@@ -952,7 +952,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1037,7 +1037,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1215,7 +1215,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;

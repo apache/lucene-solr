@@ -161,12 +161,9 @@ public abstract class PointField extends NumericFieldType {
 
   protected abstract Query getExactQuery(SchemaField field, String externalVal);
 
-  public abstract Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
-      boolean maxInclusive);
-
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
-      boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+                                           boolean maxInclusive) {
     if (!field.indexed() && field.hasDocValues()) {
       return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     } else if (field.indexed() && field.hasDocValues()) {
@@ -177,6 +174,9 @@ public abstract class PointField extends NumericFieldType {
       return getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }
   }
+
+  public abstract Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+                                           boolean maxInclusive);
 
   @Override
   public String storedToReadable(IndexableField f) {
@@ -219,9 +219,12 @@ public abstract class PointField extends NumericFieldType {
   }
   
   protected abstract String indexedToReadable(BytesRef indexedForm);
-  
+
   @Override
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    if ("".equals(termStr)) {
+      return getExistenceQuery(parser, sf);
+    }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't run prefix queries on numeric fields");
   }
   

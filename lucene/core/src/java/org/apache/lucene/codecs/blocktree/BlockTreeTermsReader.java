@@ -128,8 +128,14 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Auto-prefix terms have been superseded by points. */
   public static final int VERSION_AUTO_PREFIX_TERMS_REMOVED = 3;
 
+  /** The long[] + byte[] metadata has been replaced with a single byte[]. */
+  public static final int VERSION_META_LONGS_REMOVED = 4;
+
+  /** Suffixes are compressed to save space. */
+  public static final int VERSION_COMPRESSED_SUFFIXES = 5;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_AUTO_PREFIX_TERMS_REMOVED;
+  public static final int VERSION_CURRENT = VERSION_COMPRESSED_SUFFIXES;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -212,9 +218,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         // when frequencies are omitted, sumDocFreq=sumTotalTermFreq and only one value is written.
         final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsIn.readVLong();
         final int docCount = termsIn.readVInt();
-        final int longsSize = termsIn.readVInt();
-        if (longsSize < 0) {
-          throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, termsIn);
+        if (version < VERSION_META_LONGS_REMOVED) {
+          final int longsSize = termsIn.readVInt();
+          if (longsSize < 0) {
+            throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, termsIn);
+          }
         }
         BytesRef minTerm = readBytesRef(termsIn);
         BytesRef maxTerm = readBytesRef(termsIn);
@@ -231,7 +239,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fieldMap.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
+                                                          indexStartFP, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }

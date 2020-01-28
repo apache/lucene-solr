@@ -87,6 +87,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
   }
 
+  @Slow
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
     try (Directory dir = newDirectory()) {
@@ -100,6 +101,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
   }
 
+  @Slow
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
     try (Directory dir = newDirectory()) {
@@ -255,7 +257,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testThreadSafety() throws Exception {
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 10)];
     final AtomicBoolean failed = new AtomicBoolean();
-    final int iters = atLeast(1000);
+    final int iters = atLeast(200);
     try (Directory dir = newDirectory()) {
       for(int i=0;i<threads.length;i++) {
         final int threadID = i;
@@ -442,6 +444,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
   }
 
+  @Nightly
   public void testFixedLengthHeap() throws Exception {
     // Make sure the RAM accounting is correct, i.e. if we are sorting fixed width
     // ints (4 bytes) then the heap used is really only 4 bytes per value:

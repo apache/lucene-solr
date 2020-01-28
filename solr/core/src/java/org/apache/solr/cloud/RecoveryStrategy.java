@@ -407,7 +407,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (successfulRecovery) {
-          log.info("Restaring background replicate from leader process");
+          log.info("Restarting background replicate from leader process");
           zkController.startReplicationFromLeader(coreName, false);
           log.info("Registering as Active after recovery.");
           try {

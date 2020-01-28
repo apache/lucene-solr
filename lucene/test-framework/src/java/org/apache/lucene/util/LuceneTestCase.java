@@ -947,7 +947,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setInfoStream(new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out));
     }
 
-    if (r.nextBoolean()) {
+    if (rarely(r)) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
       ConcurrentMergeScheduler cms;
@@ -1063,7 +1063,7 @@ public abstract class LuceneTestCase extends Assert {
       return new MockRandomMergePolicy(r);
     } else if (r.nextBoolean()) {
       return newTieredMergePolicy(r);
-    } else if (r.nextInt(5) == 0) { 
+    } else if (rarely(r) ) { 
       return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
     }
     return newLogMergePolicy(r);
@@ -1127,7 +1127,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     } else {
-      tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+      tmp.setMaxMergedSegmentMB(10 + r.nextDouble() * 100);
     }
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);

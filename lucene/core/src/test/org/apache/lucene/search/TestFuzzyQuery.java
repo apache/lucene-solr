@@ -499,21 +499,31 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
 
+  private String randomRealisticMultiByteUnicode(int length) {
+    while (true) {
+      // There is 1 single-byte unicode block, and 194 multi-byte blocks
+      String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
+      if (value.charAt(0) > Byte.MAX_VALUE) {
+        return value;
+      }
+    }
+  }
+
   public void testErrorMessage() {
     // 45 states per vector from Lev2TParametricDescription
-    int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+    final int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+    final String value = randomRealisticMultiByteUnicode(length);
 
-    String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
     FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
       new FuzzyQuery(new Term("field", value)).getTermsEnum(new Terms() {
         @Override
         public TermsEnum iterator() {
-          throw new UnsupportedOperationException();
+          return TermsEnum.EMPTY;
         }
 
         @Override
         public long size() {
-          throw new UnsupportedOperationException();
+          return 0;
         }
 
         @Override
@@ -592,7 +602,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
-    int iters = atLeast(1000);
+    int iters = atLeast(200);
     for(int iter=0;iter<iters;iter++) {
       String queryTerm = randomSimpleString(digits);
       int prefixLength = random().nextInt(queryTerm.length());

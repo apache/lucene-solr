@@ -262,7 +262,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   }
 
   /** Test the accuracy of the ramBytesUsed estimations. */
-  @Slow
+  @Nightly
   public void testRamBytesUsed() throws IOException {
     if (Codec.getDefault() instanceof RandomCodec) {
       // this test relies on the fact that two segments will be written with

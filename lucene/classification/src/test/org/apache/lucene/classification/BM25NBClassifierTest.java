@@ -91,10 +91,11 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     }
   }
 
-  @Test
+  @Test @Slow
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
       BM25NBClassifier classifier = new BM25NBClassifier(leafReader,
           analyzer, null, categoryFieldName, textFieldName);

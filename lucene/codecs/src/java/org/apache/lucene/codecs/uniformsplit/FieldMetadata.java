@@ -47,9 +47,9 @@ public class FieldMetadata implements Accountable {
   protected final boolean isMutable;
   protected final FixedBitSet docsSeen;
 
-  protected int sumDocFreq;
-  protected int numTerms;
-  protected int sumTotalTermFreq;
+  protected long sumDocFreq;
+  protected long numTerms;
+  protected long sumTotalTermFreq;
   protected int docCount;
 
   protected long dictionaryStartFP;
@@ -118,15 +118,15 @@ public class FieldMetadata implements Accountable {
     return fieldInfo;
   }
 
-  public int getSumDocFreq() {
+  public long getSumDocFreq() {
     return sumDocFreq;
   }
 
-  public int getNumTerms() {
+  public long getNumTerms() {
     return numTerms;
   }
 
-  public int getSumTotalTermFreq() {
+  public long getSumTotalTermFreq() {
     return sumTotalTermFreq;
   }
 
@@ -214,12 +214,12 @@ public class FieldMetadata implements Accountable {
 
       output.writeVInt(fieldMetadata.fieldInfo.number);
 
-      output.writeVInt(fieldMetadata.numTerms);
-      output.writeVInt(fieldMetadata.sumDocFreq);
+      output.writeVLong(fieldMetadata.numTerms);
+      output.writeVLong(fieldMetadata.sumDocFreq);
 
       if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
         assert fieldMetadata.sumTotalTermFreq >= fieldMetadata.sumDocFreq : "sumTotalFQ: " + fieldMetadata.sumTotalTermFreq + " sumDocFQ: " + fieldMetadata.sumDocFreq;
-        output.writeVInt(fieldMetadata.sumTotalTermFreq - fieldMetadata.sumDocFreq);
+        output.writeVLong(fieldMetadata.sumTotalTermFreq - fieldMetadata.sumDocFreq);
       }
 
       output.writeVInt(fieldMetadata.getDocCount());
@@ -244,15 +244,15 @@ public class FieldMetadata implements Accountable {
       }
       FieldMetadata fieldMetadata = new FieldMetadata(fieldInfo, 0, false);
 
-      fieldMetadata.numTerms = input.readVInt();
+      fieldMetadata.numTerms = input.readVLong();
       if (fieldMetadata.numTerms <= 0) {
         throw new CorruptIndexException("Illegal number of terms= " + fieldMetadata.numTerms + " for field= " + fieldId, input);
       }
 
-      fieldMetadata.sumDocFreq = input.readVInt();
+      fieldMetadata.sumDocFreq = input.readVLong();
       fieldMetadata.sumTotalTermFreq = fieldMetadata.sumDocFreq;
       if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
-        fieldMetadata.sumTotalTermFreq += input.readVInt();
+        fieldMetadata.sumTotalTermFreq += input.readVLong();
         if (fieldMetadata.sumTotalTermFreq < fieldMetadata.sumDocFreq) {
           // #positions must be >= #postings.
           throw new CorruptIndexException("Illegal sumTotalTermFreq= " + fieldMetadata.sumTotalTermFreq

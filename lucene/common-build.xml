@@ -106,7 +106,7 @@
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
-  <property name="args" value=""/>
+  <property name="args" value="-XX:TieredStopAtLevel=1"/>
 
   <property name="tests.seed" value="" />
 
@@ -2245,6 +2245,12 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       <delete>
         <fileset dir="@{dstdir}">
           <include name="**/*.jar.sha1"/>
+
+          <!--
+          Don't delete jetty-start-* because this isn't regerated by ant (but is generated and validated by
+          the gradle build).
+          -->
+          <exclude name="**/jetty-start-*" />
         </fileset>
       </delete>
 

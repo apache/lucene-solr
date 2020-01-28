@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
@@ -34,8 +33,38 @@ import org.xml.sax.InputSource;
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  /** Returns an index schema created from a local resource */
+
+  /** Instantiates the configured schema factory, then calls create on it. */
+  public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
+    return newIndexSchemaFactory(config).create(resourceName, config);
+  }
+
+  /** Instantiates us from {@link SolrConfig}. */
+  public static IndexSchemaFactory newIndexSchemaFactory(SolrConfig config) {
+    PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
+    IndexSchemaFactory factory;
+    if (null != info) {
+      factory = config.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class);
+      factory.init(info.initArgs);
+    } else {
+      factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
+    }
+    return factory;
+  }
+
+  /**
+   * Returns the resource (file) name that will be used for the schema itself.  The answer may be a guess.
+   * Do not pass the result of this to {@link #create(String, SolrConfig)}.
+   * The input is the name coming from the {@link org.apache.solr.core.CoreDescriptor}
+   * which acts as a default or asked-for name.
+   */
+  public String getSchemaResourceName(String cdResourceName) {
+    return cdResourceName;
+  }
+
+  /**
+   * Returns an index schema created from a local resource.  The input is usually from the core descriptor.
+   */
   public IndexSchema create(String resourceName, SolrConfig config) {
     SolrResourceLoader loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
@@ -57,44 +86,4 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     return schema;
   }
 
-  /** Instantiates the configured schema factory, then calls create on it. */
-  public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
-    PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
-    IndexSchemaFactory factory;
-    if (null != info) {
-      factory = config.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class);
-      factory.init(info.initArgs);
-    } else {
-      factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
-    }
-    IndexSchema schema = factory.create(resourceName, config);
-    return schema;
-  }
-
-  /** 
-   * Returns the resource name that will be used: if the schema is managed, the resource
-   * name will be drawn from the schema factory configuration in the given SolrConfig.
-   * Otherwise, the given resourceName will be returned.
-   * 
-   * @param resourceName The name to use if the schema is not managed
-   * @param config The SolrConfig from which to get the schema factory config
-   * @return If the schema is managed, the resource name from the given SolrConfig,
-   *         otherwise the given resourceName. 
-   */
-  public static String getResourceNameToBeUsed(String resourceName, SolrConfig config) {
-    PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
-    final String nonManagedResourceName = null == resourceName ? IndexSchema.DEFAULT_SCHEMA_FILE : resourceName;
-    if (null == info) {
-      return nonManagedResourceName;
-    }
-    String managedSchemaResourceName
-        = (String)info.initArgs.get(ManagedIndexSchemaFactory.MANAGED_SCHEMA_RESOURCE_NAME);
-    if (null == managedSchemaResourceName) {
-      managedSchemaResourceName = ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
-    }
-    if ((new File(config.getResourceLoader().getConfigDir(), managedSchemaResourceName)).exists()) {
-      return managedSchemaResourceName;
-    }
-    return nonManagedResourceName;
-  }
 }
