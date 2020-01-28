@@ -43,6 +43,9 @@ import org.apache.solr.search.join.MultiValueTermOrdinalCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link JoinQuery} implementation using global (top-level) DocValues ordinals to efficiently compare values in the "from" and "to" fields.
+ */
 public class TopLevelJoinQuery extends JoinQuery {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
