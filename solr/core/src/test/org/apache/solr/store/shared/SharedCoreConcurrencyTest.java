@@ -18,7 +18,6 @@ package org.apache.solr.store.shared;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,8 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,14 +43,15 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 
 /**
  * Tests around synchronization of concurrent indexing, pushes and pulls
@@ -95,20 +93,11 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
    * Minimum time between each failover.
    */
   private static int DELAY_MS_BETWEEN_EACH_FAILOVER_ITERATION = 500;
-  /**
-   * Path for local shared store
-   */
-  private static Path sharedStoreRootPath;
 
   /**
    * Manages test state from start to end.
    */
   private TestState testState;
-
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    sharedStoreRootPath = createTempDir("tempDir");
-  }
 
   @Before
   public void setupTest() throws Exception {
@@ -132,7 +121,6 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    FileUtils.cleanDirectory(sharedStoreRootPath.toFile());
   }
 
   /**
@@ -583,8 +571,6 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
    * Setup solr process for test(process is one life of a node, restarts starts a new life).
    */
   private void setupSolrProcess(JettySolrRunner solrProcess) throws Exception {
-    CoreStorageClient storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), solrProcess);
     Map<String, CountDownLatch> corePullTracker = configureTestBlobProcessForNode(solrProcess);
     ConcurrentHashMap<String, ConcurrentLinkedQueue<String>> coreConcurrencyStagesTracker = new ConcurrentHashMap<>();
     configureTestSharedConcurrencyControllerForProcess(solrProcess, coreConcurrencyStagesTracker);
@@ -604,7 +590,8 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
    */
   private void configureTestSharedConcurrencyControllerForProcess(
       JettySolrRunner solrProcess, ConcurrentHashMap<String, ConcurrentLinkedQueue<String>> coreConcurrencyStagesMap) {
-    SharedCoreConcurrencyController concurrencyController = new SharedCoreConcurrencyController(solrProcess.getCoreContainer()) {
+    SharedCoreConcurrencyController concurrencyController = new SharedCoreConcurrencyController
+        (solrProcess.getCoreContainer().getSharedStoreManager().getSharedShardMetadataController()) {
       @Override
       public void recordState(String collectionName, String shardName, String coreName, SharedCoreStage stage) {
         super.recordState(collectionName, shardName, coreName, stage);

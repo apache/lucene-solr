@@ -229,6 +229,8 @@ public class CoreContainer {
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
   
   protected SharedStoreManager sharedStoreManager;
+  
+  private volatile boolean discoveredSharedCollection = false;
 
 
   // Bits for the state variable.
@@ -736,7 +738,12 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
-      sharedStoreManager = new SharedStoreManager(getZkController());
+      
+      if (cfg.getSharedStoreConfig() != null) {
+        log.info("Shared storage is enabled in Solr Cloud. Initiating SharedStoreManager.");
+        sharedStoreManager = new SharedStoreManager(getZkController());
+        sharedStoreManager.load();
+      }
     }
 
     // setup executor to load cores in parallel
@@ -756,6 +763,12 @@ public class CoreContainer {
         // is set to true for them
         // TODO: should this go behind some config?
         List<CoreDescriptor> additionalCoreDescriptors = discoverAdditionalCoreDescriptorsForSharedReplicas(cds);
+        if (!isSharedStoreEnabled() && discoveredSharedCollection) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+              "Core discovery found cores belonging to shared collections but shared storage is not enabled on "
+              + "this cluster! Solr is aborting startup. Check solr.xml for the correct configurations.");
+        }
+        
         if (!additionalCoreDescriptors.isEmpty()) {
           // enhance the list of discovered cores with the additional ones we just discovered/created
           cds = new ArrayList<>(cds);
@@ -864,6 +877,7 @@ public class CoreContainer {
             // skip non-shared collections
             continue;
           }
+          discoveredSharedCollection = true;
 
           // TODO: if shard activation(including post split) can guarantee core existence locally we can skip inactive shards
           // go over collection's replicas belonging to this node
@@ -2101,7 +2115,7 @@ public class CoreContainer {
    * the SharedCoreConcurrencyController cache; see SOLR-14134
    */
   public void evictSharedCoreMetadata(CoreDescriptor cd) {
-    if (!isZooKeeperAware()) {
+    if (!isZooKeeperAware() || !isSharedStoreEnabled()) {
       return;
     }
     
@@ -2115,6 +2129,10 @@ public class CoreContainer {
       log.info("Evicted core " + cd.getName() + " for collection " + collectionName + 
           " and shard " + shardId + " from shared core concurrency cache");
     }
+  }
+  
+  public boolean isSharedStoreEnabled() {
+    return getSharedStoreManager() != null;
   }
 
   static {

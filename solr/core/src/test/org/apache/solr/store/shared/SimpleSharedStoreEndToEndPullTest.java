@@ -16,13 +16,11 @@
  */
 package org.apache.solr.store.shared;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -33,9 +31,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -43,21 +39,11 @@ import org.junit.Test;
  */
 public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestCase {
   
-  private static Path sharedStoreRootPath;
-  
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    sharedStoreRootPath = createTempDir("tempDir");    
-  }
-  
   @After
   public void teardownTest() throws Exception {
     if (cluster != null) {
       cluster.shutdown();
     }
-    // clean up the shared store after each test. The temp dir should clean up itself after the
-    // test class finishes
-    FileUtils.cleanDirectory(sharedStoreRootPath.toFile());
   }
   
   /**
@@ -73,13 +59,9 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
     Map<String, Map<String, CountDownLatch>> solrProcessesTaskTracker = new HashMap<>();
     
     JettySolrRunner solrProcess1 = cluster.getJettySolrRunner(0);
-    CoreStorageClient storageClient1 = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient1), solrProcess1);
     Map<String, CountDownLatch> asyncPullLatches1 = configureTestBlobProcessForNode(solrProcess1);
     
     JettySolrRunner solrProcess2 = cluster.getJettySolrRunner(1);
-    CoreStorageClient storageClient2 = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient2), solrProcess2);
     Map<String, CountDownLatch> asyncPullLatches2 = configureTestBlobProcessForNode(solrProcess2);
     
     solrProcessesTaskTracker.put(solrProcess1.getNodeName(), asyncPullLatches1);

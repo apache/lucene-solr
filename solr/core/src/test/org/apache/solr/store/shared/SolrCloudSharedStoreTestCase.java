@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -30,10 +31,12 @@ import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.client.LocalStorageClient;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.process.CorePullerFeeder;
 import org.apache.solr.store.blob.process.CoreSyncStatus;
-import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
+import org.junit.After;
+import org.junit.BeforeClass;
 
 /**
  * Base class for SolrCloud tests with a few additional utilities for testing with a shared store
@@ -57,6 +60,20 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
   
   public static String DEFAULT_BLOB_DIR_NAME = "LocalBlobStore/";
   
+  public static Path blobDir;
+  
+  @BeforeClass
+  public static void setupBlobDirectory() throws Exception {
+    blobDir = createTempDir("tempDir");
+  }
+  
+  @After
+  public void cleanupBlobDirectory() throws Exception {
+    if (blobDir != null) {
+      FileUtils.cleanDirectory(blobDir.toFile());
+    }
+  }
+  
   protected static void setupSharedCollectionWithShardNames(String collectionName, 
       int maxShardsPerNode, int numReplicas, String shardNames) throws Exception {
     CollectionAdminRequest.Create create = CollectionAdminRequest
@@ -71,7 +88,24 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
     waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(numShards, numShards*numReplicas));
   }
 
+  /**
+   * Spin up a {@link MiniSolrCloudCluster} with shared storage enabled and 
+   * the local FS as the shared storage provider
+   */
   protected static void setupCluster(int nodes) throws Exception {
+    System.setProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, 
+        blobDir.resolve(DEFAULT_BLOB_DIR_NAME).toString());
+    
+    configureCluster(nodes)
+      .withSolrXml(TEST_PATH().resolve("solr-sharedstore.xml"))
+      .addConfig("conf", configset("cloud-minimal"))
+      .configure();
+  }
+  
+  /**
+   * Spin up a {@link MiniSolrCloudCluster} with shared storage disabled
+   */
+  protected static void setupClusterSharedDisable(int nodes) throws Exception {
     configureCluster(nodes)
       .addConfig("conf", configset("cloud-minimal"))
       .configure();

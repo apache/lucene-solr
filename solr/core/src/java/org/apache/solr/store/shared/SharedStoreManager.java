@@ -43,71 +43,38 @@ public class SharedStoreManager {
 
   public SharedStoreManager(ZkController controller) {
     zkController = controller;
-    // initialize BlobProcessUtil with the SharedStoreManager for background processes to be ready
-    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
-    blobCoreSyncer = new BlobCoreSyncer();
-    sharedCoreConcurrencyController = new SharedCoreConcurrencyController(zkController.getCoreContainer());
-  }
-  
-  @VisibleForTesting
-  public void initBlobStorageProvider(BlobStorageProvider blobStorageProvider) {
-    this.blobStorageProvider = blobStorageProvider;
-  }
-  
-  @VisibleForTesting
-  public void initBlobProcessUtil(BlobProcessUtil processUtil) {
-    if (blobProcessUtil != null) {
-      blobProcessUtil.shutdown();
-    }
-    blobProcessUtil = processUtil;
-  }
-  
-  /*
-   * Initiates a SharedShardMetadataController if it doesn't exist and returns one 
-   */
-  public SharedShardMetadataController getSharedShardMetadataController() {
-    if (sharedShardMetadataController != null) {
-      return sharedShardMetadataController;
-    }
+    blobStorageProvider = new BlobStorageProvider();
+    blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getClient());
+    corePullTracker = new CorePullTracker();
     sharedShardMetadataController = new SharedShardMetadataController(zkController.getSolrCloudManager());
+    sharedCoreConcurrencyController = new SharedCoreConcurrencyController(sharedShardMetadataController);
+  }
+  
+  /**
+   * Start blob processes that depend on an initiated SharedStoreManager
+   */
+  public void load() {
+    blobCoreSyncer = new BlobCoreSyncer();
+    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
+  }
+
+  public SharedShardMetadataController getSharedShardMetadataController() {
     return sharedShardMetadataController;
   }
   
-  /*
-   * Initiates a BlobStorageProvider if it doesn't exist and returns one 
-   */
   public BlobStorageProvider getBlobStorageProvider() {
-    if (blobStorageProvider != null) {
-      return blobStorageProvider;
-    }
-    blobStorageProvider = new BlobStorageProvider();
     return blobStorageProvider;
   }
   
-  /*
-   * Initiates a BlobDeleteManager if it doesn't exist and returns one 
-   */
   public BlobDeleteManager getBlobDeleteManager() {
-    if (blobDeleteManager != null) {
-      return blobDeleteManager;
-    }
-    blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getClient());
     return blobDeleteManager;
   }
   
   public BlobProcessUtil getBlobProcessManager() {
-    if (blobProcessUtil != null) {
-      return blobProcessUtil;
-    }
-    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
     return blobProcessUtil;
   }
   
   public CorePullTracker getCorePullTracker() {
-    if (corePullTracker != null) {
-      return corePullTracker ;
-    }
-    corePullTracker = new CorePullTracker();
     return corePullTracker ;
   }
   
@@ -122,6 +89,19 @@ public class SharedStoreManager {
   @VisibleForTesting
   public void initConcurrencyController(SharedCoreConcurrencyController concurrencyController) {
     this.sharedCoreConcurrencyController = concurrencyController;
+  }
+  
+  @VisibleForTesting
+  public void initBlobStorageProvider(BlobStorageProvider blobStorageProvider) {
+    this.blobStorageProvider = blobStorageProvider;
+  }
+  
+  @VisibleForTesting
+  public void initBlobProcessUtil(BlobProcessUtil processUtil) {
+    if (blobProcessUtil != null) {
+      blobProcessUtil.shutdown();
+    }
+    blobProcessUtil = processUtil;
   }
 
 }

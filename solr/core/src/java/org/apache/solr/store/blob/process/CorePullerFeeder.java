@@ -94,14 +94,6 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
   @Override
   void feedTheMonsters() throws InterruptedException {
-    while (cores.getSharedStoreManager() == null) {
-      // todo: Fix cyclic initialization sequence
-      // if thread starts early it will be killed since the initialization of sharedStoreManager has triggered the
-      // creation of this thread and following line will throw NPE.
-      if (Thread.interrupted()) {
-        throw new InterruptedException();
-      }
-    }
     CorePullTracker tracker = cores.getSharedStoreManager().getCorePullTracker();
     final long minMsBetweenLogs = 15000;
     long lastLoggedTimestamp = 0L;

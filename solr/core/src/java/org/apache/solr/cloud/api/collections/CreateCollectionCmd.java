@@ -114,6 +114,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
+    
+    if (!ocmh.overseer.getCoreContainer().isSharedStoreEnabled()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+          "Collection " + collectionName + " cannot be created because shared storage is not enabled on this cluster."
+              + " Check solr.xml for the correct configurations");
+    }
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
