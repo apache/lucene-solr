@@ -103,7 +103,7 @@ public class TestCacheDynamics extends SolrCloudTestCase {
         .setMaxShardsPerNode(5)
         .process(cluster.getSolrClient());
     CloudUtil.waitForState(cloudManager, "failed to create collection", COLLECTION, CloudUtil.clusterShape(2, 2));
-    resourceManager = cluster.getJettySolrRunner(0).getCoreContainer().getResourceManager();
+    resourceManager = cluster.getJettySolrRunner(0).getCoreContainer().getResourceManagerApi().getResourceManager();
     solrClient = cluster.getSolrClient();
     solrClient.setDefaultCollection(COLLECTION);
     // add some docs

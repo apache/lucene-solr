@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.request.beans.ResourcePoolConfig;
+
 /**
  * An implementation of {@link ResourceManager} that does nothing.
  */
@@ -77,7 +79,17 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
+  public Map<String, ResourcePoolConfig> getDefaultPoolConfigs() {
+    return Collections.emptyMap();
+  }
+
+  @Override
   protected void doInit() throws Exception {
+    // no-op
+  }
+
+  @Override
+  protected void ensureActive() {
     // no-op
   }
 

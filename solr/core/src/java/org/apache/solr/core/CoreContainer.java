@@ -74,7 +74,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -91,7 +90,6 @@ import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
-import org.apache.solr.handler.admin.ResourceManagerHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
@@ -100,9 +98,7 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.managed.DefaultResourceManager;
-import org.apache.solr.managed.NoOpResourceManager;
-import org.apache.solr.managed.ResourceManager;
+import org.apache.solr.managed.ResourceManagerAPI;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -138,7 +134,6 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
-import static org.apache.solr.common.params.CommonParams.RESOURCE_MANAGER_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
@@ -231,9 +226,7 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
-  protected volatile ResourceManager resourceManager;
-
-  protected volatile ResourceManagerHandler resourceManagerHandler;
+  protected volatile ResourceManagerAPI resourceManagerApi;
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -591,8 +584,8 @@ public class CoreContainer {
     return metricsHistoryHandler;
   }
 
-  public ResourceManager getResourceManager() {
-    return resourceManager;
+  public ResourceManagerAPI getResourceManagerAPI() {
+    return resourceManagerApi;
   }
 
   public OrderedExecutor getReplayUpdatesExecutor() {
@@ -692,24 +685,12 @@ public class CoreContainer {
 
     createMetricsHistoryHandler();
 
-    Map<String, Object> resManConfig = new HashMap<>();
-    Map<String, Object> poolConfigs = new HashMap<>(DefaultResourceManager.DEFAULT_NODE_POOLS);
-    resManConfig.put(DefaultResourceManager.POOL_CONFIGS_PARAM, poolConfigs);
-    if (isZooKeeperAware()) {
-      Map<String, Object> clusterProps = getZkController().getZkStateReader().getClusterProperties();
-      poolConfigs.putAll((Map<String, Object>)clusterProps.getOrDefault(DefaultResourceManager.POOL_CONFIGS_PARAM, Collections.emptyMap()));
-    }
-    try {
-      resourceManager = ResourceManager.load(loader, metricManager, TimeSource.NANO_TIME, DefaultResourceManager.class,
-          new PluginInfo("resourceManager", Collections.emptyMap()), resManConfig);
-    } catch (Exception e) {
-      log.warn("Resource manager initialization error - disabling!", e);
-      resourceManager = NoOpResourceManager.INSTANCE;
-    }
-
-    resourceManagerHandler = new ResourceManagerHandler(resourceManager);
-    containerHandlers.put(RESOURCE_MANAGER_PATH, resourceManagerHandler);
-    resourceManagerHandler.initializeMetrics(solrMetricsContext, RESOURCE_MANAGER_PATH);
+    resourceManagerApi = new ResourceManagerAPI(this);
+    containerHandlers.getApiBag().register(new AnnotatedApi(resourceManagerApi.readPoolApi), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(resourceManagerApi.editPoolApi), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(resourceManagerApi.readComponentApi), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(resourceManagerApi.editComponentApi), Collections.EMPTY_MAP);
+    resourceManagerApi.initializeMetrics(solrMetricsContext, "resourceMgr");
 
     autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
@@ -1045,11 +1026,11 @@ public class CoreContainer {
         }
       }
 
-      if (resourceManager != null) {
+      if (resourceManagerApi != null) {
         try {
-          resourceManager.close();
+          resourceManagerApi.close();
         } catch (Exception e) {
-          log.debug("Error closing resource manager, ignoring", e);
+          log.warn("Error closing resource manager API, ignoring...", e);
         }
       }
 
@@ -1962,6 +1943,10 @@ public class CoreContainer {
 
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  public ResourceManagerAPI getResourceManagerApi() {
+    return resourceManagerApi;
   }
 
   public boolean isCoreLoading(String name) {

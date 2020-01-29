@@ -19,12 +19,12 @@ package org.apache.solr.managed;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.client.solrj.request.beans.ResourcePoolConfig;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -45,37 +45,29 @@ import org.slf4j.LoggerFactory;
 public abstract class ResourceManager implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String RESOURCE_MANAGER_PARAM = "resourceManager";
-  public static final String POOL_CONFIGS_PARAM = "poolConfigs";
   public static final String POOL_LIMITS_PARAM = "poolLimits";
   public static final String POOL_PARAMS_PARAM = "poolParams";
 
   protected PluginInfo pluginInfo;
   protected SolrMetricsContext metricsContext;
+  protected ReentrantLock updateLock = new ReentrantLock();
   protected AtomicBoolean isClosed = new AtomicBoolean();
   protected boolean enabled = true;
   protected AtomicBoolean initialized = new AtomicBoolean();
 
   /**
-   * Create a resource manager and optionally create configured pools.
+   * Create and initialize a resource manager. This also creates default pools.
    * @param loader SolrResourceLoader instance
    * @param timeSource time source instance
-   * @param resourceManagerClass implementation class for the resource manager
    * @param pluginInfo resource manager plugin info
-   * @param config a map containing resource manager and pool configurations in {@link #RESOURCE_MANAGER_PARAM} element.
    */
   public static ResourceManager load(SolrResourceLoader loader, SolrMetricManager metricManager, TimeSource timeSource,
-                                     Class<? extends ResourceManager> resourceManagerClass, PluginInfo pluginInfo,
-                                     Map<String, Object> config) {
-    Map<String, Object> managerOverrides = (Map<String, Object>)config.getOrDefault(RESOURCE_MANAGER_PARAM, Collections.emptyMap());
-    if (!managerOverrides.isEmpty()) {
-      Map<String, Object> pluginMap = new HashMap<>();
-      pluginInfo.toMap(pluginMap);
-      pluginMap.putAll(managerOverrides);
-      if (pluginMap.containsKey(FieldType.CLASS_NAME)) {
-        resourceManagerClass = loader.findClass((String)pluginMap.get(FieldType.CLASS_NAME), ResourceManager.class);
-      }
-      pluginInfo = new PluginInfo(pluginInfo.type, pluginMap);
+                                     PluginInfo pluginInfo) {
+    Class<? extends ResourceManager> resourceManagerClass = DefaultResourceManager.class;
+    Map<String, Object> pluginMap = new HashMap<>();
+    pluginInfo.toMap(pluginMap);
+    if (pluginMap.containsKey(FieldType.CLASS_NAME)) {
+      resourceManagerClass = loader.findClass((String)pluginMap.get(FieldType.CLASS_NAME), ResourceManager.class);
     }
 
     ResourceManager resourceManager = loader.newInstance(
@@ -87,27 +79,71 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
     SolrPluginUtils.invokeSetters(resourceManager, pluginInfo.initArgs);
     resourceManager.init(pluginInfo);
     resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
-    Map<String, Object> poolConfigs = (Map<String, Object>)config.get(POOL_CONFIGS_PARAM);
+    resourceManager.setPoolConfigs(resourceManager.getDefaultPoolConfigs());
+    return resourceManager;
+  }
+
+  /**
+   * Get the configuration of default pools. These pools are protected from removal, only their parameters and
+   * limits can be modified.
+   */
+  public abstract Map<String, ResourcePoolConfig> getDefaultPoolConfigs();
+
+  /**
+   * Set new pool configurations. This removes pools that no longer exist in the new configuration (except for
+   * the default pools listed in {@link #getDefaultPoolConfigs()}), and then
+   * creates new pools, or updates limits and parameters of existing pools.
+   * @param poolConfigs new pool configurations - a map where keys are pool names and values are maps containing pool
+   *                    configurations.
+   */
+  public void setPoolConfigs(Map<String, ResourcePoolConfig> poolConfigs) {
+    ensureActive();
     if (poolConfigs != null) {
-      for (String poolName : poolConfigs.keySet()) {
-        Map<String, Object> params = (Map<String, Object>)poolConfigs.get(poolName);
-        if (params == null || params.isEmpty()) {
-          throw new IllegalArgumentException("Pool '" + poolName + "' configuration missing: " + poolConfigs);
+      updateLock.lock();
+      try {
+        // remove pools no longer present in the config - EXCEPT the default pools
+        listPools().stream()
+            .filter(p -> !getDefaultPoolConfigs().containsKey(p))
+            .filter(p -> !poolConfigs.containsKey(p))
+            .forEach(p -> {
+              try {
+                removePool(p);
+              } catch (Exception e) {
+                log.warn("Exception removing pool {}, ignoring: {}", p, e);
+              }
+            });
+        // add or modify existing pools
+        for (String poolName : poolConfigs.keySet()) {
+          ResourcePoolConfig config = poolConfigs.get(poolName);
+          if (config == null) {
+            log.warn("Pool '{}}' configuration missing, skipping: {}", poolName, poolConfigs);
+            continue;
+          }
+          if (config.type == null || config.type.isBlank()) {
+            log.warn("Pool '" + poolName + "' type is missing, skipping: " + config);
+            continue;
+          }
+          ResourceManagerPool pool = getPool(poolName);
+          if (pool != null) {
+            // pool already exists, modify if needed
+            if (!pool.getPoolLimits().equals(config.poolLimits) || !pool.getPoolParams().equals(config.poolParams)) {
+              pool.setPoolLimits(config.poolLimits);
+              pool.setPoolParams(config.poolParams);
+              log.debug("Updated limits and params of pool {}", poolName);
+            }
+          } else {
+            // create new pool
+            try {
+              createPool(poolName, config.type, config.poolLimits, config.poolParams);
+            } catch (Exception e) {
+              log.warn("Failed to create resource manager pool '" + poolName + "'", e);
+            }
+          }
         }
-        String type = (String)params.get(CommonParams.TYPE);
-        if (type == null || type.isBlank()) {
-          throw new IllegalArgumentException("Pool '" + poolName + "' type is missing: " + params);
-        }
-        Map<String, Object> poolLimits = (Map<String, Object>)params.getOrDefault(POOL_LIMITS_PARAM, Collections.emptyMap());
-        Map<String, Object> poolParams = (Map<String, Object>)params.getOrDefault(POOL_PARAMS_PARAM, Collections.emptyMap());
-        try {
-          resourceManager.createPool(poolName, type, poolLimits, poolParams);
-        } catch (Exception e) {
-          log.warn("Failed to create resource manager pool '" + poolName + "'", e);
-        }
+      } finally {
+        updateLock.unlock();
       }
     }
-    return resourceManager;
   }
 
   @Override
@@ -143,6 +179,10 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
     }
   }
 
+  public boolean isEnabled() {
+    return enabled;
+  }
+
   public PluginInfo getPluginInfo() {
     return pluginInfo;
   }
@@ -161,28 +201,6 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return metricsContext;
-  }
-
-  /**
-   * Update pool limits for existing pools.
-   * @param newPoolLimits a map of pool names to a map of updated limits. Only existing pools will be affected.
-   */
-  public void updatePoolLimits(Map<String, Object> newPoolLimits) {
-    ensureActive();
-    if (newPoolLimits == null || newPoolLimits.isEmpty()) {
-      return;
-    }
-    for (Map.Entry<String, Object> entry : newPoolLimits.entrySet()) {
-      String poolName = entry.getKey();
-      Map<String, Object> params = (Map<String, Object>)entry.getValue();
-      ResourceManagerPool<? extends ManagedComponent> pool = getPool(poolName);
-      if (pool == null) {
-        log.warn("Cannot update config - pool '" + poolName + "' not found.");
-        continue;
-      }
-      Map<String, Object> poolLimits = (Map<String, Object>)params.getOrDefault(POOL_LIMITS_PARAM, Collections.emptyMap());
-      pool.setPoolLimits(poolLimits);
-    }
   }
 
   /**
@@ -238,18 +256,6 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   public abstract void removePool(String name) throws Exception;
 
   /**
-   * Add managed components to a pool.
-   * @param pool existing pool name.
-   * @param managedComponents components to add.
-   */
-  public void registerComponents(String pool, Collection<ManagedComponent> managedComponents) {
-    ensureActive();
-    for (ManagedComponent managedComponent : managedComponents) {
-      registerComponent(pool, managedComponent);
-    }
-  }
-
-  /**
    * Add a managed component to a pool.
    * @param pool existing pool name.
    * @param managedComponent managed component. The component must support the management type
@@ -290,6 +296,9 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   public abstract boolean unregisterComponent(String pool, String componentId);
 
   protected void ensureActive() {
+    if (!enabled) {
+      throw new IllegalStateException("Resource manager is disabled.");
+    }
     if (isClosed.get()) {
       throw new IllegalStateException("Resource manager is already closed.");
     }

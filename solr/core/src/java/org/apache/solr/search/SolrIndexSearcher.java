@@ -460,7 +460,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     // register caches in their respective resource pools
-    ResourceManager resourceManager = core.getCoreContainer().getResourceManager();
+    ResourceManager resourceManager = core.getCoreContainer().getResourceManagerApi().getResourceManager();
     for (Map.Entry<String, List<SolrCache>> entry : cacheByPool.entrySet()) {
       for (SolrCache cache : entry.getValue()) {
         try {

@@ -17,6 +17,7 @@
 package org.apache.solr.managed;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.client.solrj.request.beans.ResourcePoolConfig;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -66,20 +67,28 @@ public class DefaultResourceManager extends ResourceManager {
   /** {@link org.apache.solr.search.SolrIndexSearcher}'s generic user cache pool. */
   public static final String USER_SEARCHER_CACHE_POOL = "searcherUserCache";
 
-  public static final Map<String, Map<String, Object>> DEFAULT_NODE_POOLS = new HashMap<>();
+  private static final Map<String, ResourcePoolConfig> DEFAULT_NODE_POOLS;
 
   static {
-    Map<String, Object> params = new HashMap<>();
-    params.put(CommonParams.TYPE, CacheManagerPool.TYPE);
+    Map<String, Object> defaultLimits = new HashMap<>();
     // unlimited cache RAM
-    params.put(SolrCache.MAX_RAM_MB_PARAM, -1L);
+    defaultLimits.put(SolrCache.MAX_RAM_MB_PARAM, -1L);
     // unlimited cache size
-    params.put(SolrCache.MAX_SIZE_PARAM, -1L);
-    DEFAULT_NODE_POOLS.put(DOCUMENT_CACHE_POOL, new HashMap<>(params));
-    DEFAULT_NODE_POOLS.put(FILTER_CACHE_POOL, new HashMap<>(params));
-    DEFAULT_NODE_POOLS.put(FIELD_VALUE_CACHE_POOL, new HashMap<>(params));
-    DEFAULT_NODE_POOLS.put(QUERY_RESULT_CACHE_POOL, new HashMap<>(params));
-    DEFAULT_NODE_POOLS.put(USER_SEARCHER_CACHE_POOL, new HashMap<>(params));
+    defaultLimits.put(SolrCache.MAX_SIZE_PARAM, -1L);
+    Map<String, ResourcePoolConfig> defaultPools = new HashMap<>();
+    for (String poolName : Arrays.asList(
+        DOCUMENT_CACHE_POOL,
+        FILTER_CACHE_POOL,
+        FIELD_VALUE_CACHE_POOL,
+        QUERY_RESULT_CACHE_POOL,
+        USER_SEARCHER_CACHE_POOL)) {
+      ResourcePoolConfig config = new ResourcePoolConfig();
+      config.name = poolName;
+      config.type = CacheManagerPool.TYPE;
+      config.poolLimits.putAll(defaultLimits);
+      defaultPools.put(poolName, config);
+    }
+    DEFAULT_NODE_POOLS = Collections.unmodifiableMap(defaultPools);
   }
 
 
@@ -102,16 +111,25 @@ public class DefaultResourceManager extends ResourceManager {
     this.timeSource = timeSource;
   }
 
+  @Override
+  public Map<String, ResourcePoolConfig> getDefaultPoolConfigs() {
+    return DEFAULT_NODE_POOLS;
+  }
+
   protected void doInit() throws Exception {
-    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_NODE_POOLS.size(),
-        new DefaultSolrThreadFactory(getClass().getSimpleName()));
-    scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
-    scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
-    scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    resourceManagerPoolFactory = new DefaultResourceManagerPoolFactory(loader,
-        pluginInfo != null ?
-            (Map<String, Object>)pluginInfo.initArgs.toMap(new HashMap<>()).getOrDefault("plugins", Collections.emptyMap()) :
-            Collections.emptyMap());
+    if (scheduledThreadPoolExecutor == null) {
+      scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_NODE_POOLS.size(),
+          new DefaultSolrThreadFactory(getClass().getSimpleName()));
+      scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
+      scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
+      scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    }
+    if (resourceManagerPoolFactory == null) {
+      resourceManagerPoolFactory = new DefaultResourceManagerPoolFactory(loader,
+          pluginInfo != null ?
+              (Map<String, Object>)pluginInfo.initArgs.toMap(new HashMap<>()).getOrDefault("plugins", Collections.emptyMap()) :
+              Collections.emptyMap());
+    }
     log.debug("Default resource manager initialized for loader {}.", loader);
   }
 
@@ -225,7 +243,7 @@ public class DefaultResourceManager extends ResourceManager {
     ensureActive();
     ResourceManagerPool pool = resourcePools.remove(name);
     if (pool == null) {
-      log.warn("Pool '" + name + "' doesn't exist, ignoring remove request.");
+      log.debug("Pool '" + name + "' doesn't exist, ignoring remove request.");
       return;
     }
     IOUtils.closeQuietly(pool);
@@ -269,16 +287,21 @@ public class DefaultResourceManager extends ResourceManager {
   @Override
   public void close() throws Exception {
     super.close();
-    log.debug("Closing all pools.");
-    for (ResourceManagerPool pool : resourcePools.values()) {
-      IOUtils.closeQuietly(pool);
+    updateLock.lock();
+    try {
+      log.debug("Closing all pools.");
+      for (ResourceManagerPool pool : resourcePools.values()) {
+        IOUtils.closeQuietly(pool);
+      }
+      resourcePools.clear();
+      log.debug("Shutting down scheduled thread pool executor now");
+      scheduledThreadPoolExecutor.shutdownNow();
+      log.debug("Awaiting termination of scheduled thread pool executor");
+      ExecutorUtil.awaitTermination(scheduledThreadPoolExecutor);
+      log.debug("Closed.");
+    } finally {
+      updateLock.unlock();
     }
-    resourcePools.clear();
-    log.debug("Shutting down scheduled thread pool executor now");
-    scheduledThreadPoolExecutor.shutdownNow();
-    log.debug("Awaiting termination of scheduled thread pool executor");
-    ExecutorUtil.awaitTermination(scheduledThreadPoolExecutor);
-    log.debug("Closed.");
   }
 
 }
