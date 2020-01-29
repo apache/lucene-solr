@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -696,6 +697,47 @@ public class TestLatLonShape extends LuceneTestCase {
 
     Query q = LatLonShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, searchLine);
     assertEquals(2, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testIndexAndQuerySamePolygon() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Polygon polygon;
+    while(true) {
+      try {
+        polygon = GeoTestUtil.nextPolygon();
+        // quantize the polygon
+        double[] lats = new double[polygon.numPoints()];
+        double[] lons = new double[polygon.numPoints()];
+        for (int i = 0; i < polygon.numPoints(); i++) {
+          lats[i] = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(polygon.getPolyLat(i)));
+          lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
+        }
+        polygon = new Polygon(lats, lons);
+        Tessellator.tessellate(polygon);
+        break;
+      } catch (Exception e) {
+        // invalid polygon, try a new one
+      }
+    }
+    addPolygonsToDoc(FIELDNAME, doc, polygon);
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.DISJOINT, polygon);
+    assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
   }
