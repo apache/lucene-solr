@@ -185,7 +185,8 @@ public class TestPolygon2D extends LuceneTestCase {
       Polygon polygon = nextPolygon();
       Component2D impl = Polygon2D.create(polygon);
       
-      for (int j = 0; j < 100; j++) {
+      int innerIters = atLeast(10);
+      for (int j = 0; j < innerIters; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
         // allowed to conservatively return true.
         if (impl.relate(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat) == Relation.CELL_OUTSIDE_QUERY) {

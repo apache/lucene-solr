@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -138,27 +139,28 @@ public class TestDirectMonotonic extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException {
-    final int iters = atLeast(3);
+    Random random = random();
+    final int iters = atLeast(random, 3);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
-      final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+      final int blockShift = TestUtil.nextInt(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
       final int maxNumValues = 1 << 20;
       final int numValues;
-      if (random().nextBoolean()) {
+      if (random.nextBoolean()) {
         // random number
-        numValues = TestUtil.nextInt(random(), 1, maxNumValues);
+        numValues = TestUtil.nextInt(random, 1, maxNumValues);
       } else {
         // multiple of the block size
-        final int numBlocks = TestUtil.nextInt(random(), 0, maxNumValues >>> blockShift);
-        numValues = TestUtil.nextInt(random(), 0, numBlocks) << blockShift;
+        final int numBlocks = TestUtil.nextInt(random, 0, maxNumValues >>> blockShift);
+        numValues = TestUtil.nextInt(random, 0, numBlocks) << blockShift;
       }
       List<Long> actualValues = new ArrayList<>();
-      long previous = random().nextLong();
+      long previous = random.nextLong();
       if (numValues > 0) {
         actualValues.add(previous);
       }
       for (int i = 1; i < numValues; ++i) {
-        previous += random().nextInt(1 << random().nextInt(20));
+        previous += random.nextInt(1 << random.nextInt(20));
         actualValues.add(previous);
       }
   

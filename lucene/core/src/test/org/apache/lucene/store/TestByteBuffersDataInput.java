@@ -83,7 +83,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
 
   @Test
   public void testRandomReadsOnSlices() throws Exception {
-    for (int reps = randomIntBetween(1, 200); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 20); --reps > 0;) {
       ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
   
       byte [] prefix = new byte [randomIntBetween(0, 1024 * 8)];
