@@ -271,6 +271,23 @@ public class TestPolygon2D extends LuceneTestCase {
     assertTrue(poly.contains(-2, 0));  // left side: true
     assertTrue(poly.contains(-2, 1));  // left side: true
   }
+
+  /** Tests edge case behavior with respect to insideness */
+  public void testIntersectsSameEdge() {
+    Component2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
+    // line inside edge
+    assertEquals(Relation.CELL_INSIDE_QUERY, poly.relateTriangle(-1, -1, 1, 1, -1, -1));
+    assertEquals(Relation.CELL_INSIDE_QUERY, poly.relateTriangle(-2, -2, 2, 2, -2, -2));
+    // line over edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-4, -4, 4, 4, -4, -4));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 4, 4, 4, 4));
+    // line inside edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-1, -1, 3, 3, 1, 1));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 3, 3, 2, 2));
+    // line over edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-4, -4, 7, 7, 4, 4));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 7, 7, 4, 4));
+  }
   
   /** Tests current impl against original algorithm */
   public void testContainsAgainstOriginal() {
