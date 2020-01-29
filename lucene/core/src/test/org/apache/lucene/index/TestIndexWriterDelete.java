@@ -482,11 +482,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     return hitCount;
   }
 
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
+  @Nightly
   public void testDeletesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(false);
   }
 
-  // TODO: can we tone this test down so it isn't crazy slow?
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
   @Nightly
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);

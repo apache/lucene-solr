@@ -848,7 +848,9 @@ Transformers manipulate the fields in a document returned by an entity. A transf
 
 Specific transformation rules are then added to the attributes of a `<field>` element, as shown in the examples below. The transformers are applied in the order in which they are specified in the transformer attribute.
 
-The DataImportHandler contains several built-in transformers. You can also write your own custom transformers, as described in the http://wiki.apache.org/solr/DIHCustomTransformer[DIHCustomTransformer] section of the Solr Wiki. The ScriptTransformer (described below) offers an alternative method for writing your own transformers.
+The DataImportHandler contains several built-in transformers.
+You can also write your own custom transformers if necessary.
+The ScriptTransformer described below offers an alternative method for writing your own transformers.
 
 === ClobTransformer
 

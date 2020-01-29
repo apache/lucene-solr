@@ -130,6 +130,8 @@ Improvements
 * LUCENE-9153: Allow WhitespaceAnalyzer to set a maxTokenLength other than the default of 255
   (Alan Woodward)
 
+* LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
+
 Optimizations
 ---------------------
 
