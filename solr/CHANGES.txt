@@ -2,7 +2,7 @@
 
 This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
-https://builds.apache.org/job/Solr-reference-guide-master/javadoc/solr-upgrade-notes.html
+https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
 
 ==================  9.0.0 ==================
 
