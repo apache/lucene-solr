@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -5,6 +22,7 @@ plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
+  id "org.owasp.dependencycheck" version "5.3.0"
 }
 
 // Project version and main properties. Applies to all projects.
@@ -21,7 +39,9 @@ ext {
   // Workaround for this one, for now:
   // https://github.com/palantir/gradle-consistent-versions/issues/383
   scriptDepVersions = [
-      "apache-rat": "0.11"
+      "apache-rat": "0.11",
+      "javacc": "5.0",
+      "jflex": "1.7.0",
   ]
 }
 
@@ -58,12 +78,18 @@ apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
+apply from: file('gradle/validation/owasp-dependency-check.gradle')
+
+// Source or data regeneration tasks
+apply from: file('gradle/generation/jflex.gradle')
+apply from: file('gradle/generation/javacc.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
 apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/testing/failed-tests-at-end.gradle')
+apply from: file('gradle/testing/profiling.gradle')
 apply from: file('gradle/help.gradle')
 
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are

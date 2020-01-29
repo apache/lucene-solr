@@ -63,7 +63,7 @@ public final class CompetitiveImpactAccumulator {
   public void clear() {
     Arrays.fill(maxFreqs, 0);
     otherFreqNormPairs.clear();
-    assertConsistent();
+    assert assertConsistent();
   }
 
   /** Accumulate a (freq,norm) pair, updating this structure if there is no
@@ -75,7 +75,7 @@ public final class CompetitiveImpactAccumulator {
     } else {
       add(new Impact(freq, norm), otherFreqNormPairs);
     }
-    assertConsistent();
+    assert assertConsistent();
   }
 
   /** Merge {@code acc} into this. */
@@ -90,7 +90,7 @@ public final class CompetitiveImpactAccumulator {
       add(entry, otherFreqNormPairs);
     }
 
-    assertConsistent();
+    assert assertConsistent();
   }
 
   /** Get the set of competitive freq and norm pairs, ordered by increasing freq and norm. */

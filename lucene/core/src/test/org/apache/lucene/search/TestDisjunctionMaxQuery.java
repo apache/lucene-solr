@@ -50,6 +50,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * Test of the DisjunctionMaxQuery.
  * 
  */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   /** threshold for comparing floats */

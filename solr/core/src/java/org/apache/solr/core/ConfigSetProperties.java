@@ -30,7 +30,14 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.fromJSON;
 
-
+/**
+ * Utility methods for reading configSet properties.
+ * One purpose of this notion is to express immutability.
+ * The contents are not used within the config itself; do not confuse this with config user-defined properties.
+ * The properties are stored as a JSON file within the configSet that we read into a NamedList.
+ * It's optional; there is no file if there are no properties.
+ * Note that this logic is also used to load configSet <em>flags</em>; see {@link ConfigSetService}.
+ */
 public class ConfigSetProperties {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -50,7 +57,7 @@ public class ConfigSetProperties {
     try {
       reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
     } catch (SolrResourceNotFoundException ex) {
-      log.debug("Did not find ConfigSet properties, assuming default properties: " + ex.getMessage());
+      log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
       return null;
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);

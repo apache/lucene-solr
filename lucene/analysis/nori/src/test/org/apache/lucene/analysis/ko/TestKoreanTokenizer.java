@@ -368,17 +368,25 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerUnigram, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerDecompound, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerUnigram, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerDecompound, 100*RANDOM_MULTIPLIER);
   }
 
   /** blast some random large strings through the tokenizer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerUnigram, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerDecompound, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerUnigram, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerDecompound, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerUnigram, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerDecompound, 3*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -392,7 +400,7 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
     analyzer.close();
   }
 

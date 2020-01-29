@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -92,6 +93,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       "apache  solr", "apache solr ");
     assertQueryEquals("lucene", "+apache +solr", "apache AND solr",
                       " +apache +solr");
+  }
+
+  public void testQueryLuceneAllDocsWithField() throws Exception {
+    // for all "primative" types except for doubles/floats, 'foo:*' should be functionally equivilent to "foo:[* TO *]"
+    // whatever implementation/optimizations exist for one syntax, should exist for the other syntax as well
+    // (regardless of docValues, multivalued, etc...)
+    for (String field : Arrays.asList("foo_sI", "foo_sS", "foo_s1", "foo_s",
+                                      "t_foo", "tv_foo", "tv_mv_foo",
+                                      "foo_b", "foo_b_dvo",
+                                      "foo_i", "foo_is", "foo_i_dvo",
+                                      "foo_l", "foo_l_dvo",
+                                      "foo_dt", "foo_dt_dvo")) {
+
+      assertQueryEquals("lucene", field + ":*", field + ":[* TO *]");
+    }
   }
 
   public void testQueryPrefix() throws Exception {

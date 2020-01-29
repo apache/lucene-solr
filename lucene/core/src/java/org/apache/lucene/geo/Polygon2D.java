@@ -187,7 +187,7 @@ public class Polygon2D implements Component2D {
     // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
     // if it only intersects edges that do not belong to the shape, then it is a candidate
     // we skip edges at the dateline to support shapes crossing it
-    if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+    if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true)) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -195,14 +195,14 @@ public class Polygon2D implements Component2D {
       }
     }
 
-    if (tree.crossesLine(minX, maxX, minY, maxY, bx, by, cx, cy)) {
+    if (tree.crossesLine(minX, maxX, minY, maxY, bx, by, cx, cy, true)) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.crossesLine(minX, maxX, minY, maxY, cx, cy, ax, ay)) {
+    if (tree.crossesLine(minX, maxX, minY, maxY, cx, cy, ax, ay, true)) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -236,12 +236,12 @@ public class Polygon2D implements Component2D {
     }
 
     if (numCorners == 2) {
-      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, true)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -263,7 +263,7 @@ public class Polygon2D implements Component2D {
       if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, false)) {
+      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
