@@ -18,16 +18,12 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.solr.search.DelegatingCollector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Populates a bitset of (top-level) ordinals based on field values in a multi-valued field.
