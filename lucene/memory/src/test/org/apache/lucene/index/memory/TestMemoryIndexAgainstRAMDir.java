@@ -114,6 +114,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   public void testRandomQueries() throws Exception {
     MemoryIndex index = randomMemoryIndex();
     int iterations = TEST_NIGHTLY ? 100 * RANDOM_MULTIPLIER : 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < iterations; i++) {
       assertAgainstRAMDirectory(index);
     }
   }
