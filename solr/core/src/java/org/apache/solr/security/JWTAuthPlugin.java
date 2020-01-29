@@ -338,6 +338,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
         numPassThrough.inc();
+        request.setAttribute(AuthenticationPlugin.class.getName(), getPromptHeaders(null, null));
         filterChain.doFilter(request, response);
         return true;
 
@@ -536,16 +537,28 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope}
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
+    getPromptHeaders(responseError, message).forEach(response::setHeader);
+    response.sendError(httpCode, message);
+    log.info("JWT Authentication attempt failed: {}", message);
+  }
+
+  /**
+   * Generate proper response prompt headers
+   * @param responseError standardized error code. Set to 'null' to generate WWW-Authenticate header with no error
+   * @param message custom message string to return in www-authenticate, or null if no error
+   * @return map of headers to add to response
+   */
+  private Map<String, String> getPromptHeaders(BearerWwwAuthErrorCode responseError, String message) {
+    Map<String,String> headers = new HashMap<>();
     List<String> wwwAuthParams = new ArrayList<>();
     wwwAuthParams.add("Bearer realm=\"" + realm + "\"");
     if (responseError != null) {
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
-    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
-    response.addHeader(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
-    response.sendError(httpCode, message);
-    log.info("JWT Authentication attempt failed: {}", message);
+    headers.put(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
+    headers.put(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
+    return headers;
   }
 
   protected String generateAuthDataHeader() {

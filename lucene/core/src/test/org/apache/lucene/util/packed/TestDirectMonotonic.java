@@ -26,11 +26,27 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDirectMonotonic extends LuceneTestCase {
+
+  public void testValidation() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, -1, 10));
+    assertEquals("numValues can't be negative, got -1", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, 10, 1));
+    assertEquals("blockShift must be in [2-22], got 1", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, 1L << 40, 5));
+    assertEquals("blockShift is too low for the provided number of values: blockShift=5, numValues=1099511627776, MAX_ARRAY_LENGTH=" +
+        ArrayUtil.MAX_ARRAY_LENGTH, e.getMessage());
+  }
 
   public void testEmpty() throws IOException {
     Directory dir = newDirectory();

@@ -376,6 +376,14 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
   /** blast some random large strings through the tokenizer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerUnigram, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerDecompound, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerUnigram, 3*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerDecompound, 3*RANDOM_MULTIPLIER, 8192);
@@ -392,7 +400,7 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
     analyzer.close();
   }
 

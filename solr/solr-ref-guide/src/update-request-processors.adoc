@@ -261,7 +261,7 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/AtomicUpdateProcessorFactory.html[AtomicUpdateProcessorFactory]:: This processor will convert conventional field-value documents to atomic update documents. This processor can be used at runtime (without defining it in `solrconfig.xml`), see the section <<atomicupdateprocessorfactory>> below.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/ClassificationUpdateProcessorFactory.html[ClassificationUpdateProcessorFactory]:: This processor uses Lucene's classification module to provide simple document classification. See https://wiki.apache.org/solr/SolrClassification for more details on how to use this processor.
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/ClassificationUpdateProcessorFactory.html[ClassificationUpdateProcessorFactory]:: This processor uses Lucene's classification module to provide simple document classification. See https://cwiki.apache.org/confluence/display/solr/SolrClassification for more details on how to use this processor.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
 

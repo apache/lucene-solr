@@ -123,7 +123,7 @@ public class HdfsUpdateLog extends UpdateLog {
         }
       } else {
         if (debug) {
-          log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id,
+          log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id +
               " this is a reopen or double init ... nothing else to do.");
         }
         versionInfo.reload();

@@ -74,7 +74,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon shape = (XYPolygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinPolygon(query, (XYPolygon) shape);
+        return testWithinPolygon(query, shape);
       }
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {

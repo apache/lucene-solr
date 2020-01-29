@@ -112,6 +112,14 @@ specifying the project and test task or a fully qualified task path. Example:
 gradlew -p lucene/core test -Ptests.verbose=true --tests "TestDemo"
 
 
+Profiling slow tests
+--------------------
+
+The "tests.profile" mode switch turns on a sampling profiler during test execution,
+and prints a simple summary at the end. Example:
+
+gradlew -p lucene/core test -Ptests.profile=true
+
 Testing against different JVMs
 ------------------------------
 

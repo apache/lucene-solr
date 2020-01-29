@@ -112,7 +112,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final SearcherManager mgr = new SearcherManager(w.w, applyDeletes, false, searcherFactory);
     final AtomicBoolean indexing = new AtomicBoolean(true);
     final AtomicReference<Throwable> error = new AtomicReference<>();
-    final int numDocs = atLeast(10000);
+    final int numDocs = atLeast(1000);
     Thread[] threads = new Thread[3];
     threads[0] = new Thread() {
       public void run() {

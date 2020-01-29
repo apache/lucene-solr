@@ -127,6 +127,11 @@ Improvements
   first match in the passage. Also the sizing point now pivots at the center of the first match term and not its left
   edge. This yields Passages that won't be identical to the previous behavior. (Nándor Mátravölgyi, David Smiley)
 
+* LUCENE-9153: Allow WhitespaceAnalyzer to set a maxTokenLength other than the default of 255
+  (Alan Woodward)
+
+* LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
+
 Optimizations
 ---------------------
 
