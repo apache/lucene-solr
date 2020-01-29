@@ -53,7 +53,7 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
             break;
           }
           repetitions++;
-          if (repetitions > 50) {
+          if (repetitions > 2) {
             //try again
             return nextShape();
           }

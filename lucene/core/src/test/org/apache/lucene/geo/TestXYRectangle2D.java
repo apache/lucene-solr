@@ -17,6 +17,8 @@
 
 package org.apache.lucene.geo;
 
+import java.util.Random;
+
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -60,15 +62,16 @@ public class TestXYRectangle2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    XYRectangle rectangle = ShapeTestUtil.nextBox();
+    Random random = random();
+    XYRectangle rectangle = ShapeTestUtil.nextBox(random);
     Component2D rectangle2D = XYRectangle2D.create(rectangle);
     for (int i =0; i < 100; i++) {
-      float ax = (float) ShapeTestUtil.nextDouble();
-      float ay = (float) ShapeTestUtil.nextDouble();
-      float bx = (float) ShapeTestUtil.nextDouble();
-      float by = (float) ShapeTestUtil.nextDouble();
-      float cx = (float) ShapeTestUtil.nextDouble();
-      float cy = (float) ShapeTestUtil.nextDouble();
+      float ax = (float) ShapeTestUtil.nextDouble(random);
+      float ay = (float) ShapeTestUtil.nextDouble(random);
+      float bx = (float) ShapeTestUtil.nextDouble(random);
+      float by = (float) ShapeTestUtil.nextDouble(random);
+      float cx = (float) ShapeTestUtil.nextDouble(random);
+      float cy = (float) ShapeTestUtil.nextDouble(random);
 
       float tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
       float tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);

@@ -17,6 +17,9 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+
+import java.util.Random;
+
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
@@ -35,23 +38,24 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected XYLine randomQueryLine(Object... shapes) {
-    if (random().nextInt(100) == 42) {
+    Random random = random();
+    if (random.nextInt(100) == 42) {
       // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
       int maxBound = (int)Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
-      float[] x = new float[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      float[] x = new float[RandomNumbers.randomIntBetween(random, 2, maxBound)];
       float[] y = new float[x.length];
       for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
         XYLine l = (XYLine) (shapes[i]);
-        if (random().nextBoolean() && l != null) {
-          int v = random().nextInt(l.numPoints() - 1);
+        if (random.nextBoolean() && l != null) {
+          int v = random.nextInt(l.numPoints() - 1);
           x[j] = (float)l.getX(v);
           y[j] = (float)l.getY(v);
         } else {
-          x[j] = (float)ShapeTestUtil.nextDouble();
-          y[j] = (float)ShapeTestUtil.nextDouble();
+          x[j] = (float)ShapeTestUtil.nextDouble(random);
+          y[j] = (float)ShapeTestUtil.nextDouble(random);
         }
       }
       return new XYLine(x, y);

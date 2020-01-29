@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene80;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -421,14 +422,15 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   private void doTestRandom(Directory dir) throws IOException {
+    Random random = random();
     List<Integer> docs = new ArrayList<>();
-    final int maxStep = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 2, 20));
-    final int numDocs = TestUtil.nextInt(random(), 1, Math.min(100000, Integer.MAX_VALUE / maxStep));
+    final int maxStep = TestUtil.nextInt(random, 1, 1 << TestUtil.nextInt(random, 2, 20));
+    final int numDocs = TestUtil.nextInt(random, 1, Math.min(100000, Integer.MAX_VALUE / maxStep));
     for (int doc = -1, i = 0; i < numDocs; ++i) {
-      doc += TestUtil.nextInt(random(), 1, maxStep);
+      doc += TestUtil.nextInt(random, 1, maxStep);
       docs.add(doc);
     }
-    final int maxDoc = docs.get(docs.size() - 1) + TestUtil.nextInt(random(), 1, 100);
+    final int maxDoc = docs.get(docs.size() - 1) + TestUtil.nextInt(random, 1, 100);
 
     FixedBitSet set = new FixedBitSet(maxDoc);
     for (int doc : docs) {
@@ -477,8 +479,9 @@ public class TestIndexedDISI extends LuceneTestCase {
   private void assertAdvanceExactRandomized(IndexedDISI disi, BitSetIterator disi2, int disi2length, int step)
       throws IOException {
     int index = -1;
+    Random random = random();
     for (int target = 0; target < disi2length; ) {
-      target += TestUtil.nextInt(random(), 0, step);
+      target += TestUtil.nextInt(random, 0, step);
       int doc = disi2.docID();
       while (doc < target) {
         doc = disi2.nextDoc();
@@ -489,7 +492,7 @@ public class TestIndexedDISI extends LuceneTestCase {
       assertEquals(doc == target, exists);
       if (exists) {
         assertEquals(index, disi.index());
-      } else if (random().nextBoolean()) {
+      } else if (random.nextBoolean()) {
         assertEquals(doc, disi.nextDoc());
         // This is a bit strange when doc == NO_MORE_DOCS as the index overcounts in the disi2 while-loop
         assertEquals(index, disi.index());

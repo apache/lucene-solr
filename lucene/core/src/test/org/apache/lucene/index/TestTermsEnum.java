@@ -241,7 +241,8 @@ public class TestTermsEnum extends LuceneTestCase {
       docIDToID[i] = (int) values.longValue();
     }
 
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    int numIterations = atLeast(3);
+    for(int iter=0;iter<numIterations;iter++) {
 
       // TODO: can we also test infinite As here...?
 

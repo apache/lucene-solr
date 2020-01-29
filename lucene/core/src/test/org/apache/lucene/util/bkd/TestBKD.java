@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.index.CorruptIndexException;
@@ -1220,19 +1221,20 @@ public class TestBKD extends LuceneTestCase {
   // Claims 16 bytes per dim, but only use the bottom N 1-3 bytes; this would happen e.g. if a user indexes what are actually just short
   // values as a LongPoint:
   public void testWastedLeadingBytes() throws Exception {
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
-    int numIndexDims = TestUtil.nextInt(random(), 1, numDims);
+    Random random = random();
+    int numDims = TestUtil.nextInt(random, 1, PointValues.MAX_DIMENSIONS);
+    int numIndexDims = TestUtil.nextInt(random, 1, numDims);
     int bytesPerDim = PointValues.MAX_NUM_BYTES;
-    int bytesUsed = TestUtil.nextInt(random(), 1, 3);
+    int bytesUsed = TestUtil.nextInt(random, 1, 3);
 
     Directory dir = newFSDirectory(createTempDir());
-    int numDocs = 100000;
+    int numDocs = atLeast(10000);
     BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, numIndexDims, bytesPerDim, 32, 1f, numDocs);
     byte[] tmp = new byte[bytesUsed];
     byte[] buffer = new byte[numDims * bytesPerDim];
     for(int i=0;i<numDocs;i++) {
       for(int dim=0;dim<numDims;dim++) {
-        random().nextBytes(tmp);
+        random.nextBytes(tmp);
         System.arraycopy(tmp, 0, buffer, dim*bytesPerDim+(bytesPerDim-bytesUsed), tmp.length);
       }
       w.add(buffer, i);
