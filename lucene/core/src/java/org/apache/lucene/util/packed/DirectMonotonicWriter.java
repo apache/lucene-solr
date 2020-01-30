@@ -21,6 +21,7 @@ package org.apache.lucene.util.packed;
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Write monotonically-increasing sequences of integers. This writer splits
@@ -46,14 +47,22 @@ public final class DirectMonotonicWriter {
   boolean finished;
 
   DirectMonotonicWriter(IndexOutput metaOut, IndexOutput dataOut, long numValues, int blockShift) {
+    if (blockShift < MIN_BLOCK_SHIFT || blockShift > MAX_BLOCK_SHIFT) {
+      throw new IllegalArgumentException("blockShift must be in [" + MIN_BLOCK_SHIFT + "-" + MAX_BLOCK_SHIFT + "], got " + blockShift);
+    }
+    if (numValues < 0) {
+      throw new IllegalArgumentException("numValues can't be negative, got " + numValues);
+    }
+    final long numBlocks = numValues == 0 ? 0 : ((numValues - 1) >>> blockShift) + 1;
+    if (numBlocks > ArrayUtil.MAX_ARRAY_LENGTH) {
+      throw new IllegalArgumentException("blockShift is too low for the provided number of values: blockShift=" + blockShift +
+          ", numValues=" + numValues + ", MAX_ARRAY_LENGTH=" + ArrayUtil.MAX_ARRAY_LENGTH);
+    }
     this.meta = metaOut;
     this.data = dataOut;
     this.numValues = numValues;
-    if (blockShift < 2 || blockShift > 30) {
-      throw new IllegalArgumentException("blockShift must be in [3-30], got " + blockShift);
-    }
     final int blockSize = 1 << blockShift;
-    this.buffer = new long[blockSize];
+    this.buffer = new long[(int) Math.min(numValues, blockSize)];
     this.bufferSize = 0;
     this.baseDataPointer = dataOut.getFilePointer();
   }

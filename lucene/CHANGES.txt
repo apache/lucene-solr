@@ -132,6 +132,8 @@ Improvements
 
 * LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
 
+* LUCENE-9152: Improve line intersections with polygons when they are touching from the outside. (Ignacio Vera)
+
 Optimizations
 ---------------------
 
