@@ -114,6 +114,7 @@ configure(project(":lucene:core")) {
 }
 
 configure(project(":lucene:analysis:common")) {
+
   task jflexUAX29URLEmailTokenizerImpl(type: JFlexTask) {
     description "Regenerate UAX29URLEmailTokenizerImpl.java"
     group "generation"
@@ -132,6 +133,36 @@ configure(project(":lucene:analysis:common")) {
           encoding: "UTF-8",
           token: "private static final int ZZ_BUFFERSIZE =",
           value: "private int ZZ_BUFFERSIZE ="
+      )
+    }
+  }
+
+  task jflexHTMLStripCharFilter(type: JFlexTask) {
+    description "Regenerate HTMLStripCharFilter.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.jflex')
+    skeleton = project(":lucene:core").file("src/data/jflex/skeleton.default")
+
+    doFirst {
+      // Regenerate HTMLCharacterEntities.jflex first.
+      def target = file('src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex')
+      target.withOutputStream { output ->
+        project.exec {
+          executable = "python"
+          workingDir = target.parentFile
+          standardOutput = output
+          args += [
+              "-B", // don't write any bytecode cache
+              "htmlentity.py"
+          ]
+        }
+      }
+
+      project.ant.fixcrlf(
+          file: target,
+          encoding: "UTF-8",
+          eol: "lf"
       )
     }
   }
