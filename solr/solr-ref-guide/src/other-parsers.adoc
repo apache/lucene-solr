@@ -658,8 +658,8 @@ Details and performance heuristics are given below.
 +
 `index` the default `method` unless the `score` parameter is specified.
 Uses the terms index structures to process the request.
-Performance scales linearly with the number of values matched in the "from" field.
-Consider this method when the "from" query matches few documents, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this is a disadvantage of other methods that `index` avoids).
+Performance scales with the cardinality and number of postings (term occurrences) in the "from" field.
+Consider this method when the "from" field has low cardinality, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this is a disadvantage of other methods that `index` avoids).
 
 +
 `dvWithScore` returns an optional "score" statistic alongside result documents.
