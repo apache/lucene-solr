@@ -844,7 +844,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       // If there are 2 suffix bytes or less per term, then we don't bother compressing as suffix are unlikely what
       // makes the terms dictionary large, and it also tends to be frequently the case for dense IDs like
       // auto-increment IDs, so not compressing in that case helps not hurt ID lookups by too much.
-      if (suffixWriter.length() > 2L * numEntries) {
+      // We also only start compressing when the prefix length is greater than 2 since blocks whose prefix length is
+      // 1 or 2 always all get visited when running a fuzzy query whose max number of edits is 2.
+      if (suffixWriter.length() > 2L * numEntries && prefixLength > 2) {
         // LZ4 inserts references whenever it sees duplicate strings of 4 chars or more, so only try it out if the
         // average suffix length is greater than 6.
         if (suffixWriter.length() > 6L * numEntries) {
