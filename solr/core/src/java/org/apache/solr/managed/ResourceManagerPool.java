@@ -55,6 +55,7 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   protected final String type;
   protected final Map<String, Object> poolLimits = new ConcurrentHashMap<>();
   protected final Map<String, T> components = new ConcurrentHashMap<>();
+  protected final Map<String, Map<String, Object>> initialComponentLimits = new ConcurrentHashMap<>();
   protected final ResourceManager resourceManager;
   protected final Class<? extends ManagedComponent> componentClass;
   protected final Map<String, Object> poolParams = new ConcurrentHashMap<>();
@@ -141,11 +142,21 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     if (existing != null) {
       throw new IllegalArgumentException("Component '" + managedComponent.getManagedComponentId() + "' already exists in pool '" + name + "' !");
     }
+    try {
+      initialComponentLimits.put(managedComponent.getManagedComponentId().toString(), getResourceLimits(managedComponent));
+    } catch (Exception e) {
+      log.warn("Could not retrieve initial component limits for {} / {}: {}", managedComponent.getManagedComponentId(), getName(), e);
+    }
   }
 
   /** Remove named component from this pool. */
   public boolean unregisterComponent(String componentId) {
+    initialComponentLimits.remove(componentId);
     return components.remove(componentId) != null;
+  }
+
+  public Map<String, Object> getInitialResourceLimits(String componentId) {
+    return initialComponentLimits.getOrDefault(componentId, Collections.emptyMap());
   }
 
   /**

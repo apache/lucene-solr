@@ -53,7 +53,7 @@ public class SolrCoreMetricManager implements Closeable {
     initCloudMode();
     metricManager = core.getCoreContainer().getMetricManager();
     String registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "SolrCore", core.getMetricTag());
+    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
   }
 

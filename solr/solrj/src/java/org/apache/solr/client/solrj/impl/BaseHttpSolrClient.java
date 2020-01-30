@@ -52,7 +52,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
     private NamedList meta;
 
     public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, null);
+      super(remoteHost, code, msg + (meta != null ? ": " + meta : ""), null);
       this.meta = meta;
     }
 
@@ -70,6 +70,8 @@ public abstract class BaseHttpSolrClient extends SolrClient {
       }
 
     }
+
+
 
     public NamedList getMetaData() {
 

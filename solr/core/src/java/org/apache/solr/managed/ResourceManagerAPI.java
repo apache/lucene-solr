@@ -291,7 +291,7 @@ public class ResourceManagerAPI implements SolrInfoBean {
 
   // ============= helper methods ==============
 
-  private List<ManagedComponent> getComponents(SolrQueryRequest req, SolrQueryResponse rsp, AtomicReference<ResourceManagerPool> poolRef) {
+  private List<ManagedComponent> getComponents(SolrQueryRequest req, SolrQueryResponse rsp, String componentPrefix, AtomicReference<ResourceManagerPool> poolRef) {
     String poolName = req.getPathTemplateValues().get("poolName");
     if (poolName == null || poolName.isBlank()) {
       rsp.setException(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required pool name."));
@@ -303,7 +303,7 @@ public class ResourceManagerAPI implements SolrInfoBean {
       return null;
     }
     poolRef.set(pool);
-    String componentName = req.getPathTemplateValues().get("componentName");
+    String componentName = componentPrefix != null ? componentPrefix : req.getPathTemplateValues().get("componentName");
     NamedList<Object> result = new SimpleOrderedMap<>();
     // we support a prefix of component names because eg. searcher caches will have a quickly
     // changing unique suffix
@@ -350,10 +350,10 @@ public class ResourceManagerAPI implements SolrInfoBean {
         perPool.add("type", pool.getType());
         perPool.add("size", pool.getComponents().size());
         if (withLimits) {
-          perPool.add("poolLimits", pool.getPoolLimits());
+          perPool.add("limits", pool.getPoolLimits());
         }
         if (withParams) {
-          perPool.add("poolParams", pool.getPoolParams());
+          perPool.add("params", pool.getPoolParams());
         }
         if (withComponents) {
           perPool.add("components", new TreeSet<>(pool.getComponents().keySet()));
@@ -361,7 +361,7 @@ public class ResourceManagerAPI implements SolrInfoBean {
         if (withValues) {
           try {
             Map<String, Map<String, Object>> values = pool.getCurrentValues();
-            perPool.add("totalValues", new TreeMap<>(pool.aggregateTotalValues(values)));
+            perPool.add("values", new TreeMap<>(pool.aggregateTotalValues(values)));
           } catch (Exception e) {
             log.warn("Error getting current values from pool " + name, e);
             perPool.add("error", "Error getting current values: " + e.toString());
@@ -419,7 +419,7 @@ public class ResourceManagerAPI implements SolrInfoBean {
       NamedList<Object> result = new SimpleOrderedMap<>();
       rsp.add("result", result);
       Set<String> toDelete = new TreeSet<>();
-      if (payload.get() != null && !payload.get().isBlank()) {
+      if (payload != null && payload.get() != null && !payload.get().isBlank()) {
         toDelete.add(payload.get());
       }
       if (req.getPathTemplateValues().get("poolName") != null) {
@@ -534,8 +534,8 @@ public class ResourceManagerAPI implements SolrInfoBean {
   @EndPoint(
       method = SolrRequest.METHOD.GET,
       path = {
-          "/cluster/resources/{poolName}/components",
-          "/cluster/resources/{poolName}/components/{componentName}"
+          "/node/resources/{poolName}/components",
+          "/node/resources/{poolName}/components/{componentName}"
       },
       permission = PermissionNameProvider.Name.RESOURCE_READ_PERM
   )
@@ -544,13 +544,14 @@ public class ResourceManagerAPI implements SolrInfoBean {
     @Command()
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) {
       AtomicReference<ResourceManagerPool> poolRef = new AtomicReference<>();
-      List<ManagedComponent> components = getComponents(req, rsp, poolRef);
+      List<ManagedComponent> components = getComponents(req, rsp, null, poolRef);
       if (components == null) {
         return;
       }
       ResourceManagerPool pool = poolRef.get();
       boolean withValues = req.getParams().getBool("values", false);
       boolean withLimits = req.getParams().getBool("limits", false);
+      boolean withInitialLimits = req.getParams().getBool("initialLimits", false);
       NamedList<Object> result = new SimpleOrderedMap<>();
       rsp.add("result", result);
       components.forEach(component -> {
@@ -559,15 +560,18 @@ public class ResourceManagerAPI implements SolrInfoBean {
         perComponent.add("class", component.getClass().getName());
         if (withLimits) {
           try {
-            perComponent.add("resourceLimits", new TreeMap<>(pool.getResourceLimits(component)));
+            perComponent.add("limits", new TreeMap<>(pool.getResourceLimits(component)));
           } catch (Exception e) {
             log.warn("Error getting resource limits of " + component.getManagedComponentId(), e);
             result.add("error", "Error getting resource limits of " + component.getManagedComponentId() + ": " + e.toString());
           }
         }
+        if (withInitialLimits) {
+          perComponent.add("initialLimits", new TreeMap<>(pool.getInitialResourceLimits(component.getManagedComponentId().toString())));
+        }
         if (withValues) {
           try {
-            perComponent.add("monitoredValues", new TreeMap<>(pool.getMonitoredValues(component)));
+            perComponent.add("values", new TreeMap<>(pool.getMonitoredValues(component)));
           } catch (Exception e) {
             log.warn("Error getting monitored values of " + component.getManagedComponentId() + "/" + pool.getName() + " : " + e.toString(), e);
             perComponent.add("error", "Error getting monitored values of " + component.getManagedComponentId() + ": " + e.toString());
@@ -581,26 +585,28 @@ public class ResourceManagerAPI implements SolrInfoBean {
   @EndPoint(
       method = SolrRequest.METHOD.POST,
       path = {
-          "/cluster/resources/{poolName}/components",
-          "/cluster/resources/{poolName}/components/{componentName}"
+          "/node/resources/{poolName}/components",
+          "/node/resources/{poolName}/components/{componentName}"
       },
       permission = PermissionNameProvider.Name.RESOURCE_WRITE_PERM
   )
   public class EditComponentAPI {
 
     @Command(name = "setlimits")
-    public void setLimits(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<String> payload) {
+    public void setLimits(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Map<String, Object>> payload) {
       if (!checkEnabled(payload)) return;
       AtomicReference<ResourceManagerPool> poolRef = new AtomicReference<>();
-      List<ManagedComponent> components = getComponents(req, rsp, poolRef);
+      List<ManagedComponent> components = getComponents(req, rsp, null, poolRef);
       if (components == null) {
         return;
       }
       NamedList<Object> result = new SimpleOrderedMap<>();
       rsp.add("result", result);
       ResourceManagerPool pool = poolRef.get();
-      Map<String, Object> newLimits = (Map<String, Object>)Utils.fromJSONString(payload.get());
+      Map<String, Object> newLimits = payload.get();
       for (ManagedComponent cmp : components) {
+        NamedList<Object> perComponent = new SimpleOrderedMap<>();
+        result.add(cmp.getManagedComponentId().toString(), perComponent);
         try {
           Map<String, Object> currentLimits = new HashMap<>(pool.getResourceLimits(cmp));
           newLimits.forEach((k, v) -> {
@@ -612,14 +618,14 @@ public class ResourceManagerAPI implements SolrInfoBean {
           });
           try {
             pool.setResourceLimits(cmp, newLimits, ChangeListener.Reason.USER);
-            result.add("success", newLimits);
+            perComponent.addAll(newLimits);
           } catch (Exception e) {
             log.warn("Error setting resource limits of " + cmp.getManagedComponentId() + "/" + pool.getName() + " : " + e.toString(), e);
-            result.add("error", "Error setting resource limits of " + cmp.getManagedComponentId() + ": " + e.toString());
+            perComponent.add("error", "Error setting resource limits of " + cmp.getManagedComponentId() + ": " + e.toString());
           }
         } catch (Exception e) {
           log.warn("Error getting resource limits of " + cmp.getManagedComponentId() + "/" + pool.getName() + " : " + e.toString(), e);
-          result.add("error", "Error getting resource limits of " + cmp.getManagedComponentId() + ": " + e.toString());
+          perComponent.add("error", "Error getting resource limits of " + cmp.getManagedComponentId() + ": " + e.toString());
         }
       }
     }
@@ -632,7 +638,7 @@ public class ResourceManagerAPI implements SolrInfoBean {
       NamedList<Object> result = new SimpleOrderedMap<>();
       rsp.add("result", result);
       AtomicReference<ResourceManagerPool> poolRef = new AtomicReference<>();
-      List<ManagedComponent> components = getComponents(req, rsp, poolRef);
+      List<ManagedComponent> components = getComponents(req, rsp, payload.get(), poolRef);
       if (components == null) {
         return;
       }

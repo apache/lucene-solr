@@ -124,7 +124,6 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   protected boolean optimize_expand = true;
   protected Map<String, Long> lookups = new HashMap<>();
   protected Map<String, Long> hits = new HashMap<>();
-  protected Map<String, Map<String, Object>> initialComponentLimits = new HashMap<>();
   protected int reportExceededCounter = 0;
   protected int reportExceededThreshold = DEFAULT_REPORT_EXCEEDED_THRESHOLD;
 
@@ -175,16 +174,9 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   }
 
   @Override
-  public void registerComponent(SolrCache component) {
-    super.registerComponent(component);
-    initialComponentLimits.put(component.getManagedComponentId().toString(), getResourceLimits(component));
-  }
-
-  @Override
   public boolean unregisterComponent(String componentId) {
     lookups.remove(componentId);
     hits.remove(componentId);
-    initialComponentLimits.remove(componentId);
     return super.unregisterComponent(componentId);
   }
 
