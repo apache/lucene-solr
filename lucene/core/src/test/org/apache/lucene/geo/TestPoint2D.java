@@ -23,7 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestPoint2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 4;
     double ay = 4;
     double bx = 5;
@@ -34,7 +34,7 @@ public class TestPoint2D extends LuceneTestCase {
   }
 
   public void testTriangleIntersects() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 0.0;
     double ay = 0.0;
     double bx = 1;
@@ -45,7 +45,7 @@ public class TestPoint2D extends LuceneTestCase {
   }
 
   public void testTriangleContains() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 0.0;
     double ay = 0.0;
     double bx = 0;
@@ -56,7 +56,7 @@ public class TestPoint2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    Component2D point2D = Point2D.create(new double[] {GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()});
+    Component2D point2D = Point2D.create(new Point(GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()));
 
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();

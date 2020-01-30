@@ -17,7 +17,7 @@
 package org.apache.lucene.geo;
 
 /** Represents a x/y cartesian rectangle. */
-public class XYRectangle {
+public final class XYRectangle extends XYGeometry {
   /** minimum x value */
   public final double minX;
   /** minimum y value */
@@ -35,6 +35,11 @@ public class XYRectangle {
     this.maxY = maxY;
     assert minX <= maxX;
     assert minY <= maxY;
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return XYRectangle2D.create(this);
   }
 
   @Override

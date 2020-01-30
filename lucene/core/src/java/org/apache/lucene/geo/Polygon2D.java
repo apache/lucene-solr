@@ -23,30 +23,33 @@ import org.apache.lucene.index.PointValues.Relation;
  * <p>
  * Loosely based on the algorithm described in <a href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
- * @lucene.internal
  */
 
-public class Polygon2D implements Component2D {
-  /** minimum latitude of this geometry's bounding box area */
+class Polygon2D implements Component2D {
+  /** minimum Y of this geometry's bounding box area */
   final private double minY;
-  /** maximum latitude of this geometry's bounding box area */
+  /** maximum Y of this geometry's bounding box area */
   final private double maxY;
-  /** minimum longitude of this geometry's bounding box area */
+  /** minimum X of this geometry's bounding box area */
   final private double minX;
-  /** maximum longitude of this geometry's bounding box area */
+  /** maximum X of this geometry's bounding box area */
   final private double maxX;
   /** tree of holes, or null */
   final protected Component2D holes;
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
 
-  protected Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
+  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
     this.maxX = maxX;
     this.holes = holes;
     this.tree = EdgeTree.createTree(x, y);
+  }
+
+  private Polygon2D(XYPolygon polygon, Component2D holes) {
+    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, polygon.getPolyX(), polygon.getPolyY(), holes);
   }
 
   protected Polygon2D(Polygon polygon, Component2D holes) {
@@ -312,18 +315,24 @@ public class Polygon2D implements Component2D {
     return containsCount;
   }
 
-  /** Builds a Polygon2D from multipolygon */
-  public static Component2D create(Polygon... polygons) {
-    Component2D components[] = new Component2D[polygons.length];
-    for (int i = 0; i < components.length; i++) {
-      Polygon gon = polygons[i];
-      Polygon gonHoles[] = gon.getHoles();
-      Component2D holes = null;
-      if (gonHoles.length > 0) {
-        holes = create(gonHoles);
-      }
-      components[i] = new Polygon2D(gon, holes);
+  /** Builds a Polygon2D from LatLon polygon */
+  static Component2D create(Polygon polygon) {
+    Polygon gonHoles[] = polygon.getHoles();
+    Component2D holes = null;
+    if (gonHoles.length > 0) {
+      holes = LatLonGeometry.create(gonHoles);
     }
-    return ComponentTree.create(components);
+    return new Polygon2D(polygon, holes);
   }
+
+  /** Builds a Polygon2D from XY polygon */
+  static Component2D create(XYPolygon polygon) {
+    XYPolygon gonHoles[] = polygon.getHoles();
+    Component2D holes = null;
+    if (gonHoles.length > 0) {
+      holes = XYGeometry.create(gonHoles);
+    }
+    return new Polygon2D(polygon, holes);
+  }
+
 }
