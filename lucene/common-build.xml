@@ -2584,7 +2584,9 @@ The following arguments can be provided to ant to alter its behaviour and target
       <!-- The default skeleton is specified here to work around a JFlex ant task bug:    -->
       <!-- invocations with a non-default skeleton will cause following invocations to    -->
       <!-- use the same skeleton, though not specified, unless the default is configured. -->
+      <delete file="@{dir}/@{name}.java" />
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             encoding="UTF-8"
              skeleton="${common.dir}/core/src/data/jflex/skeleton.default"/>
     </sequential>
   </macrodef>
@@ -2595,6 +2597,7 @@ The following arguments can be provided to ant to alter its behaviour and target
     <sequential>
       <!-- LUCENE-5897: Disallow scanner buffer expansion -->
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             encoding="UTF-8"
              skeleton="${common.dir}/core/src/data/jflex/skeleton.disable.buffer.expansion.txt"/>
       <!-- Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here. -->
       <replaceregexp file="@{dir}/@{name}.java"
