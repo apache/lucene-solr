@@ -25,7 +25,7 @@ import org.apache.lucene.index.PointValues.Relation;
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
  */
 
-class Polygon2D implements Component2D {
+final class Polygon2D implements Component2D {
   /** minimum Y of this geometry's bounding box area */
   final private double minY;
   /** maximum Y of this geometry's bounding box area */

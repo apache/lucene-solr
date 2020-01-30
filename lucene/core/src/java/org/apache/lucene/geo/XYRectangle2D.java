@@ -25,7 +25,7 @@ import static org.apache.lucene.geo.GeoUtils.orient;
 /**
  * 2D rectangle implementation containing cartesian spatial logic.
  */
-class XYRectangle2D implements Component2D {
+final class XYRectangle2D implements Component2D {
 
   private final double minX;
   private final double maxX;

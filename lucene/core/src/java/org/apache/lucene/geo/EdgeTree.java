@@ -31,7 +31,7 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * Methods are {@code O(n)}, but for most
  * practical lines and polygons are much faster than brute force.
  */
-class EdgeTree {
+final class EdgeTree {
   // X-Y pair (in original order) of the two vertices
   final double y1, y2;
   final double x1, x2;
@@ -156,46 +156,46 @@ class EdgeTree {
   /** Returns true if the triangle crosses any edge in this edge subtree */
   boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
                           double ax, double ay, double bx, double by, double cx, double cy, boolean includeBoundary) {
-    if (minY <= max) {
-      double dy = y1;
-      double ey = y2;
-      double dx = x1;
-      double ex = x2;
+      if (minY <= max) {
+        double dy = y1;
+        double ey = y2;
+        double dx = x1;
+        double ex = x2;
 
-      // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-      // if not, don't waste our time trying more complicated stuff
-      boolean outside = (dy < minY && ey < minY) ||
-          (dy > maxY && ey > maxY) ||
-          (dx < minX && ex < minX) ||
-          (dx > maxX && ex > maxX);
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (dy < minY && ey < minY) ||
+            (dy > maxY && ey > maxY) ||
+            (dx < minX && ex < minX) ||
+            (dx > maxX && ex > maxX);
 
-      if (outside == false) {
-        if (includeBoundary == true) {
-          if (lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by) ||
-              lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy) ||
-              lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay)) {
-            return true;
-          }
-        } else {
-          if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
-              lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
-              lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
-            return true;
+        if (outside == false) {
+          if (includeBoundary == true) {
+            if (lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by) ||
+                lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy) ||
+                lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay)) {
+              return true;
+            }
+          } else {
+            if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
+                lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
+                lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
+              return true;
+            }
           }
         }
-      }
 
 
-      if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
-        return true;
-      }
+        if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+          return true;
+        }
 
-      if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
-        return true;
+        if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+          return true;
+        }
       }
+      return false;
     }
-    return false;
-  }
 
   /** Returns true if the box crosses any edge in this edge subtree */
   boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
@@ -226,13 +226,13 @@ class EdgeTree {
 
       if (outside == false) {
         if (includeBoundary == true) {
-          if (lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
-            // include boundaries: ensures box edges that terminate on the polygon are included
-            return true;
-          }
+           if (lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
+             // include boundaries: ensures box edges that terminate on the polygon are included
+             return true;
+           }
         } else {
           if (lineCrossesLine(cx, cy, dx, dy, minX, minY, maxX, minY) ||
               lineCrossesLine(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
