@@ -541,9 +541,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
   }
 
+  @Slow
   public void testRandom() throws Exception {
 
-    int numQueries = atLeast(100);
+    int numQueries = atLeast(20);
     
     final List<TermFreqPayload2> slowCompletor = new ArrayList<>();
     final TreeSet<String> allPrefixes = new TreeSet<>();

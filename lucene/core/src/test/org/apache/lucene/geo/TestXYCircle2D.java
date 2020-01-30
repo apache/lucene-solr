@@ -79,23 +79,23 @@ public class TestXYCircle2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    final float centerLat = (float)ShapeTestUtil.nextDouble();
-    final float centerLon = (float)ShapeTestUtil.nextDouble();
-    float radiusMeters = (float) ShapeTestUtil.nextDouble();
+    final float centerLat = (float)ShapeTestUtil.nextDouble(random());
+    final float centerLon = (float)ShapeTestUtil.nextDouble(random());
+    float radiusMeters = (float) ShapeTestUtil.nextDouble(random());
     // Is there a max value???
     while (radiusMeters <= 0 || radiusMeters >= Float.MAX_VALUE / 2) {
-      radiusMeters = (float)ShapeTestUtil.nextDouble();
+      radiusMeters = (float)ShapeTestUtil.nextDouble(random());
     }
     XYCircle circle = new XYCircle(centerLat, centerLon, radiusMeters);
     Component2D circle2D = XYCircle2D.create(circle);
-    //System.out.println("CIRCLE(" + 0 + " " + 0+ "," + radius + "))");
+
     for (int i =0; i < 100; i++) {
-      double ax = ShapeTestUtil.nextDouble();
-      double ay = ShapeTestUtil.nextDouble();
-      double bx = ShapeTestUtil.nextDouble();
-      double by = ShapeTestUtil.nextDouble();
-      double cx = ShapeTestUtil.nextDouble();
-      double cy = ShapeTestUtil.nextDouble();
+      double ax = ShapeTestUtil.nextDouble(random());
+      double ay = ShapeTestUtil.nextDouble(random());
+      double bx = ShapeTestUtil.nextDouble(random());
+      double by = ShapeTestUtil.nextDouble(random());
+      double cx = ShapeTestUtil.nextDouble(random());
+      double cy = ShapeTestUtil.nextDouble(random());
 
       double tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
       double tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);

@@ -28,7 +28,7 @@ package org.apache.lucene.geo;
  * </ol>
  * @lucene.experimental
  */
-public class Circle {
+public class Circle extends LatLonGeometry {
   /** Center latitude */
   private final double lat;
   /** Center longitude */
@@ -69,6 +69,11 @@ public class Circle {
   /** Returns the radius in meters */
   public double getRadius() {
     return radiusMeters;
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return HaversinCircle2D.create(this);
   }
 
   @Override

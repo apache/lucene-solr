@@ -67,7 +67,8 @@ public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef
   @Test
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
       Classifier<BytesRef> classifier = new KNearestFuzzyClassifier(leafReader, null, analyzer, null, 3, categoryFieldName, textFieldName);
 

@@ -17,6 +17,7 @@
 package org.apache.lucene.geo;
 
 import java.util.Locale;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
@@ -195,12 +196,13 @@ public class TestGeoUtils extends LuceneTestCase {
   // TODO: does not really belong here, but we test it like this for now
   // we can make a fake IndexReader to send boxes directly to Point visitors instead?
   public void testCircleOpto() throws Exception {
-    int iters = atLeast(20);
+    Random random = random();
+    int iters = atLeast(random, 3);
     for (int i = 0; i < iters; i++) {
       // circle
-      final double centerLat = -90 + 180.0 * random().nextDouble();
-      final double centerLon = -180 + 360.0 * random().nextDouble();
-      final double radius = 50_000_000D * random().nextDouble();
+      final double centerLat = -90 + 180.0 * random.nextDouble();
+      final double centerLon = -180 + 360.0 * random.nextDouble();
+      final double radius = 50_000_000D * random.nextDouble();
       final Rectangle box = Rectangle.fromPointDistance(centerLat, centerLon, radius);
       // TODO: remove this leniency!
       if (box.crossesDateline()) {
@@ -209,22 +211,22 @@ public class TestGeoUtils extends LuceneTestCase {
       }
       final double axisLat = Rectangle.axisLat(centerLat, radius);
 
-      for (int k = 0; k < 1000; ++k) {
-
+      int innerIters = atLeast(100);
+      for (int k = 0; k < innerIters; ++k) {
         double[] latBounds = {-90, box.minLat, axisLat, box.maxLat, 90};
         double[] lonBounds = {-180, box.minLon, centerLon, box.maxLon, 180};
         // first choose an upper left corner
-        int maxLatRow = random().nextInt(4);
-        double latMax = randomInRange(latBounds[maxLatRow], latBounds[maxLatRow + 1]);
-        int minLonCol = random().nextInt(4);
-        double lonMin = randomInRange(lonBounds[minLonCol], lonBounds[minLonCol + 1]);
+        int maxLatRow = random.nextInt(4);
+        double latMax = randomInRange(random, latBounds[maxLatRow], latBounds[maxLatRow + 1]);
+        int minLonCol = random.nextInt(4);
+        double lonMin = randomInRange(random, lonBounds[minLonCol], lonBounds[minLonCol + 1]);
         // now choose a lower right corner
         int minLatMaxRow = maxLatRow == 3 ? 3 : maxLatRow + 1; // make sure it will at least cross into the bbox
-        int minLatRow = random().nextInt(minLatMaxRow);
-        double latMin = randomInRange(latBounds[minLatRow], Math.min(latBounds[minLatRow + 1], latMax));
+        int minLatRow = random.nextInt(minLatMaxRow);
+        double latMin = randomInRange(random, latBounds[minLatRow], Math.min(latBounds[minLatRow + 1], latMax));
         int maxLonMinCol = Math.max(minLonCol, 1); // make sure it will at least cross into the bbox
-        int maxLonCol = maxLonMinCol + random().nextInt(4 - maxLonMinCol);
-        double lonMax = randomInRange(Math.max(lonBounds[maxLonCol], lonMin), lonBounds[maxLonCol + 1]);
+        int maxLonCol = maxLonMinCol + random.nextInt(4 - maxLonMinCol);
+        double lonMax = randomInRange(random, Math.max(lonBounds[maxLonCol], lonMin), lonBounds[maxLonCol + 1]);
 
         assert latMax >= latMin;
         assert lonMax >= lonMin;
@@ -232,12 +234,12 @@ public class TestGeoUtils extends LuceneTestCase {
         if (isDisjoint(centerLat, centerLon, radius, axisLat, latMin, latMax, lonMin, lonMax)) {
           // intersects says false: test a ton of points
           for (int j = 0; j < 200; j++) {
-            double lat = latMin + (latMax - latMin) * random().nextDouble();
-            double lon = lonMin + (lonMax - lonMin) * random().nextDouble();
+            double lat = latMin + (latMax - latMin) * random.nextDouble();
+            double lon = lonMin + (lonMax - lonMin) * random.nextDouble();
 
-            if (random().nextBoolean()) {
+            if (random.nextBoolean()) {
               // explicitly test an edge
-              int edge = random().nextInt(4);
+              int edge = random.nextInt(4);
               if (edge == 0) {
                 lat = latMin;
               } else if (edge == 1) {
@@ -275,8 +277,8 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
-  static double randomInRange(double min, double max) {
-    return min + (max - min) * random().nextDouble();
+  static double randomInRange(Random random, double min, double max) {
+    return min + (max - min) * random.nextDouble();
   }
 
   static boolean isDisjoint(double centerLat, double centerLon, double radius, double axisLat, double latMin, double latMax, double lonMin, double lonMax) {

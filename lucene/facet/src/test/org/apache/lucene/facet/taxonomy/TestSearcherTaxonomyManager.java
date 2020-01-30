@@ -46,8 +46,10 @@ import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestSearcherTaxonomyManager extends FacetTestCase {
 
   private static class IndexerThread extends Thread {
@@ -226,7 +228,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     final AtomicBoolean stop = new AtomicBoolean();
 
     // How many unique facets to index before stopping:
-    final int ordLimit = TEST_NIGHTLY ? 100000 : 6000;
+    final int ordLimit = TEST_NIGHTLY ? 100000 : 600;
 
     Thread indexer = new IndexerThread(w, config, tw, mgr, ordLimit, stop);
     indexer.start();

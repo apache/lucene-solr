@@ -241,6 +241,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q.alt",allq,
             "defType","edismax")
         ,allr);
+
+    assertQ("ideographic space should be considered whitespace",
+        req("q","\u3000",
+            "q.alt",allq,
+            "defType","edismax")
+        ,allr);
     
     assertQ("expected doc is missing (using un-escaped edismax w/qf)",
           req("q", "literal:colon", 

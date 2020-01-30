@@ -24,10 +24,8 @@ import org.apache.lucene.util.SloppyMath;
 /**
  * 2D circle implementation containing geo spatial logic. Distance
  * is computed using the haversin formula.
- *
- * @lucene.internal
  */
-public class HaversinCircle2D implements Component2D {
+class HaversinCircle2D implements Component2D {
   final Rectangle rectangle;
   final boolean crossesDateline;
   final double centerLat;
@@ -280,7 +278,7 @@ public class HaversinCircle2D implements Component2D {
   }
 
   /** Builds a circle from  a point and a distance in meters */
-  public static HaversinCircle2D create(Circle circle) {
+  static HaversinCircle2D create(Circle circle) {
     return new HaversinCircle2D(circle.getLon(), circle.getLat(), circle.getRadius());
   }
 

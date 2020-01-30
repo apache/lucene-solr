@@ -132,7 +132,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
       }  
     };
-    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 20 * RANDOM_MULTIPLIER);
     a.close();
   }
 }

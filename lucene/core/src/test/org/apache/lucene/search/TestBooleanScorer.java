@@ -33,7 +33,6 @@ import org.apache.lucene.search.Weight.DefaultBulkScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
@@ -250,8 +249,9 @@ public class TestBooleanScorer extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document emptyDoc = new Document();
     final int numDocs = atLeast(10);
+    int numEmptyDocs = atLeast(200);
     for (int d = 0; d < numDocs; ++d) {
-      for (int i = random().nextInt(5000); i >= 0; --i) {
+      for (int i = numEmptyDocs; i >= 0; --i) {
         w.addDocument(emptyDoc);
       }
       Document doc = new Document();
@@ -261,7 +261,8 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
       }
     }
-    for (int i = TestUtil.nextInt(random(), 3000, 5000); i >= 0; --i) {
+    numEmptyDocs = atLeast(200);
+    for (int i = numEmptyDocs; i >= 0; --i) {
       w.addDocument(emptyDoc);
     }
     if (random().nextBoolean()) {

@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Random;
+
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
@@ -115,8 +117,9 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   public void testBoundingBoxQueries() throws Exception {
-    XYRectangle r1 = ShapeTestUtil.nextBox();
-    XYRectangle r2 = ShapeTestUtil.nextBox();
+    Random random = random();
+    XYRectangle r1 = ShapeTestUtil.nextBox(random);
+    XYRectangle r2 = ShapeTestUtil.nextBox(random);
     XYPolygon p;
     //find two boxes so that r1 contains r2
     while (true) {
@@ -130,12 +133,12 @@ public class TestXYShape extends LuceneTestCase {
           // ignore, try other combination
         }
       }
-      r1 = ShapeTestUtil.nextBox();
-      r2 = ShapeTestUtil.nextBox();
+      r1 = ShapeTestUtil.nextBox(random);
+      r2 = ShapeTestUtil.nextBox(random);
     }
 
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
 
     // add the polygon to the index
     Document document = new Document();
@@ -163,8 +166,8 @@ public class TestXYShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    float pX = (float) ShapeTestUtil.nextDouble();
-    float py = (float) ShapeTestUtil.nextDouble();
+    float pX = (float) ShapeTestUtil.nextDouble(random());
+    float py = (float) ShapeTestUtil.nextDouble(random());
     Field[] fields = XYShape.createIndexableFields(FIELDNAME, pX, py);
     for (Field f : fields) {
       document.add(f);
@@ -176,11 +179,11 @@ public class TestXYShape extends LuceneTestCase {
     writer.close();
     IndexSearcher s = newSearcher(r);
 
-    float x = (float) ShapeTestUtil.nextDouble();
-    float y = (float) ShapeTestUtil.nextDouble();
+    float x = (float) ShapeTestUtil.nextDouble(random());
+    float y = (float) ShapeTestUtil.nextDouble(random());
     float radius;
     do {
-      radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble()));
+      radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble(random())));
     } while (radius == 0);
     XYCircle circle = new XYCircle(x, y, radius);
     Component2D circle2D = XYCircle2D.create(circle);

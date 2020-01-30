@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Point2D;
@@ -32,7 +33,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.HaversinCircle2D;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -97,7 +97,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toCircle2D(Object circle) {
-    return HaversinCircle2D.create((Circle) circle);
+    return LatLonGeometry.create((Circle) circle);
   }
 
   @Override

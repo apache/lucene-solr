@@ -617,13 +617,13 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = TestUtil.nextInt(random(), 3, 6);
+    int numberOfRuns = atLeast(1);
     for (int iter=0; iter<numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
 
-      final int numDocs = TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
+      final int numDocs = atLeast(100);
       //final int numDocs = _TestUtil.nextInt(random, 5, 20);
 
       final int numGroups = TestUtil.nextInt(random(), 1, numDocs);

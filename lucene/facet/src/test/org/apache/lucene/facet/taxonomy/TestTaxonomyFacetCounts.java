@@ -401,7 +401,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim", true);
     
-    int numLabels = TestUtil.nextInt(random(), 40000, 100000);
+    int numLabels = TEST_NIGHTLY ? TestUtil.nextInt(random(), 40000, 100000) : TestUtil.nextInt(random(), 4000, 10000);
     
     Document doc = new Document();
     doc.add(newTextField("field", "text", Field.Store.NO));

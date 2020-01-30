@@ -76,7 +76,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomStrings() throws IOException {
-    checkRandomData(random(), analyzer, atLeast(1000));
+    checkRandomData(random(), analyzer, atLeast(200));
   }
   
   public void testEmptyTerm() throws IOException {
