@@ -40,8 +40,8 @@ ext {
   // https://github.com/palantir/gradle-consistent-versions/issues/383
   scriptDepVersions = [
       "apache-rat": "0.11",
+      "javacc": "5.0",
       "jflex": "1.7.0",
-      "javacc": "5.0"
   ]
 }
 
@@ -89,6 +89,7 @@ apply from: file('gradle/maven/maven-local.gradle')
 apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/testing/failed-tests-at-end.gradle')
+apply from: file('gradle/testing/profiling.gradle')
 apply from: file('gradle/help.gradle')
 
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are

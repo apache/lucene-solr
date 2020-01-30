@@ -80,10 +80,10 @@ public class ZkShardTerms implements AutoCloseable{
    */
   interface CoreTermWatcher {
     /**
-     * Invoked with a Terms instance after update. <p/>
+     * Invoked with a Terms instance after update. <p>
      * Concurrent invocations of this method is not allowed so at a given time only one thread
      * will invoke this method.
-     * <p/>
+     * <p>
      * <b>Note</b> - there is no guarantee that the terms version will be strictly monotonic i.e.
      * an invocation with a newer terms version <i>can</i> be followed by an invocation with an older
      * terms version. Implementations are required to be resilient to out-of-order invocations.
