@@ -55,6 +55,9 @@ Improvements
 
 * LUCENE-9152: Improve line intersections with polygons when they are touching from the outside. (Ignacio Vera)
 
+* LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
+
 Optimizations
 ---------------------
 
