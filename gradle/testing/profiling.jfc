@@ -19,13 +19,23 @@
 Collects only execution and method samples at a low interval
 -->
 <configuration version="2.0" label="TestProfiling" description="Sampling for unit tests" provider="Apache">
-    <event name="jdk.ExecutionSample">
-      <setting name="enabled" control="method-sampling-enabled">true</setting>
-      <setting name="period" control="method-sampling-java-interval">1 ms</setting>
-    </event>
+  <event name="jdk.ExecutionSample">
+    <setting name="enabled">true</setting>
+    <setting name="period">1 ms</setting>
+  </event>
 
-    <event name="jdk.NativeMethodSample">
-      <setting name="enabled" control="method-sampling-enabled">true</setting>
-      <setting name="period" control="method-sampling-native-interval">1 ms</setting>
-    </event>
+  <event name="jdk.NativeMethodSample">
+    <setting name="enabled">true</setting>
+    <setting name="period">1 ms</setting>
+  </event>
+
+  <event name="jdk.ObjectAllocationInNewTLAB">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="jdk.ObjectAllocationOutsideTLAB">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
 </configuration>
