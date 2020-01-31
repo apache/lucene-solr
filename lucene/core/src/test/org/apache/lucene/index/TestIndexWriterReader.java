@@ -49,7 +49,7 @@ import org.junit.Test;
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterReader extends LuceneTestCase {
   
-  private final int numThreads = TEST_NIGHTLY ? 5 : 3;
+  private final int numThreads = TEST_NIGHTLY ? 5 : 2;
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
@@ -371,8 +371,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   @Slow
   public void testAddIndexesAndDoDeletesThreads() throws Throwable {
-    final int numIter = 2;
-    int numDirs = 3;
+    final int numIter = TEST_NIGHTLY ? 2 : 1;
+    int numDirs = TEST_NIGHTLY ? 3 : 2;
     
     Directory mainDir = getAssertNoDeletesDirectory(newDirectory());
 

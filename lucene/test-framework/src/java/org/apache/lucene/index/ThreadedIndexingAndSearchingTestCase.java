@@ -321,7 +321,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   }
 
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
-    final int numThreads = TestUtil.nextInt(random(), 1, 5);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 5) : 2;
     final Thread[] searchThreads = new Thread[numThreads];
     final AtomicLong totHits = new AtomicLong();
 
