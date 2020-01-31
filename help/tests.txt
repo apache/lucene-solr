@@ -139,7 +139,7 @@ gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.linenumbers=tru
 Using these additional options will make the results more sparse, so it may be useful
 to increase the top-N count:
 
-gradlew -p lucene/core test -Ptests.profile=true -Ptests.count=100
+gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.count=100
 
 Testing against different JVMs
 ------------------------------
