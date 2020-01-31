@@ -648,7 +648,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     try (Directory dir = newDirectory();
          RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
              newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001), useSoftDeletes)) {
-      Thread[] threads = new Thread[3 + random().nextInt(3)];
+      int numThreads = TEST_NIGHTLY ? 3 + random().nextInt(3) : 3;
+      Thread[] threads = new Thread[numThreads];
       AtomicInteger done = new AtomicInteger(0);
       CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
       Document doc = new Document();
