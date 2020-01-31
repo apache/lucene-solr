@@ -349,6 +349,10 @@
       <equals arg1="${-cleaned.specification.version}" arg2="1.8"/>
       <equals arg1="${-cleaned.specification.version}" arg2="1.9"/>
       <equals arg1="${-cleaned.specification.version}" arg2="9"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="10"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="11"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="12"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="13"/>
     </or>
   </condition>
   
@@ -2086,7 +2090,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <equals arg1="${build.java.runtime}" arg2="1.8"/>
+    <or>
+      <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      <equals arg1="${build.java.runtime}" arg2="9"/>
+      <equals arg1="${build.java.runtime}" arg2="10"/>
+      <equals arg1="${build.java.runtime}" arg2="11"/>
+      <equals arg1="${build.java.runtime}" arg2="12"/>
+      <equals arg1="${build.java.runtime}" arg2="13"/>
+    </or>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
