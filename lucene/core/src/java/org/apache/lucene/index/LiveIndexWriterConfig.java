@@ -490,8 +490,8 @@ public class LiveIndexWriterConfig {
 
   /**
    * Expert: return the amount of time to wait for merges returned by by MergePolicy.findCommitMerges(...).
-   * If this time is reached, those merges will be aborted and we will wait again. If this time limit is reached again,
-   * we will abort the commit.
+   * If this time is reached, we proceed with the commit based on segments merged up to that point.
+   * The merges are not cancelled, and may still run to completion independent of the commit.
    */
   public double getMaxCommitMergeWaitSeconds() {
     return maxCommitMergeWaitSeconds;

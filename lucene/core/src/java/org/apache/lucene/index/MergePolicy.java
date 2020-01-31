@@ -529,8 +529,8 @@ public abstract class MergePolicy {
   /**
    * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
    *
-   * Implementers of this method should use isMergingSegment to exclude any already-merging segments from the returned
-   * {@link MergeSpecification}. If a segment already registered in a merge is returned, then the commit will fail.
+   * If a returned {@link OneMerge} includes a segment already included in a registered merge, then the commit will fail.
+   * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
    *
    * @param segmentInfos the total set of segments in the index (while preparing the commit)
    * @param mergeContext the IndexWriter to find the merges on
