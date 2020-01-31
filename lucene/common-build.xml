@@ -2002,7 +2002,11 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <equals arg1="${java.specification.version}" arg2="11"/>
+    <or>
+      <equals arg1="${java.specification.version}" arg2="11"/>
+      <equals arg1="${java.specification.version}" arg2="12"/>
+      <equals arg1="${java.specification.version}" arg2="13"/>
+    </or>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">

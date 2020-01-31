@@ -542,7 +542,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
     IndexWriter w = new IndexWriter(dir, config);
 
-    int numDocs = atLeast(1000); // make sure some terms have skip data
+    int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100); // at night, make sure some terms have skip data
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       for (int j = 0; j < numFields; j++) {

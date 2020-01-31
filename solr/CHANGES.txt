@@ -166,6 +166,8 @@ New Features
 
  * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
+ * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
