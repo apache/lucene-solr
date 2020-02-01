@@ -38,7 +38,7 @@ public class TestTransactions extends LuceneTestCase {
   private class RandomFailure extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir) throws IOException {
-      if (TestTransactions.doFail && random().nextInt() % 10 <= 3) {
+      if (TestTransactions.doFail && random().nextInt(10) <= 3) {
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + " TEST: now fail on purpose");
           new Throwable().printStackTrace(System.out);

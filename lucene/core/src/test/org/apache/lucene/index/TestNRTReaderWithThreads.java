@@ -42,55 +42,49 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     );
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
-    RunThread[] indexThreads = new RunThread[4];
+    int numThreads = TEST_NIGHTLY ? 4 : 2;
+    int numIterations = TEST_NIGHTLY ? 2000 : 50;
+    RunThread[] indexThreads = new RunThread[numThreads];
     for (int x=0; x < indexThreads.length; x++) {
-      indexThreads[x] = new RunThread(x % 2, writer);
+      indexThreads[x] = new RunThread(x % 2, writer, numIterations);
       indexThreads[x].setName("Thread " + x);
       indexThreads[x].start();
     }    
-    long startTime = System.currentTimeMillis();
-    long duration = 1000;
-    while ((System.currentTimeMillis() - startTime) < duration) {
-      Thread.sleep(100);
+   
+    for (RunThread thread : indexThreads) {
+      thread.join();
     }
-    for (int x=0; x < indexThreads.length; x++) {
-      indexThreads[x].run = false;
-      assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);
-    }
-    int delCount = 0;
-    int addCount = 0;
-    for (int x=0; x < indexThreads.length; x++) {
-      indexThreads[x].join();
-      addCount += indexThreads[x].addCount;
-      delCount += indexThreads[x].delCount;
-    }
-    for (int x=0; x < indexThreads.length; x++) {
-      assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);
-    }
-    //System.out.println("addCount:"+addCount);
-    //System.out.println("delCount:"+delCount);
+
     writer.close();
     mainDir.close();
+    
+    for (RunThread thread : indexThreads) {
+      if (thread.failure != null) {
+        throw new RuntimeException("hit exception from " + thread, thread.failure);
+      }
+    }
   }
 
   public class RunThread extends Thread {
+    int type;
     IndexWriter writer;
-    volatile boolean run = true;
-    volatile Throwable ex;
+    int numIterations;
+
+    volatile Throwable failure;
     int delCount = 0;
     int addCount = 0;
-    int type;
     final Random r = new Random(random().nextLong());
     
-    public RunThread(int type, IndexWriter writer) {
+    public RunThread(int type, IndexWriter writer, int numIterations) {
       this.type = type;
       this.writer = writer;
+      this.numIterations = numIterations;
     }
 
     @Override
     public void run() {
       try {
-        while (run) {
+        for (int iter = 0; iter < numIterations; iter++) {
           //int n = random.nextInt(2);
           if (type == 0) {
             int i = seq.addAndGet(1);
@@ -111,8 +105,8 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
         }
       } catch (Throwable ex) {
         ex.printStackTrace(System.out);
-        this.ex = ex;
-        run = false;
+        this.failure = failure;
+        throw new RuntimeException(ex);
       }
     }
   }

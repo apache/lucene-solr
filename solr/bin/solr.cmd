@@ -82,6 +82,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
   )
 
+  IF NOT DEFINED SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION (
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  )
+
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
@@ -961,6 +965,10 @@ IF "%verbose%"=="1" (
 
 IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=-Dhost=%SOLR_HOST%
+) ELSE IF "%SOLR_JETTY_HOST%"=="" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
+) ELSE IF "%SOLR_JETTY_HOST%"=="127.0.0.1" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
 ) ELSE (
   set SOLR_HOST_ARG=
 )

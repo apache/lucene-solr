@@ -62,7 +62,7 @@ This section describes how Solr works with search requests. It covers the follow
 ** <<other-parsers.adoc#other-parsers,Other Parsers>>: More parsers designed for use in specific situations.
 * <<json-request-api.adoc#json-request-api,JSON Request API>>: Overview of Solr's JSON Request API.
 ** <<json-query-dsl.adoc#json-query-dsl,JSON Query DSL>>: Detailed information about a simple yet powerful query language for JSON Request API.
-* <<json-facet-api.adoc#json-facet-api,JSON Facet API>>: Overview of Solr's JSON Facet API.
+* <<json-facet-api.adoc#facet-analytics-module,JSON Facet API>>: Overview of Solr's JSON Facet API.
 * <<faceting.adoc#faceting,Faceting>>: Detailed information about categorizing search results based on indexed terms.
 * <<highlighting.adoc#highlighting,Highlighting>>: Detailed information about Solr's highlighting capabilities, including multiple underlying highlighter implementations.
 * <<spell-checking.adoc#spell-checking,Spell Checking>>: Detailed information about Solr's spelling checker.

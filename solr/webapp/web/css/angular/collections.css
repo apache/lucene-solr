@@ -105,12 +105,16 @@ limitations under the License.
 
 #content #collections .actions form input,
 #content #collections .actions form select,
-#content #collections .actions form .chosen-container
 #content #collections .actions form .buttons,
 #content #collections .actions form .note span
 {
   float: right;
   width: 71%;
+}
+
+#content #collections .actions form .chosen-container
+{
+  width: 71% !important;
 }
 
 #content #collections .actions form .note span
@@ -355,11 +359,6 @@ limitations under the License.
 #content #collections .delete-shard button.submit span
 {
   background-image: url( ../../img/ico/tick.png );
-}
-
-#content #collections #node-name .chosen-container
-{
-    width: 100% !important;
 }
 
 #content #collections #alias-data {

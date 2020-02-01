@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,8 +38,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -168,14 +167,22 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     
     cluster.waitForNode(j1, 30);
     cluster.waitForNode(j2, 30);
-    
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getSlice("shard1").getLeader();
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
+
+    // the meat of the test -- wait to see if a different replica become a leader
+    // the correct behavior is that this should time out, if it succeeds we have a problem...
+    expectThrows(TimeoutException.class,
+                 "Did not time out waiting for new leader, out of sync replica became leader",
+                 () -> {
+                   cluster.getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (state) -> {
+            Replica newLeader = state.getSlice("shard1").getLeader();
+            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+              // this is is the bad case, our "bad" state was found before timeout
+              log.error("WTF: New Leader={}", newLeader);
+              return true;
+            }
+            return false; // still no bad state, wait for timeout
+          });
+      });
 
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     j0.start();
@@ -211,13 +218,21 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState)
         -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getLeader("shard1");
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
+    // the meat of the test -- wait to see if a different replica become a leader
+    // the correct behavior is that this should time out, if it succeeds we have a problem...
+    expectThrows(TimeoutException.class,
+                 "Did not time out waiting for new leader, out of sync replica became leader",
+                 () -> {
+                   cluster.getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (state) -> {
+            Replica newLeader = state.getSlice("shard1").getLeader();
+            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+              // this is is the bad case, our "bad" state was found before timeout
+              log.error("WTF: New Leader={}", newLeader);
+              return true;
+            }
+            return false; // still no bad state, wait for timeout
+          });
+      });
 
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();

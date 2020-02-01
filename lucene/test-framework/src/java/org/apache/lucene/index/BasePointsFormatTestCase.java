@@ -209,7 +209,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
   /** Make sure we close open files, delete temp files, etc., on exception */
   public void testWithExceptions() throws Exception {
-    int numDocs = atLeast(10000);
+    int numDocs = atLeast(1000);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
@@ -271,7 +271,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
-    int numDocs = atLeast(1000);
+    int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     List<byte[][]> docValues = new ArrayList<>();
     List<Integer> docIDs = new ArrayList<>();
 
@@ -375,7 +375,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   // Tests on N-dimensional points where each dimension is a BigInteger
   public void testBigIntNDims() throws Exception {
 
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(200);
     try (Directory dir = getDirectory(numDocs)) {
       int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
       int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
@@ -508,7 +508,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(200);
   }
 
   @Nightly

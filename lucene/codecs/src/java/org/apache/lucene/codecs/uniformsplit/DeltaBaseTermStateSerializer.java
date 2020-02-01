@@ -94,7 +94,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Writes a {@link BlockTermState} to the provided {@link DataOutput}.
    * <p>
-   * Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(long[], DataOutput, FieldInfo, BlockTermState, boolean)}.
+   * Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(DataOutput, FieldInfo, BlockTermState, boolean)}.
    */
   public void writeTermState(DataOutput termStatesOutput, FieldInfo fieldInfo, BlockTermState termState) throws IOException {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -143,7 +143,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Reads a {@link BlockTermState} from the provided {@link DataInput}.
    * <p>
-   * Simpler variant of {@link Lucene84PostingsReader#decodeTerm(long[], DataInput, FieldInfo, BlockTermState, boolean)}.
+   * Simpler variant of {@link Lucene84PostingsReader#decodeTerm(DataInput, FieldInfo, BlockTermState, boolean)}.
    *
    * @param reuse {@link BlockTermState} to reuse; or null to create a new one.
    */

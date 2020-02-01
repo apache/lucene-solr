@@ -84,7 +84,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
       if (r.numDocs() > 0) {
         fixedSearcher = new IndexSearcher(r, es);
         smokeTestSearcher(fixedSearcher);
-        runSearchThreads(System.currentTimeMillis() + 500);
+        runSearchThreads(System.currentTimeMillis() + 100);
       }
     }
     r.close();

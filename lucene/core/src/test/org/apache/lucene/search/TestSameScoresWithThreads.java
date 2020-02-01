@@ -83,7 +83,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
 
     if (!answers.isEmpty()) {
       final CountDownLatch startingGun = new CountDownLatch(1);
-      int numThreads = TestUtil.nextInt(random(), 2, 5);
+      int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
       Thread[] threads = new Thread[numThreads];
       for(int threadID=0;threadID<numThreads;threadID++) {
         Thread thread = new Thread() {

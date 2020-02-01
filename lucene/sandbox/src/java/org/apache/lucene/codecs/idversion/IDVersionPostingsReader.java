@@ -50,7 +50,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
+  public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
     throws IOException {
     final IDVersionTermState termState = (IDVersionTermState) _termState;
     termState.docID = in.readVInt();

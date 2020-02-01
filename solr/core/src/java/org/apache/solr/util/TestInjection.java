@@ -103,7 +103,7 @@ public class TestInjection {
   }
   
   public volatile static String nonGracefullClose = null;
-
+  
   public volatile static String failReplicaRequests = null;
   
   public volatile static String failUpdateRequests = null;
@@ -146,6 +146,15 @@ public class TestInjection {
 
   public volatile static boolean failInExecutePlanAction = false;
 
+  /**
+   * Defaults to <code>false</code>, If set to <code>true</code>, 
+   * then {@link #injectSkipIndexWriterCommitOnClose} will return <code>true</code>
+   *
+   * @see #injectSkipIndexWriterCommitOnClose
+   * @see org.apache.solr.update.DirectUpdateHandler2#closeWriter
+   */
+  public volatile static boolean skipIndexWriterCommitOnClose = false;
+
   public volatile static boolean uifOutOfMemoryError = false;
 
   private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
@@ -176,6 +185,7 @@ public class TestInjection {
     delayBeforeSlaveCommitRefresh = null;
     delayInExecutePlanAction = null;
     failInExecutePlanAction = false;
+    skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
@@ -247,8 +257,9 @@ public class TestInjection {
         if (rand.nextBoolean()) {
           throw new TestShutdownFailError("Test exception for non graceful close");
         } else {
-          
+          final Timer timer = new Timer();
           final Thread cthread = Thread.currentThread();
+
           TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -265,11 +276,10 @@ public class TestInjection {
               }
               
               cthread.interrupt();
-              timers.remove(this);
-              cancel();
+              timers.remove(timer);
             }
           };
-          Timer timer = new Timer();
+
           timers.add(timer);
           timer.schedule(task, rand.nextInt(500));
         }
@@ -278,6 +288,21 @@ public class TestInjection {
     return true;
   }
 
+  /**
+   * Returns the value of {@link #skipIndexWriterCommitOnClose}.
+   *
+   * @param indexWriter used only for logging
+   * @see #skipIndexWriterCommitOnClose
+   * @see org.apache.solr.update.DirectUpdateHandler2#closeWriter
+   */
+  public static boolean injectSkipIndexWriterCommitOnClose(Object indexWriter) {
+    if (skipIndexWriterCommitOnClose) {
+      log.info("Inject failure: skipIndexWriterCommitOnClose={}: {}",
+               skipIndexWriterCommitOnClose, indexWriter);
+    }
+    return skipIndexWriterCommitOnClose;
+  }
+  
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
       Random rand = random();

@@ -99,7 +99,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
 
-    int numDocs = atLeast(500);
+    int numDocs = atLeast(100);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
