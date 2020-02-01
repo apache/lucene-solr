@@ -538,7 +538,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 [example.tab-pane#v2delete-copyfield]
 ====
-[tab-label]*V1 API*
+[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
