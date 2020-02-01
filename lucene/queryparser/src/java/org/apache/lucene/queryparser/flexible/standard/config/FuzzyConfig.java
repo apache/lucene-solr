@@ -25,7 +25,7 @@ public class FuzzyConfig {
   
   private int prefixLength = FuzzyQuery.defaultPrefixLength;
 
-  private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
+  private float minSimilarity = FuzzyQuery.defaultMaxEdits;
   
   public FuzzyConfig() {}
 
