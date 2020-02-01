@@ -139,7 +139,7 @@ public class CorePushPull {
          */
         for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
             bcmBuilder.removeFile(d);
-            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
+            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.nanoTime() / 1000000);
             bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -154,7 +154,7 @@ public class CorePushPull {
           String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
           String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
           // so far checksum is not used for metadata file
-          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.currentTimeMillis());
+          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.nanoTime() / 1000000);
           bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -509,7 +509,7 @@ public class CorePushPull {
     @VisibleForTesting
     protected boolean okForHardDelete(BlobCoreMetadata.BlobFileToDelete file) {
       // For now we only check how long ago the file was marked for delete.
-      return System.nanoTime() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
+      return (System.nanoTime() / 1000000) - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
     }
     
     /**
