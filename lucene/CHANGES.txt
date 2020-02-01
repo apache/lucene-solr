@@ -137,6 +137,9 @@ Improvements
 * LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
   executed with input objects that extend such interface. (Ignacio Vera)
 
+* LUCENE-9123: Add new JapaneseTokenizer constructors with discardCompoundToken option that controls whether
+  the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
+
 Optimizations
 ---------------------
 

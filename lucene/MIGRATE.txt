@@ -17,6 +17,16 @@ For example, these entries are not allowed at all and an exception is thrown whe
 # concatenated "日経新聞" does not match the surface form "日本経済新聞"
 日本経済新聞,日経 新聞,ニッケイ シンブン,カスタム名詞
 
+## JapaneseTokenizer no longer emits original (compound) tokens by default when the mode is not NORMAL (LUCENE-9123) ##
+
+JapaneseTokenizer and JapaneseAnalyzer no longer emits original tokens when discardCompoundToken option is not specified.
+The constructor option has been introduced since Lucene 8.5.0, and the default value is changed to true.
+
+When given the text "株式会社", JapaneseTokenizer (mode != NORMAL) emits decompounded tokens "株式" and "会社" only and no
+longer outputs the original token "株式会社" by default. To output original tokens, discardCompoundToken option should be
+explicitly set to false. Be aware that if this option is set to false SynonymFilter or SynonymGraphFilter does not work
+correctly (see LUCENE-9173).
+
 ## Analysis factories now have customizable symbolic names (LUCENE-8778) ##
 
 The SPI names for concrete subclasses of TokenizerFactory, TokenFilterFactory, and CharfilterFactory are no longer
