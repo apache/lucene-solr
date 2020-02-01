@@ -64,7 +64,7 @@ public class
     }
   }
 
-  private Analyzer analyzer, analyzerNormal, analyzerNormalNBest, analyzerNoPunct, extendedModeAnalyzerNoPunct;
+  private Analyzer analyzer, analyzerNormal, analyzerNormalNBest, analyzerNoPunct, extendedModeAnalyzerNoPunct, analyzerNoCompound, extendedModeAnalyzerNoCompound;
 
   private JapaneseTokenizer makeTokenizer(boolean discardPunctuation, Mode mode) {
     return new JapaneseTokenizer(newAttributeFactory(), readDict(), discardPunctuation, mode);
@@ -118,11 +118,25 @@ public class
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
+    analyzerNoCompound = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, true, Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    extendedModeAnalyzerNoCompound = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, true, Mode.EXTENDED);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
   }
 
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct);
+    IOUtils.close(analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct, analyzerNoCompound, extendedModeAnalyzerNoCompound);
     super.tearDown();
   }
 
@@ -477,7 +491,7 @@ public class
         new TokenInfoDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/TokenInfoDictionary"),
         new UnknownDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/UnknownDictionary"),
         new ConnectionCosts(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/ConnectionCosts"),
-        readDict(), true, Mode.SEARCH);
+        readDict(), true, false, Mode.SEARCH);
     try (Analyzer a = makeAnalyzer(tokenizer)) {
       assertTokenStreamContents(a.tokenStream("foo", "abcd"),
                                 new String[] { "a", "b", "cd"  },
@@ -894,5 +908,22 @@ public class
         new String[]{"令和", "元年"},
         new int[]{0, 2},
         new int[]{2, 4});
+  }
+
+  public void testNoCompoundToken() throws Exception {
+    assertAnalyzesTo(analyzerNormal, "株式会社とアカデミア",
+        new String[]{"株式会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(analyzer, "株式会社とアカデミア",
+        new String[]{"株式", "株式会社", "会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(analyzerNoCompound, "株式会社とアカデミア",
+        new String[]{"株式", "会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(extendedModeAnalyzerNoPunct, "株式会社とアカデミア",
+        new String[]{"株式", "株式会社", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
+
+    assertAnalyzesTo(extendedModeAnalyzerNoCompound, "株式会社とアカデミア",
+        new String[]{"株式", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
   }
 }
