@@ -1187,12 +1187,12 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   set REMOTE_JMX_OPTS=
 )
 
-REM Enable java security manager (limiting filesystem access and other things)
-IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-  set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
--Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
--Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
--Dsolr.internal.network.permission=*
+REM Enable java security manager by default (limiting filesystem access and other things)
+IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
+  set SOLR_SECURITY_MANAGER_ENABLED=true && set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
+    -Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
+    -Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
+    -Dsolr.internal.network.permission=*
 )
 
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
