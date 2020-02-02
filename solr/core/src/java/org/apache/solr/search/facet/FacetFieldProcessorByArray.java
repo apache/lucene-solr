@@ -43,6 +43,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   int nDocs;
   int maxSlots;
 
+  int missingSlot = -1;
   int allBucketsSlot = -1;  // slot for the primary Accs (countAcc, collectAcc)
 
   FacetFieldProcessorByArray(FacetContext fcontext, FacetField freq, SchemaField sf) {
@@ -99,6 +100,12 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
     maxSlots = nTerms;
 
+    // allocate slot for "missing" bucket; cheap, and we might need it for caching, regardless of freq.missing setting
+    // only supported for DV, not UIF.
+    if (this instanceof FacetFieldProcessorByArrayDV) {
+      missingSlot = maxSlots++;
+    }
+
     if (freq.allBuckets) {
       allBucketsSlot = maxSlots++;
     }
@@ -111,7 +118,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
     collectDocs();
 
-    return super.findTopSlots(nTerms, nTerms,
+    return super.findTopSlots(nTerms, nTerms, missingSlot,
         slotNum -> { // getBucketValFromSlotNum
           try {
             return (Comparable) sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
@@ -138,6 +145,20 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
       Object value = sf.getType().toObject(sf, lookupOrd(slotNum));
       Query q = makeBucketQuery(valueObjToString(value));
       assert null != q : "null query for: '" + value + "'";
+      return new SlotContext(q);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+
+  /**
+   * SlotContext to use during all {@link SlotAcc} collection.
+   *
+   * @see #lookupOrd
+   */
+  public IntFunction<SlotContext> missingSlotContext = (slotNum) -> {
+    try {
+      Query q = getFieldMissingQuery(fcontext.searcher, sf.getName());
       return new SlotContext(q);
     } catch (IOException e) {
       throw new RuntimeException(e);

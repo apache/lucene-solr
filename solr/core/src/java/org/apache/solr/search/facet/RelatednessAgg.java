@@ -20,14 +20,21 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
 import java.util.function.IntFunction;
+import org.apache.lucene.index.LeafReader;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
@@ -36,6 +43,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryResultKey;
+import org.apache.solr.search.WrappedQuery;
+import org.apache.solr.search.facet.FacetFieldProcessor.SweepAcc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,7 +165,30 @@ public class RelatednessAgg extends AggValueSource {
     
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
+    final FacetFieldProcessor ffp;
+    if (numSlots > 1 && fcontext.processor instanceof FacetFieldProcessorByArray &&
+        (ffp = (FacetFieldProcessor)fcontext.processor).freq.countCacheDf != -2) {
+      // Sweep counts are only relevant where relatedness is required for primary sort, and thus must be calculated
+      // for *all* buckets (numSlots > 1).
+      //
+      // Of the four concrete implementations of FacetFieldProcessor (FacetFieldProcessorByArrayDV,
+      // FacetFieldProcessorByArrayUIF, FacetFieldProcessorByEnumTermsStream, and FacetFieldProcessorByHashDV)
+      // only the first two (each a subclass of FacetFieldProcessorByArray) are supported.
+      //
+      // Because FacetFieldProcessorByEnumTermsStream is sorted strictly in "index" order, numSlots here would
+      // never be >1, so combination with SweepSKGSlotAcc would be meaningless, and is not supported.
+      //
+      // FacetFieldProcessorByHashDV *is* used in high-cardinality field contexts; however, it is only beneficial
+      // when *domain* cardinality is low. Because sweep collection effectively induces a composite domain that is
+      // a union with the background set (which is normally high-cardinality), combination with SweepSKGSlotAcc
+      // would in most cases be an antipattern, and is not currently supported.
+
+      return new SweepSKGSlotAcc(min_pop, fcontext, numSlots, fgSet.size(), bgSet.size(),
+          ffp.getSweepCountAcc(new QueryResultKey(null, fgFilters, null, 0), fgSet, numSlots),
+          ffp.getSweepCountAcc(new QueryResultKey(null, Collections.singletonList(bgQ), null, 0), bgSet, numSlots));
+    } else {
+      return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
+    }
   }
 
   @Override
@@ -163,6 +196,88 @@ public class RelatednessAgg extends AggValueSource {
     return new Merger(this);
   }
   
+  private static final class SweepSKGSlotAcc extends SlotAcc implements SweepAcc {
+
+    private final int minCount; // pre-calculate for a given min_popularity
+    private final int fgSize;
+    private final int bgSize;
+    private final CountSlotAcc fgCount;
+    private final CountSlotAcc bgCount;
+    private double[] relatedness;
+
+    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, int fgSize, int bgSize, CountSlotAcc fgCount, CountSlotAcc bgCount) {
+      super(fcontext);
+      this.minCount = (int) Math.ceil(minPopularity * bgSize);
+      this.fgSize = fgSize;
+      this.bgSize = bgSize;
+      this.fgCount = fgCount;
+      this.bgCount = bgCount;
+      relatedness = new double[numSlots];
+      Arrays.fill(relatedness, 0, numSlots, Double.NaN);
+    }
+
+    @Override
+    public void collect(int perSegDocId, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      //No-op
+    }
+
+    @Override
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      return docs.size();
+    }
+
+    private double getRelatedness(int slot) {
+      final double cachedRelatedness = relatedness[slot];
+      if (Double.isNaN(cachedRelatedness)) {
+        final int fg_count = fgCount.getCount(slot);
+        final int bg_count = bgCount.getCount(slot);
+        if (minCount > 0) {
+          // if min_pop is configured, and either (fg|bg) popularity is lower then that value
+          // then "this.relatedness=-Infinity" so it sorts below any "valid" relatedness scores
+          if (fg_count < minCount || bg_count < minCount) {
+            return relatedness[slot] = Double.NEGATIVE_INFINITY;
+          }
+        }
+        return relatedness[slot] = computeRelatedness(fg_count, fgSize, bg_count, bgSize);
+      } else {
+        return cachedRelatedness;
+      }
+    }
+
+    public int compare(int slotA, int slotB) {
+      int r = Double.compare(getRelatedness(slotA), getRelatedness(slotB));
+      if (0 == r) {
+        r = Long.compare(fgCount.getCount(slotA), fgCount.getCount(slotB));
+      }
+      if (0 == r) {
+        r = Long.compare(bgCount.getCount(slotA), bgCount.getCount(slotB));
+      }
+      return r;
+    }
+
+    @Override
+    public Object getValue(int slotNum) {
+      BucketData slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
+      return res;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      Arrays.fill(relatedness, Double.NaN);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      relatedness = resizer.resize(relatedness, Double.NaN);
+    }
+
+    @Override
+    public void close() throws IOException {
+      relatedness = null;
+    }
+  }
+
   private static final class SKGSlotAcc extends SlotAcc {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
@@ -182,6 +297,83 @@ public class RelatednessAgg extends AggValueSource {
       this.slotvalues = new BucketData[numSlots];
       reset();
     }
+
+    // XXXXXX temporary!
+    // The following (LEAF_BY_MAX_DOC, shouldCache(), and initializeForMinDf are for comparison with extant
+    // implementation with SOLR-13108 patch applied (use filterCache, but respect minDf)
+    // All these methods can/should be removed if/when sweep facet count collection is adopted (recommended)
+    private int minDfFilterCache = Integer.MIN_VALUE;
+    private WrappedQuery noCacheQ;
+    private static final Comparator<LeafReaderContext> LEAF_BY_MAX_DOC = new Comparator<LeafReaderContext>() {
+
+      @Override
+      public int compare(LeafReaderContext o1, LeafReaderContext o2) {
+        return Integer.compare(o2.reader().maxDoc(), o1.reader().maxDoc());
+      }
+    };
+    private static final int ALWAYS_CACHE = Integer.MIN_VALUE + 1;
+    private static final float SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR = 0.5f;
+    private static final float SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR = 2.0f;
+    private TermsEnum[] tes;
+    private int[] shortcircuitThresholdsAccept;
+    private int[] shortcircuitThresholdsReject;
+    private boolean shouldCache(BytesRef term) throws IOException {
+      int docFreq = 0;
+      for (int i = 0; i < tes.length; i++) {
+        TermsEnum te = tes[i];
+        if (te.seekExact(term) && ((docFreq += te.docFreq()) >= minDfFilterCache || docFreq >= shortcircuitThresholdsAccept[i])) {
+          return true;
+        } else if (docFreq < shortcircuitThresholdsReject[i]) {
+          return false;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Initialize for checking minDf, including shortcircuit thresholds. Set shortcircuit thresholds such that an
+     * assumption that a given term will occur at a frequency in unexamined segments at 
+     * <code>SHORTCIRCUIT_THRESHOLD_[ACCEPT|REJECT]_FACTOR</code> * the frequency in already-examined segments would
+     * result in the minDf threshold ultimately being met.
+     * @param field the field for which to initialize
+     * @throws IOException from underlying LeafReaders used to determine df for caching determination
+     */
+    private void initializeForMinDf(String field) throws IOException {
+      List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
+      final int leafCount = leaves.size();
+      LeafReaderContext[] sortedLeaves = leaves.toArray(new LeafReaderContext[leafCount]);
+      Arrays.sort(sortedLeaves, LEAF_BY_MAX_DOC);
+      tes = new TermsEnum[leafCount];
+      shortcircuitThresholdsAccept = new int[leafCount];
+      shortcircuitThresholdsReject = new int[leafCount];
+      int i = 0;
+      int totalMaxDoc = 0;
+      for (LeafReaderContext ctx : sortedLeaves) {
+        LeafReader reader = ctx.reader();
+        Terms terms = reader.terms(field);
+        if (terms != null) {
+          int maxDoc = reader.maxDoc();
+          totalMaxDoc += maxDoc;
+          shortcircuitThresholdsAccept[i] = maxDoc;
+          tes[i++] = terms.iterator();
+        }
+      }
+      final int limit = i;
+      int maxDocToHere = 0;
+      for (i = 0; i < limit; i++) {
+        final int maxDoc = shortcircuitThresholdsAccept[i];
+        maxDocToHere += maxDoc;
+        final int maxDocRemaining = totalMaxDoc - maxDocToHere;
+        shortcircuitThresholdsAccept[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR) / maxDocToHere))) + 1);
+        shortcircuitThresholdsReject[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR) / maxDocToHere))) + 1);
+      }
+      if (i < leafCount) {
+        tes = Arrays.copyOf(tes, i);
+        shortcircuitThresholdsAccept = Arrays.copyOf(shortcircuitThresholdsAccept, i);
+        shortcircuitThresholdsReject = Arrays.copyOf(shortcircuitThresholdsReject, i);
+      }
+    }
+
     private void processSlot(int slot, IntFunction<SlotContext> slotContext) throws IOException {
       
       assert null != slotContext;
@@ -196,7 +388,44 @@ public class RelatednessAgg extends AggValueSource {
         assert null == fcontext.filter;
       }
       // ...and in which case we should just use the current base
-      final DocSet slotSet = null == slotQ ? fcontext.base : fcontext.searcher.getDocSet(slotQ);
+      final DocSet slotSet;
+      if (null == slotQ) {
+        slotSet = fcontext.base;
+      } else {
+        switch (minDfFilterCache) {
+          case ALWAYS_CACHE:
+            break;
+          case Integer.MIN_VALUE:
+            if (fcontext.processor.freq instanceof FacetField) {
+              FacetField ffield = (FacetField)fcontext.processor.freq;
+              noCacheQ = new WrappedQuery(null);
+              noCacheQ.setCache(false);
+              // Minimum term docFreq in order to use the filterCache for that term.
+              if (ffield.cacheDf == -1) { // -1 means never cache
+                minDfFilterCache = Integer.MAX_VALUE;
+                noCacheQ.setWrappedQuery(slotQ);
+                slotQ = noCacheQ;
+                break;
+              } else if (ffield.cacheDf == 0) { // default; compute as fraction of maxDoc
+                minDfFilterCache = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
+              } else {
+                minDfFilterCache = ffield.cacheDf;
+              }
+              initializeForMinDf(ffield.field);
+            } else {
+              minDfFilterCache = ALWAYS_CACHE;
+              break;
+            }
+          default:
+            if (!(slotQ instanceof TermQuery) || shouldCache(((TermQuery)slotQ).getTerm().bytes())) {
+              break;
+            }
+          case Integer.MAX_VALUE:
+            noCacheQ.setWrappedQuery(slotQ);
+            slotQ = noCacheQ;
+        }
+        slotSet = fcontext.searcher.getDocSet(slotQ);
+      }
 
       final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
@@ -204,7 +433,7 @@ public class RelatednessAgg extends AggValueSource {
                         bgSet.intersectionSize(slotSet));
       slotvalues[slot] = slotVal;
     }
-    
+
     @Override
     public void collect(int perSegDocId, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       // NOTE: we don't actaully care about the individual docs being collected
@@ -305,6 +534,16 @@ public class RelatednessAgg extends AggValueSource {
     
     public BucketData(final RelatednessAgg agg) {
       this.agg = agg;
+    }
+
+    public BucketData(long fg_count, long fg_size, long bg_count, long bg_size, double relatedness) {
+      this.fg_count = fg_count;
+      this.fg_size = fg_size;
+      this.fg_pop = roundTo5Digits((double) fg_count / bg_size); // yes, BACKGROUND size is intentional
+      this.bg_count = bg_count;
+      this.bg_size = bg_size;
+      this.bg_pop = roundTo5Digits((double) bg_count / bg_size);
+      this.relatedness = relatedness;
     }
 
     /** 

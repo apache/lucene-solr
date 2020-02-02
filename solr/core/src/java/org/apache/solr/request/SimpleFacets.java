@@ -99,6 +99,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
+import org.apache.solr.search.facet.FacetModule;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -555,6 +556,7 @@ public class SimpleFacets {
             jsonFacet.put("allBuckets", params.getFieldBool(field, "allBuckets", false));
             jsonFacet.put("method", "uif");
             jsonFacet.put("cacheDf", 0);
+            jsonFacet.put("countCacheDf", params.getFieldInt(field, "countCacheDf", 0));
             jsonFacet.put("perSeg", false);
             
             final String sortVal;
@@ -572,7 +574,7 @@ public class SimpleFacets {
 
             //TODO do we handle debug?  Should probably already be handled by the legacy code
 
-            Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, docs);
+            Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, FacetModule.getBaseFilters(rb), docs);
             //Go through the response to build the expected output for SimpleFacets
             counts = new NamedList<>();
             if(resObj != null) {
@@ -589,7 +591,17 @@ public class SimpleFacets {
             }
           break;
         case FC:
-          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, termFilter, fdebug);
+          boolean external = params.getBool("distrib", true);
+          Set<String> fl = rb.rsp.getReturnFields().getRequestedFieldNames();
+          int threshold = params.getFieldInt(field, "countCacheDf", 0);
+          if (threshold == 0) {
+            // allow 0 as an explicit default value.
+            threshold = TermFacetCache.DEFAULT_THRESHOLD;
+          } else if (threshold < 0) {
+            // facet cache disabled
+            threshold = Integer.MAX_VALUE;
+          }
+          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, termFilter, fdebug, threshold, rb);
           break;
         default:
           throw new AssertionError();

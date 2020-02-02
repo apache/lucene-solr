@@ -77,6 +77,7 @@ public class FacetField extends FacetRequestSorted {
   String prefix;
   FacetMethod method;
   int cacheDf;  // 0 means "default", -1 means "never cache"
+  int countCacheDf = 0; // 0 means "default", -1 means "never cache" -- for TermFacetCache; special val -2 uses legacy RelatednessAgg implementation
 
   // experimental - force perSeg collection when using dv method, currently for testing purposes only.
   Boolean perSeg;
