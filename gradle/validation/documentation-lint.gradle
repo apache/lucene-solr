@@ -1,0 +1,99 @@
+import java.nio.file.Files
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This adds top-level 'documentation-lint' task.
+
+configure(rootProject) {
+  configurations {
+    ecj
+  }
+  dependencies {
+    ecj 'org.eclipse.jdt:ecj:3.19.0'
+  }
+}
+
+def luceneProjects = subprojects.findAll{ it.path.startsWith(":lucene") }
+def solrProjects = subprojects.findAll{ it.path.startsWith(":solr") } - [ project(':solr:server'), project(':solr:webapp'), project(':solr:solr-ref-guide') ]
+
+configure(luceneProjects) {
+  plugins.withType(JavaPlugin) {
+    task("documentationLint", type: DocumentationLintTask) {
+      group = "Verification"
+      description = "Runs documentation linters"
+      dependsOn ':lucene:build'
+    }
+  }
+}
+
+configure(solrProjects) {
+  plugins.withType(JavaPlugin) {
+    task("documentationLint", type: DocumentationLintTask) {
+      group = "Verification"
+      dependsOn ':solr:build'
+    }
+  }
+}
+
+class DocumentationLintTask extends DefaultTask {
+
+  @Input
+  String srcMainDir = "src/java"
+
+  @Input
+  String srcTestDir = "src/test"
+
+  def ecjJavadocLint(String srcDir, String dstDir, String cp) {
+    project.javaexec {
+      classpath {
+        project.rootProject.configurations.ecj.asPath
+      }
+      main = "org.eclipse.jdt.internal.compiler.batch.Main"
+      args += [
+        "-classpath", cp,
+        "-d", dstDir,
+        "-encoding", "UTF-8",
+        "-source", "11",
+        "-target", "11",
+        "-nowarn",
+        "-enableJavadoc",
+        "-properties", "${project.rootProject.rootDir}/lucene/tools/javadoc/ecj.javadocs.prefs",
+        srcDir
+      ]
+    }
+  }
+
+  @TaskAction
+  def lint() {
+    def dstDir = Files.createTempDirectory("ecj")
+    def cp = project.configurations.compileClasspath.findAll().join(":")
+    // add dstDir to test classpath because 'testCompileClasspath' doesn't include main classes in 'src/java'
+    def testcp = project.configurations.testCompileClasspath.findAll().join(":") + ":" + dstDir
+    try {
+      // TODO: should output Compiler WARNING (the same as ant's ECJ macro)
+      ecjJavadocLint(srcMainDir, dstDir.toString(), cp)
+      ecjJavadocLint(srcTestDir, dstDir.toString(), testcp)
+
+      // TODO: port ant's "-documentation-lint" task
+    } finally {
+      dstDir.deleteDir()
+    }
+  }
+}
+
+
