@@ -3149,14 +3149,18 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     parent = sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w");
     parent.addChildDocument( sdoc("id","2.1", "type_s","page", "page_s","a", "v_t","x y z")  );
-    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","b", "v_t","x y  ") );
-    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","a", "v_t","x1   z")  );
+    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","a", "v_t","x2   z")  );
+    parent.addChildDocument( sdoc("id","2.4", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","2.5", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.6", "type_s","page", "page_s","c", "v_t","    z" )  );
     client.add(parent, null);
 
     parent = sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e");
-    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","d", "v_t","x    ")  );
-    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","e", "v_t","  y  ")  );
-    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","f", "v_t","    z")  );
+    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","d", "v_t","x    ")  );
+    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","e", "v_t","  y  ")  );
+    parent.addChildDocument( sdoc("id","3.4", "type_s","page", "page_s","f", "v_t","    z")  );
     client.add(parent, null);
 
     parent = sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e");
@@ -3171,34 +3175,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    field:type_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"unique(_root_)\" }"+
+            "           in_books: \"unique(_root_)\"," +
+            "           via_field:\"uniqueBlock(_root_)\","+
+            "           via_query:\"uniqueBlock({!v=type_s:book})\" }"+
             "  }," +
             "  pages: {" +
             "    type:terms," +
             "    field:page_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlock(_root_)\" }"+
+            "           in_books: \"unique(_root_)\"," +
+            "           via_field:\"uniqueBlock(_root_)\","+
+            "           via_query:\"uniqueBlock({!v=type_s:book})\" }"+
             "  }" +
             "}" )
 
-        , "response=={numFound:6,start:0,docs:[]}"
-        , "facets=={ count:6," +
+        , "response=={numFound:10,start:0,docs:[]}"
+        , "facets=={ count:10," +
             "types:{" +
-            "    buckets:[ {val:page, count:6, in_books:2} ]}" +
+            "    buckets:[ {val:page, count:10, in_books:2, via_field:2, via_query:2 } ]}" +
             "pages:{" +
             "    buckets:[ " +
-            "     {val:a, count:1, in_books:1}," +
-            "     {val:b, count:1, in_books:1}," +
-            "     {val:c, count:1, in_books:1}," +
-            "     {val:d, count:1, in_books:1}," +
-            "     {val:e, count:1, in_books:1}," +
-            "     {val:f, count:1, in_books:1}" +
+            "     {val:a, count:3, in_books:1, via_field:1, via_query:1}," +
+            "     {val:b, count:2, in_books:2, via_field:2, via_query:2}," +
+            "     {val:c, count:2, in_books:1, via_field:1, via_query:1}," +
+            "     {val:d, count:1, in_books:1, via_field:1, via_query:1}," +
+            "     {val:e, count:1, in_books:1, via_field:1, via_query:1}," +
+            "     {val:f, count:1, in_books:1, via_field:1, via_query:1}" +
             "    ]}" +
             "}"
     );
   }
-
 
   /**
    * Similar to {@link #testBlockJoin} but uses query time joining.

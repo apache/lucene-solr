@@ -168,6 +168,8 @@ New Features
 
  * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
 
+ * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
