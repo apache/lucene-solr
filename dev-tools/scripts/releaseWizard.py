@@ -83,6 +83,7 @@ def expand_jinja(text, vars=None):
         'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
+        'git_website_folder': state.get_website_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
@@ -532,6 +533,10 @@ class ReleaseState:
 
     def get_git_checkout_folder(self):
         folder = os.path.join(self.get_release_folder(), "lucene-solr")
+        return folder
+
+    def get_website_git_folder(self):
+        folder = os.path.join(self.get_release_folder(), "lucene-site")
         return folder
 
     def get_minor_branch_name(self):
@@ -1366,7 +1371,7 @@ def main():
     lucene_news_draft = os.path.join(state.get_release_folder(), 'lucene_news.md')
     solr_news_draft = os.path.join(state.get_release_folder(), 'solr_news.md')
     website_folder = os.path.join(state.get_release_folder(), 'website-source')
-    tlp_news_file = os.path.join(website_folder, 'content', 'mainnews.mdtext')
+    tlp_news_folder = os.path.join(website_folder, 'content', 'main_news')
     lucene_news_file = os.path.join(website_folder, 'content', 'core', 'corenews.mdtext')
     solr_news_file = os.path.join(website_folder, 'content', 'solr', 'news.mdtext')
 
