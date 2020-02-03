@@ -65,6 +65,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesHaveFile;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
@@ -587,9 +588,7 @@ public class TestPackages extends SolrCloudTestCase {
       fail("should have failed with message : " + expectErrorMsg);
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       String msg = e.getMetaData()._getStr(errPath, "");
-      assertTrue("should have failed with message: " + expectErrorMsg + "actual message : " + msg,
-          msg.contains(expectErrorMsg)
-      );
+      assertThat(msg, containsString(expectErrorMsg));
     }
   }
 }

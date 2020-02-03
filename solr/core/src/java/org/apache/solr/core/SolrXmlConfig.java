@@ -412,6 +412,12 @@ public class SolrXmlConfig {
         case "createCollectionCheckLeaderActive":
           builder.setCreateCollectionCheckLeaderActive(Boolean.parseBoolean(value));
           break;
+        case "pkiHandlerPrivateKeyPath":
+          builder.setPkiHandlerPrivateKeyPath(value);
+          break;
+        case "pkiHandlerPublicKeyPath":
+          builder.setPkiHandlerPublicKeyPath(value);
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }
