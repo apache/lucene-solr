@@ -65,10 +65,18 @@ public class QueryBuilder {
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
 
+  /**
+   * Wraps a term and boost
+   */
   public static class TermAndBoost {
+    /** the term */
     public final Term term;
+    /** the boost */
     public final float boost;
 
+    /**
+     * Creates a new TermAndBoost
+     */
     public TermAndBoost(Term term, float boost) {
       this.term = term;
       this.boost = boost;
