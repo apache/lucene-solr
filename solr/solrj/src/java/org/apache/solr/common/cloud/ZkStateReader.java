@@ -112,8 +112,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String RESOURCE_MANAGER_ZNODE = "/resourceMgr";
-  public static final String RESOURCE_MANAGER_CONF_PATH = "/config.json";
-  public static final String RESOURCE_MANAGER_POOL_CONF_PATH = "/poolConfig.json";
+  public static final String RESOURCE_MANAGER_CONF_PATH = "/managerConfig.json";
+  public static final String RESOURCE_MANAGER_POOL_CONF_PATH = "/poolConfigs.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
   public static final String SOLR_AUTOSCALING_CONF_PATH = "/autoscaling.json";
