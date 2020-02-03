@@ -251,7 +251,6 @@ public class LocalStorageClient implements CoreStorageClient {
         Files.walk(path).map(Path::toFile)
           .filter(file -> (!file.isDirectory()))
           .map(file -> {
-            log.info("DEBUG " + file.getAbsolutePath().substring(rootBlobDir.length()));
             // extracts just the file system blob file name without the root dir
             return file.getAbsolutePath().substring(rootBlobDir.length());
           })

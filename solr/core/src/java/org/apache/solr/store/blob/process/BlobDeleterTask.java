@@ -52,7 +52,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
     this.client = client;
     this.collectionName = collectionName;
     this.attempt = new AtomicInteger(0);
-    this.queuedTimeMs = System.nanoTime();
+    this.queuedTimeMs = System.nanoTime() / 1000000;
     this.allowRetry = allowRetry;
     this.maxAttempts = maxAttempts;
   }
@@ -71,7 +71,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
   @Override
   public BlobDeleterTaskResult call() {
     List<String> filesDeleted = new LinkedList<>();
-    final long startTimeMs = System.nanoTime();
+    final long startTimeMs = System.nanoTime() / 1000000;
     boolean isSuccess = true;
     boolean shouldRetry = false;
     try {
@@ -97,7 +97,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
         }
       }
     } finally {
-      long now = System.nanoTime();
+      long now = System.nanoTime() / 1000000;
       long runTime = now - startTimeMs;
       long startLatency = now - this.queuedTimeMs;
       log(getActionName(), collectionName, runTime, startLatency, isSuccess, getAdditionalLogMessage());
