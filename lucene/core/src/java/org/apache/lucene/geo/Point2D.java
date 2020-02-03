@@ -70,6 +70,9 @@ public class Point2D implements Component2D {
   @Override
   public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
                                              double ax, double ay, double bx, double by, double cx, double cy) {
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      return contains(ax, ay) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
+    }
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy)) {
       return PointValues.Relation.CELL_INSIDE_QUERY;
     }
