@@ -601,19 +601,19 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(Term terms[]) {
+  protected Query newSynonymQuery(TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
-        for (Term term : terms) {
-          currPosnClauses.add(newTermQuery(term));
+        for (TermAndBoost term : terms) {
+          currPosnClauses.add(newTermQuery(term.term, term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Term term : terms) {
-          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+        for (TermAndBoost term : terms) {
+          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
