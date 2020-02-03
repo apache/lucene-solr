@@ -29,27 +29,17 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
-public class FloatPayloadValueSource extends ValueSource {
-  protected final String field;
-  protected final String val;
-  protected final String indexedField;
-  protected final BytesRef indexedBytes;
+public class FloatPayloadValueSource extends PayloadValueSource {
   protected final PayloadDecoder decoder;
   protected final PayloadFunction payloadFunction;
-  protected final ValueSource defaultValueSource;
 
   public FloatPayloadValueSource(String field, String val, String indexedField, BytesRef indexedBytes,
                                  PayloadDecoder decoder, PayloadFunction payloadFunction, ValueSource defaultValueSource) {
-    this.field = field;
-    this.val = val;
-    this.indexedField = indexedField;
-    this.indexedBytes = indexedBytes;
+    super(field, val, indexedField, indexedBytes, defaultValueSource);
     this.decoder = decoder;
     this.payloadFunction = payloadFunction;
-    this.defaultValueSource = defaultValueSource;
   }
 
   @Override
@@ -85,52 +75,7 @@ public class FloatPayloadValueSource extends ValueSource {
         if (docs == null) {
           // dummy PostingsEnum so floatVal() can work
           // when would this be called?  if field/val did not match?  this is called for every doc?  create once and cache?
-          docs = new PostingsEnum() {
-            @Override
-            public int freq() {
-              return 0;
-            }
-
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
-            }
-
-            @Override
-            public int docID() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int nextDoc() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int advance(int target) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+          docs = PostingsEnum.DUMMY_INSTANCE;
         }
         atDoc = -1;
       }

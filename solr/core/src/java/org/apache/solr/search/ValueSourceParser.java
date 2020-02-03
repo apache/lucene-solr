@@ -723,12 +723,28 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
 
-        ValueSource defaultValueSource;
-        if (fp.hasMoreArguments()) {
-          defaultValueSource = fp.parseValueSource();
-        } else {
-          defaultValueSource = new ConstValueSource(0.0f);
+        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+        final FieldType fieldType = schema.getFieldType(tinfo.field);
+
+        final String payloadEncoder = PayloadUtils.getPayloadEncoder(fieldType);
+        if (payloadEncoder.equals("identity")) {
+
+          ValueSource defaultValueSource = (fp.hasMoreArguments()) ? fp.parseValueSource() : new LiteralValueSource("");
+
+          if (fp.hasMoreArguments()) {
+              // functions are not supported with strings
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + fp.parseArg());
+          }
+
+          return new StringPayloadValueSource(
+              tinfo.field,
+              tinfo.val,
+              tinfo.indexedField,
+              tinfo.indexedBytes.get(),
+              defaultValueSource);
         }
+
+        ValueSource defaultValueSource = (fp.hasMoreArguments()) ? fp.parseValueSource() : new ConstValueSource(0.0f);
 
         PayloadFunction payloadFunction = null;
         String func = "average";
@@ -743,7 +759,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
         }
 
-        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
         PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
         if (decoder==null) {

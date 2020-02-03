@@ -29,6 +29,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -567,6 +568,57 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // Test with debug
     assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,A)", CommonParams.DEBUG, "true"), "//float[@name='score']='1.0'");
+  }
+
+  @Test
+  public void testStringPayloadFunction() {
+    clearIndex();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("vals_dpss", new String[]{"A|USD", "C|EUR", "SORT|A"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("vals_dpss", new String[]{"A|usd", "C|eur", "SORT|B"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("vals_dpss", new String[]{"A|Usd", "C|Eur", "SORT|C"});
+    assertU(adoc(doc));
+
+    assertU(commit());
+
+    assertQ(req("q", "id:1", "fl", "*,score,field_test:payload(vals_dpss,A)"), "//str[@name='field_test']='USD'");
+    assertQ(req("q", "id:2", "fl", "*,score,field_test:payload(vals_dpss,C)"), "//str[@name='field_test']='eur'");
+    assertQ(req("q", "*:*",
+       "rows", "1",
+       "sort", "payload(vals_dpss,C) asc",
+       "fl", "*,score,field_test:payload(vals_dpss,C)"), "//str[@name='field_test']='EUR'");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "4");
+    doc.setField("vals_dpss", new String[]{"A|Usd"});
+    assertU(adoc(doc));
+
+    assertU(commit());
+
+    assertQ(req("q", "*:*",
+        "rows", "1",
+        "sort", "payload(vals_dpss,SORT) asc",
+        "fl", "*,score,field_test:payload(vals_dpss,SORT)"), "//str[@name='field_test']=''");
+
+    assertQ(req("q", "*:*",
+        "rows", "1",
+        "sort", "payload(vals_dpss,SORT) desc",
+        "fl", "*,score,field_test:payload(vals_dpss,SORT)"), "//str[@name='field_test']='C'");
+
+//    assertQ(req("q", "{!func}payload(vals_dpss,A):USD",
+//        "rows", "1",
+//        "fl", "*,score"), "//str[@name='id']='1'");
+
   }
 
   @Test

@@ -299,19 +299,24 @@ See also `rord` below.
 * If there were only three values ("apple","banana","pear") for a particular field X, then `ord(X)` would be `1` for documents containing "apple", `2` for documents containing "banana", etc.
 
 === payload Function
-Returns the float value computed from the decoded payloads of the term specified.
+Returns the value computed from the decoded payloads of the term specified.
 
-The return value is computed using the `min`, `max`, or `average` of the decoded payloads. A special `first` function can be used instead of the others, to short-circuit term enumeration and return only the decoded payload of the first term.
+The field specified must have identity (string), float or integer payload encoding capability (via `DelimitedPayloadTokenFilter` or `NumericPayloadTokenFilter`). If no payload is found for the term, the default value is returned.
 
-The field specified must have float or integer payload encoding capability (via `DelimitedPayloadTokenFilter` or `NumericPayloadTokenFilter`). If no payload is found for the term, the default value is returned.
+For float or integer payload encoding, the return value is computed using the `min`, `max`, or `average` of the decoded payloads. A special `first` function can be used instead of the others, to short-circuit term enumeration and return only the decoded payload of the first term.
 
 * `payload(field_name,term)`: default value is 0.0, `average` function is used.
 * `payload(field_name,term,default_value)`: default value can be a constant, field name, or another float returning function. `average` function used.
 * `payload(field_name,term,default_value,function)`: function values can be `min`, `max`, `average`, or `first`.
 
+For identity payload encoding, the return value is matched term the decoded payloads. String payload encoding does not support function values.
+
+* `payload(field_name,term)`: default value is "", returns `value` for any document has term in the "field_name" field
+
 *Syntax Example*
 
-* `payload(payloaded_field_dpf,term,0.0,first)`
+* `payload(payloaded_field_dpf,term,0.0,first)`: float example
+* `payload(payloaded_field_dpss,term)`: multivalue string example
 
 === pow Function
 
