@@ -82,6 +82,9 @@ Other
 
 * LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
 
+* LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
+  queryparser code (Alan Woodward, Erick Erickson)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
