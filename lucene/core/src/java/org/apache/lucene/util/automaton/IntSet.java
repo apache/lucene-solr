@@ -24,10 +24,10 @@ abstract class IntSet {
      * If this is a mutable int set, then changes to the set are not guaranteed to be visible in this array.
      * @return an array containing the values for this set, guaranteed to be at least {@link #size()} elements
      */
-    abstract int[] asArray();
+    abstract int[] getArray();
 
     /**
-     * Guaranteed to be less than or equal to the length of the array returned by {@link #asArray()}.
+     * Guaranteed to be less than or equal to the length of the array returned by {@link #getArray()}.
      * @return The number of values in this set.
      */
     abstract int size();
@@ -41,6 +41,6 @@ abstract class IntSet {
         if (!(o instanceof IntSet)) return false;
         IntSet that = (IntSet) o;
         return hashCode() == that.hashCode()
-            && Arrays.equals(asArray(), 0, size(), that.asArray(), 0, that.size());
+            && Arrays.equals(getArray(), 0, size(), that.getArray(), 0, that.size());
     }
 }

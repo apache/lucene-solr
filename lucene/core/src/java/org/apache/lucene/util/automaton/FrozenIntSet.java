@@ -30,7 +30,7 @@ final class FrozenIntSet extends IntSet {
   }
 
   @Override
-  int[] asArray() {
+  int[] getArray() {
     return values;
   }
 

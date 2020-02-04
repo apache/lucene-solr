@@ -156,7 +156,7 @@ final class SortedIntSet extends IntSet {
   }
 
   @Override
-  int[] asArray() {
+  int[] getArray() {
       return values;
   }
 

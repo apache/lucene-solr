@@ -16,16 +16,10 @@
  */
 package org.apache.lucene.util.automaton;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import static org.apache.lucene.util.LuceneTestCase.random;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(com.carrotsearch.randomizedtesting.RandomizedRunner.class)
-public class TestIntSet {
+public class TestIntSet extends LuceneTestCase {
     @Test
     public void testFreezeEqualitySmallSet() {
         testFreezeEquality(10);
