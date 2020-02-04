@@ -92,7 +92,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     });
     
     // verify shard2 znodes are deleted
-    assertShardZnodesDeleted(collection, "shard");
+    assertShardZnodesDeleted(collection, "shard2");
   }
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {
