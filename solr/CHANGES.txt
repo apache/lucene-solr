@@ -259,6 +259,8 @@ Bug Fixes
 * SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
   and race conditions under contention. (shalin)
 
+* SOLR-14090: Handle the case in `delete-copy-field` when source is a dynamic field (Frank Iversen, Munendra S N)
+
 Other Changes
 ---------------------
 
