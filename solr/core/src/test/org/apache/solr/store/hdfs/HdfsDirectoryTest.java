@@ -17,6 +17,7 @@
 package org.apache.solr.store.hdfs;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -229,6 +230,14 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
   private String getName() {
     return Long.toString(Math.abs(random.nextLong()));
+  }
+
+  public void testCantOverrideFiles() throws IOException {
+    try (IndexOutput out = directory.createOutput("foo", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+    }
+    expectThrows(FileAlreadyExistsException.class,
+        () -> directory.createOutput("foo", IOContext.DEFAULT));
   }
 
 }
