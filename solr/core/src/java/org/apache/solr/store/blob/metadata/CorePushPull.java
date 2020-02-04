@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -119,6 +118,9 @@ public class CorePushPull {
       if (solrCore == null) {
         throw new Exception("Can't find core " + pushPullData.getCoreName());
       }
+      
+      FileTransferCounter counter = new FileTransferCounter();
+      boolean isSuccessful = false;
 
       try {
         // Creating the new BlobCoreMetadata as a modified clone of the existing one
@@ -159,6 +161,7 @@ public class CorePushPull {
         // point for the (potentially long) time it takes to push all files to the Blob store.
         Directory coreIndexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
         solrCore.getDeletionPolicy().saveCommitPoint(solrServerMetadata.getGeneration());
+        
         try {
           // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
           // But this is untrue/totally false/misleading. IndexFetcher has File all over.
@@ -168,6 +171,9 @@ public class CorePushPull {
 
             String blobPath = pushFileToBlobStore(coreStorageClient, coreIndexDir, cfd.getFileName(), cfd.getFileSize());
             bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.getFileName(), blobPath, cfd.getFileSize(), cfd.getChecksum()));
+
+            counter.incrementActualFilesTransferred();
+            counter.incrementBytesTransferred(cfd.getFileSize());
           }
         } finally {
           solrCore.getDeletionPolicy().releaseCommitPoint(solrServerMetadata.getGeneration());
@@ -181,14 +187,13 @@ public class CorePushPull {
 
         String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(newMetadataSuffix);
         coreStorageClient.pushCoreMetadata(blobMetadata.getSharedBlobName(), blobCoreMetadataName, newBcm);
+        isSuccessful = true;
         return newBcm;
       } finally {
         solrCore.close();
 
-        long filesAffected = resolvedMetadataResult.getFilesToPush().size();
-        long bytesTransferred = resolvedMetadataResult.getFilesToPush().stream().mapToLong(cfd -> cfd.getFileSize()).sum();
-
-        logBlobAction("PUSH", filesAffected, bytesTransferred, startTimeMs, 0, startTimeMs);
+        counter.setExpectedFilesTransferred(resolvedMetadataResult.getFilesToPush().size());
+        logBlobAction("PUSH", counter, isSuccessful, startTimeMs, 0, startTimeMs);
       }
     }
 
@@ -224,10 +229,12 @@ public class CorePushPull {
      * @throws Exception    In the context of the PoC and first runs, we ignore errors such as Blob Server not available
      *                      or network issues. We therefore consider all exceptions thrown by this method as a sign that
      *                      it is durably not possible to pull the core from the Blob Store.
-     *                      TODO This has to be revisited before going to real prod, as environemnt issues can cause massive reindexing with this strategy
+     *                      TODO This has to be revisited before going to real prod, as environment issues can cause massive reindexing with this strategy
      */
     public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
         long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
+        boolean isSuccessful = false;
+        FileTransferCounter counter = new FileTransferCounter();
 
         try {
           SolrCore solrCore = container.getCore(pushPullData.getCoreName());
@@ -266,7 +273,9 @@ public class CorePushPull {
               } else {
                 filesToDownload = resolvedMetadataResult.getFilesToPull();
               }
-              downloadFilesFromBlob(tempIndexDir, filesToDownload);
+
+              counter.setExpectedFilesTransferred(filesToDownload.size());
+              downloadFilesFromBlob(tempIndexDir, filesToDownload, counter);
 
               Directory indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
               try {
@@ -356,14 +365,12 @@ public class CorePushPull {
               // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
               throw se;
             }
+            isSuccessful = true;
           } finally {
             solrCore.close();
           }
         } finally {
-          long filesAffected = resolvedMetadataResult.getFilesToPull().size();
-          long bytesTransferred = resolvedMetadataResult.getFilesToPull().stream().mapToLong(bf -> bf.getFileSize()).sum();
-          
-          logBlobAction("PULL", filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs);
+          logBlobAction("PULL", counter, isSuccessful, requestQueuedTimeMs, attempt, startTimeMs);
         }
     }
 
@@ -418,24 +425,21 @@ public class CorePushPull {
     }
 
     /**
-     * Logs soblb line for push or pull action 
-     * TODO: This is for callers of this method.
-     * fileAffected and bytesTransferred represent correct values only in case of success
-     * In case of failure(partial processing) we are not accurate.
-     * Do we want to change that? If yes, then in case of pull is downloading of files locally to temp folder is considered
-     * transfer or moving from temp dir to final destination. One option could be to just make them -1 in case of failure.
+     * Log for push or pull action 
      */
-    private void logBlobAction(String action, long filesAffected, long bytesTransferred, long requestQueuedTimeMs, int attempt, long startTimeMs) throws Exception {
+    private void logBlobAction(String action, FileTransferCounter counter, boolean isSuccessful, long requestQueuedTimeMs, int attempt,
+        long startTimeMs) throws Exception {
       long now = BlobStoreUtils.getCurrentTimeMs();
       long runTime = now - startTimeMs;
       long startLatency = now - requestQueuedTimeMs;
 
       String message = String.format(Locale.ROOT,
             "PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-              + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGeneration=%s blobGeneration=%s ",
+              + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s expectedFilesAffected=%s actualFilesAffected=%s isSuccessful=%s "
+              + "localGeneration=%s blobGeneration=%s ",
           pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(),
-          coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected,
-          solrServerMetadata.getGeneration(), blobMetadata.getGeneration());
+          coreStorageClient.getBucketName(), runTime, startLatency, counter.getBytesTransferred(), attempt, counter.getExpectedFilesTransferred(), 
+          counter.getActualFilesTransferred(), isSuccessful, solrServerMetadata.getGeneration(), blobMetadata.getGeneration());
       log.info(message);
     }
 
@@ -443,20 +447,24 @@ public class CorePushPull {
      * Downloads files from the Blob store 
      * @param destDir (temporary) directory into which files should be downloaded.
      * @param filesToDownload blob files to be downloaded
+     * @param counter wrapper object around expected and actual number of files downloaded, and number of bytes transferred successfully
      */
     @VisibleForTesting
-    protected void downloadFilesFromBlob(Directory destDir, Collection<? extends BlobFile> filesToDownload) throws Exception {
+    protected void downloadFilesFromBlob(Directory destDir, Collection<? extends BlobFile> filesToDownload, FileTransferCounter counter) throws Exception {
       // Synchronously download all Blob blobs (remember we're running on an async thread, so no need to be async twice unless
       // we eventually want to parallelize downloads of multiple blobs, but for the PoC we don't :)
       for (BlobFile bf: filesToDownload) {
         log.info("About to create " + bf.getSolrFileName() + " for core " + pushPullData.getCoreName() +
             " from index on blob " + pushPullData.getSharedStoreName());
-        IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
 
-        try (OutputStream outStream = new IndexOutputStream(io);
-          InputStream bis = coreStorageClient.pullStream(bf.getBlobName())) {
-          IOUtils.copy(bis, outStream);
-        }
+          try (IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
+              OutputStream outStream = new IndexOutputStream(io);
+            InputStream bis = coreStorageClient.pullStream(bf.getBlobName())) {
+            IOUtils.copy(bis, outStream);
+
+            counter.incrementActualFilesTransferred();
+            counter.incrementBytesTransferred(bf.getFileSize());
+          }
       }
     }
 
@@ -569,6 +577,59 @@ public class CorePushPull {
       public void close() throws IOException {
         super.close();
         indexOutput.close();
+      }
+    }
+    
+    /**
+     * FileTransferCounter contains counts of expected and actual files transferred, and actual bytes transferred in blob operations
+     */
+    static class FileTransferCounter {
+      private long expectedFilesTransferred;
+      private long actualFilesTransferred;
+      private long bytesTransferred;
+      
+      FileTransferCounter() {
+        this.expectedFilesTransferred = 0;
+        this.actualFilesTransferred = 0;
+        this.bytesTransferred = 0;
+      }
+      
+      FileTransferCounter(long expectedFilesTransferred, long actualFilesTransferred, long bytesTransferred) {
+        this.expectedFilesTransferred = expectedFilesTransferred;
+        this.actualFilesTransferred = actualFilesTransferred;
+        this.bytesTransferred = bytesTransferred;
+      }
+      
+      public long getExpectedFilesTransferred() {
+        return expectedFilesTransferred;
+      }
+
+      public long getActualFilesTransferred() {
+        return actualFilesTransferred;
+      }
+      
+      public long getBytesTransferred() {
+        return bytesTransferred;
+      }
+      
+      public void incrementActualFilesTransferred() {
+        this.actualFilesTransferred++;
+      }
+      
+      public void incrementBytesTransferred(long additionalBytesTransferred) {
+        this.bytesTransferred += additionalBytesTransferred;
+      }
+      
+      public void setExpectedFilesTransferred(long expectedFilesTransferred) {
+        this.expectedFilesTransferred = expectedFilesTransferred;
+      }
+
+      public void setActualFilesTransferred(long actualFilesTransferred) {
+        this.actualFilesTransferred = actualFilesTransferred;
+      }
+
+      public void setBytesTransferred(long bytesTransferred) {
+        this.bytesTransferred = bytesTransferred;
       }
     }
 }
