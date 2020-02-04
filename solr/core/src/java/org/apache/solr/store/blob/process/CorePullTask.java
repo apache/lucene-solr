@@ -79,7 +79,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private final PullCoreCallback callback;
 
   CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
-    this(coreContainer, pullCoreInfo, System.nanoTime() / 1000000, 0, 0L, callback, coresCreatedNotPulledYet);
+    this(coreContainer, pullCoreInfo, BlobStoreUtils.getCurrentNanoTimeInMs(), 0, 0L, callback, coresCreatedNotPulledYet);
   }
 
   @VisibleForTesting
@@ -207,7 +207,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     final long lastAttemptTimestampCopy = getLastAttemptTimestamp();
 
     if (attemptsCopy != 0) {
-      long now = System.nanoTime() / 1000000;
+      long now = BlobStoreUtils.getCurrentNanoTimeInMs();
       if (now - lastAttemptTimestampCopy < MIN_RETRY_DELAY_MS) {
         Thread.sleep(MIN_RETRY_DELAY_MS - now + lastAttemptTimestampCopy);
       }

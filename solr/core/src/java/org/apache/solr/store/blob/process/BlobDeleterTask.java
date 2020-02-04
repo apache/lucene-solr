@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +58,12 @@ class BlobDeleterTask implements Runnable {
     this.blobNames = blobNames;
     this.attempt = new AtomicInteger(0);
     this.executor = executor;
-    this.queuedTimeMs = System.nanoTime() / 1000000;
+    this.queuedTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
   }
 
   @Override
   public void run() {
-    final long startTimeMs = System.nanoTime() / 1000000;
+    final long startTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
     boolean isSuccess = true;
       
     try {
@@ -97,7 +98,7 @@ class BlobDeleterTask implements Runnable {
           executor.execute(this);
         }
       } finally {
-        long now = System.nanoTime() / 1000000;
+        long now = BlobStoreUtils.getCurrentNanoTimeInMs();
         long runTimeMs = now - startTimeMs;
         long startLatency = now - this.queuedTimeMs;
         String message = String.format(Locale.ROOT,

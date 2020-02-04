@@ -90,10 +90,10 @@ public class CorePusher {
       // so there is no question of starvation.
       // One option could be to snapshot a queue of pusher threads, we are working on behalf of,
       // before we capture the commit point to push. Once finished pushing, we can dismiss all those threads together.
-      long startTimeNs = System.nanoTime();
+      long startTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
       corePushLock.lock();
       try {
-        long lockAcquisitionTime = (System.nanoTime() - startTimeNs) / 1000000;
+        long lockAcquisitionTime = BlobStoreUtils.getCurrentNanoTimeInMs() - startTimeMs;
         SolrCore core = coreContainer.getCore(coreName);
         if (core == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
