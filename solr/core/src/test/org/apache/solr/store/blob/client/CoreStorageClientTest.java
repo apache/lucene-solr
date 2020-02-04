@@ -110,7 +110,7 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
     File pulled = File.createTempFile("myPulledFile", ".txt");
     try {
       // Write binary data
-      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) BlobStoreUtils.getCurrentNanoTimeInMs()};
+      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) BlobStoreUtils.getCurrentTimeMs()};
 
       FileUtils.writeByteArrayToFile(local, bytesWritten);
 

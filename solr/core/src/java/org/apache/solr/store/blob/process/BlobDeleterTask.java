@@ -58,12 +58,12 @@ class BlobDeleterTask implements Runnable {
     this.blobNames = blobNames;
     this.attempt = new AtomicInteger(0);
     this.executor = executor;
-    this.queuedTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
+    this.queuedTimeMs = BlobStoreUtils.getCurrentTimeMs();
   }
 
   @Override
   public void run() {
-    final long startTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
+    final long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
     boolean isSuccess = true;
       
     try {
@@ -98,7 +98,7 @@ class BlobDeleterTask implements Runnable {
           executor.execute(this);
         }
       } finally {
-        long now = BlobStoreUtils.getCurrentNanoTimeInMs();
+        long now = BlobStoreUtils.getCurrentTimeMs();
         long runTimeMs = now - startTimeMs;
         long startLatency = now - this.queuedTimeMs;
         String message = String.format(Locale.ROOT,

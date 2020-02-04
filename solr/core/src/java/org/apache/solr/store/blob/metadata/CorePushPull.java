@@ -114,7 +114,7 @@ public class CorePushPull {
      * @param newMetadataSuffix suffix of the new core.metadata file to be created as part of this push
      */
     public BlobCoreMetadata pushToBlobStore(String currentMetadataSuffix, String newMetadataSuffix) throws Exception {
-      long startTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
+      long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
       SolrCore solrCore = container.getCore(pushPullData.getCoreName());
       if (solrCore == null) {
         throw new Exception("Can't find core " + pushPullData.getCoreName());
@@ -135,7 +135,7 @@ public class CorePushPull {
          */
         for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
             bcmBuilder.removeFile(d);
-            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, BlobStoreUtils.getCurrentNanoTimeInMs());
+            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, BlobStoreUtils.getCurrentTimeMs());
             bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -150,7 +150,7 @@ public class CorePushPull {
           String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
           String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
           // so far checksum is not used for metadata file
-          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, BlobStoreUtils.getCurrentNanoTimeInMs());
+          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, BlobStoreUtils.getCurrentTimeMs());
           bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -200,7 +200,7 @@ public class CorePushPull {
      *                     following the return from this call might see the old core content).
      */
     public void pullUpdateFromBlob(boolean waitForSearcher) throws Exception {
-         pullUpdateFromBlob(BlobStoreUtils.getCurrentNanoTimeInMs(), waitForSearcher, 0);
+         pullUpdateFromBlob(BlobStoreUtils.getCurrentTimeMs(), waitForSearcher, 0);
     }
 
     /**
@@ -227,7 +227,7 @@ public class CorePushPull {
      *                      TODO This has to be revisited before going to real prod, as environemnt issues can cause massive reindexing with this strategy
      */
     public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
-        long startTimeMs = BlobStoreUtils.getCurrentNanoTimeInMs();
+        long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
 
         try {
           SolrCore solrCore = container.getCore(pushPullData.getCoreName());
@@ -426,7 +426,7 @@ public class CorePushPull {
      * transfer or moving from temp dir to final destination. One option could be to just make them -1 in case of failure.
      */
     private void logBlobAction(String action, long filesAffected, long bytesTransferred, long requestQueuedTimeMs, int attempt, long startTimeMs) throws Exception {
-      long now = BlobStoreUtils.getCurrentNanoTimeInMs();
+      long now = BlobStoreUtils.getCurrentTimeMs();
       long runTime = now - startTimeMs;
       long startLatency = now - requestQueuedTimeMs;
 
@@ -499,7 +499,7 @@ public class CorePushPull {
     @VisibleForTesting
     protected boolean okForHardDelete(BlobCoreMetadata.BlobFileToDelete file) {
       // For now we only check how long ago the file was marked for delete.
-      return BlobStoreUtils.getCurrentNanoTimeInMs() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
+      return BlobStoreUtils.getCurrentTimeMs() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
     }
     
     @VisibleForTesting
