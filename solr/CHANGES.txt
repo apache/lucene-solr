@@ -175,6 +175,8 @@ Bug Fixes
 * SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
   and race conditions under contention. (shalin)
 
+* SOLR-14239: Fix the behavior of CaffeineCache.computeIfAbsent on branch_8x. (ab)
+
 Other Changes
 ---------------------
 
