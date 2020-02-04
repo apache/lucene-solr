@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Random;
+
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.Tessellator;
@@ -112,8 +114,9 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   public void testBoundingBoxQueries() throws Exception {
-    XYRectangle r1 = ShapeTestUtil.nextBox();
-    XYRectangle r2 = ShapeTestUtil.nextBox();
+    Random random = random();
+    XYRectangle r1 = ShapeTestUtil.nextBox(random);
+    XYRectangle r2 = ShapeTestUtil.nextBox(random);
     XYPolygon p;
     //find two boxes so that r1 contains r2
     while (true) {
@@ -127,12 +130,12 @@ public class TestXYShape extends LuceneTestCase {
           // ignore, try other combination
         }
       }
-      r1 = ShapeTestUtil.nextBox();
-      r2 = ShapeTestUtil.nextBox();
+      r1 = ShapeTestUtil.nextBox(random);
+      r2 = ShapeTestUtil.nextBox(random);
     }
 
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
 
     // add the polygon to the index
     Document document = new Document();

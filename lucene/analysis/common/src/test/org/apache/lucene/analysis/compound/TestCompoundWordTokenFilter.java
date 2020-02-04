@@ -389,7 +389,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, filter);
       }
     };
-    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
   

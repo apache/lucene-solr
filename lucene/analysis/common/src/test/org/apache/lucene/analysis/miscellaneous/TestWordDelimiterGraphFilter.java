@@ -501,7 +501,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   /** blast some enormous random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    int numIterations = atLeast(3);
+    int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;

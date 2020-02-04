@@ -272,7 +272,7 @@ Please be sure to review this list so you understand what may have changed betwe
 
 === Solr 7.7
 
-See the https://wiki.apache.org/solr/ReleaseNote77[7.7 Release Notes] for an overview of the main new features in Solr 7.7.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote77[7.7 Release Notes] for an overview of the main new features in Solr 7.7.
 
 When upgrading to Solr 7.7.x, users should be aware of the following major changes from v7.6:
 
@@ -294,7 +294,7 @@ For more information, see the <<distributed-requests.adoc#configuring-the-shardh
 
 === Solr 7.6
 
-See the https://wiki.apache.org/solr/ReleaseNote76[7.6 Release Notes] for an overview of the main new features in Solr 7.6.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote76[7.6 Release Notes] for an overview of the main new features in Solr 7.6.
 
 When upgrading to Solr 7.6, users should be aware of the following major changes from v7.5:
 
@@ -351,7 +351,7 @@ For more information about the directory factory configuration in Solr, see the 
 
 === Solr 7.5
 
-See the https://wiki.apache.org/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
 
 When upgrading to Solr 7.5, users should be aware of the following major changes from v7.4:
 
@@ -381,7 +381,7 @@ The `TieredMergePolicy` will also reclaim resources from segments that exceed `m
 
 === Solr 7.4
 
-See the https://wiki.apache.org/solr/ReleaseNote74[7.4 Release Notes] for an overview of the main new features in Solr 7.4.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote74[7.4 Release Notes] for an overview of the main new features in Solr 7.4.
 
 When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
 
@@ -399,7 +399,7 @@ If you are upgrading from a version earlier than Solr 7.3, please see previous v
 
 === Solr 7.3
 
-See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
 
 When upgrading to Solr 7.3, users should be aware of the following major changes from v7.2:
 
@@ -443,7 +443,7 @@ If you are upgrading from a version earlier than Solr 7.2, please see previous v
 
 === Solr 7.2
 
-See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
 
 When upgrading to Solr 7.2, users should be aware of the following major changes from v7.1:
 
@@ -469,7 +469,7 @@ If you are upgrading from a version earlier than Solr 7.1, please see previous v
 
 === Solr 7.1
 
-See the https://wiki.apache.org/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
 
 When upgrading to Solr 7.1, users should be aware of the following major changes from v7.0:
 

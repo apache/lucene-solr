@@ -25,12 +25,14 @@ import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
 
   private int maxLength;

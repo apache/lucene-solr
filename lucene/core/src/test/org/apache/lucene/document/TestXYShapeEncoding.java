@@ -46,12 +46,12 @@ public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
 
   @Override
   protected double nextX() {
-    return ShapeTestUtil.nextDouble();
+    return ShapeTestUtil.nextDouble(random());
   }
 
   @Override
   protected double nextY() {
-    return ShapeTestUtil.nextDouble();
+    return ShapeTestUtil.nextDouble(random());
   }
 
   @Override

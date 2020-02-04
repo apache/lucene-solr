@@ -326,6 +326,7 @@ public class CheckHits {
    * @param deep indicates whether a deep comparison of sub-Explanation details should be executed
    * @param expl The Explanation to match against score
    */
+  // TODO: speed up this method to not be so slow
   public static void verifyExplanation(String q, 
                                        int doc, 
                                        float score,

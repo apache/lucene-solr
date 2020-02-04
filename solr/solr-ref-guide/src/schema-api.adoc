@@ -73,7 +73,7 @@ bin/solr -e cloud -noprompt
 
 == Modify the Schema
 
-To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/{collections|cores}/{name}/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
+To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/<collections|cores>/<name>/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
 
 * `add-field`: add a new field with parameters you provide.
 * `delete-field`: delete a field.
@@ -538,7 +538,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 [example.tab-pane#v2delete-copyfield]
 ====
-[tab-label]*V1 API*
+[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{

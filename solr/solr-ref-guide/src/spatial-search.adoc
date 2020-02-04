@@ -38,7 +38,7 @@ There are four main field types available for spatial search:
 
 `BBoxField` is for indexing bounding boxes, querying by a box, specifying a search predicate (Intersects,Within,Contains,Disjoint,Equals), and a relevancy sort/boost like overlapRatio or simply the area.
 
-Some esoteric details that are not in this guide can be found at http://wiki.apache.org/solr/SpatialSearch.
+Some esoteric details that are not in this guide can be found in the https://cwiki.apache.org/confluence/display/solr/SpatialSearch[Spatial Search] section of the Solr Wiki.
 
 == LatLonPointSpatialField
 
@@ -334,7 +334,7 @@ Here's an example polygon query for a field "geo" that can be either solr.Spatia
 
 Inside the parenthesis following the search predicate is the shape definition. The format of that shape is governed by the `format` attribute on the field type, defaulting to WKT. If you prefer GeoJSON, you can specify that instead.
 
-Beyond this Reference Guide and Spatila4j's docs, there are some details that remain at the Solr Wiki at http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4.
+Beyond this Reference Guide and Spatila4j's docs, there are some details that remain at the Solr Wiki at https://cwiki.apache.org/confluence/display/solr/SolrAdaptersForLuceneSpatial4.
 
 === Geo3D and Polygons (on the ellipsoid)
 

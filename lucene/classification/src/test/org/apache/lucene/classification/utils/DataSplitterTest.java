@@ -42,6 +42,7 @@ import org.junit.Test;
 /**
  * Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter}
  */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class DataSplitterTest extends LuceneTestCase {
 
   private LeafReader originalIndex;

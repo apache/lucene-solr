@@ -51,6 +51,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -684,6 +685,8 @@ public class HttpSolrCall {
         method = entityRequest;
       } else if ("DELETE".equals(req.getMethod())) {
         method = new HttpDelete(urlstr);
+      } else if ("OPTIONS".equals(req.getMethod())) {
+        method = new HttpOptions(urlstr);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected method type: " + req.getMethod());

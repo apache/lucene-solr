@@ -400,7 +400,7 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
     analyzer.close();
   }
 

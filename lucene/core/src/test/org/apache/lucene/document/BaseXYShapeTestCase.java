@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
@@ -82,7 +83,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   public XYRectangle randomQueryBox() {
-    return ShapeTestUtil.nextBox();
+    return ShapeTestUtil.nextBox(random());
   }
 
   @Override
@@ -135,11 +136,12 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object[] nextPoints() {
-    int numPoints = TestUtil.nextInt(random(), 1, 20);
+    Random random = random();
+    int numPoints = TestUtil.nextInt(random, 1, 20);
     float[][] points = new float[numPoints][2];
     for (int i = 0; i < numPoints; i++) {
-      points[i][0] = (float) ShapeTestUtil.nextDouble();
-      points[i][1] = (float) ShapeTestUtil.nextDouble();
+      points[i][0] = (float) ShapeTestUtil.nextDouble(random);
+      points[i][1] = (float) ShapeTestUtil.nextDouble(random);
     }
     return points;
   }

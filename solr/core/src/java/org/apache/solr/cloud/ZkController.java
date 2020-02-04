@@ -1204,11 +1204,12 @@ public class ZkController implements Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       if (replica.getType() != Type.PULL) {
-        shardTerms.registerTerm(coreZkNodeName);
+        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
       }
+
+      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       log.debug("Register replica - core:{} address:{} collection:{} shard:{}",
           coreName, baseUrl, collection, shardId);

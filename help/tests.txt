@@ -112,6 +112,35 @@ specifying the project and test task or a fully qualified task path. Example:
 gradlew -p lucene/core test -Ptests.verbose=true --tests "TestDemo"
 
 
+Profiling slow tests
+--------------------
+
+The "tests.profile" mode switch turns on a sampling profiler during test execution,
+and prints a simple summary at the end.
+
+For example, top-10 histogram of methods (cpu samples):
+
+gradlew -p lucene/core test -Ptests.profile=true
+
+Alternatively, you can profile heap allocations instead:
+
+gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.mode=heap
+
+By default, results are computed (deduplicated) on just the method name, folding
+together all events from the same method. To drill down further, you can increase the
+stack size from the default of 1, to get a histogram of stacktraces instead:
+
+gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.stacksize=8
+
+For big methods, it can also be helpful to include line numbers for more granularity:
+
+gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.linenumbers=true
+
+Using these additional options will make the results more sparse, so it may be useful
+to increase the top-N count:
+
+gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.count=100
+
 Testing against different JVMs
 ------------------------------
 

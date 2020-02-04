@@ -25,8 +25,10 @@ import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYPolygon} types */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
@@ -51,7 +53,7 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
             break;
           }
           repetitions++;
-          if (repetitions > 50) {
+          if (repetitions > 2) {
             //try again
             return nextShape();
           }

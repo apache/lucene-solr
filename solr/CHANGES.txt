@@ -87,8 +87,6 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
-
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -166,6 +164,12 @@ New Features
 
  * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
 
+ * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+
+ * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
+ * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -200,6 +204,8 @@ Improvements
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
 
 * SOLR-14132: Upgrade Angular JS 1.3.8 to 1.7.9 (Kevin Risden)
+
+* SOLR-14221: Upgrade restlet to version 2.4.0 (janhoy)
 
 Optimizations
 ---------------------
@@ -243,6 +249,13 @@ Bug Fixes
 * SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
 
 * SOLR-14205: Do not fail when given timeout to connectionImpl.isValid() = 0 (Nick Vercammen via Kevin Risden)
+
+* SOLR-11554: Support handling OPTIONS request for Hadoop authentication filter (Peter Cseh via Kevin Risden)
+
+* SOLR-14189: Switch from String.trim() to StringUtils.isBlank() in query parsers (Andy Webb via Uwe Schindler)
+
+* SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
+  and race conditions under contention. (shalin)
 
 Other Changes
 ---------------------
