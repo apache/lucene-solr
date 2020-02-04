@@ -226,6 +226,9 @@
   <dynamicField name="*_dtd" type="date" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true" docValues="true"/>
 
+  <dynamicField name="*_drf" type="dateRange" indexed="true" stored="true"/>
+  <dynamicField name="*_drfs" type="dateRange" indexed="true" multiValued="true" stored="true"/>
+
   <!-- docvalues and stored (S suffix) -->
   <dynamicField name="*_idS" type="int" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_idsS" type="int" indexed="true" stored="true" multiValued="true" docValues="true"/>
@@ -437,6 +440,7 @@
   <!-- A Trie based date field for faster date range queries and date faceting. -->
   <fieldType name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6" positionIncrementGap="0"/>
 
+  <fieldType name="dateRange" class="solr.DateRangeField"/>
 
   <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
   <fieldtype name="binary" class="solr.BinaryField"/>

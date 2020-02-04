@@ -125,6 +125,8 @@ Improvements
 
 * SOLR-14221: Upgrade restlet to version 2.4.0 (janhoy)
 
+* SOLR-10567: Add Support for DateRangeField in JSON Facet range (Stephen Weiss, Munendra S N)
+
 Optimizations
 ---------------------
 
