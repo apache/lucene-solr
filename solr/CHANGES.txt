@@ -179,6 +179,8 @@ Bug Fixes
 
 * SOLR-14239: Fix the behavior of CaffeineCache.computeIfAbsent on branch_8x. (ab)
 
+* SOLR-14090: Handle the case in `delete-copy-field` when source is a dynamic field (Frank Iversen, Munendra S N)
+
 Other Changes
 ---------------------
 
