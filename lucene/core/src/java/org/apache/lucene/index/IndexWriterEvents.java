@@ -21,6 +21,8 @@ package org.apache.lucene.index;
 
 /**
  * Callback interface to signal various actions taken by IndexWriter.
+ *
+ * @lucene.experimental
  */
 public interface IndexWriterEvents {
   /**
