@@ -172,6 +172,8 @@ New Features
 
  * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
 
+ * SOLR-14241: New delete() Stream Decorator (hossman)
+ 
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using

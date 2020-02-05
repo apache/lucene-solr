@@ -246,7 +246,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
                                                  params("qt", "/stream", "expr",
                                                         "update("+COLLECTION_X+",batchSize=1," +
-                                                        "tuple(id='42',a_i=1,b_i=5))"));
+                                                        "tuple(id=42,a_i=1,b_i=5))"));
     solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
     final List<Tuple> tuples = getTuples(solrStream);
     assertEquals(1, tuples.size());
@@ -259,7 +259,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
                                                  params("qt", "/stream", "expr",
                                                         "update("+COLLECTION_X+",batchSize=1," +
-                                                        "tuple(id='42',a_i=1,b_i=5))"));
+                                                        "tuple(id=42,a_i=1,b_i=5))"));
     // "WRITE" credentials should be required for 'update(...)'
     solrStream.setCredentials(WRITE_X_USER, "BOGUS_PASSWORD");
     
@@ -278,7 +278,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
                                                    params("qt", "/stream", "expr",
                                                           "update("+COLLECTION_X+",batchSize=1," +
-                                                          "tuple(id='42',a_i=1,b_i=5))"));
+                                                          "tuple(id=42,a_i=1,b_i=5))"));
       
       solrStream.setCredentials(user, user);
     
@@ -296,7 +296,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_Y,
                                                    params("qt", "/stream", "expr",
                                                           "update("+COLLECTION_X+",batchSize=1," +
-                                                          "tuple(id='42',a_i=1,b_i=5))"));
+                                                          "tuple(id=42,a_i=1,b_i=5))"));
       solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
       final List<Tuple> tuples = getTuples(solrStream);
       assertEquals(1, tuples.size());
@@ -318,7 +318,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         + "       search("+COLLECTION_Y+",                          "
         + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 1 batch
         + "              rows=100,                                  "
-        + "              fl=\"id,foo_i\",                           "
+        + "              fl=\"id,foo_i,_version_\",                 " // pruneVersionField default true
         + "              sort=\"foo_i desc\"))                      "
         ;
       
@@ -370,7 +370,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final SolrStream solrStream = new SolrStream(solrUrl + "/" + path,
                                                    params("qt", "/stream", "expr",
                                                           "update("+COLLECTION_X+",batchSize=1," +
-                                                          "tuple(id='42',a_i=1,b_i=5))"));
+                                                          "tuple(id=42,a_i=1,b_i=5))"));
       solrStream.setCredentials(WRITE_Y_USER, WRITE_Y_USER);
     
       // NOTE: Can't make any assertions about Exception: SOLR-14226
@@ -386,7 +386,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr
         = "executor(threads=1,                                              "
         + "         tuple(expr_s=\"update("+COLLECTION_X+", batchSize=5,    "
-        + "                               tuple(id='42',a_i=1,b_i=5))       "
+        + "                               tuple(id=42,a_i=1,b_i=5))       "
         + "                      \"))                                       "
         ;
     final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
@@ -554,7 +554,226 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
                  0L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     
   }
+
+  public void testSimpleDeleteStream() throws Exception {
+    assertEquals(0,
+                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
+                  .add(sdoc("id", "42"))
+                  .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    
+    final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
+                                                 params("qt", "/stream", "expr",
+                                                        "delete("+COLLECTION_X+",batchSize=1," +
+                                                        "tuple(id=42))"));
+    solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
+    final List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(1, tuples.size());
+    assertEquals(1L, tuples.get(0).get("totalIndexed"));
+    
+    assertEquals(0L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+
+  }
+
+  /** A simple "Delete by Query" example */
+  public void testSimpleDeleteStreamByQuery() throws Exception {
+    { // Put some "real" docs directly to both X...
+      final UpdateRequest update = setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER);
+      for (int i = 1; i <= 42; i++) {
+        update.add(sdoc("id",i+"x","foo_i",""+i));
+      }
+      assertEquals("initial docs in X",
+                   0, update.commit(cluster.getSolrClient(), COLLECTION_X).getStatus());
+    }
+    
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    
+    { // WRITE_X user should be able to delete X via a query from X
+      final String expr
+        = "delete("+COLLECTION_X+", batchSize=5,                    " // note batch size
+        + "       search("+COLLECTION_X+",                          "
+        + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 2 batches
+        + "              rows=100,                                  "
+        + "              fl=\"id,foo_i,_version_\",                 " // foo_i should be ignored...
+        + "              sort=\"foo_i desc\"))                      " // version constraint should be ok
+        ;
+
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
+                                                   params("qt", "/stream",
+                                                          "expr", expr));
+      solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
+      final List<Tuple> tuples = getTuples(solrStream);
+      assertEquals(2, tuples.size());
+      assertEquals(5L, tuples.get(0).get("totalIndexed"));
+      assertEquals(10L, tuples.get(1).get("totalIndexed"));
+    }
+    
+    assertEquals(42L - 10L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+  }
+
   
+  public void testSimpleDeleteStreamInvalidCredentials() throws Exception {
+    assertEquals(0,
+                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
+                  .add(sdoc("id", "42"))
+                  .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    
+    final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
+                                                 params("qt", "/stream", "expr",
+                                                        "update("+COLLECTION_X+",batchSize=1," +
+                                                        "tuple(id=42))"));
+    // "WRITE" credentials should be required for 'update(...)'
+    solrStream.setCredentials(WRITE_X_USER, "BOGUS_PASSWORD");
+    
+    // NOTE: Can't make any assertions about Exception: SOLR-14226
+    expectThrows(Exception.class, () -> {
+        final List<Tuple> ignored = getTuples(solrStream);
+      });
+    
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+  }
+
+
+  public void testSimpleDeleteStreamInsufficientCredentials() throws Exception {
+    assertEquals(0,
+                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
+                  .add(sdoc("id", "42"))
+                  .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    
+    // both of these users have valid credentials and authz read COLLECTION_X, but neither has
+    // authz to write to X...
+    for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER)) {
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X,
+                                                   params("qt", "/stream", "expr",
+                                                          "update("+COLLECTION_X+",batchSize=1," +
+                                                          "tuple(id=42))"));
+      
+      solrStream.setCredentials(user, user);
+    
+      // NOTE: Can't make any assertions about Exception: SOLR-14226
+      expectThrows(Exception.class, () -> {
+          final List<Tuple> ignored = getTuples(solrStream);
+        });
+    }
+    
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+  }
+  
+  public void testIndirectDeleteStream() throws Exception {
+    { // Put some "real" docs directly to both X & Y...
+      final UpdateRequest xxx_Update = setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER);
+      final UpdateRequest yyy_Update = setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER);
+      for (int i = 1; i <= 42; i++) {
+        xxx_Update.add(sdoc("id",i+"z","foo_i",""+i));
+        yyy_Update.add(sdoc("id",i+"z","foo_i",""+i));
+      }
+      assertEquals("initial docs in X",
+                   0, xxx_Update.commit(cluster.getSolrClient(), COLLECTION_X).getStatus());
+      assertEquals("initial docs in Y",
+                   0, yyy_Update.commit(cluster.getSolrClient(), COLLECTION_Y).getStatus());
+    }
+    
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
+    
+    { // WRITE_X user should be able to delete X via a (dummy) stream from Y...
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_Y,
+                                                   params("qt", "/stream", "expr",
+                                                          "delete("+COLLECTION_X+",batchSize=1," +
+                                                          "tuple(id=42z))"));
+      solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
+      final List<Tuple> tuples = getTuples(solrStream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+    }
+
+    assertEquals(42L - 1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
+    
+    { // WRITE_X user should be able to delete ids from X via a (search) stream from Y (routed via Y)
+      final String expr
+        = "delete("+COLLECTION_X+", batchSize=50,                   " // note batch size
+        + "       pruneVersionField=true,                           " // NOTE: ignoring Y version to del X
+        + "       search("+COLLECTION_Y+",                          "
+        + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 1 batch
+        + "              rows=100,                                  "
+        + "              fl=\"id,foo_i,_version_\",                 " // foo_i & version should be ignored
+        + "              sort=\"foo_i desc\"))                      "
+        ;
+      
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_Y, // NOTE: Y route
+                                                   params("qt", "/stream",
+                                                          "expr", expr));
+      solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
+      final List<Tuple> tuples = getTuples(solrStream);
+      assertEquals(1, tuples.size());
+      assertEquals(10L, tuples.get(0).get("batchIndexed"));
+      assertEquals(10L, tuples.get(0).get("totalIndexed"));
+
+    }
+
+    assertEquals(42L - 1L - 10L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
+      
+    { // WRITE_X user should be able to delete ids from X via a (search) stream from Y (routed via X)...
+      final String expr
+        = "delete("+COLLECTION_X+", batchSize=5,                    " // note batch size
+        + "       search("+COLLECTION_Y+",                          "
+        + "              q=\"foo_i:[30 TO *]\",                     " // 13 matches = 3 batches
+        + "              rows=100,                                  "
+        + "              fl=\"id,foo_i\",                           " // foo_i should be ignored
+        + "              sort=\"foo_i desc\"))                      "
+        ;
+      
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + COLLECTION_X, // NOTE: X route
+                                                   params("qt", "/stream",
+                                                          "expr", expr));
+      solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
+      final List<Tuple> tuples = getTuples(solrStream);
+      assertEquals(3, tuples.size());
+      
+      assertEquals( 5L, tuples.get(0).get("batchIndexed"));
+      assertEquals( 5L, tuples.get(0).get("totalIndexed"));
+      
+      assertEquals( 5L, tuples.get(1).get("batchIndexed"));
+      assertEquals(10L, tuples.get(1).get("totalIndexed"));
+      
+      assertEquals( 3L, tuples.get(2).get("batchIndexed"));
+      assertEquals(13L, tuples.get(2).get("totalIndexed"));
+    }
+
+    assertEquals(42L - 1L - 10L - (13L - 1L), // '42' in last 13 deletes was already deleted from X
+                 commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
+    
+  }
+
+  public void testIndirectDeleteStreamInsufficientCredentials() throws Exception {
+    assertEquals(0,
+                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
+                  .add(sdoc("id", "42"))
+                  .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+    
+    // regardless of how it's routed, WRITE_Y should NOT have authz to delete from X...
+    for (String path : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
+      final SolrStream solrStream = new SolrStream(solrUrl + "/" + path,
+                                                   params("qt", "/stream", "expr",
+                                                          "delete("+COLLECTION_X+",batchSize=1," +
+                                                          "tuple(id=42))"));
+      solrStream.setCredentials(WRITE_Y_USER, WRITE_Y_USER);
+    
+      // NOTE: Can't make any assertions about Exception: SOLR-14226
+      expectThrows(Exception.class, () -> {
+          final List<Tuple> ignored = getTuples(solrStream);
+        });
+    }
+
+    assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
+  }
+
   /**
    * Helper method that uses the specified user to (first commit, and then) count the total 
    * number of documents in the collection
