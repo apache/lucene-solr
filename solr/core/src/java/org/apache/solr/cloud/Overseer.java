@@ -70,9 +70,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.store.blob.process.BlobDeleteManager;
-import org.apache.solr.store.blob.process.BlobDeleteProcessor;
-import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
@@ -81,7 +78,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.Timer;
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -796,7 +792,6 @@ public class Overseer implements SolrCloseable {
         triggerThread.join();
       } catch (InterruptedException e)  {}
     }
-
     updaterThread = null;
     ccThread = null;
     triggerThread = null;
@@ -994,4 +989,5 @@ public class Overseer implements SolrCloseable {
     }
     getStateUpdateQueue().offer(data);
   }
+
 }

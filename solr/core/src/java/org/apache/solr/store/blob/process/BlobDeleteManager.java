@@ -71,9 +71,6 @@ public class BlobDeleteManager {
   /**
    * Limit to the number of blob files to delete accepted on the delete queue (and lost in case of server crash). When
    * the queue reaches that size, no more deletes are accepted (will be retried later for a core, next time it is pushed).
-   * (note that tests in searchserver.blobstore.metadata.CorePushTest trigger a merge that enqueues more than 100 files to
-   * be deleted. If that constant is reduced to 100 for example, some enqueues in the test will fail and there will be
-   * files left to be deleted where we've expected none. So don't reduce it too much :)
    */
   private static final int DEFAULT_ALMOST_MAX_DELETER_QUEUE_SIZE = 200;
   
@@ -113,7 +110,7 @@ public class BlobDeleteManager {
 
   /**
    * Creates a new BlobDeleteManager with the provided {@link CoreStorageClient} and instantiates
-   * it with a default deletedelayMs, queue size, and thread pool size. A default {@link BlobDeleteProcessor}
+   * it with a default deleteDelayMs, queue size, and thread pool size. A default {@link BlobDeleteProcessor}
    * is also created.
    */
   public BlobDeleteManager(CoreStorageClient client) {

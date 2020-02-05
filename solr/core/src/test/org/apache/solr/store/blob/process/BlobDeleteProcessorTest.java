@@ -223,6 +223,7 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     
     BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
         maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
+  
     // enqueue a task that fails totalFails number of times before succeeding
     CompletableFuture<BlobDeleterTaskResult> cf = 
         processor.enqueue(buildScheduledFailingTaskForTest(blobClient, name, totalAttempts, true, totalFails), isRetry);
@@ -240,7 +241,7 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     // initial error + 2 retry errors suppressed
     assertNotNull(res.getError());
     assertEquals(2, res.getError().getSuppressed().length);
-    
+  
     processor.shutdown();
   }
   
@@ -399,7 +400,7 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
       public Collection<String> doDelete() throws Exception {
         // block until something forces this latch to count down
         latch.await();
-        return null;
+        return new LinkedList<>();
       }
       
       @Override
@@ -438,7 +439,7 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
           failCount.incrementAndGet();
           throw new Exception("");
         }
-        return null;
+        return new LinkedList<>();
       }
       
       @Override

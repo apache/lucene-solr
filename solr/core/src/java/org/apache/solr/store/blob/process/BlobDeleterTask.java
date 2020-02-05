@@ -165,7 +165,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
     }
     
     /**
-     * @return the files that are being deleted. Note if the task wasn't successful there is no gaurantee
+     * @return the files that are being deleted. Note if the task wasn't successful there is no guarantee
      * all of these files were in fact deleted from shared storage
      */
     public Collection<String> getFilesDeleted() {

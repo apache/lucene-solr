@@ -101,8 +101,10 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
         blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "zzzz"));
     expectedPaths.add(
         blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234"));
+    blobClient.pushStream("s_test_core_nomatch", new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234");
     // the common prefix is s_test_core_name for these blob files
     List<String> blobFiles = blobClient.listCoreBlobFiles("s_test_core_name");
+    Assert.assertEquals(expectedPaths.size(), blobFiles.size());
     Assert.assertTrue(blobFiles.toString(), blobFiles.containsAll(expectedPaths));
   }
     

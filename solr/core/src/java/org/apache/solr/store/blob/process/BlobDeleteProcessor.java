@@ -57,7 +57,7 @@ public class BlobDeleteProcessor {
    * re-enqueue at the tail of the queue ({@link BlobDeleteManager} creates a list), so there might be additional
    * processing delay if the queue is not empty and is processed before the enqueued retry is processed).
    */
-  private final int defaultMaxDeleteAttempts;
+  private final int maxDeleteAttempts;
   private final long fixedRetryDelay;
   private final CoreStorageClient client;
   private final BlockingQueue<Runnable> deleteQueue;
@@ -75,7 +75,7 @@ public class BlobDeleteProcessor {
       int defaultMaxDeleteAttempts, long fixedRetryDelay) {
     this.name = name;
     this.almostMaxQueueSize = almostMaxQueueSize;
-    this.defaultMaxDeleteAttempts = defaultMaxDeleteAttempts;
+    this.maxDeleteAttempts = defaultMaxDeleteAttempts;
     this.fixedRetryDelay = fixedRetryDelay;
     NamedThreadFactory threadFactory = new NamedThreadFactory(name);
 
@@ -96,7 +96,7 @@ public class BlobDeleteProcessor {
    */
   public CompletableFuture<BlobDeleterTaskResult> deleteFiles(String collectionName, Set<String> blobNames, boolean allowRetry) {
     BlobDeleterTask task = new BlobFileDeletionTask(client, collectionName, blobNames, 
-        allowRetry, defaultMaxDeleteAttempts);
+        allowRetry, maxDeleteAttempts);
     return enqueue(task, false);
   }
   
@@ -108,7 +108,7 @@ public class BlobDeleteProcessor {
    */
   public CompletableFuture<BlobDeleterTaskResult> deleteCollection(String collectionName, boolean allowRetry) {
     BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, collectionName, 
-        allowRetry, defaultMaxDeleteAttempts);
+        allowRetry, maxDeleteAttempts);
     return enqueue(task, false);
   }
   
@@ -122,7 +122,7 @@ public class BlobDeleteProcessor {
    */
   public CompletableFuture<BlobDeleterTaskResult> deleteShard(String collectionName, String sharedShardName, boolean allowRetry) {
     BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, 
-        sharedShardName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER, allowRetry, defaultMaxDeleteAttempts);
+        sharedShardName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER, allowRetry, maxDeleteAttempts);
     return enqueue(task, false);
   }
   
