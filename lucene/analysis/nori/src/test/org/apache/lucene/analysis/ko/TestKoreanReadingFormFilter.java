@@ -58,7 +58,7 @@ public class TestKoreanReadingFormFilter extends BaseTokenStreamTestCase {
   
   public void testRandomData() throws IOException {
     Random random = random();
-    checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random, analyzer, 200 * RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

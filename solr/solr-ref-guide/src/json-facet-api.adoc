@@ -572,7 +572,8 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |missing |`missing(author)` |number of documents which do not have value for given field or function
 |countvals |`countvals(author)` |number of values for a given field or function
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
-|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
+|uniqueBlock |`uniqueBlock(\_root_)` or `uniqueBlock($fldref)` where `fldref=_root_` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
+| |`uniqueBlock({!v=type:parent})` or `uniqueBlock({!v=$qryref})` where `qryref=type:parent` |same as above, but using bitset of the given query to aggregate hits.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |`sumsq(rent)` |sum of squares of field or function
@@ -875,6 +876,7 @@ color: {
   limit: -1,
   facet: {
     productsCount: "uniqueBlock(_root_)"
+      // or "uniqueBlock({!v=type:product})"
   }
 }
 ----

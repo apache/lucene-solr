@@ -168,6 +168,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    * file.  We check this by using MockDirectoryWrapper to
    * measure max temp disk space used.
    */
+  // TODO: can this write less docs/indexes?
+  @Nightly
   public void testCommitOnCloseDiskUsage() throws IOException {
     // MemoryCodec, since it uses FST, is not necessarily
     // "additive", ie if you add up N small FSTs, then merge

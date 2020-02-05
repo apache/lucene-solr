@@ -304,7 +304,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               continue;
             } catch (InterruptedException e) {
               lock.unlock();
-              log.error("Thread interrupted while trying to pick task for execution.", head.getId());
+              log.error("Thread interrupted while trying to pick task {} for execution.", head.getId());
               Thread.currentThread().interrupt();
               continue;
             }
@@ -510,14 +510,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (asyncId != null) {
           if (response != null && (response.getResponse().get("failure") != null 
               || response.getResponse().get("exception") != null)) {
-            failureMap.put(asyncId, OverseerSolrResponse.serialize(response));
+            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             log.debug("Updated failed map for task with zkid:[{}]", head.getId());
           } else {
-            completedMap.put(asyncId, OverseerSolrResponse.serialize(response));
+            completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             log.debug("Updated completed map for task with zkid:[{}]", head.getId());
           }
         } else {
-          head.setBytes(OverseerSolrResponse.serialize(response));
+          head.setBytes(OverseerSolrResponseSerializer.serialize(response));
           log.debug("Completed task:[{}]", head.getId());
         }
 

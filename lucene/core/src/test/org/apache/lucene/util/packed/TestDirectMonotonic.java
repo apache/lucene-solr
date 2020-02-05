@@ -21,16 +21,33 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDirectMonotonic extends LuceneTestCase {
+
+  public void testValidation() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, -1, 10));
+    assertEquals("numValues can't be negative, got -1", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, 10, 1));
+    assertEquals("blockShift must be in [2-22], got 1", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+        () -> DirectMonotonicWriter.getInstance(null, null, 1L << 40, 5));
+    assertEquals("blockShift is too low for the provided number of values: blockShift=5, numValues=1099511627776, MAX_ARRAY_LENGTH=" +
+        ArrayUtil.MAX_ARRAY_LENGTH, e.getMessage());
+  }
 
   public void testEmpty() throws IOException {
     Directory dir = newDirectory();
@@ -122,27 +139,28 @@ public class TestDirectMonotonic extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException {
-    final int iters = atLeast(3);
+    Random random = random();
+    final int iters = atLeast(random, 3);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
-      final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+      final int blockShift = TestUtil.nextInt(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
       final int maxNumValues = 1 << 20;
       final int numValues;
-      if (random().nextBoolean()) {
+      if (random.nextBoolean()) {
         // random number
-        numValues = TestUtil.nextInt(random(), 1, maxNumValues);
+        numValues = TestUtil.nextInt(random, 1, maxNumValues);
       } else {
         // multiple of the block size
-        final int numBlocks = TestUtil.nextInt(random(), 0, maxNumValues >>> blockShift);
-        numValues = TestUtil.nextInt(random(), 0, numBlocks) << blockShift;
+        final int numBlocks = TestUtil.nextInt(random, 0, maxNumValues >>> blockShift);
+        numValues = TestUtil.nextInt(random, 0, numBlocks) << blockShift;
       }
       List<Long> actualValues = new ArrayList<>();
-      long previous = random().nextLong();
+      long previous = random.nextLong();
       if (numValues > 0) {
         actualValues.add(previous);
       }
       for (int i = 1; i < numValues; ++i) {
-        previous += random().nextInt(1 << random().nextInt(20));
+        previous += random.nextInt(1 << random.nextInt(20));
         actualValues.add(previous);
       }
   

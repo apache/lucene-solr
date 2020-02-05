@@ -50,6 +50,7 @@ import org.junit.Assume;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestDirectoryReader extends LuceneTestCase {
   
   public void testDocument() throws IOException {

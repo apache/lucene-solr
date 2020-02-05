@@ -149,30 +149,31 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     assertFalse(buffer.isNumeric());
   }
 
-  public <T extends DocValuesUpdate> T getRandomUpdate(boolean binary) {
+  DocValuesUpdate.BinaryDocValuesUpdate getRandomBinaryUpdate() {
     String termField = RandomPicks.randomFrom(random(), Arrays.asList("id", "_id", "some_other_field"));
     String docId = "" + random().nextInt(10);
-    if (binary) {
-      DocValuesUpdate.BinaryDocValuesUpdate value =  new DocValuesUpdate.BinaryDocValuesUpdate(new Term(termField, docId), "binary",
-          rarely() ? null : new BytesRef(TestUtil.randomRealisticUnicodeString(random())));
-      return (T) (rarely() ? value.prepareForApply(random().nextInt(100)) : value);
-    } else {
-      DocValuesUpdate.NumericDocValuesUpdate value = new DocValuesUpdate.NumericDocValuesUpdate(new Term(termField, docId), "numeric",
-          rarely() ? null : Long.valueOf(random().nextInt(100)));
+    DocValuesUpdate.BinaryDocValuesUpdate value =  new DocValuesUpdate.BinaryDocValuesUpdate(new Term(termField, docId), "binary",
+        rarely() ? null : new BytesRef(TestUtil.randomRealisticUnicodeString(random())));
+    return rarely() ? value.prepareForApply(random().nextInt(100)) : value;
+  }
 
-      return (T) (rarely() ? value.prepareForApply(random().nextInt(100)) : value);
-    }
+  DocValuesUpdate.NumericDocValuesUpdate getRandomNumericUpdate() {
+    String termField = RandomPicks.randomFrom(random(), Arrays.asList("id", "_id", "some_other_field"));
+    String docId = "" + random().nextInt(10);
+    DocValuesUpdate.NumericDocValuesUpdate value = new DocValuesUpdate.NumericDocValuesUpdate(new Term(termField, docId), "numeric",
+        rarely() ? null : Long.valueOf(random().nextInt(100)));
+    return rarely() ? value.prepareForApply(random().nextInt(100)) : value;
   }
 
   public void testBinaryRandom() throws IOException {
     List<DocValuesUpdate.BinaryDocValuesUpdate> updates = new ArrayList<>();
     int numUpdates = 1 + random().nextInt(1000);
     Counter counter = Counter.newCounter();
-    DocValuesUpdate.BinaryDocValuesUpdate randomUpdate = getRandomUpdate(true);
+    DocValuesUpdate.BinaryDocValuesUpdate randomUpdate = getRandomBinaryUpdate();
     updates.add(randomUpdate);
     FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
     for (int i = 0; i < numUpdates; i++) {
-      randomUpdate = getRandomUpdate(true);
+      randomUpdate = getRandomBinaryUpdate();
       updates.add(randomUpdate);
       if (randomUpdate.hasValue) {
         buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
@@ -203,11 +204,11 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     List<DocValuesUpdate.NumericDocValuesUpdate> updates = new ArrayList<>();
     int numUpdates = 1 + random().nextInt(1000);
     Counter counter = Counter.newCounter();
-    DocValuesUpdate.NumericDocValuesUpdate randomUpdate = getRandomUpdate(false);
+    DocValuesUpdate.NumericDocValuesUpdate randomUpdate = getRandomNumericUpdate();
     updates.add(randomUpdate);
     FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
     for (int i = 0; i < numUpdates; i++) {
-      randomUpdate = getRandomUpdate(false);
+      randomUpdate = getRandomNumericUpdate();
       updates.add(randomUpdate);
       if (randomUpdate.hasValue) {
         buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);

@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Operations;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
 
@@ -44,11 +46,10 @@ import org.apache.lucene.util.automaton.Automaton;
  * cause false fails).
  */
 public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
-  private CharacterRunAutomaton jvmLetter;
+  private static CharacterRunAutomaton jvmLetter;
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     Automaton single = new Automaton();
     int initial = single.createState();
     int accept = single.createState();
@@ -64,6 +65,11 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     jvmLetter = new CharacterRunAutomaton(repeat);
   }
   
+  @AfterClass
+  public static void afterClass() throws Exception {
+    jvmLetter = null;
+  }
+
   public void testLetterAscii() throws Exception {
     Random random = random();
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
@@ -74,7 +80,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomSimpleString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -95,7 +101,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(50);
+    int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomSimpleString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
@@ -114,7 +120,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomHtmlishString(random, 20);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -134,7 +140,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(50);
+    int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomHtmlishString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
@@ -153,7 +159,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomUnicodeString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
@@ -173,7 +179,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
-    int numIterations = atLeast(50);
+    int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomUnicodeString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 

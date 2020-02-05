@@ -131,7 +131,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   String defaultField;
   int phraseSlop = 0;     // default slop for phrase queries
-  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
   boolean autoGeneratePhraseQueries = false;
@@ -1184,14 +1184,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+  // called from parser
+  protected Query getExistenceQuery(String field) {
+    checkNullField(field);
+    SchemaField sf = schema.getField(field);
+    return sf.getType().getExistenceQuery(parser, sf);
+  }
 
   // called from parser
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
-    // *:* -> MatchAllDocsQuery
+
     if ("*".equals(termStr)) {
       if ("*".equals(field) || getExplicitField() == null) {
+        // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
+      } else {
+        // 'foo:*' -> existenceQuery
+        return getExistenceQuery(field);
       }
     }
 
