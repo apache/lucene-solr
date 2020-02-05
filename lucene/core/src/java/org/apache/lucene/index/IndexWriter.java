@@ -3276,7 +3276,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                         updateSegmentInfosOnMergeFinish(oneMerge, toCommit, mergeAwaitLatchRef);
                     if (registerMerge(trackedMerge) == false) {
                       throw new IllegalStateException("MergePolicy " + config.getMergePolicy().getClass() +
-                          " returned merging segments from findCommitMerges");
+                          " returned merging segments from findFullFlushMerges");
                     }
                     commitMerges.add(trackedMerge);
                   }

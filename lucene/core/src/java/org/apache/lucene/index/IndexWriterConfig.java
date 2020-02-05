@@ -113,7 +113,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
 
-  /** Default value for time to wait for merges on commit (when using a {@link MergePolicy} that implements findCommitMerges). */
+  /** Default value for time to wait for merges on commit (when using a {@link MergePolicy} that implements findFullFlushMerges). */
   public static final double DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS = 30.0;
   
   // indicates whether this config instance is already attached to a writer.
@@ -488,7 +488,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
 
   /**
-   * Expert: sets the amount of time to wait for merges returned by MergePolicy.findCommitMerges(...).
+   * Expert: sets the amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...).
    * If this time is reached, we proceed with the commit based on segments merged up to that point.
    * The merges are not cancelled, and may still run to completion independent of the commit.
    */

@@ -117,7 +117,7 @@ public class LiveIndexWriterConfig {
   /** the attributes for the NRT readers */
   protected Map<String, String> readerAttributes = Collections.emptyMap();
 
-  /** Amount of time to wait for merges returned by MergePolicy.findCommitMerges(...) */
+  /** Amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...) */
   protected volatile double maxCommitMergeWaitSeconds;
 
   /** Callback interface called on index writer actions. */
@@ -489,7 +489,7 @@ public class LiveIndexWriterConfig {
   }
 
   /**
-   * Expert: return the amount of time to wait for merges returned by by MergePolicy.findCommitMerges(...).
+   * Expert: return the amount of time to wait for merges returned by by MergePolicy.findFullFlushMerges(...).
    * If this time is reached, we proceed with the commit based on segments merged up to that point.
    * The merges are not cancelled, and may still run to completion independent of the commit.
    */
