@@ -87,24 +87,23 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     int retryDelay = 500; 
     String name = "testName";
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    Set<String> names = new HashSet<>();
-    names.add("test1");
-    names.add("test2");
-    // uses the specified defaultMaxAttempts at the processor (not task) level 
-    CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteFiles(name, names, true);
-    // wait for this task and all its potential retries to finish
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    assertEquals(1, enqueuedTasks.size());
-    
-    assertEquals(1, enqueuedTasks.size());
-    assertNotNull(res);
-    assertEquals(1, res.getTask().getAttempts());
-    assertEquals(true, res.isSuccess());
-    assertEquals(false, res.shouldRetry());
-    
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      Set<String> names = new HashSet<>();
+      names.add("test1");
+      names.add("test2");
+      // uses the specified defaultMaxAttempts at the processor (not task) level 
+      CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteFiles(name, names, true);
+      // wait for this task and all its potential retries to finish
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      assertEquals(1, enqueuedTasks.size());
+      
+      assertEquals(1, enqueuedTasks.size());
+      assertNotNull(res);
+      assertEquals(1, res.getTask().getAttempts());
+      assertEquals(true, res.isSuccess());
+      assertEquals(false, res.shouldRetry());
+    }
   }
   
   /**
@@ -120,21 +119,20 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     int retryDelay = 500; 
     String name = "testName";
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    // uses the specified defaultMaxAttempts at the processor (not task) level 
-    CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteCollection(name, true);
-    // wait for this task and all its potential retries to finish
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    assertEquals(1, enqueuedTasks.size());
-    
-    assertEquals(1, enqueuedTasks.size());
-    assertNotNull(res);
-    assertEquals(1, res.getTask().getAttempts());
-    assertEquals(true, res.isSuccess());
-    assertEquals(false, res.shouldRetry());
-    
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // uses the specified defaultMaxAttempts at the processor (not task) level 
+      CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteCollection(name, true);
+      // wait for this task and all its potential retries to finish
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      assertEquals(1, enqueuedTasks.size());
+      
+      assertEquals(1, enqueuedTasks.size());
+      assertNotNull(res);
+      assertEquals(1, res.getTask().getAttempts());
+      assertEquals(true, res.isSuccess());
+      assertEquals(false, res.shouldRetry());
+    }
   }
   
   /**
@@ -150,21 +148,20 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     int retryDelay = 500; 
     String name = "testName";
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    // uses the specified defaultMaxAttempts at the processor (not task) level 
-    CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteShard(name, name, true);
-    // wait for this task and all its potential retries to finish
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    assertEquals(1, enqueuedTasks.size());
-    
-    assertEquals(1, enqueuedTasks.size());
-    assertNotNull(res);
-    assertEquals(1, res.getTask().getAttempts());
-    assertEquals(true, res.isSuccess());
-    assertEquals(false, res.shouldRetry());
-    
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // uses the specified defaultMaxAttempts at the processor (not task) level 
+      CompletableFuture<BlobDeleterTaskResult> cf = processor.deleteShard(name, name, true);
+      // wait for this task and all its potential retries to finish
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      assertEquals(1, enqueuedTasks.size());
+      
+      assertEquals(1, enqueuedTasks.size());
+      assertNotNull(res);
+      assertEquals(1, res.getTask().getAttempts());
+      assertEquals(true, res.isSuccess());
+      assertEquals(false, res.shouldRetry());
+    }
   }
   
   /**
@@ -182,27 +179,25 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     String name = "testName";
     boolean isRetry = false;
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    
-    // enqueue a task that fails and is not retryable
-    CompletableFuture<BlobDeleterTaskResult> cf = 
-        processor.enqueue(buildFailingTaskForTest(blobClient, name, totalAttempts, false), isRetry);
-    // wait for this task and all its potential retries to finish
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    
-    // the first fails
-    assertEquals(1, enqueuedTasks.size());
-    assertNotNull(res);
-    assertEquals(1, res.getTask().getAttempts());
-    assertEquals(false, res.isSuccess());
-    assertEquals(false, res.shouldRetry());
-
-    // initial error + 0 retry errors suppressed
-    assertNotNull(res.getError());
-    assertEquals(0, res.getError().getSuppressed().length);
-    
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // enqueue a task that fails and is not retryable
+      CompletableFuture<BlobDeleterTaskResult> cf = 
+          processor.enqueue(buildFailingTaskForTest(blobClient, name, totalAttempts, false), isRetry);
+      // wait for this task and all its potential retries to finish
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      
+      // the first fails
+      assertEquals(1, enqueuedTasks.size());
+      assertNotNull(res);
+      assertEquals(1, res.getTask().getAttempts());
+      assertEquals(false, res.isSuccess());
+      assertEquals(false, res.shouldRetry());
+  
+      // initial error + 0 retry errors suppressed
+      assertNotNull(res.getError());
+      assertEquals(0, res.getError().getSuppressed().length);
+    }
   }
   
   /**
@@ -221,28 +216,26 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     String name = "testName";
     boolean isRetry = false;
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-  
-    // enqueue a task that fails totalFails number of times before succeeding
-    CompletableFuture<BlobDeleterTaskResult> cf = 
-        processor.enqueue(buildScheduledFailingTaskForTest(blobClient, name, totalAttempts, true, totalFails), isRetry);
-    
-    // wait for this task and all its potential retries to finish
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    
-    // the first 3 fail and last one succeeds
-    assertEquals(4, enqueuedTasks.size());
-    
-    assertNotNull(res);
-    assertEquals(4, res.getTask().getAttempts());
-    assertEquals(true, res.isSuccess());
-    
-    // initial error + 2 retry errors suppressed
-    assertNotNull(res.getError());
-    assertEquals(2, res.getError().getSuppressed().length);
-  
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // enqueue a task that fails totalFails number of times before succeeding
+      CompletableFuture<BlobDeleterTaskResult> cf = 
+          processor.enqueue(buildScheduledFailingTaskForTest(blobClient, name, totalAttempts, true, totalFails), isRetry);
+      
+      // wait for this task and all its potential retries to finish
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      
+      // the first 3 fail and last one succeeds
+      assertEquals(4, enqueuedTasks.size());
+      
+      assertNotNull(res);
+      assertEquals(4, res.getTask().getAttempts());
+      assertEquals(true, res.isSuccess());
+      
+      // initial error + 2 retry errors suppressed
+      assertNotNull(res.getError());
+      assertEquals(2, res.getError().getSuppressed().length);
+    }
   }
   
   /**
@@ -259,28 +252,27 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     String name = "testName";
     boolean isRetry = false;
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    // enqueue a task that fails every time it runs but is configured to retry
-    CompletableFuture<BlobDeleterTaskResult> cf = 
-        processor.enqueue(buildFailingTaskForTest(blobClient, name, totalAttempts, true), isRetry);
-    
-    // wait for this task and all its potential retries to finish 
-    BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
-    // 1 initial enqueue + 4 retries
-    assertEquals(5, enqueuedTasks.size());
-    
-    assertNotNull(res);
-    assertEquals(5, res.getTask().getAttempts());
-    assertEquals(false, res.isSuccess());
-    // circuit breaker should be false after all attempts are exceeded
-    assertEquals(false, res.shouldRetry());
-    
-    // initial error + 4 retry errors suppressed
-    assertNotNull(res.getError());
-    assertEquals(4, res.getError().getSuppressed().length);
-    
-    processor.shutdown();
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // enqueue a task that fails every time it runs but is configured to retry
+      CompletableFuture<BlobDeleterTaskResult> cf = 
+          processor.enqueue(buildFailingTaskForTest(blobClient, name, totalAttempts, true), isRetry);
+      
+      // wait for this task and all its potential retries to finish 
+      BlobDeleterTaskResult res = cf.get(5000, TimeUnit.MILLISECONDS);
+      // 1 initial enqueue + 4 retries
+      assertEquals(5, enqueuedTasks.size());
+      
+      assertNotNull(res);
+      assertEquals(5, res.getTask().getAttempts());
+      assertEquals(false, res.isSuccess());
+      // circuit breaker should be false after all attempts are exceeded
+      assertEquals(false, res.shouldRetry());
+      
+      // initial error + 4 retry errors suppressed
+      assertNotNull(res.getError());
+      assertEquals(4, res.getError().getSuppressed().length);
+    }
   }
   
   /**
@@ -297,41 +289,41 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     String name = "testName";
     boolean allowRetry = false;
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    // numThreads is 1 and we'll enqueue a blocking task that ensures our pool
-    // will be occupied while we add new tasks subsequently to test enqueue rejection
-    CountDownLatch tasklatch = new CountDownLatch(1);
-    processor.enqueue(buildBlockingTaskForTest(tasklatch), allowRetry);
-
-    // Fill the internal work queue beyond the maxQueueSize, the internal queue size is not 
-    // approximate so we'll just add beyond the max
-    for (int i = 0; i < maxQueueSize*2; i++) {
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      // numThreads is 1 and we'll enqueue a blocking task that ensures our pool
+      // will be occupied while we add new tasks subsequently to test enqueue rejection
+      CountDownLatch tasklatch = new CountDownLatch(1);
+      processor.enqueue(buildBlockingTaskForTest(tasklatch), allowRetry);
+  
+      // Fill the internal work queue beyond the maxQueueSize, the internal queue size is not 
+      // approximate so we'll just add beyond the max
+      for (int i = 0; i < maxQueueSize*2; i++) {
+        try {
+          processor.deleteCollection(name, allowRetry);
+        } catch (Exception ex) {
+          // ignore
+        }
+      }
+      
+      // verify adding a new task is rejected
       try {
         processor.deleteCollection(name, allowRetry);
+        fail("Task should have been rejected");
       } catch (Exception ex) {
-        // ignore
+        assertTrue(ex.getMessage().contains("Unable to enqueue deletion"));
       }
+      CompletableFuture<BlobDeleterTaskResult> cf = null;
+      try {
+        // verify adding a task that is marked as a retry is not rejected 
+         cf = processor.enqueue(buildFailingTaskForTest(blobClient, name, 5, true), /* isRetry */ true);
+      } catch (Exception ex) {
+        fail("Task should not have been rejected");
+      }
+      
+      // clean up and unblock the task
+      tasklatch.countDown();
     }
-    
-    // verify adding a new task is rejected
-    try {
-      processor.deleteCollection(name, allowRetry);
-      fail("Task should have been rejected");
-    } catch (Exception ex) {
-      assertTrue(ex.getMessage().contains("Unable to enqueue deletion"));
-    }
-    CompletableFuture<BlobDeleterTaskResult> cf = null;
-    try {
-      // verify adding a task that is marked as a retry is not rejected 
-       cf = processor.enqueue(buildFailingTaskForTest(blobClient, name, 5, true), /* isRetry */ true);
-    } catch (Exception ex) {
-      fail("Task should not have been rejected");
-    }
-    
-    // clean up and unblock the task
-    tasklatch.countDown();
-    processor.shutdown();
   }
   
   /**
@@ -346,37 +338,36 @@ public class BlobDeleteProcessorTest extends SolrTestCaseJ4 {
     int retryDelay = 100;
     int numberOfTasks = 200;
     
-    BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
-        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay);
-    List<BlobDeleterTask> tasks = generateRandomTasks(defaultMaxAttempts, numberOfTasks);
-    List<CompletableFuture<BlobDeleterTaskResult>> taskResultsFutures = new LinkedList<>();
-    List<BlobDeleterTaskResult> results = new LinkedList<>();
-    for (BlobDeleterTask t : tasks) {
-      taskResultsFutures.add(processor.enqueue(t, false));
-    }
-    
-    taskResultsFutures.forEach(cf -> {
-      try {
-        results.add(cf.get(20000, TimeUnit.MILLISECONDS));
-      } catch (Exception ex) {
-        fail("We timed out on some task!");
+    try (BlobDeleteProcessor processor = buildBlobDeleteProcessorForTest(enqueuedTasks, blobClient,
+        maxQueueSize, numThreads, defaultMaxAttempts, retryDelay)) {
+      List<BlobDeleterTask> tasks = generateRandomTasks(defaultMaxAttempts, numberOfTasks);
+      List<CompletableFuture<BlobDeleterTaskResult>> taskResultsFutures = new LinkedList<>();
+      List<BlobDeleterTaskResult> results = new LinkedList<>();
+      for (BlobDeleterTask t : tasks) {
+        taskResultsFutures.add(processor.enqueue(t, false));
       }
-    });
-    
-    // we shouldn't enqueue more than (numberOfTasks * defaultMaxAttempts) tasks to the pool 
-    assertTrue(enqueuedTasks.size() < (numberOfTasks * defaultMaxAttempts));
-    assertEquals(numberOfTasks, results.size());
-    int totalAttempts = 0;
-    for (BlobDeleterTaskResult res : results) {
-      assertNotNull(res);
-      assertNotNull(res.getTask());
-      assertEquals("scheduledFailingTask", res.getTask().getActionName());
-      totalAttempts += res.getTask().getAttempts();
-    }
-    // total task attempts should be consistent with our test scaffolding
-    assertTrue(totalAttempts < (numberOfTasks * defaultMaxAttempts));
       
-    processor.shutdown();
+      taskResultsFutures.forEach(cf -> {
+        try {
+          results.add(cf.get(20000, TimeUnit.MILLISECONDS));
+        } catch (Exception ex) {
+          fail("We timed out on some task!");
+        }
+      });
+      
+      // we shouldn't enqueue more than (numberOfTasks * defaultMaxAttempts) tasks to the pool 
+      assertTrue(enqueuedTasks.size() < (numberOfTasks * defaultMaxAttempts));
+      assertEquals(numberOfTasks, results.size());
+      int totalAttempts = 0;
+      for (BlobDeleterTaskResult res : results) {
+        assertNotNull(res);
+        assertNotNull(res.getTask());
+        assertEquals("scheduledFailingTask", res.getTask().getActionName());
+        totalAttempts += res.getTask().getAttempts();
+      }
+      // total task attempts should be consistent with our test scaffolding
+      assertTrue(totalAttempts < (numberOfTasks * defaultMaxAttempts));
+    }
   }
   
   private List<BlobDeleterTask> generateRandomTasks(int defaultMaxAttempts, int taskCount) {

@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
@@ -160,20 +159,18 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         CompletableFuture<BlobDeleterTaskResult> deleteFuture = 
             deleteProcessor.deleteCollection(collection, false);
         
+        BlobDeleterTaskResult result = null;
+        Throwable t = null;
         try {
           // TODO: Find a reasonable timeout value
-          BlobDeleterTaskResult result = deleteFuture.get(60, TimeUnit.SECONDS);
-          if (!result.isSuccess()) {
-            log.warn("Deleting all files belonging to shared collection " + collection + 
-                " was not successful! Files belonging to this collection may be orphaned.");
-          }
-        } catch (TimeoutException tex) {
-          // We can orphan files here if we don't delete everything in time but what matters for potentially
-          // reusing the collection name is that the zookeeper state of the collection gets deleted which 
-          // will happen in the finally block
+          result = deleteFuture.get(60, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+          t = ex;
+        }
+        if (t != null || !result.isSuccess()) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting collection" + 
-              collection + " from shared store in a reasonable amount of time, files belonging to this collection"
-                  + " may be orphaned.", tex);
+              collection + " from shared store, files belonging to this collection"
+                  + " may be orphaned.", t);
         }
       }
 

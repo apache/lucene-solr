@@ -168,9 +168,9 @@ public class BlobDeleteManager {
     isShutdown.set(true);
     log.info("BlobDeleteManager is shutting down");
     
-    deleteProcessor.shutdown();
+    deleteProcessor.close();
     log.info("BlobDeleteProcessor " + deleteProcessor.getName() + " has shutdown");
-    overseerDeleteProcessor.shutdown();
+    overseerDeleteProcessor.close();
     log.info("BlobDeleteProcessor " + overseerDeleteProcessor.getName() + " has shutdown");
   }
 

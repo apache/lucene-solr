@@ -16,6 +16,7 @@
  */
 package org.apache.solr.store.blob.process;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -45,7 +46,7 @@ import com.google.common.annotations.VisibleForTesting;
  * 
  * Instances of {@link BlobDeleteProcessor} are managed by the {@link BlobDeleteManager}.
  */
-public class BlobDeleteProcessor {
+public class BlobDeleteProcessor implements Closeable {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -164,7 +165,8 @@ public class BlobDeleteProcessor {
     });
   }
   
-  public void shutdown() {
+  @Override
+  public void close() {
     deleteExecutor.shutdown();
   }  
   

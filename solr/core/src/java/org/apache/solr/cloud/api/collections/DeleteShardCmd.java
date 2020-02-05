@@ -154,18 +154,19 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         String sharedShardName = (String) slice.get(ZkStateReader.SHARED_SHARD_NAME);
         CompletableFuture<BlobDeleterTaskResult> deleteFuture =
             deleteProcessor.deleteShard(collectionName, sharedShardName, false);
+        
+        BlobDeleterTaskResult result = null;
+        Throwable t = null;
         try {
           // TODO: Find a reasonable timeout value
-          BlobDeleterTaskResult result = deleteFuture.get(60, TimeUnit.SECONDS);
-          if (!result.isSuccess()) {
-            log.warn("Deleting all shard files belonging to shared collection " + collectionName +
-                " and shard " +  slice.getName() + " was not successful! Files belonging to this "
-                    + "collection may be orphaned.");
-          }
-        } catch (TimeoutException tex) {
+          result = deleteFuture.get(60, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+          t = ex;
+        }
+        if (t != null || !result.isSuccess()) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting shard" + 
               slice.getName() + " from shared store belonging to collection " + collectionName +
-              " in a reasonable amount of time, files belonging to this shard may be orphaned.", tex);
+              ". Files belonging to this shard may be orphaned.", t);
         }
       }
 
