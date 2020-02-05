@@ -113,7 +113,7 @@ public class CorePushPull {
      * @param newMetadataSuffix suffix of the new core.metadata file to be created as part of this push
      */
     public BlobCoreMetadata pushToBlobStore(String currentMetadataSuffix, String newMetadataSuffix) throws Exception {
-      long startTimeMs = System.nanoTime();
+      long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
       SolrCore solrCore = container.getCore(pushPullData.getCoreName());
       if (solrCore == null) {
         throw new Exception("Can't find core " + pushPullData.getCoreName());
@@ -137,7 +137,7 @@ public class CorePushPull {
          */
         for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
             bcmBuilder.removeFile(d);
-            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
+            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, BlobStoreUtils.getCurrentTimeMs());
             bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -152,7 +152,7 @@ public class CorePushPull {
           String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
           String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
           // so far checksum is not used for metadata file
-          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.currentTimeMillis());
+          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, BlobStoreUtils.getCurrentTimeMs());
           bcmBuilder.addFileToDelete(bftd);
         }
 
@@ -191,21 +191,21 @@ public class CorePushPull {
         return newBcm;
       } finally {
         solrCore.close();
-        
+
         counter.setExpectedFilesTransferred(resolvedMetadataResult.getFilesToPush().size());
         logBlobAction("PUSH", counter, isSuccessful, startTimeMs, 0, startTimeMs);
       }
     }
 
     /**
-     * Calls {@link #pullUpdateFromBlob(long, boolean, int)}  with current epoch time and attempt no. 0.
+     * Calls {@link #pullUpdateFromBlob(long, boolean, int)}  with current relative time and attempt no. 0.
      * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
      *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
      *                     a new index searcher to be eventually created but do not wait for it to be created (a query
      *                     following the return from this call might see the old core content).
      */
     public void pullUpdateFromBlob(boolean waitForSearcher) throws Exception {
-         pullUpdateFromBlob(System.nanoTime(), waitForSearcher, 0);
+         pullUpdateFromBlob(BlobStoreUtils.getCurrentTimeMs(), waitForSearcher, 0);
     }
 
     /**
@@ -217,7 +217,7 @@ public class CorePushPull {
      * <li>Local core did not exist (was created empty before calling this method) and is fetched from Blob</li>
      * </ol>
      * 
-     * @param requestQueuedTimeMs epoch time in milliseconds when the pull request was queued(meaningful in case of async pushing)
+     * @param requestQueuedTimeMs relative time in milliseconds when the pull request was queued(meaningful in case of async pushing)
      *                            only used for logging purposes
      * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
      *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
@@ -232,7 +232,7 @@ public class CorePushPull {
      *                      TODO This has to be revisited before going to real prod, as environment issues can cause massive reindexing with this strategy
      */
     public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
-        long startTimeMs = System.nanoTime();
+        long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
         boolean isSuccessful = false;
         FileTransferCounter counter = new FileTransferCounter();
 
@@ -429,7 +429,7 @@ public class CorePushPull {
      */
     private void logBlobAction(String action, FileTransferCounter counter, boolean isSuccessful, long requestQueuedTimeMs, int attempt,
         long startTimeMs) throws Exception {
-      long now = System.nanoTime();
+      long now = BlobStoreUtils.getCurrentTimeMs();
       long runTime = now - startTimeMs;
       long startLatency = now - requestQueuedTimeMs;
 
@@ -507,7 +507,7 @@ public class CorePushPull {
     @VisibleForTesting
     protected boolean okForHardDelete(BlobCoreMetadata.BlobFileToDelete file) {
       // For now we only check how long ago the file was marked for delete.
-      return System.nanoTime() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
+      return BlobStoreUtils.getCurrentTimeMs() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
     }
     
     @VisibleForTesting

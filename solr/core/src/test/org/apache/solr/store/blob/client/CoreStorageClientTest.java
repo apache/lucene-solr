@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -109,7 +110,7 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
     File pulled = File.createTempFile("myPulledFile", ".txt");
     try {
       // Write binary data
-      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) System.nanoTime()};
+      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) BlobStoreUtils.getCurrentTimeMs()};
 
       FileUtils.writeByteArrayToFile(local, bytesWritten);
 
