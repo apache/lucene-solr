@@ -196,7 +196,11 @@ public final class FieldsIndexWriter implements Closeable {
       if (filePointersOut != null) {
         fileNames.add(filePointersOut.getName());
       }
-      IOUtils.deleteFiles(dir, fileNames);
+      try {
+        IOUtils.deleteFiles(dir, fileNames);
+      } finally {
+        docsOut = filePointersOut = null;
+      }
     }
   }
 }
