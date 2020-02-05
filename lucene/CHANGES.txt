@@ -163,6 +163,9 @@ Bug Fixes
 
 * LUCENE-9135: Make UniformSplit FieldMetadata counters long. (Bruno Roustant)
 
+* LUCENE-9200: Fix TieredMergePolicy to use double (not float) math to make its merging decisions, fixing
+  a corner-case bug uncovered by fun randomized tests (Robert Muir, Mike McCandless)
+
 Other
 ---------------------
 
