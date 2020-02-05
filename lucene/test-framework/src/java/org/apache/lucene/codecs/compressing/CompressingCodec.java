@@ -36,16 +36,16 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Create a random instance.
    */
-  public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
+  public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockShift) {
     switch (random.nextInt(4)) {
     case 0:
-      return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 1:
-      return new FastDecompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new FastDecompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 2:
-      return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 3:
-      return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     default:
       throw new AssertionError();
     }
@@ -73,8 +73,8 @@ public abstract class CompressingCodec extends FilterCodec {
     // e.g. defaults use 128 for FAST and 512 for HIGH
     final int chunkDocs = TestUtil.nextInt(random, 1<<6, 1<<10);
     // e.g. defaults use 1024 for both cases
-    final int blockSize = TestUtil.nextInt(random, 1<<9, 1<<11);
-    return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
+    final int blockShift = TestUtil.nextInt(random, 8, 12);
+    return randomInstance(random, chunkSize, chunkDocs, false, blockShift);
   }
   
   /**
@@ -94,10 +94,10 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Creates a compressing codec with a given segment suffix
    */
-  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
+  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) {
     super(name, TestUtil.getDefaultCodec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockSize);
-    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize, blockSize);
+    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
+    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize, blockShift);
   }
   
   /**
