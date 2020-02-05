@@ -22,7 +22,7 @@ import math
 import os
 import sys
 # sys.path.insert(0, 'moman/finenight/python')
-sys.path.insert(0, '../../../../../../../../build/core/moman/finenight/python')
+sys.path.insert(0, '../../../../../../../../../build/moman/finenight/python')
 try:
   from possibleStates import genTransitions
 except ImportError:
