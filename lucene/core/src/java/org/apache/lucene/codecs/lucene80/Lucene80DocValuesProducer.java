@@ -786,7 +786,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       
       
       // already read and uncompressed?
-      if ( blockId != lastBlockId) {
+      if (blockId != lastBlockId) {
         lastBlockId = blockId;
         long blockStartOffset = addresses.get(blockId);
         compressedData.seek(blockStartOffset);
@@ -809,7 +809,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         }
       }
       
-      // Position the Bytes ref to the relevant part of the uncompressed block
+      // Position the BytesRef to the relevant part of the uncompressed block
       if (docInBlockId > 0) {
         uncompressedBytesRef.offset = uncompressedDocEnds[docInBlockId - 1];        
       }

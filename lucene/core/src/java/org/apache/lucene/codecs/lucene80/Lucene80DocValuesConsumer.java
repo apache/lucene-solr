@@ -360,7 +360,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
   }
 
-  class CompressedBinaryBlockWriter  implements Closeable {
+  class CompressedBinaryBlockWriter implements Closeable {
     FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();    
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
@@ -384,7 +384,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       }
     }
 
-    void  addDoc(int doc, BytesRef v) throws IOException {
+    void addDoc(int doc, BytesRef v) throws IOException {
       if (blockAddressesStart < 0) {
         blockAddressesStart = data.getFilePointer();
       }
@@ -399,7 +399,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
 
     private void flushData() throws IOException {
-      if(numDocsInCurrentBlock > 0) {
+      if (numDocsInCurrentBlock > 0) {
         // Write offset to this block to temporary offsets file
         totalChunks++;
         long thisBlockStartPointer = data.getFilePointer();
@@ -444,7 +444,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
             fp += filePointersIn.readVLong();
           }
           if (maxPointer < fp) {
-            throw new CorruptIndexException("File pointers don't add up", filePointersIn);
+            throw new CorruptIndexException("File pointers don't add up ("+fp+" vs expected "+maxPointer+")", filePointersIn);
           }
           filePointers.finish();
         } catch (Throwable e) {
