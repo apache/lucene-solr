@@ -558,7 +558,7 @@ public abstract class MergePolicy {
     long byteSize = info.sizeInBytes();
     int delCount = mergeContext.numDeletesToMerge(info);
     assert assertDelCount(delCount, info);
-    double delRatio = info.info.maxDoc() <= 0 ? 0.0f : (float) delCount / (float) info.info.maxDoc();
+    double delRatio = info.info.maxDoc() <= 0 ? 0d : (double) delCount / (double) info.info.maxDoc();
     assert delRatio <= 1.0;
     return (info.info.maxDoc() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
   }
