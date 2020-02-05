@@ -213,7 +213,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
     for (int totalHitsThreshold = 0; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       for (FieldDoc after : new FieldDoc[] { null, new FieldDoc(4, Float.NaN, new Object[] { 2L })}) {
-        TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, totalHitsThreshold);
+        TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */,
+            new MaxScoreTerminator(Math.max(2, totalHitsThreshold)));
         collector.maxScoreTerminator.setIntervalBits(0); // check on every hit to ensure maximal early termination
         ScoreAndDoc scorer = new ScoreAndDoc();
 
@@ -697,7 +698,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     dir.close();
   }
 
-  public void testConcurrentScoreboardTermination() throws Exception {
+  public void testMaxScoreTermination() throws Exception {
     try(Directory dir = newDirectory();
         IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
       Document doc = new Document();
@@ -717,7 +718,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
         TopFieldCollector collector2 = manager.newCollector();
         assertNotNull(collector.maxScoreTerminator);
         assertSame(collector.maxScoreTerminator, collector2.maxScoreTerminator);
-        assertEquals(0, collector.maxScoreTerminator.totalCollected);
+        assertEquals(0, collector.maxScoreTerminator.getTotalCollected());
         assertEquals(2, collector.maxScoreTerminator.totalToCollect);
         collector.maxScoreTerminator.setIntervalBits(0);
 
@@ -736,7 +737,9 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
   public void testRandomMaxScoreTermination() throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setIndexSort(new Sort(new SortField("N", SortField.Type.INT, random().nextBoolean())));
+    Sort indexSort = new Sort(new SortField("N", SortField.Type.INT, random().nextBoolean()),
+        new SortField("NN", SortField.Type.INT, random().nextBoolean()));
+    iwc.setIndexSort(indexSort);
     // Sometimes index the sort key in order since this is an adversarial case for strategies that rely on
     // fair distribution in the index
     boolean randomizeSortKey = random().nextBoolean();
@@ -758,6 +761,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
             doc.add(new NumericDocValuesField("N", i));
           }
         }
+        doc.add(new NumericDocValuesField("NN", random().nextInt()));
         if (random().nextFloat() < 3f / numDocs) {
           w.commit();
         }
@@ -773,8 +777,10 @@ public class TestTopFieldCollector extends LuceneTestCase {
                 .build()
         };
         int numHits = 20;
+        Sort[] sorts = new Sort[]{new Sort(new SortField[]{SortField.FIELD_DOC}), indexSort,
+            new Sort(new SortField[]{new SortField("N", SortField.Type.INT)})};
         for (Query query : queries) {
-          Sort sort = new Sort(new SortField[]{SortField.FIELD_DOC});
+          Sort sort = sorts[random().nextInt(sorts.length)];
           TopFieldCollector fieldCollector = doSearchWithThreshold(numHits, 0, query, sort, indexReader);
           TopDocs tdc = doConcurrentSearchWithThreshold(numHits, 0, query, sort, indexReader);
           TopDocs tdc2 = fieldCollector.topDocs();
