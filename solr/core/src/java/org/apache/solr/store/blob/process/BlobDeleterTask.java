@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.process.BlobDeleterTask.BlobDeleterTaskResult;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
     this.client = client;
     this.collectionName = collectionName;
     this.attempt = new AtomicInteger(0);
-    this.queuedTimeMs = System.nanoTime() / 1000000;
+    this.queuedTimeMs = BlobStoreUtils.getCurrentTimeMs();
     this.allowRetry = allowRetry;
     this.maxAttempts = maxAttempts;
   }
@@ -71,7 +72,7 @@ public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult>
   @Override
   public BlobDeleterTaskResult call() {
     List<String> filesDeleted = new LinkedList<>();
-    final long startTimeMs = System.nanoTime() / 1000000;
+    final long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
     boolean isSuccess = true;
     boolean shouldRetry = false;
     try {
