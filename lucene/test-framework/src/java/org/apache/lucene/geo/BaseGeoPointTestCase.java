@@ -66,6 +66,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
+import org.junit.Test;
 
 /**
  * Abstract class to do basic tests for a geospatial impl (high level
@@ -742,18 +743,23 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract Query newPolygonQuery(String field, Polygon... polygon);
 
-  static final boolean rectContainsPoint(Rectangle rect, double pointLat, double pointLon) {
+  protected boolean rectContainsPoint(Rectangle rect, double pointLat, double pointLon) {
     assert Double.isNaN(pointLat) == false;
-    
-    if (pointLat < rect.minLat || pointLat > rect.maxLat) {
+    // we work on the quantize space (points already quantize).
+    double minLat = quantizeLat(rect.minLat);
+    double maxLat = quantizeLat(rect.maxLat);
+    double minLon = quantizeLon(rect.minLon);
+    double maxLon = quantizeLon(rect.maxLon);
+
+    if (pointLat < minLat || pointLat > maxLat) {
       return false;
     }
-
-    if (rect.minLon <= rect.maxLon) {
-      return pointLon >= rect.minLon && pointLon <= rect.maxLon;
+    // cross dateline needs to be check on the original rectangle
+    if (rect.crossesDateline() == false) {
+      return (pointLon >= minLon && pointLon <= maxLon);
     } else {
       // Rect crosses dateline:
-      return pointLon <= rect.maxLon || pointLon >= rect.minLon;
+      return pointLon <= maxLon || pointLon >= minLon;
     }
   }
 
@@ -1223,30 +1229,37 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IndexSearcher s = newSearcher(r, false);
     // exact edge cases
     assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
-    
+    int minLatEnc = GeoEncodingUtils.encodeLatitude(rect.minLat);
+    int maxLatEnc = GeoEncodingUtils.encodeLatitude(rect.maxLat);
+    int minLonEnc = GeoEncodingUtils.encodeLongitude(rect.minLon);
+    int maxLonEnc = GeoEncodingUtils.encodeLongitude(rect.maxLon);
     // expand 1 ulp in each direction if possible and test a slightly larger box!
-    if (rect.minLat != -90) {
-      assertEquals(8, s.count(newRectQuery(FIELD_NAME, Math.nextDown(rect.minLat), rect.maxLat, rect.minLon, rect.maxLon)));
+    if (minLatEnc != Integer.MIN_VALUE) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME,  Math.nextDown(rect.minLat), rect.maxLat, rect.minLon, rect.maxLon)));
     }
-    if (rect.maxLat != 90) {
-      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, Math.nextUp(rect.maxLat), rect.minLon, rect.maxLon)));
+    if (maxLatEnc != Integer.MAX_VALUE) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, GeoEncodingUtils.decodeLatitude(maxLatEnc + 1), rect.minLon, rect.maxLon)));
     }
-    if (rect.minLon != -180) {
+    if (minLonEnc != Integer.MIN_VALUE) {
       assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, Math.nextDown(rect.minLon), rect.maxLon)));
     }
-    if (rect.maxLon != 180) {
-      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, Math.nextUp(rect.maxLon))));
+    if (maxLonEnc != Integer.MAX_VALUE) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, GeoEncodingUtils.decodeLongitude(maxLonEnc + 1))));
     }
     
     // now shrink 1 ulp in each direction if possible: it should not include bogus stuff
     // we can't shrink if values are already at extremes, and
     // we can't do this if rectangle is actually a line or we will create a cross-dateline query
-    if (rect.minLat != 90 && rect.maxLat != -90 && rect.minLon != 80 && rect.maxLon != -180 && rect.minLon != rect.maxLon) {
-      // note we put points on "sides" not just "corners" so we just shrink all 4 at once for now: it should exclude all points!
-      assertEquals(0, s.count(newRectQuery(FIELD_NAME, Math.nextUp(rect.minLat), 
-                                                     Math.nextDown(rect.maxLat), 
-                                                     Math.nextUp(rect.minLon), 
-                                                     Math.nextDown(rect.maxLon))));
+
+    if (minLatEnc != Integer.MAX_VALUE && maxLatEnc != Integer.MIN_VALUE &&
+        minLonEnc != Integer.MAX_VALUE && maxLonEnc !=  Integer.MIN_VALUE &&
+        minLonEnc + 1 < maxLonEnc) {
+
+      assertEquals(0, s.count(newRectQuery(FIELD_NAME,
+          GeoEncodingUtils.decodeLatitude(minLatEnc + 1),
+          Math.nextDown(rect.maxLat),
+          GeoEncodingUtils.decodeLongitude(minLonEnc + 1),
+          Math.nextDown(rect.maxLon))));
     }
 
     r.close();

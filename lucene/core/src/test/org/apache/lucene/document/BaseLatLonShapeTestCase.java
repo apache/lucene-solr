@@ -35,9 +35,7 @@ import org.apache.lucene.util.TestUtil;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
 
@@ -268,18 +266,8 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       }
 
       @Override
-      double quantizeXCeil(double raw) {
-        return decodeLongitude(encodeLongitudeCeil(raw));
-      }
-
-      @Override
       double quantizeY(double raw) {
         return decodeLatitude(encodeLatitude(raw));
-      }
-
-      @Override
-      double quantizeYCeil(double raw) {
-        return decodeLatitude(encodeLatitudeCeil(raw));
       }
 
       /** quantizes a latitude value to be consistent with index encoding */
@@ -287,19 +275,9 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
         return quantizeY(rawLat);
       }
 
-      /** quantizes a provided latitude value rounded up to the nearest encoded integer */
-      protected double quantizeLatCeil(double rawLat) {
-        return quantizeYCeil(rawLat);
-      }
-
       /** quantizes a longitude value to be consistent with index encoding */
       protected double quantizeLon(double rawLon) {
         return quantizeX(rawLon);
-      }
-
-      /** quantizes a provided longitude value rounded up to the nearest encoded integer */
-      protected double quantizeLonCeil(double rawLon) {
-        return quantizeXCeil(rawLon);
       }
 
       @Override

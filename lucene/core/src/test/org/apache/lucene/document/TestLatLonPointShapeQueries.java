@@ -19,8 +19,11 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
@@ -78,17 +81,10 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
         return false;
       }
       Point p = (Point)shape;
-      double lat = encoder.quantizeY(p.lat);
-      double lon = encoder.quantizeX(p.lon);
-      boolean isDisjoint = lat < minLat || lat > maxLat;
-
-      isDisjoint = isDisjoint || ((minLon > maxLon)
-          ? lon < minLon && lon > maxLon
-          : lon < minLon || lon > maxLon);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return isDisjoint;
-      }
-      return isDisjoint == false;
+      int lat = GeoEncodingUtils.encodeLatitude(p.lat);
+      int lon = GeoEncodingUtils.encodeLongitude(p.lon);
+      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      return queryRelation == QueryRelation.DISJOINT ? rectangle2D.queryContainsPoint(lon, lat) == false : rectangle2D.queryContainsPoint(lon, lat);
     }
 
     @Override
