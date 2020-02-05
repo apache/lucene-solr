@@ -207,6 +207,8 @@ Improvements
 
 * SOLR-14221: Upgrade restlet to version 2.4.0 (janhoy)
 
+* SOLR-10567: Add Support for DateRangeField in JSON Facet range (Stephen Weiss, Munendra S N)
+
 Optimizations
 ---------------------
 
@@ -256,6 +258,11 @@ Bug Fixes
 
 * SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
   and race conditions under contention. (shalin)
+
+* SOLR-14090: Handle the case in `delete-copy-field` when source is a dynamic field (Frank Iversen, Munendra S N)
+
+* SOLR-14219: SOLR-14095 Introduced an issue for rolling restarts (Incompatible Java serialization). This change
+  Fixes the compatibility issue while keeping the functionality in SOLR-14095. (Andy Webb, Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------
