@@ -188,6 +188,8 @@ Bug Fixes
 * SOLR-14219: SOLR-14095 Introduced an issue for rolling restarts (Incompatible Java serialization). This change
   Fixes the compatibility issue while keeping the functionality in SOLR-14095. (Andy Webb, Tomás Fernández Löbbe)
 
+* SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
+
 Other Changes
 ---------------------
 
