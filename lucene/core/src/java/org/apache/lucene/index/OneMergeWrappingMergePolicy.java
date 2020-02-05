@@ -60,8 +60,8 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
   }
 
   @Override
-  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
-    return wrapSpec(in.findCommitMerges(segmentInfos, mergeContext));
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return wrapSpec(in.findFullFlushMerges(mergeTrigger, segmentInfos, mergeContext));
   }
 
   private MergeSpecification wrapSpec(MergeSpecification spec) {

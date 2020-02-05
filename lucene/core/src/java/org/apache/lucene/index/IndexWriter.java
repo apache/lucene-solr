@@ -3266,7 +3266,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               if (anyChanges) {
                 // Find any merges that can execute on commit (per MergePolicy).
                 MergePolicy.MergeSpecification mergeSpec =
-                    config.getMergePolicy().findCommitMerges(segmentInfos, this);
+                    config.getMergePolicy().findFullFlushMerges(MergeTrigger.COMMIT, segmentInfos, this);
                 if (mergeSpec != null && mergeSpec.merges.size() > 0) {
                   int mergeCount = mergeSpec.merges.size();
                   commitMerges = new ArrayList<>(mergeCount);
@@ -3323,7 +3323,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // block until  the merges that we registered complete. As they complete, they will update toCommit to
         // replace merged segments with the result of each merge.
         config.getIndexWriterEvents().beginMergeOnCommit();
-        mergeScheduler.merge(this, MergeTrigger.FULL_FLUSH, true);
+        mergeScheduler.merge(this, MergeTrigger.COMMIT, true);
         long mergeWaitStart = System.nanoTime();
         int abandonedCount = 0;
         long waitTimeMillis = (long) (config.getMaxCommitMergeWaitSeconds() * 1000.0);

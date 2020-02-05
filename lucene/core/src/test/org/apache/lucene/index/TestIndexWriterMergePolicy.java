@@ -301,9 +301,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
     MergePolicy mergeOnCommitPolicy = new LogDocMergePolicy() {
       @Override
-      public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+      public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
         // Optimize down to a single segment on commit
-        if (segmentInfos.size() > 1) {
+        if (mergeTrigger == MergeTrigger.COMMIT && segmentInfos.size() > 1) {
           List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
           for (SegmentCommitInfo sci : segmentInfos) {
             if (mergeContext.getMergingSegments().contains(sci) == false) {

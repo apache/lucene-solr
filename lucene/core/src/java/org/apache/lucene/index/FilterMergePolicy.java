@@ -58,8 +58,8 @@ public class FilterMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
-    return in.findCommitMerges(segmentInfos, mergeContext);
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return in.findFullFlushMerges(mergeTrigger, segmentInfos, mergeContext);
   }
 
   @Override

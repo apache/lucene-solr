@@ -129,7 +129,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
     MergeSpecification mergeSpecification = findMerges(null, segmentInfos, mergeContext);
     if (mergeSpecification == null) {
       return null;

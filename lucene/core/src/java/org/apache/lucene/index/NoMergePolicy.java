@@ -46,7 +46,7 @@ public final class NoMergePolicy extends MergePolicy {
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
 
   @Override
-  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
 
   @Override
   public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {

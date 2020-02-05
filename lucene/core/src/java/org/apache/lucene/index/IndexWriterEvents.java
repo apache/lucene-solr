@@ -41,7 +41,7 @@ public interface IndexWriterEvents {
 
   /**
    * Signals the start of waiting for a merge on commit, returned from
-   * {@link MergePolicy#findCommitMerges(SegmentInfos, MergePolicy.MergeContext)}.
+   * {@link MergePolicy#findFullFlushMerges(MergeTrigger, SegmentInfos, MergePolicy.MergeContext)}.
    */
   void beginMergeOnCommit();
 
