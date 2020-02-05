@@ -68,6 +68,10 @@ Improvements
 * LUCENE-9110: Refactor stack analysis in tests to use generalized LuceneTestCase
   methods that use StackWalker (Uwe Schindler)
 
+* LUCENE-9206: IndexMergeTool gets additional options to control the merging.
+  This tool no longer forceMerge(1)s to a single segment by default. If you
+  rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
