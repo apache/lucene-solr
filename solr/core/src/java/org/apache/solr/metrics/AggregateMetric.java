@@ -23,10 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Metric;
 
+import java.lang.invoke.MethodHandles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class is used for keeping several partial named values and providing useful statistics over them.
  */
 public class AggregateMetric implements Metric {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Simple class to represent current value and how many times it was set.
@@ -93,16 +99,13 @@ public class AggregateMetric implements Metric {
     if (values.isEmpty()) {
       return 0;
     }
-    Double res = null;
+    double res = 0;
     for (Update u : values.values()) {
       if (!(u.value instanceof Number)) {
+        log.warn("not a Number: " + u.value);
         continue;
       }
       Number n = (Number)u.value;
-      if (res == null) {
-        res = n.doubleValue();
-        continue;
-      }
       if (n.doubleValue() > res) {
         res = n.doubleValue();
       }
@@ -114,16 +117,13 @@ public class AggregateMetric implements Metric {
     if (values.isEmpty()) {
       return 0;
     }
-    Double res = null;
+    double res = 0;
     for (Update u : values.values()) {
       if (!(u.value instanceof Number)) {
+        log.warn("not a Number: " + u.value);
         continue;
       }
       Number n = (Number)u.value;
-      if (res == null) {
-        res = n.doubleValue();
-        continue;
-      }
       if (n.doubleValue() < res) {
         res = n.doubleValue();
       }
@@ -138,6 +138,7 @@ public class AggregateMetric implements Metric {
     double total = 0;
     for (Update u : values.values()) {
       if (!(u.value instanceof Number)) {
+        log.warn("not a Number: " + u.value);
         continue;
       }
       Number n = (Number)u.value;
@@ -156,6 +157,7 @@ public class AggregateMetric implements Metric {
     int count = 0;
     for (Update u : values.values()) {
       if (!(u.value instanceof Number)) {
+        log.warn("not a Number: " + u.value);
         continue;
       }
       count++;
@@ -177,6 +179,7 @@ public class AggregateMetric implements Metric {
     double res = 0;
     for (Update u : values.values()) {
       if (!(u.value instanceof Number)) {
+        log.warn("not a Number: " + u.value);
         continue;
       }
       Number n = (Number)u.value;
