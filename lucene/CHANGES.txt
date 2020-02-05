@@ -68,6 +68,9 @@ Optimizations
 
 * LUCENE-9125: Optimize Automaton.step() with binary search and introduce Automaton.next(). (Bruno Roustant)
 
+* LUCENE-9147: The index of stored fields and term vectors in now off-heap.
+  (Adrien Grand)
+
 Bug Fixes
 ---------------------
 

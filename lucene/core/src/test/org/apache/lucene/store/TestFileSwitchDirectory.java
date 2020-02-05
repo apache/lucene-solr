@@ -49,7 +49,8 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<>();
     fileExtensions.add(CompressingStoredFieldsWriter.FIELDS_EXTENSION);
-    fileExtensions.add(CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
+    fileExtensions.add("fdx");
+    fileExtensions.add("fdm");
     
     MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random(), new RAMDirectory());
     primaryDir.setCheckIndexOnClose(false); // only part of an index
