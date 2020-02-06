@@ -103,5 +103,12 @@ public class SharedStoreManager {
     }
     blobProcessUtil = processUtil;
   }
+  
+  public void initBlobDeleteManager(BlobDeleteManager blobDeleteManager) {
+    if (this.blobDeleteManager != null) {
+      blobDeleteManager.shutdown();
+    }
+    this.blobDeleteManager = blobDeleteManager;
+  }
 
 }

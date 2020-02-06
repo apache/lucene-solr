@@ -18,94 +18,245 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.process.BlobDeleterTask.BlobDeleterTaskResult;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Task in charge of deleting Blobs (files) from blob store.
+ * Generic deletion task for files located on shared storage
  */
-class BlobDeleterTask implements Runnable {
+public abstract class BlobDeleterTask implements Callable<BlobDeleterTaskResult> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * Note we sleep() after each failed attempt, so multiply this value by {@link #SLEEP_MS_FAILED_ATTEMPT} to find
-   * out how long we'll retry (at least) if Blob access fails for some reason ("at least" because we
-   * re-enqueue at the tail of the queue ({@link BlobDeleteManager} creates a list), so there might be additional
-   * processing delay if the queue is not empty and is processed before the enqueued retry is processed).
-   */
-  private static int MAX_DELETE_ATTEMPTS = 50;
-  private static long SLEEP_MS_FAILED_ATTEMPT = TimeUnit.SECONDS.toMillis(10);
-
+  
   private final CoreStorageClient client;
-  private final String sharedBlobName;
-  private final Set<String> blobNames;
+  private final String collectionName;
   private final AtomicInteger attempt;
-  private final ThreadPoolExecutor executor;
+  
   private final long queuedTimeMs;
+  private final int maxAttempts;
+  private final boolean allowRetry;
+  private Throwable err;
 
-  BlobDeleterTask(CoreStorageClient client, String sharedBlobName, Set<String> blobNames, ThreadPoolExecutor executor) {
-    this.client = client; 
-    this.sharedBlobName = sharedBlobName;
-    this.blobNames = blobNames;
+  public BlobDeleterTask(CoreStorageClient client, String collectionName, boolean allowRetry,
+      int maxAttempts) {
+    this.client = client;
+    this.collectionName = collectionName;
     this.attempt = new AtomicInteger(0);
-    this.executor = executor;
-    this.queuedTimeMs = System.nanoTime();
+    this.queuedTimeMs = BlobStoreUtils.getCurrentTimeMs();
+    this.allowRetry = allowRetry;
+    this.maxAttempts = maxAttempts;
+  }
+  
+  /**
+   * Performs a deletion action and request against the shared storage for the given collection
+   * and returns the list of file paths deleted
+   */
+  public abstract Collection<String> doDelete() throws Exception;
+  
+  /**
+   * Return a String representing the action performed by the BlobDeleterTask for logging purposes
+   */
+  public abstract String getActionName();
+  
+  @Override
+  public BlobDeleterTaskResult call() {
+    List<String> filesDeleted = new LinkedList<>();
+    final long startTimeMs = BlobStoreUtils.getCurrentTimeMs();
+    boolean isSuccess = true;
+    boolean shouldRetry = false;
+    try {
+      filesDeleted.addAll(doDelete());
+      attempt.incrementAndGet();
+      return new BlobDeleterTaskResult(this, filesDeleted, isSuccess, shouldRetry, err);
+    } catch (Exception ex) {
+      if (err == null) {
+        err = ex;
+      } else {
+        err.addSuppressed(ex);
+      }
+      int attempts = attempt.incrementAndGet();
+      isSuccess = false;
+      log.warn("BlobDeleterTask failed on attempt=" + attempts  + " collection=" + collectionName
+          + " task=" + toString(), ex);
+      if (allowRetry) {
+        if (attempts < maxAttempts) {
+          shouldRetry = true;
+        } else {
+          log.warn("Reached " + maxAttempts + " attempt limit for deletion task " + toString() + 
+              ". This task won't be retried.");
+        }
+      }
+    } finally {
+      long now = System.nanoTime() / 1000000;
+      long runTime = now - startTimeMs;
+      long startLatency = now - this.queuedTimeMs;
+      log(getActionName(), collectionName, runTime, startLatency, isSuccess, getAdditionalLogMessage());
+    }
+    return new BlobDeleterTaskResult(this, filesDeleted, isSuccess, shouldRetry, err);
+  }
+  
+  /**
+   * Override-able by deletion tasks to provide additional action specific logging
+   */
+  public String getAdditionalLogMessage() {
+    return "";
+  }
+  
+  @Override
+  public String toString() {
+    return "collectionName=" + collectionName + " allowRetry=" + allowRetry + 
+        " queuedTimeMs=" + queuedTimeMs + " attemptsTried=" + attempt.get();
+  }
+  
+  public int getAttempts() {
+    return attempt.get();
   }
 
-  @Override
-  public void run() {
-    final long startTimeMs = System.nanoTime();
-    boolean isSuccess = true;
-      
-    try {
+  public void log(String action, String collectionName, long runTime, long startLatency, boolean isSuccess, 
+      String additionalMessage) {
+    String message = String.format(Locale.ROOT, 
+        "action=%s storageProvider=%s bucketRegion=%s bucketName=%s, runTime=%s "
+        + "startLatency=%s attempt=%s isSuccess=%s %s",
+        action, client.getStorageProvider().name(), client.getBucketRegion(), client.getBucketName(),
+        runTime, startLatency, attempt.get(), isSuccess, additionalMessage);
+    log.info(message);
+  }
+  
+  /**
+   * Represents the result of a deletion task
+   */
+  public static class BlobDeleterTaskResult {
+    private final BlobDeleterTask task;
+    private final Collection<String> filesDeleted;
+    private final boolean isSuccess;
+    private final boolean shouldRetry;
+    private final Throwable err;
+    
+    public BlobDeleterTaskResult(BlobDeleterTask task, Collection<String> filesDeleted, 
+        boolean isSuccess, boolean shouldRetry, Throwable errs) {
+      this.task = task;
+      this.filesDeleted = filesDeleted;
+      this.isSuccess = isSuccess;
+      this.shouldRetry = shouldRetry;
+      this.err = errs;
+    }
+    
+    public boolean isSuccess() {
+      return isSuccess;
+    }
+    
+    public boolean shouldRetry() {
+      return shouldRetry;
+    }
+    
+    public BlobDeleterTask getTask() {
+      return task;
+    }
+    
+    /**
+     * @return the files that are being deleted. Note if the task wasn't successful there is no guarantee
+     * all of these files were in fact deleted from shared storage
+     */
+    public Collection<String> getFilesDeleted() {
+      return filesDeleted;
+    }
+    
+    public Throwable getError() {
+      return err;
+    }
+  }
+  
+  /**
+   * A BlobDeleterTask that deletes a given set of blob files from shared store
+   */
+  public static class BlobFileDeletionTask extends BlobDeleterTask {
+    private final CoreStorageClient client;
+    private final Set<String> blobNames;
+    
+    /**
+     * Constructor for BlobDeleterTask that deletes a given set of blob files from shared store
+     */
+    public BlobFileDeletionTask(CoreStorageClient client, String collectionName, Set<String> blobNames, boolean allowRetry,
+        int maxRetryAttempt) {
+      super(client, collectionName, allowRetry, maxRetryAttempt);
+      this.blobNames = blobNames;
+      this.client = client;
+    }
+
+    @Override
+    public Collection<String> doDelete() throws Exception {
       client.deleteBlobs(blobNames);
-      // Blob might not have been deleted if at some point we've enqueued files to delete while doing a core push,
-      // but the push ended up failing and the core.metadata file was not updated. We ended up with the blobs enqueued for
-      // delete and eventually removed by a BlobDeleterTask and the files to delete still present in core.metadata
-      // so enqueued again.
-      // Note it is ok to delete these files even if the core.metadata update fails. The delete is not linked
-      // to the push activity, it is related to blobs marked for delete that can be safely removed after some delay has passed.
-      } catch (Exception e) {
-        isSuccess = false;
-        int attempts = attempt.incrementAndGet();
+      return blobNames;
+    }
 
-        log.warn("Blob file delete task failed."
-                +" attempt=" + attempts +  " sharedBlobName=" + this.sharedBlobName + " numOfBlobs=" + this.blobNames.size(), e);
+    @Override
+    public String getActionName() {
+      return "DELETE";
+    }
+    
+    @Override 
+    public String getAdditionalLogMessage() {
+      return "filesAffected=" + blobNames.size();
+    }
+    
+    @Override
+    public String toString() {
+      return "BlobFileDeletionTask action=" + getActionName() + " totalFilesSpecified=" + blobNames.size() + 
+          " " + super.toString();
+    }
+  }
+  
+  /**
+   * A BlobDeleterTask that deletes all files from shared storage with the given string prefix 
+   */
+  public static class BlobPrefixedFileDeletionTask extends BlobDeleterTask {
+    private final CoreStorageClient client;
+    private final String prefix;
+    
+    private int affectedFiles = 0;
+    
+    /**
+     * Constructor for BlobDeleterTask that deletes all files from shared storage with the given string prefix 
+     */
+    public BlobPrefixedFileDeletionTask(CoreStorageClient client, String collectionName, String prefix, boolean allowRetry,
+        int maxRetryAttempt) {
+      super(client, collectionName, allowRetry, maxRetryAttempt);
+      this.prefix = prefix;
+      this.client = client;
+    }
 
-        if (attempts < MAX_DELETE_ATTEMPTS) {
-          // We failed, but we'll try again. Enqueue the task for a new delete attempt. attempt already increased.
-          // Note this execute call accepts the
-          try {
-            // Some delay before retry... (could move this delay to before trying to delete a file that previously
-            // failed to be deleted, that way if the queue is busy and it took time to retry, we don't add an additional
-            // delay on top of that. On the other hand, an exception here could be an issue with the Blob store
-            // itself and nothing specific to the file at hand, so slowing all delete attempts for all files might
-            // make sense. Splunk will eventually tell us... or not.
-            Thread.sleep(SLEEP_MS_FAILED_ATTEMPT);
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-          }
-          // This can throw an exception if the pool is shutting down.
-          executor.execute(this);
-        }
-      } finally {
-        long now = System.nanoTime();
-        long runTime = now - startTimeMs;
-        long startLatency = now - this.queuedTimeMs;
-        String message = String.format(Locale.ROOT,
-               "sharedBlobName=%s action=DELETE storageProvider=%s bucketRegion=%s bucketName=%s "
-                      + "runTime=%s startLatency=%s attempt=%s filesAffected=%s isSuccess=%s",
-                      sharedBlobName, client.getStorageProvider().name(), client.getBucketRegion(),
-                      client.getBucketName(), runTime, startLatency, attempt.get(), this.blobNames.size(), isSuccess);
-        log.info(message);
-      }
+    @Override
+    public List<String> doDelete() throws Exception {
+      List<String> allFiles = client.listCoreBlobFiles(prefix);
+      affectedFiles = allFiles.size();
+      client.deleteBlobs(allFiles);
+      return allFiles;
+    }
+
+    @Override
+    public String getActionName() {
+      return "DELETE_FILES_PREFIXED";
+    }
+    
+    @Override 
+    public String getAdditionalLogMessage() {
+      return "filesAffected=" + affectedFiles;
+    }
+    
+    @Override
+    public String toString() {
+      return "BlobCollectionDeletionTask action=" + getActionName() + " " + super.toString();
+    }
   }
 }

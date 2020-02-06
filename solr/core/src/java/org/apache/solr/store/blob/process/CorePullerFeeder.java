@@ -25,6 +25,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.metadata.PushPullData;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +109,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       syncsEnqueuedSinceLastLog++;
 
       // Log if it's time (we did at least one pull otherwise we would be still blocked in the calls above)
-      final long now = System.nanoTime();
+      final long now = BlobStoreUtils.getCurrentTimeMs();
       final long msSinceLastLog = now - lastLoggedTimestamp;
       if (msSinceLastLog > minMsBetweenLogs) {
         log.info("Since last pull log " + msSinceLastLog + " ms ago, added "
@@ -204,7 +205,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
         PullCoreInfo pullCoreInfo = pullTask.getPullCoreInfo();
         if (status.isTransientError() && pullTask.getAttempts() < MAX_ATTEMPTS) {
           pullTask.setAttempts(pullTask.getAttempts() + 1);
-          pullTask.setLastAttemptTimestamp(System.nanoTime());
+          pullTask.setLastAttemptTimestamp(BlobStoreUtils.getCurrentTimeMs());
           pullTaskQueue.addDeduplicated(pullTask, true);
           log.info(String.format(Locale.ROOT, "Pulling core %s failed with transient error. Retrying. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));

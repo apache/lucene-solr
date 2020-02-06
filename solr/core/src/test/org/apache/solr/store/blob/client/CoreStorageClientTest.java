@@ -24,11 +24,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -87,6 +89,24 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
     int expectedBlobKeyLength = TEST_CORE_NAME_1.length() + uuid4length + 1 + 4;
     Assert.assertEquals(blobPath.length(), expectedBlobKeyLength);
   }
+  
+  @Test
+  public void testListBlobFiles() throws Exception {
+    List<String> expectedPaths = new LinkedList<>();
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "xxx"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "yyy"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "zzzz"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234"));
+    blobClient.pushStream("s_test_core_nomatch", new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234");
+    // the common prefix is s_test_core_name for these blob files
+    List<String> blobFiles = blobClient.listCoreBlobFiles("s_test_core_name");
+    Assert.assertEquals(expectedPaths.size(), blobFiles.size());
+    Assert.assertTrue(blobFiles.toString(), blobFiles.containsAll(expectedPaths));
+  }
     
   @Test
   public void testListBlobCommonPrefixes() throws Exception {
@@ -109,7 +129,7 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
     File pulled = File.createTempFile("myPulledFile", ".txt");
     try {
       // Write binary data
-      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) System.nanoTime()};
+      byte bytesWritten[] = {0, -1, 5, 10, 32, 127, -15, 20, 0, -100, 40, 0, 0, 0, (byte) BlobStoreUtils.getCurrentTimeMs()};
 
       FileUtils.writeByteArrayToFile(local, bytesWritten);
 

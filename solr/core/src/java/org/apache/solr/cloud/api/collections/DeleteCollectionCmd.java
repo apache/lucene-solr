@@ -18,6 +18,13 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -47,16 +55,13 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.process.BlobDeleteProcessor;
+import org.apache.solr.store.blob.process.BlobDeleterTask.BlobDeleterTaskResult;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -140,6 +145,32 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           // because when a new collection with same name is created, new replicas may reuse the old dataDir
           removeCounterNode = false;
           break;
+        }
+      }
+      
+      // Delete the collection files from shared store. We want to delete all of the files before we delete
+      // the collection state from ZooKeeper.
+      DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+      if (docCollection != null && docCollection.getSharedIndex()) {
+        SharedStoreManager sharedStoreManager = ocmh.overseer.getCoreContainer().getSharedStoreManager();
+        BlobDeleteManager deleteManager = sharedStoreManager.getBlobDeleteManager();
+        BlobDeleteProcessor deleteProcessor = deleteManager.getOverseerDeleteProcessor();
+        // deletes all files belonging to this collection
+        CompletableFuture<BlobDeleterTaskResult> deleteFuture = 
+            deleteProcessor.deleteCollection(collection, false);
+        
+        BlobDeleterTaskResult result = null;
+        Throwable t = null;
+        try {
+          // TODO: Find a reasonable timeout value
+          result = deleteFuture.get(60, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+          t = ex;
+        }
+        if (t != null || !result.isSuccess()) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting collection" + 
+              collection + " from shared store, files belonging to this collection"
+                  + " may be orphaned.", t);
         }
       }
 

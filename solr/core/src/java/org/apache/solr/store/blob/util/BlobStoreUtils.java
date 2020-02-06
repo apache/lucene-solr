@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -73,6 +74,15 @@ public class BlobStoreUtils {
    */
   public static String generateMetadataSuffix() {
     return UUID.randomUUID().toString();
+  }
+
+  /**
+   * Returns current time in milliseconds for use in measuring elapsed time.
+   * Cannot be combined with currentTimeMillis - currentTimeMillis will return ms relative to epoch
+   * while this method returns ms relative to some arbitrary time
+   */
+  public static long getCurrentTimeMs() {
+    return TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
   }
 
   /***

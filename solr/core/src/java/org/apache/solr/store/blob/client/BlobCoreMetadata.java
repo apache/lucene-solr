@@ -324,6 +324,9 @@ public class BlobCoreMetadata {
       return Objects.hash(super.hashCode(), deletedAt);
     }
 
+    /**
+     * @return time in milliseconds (converted from nanotime) that file was marked as deleted
+     */
     public long getDeletedAt() {
       return this.deletedAt;
     }
