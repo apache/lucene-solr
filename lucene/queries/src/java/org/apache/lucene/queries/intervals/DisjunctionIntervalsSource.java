@@ -31,7 +31,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
-import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;

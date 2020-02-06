@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
 class ExtendedIntervalsSource extends IntervalsSource {

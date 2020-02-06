@@ -161,6 +161,7 @@ final class IntervalMatches {
             state = State.ITERATING;
             return doc;
           case ITERATING:
+          case NO_MORE_INTERVALS:
             state = State.EXHAUSTED;
           case EXHAUSTED:
         }

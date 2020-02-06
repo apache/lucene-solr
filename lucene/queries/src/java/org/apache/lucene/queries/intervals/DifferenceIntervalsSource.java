@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
 abstract class DifferenceIntervalsSource extends IntervalsSource {
