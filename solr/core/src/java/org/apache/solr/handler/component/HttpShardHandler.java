@@ -299,18 +299,32 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
+      boolean onlyNrt = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
+
       replicaSource = new CloudReplicaSource.Builder()
           .params(params)
           .zkStateReader(zkController.getZkStateReader())
           .whitelistHostChecker(hostChecker)
           .replicaListTransformer(replicaListTransformer)
           .collection(cloudDescriptor.getCollectionName())
-          .onlyNrt(Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS))
+          .onlyNrt(onlyNrt)
           .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
-      if (shortCircuitIfPossible(rb, req, params, shards, coreDescriptor, cloudDescriptor, zkController, hostChecker)) {
+
+      if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+        if (hostChecker.isWhitelistHostCheckingEnabled() && hostChecker.hasExplicitWhitelist()) {
+          /*
+           * We only need to check the host whitelist if there is an explicit whitelist (other than all the live nodes)
+           * when the "shards" indicate cluster state elements only
+           */
+          hostChecker.checkWhitelist(zkController.getClusterState(), shards, Collections.singletonList(rb.shortCircuitedURL));
+        }
+        rb.isDistrib = false;
+        rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
         return;
+        // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
       }
+
       for (int i = 0; i < rb.slices.length; i++) {
         if (!ShardParams.getShardsTolerantAsBool(params) && replicaSource.getReplicasBySlice(i).isEmpty()) {
           // stop the check when there are no replicas available for a shard
@@ -356,15 +370,14 @@ public class HttpShardHandler extends ShardHandler {
     return sliceShardsStr.toString();
   }
 
-  private boolean shortCircuitIfPossible(ResponseBuilder rb, SolrQueryRequest req, SolrParams params, String shards, CoreDescriptor coreDescriptor, CloudDescriptor cloudDescriptor, ZkController zkController, HttpShardHandlerFactory.WhitelistHostChecker hostChecker) {
+  private boolean canShortCircuit(String[] slices, boolean onlyNrtReplicas, SolrParams params, CloudDescriptor cloudDescriptor) {
     // Are we hosting the shard that this request is for, and are we active? If so, then handle it ourselves
     // and make it a non-distributed request.
     String ourSlice = cloudDescriptor.getShardId();
     String ourCollection = cloudDescriptor.getCollectionName();
     // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
-    boolean onlyNrtReplicas = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
-    if (rb.slices.length == 1 && rb.slices[0] != null
-        && (rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice))  // handle the <collection>_<slice> format
+    if (slices.length == 1 && slices[0] != null
+        && (slices[0].equals(ourSlice) || slices[0].equals(ourCollection + "_" + ourSlice))  // handle the <collection>_<slice> format
         && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
         && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
       boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
@@ -372,19 +385,7 @@ public class HttpShardHandler extends ShardHandler {
       String targetHandler = params.get(ShardParams.SHARDS_QT);
       shortCircuit = shortCircuit && targetHandler == null;             // if a different handler is specified, don't short-circuit
 
-      if (shortCircuit) {
-        rb.isDistrib = false;
-        rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
-        if (hostChecker.isWhitelistHostCheckingEnabled() && hostChecker.hasExplicitWhitelist()) {
-          /*
-           * We only need to check the host whitelist if there is an explicit whitelist (other than all the live nodes)
-           * when the "shards" indicate cluster state elements only
-           */
-          hostChecker.checkWhitelist(zkController.getClusterState(), shards, Collections.singletonList(rb.shortCircuitedURL));
-        }
-        return true;
-      }
-      // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
+      return shortCircuit;
     }
     return false;
   }
