@@ -81,7 +81,9 @@ Upgrade Notes
 * SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
   Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
   (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
-  
+
+* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis) 
+
 Improvements
 ----------------------
 
