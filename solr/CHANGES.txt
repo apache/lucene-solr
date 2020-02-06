@@ -84,6 +84,11 @@ Upgrade Notes
 
 * SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis) 
 
+* SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
+  This embedded zookeeper should not be used in production. If you rely
+  upon the previous behavior, then you can change the clientPortAddress
+  in solr/server/solr/zoo.cfg (Robert Muir)
+
 Improvements
 ----------------------
 
