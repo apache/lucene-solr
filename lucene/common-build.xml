@@ -205,6 +205,13 @@
   <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing,-accessibility,-html"/>
   <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
   <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -proc:none"/>
+
+  <condition property="javadoc.nomodule.args" value="--no-module-directories" else="">
+    <or>
+      <equals arg1="${java.specification.version}" arg2="11"/>
+      <equals arg1="${java.specification.version}" arg2="12"/>
+    </or>
+  </condition>
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
@@ -2152,7 +2159,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <sources />
                 
         <classpath refid="javadoc.classpath"/>
-        <arg line="--no-module-directories --release ${javac.release}"/>
+        <arg line="${javadoc.nomodule.args} --release ${javac.release}"/>
         <arg line="${javadoc.doclint.args}"/>
         <!-- force locale to be "en_US", as Javadoc tool ignores locale parameter (in some cases) -->
         <arg line="-J-Duser.language=en -J-Duser.country=US"/>
