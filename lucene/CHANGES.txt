@@ -173,6 +173,13 @@ Bug Fixes
 * LUCENE-9200: Fix TieredMergePolicy to use double (not float) math to make its merging decisions, fixing
   a corner-case bug uncovered by fun randomized tests (Robert Muir, Mike McCandless)
 
+* LUCENE-9099: Unordered and Ordered interval queries now correctly handle
+  repeated subterms - ordered intervals could supply an 'extra' minimized
+  interval, resulting in odd matches when combined with eg CONTAINS queries;
+  and unordered intervals would match duplicate subterms on the same position,
+  so an query for UNORDERED(foo, foo) would match a document containing 'foo'
+  only once.  (Alan Woodward)
+
 Other
 ---------------------
 
