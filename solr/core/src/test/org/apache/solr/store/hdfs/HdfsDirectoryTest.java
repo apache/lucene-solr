@@ -53,6 +53,8 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   private static final int MAX_BUFFER_SIZE = 5000;
   private static final int MAX_NUMBER_OF_READS = 10000;
   private static MiniDFSCluster dfsCluster;
+  private Configuration directoryConf;
+  private Path directoryPath;
   private HdfsDirectory directory;
   private Random random;
 
@@ -74,10 +76,11 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
-    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    conf.set("dfs.permissions.enabled", "false");
+    directoryConf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+    directoryConf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), conf);
+    directoryPath = new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs");
+    directory = new HdfsDirectory(directoryPath, directoryConf);
     
     random = random();
   }
@@ -240,4 +243,24 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
         () -> directory.createOutput("foo", IOContext.DEFAULT));
   }
 
+  public void testCreateTempFiles() throws IOException {
+    String file1;
+    try (Directory dir = new HdfsDirectory(directoryPath, directoryConf);
+        IndexOutput out = dir.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      file1 = out.getName();
+    }
+    assertTrue(file1.startsWith("foo_bar"));
+    assertTrue(file1.endsWith(".tmp"));
+    // Create the directory again to force the counter to be reset
+    String file2;
+    try (Directory dir = new HdfsDirectory(directoryPath, directoryConf);
+        IndexOutput out = dir.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      file2 = out.getName();
+    }
+    assertTrue(file2.startsWith("foo_bar"));
+    assertTrue(file2.endsWith(".tmp"));
+    assertNotEquals(file1, file2);
+  }
 }
