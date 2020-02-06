@@ -768,7 +768,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     private int uncompressedBlockLength = 0;        
     private int numDocsInBlock = 0;
     private final byte[] uncompressedBlock;
-    private BytesRef uncompressedBytesRef;
+    private final BytesRef uncompressedBytesRef;
     
     public BinaryDecoder(LongValues addresses, IndexInput compressedData, int biggestUncompressedBlockSize) {
       super();
@@ -776,6 +776,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       this.compressedData = compressedData;
       // pre-allocate a byte array large enough for the biggest uncompressed block needed.
       this.uncompressedBlock = new byte[biggestUncompressedBlockSize];
+      uncompressedBytesRef = new BytesRef(uncompressedBlock);
       
     }
 
@@ -801,17 +802,20 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         }
         
         if (uncompressedBlockLength == 0) {
-          uncompressedBytesRef = new BytesRef(BytesRef.EMPTY_BYTES);
-        } else {
-          assert uncompressedBlockLength <= uncompressedBlock.length;
-          LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock, 0);
-          uncompressedBytesRef = new BytesRef(uncompressedBlock);
+          uncompressedBytesRef.offset = 0;
+          uncompressedBytesRef.length = 0;
+          return uncompressedBytesRef;
         }
+        
+        assert uncompressedBlockLength <= uncompressedBlock.length;
+        LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock, 0);
       }
       
       // Position the BytesRef to the relevant part of the uncompressed block
       if (docInBlockId > 0) {
         uncompressedBytesRef.offset = uncompressedDocEnds[docInBlockId - 1];        
+      } else {
+        uncompressedBytesRef.offset = 0;
       }
       uncompressedBytesRef.length = uncompressedDocEnds[docInBlockId] - uncompressedBytesRef.offset;
       return uncompressedBytesRef;

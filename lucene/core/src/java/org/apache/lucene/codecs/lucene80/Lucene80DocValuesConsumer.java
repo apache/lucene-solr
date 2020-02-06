@@ -66,7 +66,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   IndexOutput data, meta;
   final int maxDoc;
-  private SegmentWriteState state;
+  private final SegmentWriteState state;
 
   /** expert: Creates a new writer */
   public Lucene80DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -365,8 +365,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
-    int [] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
-    byte [] block = new byte [1024 * 16];
+    int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
+    byte[] block = new byte [1024 * 16];
     int totalChunks = 0;
     long maxPointer = 0;
     long blockAddressesStart = -1; 
@@ -376,11 +376,14 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     
     public CompressedBinaryBlockWriter() throws IOException {
       tempBinaryOffsets = state.directory.createTempOutput(state.segmentInfo.name, "binary_pointers", state.context);
+      boolean success = false;
       try {
         CodecUtil.writeHeader(tempBinaryOffsets, Lucene80DocValuesFormat.META_CODEC + "FilePointers", Lucene80DocValuesFormat.VERSION_CURRENT);
-      } catch (Throwable exception) {
-        IOUtils.closeWhileHandlingException(this); //self-close because constructor caller can't 
-        throw exception;
+        success = true;
+      } finally {
+        if (success == false) {
+          IOUtils.closeWhileHandlingException(this); //self-close because constructor caller can't 
+        }
       }
     }
 
@@ -408,7 +411,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
           data.writeVInt(docLengths[i]);
         }
         maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
-        LZ4.compress(block,  0, uncompressedBlockLength, data, ht);
+        LZ4.compress(block, 0, uncompressedBlockLength, data, ht);
         numDocsInCurrentBlock = 0;
         uncompressedBlockLength = 0;
         maxPointer = data.getFilePointer();
