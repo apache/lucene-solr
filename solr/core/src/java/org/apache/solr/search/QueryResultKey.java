@@ -24,6 +24,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
  *
@@ -45,12 +46,23 @@ public final class QueryResultKey implements Accountable {
 
 
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
+    if (sort == null && query != null) {
+      if (filters == null) {
+        filters = Collections.singletonList(query);
+      } else {
+        List<Query> origFilters = filters;
+        filters = new ArrayList<>(origFilters.size() + 1);
+        filters.add(query);
+        filters.addAll(origFilters);
+      }
+      query = null;
+    }
     this.query = query;
     this.sort = sort;
     this.filters = filters;
     this.nc_flags = nc_flags;
 
-    int h = query.hashCode();
+    int h = query == null ? 0 : query.hashCode();
 
     if (filters != null) {
       for (Query filt : filters)
@@ -94,7 +106,7 @@ public final class QueryResultKey implements Accountable {
     // check for the thing most likely to be different (and the fastest things)
     // first.
     if (this.sfields.length != other.sfields.length) return false;
-    if (!this.query.equals(other.query)) return false;
+    if (this.query == null ? other.query != null : !this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
 
     for (int i=0; i<sfields.length; i++) {

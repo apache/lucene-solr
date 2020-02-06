@@ -17,10 +17,13 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader.CacheKey;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
@@ -29,6 +32,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -36,10 +40,16 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.TermFacetCache.FacetCacheKey;
+import org.apache.solr.request.TermFacetCache.SegmentCacheEntry;
+import static org.apache.solr.request.TermFacetCache.mergeCachedSegmentCounts;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
+import org.apache.solr.search.QueryResultKey;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.LongPriorityQueue;
@@ -58,13 +68,8 @@ import org.apache.solr.util.LongPriorityQueue;
  */
 public class DocValuesFacets {
   private DocValuesFacets() {}
-
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase, FacetDebugInfo fdebug) throws IOException {
-    final Predicate<BytesRef> termFilter = new SubstringBytesRefFilter(contains, ignoreCase);
-    return getCounts(searcher, docs, fieldName, offset, limit, mincount, missing, sort, prefix, termFilter, fdebug);
-  }
   
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, Predicate<BytesRef> termFilter, FacetDebugInfo fdebug) throws IOException {
+  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, Predicate<BytesRef> termFilter, FacetDebugInfo fdebug, long facetCacheThreshold, ResponseBuilder rb) throws IOException {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
@@ -105,6 +110,7 @@ public class DocValuesFacets {
     }
     
     int startTermIndex, endTermIndex;
+    final boolean doMissing;
     if (prefix!=null) {
       startTermIndex = (int) si.lookupTerm(prefixRef.get());
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
@@ -112,57 +118,96 @@ public class DocValuesFacets {
       endTermIndex = (int) si.lookupTerm(prefixRef.get());
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
+      doMissing = false;
     } else {
-      startTermIndex=-1;
+      startTermIndex=0;
       endTermIndex=(int) si.getValueCount();
+      doMissing = true;
     }
 
     final int nTerms=endTermIndex-startTermIndex;
+    final int maxSlots = doMissing ? nTerms + 1 : nTerms;
     int missingCount = -1; 
     final CharsRefBuilder charsRef = new CharsRefBuilder();
-    if (nTerms>0 && docs.size() >= mincount) {
-
-      // count collection array only needs to be as big as the number of terms we are
-      // going to collect counts for.
-      final int[] counts = new int[nTerms];
-      if (fdebug != null) {
-        fdebug.putInfoItem("numBuckets", nTerms);
-      }
-
-      Filter filter = docs.getTopFilter();
-      List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
-      for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
-        LeafReaderContext leaf = leaves.get(subIndex);
-        DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
-        DocIdSetIterator disi = null;
-        if (dis != null) {
-          disi = dis.iterator();
-        }
-        if (disi != null) {
-          if (multiValued) {
-            SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
-            if (sub == null) {
-              sub = DocValues.emptySortedSet();
-            }
-            final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
-            if (singleton != null) {
-              // some codecs may optimize SORTED_SET storage for single-valued fields
-              accumSingle(counts, startTermIndex, singleton, disi, subIndex, ordinalMap);
-            } else {
-              accumMulti(counts, startTermIndex, sub, disi, subIndex, ordinalMap);
-            }
-          } else {
-            SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
-            if (sub == null) {
-              sub = DocValues.emptySorted();
-            }
-            accumSingle(counts, startTermIndex, sub, disi, subIndex, ordinalMap);
+    if (maxSlots>0 && docs.size() >= mincount) {
+      Map<CacheKey, SegmentCacheEntry> segmentCache = null;
+      if (facetCacheThreshold >= 0 && docs.size() > facetCacheThreshold) {
+        SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache = searcher.getCache(TermFacetCache.NAME);
+        if (facetCache != null) {
+          FacetCacheKey facetCacheKey = new FacetCacheKey(new QueryResultKey(rb.getQuery(), rb.getFilters(), null, 0), fieldName);
+          segmentCache = facetCache.get(facetCacheKey);
+          if (segmentCache == null) {
+            segmentCache = new HashMap<>();
+            facetCache.put(facetCacheKey, segmentCache);
           }
         }
       }
 
-      if (startTermIndex == -1) {
-        missingCount = counts[0];
+      // count collection array only needs to be as big as the number of terms we are
+      // going to collect counts for.
+      final int[] counts;
+      if (fdebug != null) {
+        fdebug.putInfoItem("numBuckets", maxSlots);
+      }
+
+      Filter filter = docs.getTopFilter();
+      SegmentCacheEntry topLevelCacheEntry;
+      CacheKey topLevelReaderKey = searcher.getIndexReader().getReaderCacheHelper().getKey();
+      if (segmentCache != null && (topLevelCacheEntry = segmentCache.get(topLevelReaderKey)) != null) {
+        counts = topLevelCacheEntry.topLevelCounts;
+      } else {
+        counts = new int[maxSlots];
+        List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+        for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
+          LeafReaderContext leaf = leaves.get(subIndex);
+          CacheKey segKey = null;
+          if (segmentCache != null) {
+            segKey = leaf.reader().getReaderCacheHelper().getKey();
+            SegmentCacheEntry cacheEntry = segmentCache.get(segKey);
+            if (cacheEntry != null) {
+              mergeCachedSegmentCounts(counts, cacheEntry.counts, ordinalMap.getGlobalOrds(subIndex));
+              continue;
+            }
+          }
+          DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
+          DocIdSetIterator disi = null;
+          if (dis != null) {
+            disi = dis.iterator();
+          }
+          if (disi != null) {
+            byte[] cacheSegCounts;
+            if (multiValued) {
+              SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
+              if (sub == null) {
+                sub = DocValues.emptySortedSet();
+              }
+              final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
+              if (singleton != null) {
+                // some codecs may optimize SORTED_SET storage for single-valued fields
+                cacheSegCounts = accumSingle(counts, doMissing, startTermIndex, singleton, disi, subIndex, ordinalMap, segmentCache != null);
+              } else {
+                cacheSegCounts = accumMulti(counts, doMissing, startTermIndex, sub, disi, subIndex, ordinalMap, segmentCache != null);
+              }
+            } else {
+              SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
+              if (sub == null) {
+                sub = DocValues.emptySorted();
+              }
+              cacheSegCounts = accumSingle(counts, doMissing, startTermIndex, sub, disi, subIndex, ordinalMap, segmentCache != null);
+            }
+            if (cacheSegCounts != null) {
+              segmentCache.put(segKey, new SegmentCacheEntry(cacheSegCounts));
+            }
+          }
+        }
+
+        if (segmentCache != null) {
+          segmentCache.put(topLevelReaderKey, new SegmentCacheEntry(counts));
+        }
+      }
+
+      if (doMissing) {
+        missingCount = counts[counts.length - 1];
       }
 
       // IDEA: we could also maintain a count of "other"... everything that fell outside
@@ -181,7 +226,7 @@ public class DocValuesFacets {
         LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
 
         int min=mincount-1;  // the smallest value in the top 'N' values
-        for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
+        for (int i=0; i<nTerms; i++) {
           int c = counts[i];
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
@@ -222,7 +267,7 @@ public class DocValuesFacets {
       
       } else {
         // add results in index order
-        int i=(startTermIndex==-1)?1:0;
+        int i = 0;
         if (mincount<=0 && termFilter == null) {
           // if mincount<=0 and we're not examining the values for the term filter, then
           // we won't discard any terms and we know exactly where to start.
@@ -250,7 +295,6 @@ public class DocValuesFacets {
         }
       }
     }
-    
     return finalize(res, searcher, schemaField, docs, missingCount, missing);
   }
   
@@ -267,29 +311,34 @@ public class DocValuesFacets {
   }
   
   /** accumulates per-segment single-valued facet counts */
-  static void accumSingle(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
-    if (startTermIndex == -1 && (map == null || si.getValueCount() < disi.cost()*10)) {
+  static byte[] accumSingle(int counts[], boolean doMissing, int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map, boolean cachePerSeg) throws IOException {
+    if (doMissing && (map == null || cachePerSeg || si.getValueCount() < disi.cost()*10)) {
       // no prefixing, not too many unique values wrt matching docs (lucene/facets heuristic): 
       //   collect separately per-segment, then map to global ords
-      accumSingleSeg(counts, si, disi, subIndex, map);
+      return accumSingleSeg(counts, si, disi, subIndex, map, cachePerSeg);
     } else {
       // otherwise: do collect+map on the fly
-      accumSingleGeneric(counts, startTermIndex, si, disi, subIndex, map);
+      accumSingleGeneric(counts, doMissing, startTermIndex, si, disi, subIndex, map);
+      return null;
     }
   }
   
   /** accumulates per-segment single-valued facet counts, mapping to global ordinal space on-the-fly */
-  static void accumSingleGeneric(int counts[], int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  static void accumSingleGeneric(int counts[], boolean doMissing, int startTermIndex, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     final LongValues ordmap = map == null ? null : map.getGlobalOrds(subIndex);
+    final int missingIdx = doMissing ? counts.length - 1 : -1;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term;
       if (si.advanceExact(doc)) {
         term = si.ordValue();
       } else {
-        term = -1;
+        if (doMissing) {
+          counts[missingIdx]++;
+        }
+        continue;
       }
-      if (map != null && term >= 0) {
+      if (map != null) {
         term = (int) ordmap.get(term);
       }
       int arrIdx = term-startTermIndex;
@@ -298,7 +347,7 @@ public class DocValuesFacets {
   }
   
   /** "typical" single-valued faceting: not too many unique values, no prefixing. maps to global ordinals as a separate step */
-  static void accumSingleSeg(int counts[], SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  static byte[] accumSingleSeg(int counts[], SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map, boolean cachePerSeg) throws IOException {
     // First count in seg-ord space:
     final int segCounts[];
     if (map == null) {
@@ -307,36 +356,45 @@ public class DocValuesFacets {
       segCounts = new int[1+si.getValueCount()];
     }
     
+    final int missingIdx = segCounts.length - 1;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        segCounts[1+si.ordValue()]++;
+        segCounts[si.ordValue()]++;
       } else {
-        segCounts[0]++;
+        segCounts[missingIdx]++;
       }
     }
     
     // migrate to global ords (if necessary)
     if (map != null) {
-      migrateGlobal(counts, segCounts, subIndex, map);
+      migrateGlobal(counts, segCounts, map.getGlobalOrds(subIndex));
+    }
+    if (!cachePerSeg) {
+      return null;
+    } else {
+      ByteBuffersDataOutput cachedSegCountsBuilder = new ByteBuffersDataOutput(segCounts.length * 2);
+      return TermFacetCache.encodeCounts(segCounts, cachedSegCountsBuilder);
     }
   }
   
   /** accumulates per-segment multi-valued facet counts */
-  static void accumMulti(int counts[], int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
-    if (startTermIndex == -1 && (map == null || si.getValueCount() < disi.cost()*10)) {
+  static byte[] accumMulti(int counts[], boolean doMissing, int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map, boolean cachePerSeg) throws IOException {
+    if (doMissing && (map == null || cachePerSeg || si.getValueCount() < disi.cost()*10)) {
       // no prefixing, not too many unique values wrt matching docs (lucene/facets heuristic): 
       //   collect separately per-segment, then map to global ords
-      accumMultiSeg(counts, si, disi, subIndex, map);
+      return accumMultiSeg(counts, si, disi, subIndex, map, cachePerSeg);
     } else {
       // otherwise: do collect+map on the fly
-      accumMultiGeneric(counts, startTermIndex, si, disi, subIndex, map);
+      accumMultiGeneric(counts, doMissing, startTermIndex, si, disi, subIndex, map);
+      return null;
     }
   }
     
   /** accumulates per-segment multi-valued facet counts, mapping to global ordinal space on-the-fly */
-  static void accumMultiGeneric(int counts[], int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  static void accumMultiGeneric(int counts[], boolean doMissing, int startTermIndex, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
+    final int missingIdx = doMissing ? counts.length - 1 : -1;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
@@ -349,14 +407,14 @@ public class DocValuesFacets {
           int arrIdx = term-startTermIndex;
           if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
         } while ((term = (int) si.nextOrd()) >= 0);
-      } else if (startTermIndex == -1) {
-        counts[0]++; // missing count
+      } else if (doMissing) {
+        counts[missingIdx]++; // missing count
       }
     }
   }
   
   /** "typical" multi-valued faceting: not too many unique values, no prefixing. maps to global ordinals as a separate step */
-  static void accumMultiSeg(int counts[], SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  static byte[] accumMultiSeg(int counts[], SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map, boolean cachePerSeg) throws IOException {
     // First count in seg-ord space:
     final int segCounts[];
     if (map == null) {
@@ -365,35 +423,42 @@ public class DocValuesFacets {
       segCounts = new int[1+(int)si.getValueCount()];
     }
     
+    final int missingIdx = segCounts.length - 1;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
         int term = (int) si.nextOrd();
         do {
-          segCounts[1+term]++;
+          segCounts[term]++;
         } while ((term = (int)si.nextOrd()) >= 0);
       } else {
-        counts[0]++; // missing
+        segCounts[missingIdx]++; // missing
       }
     }
     
     // migrate to global ords (if necessary)
     if (map != null) {
-      migrateGlobal(counts, segCounts, subIndex, map);
+      migrateGlobal(counts, segCounts, map.getGlobalOrds(subIndex));
+    }
+    if (!cachePerSeg) {
+      return null;
+    } else {
+      ByteBuffersDataOutput cachedSegCountsBuilder = new ByteBuffersDataOutput(segCounts.length * 2);
+      return TermFacetCache.encodeCounts(segCounts, cachedSegCountsBuilder);
     }
   }
   
   /** folds counts in segment ordinal space (segCounts) into global ordinal space (counts) */
-  static void migrateGlobal(int counts[], int segCounts[], int subIndex, OrdinalMap map) {
-    final LongValues ordMap = map.getGlobalOrds(subIndex);
+  public static void migrateGlobal(int counts[], int segCounts[], LongValues ordMap) {
     // missing count
-    counts[0] += segCounts[0];
+    int ord = segCounts.length - 1;
+    counts[counts.length - 1] += segCounts[ord];
     
     // migrate actual ordinals
-    for (int ord = 1; ord < segCounts.length; ord++) {
+    while (ord-- > 0) {
       int count = segCounts[ord];
       if (count != 0) {
-        counts[1+(int) ordMap.get(ord-1)] += count;
+        counts[(int) ordMap.get(ord)] += count;
       }
     }
   }

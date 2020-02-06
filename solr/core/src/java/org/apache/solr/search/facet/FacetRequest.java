@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -394,12 +395,13 @@ public abstract class FacetRequest {
    * Process this facet request against the given domain of docs.
    * Note: this is currently used externally by {@link org.apache.solr.request.SimpleFacets}.
    */
-  public final Object process(SolrQueryRequest req, DocSet domain) throws IOException {
+  public final Object process(SolrQueryRequest req, Query[] baseFilters, DocSet domain) throws IOException {
     //TODO check for FacetDebugInfo?  and if so set on fcontext
     //  rb.req.getContext().get("FacetDebugInfo");
     //TODO should the SolrQueryRequest be held on the FacetRequest?  It was created from parse(req,...) so is known.
     FacetContext fcontext = new FacetContext();
     fcontext.base = domain;
+    fcontext.baseFilters = baseFilters;
     fcontext.req = req;
     fcontext.searcher = req.getSearcher();
     fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
@@ -452,6 +454,7 @@ class FacetContext {
   SolrQueryRequest req;  // TODO: replace with params?
   SolrIndexSearcher searcher;
   Query filter;  // TODO: keep track of as a DocSet or as a Query?
+  Query[] baseFilters;
   DocSet base;
   FacetContext parent;
   int flags;
@@ -469,6 +472,29 @@ class FacetContext {
     return (flags & IS_SHARD) != 0;
   }
 
+  static Query[] append(Query[] base, Query append) {
+    if (append == null) {
+      return base;
+    } else if (base == null) {
+      return new Query[]{append};
+    }
+    Query[] ret = Arrays.copyOf(base, base.length + 1);
+    ret[base.length] = append;
+    return ret;
+  }
+
+  static Query[] append(Query[] base, List<Query> append) {
+    if (append == null || append.isEmpty()) {
+      return base;
+    } else if (base == null) {
+      return append.toArray(new Query[append.size()]);
+    }
+    Query[] ret = new Query[append.size() + base.length];
+    append.toArray(ret);
+    System.arraycopy(base, 0, ret, append.size(), base.length);
+    return ret;
+  }
+
   /**
    * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
    * @param domain The resulting set of documents for this facet.
@@ -477,6 +503,7 @@ class FacetContext {
     FacetContext ctx = new FacetContext();
     ctx.parent = this;
     ctx.base = domain;
+    ctx.baseFilters = append(baseFilters, filter);
     ctx.filter = filter;
 
     // carry over from parent
@@ -990,6 +1017,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
       facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
       facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+      facet.countCacheDf = (int)getLong(m, "countCacheDf", facet.countCacheDf);
 
       // TODO: pull up to higher level?
       facet.refine = FacetField.RefineMethod.fromObj(m.get("refine"));
