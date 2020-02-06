@@ -45,6 +45,7 @@ public class IndexMergeTool {
     "                          to execute only the merges according to the merge policy.\n" +
     " -verbose                 print additional details.\n";
 
+  @SuppressForbidden(reason = "System.err required (verbose mode): command line tool")
   static class Options {
     String mergedIndexPath;
     String indexPaths[];
