@@ -796,8 +796,28 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         assert numDocsInBlock <= Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK;
         uncompressedDocEnds = new int[numDocsInBlock];
         uncompressedBlockLength = 0;        
+
+        int onlyLength = -1;
         for (int i = 0; i < numDocsInBlock; i++) {
-          uncompressedBlockLength += compressedData.readVInt();
+          if (i == 0) {
+            // The first length value is special. It is shifted and has a bit to denote if
+            // all other values are the same length
+            int lengthPlusSameInd = compressedData.readVInt();
+            int sameIndicator = lengthPlusSameInd & 1;
+            int firstValLength = lengthPlusSameInd >>1;
+            if (sameIndicator == 1) {
+              onlyLength = firstValLength;
+            }
+            uncompressedBlockLength += firstValLength;            
+          } else {
+            if (onlyLength == -1) {
+              // Various lengths are stored - read each from disk
+              uncompressedBlockLength += compressedData.readVInt();            
+            } else {
+              // Only one length 
+              uncompressedBlockLength += onlyLength;
+            }
+          }
           uncompressedDocEnds[i] = uncompressedBlockLength;
         }
         
