@@ -22,6 +22,7 @@ allprojects {
     tasks.matching { it.name == "javadoc" }.all {
       StandardJavadocDocletOptions opts = (options as StandardJavadocDocletOptions)
       opts.locale("en_US")
+      opts.setJFlags(["-Duser.language=en", "-Duser.country=US"])
       opts.charSet = "UTF-8"
       opts.encoding = "UTF-8"
       opts.docEncoding = "UTF-8"
