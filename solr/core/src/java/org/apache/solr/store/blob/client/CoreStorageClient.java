@@ -136,6 +136,11 @@ public interface CoreStorageClient {
   public void shutdown();
   
   /**
+   * Lists all file names with the given prefix
+   */
+  public List<String> listCoreBlobFiles(String prefix) throws BlobException;
+  
+  /**
    * Lists the blob file names of all of files listed under a given core name's blob store
    * hierarchy that are older than the given timestamp value in milliseconds. Important to 
    * note that that the wall clock of your caller will vary with that of the blob store service

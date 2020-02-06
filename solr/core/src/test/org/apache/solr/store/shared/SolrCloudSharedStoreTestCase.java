@@ -28,11 +28,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.client.LocalStorageClient;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.process.CorePullerFeeder;
 import org.apache.solr.store.blob.process.CoreSyncStatus;
-import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 
 /**
@@ -99,6 +100,14 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
   protected static void setupTestSharedConcurrencyControllerForNode(SharedCoreConcurrencyController concurrencyController, JettySolrRunner solrRunner) {
     SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
     manager.initConcurrencyController(concurrencyController);
+  }
+  
+  /**
+   * Configures the Solr process with the given {@link BlobDeleteManager}
+   */
+  protected static void setupBlobDeleteManagerForNode(BlobDeleteManager deleteManager, JettySolrRunner solrRunner) {
+    SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
+    manager.initBlobDeleteManager(deleteManager);
   }
 
   /**
