@@ -21,9 +21,8 @@ import java.util.Map;
 import org.apache.lucene.util.ArrayUtil;
 
 // Just holds a set of int[] states, plus a corresponding
-// int[] count per state.  Used by
-// BasicOperations.determinize
-final class SortedIntSet {
+// int[] count per state.  Used by Operations.determinize
+final class SortedIntSet extends IntSet {
   int[] values;
   int[] counts;
   int upto;
@@ -37,9 +36,7 @@ final class SortedIntSet {
 
   private boolean useTreeMap;
 
-  int state;
-
-  public SortedIntSet(int capacity) {
+  SortedIntSet(int capacity) {
     values = new int[capacity];
     counts = new int[capacity];
   }
@@ -47,13 +44,7 @@ final class SortedIntSet {
   // Adds this state to the set
   public void incr(int num) {
     if (useTreeMap) {
-      final Integer key = num;
-      Integer val = map.get(key);
-      if (val == null) {
-        map.put(key, 1);
-      } else {
-        map.put(key, 1+val);
-      }
+      map.merge(num, 1, Integer::sum);
       return;
     }
 
@@ -130,7 +121,7 @@ final class SortedIntSet {
     assert false;
   }
 
-  public void computeHash() {
+  void computeHash() {
     if (useTreeMap) {
       if (map.size() > values.length) {
         final int size = ArrayUtil.oversize(map.size(), Integer.BYTES);
@@ -151,39 +142,32 @@ final class SortedIntSet {
     }
   }
 
-  public FrozenIntSet freeze(int state) {
-    final int[] c = new int[upto];
-    System.arraycopy(values, 0, c, 0, upto);
+  /**
+   * Create a snapshot of this int set associated with a given state. The snapshot will not retain any frequency
+   * information about the elements of this set, only existence.
+   * <p>
+   * It is the caller's responsibility to ensure that the hashCode and data are up to date via the {@link #computeHash()} method before calling this method.
+   * @param state the state to associate with the frozen set.
+   * @return A new FrozenIntSet with the same values as this set.
+   */
+  FrozenIntSet freeze(int state) {
+    final int[] c = ArrayUtil.copyOfSubArray(values, 0, upto);
     return new FrozenIntSet(c, hashCode, state);
+  }
+
+  @Override
+  int[] getArray() {
+      return values;
+  }
+
+  @Override
+  int size() {
+    return upto;
   }
 
   @Override
   public int hashCode() {
     return hashCode;
-  }
-
-  @Override
-  public boolean equals(Object _other) {
-    if (_other == null) {
-      return false;
-    }
-    if (!(_other instanceof FrozenIntSet)) {
-      return false;
-    }
-    FrozenIntSet other = (FrozenIntSet) _other;
-    if (hashCode != other.hashCode) {
-      return false;
-    }
-    if (other.values.length != upto) {
-      return false;
-    }
-    for(int i=0;i<upto;i++) {
-      if (other.values[i] != values[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   @Override
@@ -198,79 +182,6 @@ final class SortedIntSet {
     sb.append(']');
     return sb.toString();
   }
-  
-  public final static class FrozenIntSet {
-    final int[] values;
-    final int hashCode;
-    final int state;
 
-    public FrozenIntSet(int[] values, int hashCode, int state) {
-      this.values = values;
-      this.hashCode = hashCode;
-      this.state = state;
-    }
-
-    public FrozenIntSet(int num, int state) {
-      this.values = new int[] {num};
-      this.state = state;
-      this.hashCode = 683+num;
-    }
-
-    @Override
-    public int hashCode() {
-      return hashCode;
-    }
-
-    @Override
-    public boolean equals(Object _other) {
-      if (_other == null) {
-        return false;
-      }
-      if (_other instanceof FrozenIntSet) {
-        FrozenIntSet other = (FrozenIntSet) _other;
-        if (hashCode != other.hashCode) {
-          return false;
-        }
-        if (other.values.length != values.length) {
-          return false;
-        }
-        for(int i=0;i<values.length;i++) {
-          if (other.values[i] != values[i]) {
-            return false;
-          }
-        }
-        return true;
-      } else if (_other instanceof SortedIntSet) {
-        SortedIntSet other = (SortedIntSet) _other;
-        if (hashCode != other.hashCode) {
-          return false;
-        }
-        if (other.values.length != values.length) {
-          return false;
-        }
-        for(int i=0;i<values.length;i++) {
-          if (other.values[i] != values[i]) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      return false;
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder().append('[');
-      for(int i=0;i<values.length;i++) {
-        if (i > 0) {
-          sb.append(' ');
-        }
-        sb.append(values[i]);
-      }
-      sb.append(']');
-      return sb.toString();
-    }
-  }
 }
   

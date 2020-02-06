@@ -691,13 +691,14 @@ final public class Operations {
     //System.out.println("DET:");
     //a.writeDot("/l/la/lucene/core/detin.dot");
 
-    SortedIntSet.FrozenIntSet initialset = new SortedIntSet.FrozenIntSet(0, 0);
+    // Same initial values and state will always have the same hashCode
+    FrozenIntSet initialset = new FrozenIntSet(new int[] { 0 }, 683, 0);
 
     // Create state 0:
     b.createState();
 
-    ArrayDeque<SortedIntSet.FrozenIntSet> worklist = new ArrayDeque<>();
-    Map<SortedIntSet.FrozenIntSet,Integer> newstate = new HashMap<>();
+    ArrayDeque<FrozenIntSet> worklist = new ArrayDeque<>();
+    Map<IntSet,Integer> newstate = new HashMap<>();
 
     worklist.add(initialset);
 
@@ -723,7 +724,7 @@ final public class Operations {
       // a high (unecessary) price for that!  really we just need a low-overhead Map<int,int>
       // that implements equals/hash based only on the keys (ignores the values).  fixing this
       // might be a bigspeedup for determinizing complex automata
-      SortedIntSet.FrozenIntSet s = worklist.removeFirst();
+      FrozenIntSet s = worklist.removeFirst();
 
       // LUCENE-9981: we more carefully aggregate the net work this automaton is costing us, instead
       // of (overly simplistically) counting number
@@ -768,7 +769,7 @@ final public class Operations {
           Integer q = newstate.get(statesSet);
           if (q == null) {
             q = b.createState();
-            final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
+            final FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
             b.setAccept(q, accCount > 0);
@@ -1135,7 +1136,7 @@ final public class Operations {
     }
     return builder.toString();
   }
-  
+
   /**
    * Returns the longest BytesRef that is a prefix of all accepted strings and
    * visits each state at most once.
