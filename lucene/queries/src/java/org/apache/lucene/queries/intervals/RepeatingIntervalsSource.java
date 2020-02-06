@@ -53,7 +53,6 @@ class RepeatingIntervalsSource extends IntervalsSource {
 
   final IntervalsSource in;
   final int childCount;
-
   String name;
 
   private RepeatingIntervalsSource(IntervalsSource in, int childCount) {

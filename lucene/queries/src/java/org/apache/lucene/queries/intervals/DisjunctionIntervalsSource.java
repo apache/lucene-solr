@@ -205,12 +205,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     int currentOrd() {
-      if (current == EMPTY) {
-        return -1;
-      }
-      if (current == EXHAUSTED) {
-        return NO_MORE_INTERVALS;
-      }
+      assert current != EMPTY && current != EXHAUSTED;
       for (int i = 0; i < iterators.size(); i++) {
         if (iterators.get(i) == current) {
           return i;
@@ -395,28 +390,24 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public int startOffset() throws IOException {
       int ord = it.currentOrd();
-      assert ord != -1 && ord != IntervalIterator.NO_MORE_INTERVALS;
       return subs.get(ord).startOffset();
     }
 
     @Override
     public int endOffset() throws IOException {
       int ord = it.currentOrd();
-      assert ord != -1 && ord != IntervalIterator.NO_MORE_INTERVALS;
       return subs.get(ord).endOffset();
     }
 
     @Override
     public MatchesIterator getSubMatches() throws IOException {
       int ord = it.currentOrd();
-      assert ord != -1 && ord != IntervalIterator.NO_MORE_INTERVALS;
       return subs.get(ord).getSubMatches();
     }
 
     @Override
     public Query getQuery() {
       int ord = it.currentOrd();
-      assert ord != -1 && ord != IntervalIterator.NO_MORE_INTERVALS;
       return subs.get(ord).getQuery();
     }
 
