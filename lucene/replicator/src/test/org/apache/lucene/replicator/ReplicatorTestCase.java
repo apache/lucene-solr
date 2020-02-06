@@ -61,7 +61,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
     // talking to that server, but for the purposes of testing that should 
     // be good enough
     final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
-    final SslContextFactory sslcontext = new SslContextFactory(false);
+    final SslContextFactory.Server sslcontext = new SslContextFactory.Server();
     
     if (useSsl) {
       if (null != System.getProperty("javax.net.ssl.keyStore")) {

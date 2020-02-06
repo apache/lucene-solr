@@ -35,7 +35,8 @@ public class TestPagedBytes extends LuceneTestCase {
   // PagedBytes.Reader: 
   public void testDataInputOutput() throws Exception {
     Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+    int numIters = atLeast(1);
+    for(int iter=0;iter<numIters;iter++) {
       BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
       if (dir instanceof MockDirectoryWrapper) {
         ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
@@ -44,16 +45,16 @@ public class TestPagedBytes extends LuceneTestCase {
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
       final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
-      final int numBytes = TestUtil.nextInt(random(), 2, 10000000);
+      final int numBytes = TestUtil.nextInt(random, 2, 10000000);
 
       final byte[] answer = new byte[numBytes];
-      random().nextBytes(answer);
+      random.nextBytes(answer);
       int written = 0;
       while(written < numBytes) {
-        if (random().nextInt(10) == 7) {
+        if (random.nextInt(100) == 7) {
           out.writeByte(answer[written++]);
         } else {
-          int chunk = Math.min(random().nextInt(1000), numBytes - written);
+          int chunk = Math.min(random.nextInt(1000), numBytes - written);
           out.writeBytes(answer, written, chunk);
           written += chunk;
         }
@@ -69,10 +70,10 @@ public class TestPagedBytes extends LuceneTestCase {
       final byte[] verify = new byte[numBytes];
       int read = 0;
       while(read < numBytes) {
-        if (random().nextInt(10) == 7) {
+        if (random.nextInt(100) == 7) {
           verify[read++] = in.readByte();
         } else {
-          int chunk = Math.min(random().nextInt(1000), numBytes - read);
+          int chunk = Math.min(random.nextInt(1000), numBytes - read);
           in.readBytes(verify, read, chunk);
           read += chunk;
         }
@@ -98,7 +99,8 @@ public class TestPagedBytes extends LuceneTestCase {
   // PagedBytes.getDataInput(): 
   public void testDataInputOutput2() throws Exception {
     Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+    int numIters = atLeast(1);
+    for(int iter=0;iter<numIters;iter++) {
       final int blockBits = TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);

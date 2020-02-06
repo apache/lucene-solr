@@ -58,10 +58,27 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8596: Kuromoji user dictionary now accepts entries containing hash mark (#) that were
+  previously treated as beginning a line-ending comment (Satoshi Kato and Masaru Hasegawa via
+  Michael Sokolov)
+
+* LUCENE-9109: Use StackWalker to implement TestSecurityManager's detection
+  of JVM exit (Uwe Schindler)
+
+* LUCENE-9110: Refactor stack analysis in tests to use generalized LuceneTestCase
+  methods that use StackWalker (Uwe Schindler)
+
+* LUCENE-9206: IndexMergeTool gets additional options to control the merging.
+  This tool no longer forceMerge(1)s to a single segment by default. If you
+  rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
+
+* LUCENE-9117: RamUsageEstimator hangs with AOT compilation. Removed any attempt to 
+  estimate Long.valueOf cache size. (Cleber Muramoto, Dawid Weiss)
 
 Other
 
@@ -69,31 +86,104 @@ Other
 
 * LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
 
+* LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
+  queryparser code (Alan Woodward, Erick Erickson)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9093: Not an API change but a change in behavior of the UnifiedHighlighter's LengthGoalBreakIterator that will
+  yield Passages sized a little different due to the fact that the sizing pivot is now the center of the first match and
+  not its left edge.
+
+* LUCENE-9116: PostingsWriterBase and PostingsReaderBase no longer support
+  setting a field's metadata via a `long[]`. (Adrien Grand)
+
+* LUCENE-9116: The FSTOrd postings format has been removed.
+  (Adrien Grand)
+
+* LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
+
+* LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
 
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
+
+* LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
+
+* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
+  TestSecurityManager (Uwe Schindler)
+
+* LUCENE-9110: Backport refactored stack analysis in tests to use generalized
+  LuceneTestCase methods (Uwe Schindler)
+
+* LUCENE-9105: UniformSplit postings format detects corrupted index and better handles IO exceptions. (Bruno Roustant)
+
+* LUCENE-9106: UniformSplit postings format allows extension of block/line serializers. (Bruno Roustant)
+
+* LUCENE-9093: UnifiedHighlighter's LengthGoalBreakIterator has a new fragmentAlignment option to better center the
+  first match in the passage. Also the sizing point now pivots at the center of the first match term and not its left
+  edge. This yields Passages that won't be identical to the previous behavior. (Nándor Mátravölgyi, David Smiley)
+
+* LUCENE-9153: Allow WhitespaceAnalyzer to set a maxTokenLength other than the default of 255
+  (Alan Woodward)
+
+* LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
+
+* LUCENE-9152: Improve line intersections with polygons when they are touching from the outside. (Ignacio Vera)
+
+* LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
+
+* LUCENE-9123: Add new JapaneseTokenizer constructors with discardCompoundToken option that controls whether
+  the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
+
+* LUCENE-9125: Optimize Automaton.step() with binary search and introduce Automaton.next(). (Bruno Roustant)
+
+* LUCENE-9147: The index of stored fields and term vectors in now off-heap.
+  (Adrien Grand)
 
 Bug Fixes
 ---------------------
 
-* LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
+* LUCENE-9084: Fix potential deadlock due to circular synchronization in AnalyzingInfixSuggester (Paul Ward)
+
+* LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
+  (Adrien Grand)
+
+* LUCENE-9144: Fix error message on OneDimensionBKDWriter when too many points are added to the writer.
   (Ignacio Vera)
 
+* LUCENE-9135: Make UniformSplit FieldMetadata counters long. (Bruno Roustant)
+
+* LUCENE-9200: Fix TieredMergePolicy to use double (not float) math to make its merging decisions, fixing
+  a corner-case bug uncovered by fun randomized tests (Robert Muir, Mike McCandless)
+
 Other
+---------------------
+
+* LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
+  (kkewwei via Adrien Grand)
+
+* LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
+
+======================= Lucene 8.4.1 =======================
+
+Bug Fixes
 ---------------------
 (No changes)
 
@@ -172,6 +262,11 @@ Bug Fixes
 
 * LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
   (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
+
+* LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
+  (Ignacio Vera)
+
+* LUCENE-9103: Disjunctions can miss some hits in some rare conditions. (Adrien Grand)
 
 Other
 

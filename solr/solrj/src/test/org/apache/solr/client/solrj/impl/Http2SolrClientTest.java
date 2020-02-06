@@ -45,6 +45,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -178,6 +179,17 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       fail("No exception thrown.");
     } catch (SolrServerException e) {
       assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
+    }
+
+  }
+
+  @Test
+  public void test0IdleTimeout() throws Exception {
+    SolrQuery q = new SolrQuery("*:*");
+    try(Http2SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)) {
+      try {
+        client.query(q, SolrRequest.METHOD.GET);
+      } catch (ParseException ignored) {}
     }
 
   }
@@ -586,6 +598,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       req.setQueryParams(setOf("requestOnly", "both", "neither"));
       verifyServletState(client, req);
     }
+  }
+
+  @Test
+  public void testGetDefaultSslContextFactory() {
+    assertNull(Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
+    SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
+    assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
+    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
   }
 
   /**

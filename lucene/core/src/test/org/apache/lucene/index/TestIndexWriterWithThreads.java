@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 /**
  * MultiThreaded IndexWriter tests
  */
-@Slow
+@Slow @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below
@@ -141,7 +141,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void testImmediateDiskFullWithThreads() throws Exception {
 
     int NUM_THREADS = 3;
-    final int numIterations = TEST_NIGHTLY ? 10 : 3;
+    final int numIterations = TEST_NIGHTLY ? 10 : 1;
     for (int iter=0;iter<numIterations;iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -407,26 +407,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.setAssertNoUnrefencedFilesOnClose(false);
 
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        boolean sawAbortOrFlushDoc = false;
-        boolean sawClose = false;
-        boolean sawMerge = false;
-        for (int i = 0; i < trace.length; i++) {
-          if (sawAbortOrFlushDoc && sawMerge && sawClose) {
-            break;
-          }
-          if ("abort".equals(trace[i].getMethodName()) ||
-              "finishDocument".equals(trace[i].getMethodName())) {
-            sawAbortOrFlushDoc = true;
-          }
-          if ("merge".equals(trace[i].getMethodName())) {
-            sawMerge = true;
-          }
-          if ("close".equals(trace[i].getMethodName())) {
-            sawClose = true;
-          }
-        }
-        if (sawAbortOrFlushDoc && !sawClose && !sawMerge) {
+        if (callStackContainsAnyOf("abort", "finishDocument") && false == callStackContainsAnyOf("merge", "close")) {
           if (onlyOnce) {
             doFail = false;
           }
@@ -473,15 +454,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
-            if (onlyOnce)
-              doFail = false;
-            //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
-            //new Throwable().printStackTrace(System.out);
-            throw new IOException("now failing on purpose");
-          }
+        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+          if (onlyOnce)
+            doFail = false;
+          //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
+          //new Throwable().printStackTrace(System.out);
+          throw new IOException("now failing on purpose");
         }
       }
     }
@@ -670,7 +648,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     try (Directory dir = newDirectory();
          RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
              newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001), useSoftDeletes)) {
-      Thread[] threads = new Thread[3 + random().nextInt(3)];
+      int numThreads = TEST_NIGHTLY ? 3 + random().nextInt(3) : 3;
+      Thread[] threads = new Thread[numThreads];
       AtomicInteger done = new AtomicInteger(0);
       CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
       Document doc = new Document();

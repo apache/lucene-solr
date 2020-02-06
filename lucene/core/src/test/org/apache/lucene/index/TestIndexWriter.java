@@ -1408,8 +1408,8 @@ public class TestIndexWriter extends LuceneTestCase {
           file.startsWith(IndexFileNames.SEGMENTS) || 
           IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         if (file.lastIndexOf('.') < 0
-            // don't count stored fields and term vectors in
-            || !Arrays.asList("fdx", "fdt", "tvx", "tvd", "tvf").contains(file.substring(file.lastIndexOf('.') + 1))) {
+            // don't count stored fields and term vectors in, or any temporary files they might
+            || !Arrays.asList("fdt", "tvd", "tmp").contains(file.substring(file.lastIndexOf('.') + 1))) {
           ++computedExtraFileCount;
         }
       }
@@ -2686,6 +2686,7 @@ public class TestIndexWriter extends LuceneTestCase {
     List<Closeable> toClose = new ArrayList<>();
     try (FSDirectory dir = new SimpleFSDirectory(root);
          Closeable closeable = () -> IOUtils.close(toClose)) {
+      assert closeable != null;
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
           .setUseCompoundFile(false)
           .setMergePolicy(NoMergePolicy.INSTANCE) // avoid merging away the randomFile
@@ -3048,13 +3049,8 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName())
-              && "org.apache.lucene.index.DocumentsWriterPerThread".equals(trace[i].getClassName())) {
-            flushingThreads.add(Thread.currentThread().getName());
-            break;
-          }
+        if (callStackContains(DocumentsWriterPerThread.class, "flush")) {
+          flushingThreads.add(Thread.currentThread().getName());
         }
       }
     });
@@ -3384,15 +3380,12 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = new FilterDirectory(newDirectory()) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
-            try {
-              inFlush.countDown();
-              latch.await();
-            } catch (InterruptedException e) {
-              throw new AssertionError(e);
-            }
+        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+          try {
+            inFlush.countDown();
+            latch.await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
           }
         }
         return super.createOutput(name, context);
@@ -3683,10 +3676,14 @@ public class TestIndexWriter extends LuceneTestCase {
       for (int newMajor = Version.LATEST.major - 1; newMajor <= Version.LATEST.major; newMajor++) {
         for (OpenMode openMode : OpenMode.values()) {
           try (Directory dir = newDirectory()) {
-            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setIndexCreatedVersionMajor(previousMajor))) {}
+            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setIndexCreatedVersionMajor(previousMajor))) {
+              assert w != null;
+            }
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assertEquals(previousMajor, infos.getIndexCreatedVersionMajor());
-            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setOpenMode(openMode).setIndexCreatedVersionMajor(newMajor))) {}
+            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setOpenMode(openMode).setIndexCreatedVersionMajor(newMajor))) {
+              assert w != null;
+            }
             infos = SegmentInfos.readLatestCommit(dir);
             if (openMode == OpenMode.CREATE) {
               assertEquals(newMajor, infos.getIndexCreatedVersionMajor());

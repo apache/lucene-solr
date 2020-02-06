@@ -123,8 +123,29 @@
 # framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
 #SOLR_LOG_PRESTART_ROTATION=false
 
+# Enables jetty request log for all requests
+#SOLR_REQUESTLOG_ENABLED=false
+
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
+
+# Restrict access to solr by IP address.
+# Specify a comma-separated list of addresses or networks, for example:
+#   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
+#SOLR_IP_WHITELIST=
+
+# Block access to solr from specific IP addresses.
+# Specify a comma-separated list of addresses or networks, for example:
+#   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
+#SOLR_IP_BLACKLIST=
+
+# Sets the network interface the Solr binds to. To prevent administrators from
+# accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
+# Administrators should think carefully about their deployment environment and
+# set this value as narrowly as required before going to production. In
+# environments where security is not a concern, 0.0.0.0 can be used to allow
+# Solr to accept connections on all network interfaces.
+#SOLR_JETTY_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
@@ -145,8 +166,8 @@
 # this to false can be useful to disable these checks when re-using a certificate on many hosts
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
-#SOLR_SSL_KEY_STORE_TYPE=JKS
-#SOLR_SSL_TRUST_STORE_TYPE=JKS
+#SOLR_SSL_KEY_STORE_TYPE=PKCS12
+#SOLR_SSL_TRUST_STORE_TYPE=PKCS12
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
@@ -203,3 +224,9 @@
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 # label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
+
+# Runs solr in java security manager sandbox. This can protect against some attacks.
+# Runtime properties are passed to the security policy file (server/etc/security.policy)
+# You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
+# This is experimental! It may not work at all with Hadoop/HDFS features.
+#SOLR_SECURITY_MANAGER_ENABLED=true

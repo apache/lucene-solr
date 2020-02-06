@@ -48,6 +48,7 @@ import java.util.UUID;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
+import org.junit.AssumptionViolatedException;
 
 /** Simple test methods for IOUtils */
 public class TestIOUtils extends LuceneTestCase {
@@ -212,6 +213,9 @@ public class TestIOUtils extends LuceneTestCase {
     
     public MockLinuxFileSystemProvider(FileSystem delegateInstance, final Map<String,FileStore> filesToStore, Path root) {
       super("mocklinux://", delegateInstance);
+      if (mockedPath(root)) {
+        throw new AssumptionViolatedException("can't mock /sys and /dev inside of /sys or /dev!");
+      }
       final Collection<FileStore> allStores = new HashSet<>(filesToStore.values());
       this.fileSystem = new FilterFileSystem(this, delegateInstance) {
         @Override
@@ -242,8 +246,12 @@ public class TestIOUtils extends LuceneTestCase {
       return ret;
     }
 
+    static boolean mockedPath(Path path) {
+      return path.toAbsolutePath().startsWith("/sys") || path.toAbsolutePath().startsWith("/dev");
+    }
+
     Path maybeChroot(Path path) {
-      if (path.toAbsolutePath().startsWith("/sys") || path.toAbsolutePath().startsWith("/dev")) {
+      if (mockedPath(path)) {
         // map to our chrooted location;
         return path.getRoot().resolve(root).resolve(path.toString().substring(1));
       } else {

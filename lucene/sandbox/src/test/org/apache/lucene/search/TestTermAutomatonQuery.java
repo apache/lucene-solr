@@ -56,6 +56,7 @@ import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestTermAutomatonQuery extends LuceneTestCase {
   // "comes * sun"
   public void testBasic1() throws Exception {
@@ -406,10 +407,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numDocs = atLeast(100);
+    int numDocs = atLeast(50);
     Directory dir = newDirectory();
 
-    // Adds occassional random synonyms:
+    // Adds occasional random synonyms:
     Analyzer analyzer = new Analyzer() {
         @Override
         public TokenStreamComponents createComponents(String fieldName) {

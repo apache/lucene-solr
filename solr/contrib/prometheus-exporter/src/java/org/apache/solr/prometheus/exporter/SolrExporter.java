@@ -194,7 +194,7 @@ public class SolrExporter {
       }
 
       if (scrapeConfiguration == null) {
-        log.error("Must provide either %s or %s", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
+        log.error("Must provide either {} or {}", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
       }
 
       SolrExporter solrExporter = new SolrExporter(
@@ -219,7 +219,7 @@ public class SolrExporter {
       XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString());
       return MetricsConfiguration.from(config);
     } catch (Exception e) {
-      log.error("Could not load scrape configuration from %s", configPath.toAbsolutePath());
+      log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());
       throw new RuntimeException(e);
     }
   }

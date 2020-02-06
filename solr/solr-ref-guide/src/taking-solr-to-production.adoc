@@ -188,7 +188,7 @@ SOLR_JAVA_MEM="-Xms10g -Xmx10g"
 
 Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about garbage collection settings refer to following articles:
-1. https://wiki.apache.org/solr/ShawnHeisey
+1. https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
 2. https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
 You can also refer to <<jvm-settings.adoc#jvm-settings,JVM Settings>> for tuning your memory and garbage collection settings.
 
@@ -301,6 +301,10 @@ Check these limits every time you upgrade your kernel or operating system. These
 ====
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
 ====
+
+== Security Considerations
+
+include::securing-solr.adoc[tag=security-network-binding-1]
 
 == Running Multiple Solr Nodes per Host
 

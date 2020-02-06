@@ -45,6 +45,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -130,7 +131,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   String defaultField;
   int phraseSlop = 0;     // default slop for phrase queries
-  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
   boolean autoGeneratePhraseQueries = false;
@@ -997,8 +998,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     SchemaField sf = schema.getFieldOrNull((field));
     if (sf == null || ! (fieldType instanceof TextField)) return part;
-    String out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer()).utf8ToString();
-    return out;
+    BytesRef out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer());
+    return out == null ? part : out.utf8ToString();
   }
 
 
@@ -1183,14 +1184,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+  // called from parser
+  protected Query getExistenceQuery(String field) {
+    checkNullField(field);
+    SchemaField sf = schema.getField(field);
+    return sf.getType().getExistenceQuery(parser, sf);
+  }
 
   // called from parser
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
-    // *:* -> MatchAllDocsQuery
+
     if ("*".equals(termStr)) {
       if ("*".equals(field) || getExplicitField() == null) {
+        // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
+      } else {
+        // 'foo:*' -> existenceQuery
+        return getExistenceQuery(field);
       }
     }
 

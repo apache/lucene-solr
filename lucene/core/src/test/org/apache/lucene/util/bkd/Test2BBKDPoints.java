@@ -25,7 +25,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TimeUnits;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
@@ -33,7 +32,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 // 
 //   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 4g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BBKDPoints.test2D -verbose
 
-@TimeoutSuite(millis = 365 * 24 * TimeUnits.HOUR) // hopefully ~1 year is long enough ;)
+@TimeoutSuite(millis = Integer.MAX_VALUE) // hopefully ~24 days is long enough ;)
 @Monster("takes at least 4 hours and consumes many GB of temp disk space")
 public class Test2BBKDPoints extends LuceneTestCase {
   public void test1D() throws Exception {

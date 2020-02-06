@@ -77,14 +77,22 @@ Upgrade Notes
 
 * SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
-  
+
+* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
+  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
+  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
+
+* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis) 
+
+* SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
+  This embedded zookeeper should not be used in production. If you rely
+  upon the previous behavior, then you can change the clientPortAddress
+  in solr/server/solr/zoo.cfg (Robert Muir)
+
 Improvements
 ----------------------
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
-
-* SOLR-13749: New cross collection join filter (XCJF) (Kevin Fox, Kevin Watters, via Gus Heck)
-
 
 Other Changes
 ----------------------
@@ -95,6 +103,8 @@ Other Changes
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
+
+* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
 ==================  8.5.0 ==================
 
@@ -116,22 +126,156 @@ Upgrade Notes
 * SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
 
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+
+* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
+  issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
+  operations, to communicate operation results between the Overseer and the coordinator node, and by the
+  REQUESTSTATUS API for displaying information about async Collection operations.
+  This change won’t require you to change any client-side code you should see no differences on the client side,
+  however, it does require some care when upgrading an existing SolrCloud cluster:
+  - If you are upgrading Solr with an atomic restart strategy:
+    - If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+    - If you do use Collection API operations:
+      1. pause Collection API operations
+      2. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      3. upgrade and restart the nodes
+  - If you are upgrading Solr with a rolling restart strategy:
+    - If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+    any issues.
+    - If you do use Collection API operations, but you can pause their use during the restart the easiest
+    way is to:
+      1. pause Collection API operations
+      2. upgrade and restart all nodes
+      3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      4. Resume all normal operations
+    - If you use Collection API operations and can’t pause them during the upgrade:
+      1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+      Overseer node is upgraded last
+      2. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+      system property
+  If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+  property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
+
+ * SOLR-13808: add cache=false into underneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
+   filterCache. (Mikhail Khludnev)
+
 New Features
 ---------------------
-(No changes)
+ * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named 
+   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
+   (Anatolii Siuniaev via Mikhail Khludnev)
 
+ * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+
+ * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+
+ * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
+ * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
+
+ * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
+
+ * SOLR-14241: New delete() Stream Decorator (hossman)
+ 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
+  Internet Explorer 11 (jafurrer).
+
+* SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
+
+* SOLR-14095: Replace Java serialization with Javabin in the Overseer queues (Tomás Fernández Löbbe)
+
+* SOLR-14125: Make <expressible> plugins work with packages (noble)
+
+* SOLR-14138: Jetty's NCSA-formatted RequestLog can be enabled via environment variable,
+  SOLR_REQUESTLOG_ENABLED=true. This will respect SOLR_LOGS_DIR if it is set. (rmuir)
+
+* SOLR-14136: Jetty's InetAccessHandler can be enabled via environment variables,
+  SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST. These variables can restrict access to
+  Solr based on IP addresses/networks. (rmuir)
+
+* SOLR-14131: Add maxQueryLength option to DirectSolrSpellchecker. (Andy Webb via Bruno Roustant)
+
+* SOLR-13984: Java's SecurityManager sandbox can be enabled via environment variable,
+  SOLR_SECURITY_MANAGER_ENABLED=true. (rmuir)
+
+* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
+
+* SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
+
+* LUCENE-9093: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio and
+  hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
+  Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
+
+* SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
+
+* SOLR-14132: Upgrade Angular JS 1.3.8 to 1.7.9 (Kevin Risden)
+
+* SOLR-14221: Upgrade restlet to version 2.4.0 (janhoy)
+
+* SOLR-10567: Add Support for DateRangeField in JSON Facet range (Stephen Weiss, Munendra S N)
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
+  queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
+  docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
+
+* SOLR-14040: The shareSchema solr.xml option now supports SolrCloud.  shareSchema is useful when you have many
+  cores per node and large schemas.  (David Smiley)
 
 Bug Fixes
 ---------------------
 
 * SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
+
+* SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
+
+* SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
+
+* SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
+
+* SOLR-14198: Nullpointer exception in AuditEvent when initialized from AuthorizationContext (janhoy)
+
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
+
+* SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
+
+* SOLR-12859: Fixed DocExpirationUpdateProcessorFactory to work with BasicAuth and other auth plugins
+  that delegate to PKI for server initiated node-to-node communication. (hossman)
+
+* SOLR-11746: Adding existence queries for PointFields. DocValuesFieldExistsQuery and NormsFieldExistsQuery are used for existence queries when possible. (Houston Putman, hossman, Kai Chan)
+
+* SOLR-14207: Fix logging statements with less or more arguments than placeholders. (shalin)
+
+* SOLR-14172: Collection metadata remains in zookeeper if too many shards are requested. This also fixes a bug where
+  an inability to assign a node based on existing autoscaling policy resulted in a server error instead of a bad request.
+  (Andras Salamon, Kevin Risden, shalin)
+
+* SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
+
+* SOLR-14205: Do not fail when given timeout to connectionImpl.isValid() = 0 (Nick Vercammen via Kevin Risden)
+
+* SOLR-11554: Support handling OPTIONS request for Hadoop authentication filter (Peter Cseh via Kevin Risden)
+
+* SOLR-14189: Switch from String.trim() to StringUtils.isBlank() in query parsers (Andy Webb via Uwe Schindler)
+
+* SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
+  and race conditions under contention. (shalin)
+
+* SOLR-14090: Handle the case in `delete-copy-field` when source is a dynamic field (Frank Iversen, Munendra S N)
+
+* SOLR-14219: SOLR-14095 Introduced an issue for rolling restarts (Incompatible Java serialization). This change
+  Fixes the compatibility issue while keeping the functionality in SOLR-14095. (Andy Webb, Tomás Fernández Löbbe)
+
+* SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
 
 Other Changes
 ---------------------
@@ -140,6 +284,52 @@ Other Changes
 
 * SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
 
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
+
+* SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
+  (very likely a hard-closed socket connection).
+
+* SOLR-14169: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common (Andras Salamon via Tomás Fernández Löbbe)
+
+* SOLR-14184: Internal 'test' variable DirectUpdateHandler2.commitOnClose has been removed and replaced with
+  TestInjection.skipIndexWriterCommitOnClose.  Users that modified DUH2.commitOnClose in test cases for custom
+  plugins/modicitations should now use TestInjection instead.  (hossman)
+
+==================  8.4.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+---------------------
+
+* SOLR-14158: Package manager now stores keys in package store instead of ZK. If you're using package manager and have already
+  added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using:
+  "bin/solr add-key <keyfile.der>"
+
+Bug Fixes
+----------------------
+
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
+
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
+* SOLR-14165: SolrResponse serialVersionUID has changed in a backward incompatible way (Andy Webb via noble)
+
+* SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
+
+Improvements
+---------------------
+
+* SOLR-14158: Package manager to store public keys in a special "trusted" location instead of in ZooKeeper
+  (noble, Ishan Chattopadhyaya)
 
 ==================  8.4.0 ==================
 
@@ -156,8 +346,8 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ---------------------
 
-* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
-  to set top-level query. build() would fail if called without setting mainQuery
+* SOLR-13823: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery.
 
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
@@ -266,10 +456,6 @@ Improvements
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
-
-Optimizations
----------------------
-(No changes)
 
 Bug Fixes
 ---------------------

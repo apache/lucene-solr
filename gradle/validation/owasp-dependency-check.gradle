@@ -1,0 +1,44 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+// This adds OWASP vulnerability validation of project dependencies
+
+// If -Pvalidation.owasp=true is set the validation will also run as part of the check task.
+
+configure(rootProject) {
+  dependencyCheck {
+    failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
+    formats = ['HTML', 'JSON']
+    skipProjects = [':solr:solr-ref-guide']
+    skipConfigurations = ['unifiedClasspath']
+    suppressionFile = rootProject.file('gradle/validation/owasp-dependency-check/exclusions.xml')
+  }
+
+  task owasp() {
+    group "Verification"
+    description "Check project dependencies against OWASP vulnerability database."
+    dependsOn dependencyCheckAggregate
+  }
+
+  // Unless explicitly enabled, do not attach owasp to check. It has a large download
+  // footprint and takes a significant amount of time. This should be enabled for
+  // nightly CI runs only, I think.
+  if (propertyOrDefault("validation.owasp", false).toBoolean()) {
+    check.dependsOn owasp
+  }
+}

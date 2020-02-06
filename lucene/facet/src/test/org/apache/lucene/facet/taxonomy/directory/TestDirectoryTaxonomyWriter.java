@@ -247,7 +247,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
   }
 
   public void testConcurrency() throws Exception {
-    final int ncats = atLeast(100000); // add many categories
+    final int ncats = TEST_NIGHTLY ? atLeast(100000)  : atLeast(1000); // at night, add many categories
     final int range = ncats * 3; // affects the categories selection
     final AtomicInteger numCats = new AtomicInteger(ncats);
     final Directory dir = newDirectory();
@@ -441,7 +441,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     dir.close();
   }
 
-  @Test
+  // TODO: this test can hit pathological cases: it adds only a few docs, what is going on?
+  @Test @Nightly
   public void testHugeLabel() throws Exception {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));

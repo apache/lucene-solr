@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
-import org.apache.lucene.codecs.uniformsplit.DictionaryBrowserSupplier;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
+import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.IntersectBlockReader;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.IndexInput;
@@ -42,8 +42,8 @@ public class STIntersectBlockReader extends IntersectBlockReader {
   protected final FieldInfos fieldInfos;
 
   public STIntersectBlockReader(CompiledAutomaton compiled, BytesRef startTerm,
-                         DictionaryBrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
-                         FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
+                                IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
+                                FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
     super(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
     this.fieldInfos = fieldInfos;
   }
@@ -91,6 +91,11 @@ public class STIntersectBlockReader extends IntersectBlockReader {
     return super.nextBlockMatchingPrefix() && blockHeader != null;
   }
 
+  @Override
+  protected STBlockLine.Serializer createBlockLineSerializer() {
+    return new STBlockLine.Serializer();
+  }
+
   /**
    * Reads the {@link BlockTermState} on the current line for the specific field
    * corresponding this this reader.
@@ -100,7 +105,7 @@ public class STIntersectBlockReader extends IntersectBlockReader {
   @Override
   protected BlockTermState readTermState() throws IOException {
     termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return STBlockLine.Serializer.readTermStateForField(
+    return ((STBlockLine.Serializer) blockLineReader).readTermStateForField(
         fieldMetadata.getFieldInfo().number,
         termStatesReadBuffer,
         termStateSerializer,

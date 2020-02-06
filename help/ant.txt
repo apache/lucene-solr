@@ -1,0 +1,50 @@
+Gradle for Ant users
+====================
+
+This shows some common ant targets and their equivalent Gradle commands.
+Examples below assume cwd is at the top of the checkout (gradlew
+script available from ./). Quoted [string] gives a better or more
+conventional and commonly used task alternative.
+
+Gradle tasks apply to all modules that contain a given task name. Use
+"-p" switch with a directory or a colon-notation to specify a particular
+task or module. For example these two are equivalent:
+
+gradlew -p lucene/core check
+gradlew :lucene:core:check
+
+List of common dev task equivalents
+-----------------------------------
+
+ant clean           => gradlew clean
+ant jar             => gradlew jar          [better: gradlew assemble]
+
+ant compile         => gradlew classes      [better: gradlew assemble]
+                       gradlew testClasses  [better: gradlew assemble]
+
+ant validate        => gradlew check
+ant test            => gradlew test
+
+ant jar-checksums   => gradlew updateLicenses
+ant check-licenses  => gradlew licenses     [better: gradlew check -x test]
+ant clean-jars      => (NO REPLACEMENT)
+
+ant precommit       => gradlew precommit 
+
+ant get-maven-poms  => gradlew mavenLocal
+
+Solr-specific targets
+---------------------
+
+Assemble Solr distribution at solr/packaging/build/...
+
+ant create-package  => gradlew -p solr/packaging assemble
+
+"Resolve" libraries by copying them to lib/ and other source
+locations. This task should *not* be used anymore. It is added
+for backward compatibility with ant (and for debugging)
+but it mixes sources with output locations and this workflow
+should be discouraged. Instead run assemble on packaging (above).
+
+ant resolve         => gradlew -p solr resolve
+

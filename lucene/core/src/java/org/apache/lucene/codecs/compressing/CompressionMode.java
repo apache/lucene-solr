@@ -27,6 +27,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.compress.LZ4;
 
 /**
  * A compression mode. Tells how much effort should be spent on compression and
@@ -152,10 +153,10 @@ public abstract class CompressionMode {
 
   private static final class LZ4FastCompressor extends Compressor {
 
-    private final LZ4.HashTable ht;
+    private final LZ4.FastCompressionHashTable ht;
 
     LZ4FastCompressor() {
-      ht = new LZ4.HashTable();
+      ht = new LZ4.FastCompressionHashTable();
     }
 
     @Override
@@ -172,16 +173,16 @@ public abstract class CompressionMode {
 
   private static final class LZ4HighCompressor extends Compressor {
 
-    private final LZ4.HCHashTable ht;
+    private final LZ4.HighCompressionHashTable ht;
 
     LZ4HighCompressor() {
-      ht = new LZ4.HCHashTable();
+      ht = new LZ4.HighCompressionHashTable();
     }
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
         throws IOException {
-      LZ4.compressHC(bytes, off, len, out, ht);
+      LZ4.compress(bytes, off, len, out, ht);
     }
 
     @Override
