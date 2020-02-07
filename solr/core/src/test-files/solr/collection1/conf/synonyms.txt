@@ -39,7 +39,7 @@ persian => persian, cat, feline, animal
 
 jeans, denim pants
 
-# Synonyms used by Payload Boost
+# Boosted Synonyms
 tiger, tigre|0.9
 lynx => lince|0.8, lynx_canadensis|0.9
 
