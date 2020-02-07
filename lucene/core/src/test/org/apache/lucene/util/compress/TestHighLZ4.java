@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util.compress;
 
-import java.util.Random;
-
 import org.apache.lucene.util.compress.LZ4.HashTable;
 
 public class TestHighLZ4 extends LZ4TestCase {
@@ -25,10 +23,6 @@ public class TestHighLZ4 extends LZ4TestCase {
   @Override
   protected HashTable newHashTable() {
     LZ4.HashTable hashTable =  new LZ4.HighCompressionHashTable();
-    Random random = random();
-    if (usually(random)) {
-      hashTable.randomize(random);
-    }
     return new AssertingHashTable(hashTable);
   }
 

@@ -55,11 +55,6 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     }
 
     @Override
-    void randomize(Random random) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     boolean assertReset() {
       throw new UnsupportedOperationException();
     }

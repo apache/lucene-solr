@@ -29,7 +29,6 @@ package org.apache.lucene.util.compress;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Random;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -205,7 +204,6 @@ public final class LZ4 {
     abstract int previous(int off);
 
     // For testing
-    abstract void randomize(Random random);
     abstract boolean assertReset();
   }
 
@@ -266,20 +264,6 @@ public final class LZ4 {
     @Override
     public int previous(int off) {
       return -1;
-    }
-
-    @Override
-    void randomize(Random random) {
-      if (hashTable == null) {
-        // trigger the creation of the hash table
-        reset(new byte[1000], 3, 900);
-      }
-      if (hashTable != null) {
-        final int bpv = hashTable.getBitsPerValue();
-        for (int i = 0; i < hashTable.size(); ++i) {
-          hashTable.set(i, bpv >= 31 ? random.nextInt() & 0x7FFFFFFF : random.nextInt(1 << bpv));
-        }
-      }
     }
 
     @Override
@@ -392,20 +376,6 @@ public final class LZ4 {
         }
       }
       return -1;
-    }
-
-    @Override
-    void randomize(Random random) {
-      base = random.nextBoolean() ? random.nextInt(100) : 65536 * 2 - random.nextInt(100);
-      if (random.nextBoolean()) { // simulate compressing a short array previously
-        end = base + 100;
-        for (int i = base; i < end - LAST_LITERALS; ++i) {
-          chainTable[i & MASK] = (short) (1 + random.nextInt(10));
-        }
-      } else { // simulate compressing a long array previously
-        end = base + 100000;
-        Arrays.fill(chainTable, (short) 42);
-      }
     }
 
     @Override
