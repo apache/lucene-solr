@@ -20,7 +20,7 @@ import java.nio.file.Files
 // This adds top-level 'documentation-lint' task.
 
 def includes = allprojects.findAll { it.file('src/java').exists() }
-def tmpJavadocDir = Files.createTempDirectory("javadoc")
+def tmpJavadocDir = Files.createTempDirectory('javadoc')
 
 // Change the log level for the STDOUT to INFO (default is QUIET)
 // so that lint scripts' output will be printed without --debug option
@@ -31,36 +31,39 @@ configure(rootProject) {
   configurations {
     ecj
   }
+
   dependencies {
     ecj 'org.eclipse.jdt:ecj:3.19.0'
   }
 
-  task("documentationLint") {
-    group "Verification"
-    description "Runs documentation linters."
+  // the main task
+  task('documentationLint') {
+    group 'Verification'
+    description 'Runs documentation linters.'
 
     dependsOn ':checkBrokenLinks'
     dependsOn includes.collect { prj ->
       prj.tasks.matching { task ->
         task.name in [
           'ecjJavadocLint',
-          'checkMissingJavadocsClass',
-          'checkMissingJavadocsMethod'
+          'checkMissingJavadocs'
         ]
       }
     }
   }
 
-  task("checkBrokenLinks", type: Exec) {
+  // checking broken links in Javadocs
+  task('checkBrokenLinks', type: Exec) {
     (includes).each {
+      // before checking, collect all built Javadocs to temporary dir
       dependsOn "${it.path}:copyBuiltJavadocs"
     }
 
-    executable "python3"
+    executable 'python3'
     args "-B", "${rootDir}/dev-tools/scripts/checkJavadocLinks.py", tmpJavadocDir
   }
 
-  task ("cleanUpJavadocDir", type: Delete) {
+  task ('cleanUpJavadocDir', type: Delete) {
     delete tmpJavadocDir
   }
 
@@ -70,12 +73,12 @@ configure(rootProject) {
 
 configure(includes) { prj ->
   plugins.withType(JavaPlugin) {
-    task("ecjJavadocLint", type: EcjJavadocLintTask) {
+
+    task('ecjJavadocLint', type: EcjJavadocLintTask) {
       dependsOn ':build'
     }
 
-    // copy Javadocs to temporary directory for the task 'checkBrokenLinks'
-    task ("copyBuiltJavadocs", type: Copy, dependsOn: 'javadoc') {
+    task('copyBuiltJavadocs', type: Copy, dependsOn: 'javadoc') {
       from('build/docs/javadoc') {
         include '**/*.html'
         include '**/*.js'
@@ -84,21 +87,70 @@ configure(includes) { prj ->
       }
       into "${tmpJavadocDir}/${project.path.replace(':', '/')}"
     }
+  }
 
-    task ("checkMissingJavadocsClass", type: Exec, dependsOn: 'javadoc') {
-      executable "python3"
-      args "-B", "${project.rootProject.rootDir}/dev-tools/scripts/checkJavaDocs.py", "${buildDir}/docs/javadoc", "class"
-    }
+}
 
-    task ("checkMissingJavadocsMethod", type: Exec, dependsOn: 'javadoc') {
-      executable "python3"
-      args "-B", "${project.rootProject.rootDir}/dev-tools/scripts/checkJavaDocs.py", "${buildDir}/docs/javadoc", "method"
-    }
-
+// check missing javadocs
+allprojects {
+  task('checkMissingJavadocs', type: CheckMissingJavadocsTask, dependsOn: 'javadoc') {
   }
 }
 
+// todo: add missing docs for all classes and bump this to level=class
+def packageLevelCheckProjects = includes.findAll { it.path.startsWith(':solr') }
+configure(packageLevelCheckProjects) {
+  checkMissingJavadocs {
+    dirs += [ new Tuple2("${buildDir}/docs/javadoc", "package") ]
+  }
+}
 
+// too many classes to fix overall to just enable the above to be level="method" right now,
+// but we can prevent the modules that don't have problems from getting any worse
+def methodLevelCheckProjects = [
+  project(':lucene:analysis:icu'),
+  project(':lucene:analysis:morfologik'),
+  project(':lucene:analysis:phonetic'),
+  project(':lucene:analysis:stempel'),
+  project(':lucene:classification'),
+  project(':lucene:demo'),
+  project(':lucene:expressions'),
+  project(':lucene:facet'),
+  project(':lucene:join'),
+  project(':lucene:memory'),
+  project(':lucene:suggest'),
+  project(':lucene:spatial3d')
+]
+
+def prjLuceneCore = project(':lucene:core')
+def classLevelCheckProjects = includes.findAll { it.path.startsWith(':lucene') } - methodLevelCheckProjects - [ prjLuceneCore ]
+
+configure(classLevelCheckProjects) {
+  checkMissingJavadocs {
+    dirs += [ new Tuple2("${buildDir}/docs/javadoc", "class") ]
+  }
+}
+
+configure(methodLevelCheckProjects) {
+  checkMissingJavadocs {
+    dirs += [ new Tuple2("${buildDir}/docs/javadoc", "method") ]
+  }
+}
+
+// too much to fix core/ for now, but enforce full javadocs for key packages
+configure(prjLuceneCore) {
+  checkMissingJavadocs {
+    dirs += [
+      new Tuple2("${buildDir}/docs/javadoc", "class"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/util/automaton", "method"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/analysis", "method"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/document", "method"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/search/similarities", "method"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/index", "method"),
+      new Tuple2("${buildDir}/docs/javadoc/org/apache/lucene/codecs", "method"),
+    ]
+  }
+}
 
 class EcjJavadocLintTask extends DefaultTask {
 
@@ -144,4 +196,31 @@ class EcjJavadocLintTask extends DefaultTask {
   }
 }
 
+class CheckMissingJavadocsTask extends DefaultTask {
 
+  // list of (directory_to_be_checked, level)
+  @Input
+  List<Tuple2<String, String>> dirs = [];
+
+  def checkMissingJavadocs(String dir, String level) {
+    project.exec {
+      executable "python3"
+      args = [
+        "-B",
+        "${project.rootProject.rootDir}/dev-tools/scripts/checkJavaDocs.py",
+        dir,
+        level
+      ]
+    }
+  }
+
+  @TaskAction
+  def lint() {
+    if (dirs != null && dirs.size() > 0) {
+      for (tup in dirs) {
+        println("Checking for missing docs... (dir=${tup.first}, level=${tup.second})")
+        checkMissingJavadocs(tup.first, tup.second)
+      }
+    }
+  }
+}
