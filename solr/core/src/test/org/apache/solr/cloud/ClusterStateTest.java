@@ -42,6 +42,8 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Map<String,Slice> slices = new HashMap<>();
     Map<String,Replica> sliceToProps = new HashMap<>();
     Map<String,Object> props = new HashMap<>();
+    props.put("node_name", "node1:10000_solr");
+    props.put("core", "core1");
 
     props.put("prop1", "value");
     props.put("prop2", "value2");
