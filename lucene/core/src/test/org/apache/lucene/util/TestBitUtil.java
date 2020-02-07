@@ -20,7 +20,8 @@ package org.apache.lucene.util;
 public class TestBitUtil extends LuceneTestCase {
 
   public void testNextBitSet() {
-    for (int i = 0; i < 10000; i++) {
+    int numIterations = atLeast(1000);
+    for (int i = 0; i < numIterations; i++) {
       long[] bits = buildRandomBits();
       int numLong = bits.length - 1;
 
@@ -46,7 +47,8 @@ public class TestBitUtil extends LuceneTestCase {
   }
 
   public void testPreviousBitSet() {
-    for (int i = 0; i < 10000; i++) {
+    int numIterations = atLeast(1000);
+    for (int i = 0; i < numIterations; i++) {
       long[] bits = buildRandomBits();
       int numLong = bits.length - 1;
 

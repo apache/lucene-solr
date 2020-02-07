@@ -39,7 +39,8 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * These structures are optimized for operations such as <i>range</i>, <i>distance</i>, <i>nearest-neighbor</i>, 
  * and <i>point-in-polygon</i> queries. 
  * <h1>Basic Point Types</h1>
- * <table summary="Basic point types in Java and Lucene">
+ * <table>
+ *   <caption>Basic point types in Java and Lucene</caption>
  *   <tr><th>Java type</th><th>Lucene class</th></tr>
  *   <tr><td>{@code int}</td><td>{@link IntPoint}</td></tr>
  *   <tr><td>{@code long}</td><td>{@link LongPoint}</td></tr>

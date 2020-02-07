@@ -95,11 +95,11 @@ import org.apache.lucene.util.fst.Util;
  *
  * Files:
  * <ul>
- *   <li><tt>.tim</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
- *   <li><tt>.tip</tt>: <a href="#Termindex">Term Index</a></li>
+ *   <li><code>.tim</code>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><code>.tip</code>: <a href="#Termindex">Term Index</a></li>
  * </ul>
  * <p>
- * <a name="Termdictionary"></a>
+ * <a id="Termdictionary"></a>
  * <h3>Term Dictionary</h3>
  *
  * <p>The .tim file contains the list of terms in each
@@ -158,7 +158,7 @@ import org.apache.lucene.util.fst.Util;
  *    <li>For inner nodes of the tree, every entry will steal one bit to mark whether it points
  *        to child nodes(sub-block). If so, the corresponding TermStats and TermMetaData are omitted </li>
  * </ul>
- * <a name="Termindex"></a>
+ * <a id="Termindex"></a>
  * <h3>Term Index</h3>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
  * accessed randomly.  The index is also used to determine
@@ -841,7 +841,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       // If there are 2 suffix bytes or less per term, then we don't bother compressing as suffix are unlikely what
       // makes the terms dictionary large, and it also tends to be frequently the case for dense IDs like
       // auto-increment IDs, so not compressing in that case helps not hurt ID lookups by too much.
-      if (suffixWriter.length() > 2L * numEntries) {
+      // We also only start compressing when the prefix length is greater than 2 since blocks whose prefix length is
+      // 1 or 2 always all get visited when running a fuzzy query whose max number of edits is 2.
+      if (suffixWriter.length() > 2L * numEntries && prefixLength > 2) {
         // LZ4 inserts references whenever it sees duplicate strings of 4 chars or more, so only try it out if the
         // average suffix length is greater than 6.
         if (suffixWriter.length() > 6L * numEntries) {

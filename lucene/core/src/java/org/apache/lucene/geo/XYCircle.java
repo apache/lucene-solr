@@ -27,7 +27,7 @@ package org.apache.lucene.geo;
  * </ol>
  * @lucene.experimental
  */
-public class XYCircle {
+public class XYCircle extends XYGeometry {
   /** Center x */
   private final float x;
   /** Center y */
@@ -61,6 +61,11 @@ public class XYCircle {
   /** Returns the radius */
   public float getRadius() {
     return radius;
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return new XYCircle2D(x, y, radius);
   }
 
   @Override

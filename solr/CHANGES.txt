@@ -81,7 +81,14 @@ Upgrade Notes
 * SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
   Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
   (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
-  
+
+* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis) 
+
+* SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
+  This embedded zookeeper should not be used in production. If you rely
+  upon the previous behavior, then you can change the clientPortAddress
+  in solr/server/solr/zoo.cfg (Robert Muir)
+
 Improvements
 ----------------------
 
@@ -166,6 +173,14 @@ New Features
 
  * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
+ * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
+ * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
+
+ * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
+
+ * SOLR-14241: New delete() Stream Decorator (hossman)
+ 
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -200,6 +215,12 @@ Improvements
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
 
 * SOLR-14132: Upgrade Angular JS 1.3.8 to 1.7.9 (Kevin Risden)
+
+* SOLR-14221: Upgrade restlet to version 2.4.0 (janhoy)
+
+* SOLR-10567: Add Support for DateRangeField in JSON Facet range (Stephen Weiss, Munendra S N)
+
+* SOLR-14245: Validate Replica / ReplicaInfo on creation. (ab)
 
 Optimizations
 ---------------------
@@ -250,6 +271,13 @@ Bug Fixes
 
 * SOLR-13897: Fix unsafe publication of Terms object in ZkShardTerms that can cause visibility issues
   and race conditions under contention. (shalin)
+
+* SOLR-14090: Handle the case in `delete-copy-field` when source is a dynamic field (Frank Iversen, Munendra S N)
+
+* SOLR-14219: SOLR-14095 Introduced an issue for rolling restarts (Incompatible Java serialization). This change
+  Fixes the compatibility issue while keeping the functionality in SOLR-14095. (Andy Webb, Tomás Fernández Löbbe)
+
+* SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
 
 Other Changes
 ---------------------

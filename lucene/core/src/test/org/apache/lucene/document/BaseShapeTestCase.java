@@ -272,6 +272,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     verifyRandomPolygonQueries(reader, shapes);
     // test random point queries
     verifyRandomPointQueries(reader, shapes);
+    // test random distance queries
+    verifyRandomDistanceQueries(reader, shapes);
   }
 
   /** test random generated bounding boxes */

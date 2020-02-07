@@ -24,7 +24,7 @@ import org.apache.lucene.search.Query;
 
 final class IntervalMatches {
 
-  static MatchesIterator asMatches(IntervalIterator iterator, MatchesIterator source, int doc) throws IOException {
+  static IntervalMatchesIterator asMatches(IntervalIterator iterator, IntervalMatchesIterator source, int doc) throws IOException {
     if (source == null) {
       return null;
     }
@@ -34,7 +34,7 @@ final class IntervalMatches {
     if (iterator.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
       return null;
     }
-    return new MatchesIterator() {
+    return new IntervalMatchesIterator() {
 
       boolean cached = true;
 
@@ -68,6 +68,16 @@ final class IntervalMatches {
       }
 
       @Override
+      public int gaps() {
+        return iterator.gaps();
+      }
+
+      @Override
+      public int width() {
+        return iterator.width();
+      }
+
+      @Override
       public MatchesIterator getSubMatches() throws IOException {
         return source.getSubMatches();
       }
@@ -79,21 +89,27 @@ final class IntervalMatches {
     };
   }
 
-  enum State { UNPOSITIONED, ITERATING, EXHAUSTED }
+  enum State { UNPOSITIONED, ITERATING, NO_MORE_INTERVALS, EXHAUSTED }
 
-  static IntervalIterator wrapMatches(MatchesIterator mi, int doc) {
+  static IntervalIterator wrapMatches(IntervalMatchesIterator mi, int doc) {
     return new IntervalIterator() {
 
       State state = State.UNPOSITIONED;
 
       @Override
       public int start() {
+        if (state == State.NO_MORE_INTERVALS) {
+          return NO_MORE_INTERVALS;
+        }
         assert state == State.ITERATING;
         return mi.startPosition();
       }
 
       @Override
       public int end() {
+        if (state == State.NO_MORE_INTERVALS) {
+          return NO_MORE_INTERVALS;
+        }
         assert state == State.ITERATING;
         return mi.endPosition();
       }
@@ -101,10 +117,13 @@ final class IntervalMatches {
       @Override
       public int gaps() {
         assert state == State.ITERATING;
-        if (mi instanceof IntervalMatchesIterator) {
-          return ((IntervalMatchesIterator)mi).gaps();
-        }
-        return 0;
+        return mi.gaps();
+      }
+
+      @Override
+      public int width() {
+        assert state == State.ITERATING;
+        return mi.width();
       }
 
       @Override
@@ -113,6 +132,7 @@ final class IntervalMatches {
         if (mi.next()) {
           return mi.startPosition();
         }
+        state = State.NO_MORE_INTERVALS;
         return NO_MORE_INTERVALS;
       }
 
@@ -127,6 +147,7 @@ final class IntervalMatches {
           case UNPOSITIONED:
             return -1;
           case ITERATING:
+          case NO_MORE_INTERVALS:
             return doc;
           case EXHAUSTED:
         }
@@ -140,6 +161,7 @@ final class IntervalMatches {
             state = State.ITERATING;
             return doc;
           case ITERATING:
+          case NO_MORE_INTERVALS:
             state = State.EXHAUSTED;
           case EXHAUSTED:
         }

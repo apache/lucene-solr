@@ -202,9 +202,16 @@
   <property name="javadoc.noindex" value="true"/>
 
   <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
-  <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing,-accessibility,-html"/>
+  <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing,-accessibility"/>
   <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
   <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -proc:none"/>
+
+  <condition property="javadoc.nomodule.args" value="--no-module-directories" else="">
+    <or>
+      <equals arg1="${java.specification.version}" arg2="11"/>
+      <equals arg1="${java.specification.version}" arg2="12"/>
+    </or>
+  </condition>
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
@@ -2002,7 +2009,11 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <equals arg1="${java.specification.version}" arg2="11"/>
+    <or>
+      <equals arg1="${java.specification.version}" arg2="11"/>
+      <equals arg1="${java.specification.version}" arg2="12"/>
+      <equals arg1="${java.specification.version}" arg2="13"/>
+    </or>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
@@ -2078,30 +2089,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
-  <!-- TODO: if we make a custom ant task, we can give better
-       errors and stuff here, and not make a stupid temp dir -->
-  <macrodef name="jtidy-macro">
-    <element name="nested" implicit="yes" optional="yes"/>
-    <sequential>
-      <!--
-      TODO: find a better replacement for jTIDY that can handle HTML5
-      <ivy:cachepath organisation="net.sf.jtidy" module="jtidy" revision="r938"
-          log="download-only" inline="true" conf="master" type="jar" pathid="jtidy.classpath" />
-      <taskdef name="tidy" classname="org.w3c.tidy.ant.JTidyTask" classpathref="jtidy.classpath"/>
-      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
-      <echo message="Checking for broken html (such as invalid tags)..." taskname="jtidy"/>
-      <tidy failonerror="true" destdir="${common.dir}/build/jtidy_tmp">
-         <nested/>
-         <parameter name="input-encoding" value="UTF-8" />
-         <parameter name="only-errors" value="true" />
-         <parameter name="show-warnings" value="false" />
-      </tidy>
-      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
-      -->
-      <echo message="FIXME: Broken HTML checks were disabled, as jtidy can't handle HTML5." taskname="jtidy"/>
-    </sequential>
-  </macrodef>
-
   <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
@@ -2148,13 +2135,17 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <sources />
                 
         <classpath refid="javadoc.classpath"/>
-        <arg line="--no-module-directories --release ${javac.release}"/>
+        <arg line="${javadoc.nomodule.args} --release ${javac.release}"/>
         <arg line="${javadoc.doclint.args}"/>
         <!-- force locale to be "en_US", as Javadoc tool ignores locale parameter (in some cases) -->
         <arg line="-J-Duser.language=en -J-Duser.country=US"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
+      <!-- append some special table css -->
+      <concat destfile="@{destdir}/stylesheet.css" append="true" fixlastline="true" encoding="UTF-8">
+        <filelist dir="${common.dir}/tools/javadoc" files="table_padding.css"/>
+      </concat>
       <!-- append prettify to scripts and css -->
       <concat destfile="@{destdir}/stylesheet.css" append="true" fixlastline="true" encoding="UTF-8">
         <filelist dir="${prettify.dir}" files="prettify.css"/>
@@ -2584,7 +2575,9 @@ The following arguments can be provided to ant to alter its behaviour and target
       <!-- The default skeleton is specified here to work around a JFlex ant task bug:    -->
       <!-- invocations with a non-default skeleton will cause following invocations to    -->
       <!-- use the same skeleton, though not specified, unless the default is configured. -->
+      <delete file="@{dir}/@{name}.java" />
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             encoding="UTF-8"
              skeleton="${common.dir}/core/src/data/jflex/skeleton.default"/>
     </sequential>
   </macrodef>
@@ -2595,6 +2588,7 @@ The following arguments can be provided to ant to alter its behaviour and target
     <sequential>
       <!-- LUCENE-5897: Disallow scanner buffer expansion -->
       <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             encoding="UTF-8"
              skeleton="${common.dir}/core/src/data/jflex/skeleton.disable.buffer.expansion.txt"/>
       <!-- Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here. -->
       <replaceregexp file="@{dir}/@{name}.java"

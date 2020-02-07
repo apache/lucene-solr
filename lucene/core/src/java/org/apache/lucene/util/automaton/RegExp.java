@@ -40,7 +40,8 @@ import java.util.Set;
  * Regular Expression extension to <code>Automaton</code>.
  * <p>
  * Regular expressions are built from the following abstract syntax:
- * <table border=0 summary="description of regular expression grammar">
+ * <table style="border: 0">
+ * <caption>description of regular expression grammar</caption>
  * <tr>
  * <td><i>regexp</i></td>
  * <td>::=</td>
@@ -59,7 +60,7 @@ import java.util.Set;
  * <tr>
  * <td><i>unionexp</i></td>
  * <td>::=</td>
- * <td><i>interexp</i>&nbsp;<tt><b>|</b></tt>&nbsp;<i>unionexp</i></td>
+ * <td><i>interexp</i>&nbsp;<code><b>|</b></code>&nbsp;<i>unionexp</i></td>
  * <td>(union)</td>
  * <td></td>
  * </tr>
@@ -74,7 +75,7 @@ import java.util.Set;
  * <tr>
  * <td><i>interexp</i></td>
  * <td>::=</td>
- * <td><i>concatexp</i>&nbsp;<tt><b>&amp;</b></tt>&nbsp;<i>interexp</i></td>
+ * <td><i>concatexp</i>&nbsp;<code><b>&amp;</b></code>&nbsp;<i>interexp</i></td>
  * <td>(intersection)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
@@ -104,43 +105,43 @@ import java.util.Set;
  * <tr>
  * <td><i>repeatexp</i></td>
  * <td>::=</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>?</b></tt></td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>?</b></code></td>
  * <td>(zero or one occurrence)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>*</b></tt></td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>*</b></code></td>
  * <td>(zero or more occurrences)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>+</b></tt></td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>+</b></code></td>
  * <td>(one or more occurrences)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>{</b><i>n</i><b>}</b></tt></td>
- * <td>(<tt><i>n</i></tt> occurrences)</td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>{</b><i>n</i><b>}</b></code></td>
+ * <td>(<code><i>n</i></code> occurrences)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>{</b><i>n</i><b>,}</b></tt></td>
- * <td>(<tt><i>n</i></tt> or more occurrences)</td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>{</b><i>n</i><b>,}</b></code></td>
+ * <td>(<code><i>n</i></code> or more occurrences)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><i>repeatexp</i>&nbsp;<tt><b>{</b><i>n</i><b>,</b><i>m</i><b>}</b></tt></td>
- * <td>(<tt><i>n</i></tt> to <tt><i>m</i></tt> occurrences, including both)</td>
+ * <td><i>repeatexp</i>&nbsp;<code><b>{</b><i>n</i><b>,</b><i>m</i><b>}</b></code></td>
+ * <td>(<code><i>n</i></code> to <code><i>m</i></code> occurrences, including both)</td>
  * <td></td>
  * </tr>
  * <tr>
@@ -154,7 +155,7 @@ import java.util.Set;
  * <tr>
  * <td><i>complexp</i></td>
  * <td>::=</td>
- * <td><tt><b>~</b></tt>&nbsp;<i>complexp</i></td>
+ * <td><code><b>~</b></code>&nbsp;<i>complexp</i></td>
  * <td>(complement)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
@@ -169,14 +170,14 @@ import java.util.Set;
  * <tr>
  * <td><i>charclassexp</i></td>
  * <td>::=</td>
- * <td><tt><b>[</b></tt>&nbsp;<i>charclasses</i>&nbsp;<tt><b>]</b></tt></td>
+ * <td><code><b>[</b></code>&nbsp;<i>charclasses</i>&nbsp;<code><b>]</b></code></td>
  * <td>(character class)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>[^</b></tt>&nbsp;<i>charclasses</i>&nbsp;<tt><b>]</b></tt></td>
+ * <td><code><b>[^</b></code>&nbsp;<i>charclasses</i>&nbsp;<code><b>]</b></code></td>
  * <td>(negated character class)</td>
  * <td></td>
  * </tr>
@@ -206,7 +207,7 @@ import java.util.Set;
  * <tr>
  * <td><i>charclass</i></td>
  * <td>::=</td>
- * <td><i>charexp</i>&nbsp;<tt><b>-</b></tt>&nbsp;<i>charexp</i></td>
+ * <td><i>charexp</i>&nbsp;<code><b>-</b></code>&nbsp;<i>charexp</i></td>
  * <td>(character range, including end-points)</td>
  * <td></td>
  * </tr>
@@ -228,56 +229,56 @@ import java.util.Set;
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>.</b></tt></td>
+ * <td><code><b>.</b></code></td>
  * <td>(any single character)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>#</b></tt></td>
+ * <td><code><b>#</b></code></td>
  * <td>(the empty language)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>@</b></tt></td>
+ * <td><code><b>@</b></code></td>
  * <td>(any string)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>"</b></tt>&nbsp;&lt;Unicode string without double-quotes&gt;&nbsp; <tt><b>"</b></tt></td>
+ * <td><code><b>"</b></code>&nbsp;&lt;Unicode string without double-quotes&gt;&nbsp; <code><b>"</b></code></td>
  * <td>(a string)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>(</b></tt>&nbsp;<tt><b>)</b></tt></td>
+ * <td><code><b>(</b></code>&nbsp;<code><b>)</b></code></td>
  * <td>(the empty string)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>(</b></tt>&nbsp;<i>unionexp</i>&nbsp;<tt><b>)</b></tt></td>
+ * <td><code><b>(</b></code>&nbsp;<i>unionexp</i>&nbsp;<code><b>)</b></code></td>
  * <td>(precedence override)</td>
  * <td></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>&lt;</b></tt>&nbsp;&lt;identifier&gt;&nbsp;<tt><b>&gt;</b></tt></td>
+ * <td><code><b>&lt;</b></code>&nbsp;&lt;identifier&gt;&nbsp;<code><b>&gt;</b></code></td>
  * <td>(named automaton)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>&lt;</b><i>n</i>-<i>m</i><b>&gt;</b></tt></td>
+ * <td><code><b>&lt;</b><i>n</i>-<i>m</i><b>&gt;</b></code></td>
  * <td>(numerical interval)</td>
  * <td><small>[OPTIONAL]</small></td>
  * </tr>
@@ -292,7 +293,7 @@ import java.util.Set;
  * <tr>
  * <td></td>
  * <td>|</td>
- * <td><tt><b>\</b></tt>&nbsp;&lt;Unicode character&gt;&nbsp;</td>
+ * <td><code><b>\</b></code>&nbsp;&lt;Unicode character&gt;&nbsp;</td>
  * <td>(a single character)</td>
  * <td></td>
  * </tr>
@@ -301,13 +302,13 @@ import java.util.Set;
  * The productions marked <small>[OPTIONAL]</small> are only allowed if
  * specified by the syntax flags passed to the <code>RegExp</code> constructor.
  * The reserved characters used in the (enabled) syntax must be escaped with
- * backslash (<tt><b>\</b></tt>) or double-quotes (<tt><b>"..."</b></tt>). (In
+ * backslash (<code><b>\</b></code>) or double-quotes (<code><b>"..."</b></code>). (In
  * contrast to other regexp syntaxes, this is required also in character
- * classes.) Be aware that dash (<tt><b>-</b></tt>) has a special meaning in
+ * classes.) Be aware that dash (<code><b>-</b></code>) has a special meaning in
  * <i>charclass</i> expressions. An identifier is a string not containing right
- * angle bracket (<tt><b>&gt;</b></tt>) or dash (<tt><b>-</b></tt>). Numerical
+ * angle bracket (<code><b>&gt;</b></code>) or dash (<code><b>-</b></code>). Numerical
  * intervals are specified by non-negative decimal integers and include both end
- * points, and if <tt><i>n</i></tt> and <tt><i>m</i></tt> have the same number
+ * points, and if <code><i>n</i></code> and <code><i>m</i></code> have the same number
  * of digits, then the conforming strings must have that length (i.e. prefixed
  * by 0's).
  * 
@@ -320,33 +321,33 @@ public class RegExp {
   }
   
   /**
-   * Syntax flag, enables intersection (<tt>&amp;</tt>).
+   * Syntax flag, enables intersection (<code>&amp;</code>).
    */
   public static final int INTERSECTION = 0x0001;
   
   /**
-   * Syntax flag, enables complement (<tt>~</tt>).
+   * Syntax flag, enables complement (<code>~</code>).
    */
   public static final int COMPLEMENT = 0x0002;
   
   /**
-   * Syntax flag, enables empty language (<tt>#</tt>).
+   * Syntax flag, enables empty language (<code>#</code>).
    */
   public static final int EMPTY = 0x0004;
   
   /**
-   * Syntax flag, enables anystring (<tt>@</tt>).
+   * Syntax flag, enables anystring (<code>@</code>).
    */
   public static final int ANYSTRING = 0x0008;
   
   /**
-   * Syntax flag, enables named automata (<tt>&lt;</tt>identifier<tt>&gt;</tt>).
+   * Syntax flag, enables named automata (<code>&lt;</code>identifier<code>&gt;</code>).
    */
   public static final int AUTOMATON = 0x0010;
   
   /**
    * Syntax flag, enables numerical intervals (
-   * <tt>&lt;<i>n</i>-<i>m</i>&gt;</tt>).
+   * <code>&lt;<i>n</i>-<i>m</i>&gt;</code>).
    */
   public static final int INTERVAL = 0x0020;
   

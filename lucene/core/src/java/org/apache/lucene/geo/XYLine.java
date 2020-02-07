@@ -19,10 +19,10 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 /**
- * Represents a line in cartesian space. You can construct the Line directly with {@code double[]}, {@code double[]} x, y arrays
+ * Represents a line in cartesian space. You can construct the Line directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
  */
-public class XYLine {
+public class XYLine extends XYGeometry {
   /** array of x coordinates */
   private final double[] x;
   /** array of y coordinates */
@@ -30,7 +30,7 @@ public class XYLine {
 
   /** minimum x of this line's bounding box */
   public final double minX;
-  /** maximum x of this line's bounding box */
+  /** maximum y of this line's bounding box */
   public final double maxX;
   /** minimum y of this line's bounding box */
   public final double minY;
@@ -38,7 +38,7 @@ public class XYLine {
   public final double maxY;
 
   /**
-   * Creates a new Line from the supplied x/y array.
+   * Creates a new Line from the supplied X/Y array.
    */
   public XYLine(float[] x, float[] y) {
     if (x == null) {
@@ -104,6 +104,19 @@ public class XYLine {
   }
 
   @Override
+  protected Component2D toComponent2D() {
+    return Line2D.create(this);
+  }
+
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(Polygon.verticesToGeoJSON(x, y));
+    sb.append("]");
+    return sb.toString();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof XYLine)) return false;
@@ -130,15 +143,6 @@ public class XYLine {
           .append("]");
     }
     sb.append(')');
-    return sb.toString();
-  }
-
-  /** prints polygons as geojson */
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(Polygon.verticesToGeoJSON(x, y));
-    sb.append("]");
     return sb.toString();
   }
 }

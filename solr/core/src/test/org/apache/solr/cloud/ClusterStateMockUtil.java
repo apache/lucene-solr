@@ -171,6 +171,7 @@ public class ClusterStateMockUtil {
           replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
           replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
           replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
+          replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, "core_" + replicaName);
           if(collName == null) collName = "collection" + (collectionStates.size() + 1);
           if(sliceName == null) collName = "slice" + (slices.size() + 1);
           replica = new Replica(replicaName, replicaPropMap, collName, sliceName);

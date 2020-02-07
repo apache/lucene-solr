@@ -24,9 +24,7 @@ import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
@@ -517,7 +515,7 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Component2D polygon2D = Polygon2D.create(polygon);
+    Component2D polygon2D = LatLonGeometry.create(polygon);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
@@ -535,7 +533,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     //3 shared points
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(0.5), quantizeLat(0),
@@ -635,7 +633,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
@@ -645,7 +643,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
@@ -655,7 +653,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
-    Component2D l2d = Line2D.create(l);
+    Component2D l2d = LatLonGeometry.create(l);
     PointValues.Relation r = l2d.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(5), quantizeLat(0),

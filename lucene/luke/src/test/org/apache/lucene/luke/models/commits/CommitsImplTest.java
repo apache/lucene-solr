@@ -39,7 +39,7 @@ import org.junit.Test;
 
 // See: https://github.com/DmitryKey/luke/issues/111
 @LuceneTestCase.SuppressCodecs({
-   "SimpleText", "DummyCompressingStoredFields", "HighCompressionCompressingStoredFields", "FastCompressingStoredFields", "FastDecompressionCompressingStoredFields"
+   "SimpleText", "DummyCompressingStoredFieldsData", "HighCompressionCompressingStoredFieldsData", "FastCompressingStoredFieldsData", "FastDecompressionCompressingStoredFieldsData"
 })
 public class CommitsImplTest extends LuceneTestCase {
 

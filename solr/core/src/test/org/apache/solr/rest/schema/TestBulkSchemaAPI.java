@@ -675,7 +675,77 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("'attr_*' dynamic field does not exist in the schema", m);
     assertEquals("string", m.get("type"));
   }
-  
+
+  public void testCopyFieldRules() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    Map m = getObj(harness, "name", "fields");
+    assertNotNull("'name' field does not exist in the schema", m);
+
+    m = getObj(harness, "bind", "fields");
+    assertNotNull("'bind' field does not exist in the schema", m);
+
+    List l = getSourceCopyFields(harness, "bleh_s");
+    assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
+
+    String payload = "{\n" +
+        "          'add-copy-field' : {\n" +
+        "                       'source' :'bleh_s',\n" +
+        "                       'dest':'name'\n" +
+        "                       }\n" +
+        "          }\n";
+    String response = harness.post("/schema", json(payload));
+
+    Map map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertFalse("'bleh_s' copyField rule doesn't exist", l.isEmpty());
+    assertEquals("bleh_s", ((Map)l.get(0)).get("source"));
+    assertEquals("name", ((Map)l.get(0)).get("dest"));
+
+    // delete copy field rule
+    payload = "{\n" +
+        "          'delete-copy-field' : {\n" +
+        "                       'source' :'bleh_s',\n" +
+        "                       'dest':'name'\n" +
+        "                       }\n" +
+        "          }\n";
+
+    response = harness.post("/schema", json(payload));
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
+
+    // copy and delete with multiple destination
+    payload = "{\n" +
+        "          'add-copy-field' : {\n" +
+        "                       'source' :'bleh_s',\n" +
+        "                       'dest':['name','bind']\n" +
+        "                       }\n" +
+        "          }\n";
+    response = harness.post("/schema", json(payload));
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertEquals(2, l.size());
+
+    payload = "{\n" +
+        "          'delete-copy-field' : {\n" +
+        "                       'source' :'bleh_s',\n" +
+        "                       'dest':['name','bind']\n" +
+        "                       }\n" +
+        "          }\n";
+
+    response = harness.post("/schema", json(payload));
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
+  }
+
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
 
@@ -904,6 +974,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     map = (Map) fromJSONString(response);
     assertNull(map.get("error"));
   }
+
   public void testSortableTextFieldWithAnalyzer() throws Exception {
     String fieldTypeName = "sort_text_type";
     String fieldName = "sort_text";
@@ -958,7 +1029,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     }
     
   }
-  
+
   @Test
   public void testAddNewFieldAndQuery() throws Exception {
     getSolrClient().add(Arrays.asList(
@@ -976,7 +1047,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     int size = getSolrClient().query(query).getResults().size();
     assertEquals(1, size);
   }
-  
+
   public void testSimilarityParser() throws Exception {
     RestTestHarness harness = restTestHarness;
 

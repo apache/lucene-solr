@@ -3149,14 +3149,18 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     parent = sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w");
     parent.addChildDocument( sdoc("id","2.1", "type_s","page", "page_s","a", "v_t","x y z")  );
-    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","b", "v_t","x y  ") );
-    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","a", "v_t","x1   z")  );
+    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","a", "v_t","x2   z")  );
+    parent.addChildDocument( sdoc("id","2.4", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","2.5", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.6", "type_s","page", "page_s","c", "v_t","    z" )  );
     client.add(parent, null);
 
     parent = sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e");
-    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","d", "v_t","x    ")  );
-    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","e", "v_t","  y  ")  );
-    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","f", "v_t","    z")  );
+    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","d", "v_t","x    ")  );
+    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","e", "v_t","  y  ")  );
+    parent.addChildDocument( sdoc("id","3.4", "type_s","page", "page_s","f", "v_t","    z")  );
     client.add(parent, null);
 
     parent = sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e");
@@ -3171,34 +3175,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    field:type_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"unique(_root_)\" }"+
+            "           in_books: \"unique(_root_)\"," +
+            "           via_field:\"uniqueBlock(_root_)\","+
+            "           via_query:\"uniqueBlock({!v=type_s:book})\" }"+
             "  }," +
             "  pages: {" +
             "    type:terms," +
             "    field:page_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlock(_root_)\" }"+
+            "           in_books: \"unique(_root_)\"," +
+            "           via_field:\"uniqueBlock(_root_)\","+
+            "           via_query:\"uniqueBlock({!v=type_s:book})\" }"+
             "  }" +
             "}" )
 
-        , "response=={numFound:6,start:0,docs:[]}"
-        , "facets=={ count:6," +
+        , "response=={numFound:10,start:0,docs:[]}"
+        , "facets=={ count:10," +
             "types:{" +
-            "    buckets:[ {val:page, count:6, in_books:2} ]}" +
+            "    buckets:[ {val:page, count:10, in_books:2, via_field:2, via_query:2 } ]}" +
             "pages:{" +
             "    buckets:[ " +
-            "     {val:a, count:1, in_books:1}," +
-            "     {val:b, count:1, in_books:1}," +
-            "     {val:c, count:1, in_books:1}," +
-            "     {val:d, count:1, in_books:1}," +
-            "     {val:e, count:1, in_books:1}," +
-            "     {val:f, count:1, in_books:1}" +
+            "     {val:a, count:3, in_books:1, via_field:1, via_query:1}," +
+            "     {val:b, count:2, in_books:2, via_field:2, via_query:2}," +
+            "     {val:c, count:2, in_books:1, via_field:1, via_query:1}," +
+            "     {val:d, count:1, in_books:1, via_field:1, via_query:1}," +
+            "     {val:e, count:1, in_books:1, via_field:1, via_query:1}," +
+            "     {val:f, count:1, in_books:1, via_field:1, via_query:1}" +
             "    ]}" +
             "}"
     );
   }
-
 
   /**
    * Similar to {@link #testBlockJoin} but uses query time joining.
@@ -3454,6 +3461,62 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.testJQ(params(p, "json.facet"
         , "{price:{type : range,field : num_i,ranges:[{range:\"[*,*]\"}]}}"),
         "facets=={count:6, price:{buckets:[{val:\"[*,*]\",count:5}]}}");
+  }
+
+  @Test
+  public void testDateFacets() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    boolean multiValue = random().nextBoolean();
+    String dateField = multiValue? "b_dts": "b_dt";
+    String dateRange = multiValue? "b_drfs": "b_drf";
+
+    client.add(sdoc("id", "1", "cat_s", "A", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"), null);
+    client.add(sdoc("id", "2", "cat_s", "B", dateField, "2015-01-03T00:00:00Z",
+        dateRange, "2015-01-03T00:00:00Z"), null);
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(sdoc("id", "4", "cat_s", "A", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"), null);
+    client.add(sdoc("id", "5", "cat_s", "B", dateField, "2015-01-03T00:00:00Z",
+        dateRange, "2015-01-03T00:00:00Z"),null);
+    client.commit();
+    client.add(sdoc("id", "6", "cat_s", "B", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"),null);
+    client.commit();
+
+    SolrParams p = params("q", "*:*", "rows", "0");
+    for (String s : new String[]{dateField, dateRange}) {
+      client.testJQ(params(p, "json.facet"
+          , "{date:{type : range, mincount:1, field :" + s +
+              ",start:'2013-11-01T00:00:00Z',end:NOW,gap:'+90DAY'}}"),
+          "facets=={count:6, date:{buckets:" +
+              "[{val:\"2014-01-30T00:00:00Z\",count:3}, {val:\"2014-10-27T00:00:00Z\",count:2}]" +
+              "}}");
+
+      // with ranges
+      client.testJQ(params(p, "json.facet"
+          , "{date:{type : range, mincount:1, field :" + s +
+              ",ranges:[{from:'2013-11-01T00:00:00Z', to:'2014-04-30T00:00:00Z'}," +
+              "{from:'2015-01-01T00:00:00Z', to:'2020-01-30T00:00:00Z'}]}}"),
+          "facets=={count:6, date:{buckets:" +
+              "[{val:\"[2013-11-01T00:00:00Z,2014-04-30T00:00:00Z)\",count:3}," +
+              " {val:\"[2015-01-01T00:00:00Z,2020-01-30T00:00:00Z)\",count:2}]" +
+              "}}");
+    }
+
+    client.add(sdoc("id", "7", "cat_s", "B", dateRange, "[2010 TO 2014-05-21]"),null);
+    client.commit();
+    client.testJQ(params(p, "json.facet"
+        , "{date:{type : range, other:'before', field :" + dateRange +
+            ",start:'2011-11-01T00:00:00Z',end:'2016-01-30T00:00:00Z',gap:'+1YEAR'}}"),
+        "facets=={count:7, date:{buckets:[" +
+            "{val:\"2011-11-01T00:00:00Z\",count:1}, {val:\"2012-11-01T00:00:00Z\",count:1}," +
+            "{val:\"2013-11-01T00:00:00Z\",count:4}, {val:\"2014-11-01T00:00:00Z\",count:2}," +
+            "{val:\"2015-11-01T00:00:00Z\",count:0}" +
+            "],before:{count:1}" +
+            "}}");
   }
 
   @Test

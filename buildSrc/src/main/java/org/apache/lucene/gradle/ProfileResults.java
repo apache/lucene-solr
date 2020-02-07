@@ -73,6 +73,8 @@ public class ProfileResults {
   /*
    * Making the java code wordy to work around gradle's broken property design, ugh!
    */
+  public static final String MODE_KEY = "tests.profile.mode";
+  public static final String MODE_DEFAULT = "cpu";
   public static final String STACKSIZE_KEY = "tests.profile.stacksize";
   public static final String STACKSIZE_DEFAULT = "1";
   public static final String COUNT_KEY = "tests.profile.count";
@@ -89,67 +91,125 @@ public class ProfileResults {
    */
   public static void main(String[] args) throws IOException {
     printReport(Arrays.asList(args),
+                System.getProperty(MODE_KEY, MODE_DEFAULT),
                 Integer.parseInt(System.getProperty(STACKSIZE_KEY, STACKSIZE_DEFAULT)),
                 Integer.parseInt(System.getProperty(COUNT_KEY, COUNT_DEFAULT)),
                 Boolean.parseBoolean(System.getProperty(LINENUMBERS_KEY, LINENUMBERS_DEFAULT)));
   }
 
+  /** true if we care about this event */
+  static boolean isInteresting(String mode, RecordedEvent event) {
+    String name = event.getEventType().getName();
+    switch(mode) {
+      case "cpu":
+        return (name.equals("jdk.ExecutionSample") || name.equals("jdk.NativeMethodSample")) &&
+            !isGradlePollThread(event.getThread("sampledThread"));
+      case "heap":
+        return (name.equals("jdk.ObjectAllocationInNewTLAB") || name.equals("jdk.ObjectAllocationOutsideTLAB")) &&
+            !isGradlePollThread(event.getThread("eventThread"));
+      default:
+        throw new UnsupportedOperationException(event.toString());
+    }
+  }
+
+  /** true if the thread is gradle epoll thread (which we don't care about) */
+  static boolean isGradlePollThread(RecordedThread thread) {
+    return (thread != null && thread.getJavaName().startsWith("/127.0.0.1"));
+  }
+
+  /** value we accumulate for this event */
+  static long getValue(RecordedEvent event) {
+    switch(event.getEventType().getName()) {
+      case "jdk.ObjectAllocationInNewTLAB":
+        return event.getLong("tlabSize");
+      case "jdk.ObjectAllocationOutsideTLAB":
+        return event.getLong("allocationSize");
+      case "jdk.ExecutionSample":
+        return 1L;
+      case "jdk.NativeMethodSample":
+        return 1L;
+      default:
+        throw new UnsupportedOperationException(event.toString());
+    }
+  }
+
+  /** format a value, if its huge, we show millions */
+  static String formatValue(long value) {
+    if (value > 1_000_000) {
+      return String.format("%dM", value / 1_000_000);
+    } else {
+      return Long.toString(value);
+    }
+  }
+
+  /** fixed width used for printing the different columns */
+  private static final int COLUMN_SIZE = 14;
+  private static final String COLUMN_PAD = "%-" + COLUMN_SIZE + "s";
+  private static String pad(String input) {
+    return String.format(Locale.ROOT, COLUMN_PAD, input);
+  }
+
   /**
    * Process all the JFR files passed in args and print a merged summary.
    */
-  public static void printReport(List<String> files, int stacksize, int count, boolean lineNumbers) throws IOException {
+  public static void printReport(List<String> files, String mode, int stacksize, int count, boolean lineNumbers) throws IOException {
+    if (!"cpu".equals(mode) && !"heap".equals(mode)) {
+      throw new IllegalArgumentException("tests.profile.mode must be one of (cpu,heap)");
+    }
     if (stacksize < 1) {
       throw new IllegalArgumentException("tests.profile.stacksize must be positive");
     }
     if (count < 1) {
       throw new IllegalArgumentException("tests.profile.count must be positive");
     }
-    Map<String, SimpleEntry<String, Integer>> histogram = new HashMap<>();
-    int total = 0;
+    Map<String, SimpleEntry<String, Long>> histogram = new HashMap<>();
+    int totalEvents = 0;
+    long sumValues = 0;
+    String framePadding = " ".repeat(COLUMN_SIZE * 2);
     for (String file : files) {
       try (RecordingFile recording = new RecordingFile(Paths.get(file))) {
         while (recording.hasMoreEvents()) {
           RecordedEvent event = recording.readEvent();
-          RecordedThread thread = event.getThread("sampledThread");
-          // ignore gradle's epoll loop in the worker thread
-          if (thread != null && thread.getJavaName().startsWith("/127.0.0.1")) {
+          if (!isInteresting(mode, event)) {
             continue;
           }
-          // process java and native method samples
-          if (event.getEventType().getName().equals("jdk.ExecutionSample") ||
-              event.getEventType().getName().equals("jdk.NativeMethodSample")) {
-            RecordedStackTrace trace = event.getStackTrace();
-            if (trace != null) {
-              StringBuilder stack = new StringBuilder();
-              for (int i = 0; i < Math.min(stacksize, trace.getFrames().size()); i++) {
-                if (stack.length() > 0) {
-                  stack.append("\n\t\t\t  at ");
-                }
-                stack.append(frameToString(trace.getFrames().get(i), lineNumbers));
+          RecordedStackTrace trace = event.getStackTrace();
+          if (trace != null) {
+            StringBuilder stack = new StringBuilder();
+            for (int i = 0; i < Math.min(stacksize, trace.getFrames().size()); i++) {
+              if (stack.length() > 0) {
+                stack.append("\n")
+                     .append(framePadding)
+                     .append("  at ");
               }
-              String line = stack.toString();
-              SimpleEntry<String,Integer> entry = histogram.computeIfAbsent(line, u -> new SimpleEntry<String, Integer>(line, 0));
-              entry.setValue(entry.getValue() + 1);
-              total++;
+              stack.append(frameToString(trace.getFrames().get(i), lineNumbers));
             }
+            String line = stack.toString();
+            SimpleEntry<String,Long> entry = histogram.computeIfAbsent(line, u -> new SimpleEntry<String, Long>(line, 0L));
+            long value = getValue(event);
+            entry.setValue(entry.getValue() + value);
+            totalEvents++;
+            sumValues += value;
           }
         }
       }
     }
     // print summary from histogram
-    System.out.printf(Locale.ROOT, "PROFILE SUMMARY from %d samples\n", total);
+    System.out.printf(Locale.ROOT, "PROFILE SUMMARY from %d events (total: %s)\n", totalEvents, formatValue(sumValues));
+    System.out.printf(Locale.ROOT, "  tests.profile.mode=%s\n", mode);
     System.out.printf(Locale.ROOT, "  tests.profile.count=%d\n", count);
-    System.out.printf(Locale.ROOT, "  tests.profile.stacksize=%d\n",  stacksize);
-    System.out.printf(Locale.ROOT, "  tests.profile.linenumbers=%b\n",  lineNumbers);
-    System.out.printf(Locale.ROOT, "PERCENT\tSAMPLES\tSTACK\n", total);
-    List<SimpleEntry<String, Integer>> entries = new ArrayList<>(histogram.values());
+    System.out.printf(Locale.ROOT, "  tests.profile.stacksize=%d\n", stacksize);
+    System.out.printf(Locale.ROOT, "  tests.profile.linenumbers=%b\n", lineNumbers);
+    System.out.printf(Locale.ROOT, "%s%sSTACK\n", pad("PERCENT"), pad(mode.toUpperCase(Locale.ROOT) + " SAMPLES"));
+    List<SimpleEntry<String, Long>> entries = new ArrayList<>(histogram.values());
     entries.sort((u, v) -> v.getValue().compareTo(u.getValue()));
     int seen = 0;
-    for (SimpleEntry<String, Integer> c : entries) {
+    for (SimpleEntry<String, Long> c : entries) {
       if (seen++ == count) {
         break;
       }
-      System.out.printf(Locale.ROOT, "%2.2f%%\t%d\t%s\n", 100 * (float) c.getValue() / total, c.getValue(), c.getKey());
+      String percent = String.format("%2.2f%%", 100 * (c.getValue() / (float) sumValues));
+      System.out.printf(Locale.ROOT, "%s%s%s\n", pad(percent), pad(formatValue(c.getValue())), c.getKey());
     }
   }
 }

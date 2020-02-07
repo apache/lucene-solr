@@ -210,7 +210,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   }
   
   public void testHashCodeWithThreads() throws Exception {
-    final AutomatonQuery queries[] = new AutomatonQuery[1000];
+    final AutomatonQuery queries[] = new AutomatonQuery[atLeast(100)];
     for (int i = 0; i < queries.length; i++) {
       queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
     }
