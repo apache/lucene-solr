@@ -22,7 +22,7 @@ reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
-reJ8Caption = re.compile('<h3>(.*?) Summary</h3>')
+reJ8Caption = re.compile('<h[23]>(.*?) Summary</h[23]>')
 reTDLastNested = re.compile('^<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
 reMethod = re.compile('^<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 reColOne = re.compile('^<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
@@ -31,8 +31,9 @@ reNestedClassMemberNameLink = re.compile('^<td class="colLast"><code><span class
 reMemberNameOneLink = re.compile('^<td class="colOne"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)"', re.IGNORECASE)
 
 # the Method detail section at the end
-reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
+reMethodDetail = re.compile('^<h[23]>Method Details?</h[23]>$', re.IGNORECASE)
 reMethodDetailAnchor = re.compile('^(?:</a>)?<a id="([^>]*?)">$', re.IGNORECASE)
+reJ13MethodDetailAnchor = re.compile('^(?:<h3>|</a>)<a id="([^>]*?)">[^>]*</a></h3>$', re.IGNORECASE)
 
 reTag = re.compile("(?i)<(\/?\w+)((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
 
@@ -176,7 +177,7 @@ def checkClassSummaries(fullPath):
     # they should be specified elsewhere, if they are e.g. jdk or 
     # external classes we cannot inherit their docs anyway
     if foundMethodDetail:
-      m = reMethodDetailAnchor.search(line)
+      m = reMethodDetailAnchor.search(line) or reJ13MethodDetailAnchor.search(line)
       if m is not None:
         lastMethodAnchor = m.group(1)
         continue
