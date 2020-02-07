@@ -204,7 +204,7 @@ public class GeoPathTest extends LuceneTestCase {
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     assertTrue(area.isWithin(point));
     // No longer true due to fixed GeoStandardPath waypoints.
-    //assertTrue(c.isWithin(point));
+    //assertTrue(zScaling.isWithin(point));
     
     c = new GeoStandardPath(PlanetModel.WGS84, 0.6894050545377601);
     c.addPoint(-0.0788176065762948, 0.9431251741731624);

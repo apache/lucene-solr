@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial3d;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 
@@ -35,17 +36,18 @@ public class TestGeo3DDocValues extends LuceneTestCase {
   }
     
   void checkPointEncoding(final double latitude, final double longitude) {
-    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(latitude), Geo3DUtil.fromDegrees(longitude));
-    long pointValue = Geo3DDocValuesField.encodePoint(point);
-    final double x = Geo3DDocValuesField.decodeXValue(pointValue);
-    final double y = Geo3DDocValuesField.decodeYValue(pointValue);
-    final double z = Geo3DDocValuesField.decodeZValue(pointValue);
+    PlanetModel planetModel = RandomPicks.randomFrom(random(), new PlanetModel[] {PlanetModel.WGS84, PlanetModel.CLARKE_1866});
+    final GeoPoint point = new GeoPoint(planetModel, Geo3DUtil.fromDegrees(latitude), Geo3DUtil.fromDegrees(longitude));
+    long pointValue = planetModel.getDocValueEncoder().encodePoint(point);
+    final double x = planetModel.getDocValueEncoder().decodeXValue(pointValue);
+    final double y = planetModel.getDocValueEncoder().decodeYValue(pointValue);
+    final double z = planetModel.getDocValueEncoder().decodeZValue(pointValue);
     final GeoPoint pointR = new GeoPoint(x,y,z);
     // Check whether stable
-    pointValue = Geo3DDocValuesField.encodePoint(x, y, z);
-    assertEquals(x, Geo3DDocValuesField.decodeXValue(pointValue), 0.0);
-    assertEquals(y, Geo3DDocValuesField.decodeYValue(pointValue), 0.0);
-    assertEquals(z, Geo3DDocValuesField.decodeZValue(pointValue), 0.0);
+    pointValue = planetModel.getDocValueEncoder().encodePoint(x, y, z);
+    assertEquals(x, planetModel.getDocValueEncoder().decodeXValue(pointValue), 0.0);
+    assertEquals(y, planetModel.getDocValueEncoder().decodeYValue(pointValue), 0.0);
+    assertEquals(z, planetModel.getDocValueEncoder().decodeZValue(pointValue), 0.0);
     // Check whether has some relationship with original point
     assertEquals(0.0, point.arcDistance(pointR), 0.02);
   }

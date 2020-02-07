@@ -19,14 +19,16 @@ package org.apache.lucene.spatial3d;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial3d.geom.GeoDistanceShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 
 /**
  * Sorts by distance from an origin location.
  */
 final class Geo3DPointSortField extends SortField {
   final GeoDistanceShape distanceShape;
+  final PlanetModel planetModel;
 
-  Geo3DPointSortField(final String field, final GeoDistanceShape distanceShape) {
+  Geo3DPointSortField(final String field, final PlanetModel planetModel, final GeoDistanceShape distanceShape) {
     super(field, SortField.Type.CUSTOM);
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
@@ -35,12 +37,13 @@ final class Geo3DPointSortField extends SortField {
       throw new IllegalArgumentException("distanceShape must not be null");
     }
     this.distanceShape = distanceShape;
+    this.planetModel = planetModel;
     setMissingValue(Double.POSITIVE_INFINITY);
   }
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new Geo3DPointDistanceComparator(getField(), distanceShape, numHits);
+    return new Geo3DPointDistanceComparator(getField(), planetModel, distanceShape, numHits);
   }
 
   @Override
