@@ -19,8 +19,8 @@ import java.nio.file.Files
 
 // This adds top-level 'documentation-lint' task.
 
+// target projects for javadoc linting
 def includes = allprojects.findAll { it.file('src/java').exists() }
-def tmpJavadocDir = Files.createTempDirectory('javadoc')
 
 // Change the log level for the STDOUT to INFO (default is QUIET)
 // so that lint scripts' output will be printed without --debug option
@@ -52,49 +52,19 @@ configure(rootProject) {
     }
   }
 
-  // checking broken links in Javadocs
-  task('checkBrokenLinks', type: Exec) {
-    (includes).each {
-      // before checking, collect all built Javadocs to temporary dir
-      dependsOn "${it.path}:copyBuiltJavadocs"
+  task('checkBrokenLinks', type: CheckBrokenJavadocsLinksTask) {
+    includes.each {
+      dependsOn "${it.path}:javadoc"
     }
-
-    executable 'python3'
-    args "-B", "${rootDir}/dev-tools/scripts/checkJavadocLinks.py", tmpJavadocDir
   }
-
-  task ('cleanUpJavadocDir', type: Delete) {
-    delete tmpJavadocDir
-  }
-
-  checkBrokenLinks.finalizedBy cleanUpJavadocDir
-
 }
 
 configure(includes) { prj ->
-  plugins.withType(JavaPlugin) {
-
-    task('ecjJavadocLint', type: EcjJavadocLintTask) {
-      dependsOn ':build'
-    }
-
-    task('copyBuiltJavadocs', type: Copy, dependsOn: 'javadoc') {
-      from('build/docs/javadoc') {
-        include '**/*.html'
-        include '**/*.js'
-        include '**/*.css'
-        includeEmptyDirs false
-      }
-      into "${tmpJavadocDir}/${project.path.replace(':', '/')}"
-    }
-  }
-
+  task('ecjJavadocLint', type: EcjJavadocLintTask, dependsOn: 'classes')
 }
 
-// check missing javadocs
 allprojects {
-  task('checkMissingJavadocs', type: CheckMissingJavadocsTask, dependsOn: 'javadoc') {
-  }
+  task('checkMissingJavadocs', type: CheckMissingJavadocsTask, dependsOn: 'javadoc')
 }
 
 // todo: add missing docs for all classes and bump this to level=class
@@ -192,6 +162,49 @@ class EcjJavadocLintTask extends DefaultTask {
       ecjJavadocLint(srcTestDir, dstDir.toString(), testcp)
     } finally {
       dstDir.deleteDir()
+    }
+  }
+}
+
+class CheckBrokenJavadocsLinksTask extends DefaultTask {
+
+  // collect all built Javadocs to temp dir for linting
+  def copyAllJavadocs(String tmpJavadocDir) {
+    def prjWithJavadoc = project.allprojects.findAll { it.file('src/java').exists() && it.file('build/docs/javadoc').exists() }
+    prjWithJavadoc.each { prj ->
+      prj.copy {
+        from('build/docs/javadoc') {
+          include '**/*.html'
+          include '**/*.js'
+          include '**/*.css'
+          includeEmptyDirs false
+        }
+        into "${tmpJavadocDir}/${prj.path.replace(':', '/')}"
+      }
+    }
+  }
+
+  def checkBrokenJavadocLinks(dir) {
+    project.exec {
+      executable "python3"
+      args = [
+        "-B",
+        "${project.rootProject.rootDir}/dev-tools/scripts/checkJavadocLinks.py",
+        dir
+      ]
+    }
+  }
+
+  @TaskAction
+  def lint() {
+    def tmpJavadocDir = Files.createTempDirectory("javadoc")
+    try {
+      copyAllJavadocs(tmpJavadocDir.toString())
+      println("Checking for broken links...")
+      checkBrokenJavadocLinks("${tmpJavadocDir.toString()}/lucene")
+      checkBrokenJavadocLinks("${tmpJavadocDir.toString()}/solr")
+    } finally {
+      tmpJavadocDir.deleteDir()
     }
   }
 }
