@@ -25,7 +25,8 @@
  * Contained packages:
  * </p>
  * 
- * <table border=1 cellpadding=4 summary="table of benchmark packages">
+ * <table class="padding4" style="border: 1px solid">
+ *  <caption>table of benchmark packages</caption>
  *  <tr>
  *    <td><b>Package</b></td>
  *    <td><b>Description</b></td>
@@ -63,7 +64,7 @@
  *                     report.</a></li>
  *         <li><a href="#recsCounting">Results record counting clarified</a></li>
  *     </ol>
- * <a name="concept"></a>
+ * <a id="concept"></a>
  * <h2>Benchmarking By Tasks</h2>
  * <p>
  * Benchmark Lucene using task primitives.
@@ -79,7 +80,7 @@
  * additional characteristics of the benchmark run.
  * </p>
  * 
- * <a name="usage"></a>
+ * <a id="usage"></a>
  * <h2>How to use</h2>
  * <p>
  * Easiest way to run a benchmarks is using the predefined ant task:
@@ -166,7 +167,7 @@
  * <b>org.apache.lucene.benchmark.byTask.tasks</b> specify that package thru the
  * <span style="color: #FF0000">alt.tasks.packages</span> property.
  * 
- * <a name="algorithm"></a>
+ * <a id="algorithm"></a>
  * <h2>Benchmark "algorithm"</h2>
  * 
  * <p>
@@ -312,7 +313,7 @@
  * </ol>
  * 
  * 
- * <a name="tasks"></a>
+ * <a id="tasks"></a>
  * <h2>Supported tasks/commands</h2>
  * 
  * <p>
@@ -481,7 +482,7 @@
  *  </li>
  *  </ol>
  * 
- * <a name="properties"></a>
+ * <a id="properties"></a>
  * <h2>Benchmark properties</h2>
  * 
  * <p>
@@ -604,7 +605,7 @@
  * For sample use of these properties see the *.alg files under conf.
  * </p>
  * 
- * <a name="example"></a>
+ * <a id="example"></a>
  * <h2>Example input algorithm and the result benchmark report</h2>
  * <p>
  * The following example is in conf/sample.alg:
@@ -690,7 +691,7 @@
  * PopulateLong -  - 1  20 1000 -  -   1 -  -   10003 -  -  - 77.0 -  - 129.92 -  87,309,608 -  100,831,232
  * </pre>
  * 
- * <a name="recsCounting"></a>
+ * <a id="recsCounting"></a>
  * <h2>Results record counting clarified</h2>
  * <p>
  * Two columns in the results table indicate records counts: records-per-run and

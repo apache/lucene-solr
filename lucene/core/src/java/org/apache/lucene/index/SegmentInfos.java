@@ -54,7 +54,7 @@ import org.apache.lucene.util.Version;
  * segments in relation to the file system.
  * <p>
  * The active segments in the index are stored in the segment info file,
- * <tt>segments_N</tt>. There may be one or more <tt>segments_N</tt> files in
+ * <code>segments_N</code>. There may be one or more <code>segments_N</code> files in
  * the index; however, the one with the largest generation is the active one
  * (when older segments_N files are present it's because they temporarily cannot
  * be deleted, or a custom {@link IndexDeletionPolicy} is in
@@ -64,7 +64,7 @@ import org.apache.lucene.util.Version;
  * <p>
  * Files:
  * <ul>
- * <li><tt>segments_N</tt>: Header, LuceneVersion, Version, NameCounter, SegCount, MinSegmentLuceneVersion, &lt;SegName,
+ * <li><code>segments_N</code>: Header, LuceneVersion, Version, NameCounter, SegCount, MinSegmentLuceneVersion, &lt;SegName,
  * SegID, SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen,
  * UpdatesFiles&gt;<sup>SegCount</sup>, CommitUserData, Footer
  * </ul>

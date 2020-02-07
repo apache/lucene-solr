@@ -65,7 +65,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
 
   protected String field;
   int phraseSlop = 0;
-  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
   TimeZone timeZone = TimeZone.getDefault();

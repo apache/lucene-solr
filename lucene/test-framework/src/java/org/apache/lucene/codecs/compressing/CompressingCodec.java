@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
@@ -35,16 +36,16 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Create a random instance.
    */
-  public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
+  public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockShift) {
     switch (random.nextInt(4)) {
     case 0:
-      return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 1:
-      return new FastDecompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new FastDecompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 2:
-      return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 3:
-      return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockSize);
+      return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     default:
       throw new AssertionError();
     }
@@ -57,7 +58,9 @@ public abstract class CompressingCodec extends FilterCodec {
   public static CompressingCodec randomInstance(Random random) {
     final int chunkSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1 << 15);
     final int chunkDocs = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 64, 1024);
-    final int blockSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1024);
+    final int blockSize = random.nextBoolean()
+        ? RandomNumbers.randomIntBetween(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, 10)
+        : RandomNumbers.randomIntBetween(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
     return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
   }
 
@@ -70,8 +73,8 @@ public abstract class CompressingCodec extends FilterCodec {
     // e.g. defaults use 128 for FAST and 512 for HIGH
     final int chunkDocs = TestUtil.nextInt(random, 1<<6, 1<<10);
     // e.g. defaults use 1024 for both cases
-    final int blockSize = TestUtil.nextInt(random, 1<<9, 1<<11);
-    return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
+    final int blockShift = TestUtil.nextInt(random, 8, 12);
+    return randomInstance(random, chunkSize, chunkDocs, false, blockShift);
   }
   
   /**
@@ -91,10 +94,10 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Creates a compressing codec with a given segment suffix
    */
-  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
+  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) {
     super(name, TestUtil.getDefaultCodec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockSize);
-    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize, blockSize);
+    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
+    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize, blockShift);
   }
   
   /**

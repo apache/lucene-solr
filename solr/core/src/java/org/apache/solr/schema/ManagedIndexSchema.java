@@ -860,7 +860,11 @@ public final class ManagedIndexSchema extends IndexSchema {
           break;
         }
       }
-    } else { // non-dynamic copy field directive
+    }
+
+    if (!found) {
+      // non-dynamic copy field directive.
+      // Here, source field could either exists in schema or match a dynamic rule
       List<CopyField> copyFieldList = copyFieldsMap.get(source);
       if (copyFieldList != null) {
         for (Iterator<CopyField> iter = copyFieldList.iterator() ; iter.hasNext() ; ) {

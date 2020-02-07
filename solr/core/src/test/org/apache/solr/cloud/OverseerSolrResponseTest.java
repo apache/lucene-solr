@@ -62,7 +62,7 @@ public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
     exceptionNl.add("msg", e.getMessage());
     exceptionNl.add("rspCode", e.code());
     responseNl.add("exception", exceptionNl);
-    OverseerSolrResponse deserialized = OverseerSolrResponse.deserialize(OverseerSolrResponse.serialize(new OverseerSolrResponse(responseNl)));
+    OverseerSolrResponse deserialized = OverseerSolrResponseSerializer.deserialize(OverseerSolrResponseSerializer.serialize(new OverseerSolrResponse(responseNl)));
     assertNotNull("Expecting an exception", deserialized.getException());
     assertEquals("Unexpected exception type in deserialized response", SolrException.class, deserialized.getException().getClass());
     assertEquals("Unexpected exception code in deserialized response", e.code(), ((SolrException)deserialized.getException()).code());
@@ -71,8 +71,8 @@ public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
   
   private void assertSerializeDeserialize(NamedList<Object> content) {
     OverseerSolrResponse response = new OverseerSolrResponse(content);
-    byte[] serialized = OverseerSolrResponse.serialize(response);
-    OverseerSolrResponse deserialized = OverseerSolrResponse.deserialize(serialized);
+    byte[] serialized = OverseerSolrResponseSerializer.serialize(response);
+    OverseerSolrResponse deserialized = OverseerSolrResponseSerializer.deserialize(serialized);
     assertEquals("Deserialized response is different than original", response.getResponse(), deserialized.getResponse());
   }
 

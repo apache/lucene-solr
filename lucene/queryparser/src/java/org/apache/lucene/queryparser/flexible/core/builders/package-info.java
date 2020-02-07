@@ -20,7 +20,7 @@
  *
  * <h2>Query Parser Builders</h2>
  * <p>
- * The package <tt>org.apache.lucene.queryParser.builders</tt> contains the interface that
+ * The package <code>org.apache.lucene.queryParser.builders</code> contains the interface that
  * builders must implement, it also contain a utility {@link org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder}, which walks the tree
  * and call the Builder for each node in the tree.
  * Builder normally convert QueryNode Object into a Lucene Query Object,

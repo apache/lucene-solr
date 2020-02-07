@@ -35,12 +35,12 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Random-access reader for {@link CompressingStoredFieldsIndexWriter}.
+ * Random-access reader for {@link FieldsIndexWriter}.
  * @lucene.internal
  */
-public final class CompressingStoredFieldsIndexReader implements Cloneable, Accountable {
+final class LegacyFieldsIndexReader extends FieldsIndex {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(CompressingStoredFieldsIndexReader.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LegacyFieldsIndexReader.class);
 
   final int maxDoc;
   final int[] docBases;
@@ -52,7 +52,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
 
   // It is the responsibility of the caller to close fieldsIndexIn after this constructor
   // has been called
-  CompressingStoredFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
+  LegacyFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
     maxDoc = si.maxDoc();
     int[] docBases = new int[16];
     long[] startPointers = new long[16];
@@ -163,7 +163,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
   }
 
   @Override
-  public CompressingStoredFieldsIndexReader clone() {
+  public LegacyFieldsIndexReader clone() {
     return this;
   }
 
@@ -210,5 +210,10 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(blocks=" + docBases.length + ")";
+  }
+
+  @Override
+  public void close() throws IOException {
+    // nothing to do
   }
 }
