@@ -47,7 +47,7 @@ allprojects {
       opts.addBooleanOption('Xdoclint:all,-missing,-accessibility', true)
 
       def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
-      opts.overview = file("src/main/java/overview.html").toString()
+      opts.overview = file("src/java/overview.html").toString()
       opts.docTitle = "${libName} ${project.version} ${project.name} API"
       opts.windowTitle = "${libName} ${project.version} ${project.name} API"
       opts.bottom = "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>"
