@@ -379,11 +379,10 @@ public class QueryBuilder {
       return null;
     }
 
-    List<SpanQuery> terms = new ArrayList<>();
+    List<SpanTermQuery> terms = new ArrayList<>();
     while (in.incrementToken()) {
       boost = boostAtt.getBoost();
-      SpanQuery query = new SpanTermQuery(new Term(field, termAtt.getBytesRef()));
-      terms.add(query);
+      terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
     }
 
     if (terms.isEmpty()) {
@@ -472,7 +471,7 @@ public class QueryBuilder {
   protected Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
     builder.setSlop(slop);
-
+    
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);

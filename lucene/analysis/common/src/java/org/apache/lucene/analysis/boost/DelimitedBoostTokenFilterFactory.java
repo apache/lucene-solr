@@ -16,15 +16,7 @@
  */
 package org.apache.lucene.analysis.boost;
 
-
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
-import org.apache.lucene.analysis.payloads.FloatEncoder;
-import org.apache.lucene.analysis.payloads.IdentityEncoder;
-import org.apache.lucene.analysis.payloads.IntegerEncoder;
-import org.apache.lucene.analysis.payloads.PayloadEncoder;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -39,19 +31,23 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @since 3.1
  * @lucene.spi {@value #NAME}
+ * @since 3.1
  */
 public class DelimitedBoostTokenFilterFactory extends TokenFilterFactory {
 
-  /** SPI name */
+  /**
+   * SPI name
+   */
   public static final String NAME = "delimitedBoost";
   public static final String DELIMITER_ATTR = "delimiter";
   public static final char DEFAULT_DELIMITER = '|';
-  
+
   private final char delimiter;
-  
-  /** Creates a new DelimitedPayloadTokenFilterFactory */
+
+  /**
+   * Creates a new DelimitedPayloadTokenFilterFactory
+   */
   public DelimitedBoostTokenFilterFactory(Map<String, String> args) {
     super(args);
     delimiter = getChar(args, DELIMITER_ATTR, DEFAULT_DELIMITER);
@@ -64,5 +60,5 @@ public class DelimitedBoostTokenFilterFactory extends TokenFilterFactory {
   public DelimitedBoostTokenFilter create(TokenStream input) {
     return new DelimitedBoostTokenFilter(input, delimiter);
   }
-  
+
 }

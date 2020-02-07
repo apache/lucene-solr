@@ -43,7 +43,6 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
-  protected boolean synonymBoostByPayload;
   protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
 
   /**
@@ -88,12 +87,6 @@ public class TextField extends FieldType {
     if (enableGraphQueriesStr != null)
       enableGraphQueries = Boolean.parseBoolean(enableGraphQueriesStr);
 
-    boolean boostByPayload = false;
-    String boostByPayloadStr = args.remove(BOOST_BY_PAYLOAD);
-    if (boostByPayloadStr != null)
-      boostByPayload = Boolean.parseBoolean(boostByPayloadStr);
-    this.synonymBoostByPayload = boostByPayload;
-
     super.init(schema, args);    
   }
 
@@ -118,10 +111,6 @@ public class TextField extends FieldType {
   
   public boolean getEnableGraphQueries() {
     return enableGraphQueries;
-  }
-
-  public boolean getSynonymBoostByPayload() {
-    return synonymBoostByPayload;
   }
 
   public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}

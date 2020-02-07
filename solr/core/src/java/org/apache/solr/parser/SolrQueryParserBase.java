@@ -602,13 +602,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return query;
   }
 
-  /**
-   * Builds a new GraphQuery for multi-terms synonyms.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   *
-   * @return new Query instance
-   */
   @Override
   protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
     switch (synonymQueryStyle) {

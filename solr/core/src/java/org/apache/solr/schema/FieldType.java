@@ -1063,7 +1063,6 @@ public abstract class FieldType extends FieldProperties {
 
   protected static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
-  protected static final String BOOST_BY_PAYLOAD = "boostByPayload";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
   protected static final String SYNONYM_QUERY_STYLE = "synonymQueryStyle";

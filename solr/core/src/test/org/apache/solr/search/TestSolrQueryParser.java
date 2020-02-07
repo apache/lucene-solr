@@ -1209,6 +1209,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
 
   public void testSynonymQueryStyle() throws Exception {
+
     Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
     assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
 
