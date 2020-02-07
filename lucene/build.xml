@@ -39,7 +39,7 @@
                         **/lib/*.jar,
                         licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
+              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar,dev-docs/**"
   />
 
   <!-- ================================================================== -->
