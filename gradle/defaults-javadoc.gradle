@@ -44,7 +44,7 @@ allprojects {
       )
 
       opts.addStringOption("-release", "11")
-      opts.addBooleanOption('Xdoclint:all,-missing,-accessibility,-html', true)
+      opts.addBooleanOption('Xdoclint:all,-missing,-accessibility', true)
 
       def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
       opts.overview = file("src/main/java/overview.html").toString()

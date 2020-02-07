@@ -96,7 +96,7 @@ public class Trie {
   /**
    * Constructor for the Trie object.
    * 
-   * @param forward set to <tt>true</tt>
+   * @param forward set to <code>true</code>
    */
   public Trie(boolean forward) {
     rows.add(new Row());
@@ -107,7 +107,7 @@ public class Trie {
   /**
    * Constructor for the Trie object.
    * 
-   * @param forward <tt>true</tt> if read left to right, <tt>false</tt> if read
+   * @param forward <code>true</code> if read left to right, <code>false</code> if read
    *          right to left
    * @param root index of the row that is the root node
    * @param cmds the patch commands to store

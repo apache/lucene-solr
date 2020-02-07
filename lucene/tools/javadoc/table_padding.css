@@ -14,21 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Necessary interfaces to implement text parsers.
- * 
- * <h2>Parser</h2>
- * <p>
- * The package <code>org.apache.lucene.queryparser.flexible.parser</code> contains interfaces
- * that should be implemented by the parsers.
- * 
- * Parsers produce QueryNode Trees from a string object.
- * These package still needs some work to add support to for multiple parsers.
- * 
- * Features that should be supported for the future, related with the parser:
- * - QueryNode tree should be able convertible to any parser syntax.
- * - The query syntax should support calling other parsers.
- * - QueryNode tree created by multiple parsers.
+
+/*
+ * some css needed for dealing with legacy table attributes in docs
+ * let's remove this file and fix things to be a cleaner way!
  */
-package org.apache.lucene.queryparser.flexible.core.parser;
+
+table.padding1 td,th {
+  padding: 1px;
+}
+
+table.padding2 td,th {
+  padding: 2px;
+}
+
+table.padding3 td,th {
+  padding: 3px;
+}
+
+table.padding4 td,th {
+  padding: 4px;
+}

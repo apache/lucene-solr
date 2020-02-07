@@ -40,7 +40,7 @@ import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 6.0 Field Infos format.
- * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.
+ * <p>Field names are stored in the field info file, with suffix <code>.fnm</code>.
  * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
  * FieldBits,DocValuesBits,DocValuesGen,Attributes,DimensionCount,DimensionNumBytes&gt; <sup>FieldsCount</sup>,Footer
  * <p>Data types:

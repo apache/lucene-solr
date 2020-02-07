@@ -35,8 +35,8 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * A {@link StoredFieldsFormat} that compresses documents in chunks in
  * order to improve the compression ratio.
  * <p>
- * For a chunk size of <tt>chunkSize</tt> bytes, this {@link StoredFieldsFormat}
- * does not support documents larger than (<tt>2<sup>31</sup> - chunkSize</tt>)
+ * For a chunk size of <var>chunkSize</var> bytes, this {@link StoredFieldsFormat}
+ * does not support documents larger than (<code>2<sup>31</sup> - chunkSize</code>)
  * bytes.
  * <p>
  * For optimal performance, you should use a {@link MergePolicy} that returns

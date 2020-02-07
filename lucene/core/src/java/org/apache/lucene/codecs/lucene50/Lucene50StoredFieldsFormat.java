@@ -57,10 +57,10 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * <p><b>File formats</b>
  * <p>Stored fields are represented by three files:
  * <ol>
- * <li><a name="field_data"></a>
- * <p>A fields data file (extension <tt>.fdt</tt>). This file stores a compact
+ * <li><a id="field_data"></a>
+ * <p>A fields data file (extension <code>.fdt</code>). This file stores a compact
  * representation of documents in compressed blocks of 16KB or more. When
- * writing a segment, documents are appended to an in-memory <tt>byte[]</tt>
+ * writing a segment, documents are appended to an in-memory <code>byte[]</code>
  * buffer. When its size reaches 16KB or more, some metadata about the documents
  * is flushed to disk, immediately followed by a compressed representation of
  * the buffer using the
@@ -83,21 +83,21 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * is less than 0.5%.</li>
  * </ul>
  * </li>
- * <li><a name="field_index"></a>
- * <p>A fields index file (extension <tt>.fdx</tt>). This file stores two
+ * <li><a id="field_index"></a>
+ * <p>A fields index file (extension <code>.fdx</code>). This file stores two
  * {@link DirectMonotonicWriter monotonic arrays}, one for the first doc IDs of
  * each block of compressed documents, and another one for the corresponding
  * offsets on disk. At search time, the array containing doc IDs is
  * binary-searched in order to find the block that contains the expected doc ID,
  * and the associated offset on disk is retrieved from the second array.</p>
- * <li><a name="field_meta"></a>
- * <p>A fields meta file (extension <tt>.fdm</tt>). This file stores metadata
+ * <li><a id="field_meta"></a>
+ * <p>A fields meta file (extension <code>.fdm</code>). This file stores metadata
  * about the monotonic arrays stored in the index file.</p>
  * </li>
  * </ol>
  * <p><b>Known limitations</b>
  * <p>This {@link StoredFieldsFormat} does not support individual documents
- * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.
+ * larger than (<code>2<sup>31</sup> - 2<sup>14</sup></code>) bytes.
  * @lucene.experimental
  */
 public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {

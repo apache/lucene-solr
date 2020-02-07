@@ -41,7 +41,7 @@
  * </li>
  * </ul>
  * </div>
- * <a name="Introduction"></a>
+ * <a id="Introduction"></a>
  * <h2>Introduction</h2>
  * <div>
  * <p>This document defines the index file formats used in this version of Lucene.
@@ -51,7 +51,7 @@
  * <p>This document attempts to provide a high-level definition of the Apache
  * Lucene file formats.</p>
  * </div>
- * <a name="Definitions"></a>
+ * <a id="Definitions"></a>
  * <h2>Definitions</h2>
  * <div>
  * <p>The fundamental concepts in Lucene are index, document, field and term.</p>
@@ -64,14 +64,14 @@
  * <p>The same sequence of bytes in two different fields is considered a different 
  * term. Thus terms are represented as a pair: the string naming the field, and the
  * bytes within the field.</p>
- * <a name="Inverted_Indexing"></a>
+ * <a id="Inverted_Indexing"></a>
  * <h3>Inverted Indexing</h3>
  * <p>The index stores statistics about terms in order to make term-based search
  * more efficient. Lucene's index falls into the family of indexes known as an
  * <i>inverted index.</i> This is because it can list, for a term, the documents
  * that contain it. This is the inverse of the natural relationship, in which
  * documents list terms.</p>
- * <a name="Types_of_Fields"></a>
+ * <a id="Types_of_Fields"></a>
  * <h3>Types of Fields</h3>
  * <p>In Lucene, fields may be <i>stored</i>, in which case their text is stored
  * in the index literally, in a non-inverted manner. Fields that are inverted are
@@ -82,7 +82,7 @@
  * indexed literally.</p>
  * <p>See the {@link org.apache.lucene.document.Field Field}
  * java docs for more information on Fields.</p>
- * <a name="Segments"></a>
+ * <a id="Segments"></a>
  * <h3>Segments</h3>
  * <p>Lucene indexes may be composed of multiple sub-indexes, or <i>segments</i>.
  * Each segment is a fully independent index, which could be searched separately.
@@ -93,7 +93,7 @@
  * </ol>
  * <p>Searches may involve multiple segments and/or multiple indexes, each index
  * potentially composed of a set of segments.</p>
- * <a name="Document_Numbers"></a>
+ * <a id="Document_Numbers"></a>
  * <h3>Document Numbers</h3>
  * <p>Internally, Lucene refers to documents by an integer <i>document number</i>.
  * The first document added to an index is numbered zero, and each subsequent
@@ -122,7 +122,7 @@
  * </li>
  * </ul>
  * </div>
- * <a name="Overview"></a>
+ * <a id="Overview"></a>
  * <h2>Index Structure Overview</h2>
  * <div>
  * <p>Each segment index maintains the following:</p>
@@ -194,7 +194,7 @@
  * </ul>
  * <p>Details on each of these are provided in their linked pages.</p>
  * </div>
- * <a name="File_Naming"></a>
+ * <a id="File_Naming"></a>
  * <h2>File Naming</h2>
  * <div>
  * <p>All files belonging to a segment have the same name with varying extensions.
@@ -210,12 +210,13 @@
  * segments_1, then segments_2, etc. The generation is a sequential long integer
  * represented in alpha-numeric (base 36) form.</p>
  * </div>
- * <a name="file-names"></a>
+ * <a id="file-names"></a>
  * <h2>Summary of File Extensions</h2>
  * <div>
  * <p>The following table summarizes the names and extensions of the files in
  * Lucene:</p>
- * <table cellspacing="1" cellpadding="4" summary="lucene filenames by extension">
+ * <table class="padding4" style="border-spacing: 1px; border-collapse: separate">
+ * <caption>lucene filenames by extension</caption>
  * <tr>
  * <th>Name</th>
  * <th>Extension</th>
@@ -315,7 +316,7 @@
  * </tr>
  * </table>
  * </div>
- * <a name="Lock_File"></a>
+ * <a id="Lock_File"></a>
  * <h2>Lock File</h2>
  * The write lock, which is stored in the index directory by default, is named
  * "write.lock". If the lock directory is different from the index directory then
@@ -323,7 +324,7 @@
  * derived from the full path to the index directory. When this file is present, a
  * writer is currently modifying the index (adding or removing documents). This
  * lock file ensures that only one writer is modifying the index at a time.
- * <a name="History"></a>
+ * <a id="History"></a>
  * <h2>History</h2>
  * <p>Compatibility notes are provided in this document, describing how file
  * formats have changed from prior versions:</p>
@@ -399,7 +400,7 @@
  * <li>In version 8.4, postings, positions, offsets and payload lengths have move to a more
  * performant encoding that is vectorized.</li>
  * </ul>
- * <a name="Limitations"></a>
+ * <a id="Limitations"></a>
  * <h2>Limitations</h2>
  * <div>
  * <p>Lucene uses a Java <code>int</code> to refer to
