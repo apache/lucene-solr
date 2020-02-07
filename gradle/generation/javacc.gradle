@@ -33,6 +33,7 @@ configure(rootProject) {
     dependsOn ":lucene:queryparser:javaccParserClassic"
     dependsOn ":lucene:queryparser:javaccParserSurround"
     dependsOn ":lucene:queryparser:javaccParserFlexible"
+    dependsOn ":solr:core:javaccSolrParser"
   }
 }
 
@@ -128,7 +129,7 @@ class JavaCCTask extends DefaultTask {
 
 configure(project(":lucene:queryparser")) {
   task javaccParserClassic(type: JavaCCTask) {
-    description "Regenerate classic query parser from java CC.java"
+    description "Regenerate classic query parser from lucene/queryparser/classic/QueryParser.jj"
     group "generation"
 
     javaccFile = file('src/java/org/apache/lucene/queryparser/classic/QueryParser.jj')
@@ -185,7 +186,7 @@ configure(project(":lucene:queryparser")) {
 
 configure(project(":lucene:queryparser")) {
   task javaccParserSurround(type: JavaCCTask) {
-    description "Regenerate surround query parser from java CC.java"
+    description "Regenerate surround query parser from lucene/queryparser/surround/parser/QueryParser.jj"
     group "generation"
 
     javaccFile = file('src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj')
@@ -228,13 +229,12 @@ configure(project(":lucene:queryparser")) {
             replace: "",
             encoding: "UTF-8")
       }
-
     }
   }
 }
 configure(project(":lucene:queryparser")) {
   task javaccParserFlexible(type: JavaCCTask) {
-    description "Regenerate Flexible query parser from java CC.java"
+    description "Regenerate Flexible query parser from queryparser/flexible/standard/parser/StandardSyntaxParser.jj"
     group "generation"
 
     javaccFile = file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj')
@@ -334,6 +334,52 @@ configure(project(":lucene:queryparser")) {
             replace: "",
             encoding: "UTF-8")
       }
+    }
+  }
+}
+configure(project(":solr:core")) {
+  task javaccSolrParser(type: JavaCCTask) {
+    description "Regenerate Solr query parser from solr/parser/QueryParser.jj"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
+
+    doLast {
+      def separator = System.getProperty('line.separator')
+      def parentDir = javaccFile.parentFile
+
+      [/import java\.io\.StringReader;/,
+       /import java\.util\.ArrayList;/,
+       /import java\.util\.Arrays;/,
+       /import java\.util\.HashSet;/,
+       /import java\.util\.List;/,
+       /import java\.util\.Set;/,
+       /import org\.apache\.lucene\.analysis\.Analyzer;/,
+       /import org\.apache\.lucene\.search\.BooleanClause;/,
+       /import org\.apache\.lucene\.search\.Query;/,
+       /import org\.apache\.solr\.search\.SyntaxError;/,
+       /import org\.apache\.solr\.search\.QParser;/
+      ].each {
+        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
+            match: "${it}\\s*${separator}",
+            replace: "",
+            encoding: "UTF-8")
+      }
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "public QueryParser(CharStream ",
+          value: "protected QueryParser(CharStream ",
+          encoding: "UTF-8")
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "public QueryParser(QueryParserTokenManager ",
+          value: "protected QueryParser(QueryParserTokenManager ",
+          encoding: "UTF-8")
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "final private LookaheadSuccess jj_ls =",
+          value: "static final private LookaheadSuccess jj_ls =",
+          encoding: "UTF-8")
     }
   }
 }

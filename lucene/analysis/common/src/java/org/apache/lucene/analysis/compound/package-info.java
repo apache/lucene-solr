@@ -18,7 +18,8 @@
 /**
  * A filter that decomposes compound words you find in many Germanic
  * languages into the word parts. This example shows what it does:
- * <table border="1" summary="example input stream">
+ * <table style="border: 1px solid">
+ *  <caption>example input stream</caption>
  *  <tr>
  *   <th>Input token stream</th>
  *  </tr>
@@ -27,7 +28,8 @@
  *  </tr>
  * </table>
  * <br>
- * <table border="1" summary="example output stream">
+ * <table style="border: 1px solid">
+ *  <caption>example output stream</caption>
  *  <tr>
  *   <th>Output token stream</th>
  *  </tr>
@@ -118,7 +120,8 @@
  * 
  * <h3>Which variant should I use?</h3>
  * This decision matrix should help you:
- * <table border="1" summary="comparison of dictionary and hyphenation based decompounding">
+ * <table style="border: 1px solid">
+ *  <caption>comparison of dictionary and hyphenation based decompounding</caption>
  *  <tr>
  *   <th>Token filter</th>
  *   <th>Output quality</th>

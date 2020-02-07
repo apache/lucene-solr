@@ -628,12 +628,6 @@
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
   <target name="-documentation-lint" depends="documentation">
-    <jtidy-macro>
-       <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
-            javadocs generates invalid XML if you deprecate a method that takes a parameter
-            with a generic type -->
-      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
-    </jtidy-macro>
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
     <echo message="Checking for malformed docs..."/>
