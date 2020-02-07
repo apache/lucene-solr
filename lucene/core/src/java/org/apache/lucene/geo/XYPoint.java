@@ -27,31 +27,29 @@ package org.apache.lucene.geo;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public final class Point extends LatLonGeometry {
+public final class XYPoint extends XYGeometry {
 
   /** latitude coordinate */
-  private final double lat;
+  private final double x;
   /** longitude coordinate */
-  private final double lon;
+  private final double y;
 
   /**
    * Creates a new Point from the supplied latitude/longitude.
    */
-  public Point(double lat, double lon) {
-    GeoUtils.checkLatitude(lat);
-    GeoUtils.checkLongitude(lon);
-    this.lat = lat;
-    this.lon = lon;
+  public XYPoint(float x, float y) {
+    this.x = x;
+    this.y = y;
   }
 
   /** Returns latitude value at given index */
-  public double getLat() {
-    return lat;
+  public double getX() {
+    return x;
   }
 
   /** Returns longitude value at given index */
-  public double getLon() {
-    return lon;
+  public double getY() {
+    return y;
   }
 
   @Override
@@ -62,15 +60,15 @@ public final class Point extends LatLonGeometry {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Point)) return false;
-    Point point = (Point) o;
-    return point.lat == lat && point.lon == lon;
+    if (!(o instanceof XYPoint)) return false;
+    XYPoint point = (XYPoint) o;
+    return point.x == x && point.y == y;
   }
 
   @Override
   public int hashCode() {
-    int result = Double.hashCode(lat);
-    result = 31 * result + Double.hashCode(lon);
+    int result = Double.hashCode(x);
+    result = 31 * result + Double.hashCode(y);
     return result;
   }
 
@@ -78,9 +76,9 @@ public final class Point extends LatLonGeometry {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Point(");
-    sb.append(lon);
+    sb.append(x);
     sb.append(",");
-    sb.append(lat);
+    sb.append(y);
     sb.append(')');
     return sb.toString();
   }
