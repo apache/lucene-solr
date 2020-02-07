@@ -45,7 +45,6 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.AttributeSource;
 
 /**
  * QueryParser which permits complex phrase query syntax eg "(john jon
@@ -148,15 +147,15 @@ public class ComplexPhraseQueryParser extends QueryParser {
   // to throw a runtime exception here if a term for another field is embedded
   // in phrase query
   @Override
-  protected Query newTermQuery(String field, AttributeSource attribute) {
+  protected Query newTermQuery(Term term, float boost) {
     if (isPass2ResolvingPhrases) {
       try {
-        checkPhraseClauseIsForSameField(field);
+        checkPhraseClauseIsForSameField(term.field());
       } catch (ParseException pe) {
         throw new RuntimeException("Error parsing complex phrase", pe);
       }
     }
-    return super.newTermQuery(field,attribute);
+    return super.newTermQuery(term, boost);
   }
 
   // Helper method used to report on any clauses that appear in query syntax

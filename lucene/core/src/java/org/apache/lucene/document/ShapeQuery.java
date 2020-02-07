@@ -79,7 +79,7 @@ abstract class ShapeQuery extends Query {
   /**
    *   relates an internal node (bounding box of a range of triangles) to the target query
    *   Note: logic is specific to query type
-   *   see {@link LatLonShapeBoundingBoxQuery#relateRangeToQuery} and {@link LatLonShapePolygonQuery#relateRangeToQuery}
+   *   see {@link LatLonShapeBoundingBoxQuery#relateRangeToQuery} and {@link LatLonShapeQuery#relateRangeToQuery}
    */
   protected abstract Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                      int maxXOffset, int maxYOffset, byte[] maxTriangle);

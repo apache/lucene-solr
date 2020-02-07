@@ -54,7 +54,7 @@ public class TestDanishAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new DanishAnalyzer();
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
 }

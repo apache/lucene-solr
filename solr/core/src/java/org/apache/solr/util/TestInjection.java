@@ -257,8 +257,9 @@ public class TestInjection {
         if (rand.nextBoolean()) {
           throw new TestShutdownFailError("Test exception for non graceful close");
         } else {
-          
+          final Timer timer = new Timer();
           final Thread cthread = Thread.currentThread();
+
           TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -275,11 +276,10 @@ public class TestInjection {
               }
               
               cthread.interrupt();
-              timers.remove(this);
-              cancel();
+              timers.remove(timer);
             }
           };
-          Timer timer = new Timer();
+
           timers.add(timer);
           timer.schedule(task, rand.nextInt(500));
         }

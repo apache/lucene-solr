@@ -37,7 +37,7 @@ import org.apache.lucene.geo.GeoUtils.WindingOrder;
  * </ol>
  * @lucene.experimental
  */
-public final class Polygon {
+public final class Polygon extends LatLonGeometry {
   private final double[] polyLats;
   private final double[] polyLons;
   private final Polygon[] holes;
@@ -161,6 +161,11 @@ public final class Polygon {
   /** returns the number of holes for the polygon */
   public int numHoles() {
     return holes.length;
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return Polygon2D.create(this);
   }
 
   @Override

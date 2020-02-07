@@ -21,6 +21,8 @@ import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /** generates random cartesian geometry; heavy reuse of {@link GeoTestUtil} */
@@ -28,24 +30,25 @@ public class ShapeTestUtil {
 
   /** returns next pseudorandom polygon */
   public static XYPolygon nextPolygon() {
-    if (random().nextBoolean()) {
-      return surpriseMePolygon();
-    } else if (random().nextInt(10) == 1) {
+    Random random = random();
+    if (random.nextBoolean()) {
+      return surpriseMePolygon(random);
+    } else if (LuceneTestCase.TEST_NIGHTLY && random.nextInt(10) == 1) {
       // this poly is slow to create ... only do it 10% of the time:
       while (true) {
-        int gons = TestUtil.nextInt(random(), 4, 500);
+        int gons = TestUtil.nextInt(random, 4, 500);
         // So the poly can cover at most 50% of the earth's surface:
-        double radius = random().nextDouble() * 0.5 * Float.MAX_VALUE + 1.0;
+        double radius = random.nextDouble() * 0.5 * Float.MAX_VALUE + 1.0;
         try {
-          return createRegularPolygon(nextDouble(), nextDouble(), radius, gons);
+          return createRegularPolygon(nextDouble(random), nextDouble(random), radius, gons);
         } catch (IllegalArgumentException iae) {
           // we tried to cross dateline or pole ... try again
         }
       }
     }
 
-    XYRectangle box = nextBoxInternal();
-    if (random().nextBoolean()) {
+    XYRectangle box = nextBox(random);
+    if (random.nextBoolean()) {
       // box
       return boxPolygon(box);
     } else {
@@ -68,22 +71,18 @@ public class ShapeTestUtil {
     return new XYPolygon(polyX, polyY);
   }
 
-  public static XYRectangle nextBox() {
-    return nextBoxInternal();
-  }
-
-  private static XYRectangle nextBoxInternal() {
+  public static XYRectangle nextBox(Random random) {
     // prevent lines instead of boxes
-    double x0 = nextDouble();
-    double x1 = nextDouble();
+    double x0 = nextDouble(random);
+    double x1 = nextDouble(random);
     while (x0 == x1) {
-      x1 = nextDouble();
+      x1 = nextDouble(random);
     }
     // prevent lines instead of boxes
-    double y0 = nextDouble();
-    double y1 = nextDouble();
+    double y0 = nextDouble(random);
+    double y1 = nextDouble(random);
     while (y0 == y1) {
-      y1 = nextDouble();
+      y1 = nextDouble(random);
     }
 
     if (x1 < x0) {
@@ -117,25 +116,25 @@ public class ShapeTestUtil {
     return new XYPolygon(polyX, polyY);
   }
 
-  private static XYPolygon surpriseMePolygon() {
+  private static XYPolygon surpriseMePolygon(Random random) {
     // repeat until we get a poly that doesn't cross dateline:
     while (true) {
       //System.out.println("\nPOLY ITER");
-      double centerX = nextDouble();
-      double centerY = nextDouble();
-      double radius = 0.1 + 20 * random().nextDouble();
-      double radiusDelta = random().nextDouble();
+      double centerX = nextDouble(random);
+      double centerY = nextDouble(random);
+      double radius = 0.1 + 20 * random.nextDouble();
+      double radiusDelta = random.nextDouble();
 
       ArrayList<Float> xList = new ArrayList<>();
       ArrayList<Float> yList = new ArrayList<>();
       double angle = 0.0;
       while (true) {
-        angle += random().nextDouble()*40.0;
+        angle += random.nextDouble()*40.0;
         //System.out.println("  angle " + angle);
         if (angle > 360) {
           break;
         }
-        double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
+        double len = radius * (1.0 - radiusDelta + radiusDelta * random.nextDouble());
         double maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
         double maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
 
@@ -196,8 +195,8 @@ public class ShapeTestUtil {
     return new XYPolygon(result[0], result[1]);
   }
 
-  public static double nextDouble() {
-    return BiasedNumbers.randomDoubleBetween(random(), -Float.MAX_VALUE, Float.MAX_VALUE);
+  public static double nextDouble(Random random) {
+    return BiasedNumbers.randomDoubleBetween(random, -Float.MAX_VALUE, Float.MAX_VALUE);
   }
 
   /** Keep it simple, we don't need to take arbitrary Random for geo tests */

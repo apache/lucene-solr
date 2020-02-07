@@ -84,8 +84,6 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
 
 The following sections describe the tokenizer factory classes included in this release of Solr.
 
-For user tips about Solr's tokenizers, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
-
 == Standard Tokenizer
 
 This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:

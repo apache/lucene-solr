@@ -21,17 +21,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttributeImpl;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -49,12 +44,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
-import org.apache.lucene.search.SynonymQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.spans.SpanBoostQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
@@ -94,7 +84,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_REQ     = 11;
 
   protected SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
-  protected boolean synonymsBoostByPayload = false;
 
   /**
    *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
@@ -397,10 +386,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * Gets how overlapping query terms should be scored
    */
   public SynonymQueryStyle getSynonymQueryStyle() {return this.synonymQueryStyle;}
-  
-  public void setSynonymsBoostByPayload(boolean synonymsBoostByPayload) {
-    this.synonymsBoostByPayload = synonymsBoostByPayload;
-  }
+
 
   /**
    * Set to <code>true</code> to allow leading wildcard characters.
@@ -533,17 +519,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                 boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
-                                boolean synonymsBoostByPayload,
                                 SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
-    setSynonymsBoostByPayload(synonymsBoostByPayload);
     setSynonymQueryStyle(synonymQueryStyle);
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
-    setSynonymsBoostByPayload(false); // reset back to default
     setSynonymQueryStyle(AS_SAME_TERM);
     return query;
   }
@@ -617,131 +600,27 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return query;
   }
 
-  private Query buildBooleanQuery(List<Query> sidePathsQueries) {
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    for (Query sidePath : sidePathsQueries) {
-      builder.add(sidePath, BooleanClause.Occur.SHOULD);
-    }
-    return builder.build();
-  }
-
   @Override
-  protected Query newTermQuery(String field, AttributeSource attribute) {
-    Query termQuery = super.newTermQuery(field,attribute);
-    return getBoostedQueryByPayload(new AttributeSource[]{attribute}, termQuery);
-  }
-
-  @Override
-  protected Query newPhraseQuery(String field, AttributeSource[] attributes, int slop) {
-    Query phraseQuery = super.newPhraseQuery(field,attributes,slop);
-    return getBoostedQueryByPayload(attributes, phraseQuery);
-  }
-
-  @Override
-  protected SpanQuery newSpanQuery(String field, AttributeSource[] attributes) {
-    SpanQuery spanQuery = super.newSpanQuery(field,attributes);
-    return getBoostedQueryByPayload(attributes, spanQuery);
-  }
-
-  @Override
-  protected Query newSynonymQuery(String field, AttributeSource[] attributes) {
+  protected Query newSynonymQuery(TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
-      case PICK_BEST: {
-        List<Query> synonymQueries = getSynonymQueries(field, attributes);
-        return new DisjunctionMaxQuery(synonymQueries, 0.0f);
-      }
-      case AS_DISTINCT_TERMS: {
-        List<Query> synonymQueries = getSynonymQueries(field, attributes);
-        return buildBooleanQuery(synonymQueries);
-      }
-      case AS_SAME_TERM:{
-        SynonymQuery.Builder builder = new SynonymQuery.Builder(field);
-        for (int i = 0; i < attributes.length; i++) {
-          TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-          float payloadBoost = getDecodedPayload(attributes[i]);
-          if (isAcceptableBoost(payloadBoost)) {
-            builder.addTerm(new Term(field, termAttribute.getBytesRef()), payloadBoost);
-          } else {
-            builder.addTerm(new Term(field, termAttribute.getBytesRef()));
-          }
+      case PICK_BEST:
+        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        for (TermAndBoost term : terms) {
+          currPosnClauses.add(newTermQuery(term.term, term.boost));
+        }
+        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
+        return dm;
+      case AS_DISTINCT_TERMS:
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (TermAndBoost term : terms) {
+          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
-      }
+      case AS_SAME_TERM:
+        return super.newSynonymQuery(terms);
       default:
         throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
     }
-  }
-
-  private List<Query> getSynonymQueries(String field, AttributeSource[] attributes) {
-    List<Query> synonymQueries = new ArrayList<>(attributes.length);
-    for (int i = 0; i < attributes.length; i++) {
-      TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-      Query synonymQuery = new TermQuery(new Term(field, termAttribute.getBytesRef()));
-      synonymQueries.add(getBoostedQueryByPayload(new AttributeSource[]{attributes[i]}, synonymQuery));
-    }
-    return synonymQueries;
-  }
-  
-  private Query getBoostedQueryByPayload(AttributeSource[] attributes, Query query) {
-    float payloadBoost = 0f;
-    for (int i = 0; i < attributes.length; i++) {
-      payloadBoost = getDecodedPayload(attributes[i]);
-    }
-    if (isAcceptableBoost(payloadBoost)) {
-      return new BoostQuery(query, payloadBoost);
-    }
-    return query;
-  }
-  
-  private SpanQuery getBoostedQueryByPayload(AttributeSource[] attributes, SpanQuery query) {
-    float payloadBoost = 0f;
-    for (int i = 0; i < attributes.length; i++) {
-      payloadBoost = getDecodedPayload(attributes[i]);
-    }
-    if (isAcceptableBoost(payloadBoost)) {
-      return new SpanBoostQuery(query, payloadBoost);
-    }
-    return query;
-  }
-
-  private float getDecodedPayload(AttributeSource attribute) {
-    float payloadBoost = 0f;
-    PayloadAttributeImpl payloadAttribute = attribute.getAttributeImpl(PayloadAttributeImpl.class);
-    if (payloadAttribute != null && synonymsBoostByPayload) {
-      BytesRef payloadToDecode = payloadAttribute.getPayload();
-      if (payloadToDecode != null) {
-        payloadBoost = PayloadHelper.decodeFloat(payloadToDecode.bytes, payloadToDecode.offset);
-      }
-    }
-    return payloadBoost;
-  }
-
-  protected boolean isAcceptableBoost(float payloadBoost) {
-    return payloadBoost >0f && payloadBoost !=1f;
-  }
-
-  /**
-   * Builds a new GraphQuery for multi-terms synonyms.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   *
-   * @return new Query instance
-   */
-  @Override
-  protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
-      List<Query> sidePathSynonymQueries = new LinkedList<>();
-      sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
-      switch (synonymQueryStyle) {
-        case PICK_BEST: {
-          return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
-        }
-        case AS_SAME_TERM:
-        case AS_DISTINCT_TERMS: {
-          return buildBooleanQuery(sidePathSynonymQueries);
-        }
-        default:
-          throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
-      }
   }
 
   /**
@@ -865,7 +744,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           if (ft.isTokenized() && sfield.indexed()) {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-            boolean fieldSynonymsBoostByPayload = ft instanceof TextField && ((TextField)ft).getSynonymBoostByPayload();
 
             SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
             if (ft instanceof TextField) {
@@ -873,7 +751,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             }
 
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
+                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -1190,12 +1068,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        boolean fieldSynonymsBoostByPayload = ft instanceof TextField && ((TextField)ft).getSynonymBoostByPayload();
         SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
           synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
         }
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries,fieldSynonymsBoostByPayload, synonymQueryStyle);
+        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -1206,7 +1083,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true,false, AS_SAME_TERM);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, AS_SAME_TERM);
   }
 
   // Assumption: quoted is always false
@@ -1240,13 +1117,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        boolean fieldSynonymsBoostByPayload = ft instanceof TextField && ((TextField)ft).getSynonymBoostByPayload();
         SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
           synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
         }
         return newFieldQuery
-            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
+            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);
@@ -1278,7 +1154,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, false, AS_SAME_TERM);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, AS_SAME_TERM);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){

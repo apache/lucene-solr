@@ -18,43 +18,58 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Point2D;
+import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified bounding box.
+ * Finds all previously indexed cartesian shapes that comply the given {@link QueryRelation} with
+ * the specified array of {@link LatLonGeometry}.
  *
- * <p>The field must be indexed using
- * {@link LatLonShape#createIndexableFields} added per document.
+ * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
+ *
  **/
-final class LatLonShapePointQuery extends ShapeQuery {
-  final Component2D point2D;
-  final double[][] points;
+final class LatLonShapeQuery extends ShapeQuery {
+  final private LatLonGeometry[] geometries;
+  final private Component2D component2D;
 
-  public LatLonShapePointQuery(String field, ShapeField.QueryRelation queryRelation, double[][] points) {
+  /**
+   * Creates a query that matches all indexed shapes to the provided array of {@link LatLonGeometry}
+   */
+  LatLonShapeQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
-    this.points = points;
-    this.point2D = Point2D.create(points);
+    if (queryRelation == QueryRelation.WITHIN) {
+      for (LatLonGeometry geometry : geometries) {
+        if (geometry instanceof Line) {
+          // TODO: line queries do not support within relations
+          throw new IllegalArgumentException("LatLonShapeQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
+        }
+      }
+
+    }
+    this.component2D = LatLonGeometry.create(geometries);
+    this.geometries = geometries.clone();
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+
     double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
     double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
     double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return point2D.relate(minLon, maxLon, minLat, maxLat);
+    return component2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
-  /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
@@ -65,14 +80,10 @@ final class LatLonShapePointQuery extends ShapeQuery {
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS:
-        return point2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN:
-        return point2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
-      case DISJOINT:
-        return point2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
-      default:
-        throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
+      case INTERSECTS: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
 
@@ -87,24 +98,7 @@ final class LatLonShapePointQuery extends ShapeQuery {
     double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
 
-    return point2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return sameClassAs(o) && equalsTo(getClass().cast(o));
-  }
-
-  @Override
-  protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(points, ((LatLonShapePointQuery)o).points);
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(points);
-    return hash;
+    return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }
 
   @Override
@@ -117,7 +111,24 @@ final class LatLonShapePointQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("lat = " + points[0][0] + " , lon = " + points[0][1]);
+    sb.append("[");
+    for (int i = 0; i < geometries.length; i++) {
+      sb.append(geometries[i].toString());
+      sb.append(',');
+    }
+    sb.append(']');
     return sb.toString();
+  }
+
+  @Override
+  protected boolean equalsTo(Object o) {
+    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeQuery)o).geometries);
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = super.hashCode();
+    hash = 31 * hash + Arrays.hashCode(geometries);
+    return hash;
   }
 }

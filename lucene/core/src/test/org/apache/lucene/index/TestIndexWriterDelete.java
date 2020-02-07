@@ -482,11 +482,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     return hitCount;
   }
 
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
+  @Nightly
   public void testDeletesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(false);
   }
 
-  // TODO: can we tone this test down so it isn't crazy slow?
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
   @Nightly
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);
@@ -980,7 +982,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
   
-  @Slow
+  // TODO: this test can hit pathological cases (IW settings?) where it runs for far too long
+  @Nightly
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?

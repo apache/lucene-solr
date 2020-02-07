@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,6 +30,8 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -63,6 +64,24 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
+
+  /**
+   * Wraps a term and boost
+   */
+  public static class TermAndBoost {
+    /** the term */
+    public final Term term;
+    /** the boost */
+    public final float boost;
+
+    /**
+     * Creates a new TermAndBoost
+     */
+    public TermAndBoost(Term term, float boost) {
+      this.term = term;
+      this.boost = boost;
+    }
+  }
 
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
@@ -361,35 +380,41 @@ public class QueryBuilder {
    * Creates simple term query from the cached tokenstream contents 
    */
   protected Query analyzeTerm(String field, TokenStream stream) throws IOException {
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    
     stream.reset();
     if (!stream.incrementToken()) {
       throw new AssertionError();
     }
     
-    return newTermQuery(field,stream.cloneAttributes());
+    return newTermQuery(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost());
   }
   
   /** 
    * Creates simple boolean query from the cached tokenstream contents 
    */
   protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    
     stream.reset();
-    List<AttributeSource> clonedAttributes = new ArrayList<>();
+    List<TermAndBoost> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      clonedAttributes.add(stream.cloneAttributes());
+      terms.add(new TermAndBoost(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost()));
     }
-    return newSynonymQuery(field, clonedAttributes.toArray(new AttributeSource[clonedAttributes.size()]));
+    
+    return newSynonymQuery(terms.toArray(new TermAndBoost[0]));
   }
 
-  protected void add(BooleanQuery.Builder q, String field, List<AttributeSource> currentAttributes, BooleanClause.Occur operator) {
-    if (currentAttributes.isEmpty()) {
+  protected void add(BooleanQuery.Builder q, List<TermAndBoost> current, BooleanClause.Occur operator) {
+    if (current.isEmpty()) {
       return;
     }
-    if (currentAttributes.size() == 1) {
-      q.add(newTermQuery(field,currentAttributes.get(0)), operator);
+    if (current.size() == 1) {
+      q.add(newTermQuery(current.get(0).term, current.get(0).boost), operator);
     } else {
-      Query synonymQuery = newSynonymQuery(field, currentAttributes.toArray(new AttributeSource[currentAttributes.size()]));
-      q.add(synonymQuery, operator);
+      q.add(newSynonymQuery(current.toArray(new TermAndBoost[0])), operator);
     }
   }
 
@@ -398,18 +423,22 @@ public class QueryBuilder {
    */
   protected Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
     BooleanQuery.Builder q = newBooleanQuery();
-    List<AttributeSource> cumulativeAttributes = new ArrayList<>();
+    List<TermAndBoost> currentQuery = new ArrayList<>();
+    
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
-        add(q, field, cumulativeAttributes, operator);
-        cumulativeAttributes.clear();
+        add(q, currentQuery, operator);
+        currentQuery.clear();
       }
-      cumulativeAttributes.add(stream.cloneAttributes());
+      currentQuery.add(new TermAndBoost(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost()));
     }
-    add(q, field, cumulativeAttributes, operator);
-
+    add(q, currentQuery, operator);
+    
     return q.build();
   }
   
@@ -497,11 +526,18 @@ public class QueryBuilder {
         positionalQuery = newGraphSynonymQuery(queries);
       } else {
         List<AttributeSource> attributes = graph.getTerms(start);
-        assert attributes.size()> 0;
-        if (attributes.size() == 1) {
-          positionalQuery = newTermQuery(field,attributes.get(0));
+        TermAndBoost[] terms = attributes.stream()
+            .map(s -> {
+              TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
+              BoostAttribute b = s.addAttribute(BoostAttribute.class);
+              return new TermAndBoost(new Term(field, t.getBytesRef()), b.getBoost());
+            })
+            .toArray(TermAndBoost[]::new);
+        assert terms.length > 0;
+        if (terms.length == 1) {
+          positionalQuery = newTermQuery(terms[0].term, terms[0].boost);
         } else {
-          positionalQuery = newSynonymQuery(field, attributes.toArray(new AttributeSource[attributes.size()]));
+          positionalQuery = newSynonymQuery(terms);
         }
       }
       if (positionalQuery != null) {
@@ -620,11 +656,10 @@ public class QueryBuilder {
    * This is intended for subclasses that wish to customize the generated queries.
    * @return new Query instance
    */
-  protected Query newSynonymQuery(String field, AttributeSource[] attributes) {
-    SynonymQuery.Builder builder = new SynonymQuery.Builder(field);
-    for (int i = 0; i < attributes.length; i++) {
-      TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-      builder.addTerm(new Term(field, termAttribute.getBytesRef()));
+  protected Query newSynonymQuery(TermAndBoost[] terms) {
+    SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].term.field());
+    for (TermAndBoost t : terms) {
+      builder.addTerm(t.term, t.boost);
     }
     return builder.build();
   }
@@ -651,57 +686,17 @@ public class QueryBuilder {
    * Builds a new TermQuery instance.
    * <p>
    * This is intended for subclasses that wish to customize the generated queries.
+   * @param term term
    * @return new TermQuery instance
    */
-  protected Query newTermQuery(String field, AttributeSource attribute) {
-    TermToBytesRefAttribute termAttribute = attribute.getAttribute(TermToBytesRefAttribute.class);
-    return new TermQuery(new Term(field, termAttribute.getBytesRef()));
-  }
-
-  /**
-   * Builds a new PhraseQuery instance.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   * @return new PhraseQuery instance
-   */
-  protected Query newPhraseQuery(String field, AttributeSource[] attributes, int slop) {
-    PhraseQuery.Builder builder = new PhraseQuery.Builder();
-    builder.setSlop(slop);
-    int position =-1;
-    for (int i = 0; i < attributes.length; i++) {
-      TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-      PositionIncrementAttribute posIncrAtt = attributes[i].getAttribute(PositionIncrementAttribute.class);
-      if (enablePositionIncrements) {
-        position += posIncrAtt.getPositionIncrement();
-      } else {
-        position += 1;
-      }
-      builder.add(new Term(field, termAttribute.getBytesRef()), position);
+  protected Query newTermQuery(Term term, float boost) {
+    Query q = new TermQuery(term);
+    if (boost == 1.0f) {
+      return q;
     }
-    return builder.build();
+    return new BoostQuery(q, boost);
   }
-
-  /**
-   * Builds a new PhraseQuery instance.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   * @return new PhraseQuery instance
-   */
-  protected SpanQuery newSpanQuery(String field, AttributeSource[] attributes) {
-    List<SpanTermQuery> spanQueries = new ArrayList<>(attributes.length);
-    for (int i = 0; i < attributes.length; i++) {
-      TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-      SpanTermQuery q = new SpanTermQuery(new Term(field, termAttribute.getBytesRef()));
-      spanQueries.add(q);
-    }
-    if (spanQueries.isEmpty()) {
-      return null;
-    } else if (spanQueries.size() == 1) {
-      return spanQueries.get(0);
-    } else {
-      return new SpanNearQuery(spanQueries.toArray(new SpanTermQuery[0]), 0, true);
-    }
-  }
+  
   
   /**
    * Builds a new MultiPhraseQuery instance.

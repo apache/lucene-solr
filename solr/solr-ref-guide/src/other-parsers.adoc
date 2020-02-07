@@ -591,36 +591,95 @@ The hash range query parser uses a special cache to improve the speedup of the q
 
 == Join Query Parser
 
-`JoinQParser` extends the `QParserPlugin`. It allows normalizing relationships between documents with a join operation. This is different from the concept of a join in a relational database because no information is being truly joined. An appropriate SQL analogy would be an "inner query".
+The Join query parser allows users to run queries that normalize relationships between documents.
+Solr runs a subquery of the user's choosing (the `v` param), identifies all the values that matching documents have in a field of interest (the `from` param), and then returns documents where those values are contained in a second field of interest (the `to` param).
 
-Examples:
-
-Find all products containing the word "ipod", join them against manufacturer docs and return the list of manufacturers:
-
-[source,text]
-----
-{!join from=manu_id_s to=id}ipod
-----
-
-Find all manufacturer docs named "belkin", join them against product docs, and filter the list to only products with a price less than $12:
+In practice, these semantics are much like "inner queries" in a SQL engine.
+As an example, consider the Solr query below:
 
 [source,text]
 ----
-q  = {!join from=id to=manu_id_s}compName_s:Belkin
-fq = price:[* TO 12]
+/solr/techproducts/select?q={!join from=manu_id_s to=id}title:ipod
 ----
 
-The join operation is done on a term basis, so the "from" and "to" fields must use compatible field types. For example: joining between a `StrField` and a `IntPointField` will not work, likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
+This query, which returns a document for each manufacturer that makes a product with "ipod" in the title, is semantically identical to the SQL query below:
 
-=== Join Parser Scoring
+[source,text]
+----
+SELECT *
+FROM techproducts
+WHERE id IN (
+    SELECT manu_id_s
+    FROM techproducts
+    WHERE title='ipod'
+  )
+----
 
-You can optionally use the `score` parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum) `total`, or `none`.
+The join operation is done on a term basis, so the `from` and `to` fields must use compatible field types.
+For example: joining between a `StrField` and a `IntPointField` will not work.
+Likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
 
-.Score parameter and single value numerics
+=== Parameters
+
+This query parser takes the following parameters:
+
+`from`::
+The name of a field which contains values to look for in the "to" field.
+Can be single or multi-valued, but must have a field type compatible with the field represented in the "to" field.
+This parameter is required.
+
+`to`::
+The name of a field whose value(s) will be checked against those found in the "from" field.
+Can be single or multi-valued, but must have a field type compatible with the "from" field.
+This parameter is required.
+
+`fromIndex`::
+The name of the index to run the "from" query (`v` parameter) on and where "from" values are gathered.
+Must be located on the same node as the core processing the request.
+This parameter is optional; it defaults to the value of the processing core if not specified.
+See <<Joining Across Collections,Joining Across Collections>> below for more information.
+
+`score`::
+An optional parameter that instructs Solr to return information about the "from" query scores.
+The value of this parameter controls what type of aggregation information is returned.
+Options include `avg` (average), `max` (maximum), `min` (minimum), `total` (total), or `none`.
++
+If `method` is not specified but `score` is, then the `dvWithScore` method is used.
+If `method` is specified and is not `dvWithScore`, then the `score` value is ignored.
+See the `method` parameter documentation below for more details.
+
+
+`method`::
+An optional parameter used to determine which of several query implementations should be used by Solr.
+Options are restricted to: `index`, `dvWithScore`, and `topLevelDV`.
+If unspecified the default value is `index`, unless the `score` parameter is present which overrides it to `dvWithScore`.
+Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.
+Details and performance heuristics are given below.
++
+`index` the default `method` unless the `score` parameter is specified.
+Uses the terms index structures to process the request.
+Performance scales with the cardinality and number of postings (term occurrences) in the "from" field.
+Consider this method when the "from" field has low cardinality, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this is a disadvantage of other methods that `index` avoids).
+
++
+`dvWithScore` returns an optional "score" statistic alongside result documents.
+Uses docValues structures if available, but falls back to the field cache when necessary.
+The first access to the field cache slows down the initial requests following a commit and takes up additional space on the JVM heap, so docValues are recommended in most situations.
+Performance scales linearly with the number of values matched in the "from" field.
+This method must be used if score information is required, and should also be considered when the "from" query matches few documents, regardless of the number of "to" side documents returned.
++
+.dvWithScore and single value numerics
 [WARNING]
 ====
-Specifying `score` local parameter switches the join algorithm. This might have performance implication on large indices, but it's more important that this algorithm won't work for single value numeric field starting from 7.0. Users are encouraged to change field types to string and rebuild indexes during migration.
+The `dvWithScore` method doesn't support single value numeric fields. Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
 ====
++
+`topLevelDV` can only be used when `to` and `from` fields have docValues data, and does not currently support numeric fields.
+Uses top-level docValues data structures to find results.
+These data structures outperform other methods as the number of values matched in the `from` field grows high.
+But they are also expensive to build and need to be lazily populated after each commit, causing a sometimes-noticeable slowdown on the first query to use them after each commit.
+If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
+Consider this method when the "from" query matches a large number of documents and the "to" result set is small to moderate in size, but only if sporadic post-commit slowness is tolerable.
 
 === Joining Across Collections
 
@@ -663,7 +722,7 @@ node 4: movie_directors_shard1_replica4
 
 At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join. If a local replica is not available or active, then the query will fail. At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection. Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
-For more information about join queries, see the Solr Wiki page on http://wiki.apache.org/solr/Join[Joins]. Erick Erickson has also written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
 
 == Lucene Query Parser
 

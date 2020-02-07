@@ -293,7 +293,7 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Analyzer a = new CJKAnalyzer();
-    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), a, 10 * RANDOM_MULTIPLIER, 8192);
     a.close();
   }
   

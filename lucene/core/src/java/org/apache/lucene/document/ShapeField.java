@@ -35,7 +35,6 @@ import org.apache.lucene.util.NumericUtils;
  * <p>
  * This class defines the static methods for encoding the three vertices of a tessellated triangles as a seven dimension point.
  * The coordinates are converted from double precision values into 32 bit integers so they are sortable at index time.
- * <p>
  */
 public final class ShapeField {
   /** vertex coordinates are encoded as 4 byte integers */
