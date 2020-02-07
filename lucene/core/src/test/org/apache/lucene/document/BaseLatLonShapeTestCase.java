@@ -22,11 +22,9 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -75,17 +73,22 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toLine2D(Object... lines) {
-    return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
+    return LatLonGeometry.create(Arrays.stream(lines).toArray(Line[]::new));
   }
 
   @Override
   protected Component2D toPolygon2D(Object... polygons) {
-    return Polygon2D.create(Arrays.stream(polygons).toArray(Polygon[]::new));
+    return LatLonGeometry.create(Arrays.stream(polygons).toArray(Polygon[]::new));
   }
 
   @Override
   protected Component2D toPoint2D(Object... points) {
-    return Point2D.create(Arrays.stream(points).toArray(double[][]::new));
+    double[][] p = Arrays.stream(points).toArray(double[][]::new);
+    org.apache.lucene.geo.Point[] pointArray = new org.apache.lucene.geo.Point[points.length];
+    for (int i =0; i < points.length; i++) {
+      pointArray[i] = new org.apache.lucene.geo.Point(p[i][0], p[i][1]);
+    }
+    return LatLonGeometry.create(pointArray);
   }
 
   @Override
@@ -388,5 +391,4 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       return sb.toString();
     }
   }
-
 }

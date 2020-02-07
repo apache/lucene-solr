@@ -35,7 +35,7 @@ public class TestPolygon2D extends LuceneTestCase {
     Polygon hole = new Polygon(new double[] { -10, -10, 10, 10, -10 }, new double[] { -10, 10, 10, -10, -10 });
     Polygon outer = new Polygon(new double[] { -50, -50, 50, 50, -50 }, new double[] { -50, 50, 50, -50, -50 }, hole);
     Polygon island = new Polygon(new double[] { -5, -5, 5, 5, -5 }, new double[] { -5, 5, 5, -5, -5 } );
-    Component2D polygon = Polygon2D.create(outer, island);
+    Component2D polygon = LatLonGeometry.create(outer, island);
     
     // contains(point)
     assertTrue(polygon.contains(-2, 2)); // on the island
