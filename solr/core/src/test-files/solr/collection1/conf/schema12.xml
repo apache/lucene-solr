@@ -197,7 +197,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_pick_best_boost_by_payload" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true" boostByPayload="true">
+  <fieldType name="text_pick_best_boost_by_payload" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -205,7 +205,7 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
     </analyzer>
   </fieldType>
   
@@ -238,7 +238,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_as_distinct_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true" boostByPayload="true">
+  <fieldType name="text_as_distinct_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -246,11 +246,11 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_as_same_term_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true" boostByPayload="true">
+  <fieldType name="text_as_same_term_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -258,7 +258,7 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
     </analyzer>
   </fieldType>
 

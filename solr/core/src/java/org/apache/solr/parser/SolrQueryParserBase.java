@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -598,6 +600,29 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf = schema.getField(regexp.field());
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
+  }
+
+  /**
+   * Builds a new GraphQuery for multi-terms synonyms.
+   * <p>
+   * This is intended for subclasses that wish to customize the generated queries.
+   *
+   * @return new Query instance
+   */
+  @Override
+  protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
+    switch (synonymQueryStyle) {
+      case PICK_BEST: {
+        List<Query> sidePathSynonymQueries = new LinkedList<>();
+        sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
+        return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
+      }
+      case AS_SAME_TERM:
+      case AS_DISTINCT_TERMS:{
+        return super.newGraphSynonymQuery(sidePathQueriesIterator);}
+      default:
+        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+    }
   }
 
   @Override

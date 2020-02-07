@@ -38,6 +38,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -369,13 +370,36 @@ public class QueryBuilder {
    * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop 0 is returned.
    */
   protected SpanQuery createSpanQuery(TokenStream in, String field) throws IOException {
-    List<AttributeSource> clonedAttributes = new ArrayList<>();
-    while (in.incrementToken()) {
-      clonedAttributes.add(in.cloneAttributes());
+    TermToBytesRefAttribute termAtt = in.getAttribute(TermToBytesRefAttribute.class);
+    BoostAttribute boostAtt = in.addAttribute(BoostAttribute.class);
+
+    SpanQuery result;
+    float boost = 1.0f;
+    if (termAtt == null) {
+      return null;
     }
-    return newSpanQuery(field,clonedAttributes.toArray(new AttributeSource[clonedAttributes.size()]));
+
+    List<SpanQuery> terms = new ArrayList<>();
+    while (in.incrementToken()) {
+      boost = boostAtt.getBoost();
+      SpanQuery query = new SpanTermQuery(new Term(field, termAtt.getBytesRef()));
+      terms.add(query);
+    }
+
+    if (terms.isEmpty()) {
+      return null;
+    } else if (terms.size() == 1) {
+      result = terms.get(0);
+    } else {
+      result = new SpanNearQuery(terms.toArray(new SpanQuery[0]), 0, true);
+    }
+
+    if (boost != 1.0f) {
+      result = new SpanBoostQuery(result, boost);
+    }
+    return result;
   }
-  
+
   /** 
    * Creates simple term query from the cached tokenstream contents 
    */
@@ -446,12 +470,29 @@ public class QueryBuilder {
    * Creates simple phrase query from the cached tokenstream contents 
    */
   protected Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
-    List<AttributeSource> clonedAttributes = new LinkedList<>();
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
+
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    int position = -1;
+    float phraseBoost = 1.0f;
     stream.reset();
     while (stream.incrementToken()) {
-      clonedAttributes.add(stream.cloneAttributes());
+      if (enablePositionIncrements) {
+        position += posIncrAtt.getPositionIncrement();
+      } else {
+        position += 1;
+      }
+      builder.add(new Term(field, termAtt.getBytesRef()), position);
+      phraseBoost = boostAtt.getBoost();
     }
-    return newPhraseQuery(field,clonedAttributes.toArray(new AttributeSource[clonedAttributes.size()]),slop);
+    PhraseQuery query = builder.build();
+    if (phraseBoost == 1.0f) {
+      return query;
+    }
+    return new BoostQuery(query, phraseBoost);
   }
   
   /** 

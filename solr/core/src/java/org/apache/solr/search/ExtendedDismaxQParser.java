@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -134,7 +132,7 @@ public class ExtendedDismaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if (StringUtils.isBlank(userQuery)) {
+    if( userQuery == null || userQuery.trim().length() == 0 ) {
       // If no query is specified, we may have an alternate
       if (config.altQ != null) {
         QParser altQParser = subQuery(config.altQ, null);
@@ -1087,7 +1085,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
-                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries, boolean fieldSynonymsBoostByPayload,
+                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries,
                                   SynonymQueryStyle synonymQueryStyle)
         throws SyntaxError {
       Analyzer actualAnalyzer;
@@ -1102,7 +1100,7 @@ public class ExtendedDismaxQParser extends QParser {
       } else {
         actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
       }
-      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
+      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries, synonymQueryStyle);
     }
     
     @Override

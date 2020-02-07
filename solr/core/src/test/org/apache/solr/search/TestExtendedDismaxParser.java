@@ -241,12 +241,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q.alt",allq,
             "defType","edismax")
         ,allr);
-
-    assertQ("ideographic space should be considered whitespace",
-        req("q","\u3000",
-            "q.alt",allq,
-            "defType","edismax")
-        ,allr);
     
     assertQ("expected doc is missing (using un-escaped edismax w/qf)",
           req("q", "literal:colon", 
@@ -2087,10 +2081,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       @Override
       protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                     boolean quoted, boolean fieldAutoGenPhraseQueries,
-                                    boolean fieldEnableGraphQueries, boolean fieldSynonymsBoostByPayload, SynonymQueryStyle synonymQueryStyle)
+                                    boolean fieldEnableGraphQueries, SynonymQueryStyle synonymQueryStyle)
           throws SyntaxError {
         Query q = super.newFieldQuery
-            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
+            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
         if (q instanceof BooleanQuery) {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
