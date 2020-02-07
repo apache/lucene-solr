@@ -55,8 +55,6 @@ public final class DelimitedBoostTokenFilter extends TokenFilter {
           return true;
         }
       }
-      // we have not seen the delimiter
-      boostAtt.setBoost(1.0f);
       return true;
     } else return false;
   }

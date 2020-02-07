@@ -70,6 +70,7 @@ public class QueryBuilder {
    * Wraps a term and boost
    */
   public static class TermAndBoost {
+    private static final float DEFAULT_BOOST = 1.0f;
     /** the term */
     public final Term term;
     /** the boost */
@@ -374,14 +375,14 @@ public class QueryBuilder {
     BoostAttribute boostAtt = in.addAttribute(BoostAttribute.class);
 
     SpanQuery result;
-    float boost = 1.0f;
+    float boost = TermAndBoost.DEFAULT_BOOST;
     if (termAtt == null) {
       return null;
     }
 
     List<SpanTermQuery> terms = new ArrayList<>();
     while (in.incrementToken()) {
-      boost = boostAtt.getBoost();
+      boost *= boostAtt.getBoost();
       terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
     }
 
@@ -393,7 +394,7 @@ public class QueryBuilder {
       result = new SpanNearQuery(terms.toArray(new SpanQuery[0]), 0, true);
     }
 
-    if (boost != 1.0f) {
+    if (boost != TermAndBoost.DEFAULT_BOOST) {
       result = new SpanBoostQuery(result, boost);
     }
     return result;
@@ -476,7 +477,7 @@ public class QueryBuilder {
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
-    float phraseBoost = 1.0f;
+    float phraseBoost = TermAndBoost.DEFAULT_BOOST;
     stream.reset();
     while (stream.incrementToken()) {
       if (enablePositionIncrements) {
@@ -485,10 +486,10 @@ public class QueryBuilder {
         position += 1;
       }
       builder.add(new Term(field, termAtt.getBytesRef()), position);
-      phraseBoost = boostAtt.getBoost();
+      phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
-    if (phraseBoost == 1.0f) {
+    if (phraseBoost == TermAndBoost.DEFAULT_BOOST) {
       return query;
     }
     return new BoostQuery(query, phraseBoost);
@@ -565,14 +566,7 @@ public class QueryBuilder {
         };
         positionalQuery = newGraphSynonymQuery(queries);
       } else {
-        List<AttributeSource> attributes = graph.getTerms(start);
-        TermAndBoost[] terms = attributes.stream()
-            .map(s -> {
-              TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
-              BoostAttribute b = s.addAttribute(BoostAttribute.class);
-              return new TermAndBoost(new Term(field, t.getBytesRef()), b.getBoost());
-            })
-            .toArray(TermAndBoost[]::new);
+        TermAndBoost[] terms = graph.getTermsAndBoosts(field,start);
         assert terms.length > 0;
         if (terms.length == 1) {
           positionalQuery = newTermQuery(terms[0].term, terms[0].boost);
@@ -731,7 +725,7 @@ public class QueryBuilder {
    */
   protected Query newTermQuery(Term term, float boost) {
     Query q = new TermQuery(term);
-    if (boost == 1.0f) {
+    if (boost == TermAndBoost.DEFAULT_BOOST) {
       return q;
     }
     return new BoostQuery(q, boost);

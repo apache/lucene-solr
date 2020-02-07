@@ -30,9 +30,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
@@ -122,6 +124,15 @@ public final class GraphTokenStreamFiniteStrings {
     return getTerms(state).stream()
         .map(s -> new Term(field, s.addAttribute(TermToBytesRefAttribute.class).getBytesRef()))
         .toArray(Term[]::new);
+  }
+
+  /**
+   * Returns the list of terms that start at the provided state
+   */
+  public QueryBuilder.TermAndBoost[] getTermsAndBoosts(String field, int state) {
+    return getTerms(state).stream()
+            .map(s -> new QueryBuilder.TermAndBoost(new Term(field, s.addAttribute(TermToBytesRefAttribute.class).getBytesRef()),s.addAttribute(BoostAttribute.class).getBoost()))
+            .toArray(QueryBuilder.TermAndBoost[]::new);
   }
 
   /**

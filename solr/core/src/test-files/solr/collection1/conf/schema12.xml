@@ -227,7 +227,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_pick_best_boost_by_payload" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
+  <fieldType name="text_pick_best_boosted" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -239,7 +239,7 @@
     </analyzer>
   </fieldType>
   
-  <fieldType name="text_as_distinct_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
+  <fieldType name="text_as_distinct_boosted" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -251,7 +251,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_as_same_term_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true">
+  <fieldType name="text_as_same_term_boosted" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -691,9 +691,9 @@
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
   <dynamicField name="t_pick_best_*" type="text_pick_best" indexed="true" stored="true"/>
-  <dynamicField name="t_pick_best_boost_by_payload_*" type="text_pick_best_boost_by_payload" indexed="true" stored="true"/>
-  <dynamicField name="t_as_distinct_boost_by_payload_*" type="text_as_distinct_boost_by_payload" indexed="true" stored="true"/>
-  <dynamicField name="t_as_same_term_boost_by_payload_*" type="text_as_same_term_boost_by_payload" indexed="true" stored="true"/>
+  <dynamicField name="t_pick_best_boosted_*" type="text_pick_best_boosted" indexed="true" stored="true"/>
+  <dynamicField name="t_as_distinct_boosted_*" type="text_as_distinct_boosted" indexed="true" stored="true"/>
+  <dynamicField name="t_as_same_term_boosted_*" type="text_as_same_term_boosted" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
 
