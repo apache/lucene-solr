@@ -60,6 +60,7 @@ import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
@@ -442,19 +443,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (scope != null) scope.close();
 
       GlobalTracer.get().clearContext();
-      consumeInputFully(request);
+      consumeInputFully(request, response);
     }
   }
   
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the 
   // connection - see SOLR-8453 and SOLR-8683
-  private void consumeInputFully(HttpServletRequest req) {
+  private void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
       while (!is.isFinished() && is.read() != -1) {}
     } catch (IOException e) {
-      log.info("Could not consume full client request", e);
+      if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
+        log.debug("No input stream to consume from client");
+      } else {
+        log.info("Could not consume full client request", e);
+      }
     }
   }
   

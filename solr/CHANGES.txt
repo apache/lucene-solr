@@ -279,6 +279,8 @@ Bug Fixes
 
 * SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
 
+* SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
+
 Other Changes
 ---------------------
 
