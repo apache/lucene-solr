@@ -136,7 +136,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
 
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), DATA_DIM_COUNT);
-        int dataDimensionalCount = Integer.parseInt(readString(DATA_DIM_COUNT.length, scratch));
+        int dimensionalCount = Integer.parseInt(readString(DATA_DIM_COUNT.length, scratch));
 
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), INDEX_DIM_COUNT);
@@ -152,7 +152,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
 
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
                                  omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts),
-                                 dataDimensionalCount, indexDimensionalCount, dimensionalNumBytes, isSoftDeletesField);
+                                 dimensionalCount, indexDimensionalCount, dimensionalNumBytes, isSoftDeletesField);
       }
 
       SimpleTextUtil.checkFooter(input);
@@ -242,7 +242,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         }
 
         SimpleTextUtil.write(out, DATA_DIM_COUNT);
-        SimpleTextUtil.write(out, Integer.toString(fi.getPointDataDimensionCount()), scratch);
+        SimpleTextUtil.write(out, Integer.toString(fi.getPointDimensionCount()), scratch);
         SimpleTextUtil.writeNewline(out);
 
         SimpleTextUtil.write(out, INDEX_DIM_COUNT);

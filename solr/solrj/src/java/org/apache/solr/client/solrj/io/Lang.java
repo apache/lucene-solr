@@ -39,6 +39,7 @@ public class Lang {
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
+        .withFunctionName("delete", DeleteStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)

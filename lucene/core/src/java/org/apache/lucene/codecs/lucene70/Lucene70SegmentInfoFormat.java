@@ -45,7 +45,7 @@ import org.apache.lucene.util.Version;
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, IndexSort, Footer
+ *   <li><code>.si</code>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, IndexSort, Footer
  * </ul>
  * Data types:
  * <ul>

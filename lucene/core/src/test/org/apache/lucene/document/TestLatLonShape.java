@@ -19,11 +19,11 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
@@ -514,7 +514,7 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Component2D polygon2D = Polygon2D.create(polygon);
+    Component2D polygon2D = LatLonGeometry.create(polygon);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
@@ -532,7 +532,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     //3 shared points
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(0.5), quantizeLat(0),
@@ -632,7 +632,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
@@ -642,7 +642,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
@@ -652,7 +652,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
-    Component2D l2d = Line2D.create(l);
+    Component2D l2d = LatLonGeometry.create(l);
     PointValues.Relation r = l2d.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(5), quantizeLat(0),
@@ -696,6 +696,47 @@ public class TestLatLonShape extends LuceneTestCase {
 
     Query q = LatLonShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, searchLine);
     assertEquals(2, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testIndexAndQuerySamePolygon() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Polygon polygon;
+    while(true) {
+      try {
+        polygon = GeoTestUtil.nextPolygon();
+        // quantize the polygon
+        double[] lats = new double[polygon.numPoints()];
+        double[] lons = new double[polygon.numPoints()];
+        for (int i = 0; i < polygon.numPoints(); i++) {
+          lats[i] = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(polygon.getPolyLat(i)));
+          lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
+        }
+        polygon = new Polygon(lats, lons);
+        Tessellator.tessellate(polygon);
+        break;
+      } catch (Exception e) {
+        // invalid polygon, try a new one
+      }
+    }
+    addPolygonsToDoc(FIELDNAME, doc, polygon);
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.DISJOINT, polygon);
+    assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
   }

@@ -93,7 +93,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    int numTerms = atLeast(10000);
+    int numTerms = atLeast(1000);
     Set<BytesRef> terms = new HashSet<>();
     while (terms.size() < numTerms) {
       byte[] bytes = new byte[TestUtil.nextInt(random(), 1, 10)];

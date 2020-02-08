@@ -29,7 +29,7 @@
  *     </ol>
  * 
  * 
- * <a name="sims"></a>
+ * <a id="sims"></a>
  * <h2>Summary of the Ranking Methods</h2>
  * 
  * <p>{@link org.apache.lucene.search.similarities.BM25Similarity} is an optimized
@@ -46,7 +46,7 @@
  * Lucene ships the following methods built on
  * {@link org.apache.lucene.search.similarities.SimilarityBase}:
  * 
- * <a name="framework"></a>
+ * <a id="framework"></a>
  * <ul>
  *   <li>Amati and Rijsbergen's {@linkplain org.apache.lucene.search.similarities.DFRSimilarity DFR} framework;</li>
  *   <li>Clinchant and Gaussier's {@linkplain org.apache.lucene.search.similarities.IBSimilarity Information-based models}
@@ -66,7 +66,7 @@
  * optimizations can always be implemented in subclasses; see
  * <a href="#changingSimilarity">below</a>.
  * 
- * <a name="changingSimilarity"></a>
+ * <a id="changingSimilarity"></a>
  * <h2>Changing Similarity</h2>
  * 
  * <p>Chances are the available Similarities are sufficient for all
@@ -94,12 +94,12 @@
  * <p>{@link org.apache.lucene.search.similarities.BM25Similarity} has
  * two parameters that may be tuned:
  * <ul>
- *   <li><tt>k1</tt>, which calibrates term frequency saturation and must be
+ *   <li><code>k1</code>, which calibrates term frequency saturation and must be
  *   positive or null. A value of {@code 0} makes term frequency completely
- *   ignored, making documents scored only based on the value of the <tt>IDF</tt>
- *   of the matched terms. Higher values of <tt>k1</tt> increase the impact of
+ *   ignored, making documents scored only based on the value of the <code>IDF</code>
+ *   of the matched terms. Higher values of <code>k1</code> increase the impact of
  *   term frequency on the final score. Default value is {@code 1.2}.</li>
- *   <li><tt>b</tt>, which controls how much document length should normalize
+ *   <li><code>b</code>, which controls how much document length should normalize
  *   term frequency values and must be in {@code [0, 1]}. A value of {@code 0}
  *   disables length normalization completely. Default value is {@code 0.75}.</li>
  * </ul> 

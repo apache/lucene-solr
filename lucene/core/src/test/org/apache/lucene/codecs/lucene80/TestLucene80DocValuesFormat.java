@@ -83,11 +83,11 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
   // for now just keep them here, as we want to test this for this format.
   
-  @Slow
   public void testSortedSetVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(atLeast(100), 1, 32766, 16, 100);
+      int numDocs = TEST_NIGHTLY ? atLeast(100) : atLeast(10);
+      doTestSortedSetVsStoredFields(numDocs, 1, 32766, 16, 100);
     }
   }
   

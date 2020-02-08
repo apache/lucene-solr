@@ -17,16 +17,16 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
+import org.apache.lucene.geo.XYPoint;
 import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.TestUtil;
@@ -67,22 +67,27 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toPoint2D(Object... points) {
-    return Point2D.create(Arrays.stream(points).toArray(float[][]::new));
+    float[][] p = Arrays.stream(points).toArray(float[][]::new);
+    XYPoint[] pointArray = new XYPoint[points.length];
+    for (int i =0; i < points.length; i++) {
+      pointArray[i] = new XYPoint(p[i][0], p[i][1]);
+    }
+    return XYGeometry.create(pointArray);
   }
 
   @Override
   protected Component2D toLine2D(Object... lines) {
-    return Line2D.create(Arrays.stream(lines).toArray(XYLine[]::new));
+    return XYGeometry.create(Arrays.stream(lines).toArray(XYLine[]::new));
   }
 
   @Override
   protected Component2D toPolygon2D(Object... polygons) {
-    return XYPolygon2D.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
+    return XYGeometry.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
   }
 
   @Override
   public XYRectangle randomQueryBox() {
-    return ShapeTestUtil.nextBox();
+    return ShapeTestUtil.nextBox(random());
   }
 
   @Override
@@ -135,11 +140,12 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object[] nextPoints() {
-    int numPoints = TestUtil.nextInt(random(), 1, 20);
+    Random random = random();
+    int numPoints = TestUtil.nextInt(random, 1, 20);
     float[][] points = new float[numPoints][2];
     for (int i = 0; i < numPoints; i++) {
-      points[i][0] = (float) ShapeTestUtil.nextDouble();
-      points[i][1] = (float) ShapeTestUtil.nextDouble();
+      points[i][0] = (float) ShapeTestUtil.nextDouble(random);
+      points[i][1] = (float) ShapeTestUtil.nextDouble(random);
     }
     return points;
   }

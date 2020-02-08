@@ -95,8 +95,11 @@ final class SimpleTextBKDWriter implements Closeable {
   /** Default maximum heap to use, before spilling to (slower) disk */
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
 
+  /** Maximum number of dimensions (2 * max index dimensions) */
+  public static final int MAX_DIMS = 16;
+
   /** Maximum number of dimensions */
-  public static final int MAX_DIMS = 8;
+  public static final int MAX_INDEX_DIMS = 8;
 
   /** How many dimensions we are storing at the leaf (data) nodes */
   protected final int numDataDims;
@@ -107,7 +110,7 @@ final class SimpleTextBKDWriter implements Closeable {
   /** How many bytes each value in each dimension takes. */
   protected final int bytesPerDim;
 
-  /** numDataDims * bytesPerDim */
+  /** numDims * bytesPerDim */
   protected final int packedBytesLength;
 
   /** numIndexDims * bytesPerDim */
@@ -188,14 +191,17 @@ final class SimpleTextBKDWriter implements Closeable {
     this.maxMBSortInHeap = maxMBSortInHeap;
   }
 
-  public static void verifyParams(int numDataDims, int numIndexDims, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) {
+  public static void verifyParams(int numDims, int numIndexDims, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) {
     // We encode dim in a single byte in the splitPackedValues, but we only expose 4 bits for it now, in case we want to use
     // remaining 4 bits for another purpose later
-    if (numDataDims < 1 || numDataDims > MAX_DIMS) {
-      throw new IllegalArgumentException("numDataDims must be 1 .. " + MAX_DIMS + " (got: " + numDataDims + ")");
+    if (numDims < 1 || numDims > MAX_DIMS) {
+      throw new IllegalArgumentException("numDims must be 1 .. " + MAX_DIMS + " (got: " + numDims + ")");
     }
-    if (numIndexDims < 1 || numIndexDims > numDataDims) {
-      throw new IllegalArgumentException("numIndexDims must be 1 .. " + numDataDims + " (got: " + numIndexDims + ")");
+    if (numIndexDims < 1 || numIndexDims > MAX_INDEX_DIMS) {
+      throw new IllegalArgumentException("numIndexDims must be 1 .. " + MAX_INDEX_DIMS + " (got: " + numIndexDims + ")");
+    }
+    if (numIndexDims > numDims) {
+      throw new IllegalArgumentException("numIndexDims cannot exceed numDims (" + numDims + ") (got: " + numIndexDims + ")");
     }
     if (maxPointsInLeafNode <= 0) {
       throw new IllegalArgumentException("maxPointsInLeafNode must be > 0; got " + maxPointsInLeafNode);

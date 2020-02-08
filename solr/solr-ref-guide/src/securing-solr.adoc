@@ -79,7 +79,6 @@ SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.
 
-
 == Network Configuration
 
 // tag::security-network-binding-1[]
@@ -95,6 +94,3 @@ It is also strongly recommended that Solr listen to only those network interface
  ----
 // end::security-network-binding-1[]
 
-== Enable Security Manager
-
-Solr can run in a Java Security Manager sandbox by setting `SOLR_SECURITY_MANAGER_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`. This feature is incompatible with Hadoop.

@@ -25,13 +25,13 @@ allprojects {
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-        "-Xlint", 
+        "-Xlint",
         "-Xlint:-deprecation",
         "-Xlint:-serial",
 
         "-Xdoclint:all/protected",
-        "-Xdoclint:-missing", 
-        "-Xdoclint:-accessibility", 
+        "-Xdoclint:-missing",
+        "-Xdoclint:-accessibility",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
       ]
     }

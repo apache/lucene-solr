@@ -77,8 +77,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
     }
     this.bytesPerDim = bytesPerDim;
-    if (numDims < 1 || numDims > PointValues.MAX_DIMENSIONS) {
-      throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_DIMENSIONS + "; got " + numDims);
+    if (numDims < 1 || numDims > PointValues.MAX_INDEX_DIMENSIONS) {
+      throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_INDEX_DIMENSIONS + "; got " + numDims);
     }
 
     this.numDims = numDims;

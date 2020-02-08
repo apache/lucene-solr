@@ -183,6 +183,17 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   }
 
+  @Test
+  public void test0IdleTimeout() throws Exception {
+    SolrQuery q = new SolrQuery("*:*");
+    try(Http2SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)) {
+      try {
+        client.query(q, SolrRequest.METHOD.GET);
+      } catch (ParseException ignored) {}
+    }
+
+  }
+
   /**
    * test that SolrExceptions thrown by HttpSolrClient can
    * correctly encapsulate http status codes even when not on the list of

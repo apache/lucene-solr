@@ -404,7 +404,14 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
     SegmentInfos segmentInfos = new SegmentInfos(Version.LATEST.major);
     final double avgDocSizeMB = 5. / 1024; // 5kB
     for (int numDocs = 0; numDocs < totalDocs; ) {
-      int flushDocCount = TestUtil.nextInt(random(), 1, maxDocsPerFlush);
+      final int flushDocCount;
+      if (usually()) {
+        // reasonable value
+        flushDocCount = TestUtil.nextInt(random(), maxDocsPerFlush/2, maxDocsPerFlush);
+      } else {
+        // crazy value
+        flushDocCount = TestUtil.nextInt(random(), 1, maxDocsPerFlush);
+      }
       // how many of these documents are actually updates
       int delCount = (int) (flushDocCount * 0.9 * numDocs / totalDocs);
       numDocs += flushDocCount - delCount;

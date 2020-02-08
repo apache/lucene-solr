@@ -1221,7 +1221,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     // create index
     final int numFields = TestUtil.nextInt(random(), 1, 4);
-    final int numDocs = atLeast(2000);
+    final int numDocs = TEST_NIGHTLY ? atLeast(2000) : atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "doc" + i, Store.NO));
@@ -1240,7 +1240,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    final int numThreads = TestUtil.nextInt(random(), 3, 6);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 3, 6) : 2;
     final CountDownLatch done = new CountDownLatch(numThreads);
     final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
     

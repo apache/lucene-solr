@@ -1469,8 +1469,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     });
 
     Row row = session.getNode("nodex");
-    Row r1 = row.addReplica("c1", "s1", null);
-    Row r2 = r1.addReplica("c1", "s1", null);
+    Row r1 = row.addReplica("c1", "s1", Replica.Type.NRT);
+    Row r2 = r1.addReplica("c1", "s1", Replica.Type.NRT);
     assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof ReplicaInfo);
@@ -2594,13 +2594,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
             if (node.equals("node1")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard1", Collections.singletonList(new ReplicaInfo("r1", "shard1",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), "newColl", "shard1"),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1", ZkStateReader.CORE_NAME_PROP, "core1"), "newColl", "shard1"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             } else if (node.equals("node2")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard2", Collections.singletonList(new ReplicaInfo("r1", "shard2",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),"newColl", "shard2"),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2", ZkStateReader.CORE_NAME_PROP, "core2"),"newColl", "shard2"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             }
@@ -2623,9 +2623,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
               @Override
               public Replica getLeader(String sliceName) {
                 if (sliceName.equals("shard1"))
-                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), name, "shard1");
+                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1", ZkStateReader.CORE_NAME_PROP, "core1"), name, "shard1");
                 if (sliceName.equals("shard2"))
-                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),name, "shard2");
+                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2", ZkStateReader.CORE_NAME_PROP, "core2"),name, "shard2");
                 return null;
               }
             };
@@ -2642,7 +2642,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testMoveReplicaLeaderlast() {
 
     List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<>();
-    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"), "c1", "s1");
+    Map<String, Object> propMap = Utils.makeMap(
+        "leader", "true",
+        ZkStateReader.NODE_NAME_PROP, "node1",
+        ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.toString(),
+        ZkStateReader.CORE_NAME_PROP, "core1");
+    Replica replica = new Replica("r1", propMap, "c1", "s1");
     ReplicaInfo replicaInfo = new ReplicaInfo(replica.collection, replica.slice ,replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
@@ -2650,11 +2655,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
-    replica = new Replica("r2", Utils.makeMap("leader", false),"c1","s1");
+    propMap.put("leader", false);
+    replica = new Replica("r2", propMap,"c1","s1");
     replicaInfo = new ReplicaInfo(replica.collection, replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
-    replica = new Replica("r3", Utils.makeMap("leader", false),"c1","s1");
+    replica = new Replica("r3", propMap,"c1","s1");
     replicaInfo = new ReplicaInfo(replica.collection,replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
@@ -2832,8 +2838,51 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  public static void fixRequiredProps(Map<String, Object> testData) {
+    Map<String, Object> clusterState = (Map<String, Object>) testData.get("clusterstate");
+    clusterState.forEach((collection, val) -> {
+      Map<String, Object> docColl = (Map<String, Object>) val;
+      Map<String, Object> shards = (Map<String, Object>) docColl.get("shards");
+      shards.forEach((shardName, val2) -> {
+        Map<String, Object> shard = (Map<String, Object>) val2;
+        Map<String, Object> replicas = (Map<String, Object>) shard.get("replicas");
+        replicas.forEach((coreNode, val3) -> {
+          Map<String, Object> replica = (Map<String, Object>) val3;
+          if (!replica.containsKey("node_name")) {
+            replica.put("node_name", "node1");
+          }
+          if (!replica.containsKey("core")) {
+            replica.put("core", "core_" + coreNode);
+          }
+        });
+      });
+    });
+    Map<String, Object> replicaInfo = (Map<String, Object>) testData.get("replicaInfo");
+    replicaInfo.forEach((node, val) -> {
+      Map m1 = (Map) val;
+      m1.forEach((coll, val2) -> {
+        Map m2 = (Map) val2;
+        m2.forEach((shard, val3) -> {
+          List l3 = (List) val3;
+          l3.forEach(o -> {
+            Map replica = (Map) o;
+            String coreNode = replica.keySet().iterator().next().toString();
+            replica = (Map) replica.get(coreNode);
+            if (!replica.containsKey("node_name")) {
+              replica.put("node_name", "node1");
+            }
+            if (!replica.containsKey("core")) {
+              replica.put("core", "core_" + coreNode);
+            }
+          });
+        });
+      });
+    });
+  }
+
   public void testAutoscalingPreferencesUsedWithNoPolicy() throws IOException, InterruptedException {
-    Map m = (Map) loadFromResource("testAutoscalingPreferencesUsedWithNoPolicy.json");
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAutoscalingPreferencesUsedWithNoPolicy.json");
+    fixRequiredProps(m);
     Map clusterState = (Map) m.remove("clusterstate");
 
     Map replicaInfo = (Map) m.get("replicaInfo");

@@ -39,7 +39,8 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * These structures are optimized for operations such as <i>range</i>, <i>distance</i>, <i>nearest-neighbor</i>, 
  * and <i>point-in-polygon</i> queries. 
  * <h1>Basic Point Types</h1>
- * <table summary="Basic point types in Java and Lucene">
+ * <table>
+ *   <caption>Basic point types in Java and Lucene</caption>
  *   <tr><th>Java type</th><th>Lucene class</th></tr>
  *   <tr><td>{@code int}</td><td>{@link IntPoint}</td></tr>
  *   <tr><td>{@code long}</td><td>{@link LongPoint}</td></tr>
@@ -87,6 +88,9 @@ public abstract class PointValues {
 
   /** Maximum number of dimensions */
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
+
+  /** Maximum number of index dimensions */
+  public static final int MAX_INDEX_DIMENSIONS = BKDWriter.MAX_INDEX_DIMS;
 
   /** Return the cumulated number of points across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
@@ -269,8 +273,8 @@ public abstract class PointValues {
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue() throws IOException;
 
-  /** Returns how many data dimensions are represented in the values */
-  public abstract int getNumDataDimensions() throws IOException;
+  /** Returns how many dimensions are represented in the values */
+  public abstract int getNumDimensions() throws IOException;
 
   /** Returns how many dimensions are used for the index */
   public abstract int getNumIndexDimensions() throws IOException;

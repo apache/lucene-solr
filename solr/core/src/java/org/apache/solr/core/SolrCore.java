@@ -2188,11 +2188,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * see newSearcher(String name, boolean readOnly).
    *
    * <p>
-   * If <tt>forceNew==true</tt> then
+   * If <code>forceNew==true</code> then
    * A new searcher will be opened and registered regardless of whether there is already
    * a registered searcher or other searchers in the process of being created.
    * <p>
-   * If <tt>forceNew==false</tt> then:<ul>
+   * If <code>forceNew==false</code> then:<ul>
    * <li>If a searcher is already registered, that searcher will be returned</li>
    * <li>If no searcher is currently registered, but at least one is in the process of being created, then
    * this call will block until the first searcher is registered</li>
@@ -2200,12 +2200,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * searcher will be created.</li>
    * </ul>
    * <p>
-   * If <tt>returnSearcher==true</tt> then a {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; will be returned with
+   * If <code>returnSearcher==true</code> then a {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; will be returned with
    * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
    * <p>
-   * If <tt>waitSearcher!=null</tt> and a new {@link SolrIndexSearcher} was created,
+   * If <code>waitSearcher!=null</code> and a new {@link SolrIndexSearcher} was created,
    * then it is filled in with a Future that will return after the searcher is registered.  The Future may be set to
-   * <tt>null</tt> in which case the SolrIndexSearcher created has already been registered at the time
+   * <code>null</code> in which case the SolrIndexSearcher created has already been registered at the time
    * this method returned.
    * <p>
    *
