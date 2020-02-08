@@ -121,6 +121,54 @@
     <dependency org="org.apache.kerby" name="kerb-admin" rev="${/org.apache.kerby/kerb-admin}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerby-kdc" rev="${/org.apache.kerby/kerby-kdc}" conf="test.MiniKdc"/>
 
+    <!-- LDAP Dependencies -->
+    <dependency org="net.sf.ehcache" name="ehcache" rev="${/net.sf.ehcache/ehcache}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-asn1-api" rev="${/org.apache.directory.api/api-asn1-api}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-asn1-ber" rev="${/org.apache.directory.api/api-asn1-ber}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-i18n" rev="${/org.apache.directory.api/api-i18n}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-codec-core" rev="${/org.apache.directory.api/api-ldap-codec-core}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-codec-standalone" rev="${/org.apache.directory.api/api-ldap-codec-standalone}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-extras-aci" rev="${/org.apache.directory.api/api-ldap-extras-aci}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-extras-codec" rev="${/org.apache.directory.api/api-ldap-extras-codec}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-extras-codec-api" rev="${/org.apache.directory.api/api-ldap-extras-codec-api}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-extras-trigger" rev="${/org.apache.directory.api/api-ldap-extras-trigger}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-extras-util" rev="${/org.apache.directory.api/api-ldap-extras-util}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-model" rev="${/org.apache.directory.api/api-ldap-model}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-net-mina" rev="${/org.apache.directory.api/api-ldap-net-mina}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-ldap-schema-data" rev="${/org.apache.directory.api/api-ldap-schema-data}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.api" name="api-util" rev="${/org.apache.directory.api/api-util}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.jdbm" name="apacheds-jdbm1" rev="${/org.apache.directory.jdbm/apacheds-jdbm1}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core" rev="${/org.apache.directory.server/apacheds-core}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-annotations" rev="${/org.apache.directory.server/apacheds-core-annotations}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-api" rev="${/org.apache.directory.server/apacheds-core-api}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-avl" rev="${/org.apache.directory.server/apacheds-core-avl}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-shared" rev="${/org.apache.directory.server/apacheds-core-shared}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-i18n" rev="${/org.apache.directory.server/apacheds-i18n}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-admin" rev="${/org.apache.directory.server/apacheds-interceptors-admin}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-authn" rev="${/org.apache.directory.server/apacheds-interceptors-authn}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-authz" rev="${/org.apache.directory.server/apacheds-interceptors-authz}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-changelog" rev="${/org.apache.directory.server/apacheds-interceptors-changelog}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-collective" rev="${/org.apache.directory.server/apacheds-interceptors-collective}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-event" rev="${/org.apache.directory.server/apacheds-interceptors-event}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-exception" rev="${/org.apache.directory.server/apacheds-interceptors-exception}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-journal" rev="${/org.apache.directory.server/apacheds-interceptors-journal}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-operational" rev="${/org.apache.directory.server/apacheds-interceptors-operational}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-normalization" rev="${/org.apache.directory.server/apacheds-interceptors-normalization}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-referral" rev="${/org.apache.directory.server/apacheds-interceptors-referral}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-schema" rev="${/org.apache.directory.server/apacheds-interceptors-schema}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-subtree" rev="${/org.apache.directory.server/apacheds-interceptors-subtree}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-trigger" rev="${/org.apache.directory.server/apacheds-interceptors-trigger}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-jdbm-partition" rev="${/org.apache.directory.server/apacheds-jdbm-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-ldif-partition" rev="${/org.apache.directory.server/apacheds-ldif-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-protocol-ldap" rev="${/org.apache.directory.server/apacheds-protocol-ldap}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-protocol-shared" rev="${/org.apache.directory.server/apacheds-protocol-shared}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-server-annotations" rev="${/org.apache.directory.server/apacheds-server-annotations}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-test-framework" rev="${/org.apache.directory.server/apacheds-test-framework}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-xdbm-partition" rev="${/org.apache.directory.server/apacheds-xdbm-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.mina" name="mina-core" rev="${/org.apache.mina/mina-core}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.servicemix.bundles" name="org.apache.servicemix.bundles.antlr" rev="${/org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr}" conf="test.MiniKdc"/>
+    <dependency org="org.bouncycastle" name="bcprov-jdk15on" rev="${/org.bouncycastle/bcprov-jdk15on}" conf="test.MiniKdc"/>
+
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
 

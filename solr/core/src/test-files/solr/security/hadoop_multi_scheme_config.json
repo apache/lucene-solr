@@ -1,0 +1,27 @@
+{
+    "authentication": {
+        "class": "org.apache.solr.security.ConfigurableInternodeAuthHadoopPlugin",
+        "sysPropPrefix": "solr.",
+        "type": "multi-scheme",
+        "clientBuilderFactory": "org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder",
+        "initKerberosZk": "false",
+        "authConfigs": [
+            "multi-scheme-auth-handler.schemes",
+            "multi-scheme-auth-handler.schemes.basic.handler",
+            "multi-scheme-auth-handler.schemes.negotiate.handler",
+            "kerberos.principal",
+            "kerberos.keytab",
+            "kerberos.name.rules",
+            "ldap.providerurl",
+            "ldap.basedn",
+            "ldap.binddomain",
+            "ldap.enablestarttls",
+            "cookie.domain"
+        ],
+        "defaultConfigs": {
+            "multi-scheme-auth-handler.schemes": "negotiate,basic",
+            "multi-scheme-auth-handler.schemes.negotiate.handler": "kerberos",
+            "multi-scheme-auth-handler.schemes.basic.handler": "ldap"
+        }
+    }
+}

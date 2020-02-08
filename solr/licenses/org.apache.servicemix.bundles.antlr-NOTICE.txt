@@ -1,0 +1,8 @@
+   =========================================================================
+   ==  NOTICE file for use with the Apache License, Version 2.0,          ==
+   ==  in this case for the Apache ServiceMix distribution.               ==
+   =========================================================================
+
+   This product contains software developed by
+   The Apache Software Foundation (http://www.apache.org/).
+

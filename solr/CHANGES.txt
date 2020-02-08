@@ -303,6 +303,8 @@ Other Changes
 
 * SOLR-14209: Upgrade JQuery to 3.4.1 (Kevin Risden)
 
+* SOLR-9840: Add a unit test for LDAP integration (Hrishikesh Gadre, Kevin Risden)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
