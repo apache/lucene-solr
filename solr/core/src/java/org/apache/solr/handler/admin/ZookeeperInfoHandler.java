@@ -534,7 +534,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.writeString("a_attr");
       json.writeNameSeparator();
       json.startObject();
-      String href = "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+      String href = "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, "UTF-8");
       writeKeyValue(json, "href", href, true);
       json.endObject();
 
