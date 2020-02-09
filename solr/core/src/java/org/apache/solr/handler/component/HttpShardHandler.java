@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -312,13 +311,6 @@ public class HttpShardHandler extends ShardHandler {
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
       if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
-        if (hostChecker.isWhitelistHostCheckingEnabled() && hostChecker.hasExplicitWhitelist()) {
-          /*
-           * We only need to check the host whitelist if there is an explicit whitelist (other than all the live nodes)
-           * when the "shards" indicate cluster state elements only
-           */
-          hostChecker.checkWhitelist(zkController.getClusterState(), shards, Collections.singletonList(rb.shortCircuitedURL));
-        }
         rb.isDistrib = false;
         rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
         return;
