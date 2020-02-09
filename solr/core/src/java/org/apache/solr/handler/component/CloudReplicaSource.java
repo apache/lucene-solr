@@ -126,7 +126,7 @@ class CloudReplicaSource implements ReplicaSource {
       // if partial results are acceptable
       return Collections.emptyList();
     } else {
-      final Predicate<Replica> isShardLeader = new IsLeaderPredicate(builder.zkStateReader, clusterState, builder.collection, slice.getName());
+      final Predicate<Replica> isShardLeader = new IsLeaderPredicate(builder.zkStateReader, clusterState, slice.getCollection(), slice.getName());
       List<Replica> list = slice.getReplicas()
           .stream()
           .filter(replica -> replica.isActive(clusterState.getLiveNodes()))
