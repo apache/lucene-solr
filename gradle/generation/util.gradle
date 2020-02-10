@@ -33,7 +33,6 @@ configure(rootProject) {
   }
 }
 
-
 task installMoman(type: Download) {
   def momanDir = new File(buildDir, "moman").getAbsolutePath()
   def momanZip = new File(momanDir, "moman.zip").getAbsolutePath()
@@ -67,19 +66,15 @@ configure(project(":lucene:core")) {
         }
       }
       // Correct line endings for Windows.
-      ['Packed64SingleBlock.java', 'BulkOperation*.java'].each { files ->
-        project.ant.fixcrlf(
-            srcDir: workDir,
-            includes: files,
-            encoding: 'UTF-8',
-            eol: 'lf'
-        )
-      }
+      project.ant.fixcrlf(
+          srcDir: workDir,
+          includes: 'Packed64SingleBlock.java, BulkOperation*.java',
+          encoding: 'UTF-8',
+          eol: 'lf'
+      )
     }
   }
-}
 
-configure(project(":lucene:core")) {
   task utilGenLev(dependsOn: installMoman) {
     description "Regenerate util/automaton Lev*ParametricDescription.java"
     group "generation"
