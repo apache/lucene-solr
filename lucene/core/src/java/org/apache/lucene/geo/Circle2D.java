@@ -21,7 +21,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.SloppyMath;
 
 /**
- * 2D circle implementation containing XY spatial logic.
+ * 2D circle implementation containing spatial logic.
  *
  * @lucene.internal
  */
@@ -422,6 +422,7 @@ class Circle2D implements Component2D {
     @Override
     public double getMinX() {
       if (crossesDateline) {
+        // Component2D does not support boxes that crosses the dateline
         return GeoUtils.MIN_LON_INCL;
       }
       return rectangle.minLon;
@@ -430,6 +431,7 @@ class Circle2D implements Component2D {
     @Override
     public double getMaxX() {
       if (crossesDateline) {
+        // Component2D does not support boxes that crosses the dateline
         return GeoUtils.MAX_LON_INCL;
       }
       return rectangle.maxLon;
@@ -456,14 +458,14 @@ class Circle2D implements Component2D {
     }
   }
 
-  /** Builds a XYCircle2D from XYCircle */
-  public static Component2D create(XYCircle circle) {
+  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using haversin distance.*/
+  static Component2D create(XYCircle circle) {
     DistanceCalculator calculator = new CartesianDistance(circle.getX(), circle.getY(), circle.getRadius());
     return new Circle2D(calculator);
   }
 
-  /** Builds a XYCircle2D from XYCircle */
-  public static Component2D create(Circle circle) {
+  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using cartesian distance. */
+  static Component2D create(Circle circle) {
     DistanceCalculator calculator = new HaversinDistance(circle.getLon(), circle.getLat(), circle.getRadius());
     return new Circle2D(calculator);
   }
