@@ -55,7 +55,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     if (TEST_NIGHTLY) {
       numDocs = TestUtil.nextInt(random(), 2049, 4000);
     } else {
-      numDocs = atLeast(545);
+      numDocs = atLeast(546);
     }
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
