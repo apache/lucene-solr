@@ -36,8 +36,12 @@ public class AggregateMetric implements Metric {
 
   /**
    * Simple class to represent current value and how many times it was set.
+   * <p>Note: values should belong to the list of types supported by JMX:
+   * {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}</p>
    */
   public static class Update {
+  
+    // use of Object is deliberate - see note above
     public Object value;
     public final AtomicInteger updateCount = new AtomicInteger();
 
@@ -56,6 +60,18 @@ public class AggregateMetric implements Metric {
           "value=" + value +
           ", updateCount=" + updateCount +
           '}';
+    }
+
+    public double toDouble() {
+      if (value instanceof Boolean) {
+        return 0;
+      } 
+      if (!(value instanceof Number)) {
+        log.debug("not a Number: " + value);
+        return 0;
+      }
+      Number n = (Number)value;
+      return n.doubleValue();
     }
   }
 
@@ -101,13 +117,9 @@ public class AggregateMetric implements Metric {
     }
     double res = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
-        log.warn("not a Number: " + u.value);
-        continue;
-      }
-      Number n = (Number)u.value;
-      if (n.doubleValue() > res) {
-        res = n.doubleValue();
+      double d = u.toDouble();
+      if (d > res) {
+        res = d;
       }
     }
     return res;
@@ -119,13 +131,9 @@ public class AggregateMetric implements Metric {
     }
     double res = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
-        log.warn("not a Number: " + u.value);
-        continue;
-      }
-      Number n = (Number)u.value;
-      if (n.doubleValue() < res) {
-        res = n.doubleValue();
+      double d = u.toDouble();
+      if (d < res) {
+        res = d;
       }
     }
     return res;
@@ -137,12 +145,7 @@ public class AggregateMetric implements Metric {
     }
     double total = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
-        log.warn("not a Number: " + u.value);
-        continue;
-      }
-      Number n = (Number)u.value;
-      total += n.doubleValue();
+      total += u.toDouble();
     }
     return total / values.size();
   }
@@ -156,13 +159,9 @@ public class AggregateMetric implements Metric {
     double sum = 0;
     int count = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
-        log.warn("not a Number: " + u.value);
-        continue;
-      }
+      double d = u.toDouble();
       count++;
-      Number n = (Number)u.value;
-      final double diff = n.doubleValue() - mean;
+      final double diff = d - mean;
       sum += diff * diff;
     }
     if (count < 2) {
@@ -178,12 +177,7 @@ public class AggregateMetric implements Metric {
     }
     double res = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
-        log.warn("not a Number: " + u.value);
-        continue;
-      }
-      Number n = (Number)u.value;
-      res += n.doubleValue();
+      res += u.toDouble();
     }
     return res;
   }
