@@ -158,9 +158,26 @@ public class ClusterStateMockUtil {
           Map<String, Object> replicaPropMap = makeReplicaProps(sliceName, node, replicaName, stateCode, m.group(1));
           if (collName == null) collName = "collection" + (collectionStates.size() + 1);
           if (sliceName == null) collName = "slice" + (slices.size() + 1);
-          replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
 
+          // O(n^2) alert! but this is for mocks and testing so shouldn't be used for very large cluster states
+          boolean leaderFound = false;
+          for (Map.Entry<String, Replica> entry : replicas.entrySet()) {
+            Replica value = entry.getValue();
+            if ("true".equals(value.get(Slice.LEADER)))  {
+              leaderFound = true;
+              break;
+            }
+          }
+          if (!leaderFound && !m.group(1).equals("p")) {
+            replicaPropMap.put(Slice.LEADER, "true");
+          }
+          replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
           replicas.put(replica.getName(), replica);
+
+          // hack alert: re-create slice with existing data and new replicas map so that it updates its internal leader attribute
+          slice = new Slice(slice.getName(), replicas, null, collName);
+          slices.put(slice.getName(), slice);
+          // we don't need to update doc collection again because we aren't adding a new slice or changing its state
           break;
         default:
           break;
