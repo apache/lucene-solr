@@ -56,6 +56,8 @@ public final class DelimitedBoostTokenFilter extends TokenFilter {
         }
       }
       return true;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 }

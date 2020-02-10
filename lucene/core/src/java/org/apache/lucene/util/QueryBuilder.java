@@ -44,6 +44,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
+import static org.apache.lucene.search.BoostAttribute.DEFAULT_BOOST;
 
 /**
  * Creates queries from the {@link Analyzer} chain.
@@ -70,7 +71,6 @@ public class QueryBuilder {
    * Wraps a term and boost
    */
   public static class TermAndBoost {
-    private static final float DEFAULT_BOOST = 1.0f;
     /** the term */
     public final Term term;
     /** the boost */
@@ -375,7 +375,7 @@ public class QueryBuilder {
     BoostAttribute boostAtt = in.addAttribute(BoostAttribute.class);
 
     SpanQuery result;
-    float boost = TermAndBoost.DEFAULT_BOOST;
+    float boost = DEFAULT_BOOST;
     if (termAtt == null) {
       return null;
     }
@@ -394,7 +394,7 @@ public class QueryBuilder {
       result = new SpanNearQuery(terms.toArray(new SpanQuery[0]), 0, true);
     }
 
-    if (boost != TermAndBoost.DEFAULT_BOOST) {
+    if (boost != DEFAULT_BOOST) {
       result = new SpanBoostQuery(result, boost);
     }
     return result;
@@ -477,7 +477,7 @@ public class QueryBuilder {
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
-    float phraseBoost = TermAndBoost.DEFAULT_BOOST;
+    float phraseBoost = DEFAULT_BOOST;
     stream.reset();
     while (stream.incrementToken()) {
       if (enablePositionIncrements) {
@@ -489,7 +489,7 @@ public class QueryBuilder {
       phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
-    if (phraseBoost == TermAndBoost.DEFAULT_BOOST) {
+    if (phraseBoost == DEFAULT_BOOST) {
       return query;
     }
     return new BoostQuery(query, phraseBoost);
@@ -566,7 +566,14 @@ public class QueryBuilder {
         };
         positionalQuery = newGraphSynonymQuery(queries);
       } else {
-        TermAndBoost[] terms = graph.getTermsAndBoosts(field,start);
+        List<AttributeSource> attributes = graph.getTerms(start);
+        TermAndBoost[] terms = attributes.stream()
+                .map(s -> {
+                  TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
+                  BoostAttribute b = s.addAttribute(BoostAttribute.class);
+                  return new TermAndBoost(new Term(field, t.getBytesRef()), b.getBoost());
+                })
+                .toArray(TermAndBoost[]::new);
         assert terms.length > 0;
         if (terms.length == 1) {
           positionalQuery = newTermQuery(terms[0].term, terms[0].boost);
@@ -725,7 +732,7 @@ public class QueryBuilder {
    */
   protected Query newTermQuery(Term term, float boost) {
     Query q = new TermQuery(term);
-    if (boost == TermAndBoost.DEFAULT_BOOST) {
+    if (boost == DEFAULT_BOOST) {
       return q;
     }
     return new BoostQuery(q, boost);
