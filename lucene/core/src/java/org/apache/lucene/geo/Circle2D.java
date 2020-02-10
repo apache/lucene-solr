@@ -275,10 +275,10 @@ class Circle2D implements Component2D {
     public CartesianDistance(double centerX, double centerY, double radius) {
       this.centerX = centerX;
       this.centerY = centerY;
-      this.minX = centerX - radius;
-      this.maxX = centerX + radius;
-      this.minY = centerY - radius;
-      this.maxY = centerY + radius;
+      this.minX = Math.max(-Float.MAX_VALUE, centerX - radius);
+      this.maxX = Math.min(Float.MAX_VALUE, centerX + radius);
+      this.minY = Math.max(-Float.MAX_VALUE, centerY - radius);
+      this.maxY = Math.min(Float.MAX_VALUE, centerY + radius);
       this.radiusSquared = radius * radius;
     }
 
