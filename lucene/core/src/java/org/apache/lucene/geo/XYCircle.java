@@ -27,7 +27,7 @@ package org.apache.lucene.geo;
  * </ol>
  * @lucene.experimental
  */
-public class XYCircle extends XYGeometry {
+public final class XYCircle extends XYGeometry {
   /** Center x */
   private final float x;
   /** Center y */

@@ -22,8 +22,6 @@ import org.apache.lucene.util.SloppyMath;
 
 /**
  * 2D circle implementation containing spatial logic.
- *
- * @lucene.internal
  */
 class Circle2D implements Component2D {
 
@@ -287,10 +285,7 @@ class Circle2D implements Component2D {
     @Override
     public Relation relate(double minX, double maxX, double minY, double maxY) {
       if (Component2D.containsPoint(centerX, centerY, minX, maxX, minY, maxY)) {
-        if (cartesianDistanceSquared(centerX, centerY, minX, minY) <= radiusSquared &&
-            cartesianDistanceSquared(centerX, centerY, maxX, minY) <= radiusSquared &&
-            cartesianDistanceSquared(centerX, centerY, maxX, maxY) <= radiusSquared &&
-            cartesianDistanceSquared(centerX, centerY, minX, maxY) <= radiusSquared) {
+        if (contains(minX, minY) && contains(maxX, minY) && contains(maxX, maxY) && contains(minX, maxY)) {
           // we are fully enclosed, collect everything within this subtree
           return Relation.CELL_INSIDE_QUERY;
         }
@@ -321,7 +316,9 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      return cartesianDistanceSquared(x, y, this.centerX, this.centerY) <= radiusSquared;
+      final double diffX = x - this.centerX;
+      final double diffY = y - this.centerY;
+      return diffX * diffX + diffY * diffY <= radiusSquared;
     }
 
     @Override
@@ -362,12 +359,6 @@ class Circle2D implements Component2D {
     @Override
     public double getY() {
       return centerY;
-    }
-
-    private static double cartesianDistanceSquared(double x1, double y1, double x2, double y2) {
-      final double diffX = x1 - x2;
-      final double diffY = y1 - y2;
-      return diffX * diffX + diffY * diffY;
     }
   }
 

@@ -28,7 +28,7 @@ package org.apache.lucene.geo;
  * </ol>
  * @lucene.experimental
  */
-public class Circle extends LatLonGeometry {
+public final class Circle extends LatLonGeometry {
   /** Center latitude */
   private final double lat;
   /** Center longitude */
