@@ -110,7 +110,7 @@ public class RandomCodec extends AssertingCodec {
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
-                                                                   fieldInfo.getPointDataDimensionCount(),
+                                                                   fieldInfo.getPointDimensionCount(),
                                                                    fieldInfo.getPointIndexDimensionCount(),
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,

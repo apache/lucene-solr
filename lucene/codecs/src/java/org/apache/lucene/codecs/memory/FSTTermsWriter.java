@@ -58,12 +58,12 @@ import org.apache.lucene.util.fst.Util;
  * <p>
  * File:
  * <ul>
- *   <li><tt>.tst</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><code>.tst</code>: <a href="#Termdictionary">Term Dictionary</a></li>
  * </ul>
  * <p>
  *
- * <a name="Termdictionary"></a>
- * <h3>Term Dictionary</h3>
+ * <a id="Termdictionary"></a>
+ * <h2>Term Dictionary</h2>
  * <p>
  *  The .tst contains a list of FSTs, one for each field.
  *  The FST maps a term to its corresponding statistics (e.g. docfreq) 

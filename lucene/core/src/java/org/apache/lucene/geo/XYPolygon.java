@@ -19,10 +19,10 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 /**
- * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code double[]}, {@code double[]} x, y arrays
+ * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
  */
-public class XYPolygon {
+public final class XYPolygon extends XYGeometry {
   private final double[] x;
   private final double[] y;
   private final XYPolygon[] holes;
@@ -146,6 +146,23 @@ public class XYPolygon {
   }
 
   @Override
+  protected Component2D toComponent2D() {
+    return Polygon2D.create(this);
+  }
+
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(Polygon.verticesToGeoJSON(y, x));
+    for (XYPolygon hole : holes) {
+      sb.append(",");
+      sb.append(Polygon.verticesToGeoJSON(hole.y, hole.x));
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
@@ -181,19 +198,6 @@ public class XYPolygon {
       sb.append(", holes=");
       sb.append(Arrays.toString(holes));
     }
-    return sb.toString();
-  }
-
-  /** prints polygons as geojson */
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(Polygon.verticesToGeoJSON(y, x));
-    for (XYPolygon hole : holes) {
-      sb.append(",");
-      sb.append(Polygon.verticesToGeoJSON(hole.y, hole.x));
-    }
-    sb.append("]");
     return sb.toString();
   }
 }

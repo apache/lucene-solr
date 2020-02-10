@@ -19,8 +19,8 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYPolygon2D;
 
 /** tests XYShape encoding */
 public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
@@ -61,6 +61,6 @@ public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
 
   @Override
   protected Component2D createPolygon2D(Object polygon) {
-    return XYPolygon2D.create((XYPolygon)polygon);
+    return XYGeometry.create((XYPolygon)polygon);
   }
 }

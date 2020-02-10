@@ -78,7 +78,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link TopScoreDocCollector#create} or {@link TopFieldCollector#create} and
  * call {@link #search(Query, Collector)}.
  *
- * <a name="thread-safety"></a><p><b>NOTE</b>: <code>{@link
+ * <a id="thread-safety"></a><p><b>NOTE</b>: <code>{@link
  * IndexSearcher}</code> instances are completely
  * thread safe, meaning multiple threads can call any of its
  * methods, concurrently.  If your application requires

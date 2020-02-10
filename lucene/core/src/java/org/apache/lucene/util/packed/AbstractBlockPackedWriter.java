@@ -50,7 +50,7 @@ abstract class AbstractBlockPackedWriter {
 
   /**
    * Sole constructor.
-   * @param blockSize the number of values of a single block, must be a multiple of <tt>64</tt>
+   * @param blockSize the number of values of a single block, must be a multiple of <code>64</code>
    */
   public AbstractBlockPackedWriter(DataOutput out, int blockSize) {
     checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);

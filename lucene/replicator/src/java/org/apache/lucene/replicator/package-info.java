@@ -16,7 +16,7 @@
  */
  
 /** 
- * <h1>Files replication framework</h1>
+ * Files replication framework
  *
  * The
  * <a href="Replicator.html">Replicator</a> allows replicating files between a server and client(s). Producers publish

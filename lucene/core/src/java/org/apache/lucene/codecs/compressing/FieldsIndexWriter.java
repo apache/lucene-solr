@@ -80,21 +80,15 @@ public final class FieldsIndexWriter implements Closeable {
     this.blockShift = blockShift;
     this.ioContext = ioContext;
     this.docsOut = dir.createTempOutput(name, codecName + "-doc_ids", ioContext);
-    IndexOutput filePointersOut = null;
     boolean success = false;
     try {
       CodecUtil.writeHeader(docsOut, codecName + "Docs", VERSION_CURRENT);
-      this.filePointersOut = filePointersOut = dir.createTempOutput(name, codecName + "file_pointers", ioContext);
+      filePointersOut = dir.createTempOutput(name, codecName + "file_pointers", ioContext);
       CodecUtil.writeHeader(filePointersOut, codecName + "FilePointers", VERSION_CURRENT);
       success = true;
     } finally {
       if (success == false) {
-        docsOut.close();
-        dir.deleteFile(docsOut.getName());
-        if (filePointersOut != null) {
-          filePointersOut.close();
-          dir.deleteFile(filePointersOut.getName());
-        }
+        close();
       }
     }
   }
