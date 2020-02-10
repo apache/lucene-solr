@@ -172,6 +172,8 @@ Other Changes
 
 * SOLR-14209: Upgrade JQuery to 3.4.1 (Kevin Risden)
 
+* SOLR-13996: Refactor HttpShardHandler.prepDistributed method. (shalin)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
