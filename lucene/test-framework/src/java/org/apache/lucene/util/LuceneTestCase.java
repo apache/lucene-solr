@@ -153,7 +153,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
  * 
- * <h3>Class and instance setup.</h3>
+ * <h2>Class and instance setup.</h2>
  * 
  * <p>
  * The preferred way to specify class (suite-level) setup/cleanup is to use
@@ -170,13 +170,13 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * your subclass, make sure you call <code>super.setUp()</code> and
  * <code>super.tearDown()</code>. This is detected and enforced.
  * 
- * <h3>Specifying test cases</h3>
+ * <h2>Specifying test cases</h2>
  * 
  * <p>
  * Any test method with a <code>testXXX</code> prefix is considered a test case.
  * Any test method annotated with {@link Test} is considered a test case.
  * 
- * <h3>Randomized execution and test facilities</h3>
+ * <h2>Randomized execution and test facilities</h2>
  * 
  * <p>
  * {@link LuceneTestCase} uses {@link RandomizedRunner} to execute test cases.

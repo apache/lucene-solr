@@ -200,15 +200,7 @@ def get_solr_init_changes():
   return dedent('''
     Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
-    Versions of Major Components
-    ---------------------
-    Apache Tika %(org.apache.tika.version)s
-    Carrot2 %(/org.carrot2/carrot2-mini)s
-    Velocity %(/org.apache.velocity/velocity-engine-core)s and Velocity Tools %(org.apache.velocity.tools.version)s
-    Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
-    Jetty %(org.eclipse.jetty.version)s
-
-    ''' % parse_properties_file('lucene/ivy-versions.properties'))
+    ''')
   
 def main():
   if not os.path.exists('lucene/version.properties'):
@@ -222,7 +214,7 @@ def main():
   update_changes('lucene/CHANGES.txt', newconf.version, '\n',
                  ['Bug Fixes'] if is_bugfix else ['API Changes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other'])
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes'] if is_bugfix else ['Upgrade Notes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
+                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:
