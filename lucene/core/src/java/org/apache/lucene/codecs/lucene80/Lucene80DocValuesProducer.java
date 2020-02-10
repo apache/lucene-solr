@@ -190,8 +190,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       long numAddresses = entry.numDocsWithField + 1L;
       // New count of compressed addresses - the number of compresseed blocks
       if (version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED) {
-        entry.numCompressedChunks = meta.readInt();
-        entry.maxUncompressedChunkSize = meta.readInt();
+        entry.numCompressedChunks = meta.readVInt();
+        entry.docsPerChunk = meta.readVInt();
+        entry.maxUncompressedChunkSize = meta.readVInt();
         numAddresses = entry.numCompressedChunks;
       }      
       
@@ -315,6 +316,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long addressesLength;
     DirectMonotonicReader.Meta addressesMeta;
     int numCompressedChunks;
+    int docsPerChunk;
     int maxUncompressedChunkSize;
   }
 
@@ -764,26 +766,28 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     private final IndexInput compressedData;
     // Cache of last uncompressed block 
     private long lastBlockId = -1;
-    private int []uncompressedDocEnds = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK];
+    private final int []uncompressedDocStarts;
     private int uncompressedBlockLength = 0;        
-    private int numDocsInBlock = 0;
     private final byte[] uncompressedBlock;
     private final BytesRef uncompressedBytesRef;
+    private final int docsPerChunk;
     
-    public BinaryDecoder(LongValues addresses, IndexInput compressedData, int biggestUncompressedBlockSize) {
+    public BinaryDecoder(LongValues addresses, IndexInput compressedData, int biggestUncompressedBlockSize, int docsPerChunk) {
       super();
       this.addresses = addresses;
       this.compressedData = compressedData;
       // pre-allocate a byte array large enough for the biggest uncompressed block needed.
       this.uncompressedBlock = new byte[biggestUncompressedBlockSize];
       uncompressedBytesRef = new BytesRef(uncompressedBlock);
+      this.docsPerChunk = docsPerChunk;
+      uncompressedDocStarts = new int[docsPerChunk + 1];
       
     }
 
     BytesRef decode(int docNumber) throws IOException {
       int blockId = docNumber >> Lucene80DocValuesFormat.BINARY_BLOCK_SHIFT; 
-      int docInBlockId = docNumber % Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK;
-      assert docInBlockId < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK;
+      int docInBlockId = docNumber % docsPerChunk;
+      assert docInBlockId < docsPerChunk;
       
       
       // already read and uncompressed?
@@ -792,19 +796,16 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         long blockStartOffset = addresses.get(blockId);
         compressedData.seek(blockStartOffset);
         
-        numDocsInBlock = compressedData.readVInt();
-        assert numDocsInBlock <= Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK;
-        uncompressedDocEnds = new int[numDocsInBlock];
         uncompressedBlockLength = 0;        
 
         int onlyLength = -1;
-        for (int i = 0; i < numDocsInBlock; i++) {
+        for (int i = 0; i < docsPerChunk; i++) {
           if (i == 0) {
             // The first length value is special. It is shifted and has a bit to denote if
             // all other values are the same length
             int lengthPlusSameInd = compressedData.readVInt();
             int sameIndicator = lengthPlusSameInd & 1;
-            int firstValLength = lengthPlusSameInd >>1;
+            int firstValLength = lengthPlusSameInd >>>1;
             if (sameIndicator == 1) {
               onlyLength = firstValLength;
             }
@@ -818,7 +819,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
               uncompressedBlockLength += onlyLength;
             }
           }
-          uncompressedDocEnds[i] = uncompressedBlockLength;
+          uncompressedDocStarts[i+1] = uncompressedBlockLength;
         }
         
         if (uncompressedBlockLength == 0) {
@@ -831,13 +832,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock, 0);
       }
       
-      // Position the BytesRef to the relevant part of the uncompressed block
-      if (docInBlockId > 0) {
-        uncompressedBytesRef.offset = uncompressedDocEnds[docInBlockId - 1];        
-      } else {
-        uncompressedBytesRef.offset = 0;
-      }
-      uncompressedBytesRef.length = uncompressedDocEnds[docInBlockId] - uncompressedBytesRef.offset;
+      uncompressedBytesRef.offset = uncompressedDocStarts[docInBlockId];        
+      uncompressedBytesRef.length = uncompressedDocStarts[docInBlockId +1] - uncompressedBytesRef.offset;
       return uncompressedBytesRef;
     }    
   }
@@ -858,7 +854,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final RandomAccessInput addressesData = this.data.randomAccessSlice(entry.addressesOffset, entry.addressesLength);
       final LongValues addresses = DirectMonotonicReader.getInstance(entry.addressesMeta, addressesData);
       return new DenseBinaryDocValues(maxDoc) {
-        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize);
+        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunk);
 
         @Override
         public BytesRef binaryValue() throws IOException {          
@@ -872,7 +868,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final RandomAccessInput addressesData = this.data.randomAccessSlice(entry.addressesOffset, entry.addressesLength);
       final LongValues addresses = DirectMonotonicReader.getInstance(entry.addressesMeta, addressesData);
       return new SparseBinaryDocValues(disi) {
-        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize);
+        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunk);
 
         @Override
         public BytesRef binaryValue() throws IOException {

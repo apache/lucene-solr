@@ -406,14 +406,12 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         // Write offset to this block to temporary offsets file
         totalChunks++;
         long thisBlockStartPointer = data.getFilePointer();
-        data.writeVInt(numDocsInCurrentBlock);
         
         // Optimisation - check if all lengths are same
-        boolean allLengthsSame = true && numDocsInCurrentBlock >0;
-        for (int i = 0; i < numDocsInCurrentBlock; i++) {
+        boolean allLengthsSame = true && numDocsInCurrentBlock >0  ;
+        for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK && allLengthsSame; i++) {
           if (i > 0 && docLengths[i] != docLengths[i-1]) {
             allLengthsSame = false;
-            break;
           }
         }
         if (allLengthsSame) {
@@ -421,7 +419,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
             int onlyOneLength = (docLengths[0] <<1) | 1;
             data.writeVInt(onlyOneLength);
         } else {
-          for (int i = 0; i < numDocsInCurrentBlock; i++) {
+          for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
             if(i == 0) {
               // Write first value shifted and steal a bit to indicate other lengths are to follow
               int multipleLengths = (docLengths[0] <<1);
@@ -434,6 +432,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
         LZ4.compress(block, 0, uncompressedBlockLength, data, ht);
         numDocsInCurrentBlock = 0;
+        // Ensure initialized with zeroes because full array is always written
+        Arrays.fill(docLengths, 0);
         uncompressedBlockLength = 0;
         maxPointer = data.getFilePointer();
         tempBinaryOffsets.writeVLong(maxPointer - thisBlockStartPointer);
@@ -448,8 +448,9 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       long startDMW = data.getFilePointer();
       meta.writeLong(startDMW);
       
-      meta.writeInt(totalChunks);
-      meta.writeInt(maxUncompressedBlockLength);
+      meta.writeVInt(totalChunks);
+      meta.writeVInt(Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK);
+      meta.writeVInt(maxUncompressedBlockLength);
       meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
       
     
