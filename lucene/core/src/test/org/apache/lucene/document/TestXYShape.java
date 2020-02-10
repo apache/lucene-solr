@@ -23,7 +23,7 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYCircle;
-import org.apache.lucene.geo.XYCircle2D;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
@@ -186,7 +186,7 @@ public class TestXYShape extends LuceneTestCase {
       radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble(random())));
     } while (radius == 0);
     XYCircle circle = new XYCircle(x, y, radius);
-    Component2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYGeometry.create(circle);
     int expected;
     int expectedDisjoint;
     if (circle2D.contains(pX, py))  {

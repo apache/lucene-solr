@@ -24,7 +24,6 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYCircle;
-import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPoint;
@@ -94,7 +93,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toCircle2D(Object circle) {
-    return XYCircle2D.create((XYCircle) circle);
+    return XYGeometry.create((XYCircle) circle);
   }
 
   @Override

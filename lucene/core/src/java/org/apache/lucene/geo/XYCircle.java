@@ -65,7 +65,7 @@ public class XYCircle extends XYGeometry {
 
   @Override
   protected Component2D toComponent2D() {
-    return new XYCircle2D(x, y, radius);
+    return Circle2D.create(this);
   }
 
   @Override

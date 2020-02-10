@@ -20,11 +20,17 @@ package org.apache.lucene.geo;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestHaversinCircle2D extends LuceneTestCase {
+public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
-    Circle circle = new Circle(0, 0, 100);
-    Component2D circle2D = HaversinCircle2D.create(circle);
+    Component2D circle2D;
+    if (random().nextBoolean()) {
+      Circle circle = new Circle(0, 0, 100);
+      circle2D = LatLonGeometry.create(circle);
+    } else {
+      XYCircle xyCircle = new XYCircle(0, 0, 1);
+      circle2D = XYGeometry.create(xyCircle);
+    }
     double ax = 4;
     double ay = 4;
     double bx = 5;
@@ -36,8 +42,14 @@ public class TestHaversinCircle2D extends LuceneTestCase {
   }
 
   public void testTriangleIntersects() {
-    Circle circle = new Circle(0, 0, 1000000);
-    HaversinCircle2D circle2D = HaversinCircle2D.create(circle);
+    Component2D circle2D;
+    if (random().nextBoolean()) {
+      Circle circle = new Circle(0, 0, 1000000);
+      circle2D = LatLonGeometry.create(circle);
+    } else {
+      XYCircle xyCircle = new XYCircle(0, 0, 10);
+      circle2D = XYGeometry.create(xyCircle);
+    }
     double ax = -20;
     double ay = 1;
     double bx = 20;
@@ -49,8 +61,14 @@ public class TestHaversinCircle2D extends LuceneTestCase {
   }
 
   public void testTriangleContains() {
-    Circle circle = new Circle(0, 0, 1000000);
-    HaversinCircle2D circle2D = HaversinCircle2D.create(circle);
+    Component2D circle2D;
+    if (random().nextBoolean()) {
+      Circle circle = new Circle(0, 0, 1000000);
+      circle2D = LatLonGeometry.create(circle);
+    } else {
+      XYCircle xyCircle = new XYCircle(0, 0, 1);
+      circle2D = XYGeometry.create(xyCircle);
+    }
     double ax = 0.25;
     double ay = 0.25;
     double bx = 0.5;
@@ -62,8 +80,15 @@ public class TestHaversinCircle2D extends LuceneTestCase {
   }
 
   public void testTriangleWithin() {
-    Circle circle = new Circle(0, 0, 1000);
-    HaversinCircle2D circle2D = HaversinCircle2D.create(circle);
+    Component2D circle2D;
+    if (random().nextBoolean()) {
+      Circle circle = new Circle(0, 0, 1000);
+      circle2D = LatLonGeometry.create(circle);
+    } else {
+      XYCircle xyCircle = new XYCircle(0, 0, 1);
+      circle2D = XYGeometry.create(xyCircle);
+    }
+
     double ax = -20;
     double ay = -20;
     double bx = 20;
@@ -75,15 +100,27 @@ public class TestHaversinCircle2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    final double centerLat = GeoTestUtil.nextLatitude();
-    final double centerLon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    Component2D circle2D;
+    if (random().nextBoolean()) {
+      final double centerLat = GeoTestUtil.nextLatitude();
+      final double centerLon = GeoTestUtil.nextLongitude();
+      double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+      while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
+        radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+      }
+      Circle circle = new Circle(centerLat, centerLon, radiusMeters);
+      circle2D = LatLonGeometry.create(circle);
+    } else {
+      final float centerLat = (float)ShapeTestUtil.nextDouble(random());
+      final float centerLon = (float)ShapeTestUtil.nextDouble(random());
+      float radiusMeters = (float) ShapeTestUtil.nextDouble(random());
+      // Is there a max value???
+      while (radiusMeters <= 0 || radiusMeters >= Float.MAX_VALUE / 2) {
+        radiusMeters = (float)ShapeTestUtil.nextDouble(random());
+      }
+      XYCircle circle = new XYCircle(centerLat, centerLon, radiusMeters);
+      circle2D = XYGeometry.create(circle);
     }
-    Circle circle = new Circle(centerLat, centerLon, radiusMeters);
-    HaversinCircle2D circle2D = HaversinCircle2D.create(circle);
-
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();
       double ay = GeoTestUtil.nextLatitude();

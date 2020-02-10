@@ -73,7 +73,7 @@ public class Circle extends LatLonGeometry {
 
   @Override
   protected Component2D toComponent2D() {
-    return HaversinCircle2D.create(this);
+    return Circle2D.create(this);
   }
 
   @Override
