@@ -42,7 +42,9 @@ public final class XYCircle extends XYGeometry {
     if (radius <= 0) {
        throw new IllegalArgumentException("Radius must be bigger than 0, got " + radius);
     }
-
+    if (Float.isFinite(radius) == false || Float.isNaN(radius)) {
+      throw new IllegalArgumentException("Radius must be finite, got " + radius);
+    }
     this.x = x;
     this.y = y;
     this.radius = radius;
