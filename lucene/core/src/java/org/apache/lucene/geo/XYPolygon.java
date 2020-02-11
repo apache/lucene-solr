@@ -18,6 +18,8 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /**
  * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
@@ -72,8 +74,8 @@ public final class XYPolygon extends XYGeometry {
     this.x = new double[x.length];
     this.y = new double[y.length];
     for (int i = 0; i < x.length; ++i) {
-      this.x[i] = (double)x[i];
-      this.y[i] = (double)y[i];
+      this.x[i] = checkVal(x[i]);
+      this.y[i] = checkVal(y[i]);
     }
     this.holes = holes.clone();
 

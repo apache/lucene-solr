@@ -57,6 +57,17 @@ public class ShapeTestUtil {
     }
   }
 
+  public static XYLine nextLine() {
+    XYPolygon poly = ShapeTestUtil.nextPolygon();
+    float[] x = new float[poly.numPoints() - 1];
+    float[] y = new float[x.length];
+    for (int i = 0; i < x.length; ++i) {
+      x[i] = (float) poly.getPolyX(i);
+      y[i] = (float) poly.getPolyY(i);
+    }
+    return new XYLine(x, y);
+  }
+
   private static XYPolygon trianglePolygon(XYRectangle box) {
     final float[] polyX = new float[4];
     final float[] polyY = new float[4];

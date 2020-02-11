@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /** Represents a x/y cartesian rectangle. */
 public final class XYRectangle extends XYGeometry {
   /** minimum x value */
@@ -29,12 +31,16 @@ public final class XYRectangle extends XYGeometry {
 
   /** Constructs a bounding box by first validating the provided x and y coordinates */
   public XYRectangle(double minX, double maxX, double minY, double maxY) {
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
-    assert minX <= maxX;
-    assert minY <= maxY;
+    if (minX > maxX) {
+      throw new IllegalArgumentException("minX must be lower than maxX, got " + minX + " > " + maxX);
+    }
+    if (minY > maxY) {
+      throw new IllegalArgumentException("minY must be lower than maxY, got " + minY + " > " + maxY);
+    }
+    this.minX = checkVal(minX);
+    this.maxX = checkVal(maxX);
+    this.minY = checkVal(minY);
+    this.maxY = checkVal(maxY);
   }
 
   @Override

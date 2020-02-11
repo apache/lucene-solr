@@ -17,6 +17,8 @@
 
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /**
  * Represents a point on the earth's surface.  You can construct the point directly with {@code double}
  * coordinates.
@@ -38,8 +40,8 @@ public final class XYPoint extends XYGeometry {
    * Creates a new Point from the supplied latitude/longitude.
    */
   public XYPoint(float x, float y) {
-    this.x = x;
-    this.y = y;
+    this.x = checkVal(x);
+    this.y = checkVal(y);
   }
 
   /** Returns latitude value at given index */

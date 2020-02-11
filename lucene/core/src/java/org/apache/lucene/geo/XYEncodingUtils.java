@@ -34,10 +34,11 @@ public final class XYEncodingUtils {
   }
 
   /** validates value is within +/-{@link Float#MAX_VALUE} coordinate bounds */
-  public static void checkVal(double x) {
+  public static double checkVal(double x) {
     if (Double.isNaN(x) || x < MIN_VAL_INCL || x > MAX_VAL_INCL) {
       throw new IllegalArgumentException("invalid value " + x + "; must be between " + MIN_VAL_INCL + " and " + MAX_VAL_INCL);
     }
+    return x;
   }
 
   /**
@@ -47,8 +48,7 @@ public final class XYEncodingUtils {
    * @throws IllegalArgumentException if value is out of bounds
    */
   public static int encode(double x) {
-    checkVal(x);
-    return NumericUtils.floatToSortableInt((float)x);
+    return NumericUtils.floatToSortableInt((float) checkVal(x));
   }
 
   /**

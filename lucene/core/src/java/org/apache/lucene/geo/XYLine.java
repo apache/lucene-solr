@@ -18,6 +18,8 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /**
  * Represents a line in cartesian space. You can construct the Line directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
@@ -54,6 +56,13 @@ public class XYLine extends XYGeometry {
       throw new IllegalArgumentException("at least 2 line points required");
     }
 
+    this.x = new double[x.length];
+    this.y = new double[y.length];
+    for (int i = 0; i < x.length; ++i) {
+      this.x[i] = checkVal(x[i]);
+      this.y[i] = checkVal(y[i]);
+    }
+
     // compute bounding box
     double minX = x[0];
     double minY = y[0];
@@ -66,12 +75,6 @@ public class XYLine extends XYGeometry {
       maxY = Math.max(y[i], maxY);
     }
 
-    this.x = new double[x.length];
-    this.y = new double[y.length];
-    for (int i = 0; i < x.length; ++i) {
-      this.x[i] = (double)x[i];
-      this.y[i] = (double)y[i];
-    }
     this.minX = minX;
     this.maxX = maxX;
     this.minY = minY;
