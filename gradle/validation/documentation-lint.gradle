@@ -166,17 +166,18 @@ class CheckBrokenJavadocsLinksTask extends DefaultTask {
 
   // collect all built Javadocs to temp dir for linting
   def copyAllJavadocs(String tmpJavadocDir) {
-    def prjWithJavadoc = project.allprojects.findAll { it.file('src/java').exists() && it.file('build/docs/javadoc').exists() }
-    prjWithJavadoc.each { prj ->
-      prj.copy {
-        from('build/docs/javadoc') {
-          include '**/*.html'
-          include '**/*.js'
-          include '**/*.css'
-          includeEmptyDirs false
+    project.allprojects.each { prj ->
+      prj.plugins.withId('java', {
+        prj.copy {
+          from("${prj.buildDir}/docs/javadoc") {
+            include '**/*.html'
+            include '**/*.js'
+            include '**/*.css'
+            includeEmptyDirs false
+          }
+          into "${tmpJavadocDir}/${prj.path.replace(':', '/')}"
         }
-        into "${tmpJavadocDir}/${prj.path.replace(':', '/')}"
-      }
+      })
     }
   }
 
