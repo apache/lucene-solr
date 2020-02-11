@@ -100,7 +100,7 @@ import org.apache.lucene.util.fst.Util;
  * </ul>
  * <p>
  * <a id="Termdictionary"></a>
- * <h3>Term Dictionary</h3>
+ * <h2>Term Dictionary</h2>
  *
  * <p>The .tim file contains the list of terms in each
  * field along with per-term statistics (such as docfreq)
@@ -159,7 +159,7 @@ import org.apache.lucene.util.fst.Util;
  *        to child nodes(sub-block). If so, the corresponding TermStats and TermMetaData are omitted </li>
  * </ul>
  * <a id="Termindex"></a>
- * <h3>Term Index</h3>
+ * <h2>Term Index</h2>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
  * accessed randomly.  The index is also used to determine
  * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>

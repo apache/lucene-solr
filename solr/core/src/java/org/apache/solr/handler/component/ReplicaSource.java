@@ -14,8 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Near-real-time replication framework
+
+package org.apache.solr.handler.component;
+
+import java.util.List;
+
+/**
+ * A source of slices and corresponding replicas required to execute a request.
+ *
+ * @lucene.experimental
  */
-package org.apache.lucene.replicator.nrt;
+interface ReplicaSource {
+  /**
+   * @return the list of slice names
+   */
+  List<String> getSliceNames();
+
+  /**
+   * Get the list of replica urls for a 0-indexed slice number.
+   */
+  List<String> getReplicasBySlice(int sliceNumber);
+
+  /**
+   * @return the count of slices
+   */
+  int getSliceCount();
+}

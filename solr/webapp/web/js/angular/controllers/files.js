@@ -57,16 +57,14 @@ solrAdminApp.controller('FilesController',
                             process(path + file, children);
                         }
                         tree.push({
-                            data: {
-                                title: file,
-                                attr: { id: path + file}
-                            },
+                            text: file,
+                            a_attr: { id: path + file},
                             children: children,
                             state: state
                         });
                     }
                 });
-            }
+            };
             $scope.tree = [];
             process("", $scope.tree);
 
@@ -92,7 +90,7 @@ solrAdminApp.controller('FilesController',
         };
 
         $scope.showTreeLink = function(data) {
-            var file = data.args[0].id;
+            var file = data.node.a_attr.id;
             $location.search({file:file});
         };
 

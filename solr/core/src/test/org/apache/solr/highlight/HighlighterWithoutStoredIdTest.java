@@ -14,8 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Near-real-time replication framework
- */
-package org.apache.lucene.replicator.nrt;
+package org.apache.solr.highlight;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+public class HighlighterWithoutStoredIdTest extends HighlighterTest {
+
+  @BeforeClass
+  public static void beforeClassProps() {
+    System.setProperty("solr.tests.id.stored", "false");
+    System.setProperty("solr.tests.id.docValues", "true");
+  }
+
+  @AfterClass
+  public static void afterClassProps() {
+    System.clearProperty("solr.tests.id.stored");
+    System.clearProperty("solr.tests.id.docValues");
+  }
+
+}

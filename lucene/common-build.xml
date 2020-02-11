@@ -201,10 +201,9 @@
   <!-- We must have the index disabled for releases, as Java 11 includes a javascript search engine with GPL license: -->
   <property name="javadoc.noindex" value="true"/>
 
-  <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
-  <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing,-accessibility"/>
+  <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing"/>
   <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
-  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -proc:none"/>
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -proc:none"/>
 
   <condition property="javadoc.nomodule.args" value="--no-module-directories" else="">
     <or>
