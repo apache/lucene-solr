@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -272,16 +271,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       if (keyField != null) {
         // guaranteed to be one and only one since this is uniqueKey!
         SolrDocument solrDoc = docFetcher.solrDoc(docId, srf);
-
-        String uKey = null;
-        Object val = solrDoc.getFieldValue(uniqFieldName);
-        if (val != null) {
-          if (val instanceof StoredField) {
-            uKey = ((StoredField) val).stringValue();
-          } else {
-            uKey = val.toString();
-          }
-        }
+        String uKey = schema.printableUniqueKey(solrDoc);
         assert null != uKey;
         docNL.add("uniqueKey", uKey);
         termVectors.add(uKey, docNL);
