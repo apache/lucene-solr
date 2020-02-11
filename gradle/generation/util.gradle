@@ -21,9 +21,6 @@ configure(rootProject) {
     utilgen
   }
 
-  dependencies {
-  }
-
   task utilgen {
     description "Regenerate sources for ...lucene/util/automaton and ...lucene/util/packed."
     group "generation"
@@ -33,8 +30,9 @@ configure(rootProject) {
   }
 }
 
+def momanDir = new File(buildDir, "moman").getAbsolutePath()
 task installMoman(type: Download) {
-  def momanDir = new File(buildDir, "moman").getAbsolutePath()
+
   def momanZip = new File(momanDir, "moman.zip").getAbsolutePath()
 
   src "https://bitbucket.org/jpbarrette/moman/get/5c5c2a1e4dea.zip"
@@ -87,7 +85,7 @@ configure(project(":lucene:core")) {
           project.exec {
             workingDir workDir
             executable "python"
-            args = ['-B', 'createLevAutomata.py', num, transpose]
+            args = ['-B', 'createLevAutomata.py', num, transpose, "${momanDir}/finenight/python"]
           }
         }
       }

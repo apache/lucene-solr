@@ -21,12 +21,7 @@
 import math
 import os
 import sys
-# sys.path.insert(0, 'moman/finenight/python')
-sys.path.insert(0, '../../../../../../../../../build/moman/finenight/python')
-try:
-  from possibleStates import genTransitions
-except ImportError:
-  from finenight.possibleStates import genTransitions
+
 
 MODE = 'array'
 PACKED = True
@@ -96,9 +91,9 @@ def charVarNumber(charVar):
 
 def main():
 
-  if len(sys.argv) != 3:
+  if len(sys.argv) != 4:
     print
-    print 'Usage: python -u %s N <True/False>' % sys.argv[0]
+    print 'Usage: python -u %s N <True/False> path_to_moman_dir' % sys.argv[0]
     print
     print 'NOTE: the resulting .java file is created in the current working dir!'
     print
@@ -107,6 +102,14 @@ def main():
   n = int(sys.argv[1])
 
   transpose = (sys.argv[2] == "True")
+
+  sys.path.insert(0, sys.argv[3])
+
+  try:
+    from possibleStates import genTransitions
+  except ImportError:
+    from finenight.possibleStates import genTransitions
+
 
   tables = genTransitions(n, transpose)
 
