@@ -412,6 +412,7 @@ File | Project Structure | Platform Settings | SDKs):
         <exclude name="*/dist/**"/>
         <exclude name="*/package/**"/>
         <exclude name="*/example/exampledocs/**"/>
+        <exclude name="gradle/**" />
       </fileset>
     </delete>
   </target>

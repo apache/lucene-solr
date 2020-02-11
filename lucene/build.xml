@@ -39,7 +39,7 @@
                         **/lib/*.jar,
                         licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
+              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar,dev-docs/**"
   />
 
   <!-- ================================================================== -->
@@ -144,13 +144,6 @@
 
   <!-- we check for broken links across all documentation -->
   <target name="-documentation-lint" depends="documentation">
-    <echo message="checking for broken html..."/>
-    <jtidy-macro>
-       <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
-            javadocs generates invalid XML if you deprecate a method that takes a parameter
-            with a generic type -->
-      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
-    </jtidy-macro>
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="build/docs"/>
     <echo message="Checking for missing docs..."/>
@@ -182,7 +175,6 @@
     <!-- queries: problems -->
     <!-- queryparser: problems -->
     <!-- sandbox: problems -->
-    <check-missing-javadocs dir="build/docs/spatial" level="method"/>
     <!-- spatial-extras: problems -->
     <check-missing-javadocs dir="build/docs/suggest" level="method"/>
     <!-- test-framework: problems -->

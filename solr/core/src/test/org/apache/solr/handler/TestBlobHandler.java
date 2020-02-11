@@ -180,7 +180,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
         Map m = (Map) fromJSONString(response);
         assertFalse("Error in posting blob " + m.toString(), m.containsKey("error"));
       } catch (JSONParser.ParseException e) {
-        log.error("$ERROR$", response, e);
+        log.error("$ERROR$: {}", response, e);
         fail();
       }
     } finally {

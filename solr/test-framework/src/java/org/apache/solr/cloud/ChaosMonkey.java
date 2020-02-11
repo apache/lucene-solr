@@ -43,9 +43,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -482,7 +482,7 @@ public class ChaosMonkey {
     
     if (chaosRandom.nextBoolean()) {
       monkeyLog("Jetty will not commit on close");
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
     }
 
     this.aggressivelyKillLeaders = killLeaders;
@@ -533,8 +533,7 @@ public class ChaosMonkey {
       Thread.currentThread().interrupt();
     }
     runTimer.stop();
-
-    DirectUpdateHandler2.commitOnClose = true;
+    TestInjection.skipIndexWriterCommitOnClose = false;
 
     double runtime = runTimer.getTime()/1000.0f;
     if (runtime > NO_STOP_WARN_TIME && stops.get() == 0) {

@@ -160,7 +160,7 @@ If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term. Please note that 
 +
 This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
 
-To see an example of TermVector component output, see the Wiki page: http://wiki.apache.org/solr/TermVectorComponentExampleOptions
+To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions
 
 For schema requirements, see also the section  <<field-properties-by-use-case.adoc#field-properties-by-use-case, Field Properties by Use Case>>.
 

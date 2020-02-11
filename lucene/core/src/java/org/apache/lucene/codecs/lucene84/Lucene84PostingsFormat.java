@@ -96,14 +96,14 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>
  * Files and detailed format:
  * <ul>
- *   <li><tt>.tim</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
- *   <li><tt>.tip</tt>: <a href="#Termindex">Term Index</a></li>
- *   <li><tt>.doc</tt>: <a href="#Frequencies">Frequencies and Skip Data</a></li>
- *   <li><tt>.pos</tt>: <a href="#Positions">Positions</a></li>
- *   <li><tt>.pay</tt>: <a href="#Payloads">Payloads and Offsets</a></li>
+ *   <li><code>.tim</code>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><code>.tip</code>: <a href="#Termindex">Term Index</a></li>
+ *   <li><code>.doc</code>: <a href="#Frequencies">Frequencies and Skip Data</a></li>
+ *   <li><code>.pos</code>: <a href="#Positions">Positions</a></li>
+ *   <li><code>.pay</code>: <a href="#Payloads">Payloads and Offsets</a></li>
  * </ul>
  *
- * <a name="Termdictionary"></a>
+ * <a id="Termdictionary"></a>
  * <dl>
  * <dd>
  * <b>Term Dictionary</b>
@@ -163,7 +163,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </dd>
  * </dl>
  *
- * <a name="Termindex"></a>
+ * <a id="Termindex"></a>
  * <dl>
  * <dd>
  * <b>Term Index</b>
@@ -173,7 +173,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </dl>
  *
  *
- * <a name="Frequencies"></a>
+ * <a id="Frequencies"></a>
  * <dl>
  * <dd>
  * <b>Frequencies and Skip Data</b>
@@ -261,7 +261,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </dd>
  * </dl>
  *
- * <a name="Positions"></a>
+ * <a id="Positions"></a>
  * <dl>
  * <dd>
  * <b>Positions</b>
@@ -314,7 +314,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * </dd>
  * </dl>
  *
- * <a name="Payloads"></a>
+ * <a id="Payloads"></a>
  * <dl>
  * <dd>
  * <b>Payloads and Offsets</b>
@@ -386,7 +386,9 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
 
   // Increment version to change it
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  // Better compression of the terms dictionary in case most terms have a docFreq of 1
+  final static int VERSION_COMPRESSED_TERMS_DICT_IDS = 1;
+  final static int VERSION_CURRENT = VERSION_COMPRESSED_TERMS_DICT_IDS;
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;

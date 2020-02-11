@@ -35,21 +35,28 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestDoubleValuesSource extends LuceneTestCase {
 
   private static final double LEAST_DOUBLE_VALUE = 45.72;
 
-  private Directory dir;
-  private IndexReader reader;
-  private IndexSearcher searcher;
+  private static Directory dir;
+  private static IndexReader reader;
+  private static IndexSearcher searcher;
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    int numDocs = TestUtil.nextInt(random(), 2049, 4000);
+    final int numDocs;
+    if (TEST_NIGHTLY) {
+      numDocs = TestUtil.nextInt(random(), 2049, 4000);
+    } else {
+      numDocs = atLeast(546);
+    }
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
@@ -67,11 +74,13 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     searcher = newSearcher(reader);
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     reader.close();
     dir.close();
-    super.tearDown();
+    searcher = null;
+    reader = null;
+    dir = null;
   }
 
   public void testSortMissingZeroDefault() throws Exception {

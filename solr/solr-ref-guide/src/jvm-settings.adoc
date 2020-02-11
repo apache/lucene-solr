@@ -20,7 +20,7 @@ Optimizing the JVM can be a key factor in getting the most from your Solr instal
 
 Configuring your JVM can be a complex topic and a full discussion is beyond the scope of this document. Luckily, most modern JVMs are quite good at making the best use of available resources with default settings. The following sections contain a few tips that may be helpful when the defaults are not optimal for your situation.
 
-For more general information about improving Solr performance, see https://wiki.apache.org/solr/SolrPerformanceFactors.
+For more general information about improving Solr performance, see https://cwiki.apache.org/confluence/display/solr/SolrPerformanceFactors[Solr Performance Factors] in the Solr Wiki.
 
 == Choosing Memory Heap Settings
 

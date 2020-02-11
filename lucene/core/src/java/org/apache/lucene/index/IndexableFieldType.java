@@ -100,9 +100,9 @@ public interface IndexableFieldType {
   public DocValuesType docValuesType();
 
   /**
-   * If this is positive (representing the number of point data dimensions), the field is indexed as a point.
+   * If this is positive (representing the number of point dimensions), the field is indexed as a point.
    */
-  public int pointDataDimensionCount();
+  public int pointDimensionCount();
 
   /**
    * The number of dimensions used for the index key

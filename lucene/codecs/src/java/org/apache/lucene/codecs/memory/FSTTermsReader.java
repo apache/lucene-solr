@@ -99,8 +99,7 @@ public class FSTTermsReader extends FieldsProducer {
         // if frequencies are omitted, sumTotalTermFreq=sumDocFreq and we only write one value
         long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         int docCount = in.readVInt();
-        int longsSize = in.readVInt();
-        TermsReader current = new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
+        TermsReader current = new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount);
         TermsReader previous = fields.put(fieldInfo.name, current);
         checkFieldSummary(state.segmentInfo, in, current, previous);
       }
@@ -169,17 +168,15 @@ public class FSTTermsReader extends FieldsProducer {
     final long sumTotalTermFreq;
     final long sumDocFreq;
     final int docCount;
-    final int longsSize;
     final FST<FSTTermOutputs.TermData> dict;
 
-    TermsReader(FieldInfo fieldInfo, IndexInput in, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
+    TermsReader(FieldInfo fieldInfo, IndexInput in, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
-      this.dict = new FST<>(in, new FSTTermOutputs(fieldInfo, longsSize));
+      this.dict = new FST<>(in, new FSTTermOutputs(fieldInfo));
     }
 
     @Override
@@ -349,7 +346,7 @@ public class FSTTermsReader extends FieldsProducer {
           if (meta.bytes != null) {
             bytesReader.reset(meta.bytes, 0, meta.bytes.length);
           }
-          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state, true);
+          postingsReader.decodeTerm(bytesReader, fieldInfo, state, true);
           decoded = true;
         }
       }
@@ -495,7 +492,7 @@ public class FSTTermsReader extends FieldsProducer {
           if (meta.bytes != null) {
             bytesReader.reset(meta.bytes, 0, meta.bytes.length);
           }
-          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state, true);
+          postingsReader.decodeTerm(bytesReader, fieldInfo, state, true);
           decoded = true;
         }
       }

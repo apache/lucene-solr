@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 
 /**
  * Immutable stateless index dictionary kept in RAM.
@@ -52,7 +53,7 @@ public interface IndexDictionary extends Accountable {
   /**
    * Creates a new {@link IndexDictionary.Browser}.
    */
-  Browser browser();
+  Browser browser() throws IOException;
 
   /**
    * Builds an immutable {@link IndexDictionary}.
@@ -75,9 +76,12 @@ public interface IndexDictionary extends Accountable {
      * @param blockFilePointer Non-negative file pointer to the start of the
      *                         block in the block file.
      */
-    void add(BytesRef blockKey, long blockFilePointer);
+    void add(BytesRef blockKey, long blockFilePointer) throws IOException;
 
-    IndexDictionary build();
+    /**
+     * Builds the immutable {@link IndexDictionary} for the added entries.
+     */
+    IndexDictionary build() throws IOException;
   }
 
   /**
@@ -97,31 +101,41 @@ public interface IndexDictionary extends Accountable {
      * Otherwise {@code -1} if there is no floor block key because the searched
      * term precedes alphabetically the first block key of the dictionary.
      */
-    long seekBlock(BytesRef term);
+    long seekBlock(BytesRef term) throws IOException;
 
     /**
      * Returns the next block key and positions the browser at this key.
      * A key is a prefix of a term in the dictionary.
      * If seekBlock was just called then this is the current block key.
      */
-    BytesRef nextKey();
+    BytesRef nextKey() throws IOException;
 
     /**
      * Returns the next key without advancing.
      * Only call this after {@link #nextKey()} returns a non-null result.
      */
-    BytesRef peekKey();
+    BytesRef peekKey() throws IOException;
 
     /**
      * Returns the number of characters of this block's key that is in common with all terms in this block.
      * Only call this after {@link #nextKey()} returns a non-null result.
      */
-    int getBlockPrefixLen();
+    int getBlockPrefixLen() throws IOException;
 
     /**
      * Returns the block file pointer associated with the key returned.
      * Only call this after {@link #nextKey()} returns a non-null result.
      */
-    long getBlockFilePointer();
+    long getBlockFilePointer() throws IOException;
   }
+
+  /**
+   * Supplier for a new stateful {@link Browser} created on the immutable {@link IndexDictionary}.
+   * <p>
+   * The immutable {@link IndexDictionary} is lazy loaded thread safely. This lazy loading allows
+   * us to load it only when {@link org.apache.lucene.index.TermsEnum#seekCeil} or
+   * {@link org.apache.lucene.index.TermsEnum#seekExact} are called (it is not loaded for a direct
+   * all-terms enumeration).
+   */
+  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {}
 }

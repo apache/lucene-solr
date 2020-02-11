@@ -46,8 +46,8 @@ import org.apache.tools.ant.types.resources.Resources;
 import org.apache.tools.ant.util.FileNameMapper;
 
 /**
- * An ANT task that verifies if JAR file have associated <tt>LICENSE</tt>,
- * <tt>NOTICE</tt>, and <tt>sha1</tt> files. 
+ * An ANT task that verifies if JAR file have associated <code>LICENSE</code>,
+ * <code>NOTICE</code>, and <code>sha1</code> files. 
  */
 public class LicenseCheckTask extends Task {
 

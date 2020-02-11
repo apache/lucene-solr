@@ -383,7 +383,8 @@
  *    synonyms, setting the position increment to 0 is enough to denote the fact that two
  *    words are synonyms, for example:
  * </p>
- * <table summary="table showing position increments of 1 and 0 for red and magenta, respectively">
+ * <table>
+ * <caption>table showing position increments of 1 and 0 for red and magenta, respectively</caption>
  * <tr><td>Term</td><td>red</td><td>magenta</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td></tr>
  * </table>
@@ -394,7 +395,8 @@
  *    a TokenStream where "IBM" is a synonym of "Internal Business Machines". Position increments
  *    are not enough anymore:
  * </p>
- * <table summary="position increments where international is zero">
+ * <table>
+ * <caption>position increments where international is zero</caption>
  * <tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
  * </table>
@@ -405,7 +407,8 @@
  *    than "International" is a synonym of "Business". The only way to solve this issue is to
  *    make "IBM" span across 3 positions, this is where position lengths come to rescue.
  * </p>
- * <table summary="position lengths where IBM is three">
+ * <table>
+ * <caption>position lengths where IBM is three</caption>
  * <tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
  * <tr><td>Position length</td><td>3</td><td>1</td><td>1</td><td>1</td></tr>
@@ -414,7 +417,7 @@
  *    This new attribute makes clear that "IBM" and "International Business Machines" start and end
  *    at the same positions.
  * </p>
- * <a name="corrupt"></a>
+ * <a id="corrupt"></a>
  * <h3>How to not write corrupt token streams</h3>
  * <p>
  *    There are a few rules to observe when writing custom Tokenizers and TokenFilters:
@@ -472,7 +475,9 @@
  * <p>
  * Lucene provides seven Attributes out of the box:
  * </p>
- * <table rules="all" frame="box" cellpadding="3" summary="common bundled attributes">
+ * <table class="padding3">
+ *   <caption>common bundled attributes</caption>
+ *   <tbody style="border: 1px solid">
  *   <tr>
  *     <td>{@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}</td>
  *     <td>
@@ -513,6 +518,7 @@
  *       return true from this attribute's isKeyword() method. 
  *     </td>
  *   </tr>
+ *   </tbody>
  * </table>
  * <h3>More Requirements for Analysis Component Classes</h3>
  * Due to the historical development of the API, there are some perhaps

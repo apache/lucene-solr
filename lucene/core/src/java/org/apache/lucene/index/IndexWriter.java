@@ -100,7 +100,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
-  <a name="sequence_numbers"></a>
+  <a id="sequence_numbers"></a>
   <p>Each method that changes the index returns a {@code long} sequence number, which
   expresses the effective order in which each change was applied.
   {@link #commit} also returns a sequence number, describing which
@@ -108,7 +108,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   are transient (not saved into the index in any way) and only valid
   within a single {@code IndexWriter} instance.</p>
 
-  <a name="flush"></a>
+  <a id="flush"></a>
   <p>These changes are buffered in memory and periodically
   flushed to the {@link Directory} (during the above method
   calls). A flush is triggered when there are enough added documents
@@ -134,7 +134,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   another <code>IndexWriter</code> on the same directory will lead to a
   {@link LockObtainFailedException}.</p>
   
-  <a name="deletionPolicy"></a>
+  <a id="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
   {@link IndexDeletionPolicy} implementation to be specified.  You
   can use this to control when prior commits are deleted from
@@ -155,7 +155,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   will likely result in poor performance compared to a local IO
   device. </p>
 
-  <a name="mergePolicy"></a> <p>Expert:
+  <a id="mergePolicy"></a> <p>Expert:
   <code>IndexWriter</code> allows you to separately change
   the {@link MergePolicy} and the {@link MergeScheduler}.
   The {@link MergePolicy} is invoked whenever there are
@@ -167,14 +167,14 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   it decides when and how to run the merges.  The default is
   {@link ConcurrentMergeScheduler}. </p>
 
-  <a name="OOME"></a><p><b>NOTE</b>: if you hit a
+  <a id="OOME"></a><p><b>NOTE</b>: if you hit a
   VirtualMachineError, or disaster strikes during a checkpoint
   then IndexWriter will close itself.  This is a
   defensive measure in case any internal state (buffered
   documents, deletions, reference counts) were corrupted.  
   Any subsequent calls will throw an AlreadyClosedException.</p>
 
-  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
+  <a id="thread-safety"></a><p><b>NOTE</b>: {@link
   IndexWriter} instances are completely thread
   safe, meaning multiple threads can call any of its
   methods, concurrently.  If your application requires
@@ -992,7 +992,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     for(SegmentCommitInfo info : segmentInfos) {
       FieldInfos fis = readFieldInfos(info);
       for(FieldInfo fi : fis) {
-        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
       }
     }
 
@@ -2814,7 +2814,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
               // This will throw exceptions if any of the incoming fields have an illegal schema change:
-              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
           }

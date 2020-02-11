@@ -103,7 +103,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     Point p1 = SpatialUtils.parsePointSolrException(part1, SpatialContext.GEO);
     Point p2 = SpatialUtils.parsePointSolrException(part2, SpatialContext.GEO);
 

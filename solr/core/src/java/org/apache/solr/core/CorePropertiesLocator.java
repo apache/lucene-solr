@@ -185,7 +185,7 @@ public class CorePropertiesLocator implements CoresLocator {
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
+      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
       ret.loadExtraProperties();
       return ret;
     }

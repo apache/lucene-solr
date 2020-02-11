@@ -32,6 +32,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.CurrencyValue;
+import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -113,7 +114,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * <ul>
    * <li>If this is a phase#1 shard request, then {@link #createRangeList} will set this value (non null)
    *     if and only if it is needed for refinement (ie: <code>hardend:false</code> &amp; <code>other</code>
-   *     that requres an end value low/high value calculation).  And it wil be included in the response</li>
+   *     that requires an end value low/high value calculation).  And it wil be included in the response</li>
    * <li>If this is a phase#2 refinement request, this variable will be used 
    *     {@link #getOrComputeActualEndForRefinement} to track the value sent with the refinement request 
    *     -- or to cache a recomputed value if the request omitted it -- for use in refining the 
@@ -249,6 +250,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       }
     } else if (ft instanceof CurrencyFieldType) {
       return new CurrencyCalc(sf);
+    } else if (ft instanceof DateRangeField) {
+      return new DateCalc(sf, null);
     }
 
     // if we made it this far, we have no idea what it is...
@@ -737,6 +740,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return ((Number) value).floatValue() + Float.parseFloat(gap);
     }
   }
+
   private static class DoubleCalc extends Calc {
     @Override
     public Comparable bitsToValue(long bits) {
@@ -762,6 +766,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return ((Number) value).doubleValue() + Double.parseDouble(gap);
     }
   }
+
   private static class IntCalc extends Calc {
 
     public IntCalc(final SchemaField f) { super(f); }
@@ -778,6 +783,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return ((Number) value).intValue() + Integer.parseInt(gap);
     }
   }
+
   private static class LongCalc extends Calc {
 
     public LongCalc(final SchemaField f) { super(f); }
@@ -790,13 +796,15 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return ((Number) value).longValue() + Long.parseLong(gap);
     }
   }
+
   private static class DateCalc extends Calc {
     private final Date now;
     public DateCalc(final SchemaField f,
                     final Date now) {
       super(f);
       this.now = now;
-      if (! (field.getType() instanceof TrieDateField) && !(field.getType().isPointField()) ) {
+      if (!(field.getType() instanceof TrieDateField || field.getType().isPointField() ||
+          field.getType() instanceof DateRangeField)) {
         throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField, DateRangeField or PointField");
       }
     }

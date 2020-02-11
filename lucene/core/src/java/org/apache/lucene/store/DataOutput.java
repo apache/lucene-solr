@@ -90,12 +90,13 @@ public abstract class DataOutput {
    * resulting integer value. Thus values from zero to 127 may be stored in a single
    * byte, values from 128 to 16,383 may be stored in two bytes, and so on.</p>
    * <p>VByte Encoding Example</p>
-   * <table cellspacing="0" cellpadding="2" border="0" summary="variable length encoding examples">
+   * <table class="padding2" style="border-spacing: 0px; border-collapse: separate; border: 0">
+   * <caption>variable length encoding examples</caption>
    * <tr valign="top">
-   *   <th align="left">Value</th>
-   *   <th align="left">Byte 1</th>
-   *   <th align="left">Byte 2</th>
-   *   <th align="left">Byte 3</th>
+   *   <th style="text-align:left">Value</th>
+   *   <th style="text-align:left">Byte 1</th>
+   *   <th style="text-align:left">Byte 2</th>
+   *   <th style="text-align:left">Byte 3</th>
    * </tr>
    * <tr valign="bottom">
    *   <td>0</td>

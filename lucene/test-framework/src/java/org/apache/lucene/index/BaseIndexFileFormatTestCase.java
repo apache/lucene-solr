@@ -262,7 +262,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   }
 
   /** Test the accuracy of the ramBytesUsed estimations. */
-  @Slow
+  @Nightly
   public void testRamBytesUsed() throws IOException {
     if (Codec.getDefault() instanceof RandomCodec) {
       // this test relies on the fact that two segments will be written with
@@ -347,7 +347,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
-                                    proto.getPointDataDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
+                                    proto.getPointDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
 
     FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
 

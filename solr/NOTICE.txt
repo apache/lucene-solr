@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2019 The Apache Software Foundation
+ Copyright 2006-2020 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -37,7 +37,7 @@ Copyright (c) 2013-2014 Klaus Hartl, https://github.com/carhartl/jquery-cookie
 This product includes jquery.form Javascript library created by Mike Alsup
 Copyright 2006-2014 (c) M. Alsup, https://github.com/malsup/form/
 
-This product includes the jquery.jstree.js Javascript library created by Ivan Bozhanov
+This product includes the jstree Javascript library created by Ivan Bozhanov
 Copyright (c) 2013-2014 Ivan Bozhanov, https://github.com/vakata/jstree
 
 This product includes jquery.timeago.js Javascript library by Ryan McGeary
@@ -129,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2019 The Apache Software Foundation
+Copyright 2001-2020 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
