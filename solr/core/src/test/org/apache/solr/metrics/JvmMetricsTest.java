@@ -26,7 +26,6 @@ import com.codahale.metrics.Metric;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
