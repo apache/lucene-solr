@@ -19,9 +19,6 @@ import java.nio.file.Files
 
 // This adds top-level 'documentation-lint' task.
 
-// target projects for javadoc linting
-def includes = allprojects.findAll { it.file('src/java').exists() }
-
 // Change the log level for the STDOUT to INFO (default is QUIET)
 // so that lint scripts' output will be printed without --debug option
 logging.captureStandardOutput LogLevel.INFO
@@ -42,10 +39,10 @@ configure(rootProject) {
     description 'Runs documentation linters.'
 
     dependsOn ':checkBrokenLinks'
-    dependsOn includes.collect { prj ->
+    dependsOn subprojects.collect { prj ->
       prj.tasks.matching { task ->
         task.name in [
-          'ecjJavadocLint',
+          'ecjLint',
           'checkMissingJavadocs'
         ]
       }
@@ -53,25 +50,28 @@ configure(rootProject) {
   }
 
   task('checkBrokenLinks', type: CheckBrokenJavadocsLinksTask) {
-    includes.each {
-      dependsOn "${it.path}:javadoc"
+    dependsOn subprojects.collect { prj ->
+      prj.tasks.matching { task ->
+        task.name == 'javadoc'
+      }
     }
   }
 }
 
-configure(includes) { prj ->
-  task('ecjJavadocLint', type: EcjJavadocLintTask, dependsOn: 'classes')
-}
-
-allprojects {
-  task('checkMissingJavadocs', type: CheckMissingJavadocsTask, dependsOn: 'javadoc')
+allprojects { prj ->
+  task('ecjLint', type: EcjLintTask)
+  task('checkMissingJavadocs', type: CheckMissingJavadocsTask) {
+    plugins.withId('java', {
+      dependsOn 'javadoc'
+    })
+  }
 }
 
 // todo: add missing docs for all classes and bump this to level=class
-def packageLevelCheckProjects = includes.findAll { it.path.startsWith(':solr') }
-configure(packageLevelCheckProjects) {
+def packageLevelCheckProjects = allprojects.findAll { it.path.startsWith(':solr') && it.plugins.contains(JavaPlugin) }
+configure(packageLevelCheckProjects) { prj ->
   checkMissingJavadocs {
-    dirs += [ new Tuple2("${buildDir}/docs/javadoc", "package") ]
+    dirs += [new Tuple2("${buildDir}/docs/javadoc", "package")]
   }
 }
 
@@ -93,7 +93,7 @@ def methodLevelCheckProjects = [
 ]
 
 def prjLuceneCore = project(':lucene:core')
-def classLevelCheckProjects = includes.findAll { it.path.startsWith(':lucene') } - methodLevelCheckProjects - [ prjLuceneCore ]
+def classLevelCheckProjects = allprojects.findAll { it.path.startsWith(':lucene') && it.plugins.contains(JavaPlugin) } - methodLevelCheckProjects - [ prjLuceneCore ]
 
 configure(classLevelCheckProjects) {
   checkMissingJavadocs {
@@ -122,48 +122,44 @@ configure(prjLuceneCore) {
   }
 }
 
-class EcjJavadocLintTask extends DefaultTask {
+class EcjLintTask extends DefaultTask {
 
-  @Input
-  String srcMainDir = "src/java"
-
-  @Input
-  String srcTestDir = "src/test"
-
-  def ecjJavadocLint(String srcDir, String dstDir, String cp) {
-    project.javaexec {
-      classpath {
-        project.rootProject.configurations.ecj.asPath
+  def ecjJavadocLint(String dstDir) {
+    project.plugins.withId('java', {
+      project.sourceSets.each { sourceSet ->
+        project.javaexec {
+          classpath {
+            project.rootProject.configurations.ecj.asPath
+          }
+          main = "org.eclipse.jdt.internal.compiler.batch.Main"
+          args += [
+            // Unfortunately, 'testCompileClasspath' is not available from sourceSet, so without the second term test classes cannot be compiled.
+            "-classpath", sourceSet.compileClasspath.toList().join(':') + project.configurations.testCompileClasspath.findAll().join(":"),
+            "-d", dstDir,
+            "-encoding", "UTF-8",
+            "-source", "11", // How this can be obtained from sourceSet or project?
+            "-target", "11",
+            "-nowarn",
+            "-enableJavadoc",
+            "-properties", "${project.rootProject.rootDir}/lucene/tools/javadoc/ecj.javadocs.prefs",
+            "src/java" // ... or "src/test". How this can be obtained from sourceSet or project?
+          ]
+        }
       }
-      main = "org.eclipse.jdt.internal.compiler.batch.Main"
-      args += [
-        "-classpath", cp,
-        "-d", dstDir,
-        "-encoding", "UTF-8",
-        "-source", "11",
-        "-target", "11",
-        "-nowarn",
-        "-enableJavadoc",
-        "-properties", "${project.rootProject.rootDir}/lucene/tools/javadoc/ecj.javadocs.prefs",
-        srcDir
-      ]
-    }
+    })
   }
 
   @TaskAction
   def lint() {
     def dstDir = Files.createTempDirectory("ecj")
-    def cp = project.configurations.compileClasspath.findAll().join(":")
-    // add dstDir to test classpath because 'testCompileClasspath' doesn't include main classes in 'src/java'
-    def testcp = project.configurations.testCompileClasspath.findAll().join(":") + ":" + dstDir
     try {
       // TODO: should output Compiler WARNING (the same as ant's ECJ macro)?
-      ecjJavadocLint(srcMainDir, dstDir.toString(), cp)
-      ecjJavadocLint(srcTestDir, dstDir.toString(), testcp)
+      ecjJavadocLint(dstDir.toString())
     } finally {
       dstDir.deleteDir()
     }
   }
+
 }
 
 class CheckBrokenJavadocsLinksTask extends DefaultTask {
@@ -237,3 +233,4 @@ class CheckMissingJavadocsTask extends DefaultTask {
     }
   }
 }
+
