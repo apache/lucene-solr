@@ -89,7 +89,7 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     IndexSearcher searchers[] = new IndexSearcher[] {
         new IndexSearcher(reader),
-        new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(service))
+        new IndexSearcher(reader, service)
     };
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -240,7 +240,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
                                    new LinkedBlockingQueue<Runnable>(),
                                    new NamedThreadFactory("TestIndexSearcher"));
-    IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(service));
+    IndexSearcher s = new IndexSearcher(r, service);
     IndexSearcher.LeafSlice[] slices = s.getSlices();
     assertNotNull(slices);
     assertEquals(1, slices.length);
@@ -253,10 +253,10 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testOneSegmentExecutesOnTheCallerThread() throws IOException {
     List<LeafReaderContext> leaves = reader.leaves();
     AtomicInteger numExecutions = new AtomicInteger(0);
-    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(task -> {
+    IndexSearcher searcher = new IndexSearcher(reader, task -> {
       numExecutions.incrementAndGet();
       task.run();
-    })) {
+    }) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
@@ -277,7 +277,7 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testRejectedExecution() throws IOException {
     ExecutorService service = new RejectingMockExecutor();
 
-    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(service)) {
+    IndexSearcher searcher = new IndexSearcher(reader, service) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
@@ -355,7 +355,7 @@ public class TestIndexSearcher extends LuceneTestCase {
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestIndexSearcher"));
 
-    IndexSearcher searcher= new IndexSearcher(reader, new RandomBlockingSliceExecutionControlPlane(service));
+    IndexSearcher searcher= new IndexSearcher(reader.getContext(), service, new RandomBlockingSliceExecutionControlPlane(service));
 
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -390,17 +390,15 @@ public class TestIndexSearcher extends LuceneTestCase {
     TestUtil.shutdownExecutorService(service);
   }
 
-  private class RandomBlockingSliceExecutionControlPlane<C> implements SliceExecutionControlPlane<C> {
-
-    private final Executor executor;
+  private class RandomBlockingSliceExecutionControlPlane extends DefaultExecutionControlPlane {
 
     public RandomBlockingSliceExecutionControlPlane(Executor executor) {
-      this.executor = executor;
+      super(executor);
     }
 
     @Override
-    public List<Future<C>> invokeAll(Collection<FutureTask> tasks) {
-      List<Future<C>> futures = new ArrayList();
+    public List<Future> invokeAll(Collection<FutureTask> tasks) {
+      List<Future> futures = new ArrayList();
 
       for (FutureTask task : tasks) {
         boolean shouldExecuteOnCallerThread = false;
@@ -409,17 +407,8 @@ public class TestIndexSearcher extends LuceneTestCase {
           shouldExecuteOnCallerThread = true;
         }
 
-        try {
-          executor.execute(task);
-        } catch (RejectedExecutionException e) {
-          // Execute on caller thread
-          shouldExecuteOnCallerThread = true;
-        }
+        processTask(task, futures, shouldExecuteOnCallerThread);
 
-        if (shouldExecuteOnCallerThread) {
-          task.run();
-
-        }
         futures.add(task);
       }
 

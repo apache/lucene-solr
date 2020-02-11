@@ -26,11 +26,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -119,7 +119,7 @@ public class IndexSearcher {
   /** used with executor - each slice holds a set of leafs executed within one thread */
   private final LeafSlice[] leafSlices;
 
-  private final SliceExecutionControlPlane sliceExecutionControlPlane;
+  private final DefaultExecutionControlPlane sliceExecutionControlPlane;
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
@@ -185,10 +185,14 @@ public class IndexSearcher {
    *  Thread.interrupt under-the-hood which can silently
    *  close file descriptors (see <a
    *  href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
-   * 
+   *  NOTE: If ThreadPoolExecutor or its derivative is passed in for the Executor, IndexSearcher
+   *  will perform throttling based on task queue backpressure to ensure that a single query does
+   *  not overwhelm the entire search threadpool. If not, then the standard execution methodology
+   *  will be followed.
+   *
    * @lucene.experimental */
-  public IndexSearcher(IndexReader r, SliceExecutionControlPlane sliceExecutionControlPlane) {
-    this(r.getContext(), sliceExecutionControlPlane);
+  public IndexSearcher(IndexReader r, Executor executor) {
+    this(r.getContext(), executor);
   }
 
   /**
@@ -200,12 +204,31 @@ public class IndexSearcher {
    * ExecutorService as this uses Thread.interrupt under-the-hood which can
    * silently close file descriptors (see <a
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
+   * NOTE: If ThreadPoolExecutor or its derivative is passed in for the Executor, IndexSearcher
+   * will perform throttling based on task queue backpressure to ensure that a single query does
+   * not overwhelm the entire search threadpool. If not, then the standard execution methodology
+   * will be followed.
    * 
    * @see IndexReaderContext
    * @see IndexReader#getContext()
    * @lucene.experimental
    */
-  public IndexSearcher(IndexReaderContext context, SliceExecutionControlPlane sliceExecutionControlPlane) {
+  public IndexSearcher(IndexReaderContext context, Executor executor) {
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    reader = context.reader();
+    this.sliceExecutionControlPlane = getSliceExecutionControlPlane(executor);
+    this.readerContext = context;
+    leafContexts = context.leaves();
+    this.leafSlices = executor == null ? null : slices(leafContexts);
+  }
+
+  /**
+   * We do this elaborate dance as to have only one constructor with a nullable second parameter
+   * See the next constructor for more clarification
+   * Only for testing
+   */
+  IndexSearcher(IndexReaderContext context, Executor executor,
+                DefaultExecutionControlPlane sliceExecutionControlPlane) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.sliceExecutionControlPlane = sliceExecutionControlPlane;
@@ -660,7 +683,7 @@ public class IndexSearcher {
       }
       query = rewrite(query);
       final Weight weight = createWeight(query, scoreMode, 1);
-      final List<Future<C>> topDocsFutures;
+      final List<Future> topDocsFutures;
       List<FutureTask> listTasks = new ArrayList<>();
       for (int i = 0; i < leafSlices.length - 1; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -673,11 +696,7 @@ public class IndexSearcher {
       }
 
       topDocsFutures = sliceExecutionControlPlane.invokeAll(listTasks);
-      final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
-      final C collector = collectors.get(leafSlices.length - 1);
-      // execute the last on the caller thread
-      search(Arrays.asList(leaves), weight, collector);
-      topDocsFutures.add(CompletableFuture.completedFuture(collector));
+
       final List<C> collectedCollectors = new ArrayList<>();
       for (Future<C> future : topDocsFutures) {
         try {
@@ -929,5 +948,17 @@ public class IndexSearcher {
     public TooManyClauses() {
       super("maxClauseCount is set to " + maxClauseCount);
     }
+  }
+
+  private static DefaultExecutionControlPlane getSliceExecutionControlPlane(Executor executor) {
+    if (executor == null) {
+      return null;
+    }
+
+    if (executor instanceof ThreadPoolExecutor) {
+      return new QueueSizeBasedExecutionControlPlane((ThreadPoolExecutor) executor);
+    }
+
+    return new DefaultExecutionControlPlane(executor);
   }
 }

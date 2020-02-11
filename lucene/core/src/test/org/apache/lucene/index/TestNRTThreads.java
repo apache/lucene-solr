@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueueSizeBasedExecutionControlPlane;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -83,7 +82,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
       //openDelFileCount=" + dir.openDeleteFileCount());
 
       if (r.numDocs() > 0) {
-        fixedSearcher = new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(es));
+        fixedSearcher = new IndexSearcher(r, es);
         smokeTestSearcher(fixedSearcher);
         runSearchThreads(System.currentTimeMillis() + 500);
       }

@@ -21,27 +21,25 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Implementation of SliceBasedExecutionControlPlane that controls the number of active threads
- * that are used for a single query. At any point, no more than (maximum pool size of the executor)
- * LIMITING_FACTOR threads should be active. If the limit is exceeded, further segments are searched on the caller thread
+ * Default implementation of SliceExecutionControlPlane which executes FutureTask instances. This is used
+ * by IndexSearcher as default unless overridden by a custom implementation.
  */
-public class QueueSizeBasedExecutionControlPlane extends DefaultExecutionControlPlane {
-  private final ThreadPoolExecutor threadPoolExecutor;
-  private static final double LIMITING_FACTOR = 1.5;
+public class DefaultExecutionControlPlane implements SliceExecutionControlPlane<List<Future>, FutureTask> {
+  private final Executor executor;
 
-  public QueueSizeBasedExecutionControlPlane(ThreadPoolExecutor executor) {
-    super(executor);
-    this.threadPoolExecutor = executor;
+  public DefaultExecutionControlPlane(Executor executor) {
+    assert executor != null;
+    this.executor = executor;
   }
 
   @Override
   public List<Future> invokeAll(Collection<FutureTask> tasks) {
-    boolean isThresholdCheckEnabled = true;
     List<Future> futures = new ArrayList();
     int i = 0;
 
@@ -53,25 +51,46 @@ public class QueueSizeBasedExecutionControlPlane extends DefaultExecutionControl
         shouldExecuteOnCallerThread = true;
       }
 
-      if (isThresholdCheckEnabled && threadPoolExecutor.getQueue().size() <
-          (threadPoolExecutor.getMaximumPoolSize() * LIMITING_FACTOR)) {
-        shouldExecuteOnCallerThread = true;
-      }
-
       processTask(task, futures, shouldExecuteOnCallerThread);
 
       i++;
-      if (!shouldExecuteOnCallerThread) {
-        futures.add(task);
-      } else {
-        try {
-          futures.add(CompletableFuture.completedFuture(task.get()));
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage());
-        }
-      }
     }
 
     return futures;
+  }
+
+  // Helper method to execute a single task
+  protected void processTask(FutureTask task, List<Future> futures,
+                             boolean shouldExecuteOnCallerThread) {
+    if (task == null) {
+      throw new IllegalArgumentException("Input is null");
+    }
+
+    if (!shouldExecuteOnCallerThread) {
+      try {
+        executor.execute(task);
+      } catch (RejectedExecutionException e) {
+        // Execute on caller thread
+        shouldExecuteOnCallerThread = true;
+      }
+    }
+
+    if (shouldExecuteOnCallerThread) {
+      try {
+        task.run();
+      } catch (Exception e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }
+
+    if (!shouldExecuteOnCallerThread) {
+      futures.add(task);
+    } else {
+      try {
+        futures.add(CompletableFuture.completedFuture(task.get()));
+      } catch (Exception e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }
   }
 }

@@ -126,7 +126,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestTopDocsCollector"));
     try {
-      IndexSearcher searcher = new IndexSearcher(indexReader, new QueueSizeBasedExecutionControlPlane(service));
+      IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
       CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
           null, threshold);

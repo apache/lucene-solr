@@ -31,9 +31,9 @@ public class ScorerIndexSearcher extends IndexSearcher {
 
   /** Creates a searcher searching the provided index. Search on individual
    *  segments will be run in the provided {@link SliceExecutionControlPlane}.
-   * @see IndexSearcher#IndexSearcher(IndexReader, SliceExecutionControlPlane) */
+   * @see IndexSearcher#IndexSearcher(IndexReader, Executor) */
   public ScorerIndexSearcher(IndexReader r, Executor executor) {
-    super(r, new QueueSizeBasedExecutionControlPlane(executor));
+    super(r, executor);
   }
 
   /** Creates a searcher searching the provided index.

@@ -45,8 +45,8 @@ import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
@@ -81,8 +81,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final SearcherFactory factory = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
-        SliceExecutionControlPlane sliceExecutionControlPlane = es != null ? new QueueSizeBasedExecutionControlPlane(es) : null;
-        IndexSearcher s = new IndexSearcher(r, sliceExecutionControlPlane);
+        IndexSearcher s = new IndexSearcher(r, es);
         TestSearcherManager.this.warmCalled = true;
         s.search(new TermQuery(new Term("body", "united")), 10);
         return s;
@@ -229,7 +228,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         } catch (InterruptedException e) {
           //
         }
-        return new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(es));
+        return new IndexSearcher(r, es);
       }
     };
     final SearcherManager searcherManager = random().nextBoolean() 

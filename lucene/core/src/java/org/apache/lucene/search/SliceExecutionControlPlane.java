@@ -18,9 +18,6 @@
 package org.apache.lucene.search;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 
 /**
@@ -28,11 +25,11 @@ import java.util.concurrent.FutureTask;
  * for execution of slices based on the current status
  * of the system and current system load
  */
-public interface SliceExecutionControlPlane<C> {
+public interface SliceExecutionControlPlane <C, T extends Runnable> {
   /**
    * Invoke all slices that are allocated for the query
    */
-  List<Future<C>> invokeAll(Collection<FutureTask> tasks);
+  C invokeAll(Collection<T> tasks);
 }
 
 

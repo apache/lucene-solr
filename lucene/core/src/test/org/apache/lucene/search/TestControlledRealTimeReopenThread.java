@@ -43,8 +43,8 @@ import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 @SuppressCodecs({ "SimpleText", "Direct" })
@@ -224,8 +224,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         @Override
         public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
           TestControlledRealTimeReopenThread.this.warmCalled = true;
-          SliceExecutionControlPlane sliceExecutionControlPlane = es != null ? new QueueSizeBasedExecutionControlPlane(es) : null;
-          IndexSearcher s = new IndexSearcher(r, sliceExecutionControlPlane);
+          IndexSearcher s = new IndexSearcher(r, es);
           s.search(new TermQuery(new Term("body", "united")), 10);
           return s;
         }
