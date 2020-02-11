@@ -111,7 +111,7 @@ public class XmlConfigFile { // formerly simply "Config"
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
-      loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
+      loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
     }
     this.loader = loader;
     this.substituteProperties = substituteProps;

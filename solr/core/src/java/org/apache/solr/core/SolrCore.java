@@ -1275,7 +1275,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
-    return SolrResourceLoader.normalizeDir(dataDir);
+    return SolrPaths.normalizeDir(dataDir);
   }
 
 

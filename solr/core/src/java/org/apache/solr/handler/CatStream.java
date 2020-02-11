@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,9 +95,9 @@ public class CatStream extends TupleStream implements Expressible {
     }
     final SolrCore core = (SolrCore) context.get("solr-core");
 
-    this.chroot = Paths.get(core.getCoreContainer().getSolrHome(), SolrResourceLoader.USER_FILES_DIRECTORY).toString();
+    this.chroot = Paths.get(core.getCoreContainer().getSolrHome(), SolrPaths.USER_FILES_DIRECTORY).toString();
     if (! new File(this.chroot).exists()) {
-      throw new IllegalStateException(SolrResourceLoader.USER_FILES_DIRECTORY + " directory used to load files must exist but could not be found!");
+      throw new IllegalStateException(SolrPaths.USER_FILES_DIRECTORY + " directory used to load files must exist but could not be found!");
     }
   }
 

@@ -16,10 +16,6 @@
  */
 package org.apache.solr.core;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,16 +34,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -84,15 +77,13 @@ import org.slf4j.LoggerFactory;
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String project = "solr";
-  static final String base = "org.apache" + "." + project;
-  static final String[] packages = {
+  private static final String base = "org.apache.solr";
+  private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
       "cloud.autoscaling."
   };
-  private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 
@@ -123,7 +114,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public SolrResourceLoader() {
-    this(SolrResourceLoader.locateSolrHome(), null);
+    this(SolrPaths.locateSolrHome(), null);
   }
 
   /**
@@ -155,11 +146,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * found in the "lib/" directory in the specified instance directory.
    *
    * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
-   * @see #locateSolrHome
+   * @see SolrPaths#locateSolrHome()
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrResourceLoader.locateSolrHome().toAbsolutePath().normalize();
+      this.instanceDir = SolrPaths.locateSolrHome().toAbsolutePath().normalize();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else {
       this.instanceDir = instanceDir.toAbsolutePath().normalize();
@@ -287,13 +278,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         return matcher.matches(entry.getFileName());
       }
     });
-  }
-
-  /**
-   * Ensures a directory name always ends with a '/'.
-   */
-  public static String normalizeDir(String path) {
-    return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + File.separator : path;
   }
 
   public String getConfigDir() {
@@ -437,7 +421,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern =
-      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Q" + project + ".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
 
   @Override
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
@@ -497,8 +481,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
         String newName = cname;
-        if (newName.startsWith(project)) {
-          newName = cname.substring(project.length() + 1);
+        if (newName.startsWith("solr")) {
+          newName = cname.substring("solr".length() + 1);
         }
         for (String subpackage : subpackages) {
           try {
@@ -678,86 +662,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * if both fail, defaults to solr/
    * @return the instance directory name
    */
-  /**
-   * Finds the solrhome based on looking up the value in one of three places:
-   * <ol>
-   * <li>JNDI: via java:comp/env/solr/home</li>
-   * <li>The system property solr.solr.home</li>
-   * <li>Look in the current working directory for a solr/ directory</li>
-   * </ol>
-   * <p>
-   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
-   *
-   * @return A normalized solrhome
-   * @see #normalizeDir(String)
-   */
-  public static Path locateSolrHome() {
-
-    String home = null;
-    // Try JNDI
-    try {
-      Context c = new InitialContext();
-      home = (String) c.lookup("java:comp/env/" + project + "/home");
-      logOnceInfo("home_using_jndi", "Using JNDI solr.home: " + home);
-    } catch (NoInitialContextException e) {
-      log.debug("JNDI not configured for " + project + " (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.debug("No /" + project + "/home in JNDI");
-    } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
-    }
-
-    // Now try system property
-    if (home == null) {
-      String prop = project + ".solr.home";
-      home = System.getProperty(prop);
-      if (home != null) {
-        logOnceInfo("home_using_sysprop", "Using system property " + prop + ": " + home);
-      }
-    }
-
-    // if all else fails, try 
-    if (home == null) {
-      home = project + '/';
-      logOnceInfo("home_default", project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
-    }
-    return Paths.get(home);
-  }
-
-  /**
-   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
-   * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
-   */
-  public static final String USER_FILES_DIRECTORY = "userfiles";
-
-  public static void ensureUserFilesDataDir(Path solrHome) {
-    final Path userFilesPath = getUserFilesPath(solrHome);
-    final File userFilesDirectory = new File(userFilesPath.toString());
-    if (!userFilesDirectory.exists()) {
-      try {
-        final boolean created = userFilesDirectory.mkdir();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
-      }
-    }
-  }
-
-  public static Path getUserFilesPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
-  }
-
-  // Logs a message only once per startup
-  private static void logOnceInfo(String key, String msg) {
-    if (!loggedOnce.contains(key)) {
-      loggedOnce.add(key);
-      log.info(msg);
-    }
-  }
 
   /**
    * @return the instance path for this resource loader

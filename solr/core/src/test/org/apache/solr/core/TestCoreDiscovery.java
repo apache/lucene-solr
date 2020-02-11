@@ -114,7 +114,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer container = new CoreContainer(SolrResourceLoader.locateSolrHome(), new Properties());
+    final CoreContainer container = new CoreContainer(SolrPaths.locateSolrHome(), new Properties());
     try {
       container.load();
     } catch (Exception e) {
