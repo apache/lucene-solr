@@ -153,6 +153,9 @@ Bug Fixes
 
 * SOLR-14038: Admin UI display for "state.json" should be in a scollable region (Kevin Risden)
 
+* SOLR-14058: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
+  under certain circumstances. (yonik)
+
 Other Changes
 ---------------------
 
