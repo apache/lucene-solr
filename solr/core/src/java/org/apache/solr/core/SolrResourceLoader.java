@@ -180,7 +180,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.classLoader = newLoader;
     this.needToReloadLuceneSPI = true;
 
-    //nocommit validate core name needn't be present
     log.info("Added {} libs to classloader, from paths: {}",
         urls.size(), urls.stream()
         .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))

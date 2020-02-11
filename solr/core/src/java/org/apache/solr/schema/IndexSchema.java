@@ -464,7 +464,6 @@ public class IndexSchema {
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();
-      // nocommit validate by default we log the core name; no need to add to our log.
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
         sb.append("schema has no name!");
