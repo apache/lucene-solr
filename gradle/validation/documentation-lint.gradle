@@ -137,12 +137,13 @@ class EcjLintTask extends DefaultTask {
             "-classpath", sourceSet.compileClasspath.toList().join(':') + project.configurations.testCompileClasspath.findAll().join(":"),
             "-d", dstDir,
             "-encoding", "UTF-8",
-            "-source", "11", // How this can be obtained from sourceSet or project?
+            "-source", "11", // FIXME: How this can be obtained from sourceSet or project?
             "-target", "11",
             "-nowarn",
             "-enableJavadoc",
             "-properties", "${project.rootProject.rootDir}/lucene/tools/javadoc/ecj.javadocs.prefs",
-            "src/java" // ... or "src/test". How this can be obtained from sourceSet or project?
+            // FIXME: How this can be obtained from sourceSet or project?
+            "src/java" // ... or "src/test".
           ]
         }
       }
@@ -175,7 +176,7 @@ class CheckBrokenJavadocsLinksTask extends DefaultTask {
             include '**/*.css'
             includeEmptyDirs false
           }
-          into "${tmpJavadocDir}/${prj.path.replace(':', '/')}"
+          into "${tmpJavadocDir}/${prj.path.replace(':', '/')}"  // FIXME: this doesn't work for analyzers-xxx modules...
         }
       })
     }
