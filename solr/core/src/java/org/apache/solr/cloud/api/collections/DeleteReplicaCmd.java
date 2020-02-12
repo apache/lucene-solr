@@ -189,7 +189,7 @@ public class DeleteReplicaCmd implements Cmd {
       count--;
     }
     // pick the leader if no options left when type is passed
-    if (count == 1) {
+    if (count == 1 && type != null) {
       if (leader.getType().equals(type)) {
         replicasToBeRemoved.add(leader.getName());
       }
