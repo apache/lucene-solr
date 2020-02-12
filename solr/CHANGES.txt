@@ -91,6 +91,9 @@ Improvements
 
 * SOLR-14245: Validate Replica / ReplicaInfo on creation. (ab)
 
+* SOLR-14194: Highlighting now works when the uniqueKey field is not stored but has docValues.  And the original
+  highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
+
 Optimizations
 ---------------------
 
@@ -149,6 +152,9 @@ Bug Fixes
 * SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
 
 * SOLR-14038: Admin UI display for "state.json" should be in a scollable region (Kevin Risden)
+
+* SOLR-14058: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
+  under certain circumstances. (yonik)
 
 Other Changes
 ---------------------
