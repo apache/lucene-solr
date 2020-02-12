@@ -196,8 +196,8 @@ public class DocumentBuilder {
 
                 // Perhaps trim the length of a copy field
                 Object val = v;
-                if( val instanceof String && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue((String)val);
+                if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
+                    val = cf.getLimitedValue(val.toString());
                 }
 
                 addField(out, destinationField, val,
