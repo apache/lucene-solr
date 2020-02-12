@@ -49,10 +49,10 @@ final class Polygon2D implements Component2D {
   }
 
   private Polygon2D(XYPolygon polygon, Component2D holes) {
-    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, polygon.getPolyX(), polygon.getPolyY(), holes);
+    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, XYEncodingUtils.floatToDouble(polygon.getPolyX()), XYEncodingUtils.floatToDouble(polygon.getPolyY()), holes);
   }
 
-  protected Polygon2D(Polygon polygon, Component2D holes) {
+  private Polygon2D(Polygon polygon, Component2D holes) {
     this(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, polygon.getPolyLons(), polygon.getPolyLats(), holes);
   }
 

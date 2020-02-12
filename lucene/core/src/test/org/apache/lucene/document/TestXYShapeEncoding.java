@@ -26,12 +26,12 @@ import org.apache.lucene.geo.XYPolygon;
 public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
   @Override
   protected int encodeX(double x) {
-    return XYEncodingUtils.encode(x);
+    return XYEncodingUtils.encode((float) x);
   }
 
   @Override
   protected int encodeY(double y) {
-    return XYEncodingUtils.encode(y);
+    return XYEncodingUtils.encode((float) y);
   }
 
   @Override
@@ -46,12 +46,12 @@ public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
 
   @Override
   protected double nextX() {
-    return ShapeTestUtil.nextDouble(random());
+    return ShapeTestUtil.nextFloat(random());
   }
 
   @Override
   protected double nextY() {
-    return ShapeTestUtil.nextDouble(random());
+    return ShapeTestUtil.nextFloat(random());
   }
 
   @Override
