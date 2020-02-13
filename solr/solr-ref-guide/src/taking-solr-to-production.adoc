@@ -186,6 +186,11 @@ By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx5
 SOLR_JAVA_MEM="-Xms10g -Xmx10g"
 ----
 
+[NOTE]
+====
+Do not allocate a very large Java Heap memory unless you know you need it. Rule of thumb is to keep it as low as possible without running out of memory, since this will leave more free RAM for the Operating System to cache your index files automatically. Also, you should never go beyond 31Gb or heap since that will reduce performance and lead to more garbage collection, see <<#running-multiple-solr-nodes-per-host,Running Multiple Solr Nodes Per Host>>.
+====
+
 Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about garbage collection settings refer to following articles:
 1. https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
@@ -301,6 +306,44 @@ Check these limits every time you upgrade your kernel or operating system. These
 ====
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
 ====
+
+=== Avoid swapping
+
+When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation. We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system. So our recommendation is to disable swap on the host altogether or reduce the "swappiness". These instructions are valid for Linux environments. Also note that when running Solr in a Docker container, these changes must be applied to the *host*.
+
+==== Disabling swap
+
+To disable swap on a Linux system temporarily, you can run the `swapoff` command:
+
+[source,bash]
+----
+sudo swapoff -a
+----
+
+If you want to make this setting permanent, first make sure you have more than enough physical RAM on your host and then consult the documentation for correct procedure to disable swap.
+
+==== Reduce swappiness
+
+An alternative option is to reduce the "swappiness" of your system. A Linux system will by default be quite aggressive in swapping out memory to disk, by having a high default "swappiness" value. By reducing this to a very low value, it will have almost the same effect as using `swapoff`, but Linux will still be allowed to swap in case of emergency. To check the current swappiness setting, run:
+
+[source,bash]
+----
+cat /proc/sys/vm/swappiness
+----
+
+Next, to change the setting permanently, open ``/etc/sysctl.conf` as the root user. Then, change or add this line to the file:
+
+[source,bash]
+----
+vm.swappiness = 1
+----
+
+Alternatively, you can change the setting temporarily, run this comamnd:
+
+[source,bash]
+----
+echo 1 > /proc/sys/vm/swappiness
+----
 
 == Security Considerations
 

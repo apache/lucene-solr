@@ -180,6 +180,8 @@ Other Changes
 
 * SOLR-13996: Refactor HttpShardHandler.prepDistributed method. (shalin)
 
+* SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
