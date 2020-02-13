@@ -31,8 +31,6 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @lucene.spi {@value #NAME}
- * @since 3.1
  */
 public class DelimitedBoostTokenFilterFactory extends TokenFilterFactory {
 
