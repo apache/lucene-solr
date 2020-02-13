@@ -132,6 +132,12 @@ public class HttpClientUtil {
    */
   public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory";
 
+  /**
+   * A Java system property to select the {@linkplain SchemaRegistryProvider} used for
+   * configuring the Apache HTTP clients.
+   */
+  public static final String SYS_PROP_SCHEMA_REGISTRY_PROVIDER = "solr.schema.registry.provider";
+
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
@@ -146,6 +152,17 @@ public class HttpClientUtil {
 
   static {
     resetHttpClientBuilder();
+
+    // Configure the SchemaRegistryProvider if user has specified the provider type.
+    String schemaRegistryProviderClassName = System.getProperty(SYS_PROP_SCHEMA_REGISTRY_PROVIDER);
+    if (schemaRegistryProviderClassName != null) {
+      log.debug("Using " + schemaRegistryProviderClassName);
+      try {
+        schemaRegistryProvider = (SchemaRegistryProvider)Class.forName(schemaRegistryProviderClassName).getConstructor().newInstance();
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
+        throw new RuntimeException("Unable to instantiate Solr SchemaRegistryProvider", e);
+      }
+    }
 
     // Configure the HttpClientBuilder if user has specified the factory type.
     String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
