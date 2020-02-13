@@ -2373,8 +2373,6 @@ lion => panthera leo|0.9, simba|0.8, kimba|0.75
 
 *Example:*
 
---
-[example.tab-pane#byname-filter-stop-weightedsynonymgraph]
 ====
 [.tab-label]*With name*
 [source,xml]
@@ -2386,7 +2384,6 @@ lion => panthera leo|0.9, simba|0.8, kimba|0.75
 </analyzer>
 ----
 ====
---
 
 *In:* "lion"
 
