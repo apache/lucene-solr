@@ -73,6 +73,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -83,9 +84,9 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.SolrFileCleaningTracker;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -484,15 +485,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       // /admin/info/key must be always open. see SOLR-9188
       String requestPath = ServletUtils.getPathAfterContext(request);
-      if (PublicKeyHandler.PATH.equals(requestPath)) {
-        if (log.isDebugEnabled())
-          log.debug("Pass through PKI authentication endpoint");
+      if (PublicKeyHandler.PATH.equals(requestPath) || HealthCheckHandler.PATH.equals(requestPath) || requestPath.endsWith("/node/health")) {
+        if (log.isDebugEnabled()) {
+          log.debug("Pass through {}", requestPath);
+        }
         return true;
       }
-      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
+      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page
       if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
           log.debug("Pass through Admin UI entry point");
+        }
         return true;
       }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);

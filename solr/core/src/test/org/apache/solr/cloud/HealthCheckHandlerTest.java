@@ -39,14 +39,7 @@ import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
-public class HealthCheckHandlerTest extends SolrCloudTestCase {
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-  }
-
+public abstract class HealthCheckHandlerTest extends SolrCloudTestCase {
   @Test
   public void testHealthCheckHandler() throws Exception {
     SolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());

@@ -86,6 +86,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -629,7 +630,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAuthorize() {
-    if(PublicKeyHandler.PATH.equals(path)) return false;
+    if(PublicKeyHandler.PATH.equals(path) || HealthCheckHandler.PATH.equals(path) || path.endsWith("/node/health")) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served 
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {

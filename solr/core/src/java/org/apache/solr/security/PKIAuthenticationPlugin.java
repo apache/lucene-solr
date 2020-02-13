@@ -50,6 +50,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
@@ -88,7 +89,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
-    if (requestURI.endsWith(PublicKeyHandler.PATH)) {
+    if (requestURI.endsWith(PublicKeyHandler.PATH) || requestURI.endsWith(HealthCheckHandler.PATH) || requestURI.endsWith("/node/health")) {
       numPassThrough.inc();
       filterChain.doFilter(request, response);
       return true;

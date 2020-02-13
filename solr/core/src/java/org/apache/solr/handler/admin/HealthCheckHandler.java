@@ -46,6 +46,8 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String PATH = "/admin/info/health";
+
   CoreContainer coreContainer;
 
   public HealthCheckHandler() {}
