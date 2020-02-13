@@ -608,7 +608,7 @@ public class TestPointQueries extends LuceneTestCase {
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
     if (VERBOSE) {

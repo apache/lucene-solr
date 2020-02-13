@@ -43,6 +43,17 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 
 public class SolrTestCase extends LuceneTestCase {
 
+  /**
+   * <b>DO NOT REMOVE THIS LOGGER</b>
+   * <p>
+   * For reasons that aren't 100% obvious, the existence of this logger is neccessary to ensure
+   * that the logging framework is properly initialized (even if concrete subclasses do not 
+   * themselves initialize any loggers) so that the async logger threads can be properly shutdown
+   * on completion of the test suite
+   * </p>
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
+   * @see #shutdownLogger
+   */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** 

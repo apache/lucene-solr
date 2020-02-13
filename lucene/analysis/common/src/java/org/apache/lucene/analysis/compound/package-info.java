@@ -73,8 +73,8 @@
  *  word.</li>
  * </ul>
  * 
- * <h3>Compound word token filters</h3>
- * <h4>HyphenationCompoundWordTokenFilter</h4>
+ * <h2>Compound word token filters</h2>
+ * <h3>HyphenationCompoundWordTokenFilter</h3>
  * The {@link
  * org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter
  * HyphenationCompoundWordTokenFilter} uses hyphenation grammars to find
@@ -82,7 +82,7 @@
  * without a dictionary as well but then produces a lot of "nonword" tokens.
  * The quality of the output tokens is directly connected to the quality of the
  * grammar file you use. For languages like German they are quite good.
- * <h5>Grammar file</h5>
+ * <h4>Grammar file</h4>
  * Unfortunately we cannot bundle the hyphenation grammar files with Lucene
  * because they do not use an ASF compatible license (they use the LaTeX
  * Project Public License instead). You can find the XML based grammar
@@ -99,7 +99,7 @@
  * <a href="http://xmlgraphics.apache.org/fop/">Apache FOP project</a>
  * .
  * 
- * <h4>DictionaryCompoundWordTokenFilter</h4>
+ * <h3>DictionaryCompoundWordTokenFilter</h3>
  * The {@link
  * org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter
  * DictionaryCompoundWordTokenFilter} uses a dictionary-only approach to
@@ -107,7 +107,7 @@
  * uses the hyphenation grammars. You can use it as a first start to
  * see if your dictionary is good or not because it is much simpler in design.
  * 
- * <h3>Dictionary</h3>
+ * <h2>Dictionary</h2>
  * The output quality of both token filters is directly connected to the
  * quality of the dictionary you use. They are language dependent of course.
  * You always should use a dictionary
@@ -118,7 +118,7 @@
  * dictionaries</a>
  * Wiki.
  * 
- * <h3>Which variant should I use?</h3>
+ * <h2>Which variant should I use?</h2>
  * This decision matrix should help you:
  * <table style="border: 1px solid">
  *  <caption>comparison of dictionary and hyphenation based decompounding</caption>
@@ -138,7 +138,7 @@
  *   <td>slow</td>
  *  </tr>
  * </table>
- * <h3>Examples</h3>
+ * <h2>Examples</h2>
  * <pre class="prettyprint">
  *   public void testHyphenationCompoundWordsDE() throws Exception {
  *     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",

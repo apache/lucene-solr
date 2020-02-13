@@ -116,6 +116,8 @@ New Features
 Improvements
 ---------------------
 
+* LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
+
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 
 * LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
@@ -146,6 +148,9 @@ Improvements
 
 * LUCENE-9123: Add new JapaneseTokenizer constructors with discardCompoundToken option that controls whether
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
+
+* LUCENE-9194: Simplify XYShapeXQuery API by adding a new abstract class called XYGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
 
 Optimizations
 ---------------------
