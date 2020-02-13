@@ -17,12 +17,15 @@
 
 package org.apache.solr;
 
+import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 
@@ -39,7 +42,21 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
  */
 
 public class SolrTestCase extends LuceneTestCase {
+
   /**
+   * <b>DO NOT REMOVE THIS LOGGER</b>
+   * <p>
+   * For reasons that aren't 100% obvious, the existence of this logger is neccessary to ensure
+   * that the logging framework is properly initialized (even if concrete subclasses do not 
+   * themselves initialize any loggers) so that the async logger threads can be properly shutdown
+   * on completion of the test suite
+   * </p>
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
+   * @see #shutdownLogger
+   */
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** 
    * Special hook for sanity checking if any tests trigger failures when an
    * Assumption failure occures in a {@link BeforeClass} method
    * @lucene.internal
