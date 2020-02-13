@@ -2361,6 +2361,8 @@ small => tiny,teeny,weeny
 *Weighted Synonyms:*
 
 Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
+For more information feel free to refer to:
+https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
 For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
 
 [source,text]
