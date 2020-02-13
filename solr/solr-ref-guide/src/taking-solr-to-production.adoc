@@ -244,7 +244,7 @@ SOLR_HOST=solr1.example.com
 
 Setting the hostname of the Solr server is recommended, especially when running in SolrCloud mode, as this determines the address of the node when it registers with ZooKeeper.
 
-=== Environment banner in Admin UI
+=== Environment Banner in Admin UI
 
 To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
 
@@ -311,7 +311,7 @@ If these limits are exceeded, the problems reported by Solr vary depending on th
 
 When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation. We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system. So our recommendation is to disable swap on the host altogether or reduce the "swappiness". These instructions are valid for Linux environments. Also note that when running Solr in a Docker container, these changes must be applied to the *host*.
 
-==== Disabling swap
+==== Disabling Swap
 
 To disable swap on a Linux system temporarily, you can run the `swapoff` command:
 
@@ -322,7 +322,7 @@ sudo swapoff -a
 
 If you want to make this setting permanent, first make sure you have more than enough physical RAM on your host and then consult the documentation for correct procedure to disable swap.
 
-==== Reduce swappiness
+==== Reduce Swappiness
 
 An alternative option is to reduce the "swappiness" of your system. A Linux system will by default be quite aggressive in swapping out memory to disk, by having a high default "swappiness" value. By reducing this to a very low value, it will have almost the same effect as using `swapoff`, but Linux will still be allowed to swap in case of emergency. To check the current swappiness setting, run:
 
