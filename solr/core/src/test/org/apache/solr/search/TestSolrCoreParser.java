@@ -32,10 +32,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
@@ -118,12 +116,6 @@ public class TestSolrCoreParser extends SolrTestCase {
     assertTrue(bq.clauses().get(1).getQuery() instanceof MatchNoDocsQuery);
   }
 
-  private static SpanQuery unwrapSpanBoostQuery(Query query) {
-    assertTrue(query instanceof SpanBoostQuery);
-    final SpanBoostQuery spanBoostQuery = (SpanBoostQuery)query;
-    return spanBoostQuery.getQuery();
-  }
-
   // test custom query (HandyQueryBuilder) wrapping a SpanQuery
   public void testHandySpanQuery() throws IOException, ParserException {
     final String lhsXml = "<SpanOr fieldName='contents'>"
@@ -142,10 +134,10 @@ public class TestSolrCoreParser extends SolrTestCase {
       final Query clauseQuery = bq.clauses().get(ii).getQuery();
       switch (ii) {
         case 0:
-          assertTrue(unwrapSpanBoostQuery(clauseQuery) instanceof SpanOrQuery);
+          assertTrue((clauseQuery) instanceof SpanOrQuery);
           break;
         case 1:
-          assertTrue(unwrapSpanBoostQuery(clauseQuery) instanceof SpanNearQuery);
+          assertTrue((clauseQuery) instanceof SpanNearQuery);
           break;
         default:
           fail("unexpected clause index "+ii);
@@ -181,8 +173,8 @@ public class TestSolrCoreParser extends SolrTestCase {
     // the test
     final Query query = parseXmlString(xml);
     if (span) {
-      assertTrue(unwrapSpanBoostQuery(query) instanceof SpanOrQuery);
-      final SpanOrQuery soq = (SpanOrQuery)unwrapSpanBoostQuery(query);
+      assertTrue((query) instanceof SpanOrQuery);
+      final SpanOrQuery soq = (SpanOrQuery) query;
       assertEquals(2, soq.getClauses().length);
       checkChooseOneWordQuery(span, soq.getClauses()[0], fieldName, randomTerms);
       checkApacheLuceneSolr(soq.getClauses()[1], fieldName);

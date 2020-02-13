@@ -273,42 +273,40 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
 
   public void testST3() throws Exception {
     SpanQuery q = st("w1");
-    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
+    bqtest(q, new int[] {0,1,2,3});
   }
   public void testST6() throws Exception {
     SpanQuery q = st("xx");
-    qtest(new SpanBoostQuery(q, 0), new int[] {2,3});
+    qtest(q, new int[] {2,3});
   }
 
   public void testSF3() throws Exception {
     SpanQuery q = sf(("w1"),1);
-    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
+    bqtest(q, new int[] {0,1,2,3});
   }
   public void testSF7() throws Exception {
     SpanQuery q = sf(("xx"),3);
-    bqtest(new SpanBoostQuery(q, 0), new int[] {2,3});
+    bqtest(q, new int[] {2,3});
   }
   
   public void testSNot3() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("QQ"));
-    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
+    bqtest(q, new int[] {0,1,2,3});
   }
   public void testSNot6() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("xx"));
-    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
+    bqtest(q, new int[] {0,1,2,3});
   }
 
   public void testSNot8() throws Exception {
     // NOTE: using qtest not bqtest
     SpanQuery f = snear("w1","w3",10,true);
-    f = new SpanBoostQuery(f, 0);
     SpanQuery q = snot(f, st("xx"));
     qtest(q, new int[] {0,1,3});
   }
   public void testSNot9() throws Exception {
     // NOTE: using qtest not bqtest
     SpanQuery t = st("xx");
-    t = new SpanBoostQuery(t, 0);
     SpanQuery q = snot(snear("w1","w3",10,true), t);
     qtest(q, new int[] {0,1,3});
   }
