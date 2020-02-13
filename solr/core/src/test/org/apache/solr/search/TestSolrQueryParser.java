@@ -1336,7 +1336,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   public void testSynonymsBoost_singleConceptQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
-    //snow leopard|1.0, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
+    //snow leopard, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
     Query q = QParser.getParser("snow leopard",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\")", q.toString());
     
@@ -1372,7 +1372,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   public void testSynonymsBoost_multiConceptsQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
-    //snow leopard|1.0, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
+    //snow leopard, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
     //panthera onca => jaguar|0.95, big cat|0.85, black panther|0.65
     Query q = QParser.getParser("snow leopard panthera onca",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\")" +
