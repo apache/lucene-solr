@@ -75,7 +75,7 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle(minX, maxX, minY, maxY));
+      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 
