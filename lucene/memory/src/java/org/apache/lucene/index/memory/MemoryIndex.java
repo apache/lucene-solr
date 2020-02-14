@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
@@ -1239,6 +1240,11 @@ public class MemoryIndex {
         return null;
       }
       return new MemoryIndexPointValues(info);
+    }
+
+    @Override
+    public VectorValues getVectorValues(String field) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

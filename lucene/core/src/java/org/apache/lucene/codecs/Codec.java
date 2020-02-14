@@ -110,6 +110,8 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
 
   /** Encodes/decodes points index */
   public abstract PointsFormat pointsFormat();
+
+  public abstract VectorsFormat vectorsFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {

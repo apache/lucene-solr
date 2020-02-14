@@ -81,5 +81,16 @@ public class DisiWrapper {
     this.lastApproxNonMatchDoc = -2;
     this.lastApproxMatchDoc = -2;
   }
+
+  public DisiWrapper(DocIdSetIterator iterator) {
+    this.scorer = null;
+    this.spans = null;
+    this.iterator = iterator;
+    this.cost = iterator.cost();
+    this.doc = -1;
+    this.twoPhaseView = null;
+    this.approximation = iterator;
+    this.matchCost = 0f;
+  }
 }
 

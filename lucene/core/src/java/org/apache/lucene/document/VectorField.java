@@ -55,21 +55,4 @@ public final class VectorField extends Field {
     buffer.asFloatBuffer().put(value);
     return new BytesRef(buffer.array());
   }
-
-  public static float[] decode(BytesRef bytes) {
-    int numDims = bytes.length / Float.BYTES;
-    float[] value = new float[numDims];
-    ByteBuffer buffer = ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
-    buffer.asFloatBuffer().get(value);
-    return value;
-  }
-
-  public static double l2norm(float[] first, float[] second) {
-    double l2norm = 0;
-    for (int v = 0; v < first.length; v++) {
-      double diff = first[v] - second[v];
-      l2norm += diff * diff;
-    }
-    return Math.sqrt(l2norm);
-  }
 }

@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.VectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
@@ -76,7 +77,7 @@ public class Lucene80Codec extends Codec {
     super("Lucene80");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat();
   }
-  
+
   @Override
   public final StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
@@ -116,7 +117,12 @@ public class Lucene80Codec extends Codec {
   public final PointsFormat pointsFormat() {
     return new Lucene60PointsFormat();
   }
-  
+
+  @Override
+  public VectorsFormat vectorsFormat() {
+    return VectorsFormat.EMPTY;
+  }
+
   @Override
   public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.util.Bits;
@@ -274,6 +275,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public PointValues getPointValues(String field) {
     ensureOpen();
     return null; // because not supported.  Throw UOE?
+  }
+
+  @Override
+  public VectorValues getVectorValues(String field) throws IOException {
+    ensureOpen();
+    return null;
   }
 
   @Override
