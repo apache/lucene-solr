@@ -111,7 +111,7 @@ public class TestDocSet extends SolrTestCase {
     return new BitDocSet(bs);
   }
 
-  public DocSet getDocSlice(FixedBitSet bs) {
+  public DocSlice getDocSlice(FixedBitSet bs) {
     int len = bs.cardinality();
     int[] arr = new int[len+5];
     arr[0]=10; arr[1]=20; arr[2]=30; arr[arr.length-1]=1; arr[arr.length-2]=2;
@@ -129,7 +129,7 @@ public class TestDocSet extends SolrTestCase {
 
 
   public DocSet getDocSet(FixedBitSet bs) {
-    switch(rand.nextInt(10)) {
+    switch(rand.nextInt(9)) {
       case 0: return getHashDocSet(bs);
 
       case 1: return getBitDocSet(bs);
@@ -141,8 +141,6 @@ public class TestDocSet extends SolrTestCase {
       case 6: return getIntDocSet(bs);
       case 7: return getIntDocSet(bs);
       case 8: return getIntDocSet(bs);
-
-      case 9: return getDocSlice(bs);
     }
     return null;
   }

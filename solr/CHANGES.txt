@@ -35,6 +35,8 @@ Other Changes
 * SOLR-14272: Remove autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay for 9.0 as it was
   deprecated in 7.1 (Anshum Gupta)
 
+* SOLR-14258: DocList no longer extends DocSet. (David Smiley)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
