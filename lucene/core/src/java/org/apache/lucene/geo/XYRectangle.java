@@ -39,7 +39,7 @@ public final class XYRectangle extends XYGeometry {
 
   @Override
   protected Component2D toComponent2D() {
-    return XYRectangle2D.create(this);
+    return Rectangle2D.create(this);
   }
 
   @Override
