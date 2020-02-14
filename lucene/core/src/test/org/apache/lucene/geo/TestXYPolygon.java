@@ -17,6 +17,8 @@
 package org.apache.lucene.geo;
 
 
+import java.util.Arrays;
+
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestXYPolygon extends LuceneTestCase {
@@ -88,8 +90,18 @@ public class TestXYPolygon extends LuceneTestCase {
   /** equals and hashcode */
   public void testEqualsAndHashCode() {
     XYPolygon polygon = ShapeTestUtil.nextPolygon();
-    XYPolygon copy = new XYPolygon(polygon.getPolyX(), polygon.getPolyY());
+    XYPolygon copy = new XYPolygon(polygon.getPolyX(), polygon.getPolyY(), polygon.getHoles());
     assertEquals(polygon, copy);
     assertEquals(polygon.hashCode(), copy.hashCode());
+    XYPolygon otherPolygon = ShapeTestUtil.nextPolygon();
+    if (Arrays.equals(polygon.getPolyX(), otherPolygon.getPolyX()) == false ||
+        Arrays.equals(polygon.getPolyY(), otherPolygon.getPolyY()) == false ||
+        Arrays.equals(polygon.getHoles(), otherPolygon.getHoles()) == false) {
+      assertNotEquals(polygon, otherPolygon);
+      assertNotEquals(polygon.hashCode(), otherPolygon.hashCode());
+    } else {
+      assertEquals(polygon, otherPolygon);
+      assertEquals(polygon.hashCode(), otherPolygon.hashCode());
+    }
   }
 }

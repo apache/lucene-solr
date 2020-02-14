@@ -92,6 +92,15 @@ public class TestXYRectangle extends LuceneTestCase {
     XYRectangle copy = new XYRectangle(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
     assertEquals(rectangle, copy);
     assertEquals(rectangle.hashCode(), copy.hashCode());
+    XYRectangle otherRectangle = ShapeTestUtil.nextBox(random());
+    if (rectangle.minX != otherRectangle.minX || rectangle.maxX != otherRectangle.maxX ||
+        rectangle.minY != otherRectangle.minY || rectangle.maxY != otherRectangle.maxY) {
+      assertNotEquals(rectangle, otherRectangle);
+      assertNotEquals(rectangle.hashCode(), otherRectangle.hashCode());
+    } else {
+      assertEquals(rectangle, otherRectangle);
+      assertEquals(rectangle.hashCode(), otherRectangle.hashCode());
+    }
   }
 
 }

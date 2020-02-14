@@ -65,5 +65,13 @@ public class TestXYPoint extends LuceneTestCase {
     XYPoint copy = new XYPoint(point.getX(), point.getY());
     assertEquals(point, copy);
     assertEquals(point.hashCode(), copy.hashCode());
+    XYPoint otherPoint = new XYPoint(ShapeTestUtil.nextFloat(random()), ShapeTestUtil.nextFloat(random()));
+    if (point.getX() != otherPoint.getX() || point.getY() != otherPoint.getY()) {
+      assertNotEquals(point, otherPoint);
+      assertNotEquals(point.hashCode(), otherPoint.hashCode());
+    } else {
+      assertEquals(point, otherPoint);
+      assertEquals(point.hashCode(), otherPoint.hashCode());
+    }
   }
 }

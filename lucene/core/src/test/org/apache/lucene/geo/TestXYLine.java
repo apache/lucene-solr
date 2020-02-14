@@ -17,6 +17,8 @@
 package org.apache.lucene.geo;
 
 
+import java.util.Arrays;
+
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestXYLine extends LuceneTestCase {
@@ -83,5 +85,15 @@ public class TestXYLine extends LuceneTestCase {
     XYLine copy = new XYLine(line.getX(), line.getY());
     assertEquals(line, copy);
     assertEquals(line.hashCode(), copy.hashCode());
+    XYLine otherLine = ShapeTestUtil.nextLine();
+    if (Arrays.equals(line.getX(), otherLine.getX()) == false  ||
+        Arrays.equals(line.getY(), otherLine.getY()) == false) {
+      assertNotEquals(line, otherLine);
+      assertNotEquals(line.hashCode(), otherLine.hashCode());
+    } else {
+      assertEquals(line, otherLine);
+      assertEquals(line.hashCode(), otherLine.hashCode());
+    }
+
   }
 }
