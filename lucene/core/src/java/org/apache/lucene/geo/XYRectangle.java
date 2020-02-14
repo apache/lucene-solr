@@ -16,25 +16,31 @@
  */
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /** Represents a x/y cartesian rectangle. */
 public final class XYRectangle extends XYGeometry {
   /** minimum x value */
-  public final double minX;
+  public final float minX;
   /** minimum y value */
-  public final double maxX;
+  public final float maxX;
   /** maximum x value */
-  public final double minY;
+  public final float minY;
   /** maximum y value */
-  public final double maxY;
+  public final float maxY;
 
   /** Constructs a bounding box by first validating the provided x and y coordinates */
-  public XYRectangle(double minX, double maxX, double minY, double maxY) {
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
-    assert minX <= maxX;
-    assert minY <= maxY;
+  public XYRectangle(float minX, float maxX, float minY, float maxY) {
+    if (minX > maxX) {
+      throw new IllegalArgumentException("minX must be lower than maxX, got " + minX + " > " + maxX);
+    }
+    if (minY > maxY) {
+      throw new IllegalArgumentException("minY must be lower than maxY, got " + minY + " > " + maxY);
+    }
+    this.minX = checkVal(minX);
+    this.maxX = checkVal(maxX);
+    this.minY = checkVal(minY);
+    this.maxY = checkVal(maxY);
   }
 
   @Override
@@ -49,10 +55,10 @@ public final class XYRectangle extends XYGeometry {
 
     XYRectangle rectangle = (XYRectangle) o;
 
-    if (Double.compare(rectangle.minX, minX) != 0) return false;
-    if (Double.compare(rectangle.minY, minY) != 0) return false;
-    if (Double.compare(rectangle.maxX, maxX) != 0) return false;
-    return Double.compare(rectangle.maxY, maxY) == 0;
+    if (Float.compare(rectangle.minX, minX) != 0) return false;
+    if (Float.compare(rectangle.minY, minY) != 0) return false;
+    if (Float.compare(rectangle.maxX, maxX) != 0) return false;
+    return Float.compare(rectangle.maxY, maxY) == 0;
 
   }
 
@@ -60,13 +66,13 @@ public final class XYRectangle extends XYGeometry {
   public int hashCode() {
     int result;
     long temp;
-    temp = Double.doubleToLongBits(minX);
+    temp = Float.floatToIntBits(minX);
     result = (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(minY);
+    temp = Float.floatToIntBits(minY);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(maxX);
+    temp = Float.floatToIntBits(maxX);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(maxY);
+    temp = Float.floatToIntBits(maxY);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }

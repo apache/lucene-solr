@@ -95,12 +95,12 @@ public class TestRectangle2D extends LuceneTestCase {
     XYRectangle rectangle = ShapeTestUtil.nextBox(random);
     Component2D rectangle2D = Rectangle2D.create(rectangle);
     for (int i =0; i < 100; i++) {
-      float ax = (float) ShapeTestUtil.nextDouble(random);
-      float ay = (float) ShapeTestUtil.nextDouble(random);
-      float bx = (float) ShapeTestUtil.nextDouble(random);
-      float by = (float) ShapeTestUtil.nextDouble(random);
-      float cx = (float) ShapeTestUtil.nextDouble(random);
-      float cy = (float) ShapeTestUtil.nextDouble(random);
+      float ax = ShapeTestUtil.nextFloat(random);
+      float ay = ShapeTestUtil.nextFloat(random);
+      float bx = ShapeTestUtil.nextFloat(random);
+      float by = ShapeTestUtil.nextFloat(random);
+      float cx = ShapeTestUtil.nextFloat(random);
+      float cy = ShapeTestUtil.nextFloat(random);
 
       float tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
       float tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);

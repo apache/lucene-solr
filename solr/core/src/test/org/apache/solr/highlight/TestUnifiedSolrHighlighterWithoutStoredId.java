@@ -14,16 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util.compress;
+package org.apache.solr.highlight;
 
-import org.apache.lucene.util.compress.LZ4.HashTable;
 
-public class TestHighLZ4 extends LZ4TestCase {
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
-  @Override
-  protected HashTable newHashTable() {
-    LZ4.HashTable hashTable =  new LZ4.HighCompressionHashTable();
-    return new AssertingHashTable(hashTable);
+/** Tests for the UnifiedHighlighter Solr plugin **/
+public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHighlighter {
+
+  @BeforeClass
+  public static void beforeClassProps() {
+    System.setProperty("solr.tests.id.stored", "false");
+    System.setProperty("solr.tests.id.docValues", "true");
   }
 
+  @AfterClass
+  public static void afterClassProps() {
+    System.clearProperty("solr.tests.id.stored");
+    System.clearProperty("solr.tests.id.docValues");
+  }
 }

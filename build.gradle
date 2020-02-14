@@ -23,6 +23,7 @@ plugins {
   id "com.palantir.consistent-versions" version "1.14.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
+  id "de.undercouch.download" version "4.0.2" apply false
 }
 
 // Project version and main properties. Applies to all projects.
@@ -83,6 +84,7 @@ apply from: file('gradle/validation/owasp-dependency-check.gradle')
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
 apply from: file('gradle/generation/javacc.gradle')
+apply from: file('gradle/generation/util.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')

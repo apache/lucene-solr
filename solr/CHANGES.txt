@@ -91,6 +91,9 @@ Improvements
 
 * SOLR-14245: Validate Replica / ReplicaInfo on creation. (ab)
 
+* SOLR-14194: Highlighting now works when the uniqueKey field is not stored but has docValues.  And the original
+  highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
+
 Optimizations
 ---------------------
 
@@ -150,6 +153,9 @@ Bug Fixes
 
 * SOLR-14038: Admin UI display for "state.json" should be in a scollable region (Kevin Risden)
 
+* SOLR-14058: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
+  under certain circumstances. (yonik)
+
 Other Changes
 ---------------------
 
@@ -171,6 +177,8 @@ Other Changes
 * SOLR-14248: Improve ClusterStateMockUtil and make its methods public. (shalin)
 
 * SOLR-14209: Upgrade JQuery to 3.4.1 (Kevin Risden)
+
+* SOLR-13996: Refactor HttpShardHandler.prepDistributed method. (shalin)
 
 ==================  8.4.1 ==================
 

@@ -14,16 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util.compress;
 
-import org.apache.lucene.util.compress.LZ4.HashTable;
+package org.apache.solr.handler.component;
 
-public class TestHighLZ4 extends LZ4TestCase {
+import java.util.List;
 
-  @Override
-  protected HashTable newHashTable() {
-    LZ4.HashTable hashTable =  new LZ4.HighCompressionHashTable();
-    return new AssertingHashTable(hashTable);
-  }
+/**
+ * A source of slices and corresponding replicas required to execute a request.
+ *
+ * @lucene.experimental
+ */
+interface ReplicaSource {
+  /**
+   * @return the list of slice names
+   */
+  List<String> getSliceNames();
 
+  /**
+   * Get the list of replica urls for a 0-indexed slice number.
+   */
+  List<String> getReplicasBySlice(int sliceNumber);
+
+  /**
+   * @return the count of slices
+   */
+  int getSliceCount();
 }
