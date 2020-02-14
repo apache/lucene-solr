@@ -46,10 +46,10 @@ public final class Circle extends LatLonGeometry {
     GeoUtils.checkLatitude(lat);
     GeoUtils.checkLongitude(lon);
     if (radiusMeters <= 0) {
-       throw new IllegalArgumentException("Radius must be bigger than 0, got " + radiusMeters);
+       throw new IllegalArgumentException("radius must be bigger than 0, got " + radiusMeters);
     }
     if (radiusMeters < MAX_RADIUS == false) {
-      throw new IllegalArgumentException("Radius must be lower than " + MAX_RADIUS + ", got " + radiusMeters);
+      throw new IllegalArgumentException("radius must be lower than " + MAX_RADIUS + ", got " + radiusMeters);
     }
     this.lat = lat;
     this.lon = lon;

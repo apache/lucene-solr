@@ -102,23 +102,10 @@ public class TestCircle2D extends LuceneTestCase {
   public void testRandomTriangles() {
     Component2D circle2D;
     if (random().nextBoolean()) {
-      final double centerLat = GeoTestUtil.nextLatitude();
-      final double centerLon = GeoTestUtil.nextLongitude();
-      double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-      while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
-        radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-      }
-      Circle circle = new Circle(centerLat, centerLon, radiusMeters);
+      Circle circle = GeoTestUtil.nextCircle();
       circle2D = LatLonGeometry.create(circle);
     } else {
-      final float centerLat = (float)ShapeTestUtil.nextDouble(random());
-      final float centerLon = (float)ShapeTestUtil.nextDouble(random());
-      float radiusMeters = (float) ShapeTestUtil.nextDouble(random());
-      // Is there a max value???
-      while (radiusMeters <= 0 || radiusMeters >= Float.MAX_VALUE / 2) {
-        radiusMeters = (float)ShapeTestUtil.nextDouble(random());
-      }
-      XYCircle circle = new XYCircle(centerLat, centerLon, radiusMeters);
+      XYCircle circle = ShapeTestUtil.nextCircle();
       circle2D = XYGeometry.create(circle);
     }
     for (int i =0; i < 100; i++) {

@@ -41,7 +41,7 @@ public class TestCircle extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new Circle(43.5, 45.23, -1000);
     });
-    assertTrue(expected.getMessage().contains("Radius must be bigger than 0, got -1000.0"));
+    assertTrue(expected.getMessage().contains("radius must be bigger than 0, got -1000.0"));
   }
 
   /** radius must be lower than 3185504.3857 */
@@ -49,7 +49,7 @@ public class TestCircle extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new Circle(43.5, 45.23, Double.POSITIVE_INFINITY);
     });
-    assertTrue(expected.getMessage().contains("Radius must be lower than 3185504.3857, got Infinity"));
+    assertTrue(expected.getMessage().contains("radius must be lower than 3185504.3857, got Infinity"));
   }
 
   /** equals and hashcode */
@@ -58,5 +58,13 @@ public class TestCircle extends LuceneTestCase {
     Circle copy = new Circle(circle.getLat(), circle.getLon(), circle.getRadius());
     assertEquals(circle, copy);
     assertEquals(circle.hashCode(), copy.hashCode());
+    Circle otherCircle = GeoTestUtil.nextCircle();
+    if (circle.getLon() != otherCircle.getLon() || circle.getLat() != otherCircle.getLat() || circle.getRadius() != otherCircle.getRadius()) {
+      assertNotEquals(circle, otherCircle);
+      assertNotEquals(circle.hashCode(), otherCircle.hashCode());
+    } else {
+      assertEquals(circle, otherCircle);
+      assertEquals(circle.hashCode(), otherCircle.hashCode());
+    }
   }
 }

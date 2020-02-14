@@ -163,8 +163,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object nextCircle() {
-    float radius = (float) TestUtil.nextInt(random(), 1, 1000);
-    return new XYCircle((float)ShapeTestUtil.nextDouble(random()), (float)ShapeTestUtil.nextDouble(random()), radius);
+    return ShapeTestUtil.nextCircle();
   }
 
   @Override

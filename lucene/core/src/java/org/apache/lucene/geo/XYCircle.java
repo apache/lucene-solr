@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
 
 /**
  * Represents a circle on the XY plane.
@@ -42,11 +43,11 @@ public final class XYCircle extends XYGeometry {
     if (radius <= 0) {
        throw new IllegalArgumentException("radius must be bigger than 0, got " + radius);
     }
-    if (Float.isFinite(radius) == false || Float.isNaN(radius)) {
+    if (Float.isFinite(radius) == false) {
       throw new IllegalArgumentException("radius must be finite, got " + radius);
     }
-    this.x = x;
-    this.y = y;
+    this.x = checkVal(x);
+    this.y = checkVal(y);
     this.radius = radius;
   }
 

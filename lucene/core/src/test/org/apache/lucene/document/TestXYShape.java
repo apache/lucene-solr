@@ -166,8 +166,8 @@ public class TestXYShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    float pX = (float) ShapeTestUtil.nextDouble(random());
-    float py = (float) ShapeTestUtil.nextDouble(random());
+    float pX = ShapeTestUtil.nextFloat(random());
+    float py = ShapeTestUtil.nextFloat(random());
     Field[] fields = XYShape.createIndexableFields(FIELDNAME, pX, py);
     for (Field f : fields) {
       document.add(f);
@@ -178,14 +178,7 @@ public class TestXYShape extends LuceneTestCase {
     IndexReader r = writer.getReader();
     writer.close();
     IndexSearcher s = newSearcher(r);
-
-    float x = (float) ShapeTestUtil.nextDouble(random());
-    float y = (float) ShapeTestUtil.nextDouble(random());
-    float radius;
-    do {
-      radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble(random())));
-    } while (radius == 0);
-    XYCircle circle = new XYCircle(x, y, radius);
+    XYCircle circle = ShapeTestUtil.nextCircle();
     Component2D circle2D = XYGeometry.create(circle);
     int expected;
     int expectedDisjoint;

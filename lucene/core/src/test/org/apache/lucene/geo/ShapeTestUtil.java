@@ -68,6 +68,14 @@ public class ShapeTestUtil {
     return new XYLine(x, y);
   }
 
+  public static XYCircle nextCircle() {
+    Random random = random();
+    float x = nextFloat(random);
+    float y = nextFloat(random);
+    float radius = random().nextFloat() * Float.MAX_VALUE / 2;
+    return new XYCircle(x, y, radius);
+  }
+
   private static XYPolygon trianglePolygon(XYRectangle box) {
     final float[] polyX = new float[4];
     final float[] polyY = new float[4];
