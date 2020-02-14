@@ -53,8 +53,8 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
           x[j] = p.x;
           y[j] = p.y;
         } else {
-          x[j] = (float)ShapeTestUtil.nextDouble(random);
-          y[j] = (float)ShapeTestUtil.nextDouble(random);
+          x[j] = ShapeTestUtil.nextFloat(random);
+          y[j] = ShapeTestUtil.nextFloat(random);
         }
       }
       return new XYLine(x, y);
@@ -80,7 +80,7 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle(minX, maxX, minY, maxY));
+      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 
