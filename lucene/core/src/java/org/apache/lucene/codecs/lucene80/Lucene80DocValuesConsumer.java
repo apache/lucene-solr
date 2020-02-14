@@ -361,17 +361,17 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   }
 
   class CompressedBinaryBlockWriter implements Closeable {
-    FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();    
+    final FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();    
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
-    int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
-    byte[] block = new byte [1024 * 16];
+    final int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
+    byte[] block = BytesRef.EMPTY_BYTES;
     int totalChunks = 0;
     long maxPointer = 0;
-    long blockAddressesStart = -1; 
+    final long blockAddressesStart; 
 
-    private IndexOutput tempBinaryOffsets;
+    private final IndexOutput tempBinaryOffsets;
     
     
     public CompressedBinaryBlockWriter() throws IOException {
@@ -379,6 +379,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       boolean success = false;
       try {
         CodecUtil.writeHeader(tempBinaryOffsets, Lucene80DocValuesFormat.META_CODEC + "FilePointers", Lucene80DocValuesFormat.VERSION_CURRENT);
+        blockAddressesStart = data.getFilePointer();
         success = true;
       } finally {
         if (success == false) {
@@ -388,9 +389,6 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
 
     void addDoc(int doc, BytesRef v) throws IOException {
-      if (blockAddressesStart < 0) {
-        blockAddressesStart = data.getFilePointer();
-      }
       docLengths[numDocsInCurrentBlock] = v.length;
       block = ArrayUtil.grow(block, uncompressedBlockLength + v.length);
       System.arraycopy(v.bytes, v.offset, block, uncompressedBlockLength, v.length);
@@ -408,10 +406,11 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         long thisBlockStartPointer = data.getFilePointer();
         
         // Optimisation - check if all lengths are same
-        boolean allLengthsSame = true && numDocsInCurrentBlock >0  ;
-        for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK && allLengthsSame; i++) {
-          if (i > 0 && docLengths[i] != docLengths[i-1]) {
+        boolean allLengthsSame = true;
+        for (int i = 1; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
+          if (docLengths[i] != docLengths[i-1]) {
             allLengthsSame = false;
+            break;
           }
         }
         if (allLengthsSame) {
@@ -420,7 +419,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
             data.writeVInt(onlyOneLength);
         } else {
           for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
-            if(i == 0) {
+            if (i == 0) {
               // Write first value shifted and steal a bit to indicate other lengths are to follow
               int multipleLengths = (docLengths[0] <<1);
               data.writeVInt(multipleLengths);              
@@ -441,7 +440,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
     
     void writeMetaData() throws IOException {
-      if (blockAddressesStart < 0 ) {
+      if (totalChunks == 0) {
         return;
       }
       
@@ -449,7 +448,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(startDMW);
       
       meta.writeVInt(totalChunks);
-      meta.writeVInt(Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK);
+      meta.writeVInt(Lucene80DocValuesFormat.BINARY_BLOCK_SHIFT);
       meta.writeVInt(maxUncompressedBlockLength);
       meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
       
@@ -487,7 +486,6 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       if (tempBinaryOffsets != null) {
         IOUtils.close(tempBinaryOffsets);             
         state.directory.deleteFile(tempBinaryOffsets.getName());
-        tempBinaryOffsets = null;
       }
     }
     
