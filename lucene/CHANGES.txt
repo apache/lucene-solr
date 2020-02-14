@@ -22,6 +22,8 @@ API Changes
 
 * LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
 
+* LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
+
 New Features
 ---------------------
 

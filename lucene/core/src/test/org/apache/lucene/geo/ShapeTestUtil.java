@@ -41,7 +41,7 @@ public class ShapeTestUtil {
         // So the poly can cover at most 50% of the earth's surface:
         double radius = random.nextDouble() * 0.5 * Float.MAX_VALUE + 1.0;
         try {
-          return createRegularPolygon(nextDouble(random), nextDouble(random), radius, gons);
+          return createRegularPolygon(nextFloat(random), nextFloat(random), radius, gons);
         } catch (IllegalArgumentException iae) {
           // we tried to cross dateline or pole ... try again
         }
@@ -58,42 +58,53 @@ public class ShapeTestUtil {
     }
   }
 
+  public static XYLine nextLine() {
+    XYPolygon poly = ShapeTestUtil.nextPolygon();
+    float[] x = new float[poly.numPoints() - 1];
+    float[] y = new float[x.length];
+    for (int i = 0; i < x.length; ++i) {
+      x[i] = poly.getPolyX(i);
+      y[i] = poly.getPolyY(i);
+    }
+    return new XYLine(x, y);
+  }
+
   private static XYPolygon trianglePolygon(XYRectangle box) {
     final float[] polyX = new float[4];
     final float[] polyY = new float[4];
-    polyX[0] = (float)box.minX;
-    polyY[0] = (float)box.minY;
-    polyX[1] = (float)box.minX;
-    polyY[1] = (float)box.minY;
-    polyX[2] = (float)box.minX;
-    polyY[2] = (float)box.minY;
-    polyX[3] = (float)box.minX;
-    polyY[3] = (float)box.minY;
+    polyX[0] = box.minX;
+    polyY[0] = box.minY;
+    polyX[1] = box.minX;
+    polyY[1] = box.minY;
+    polyX[2] = box.minX;
+    polyY[2] = box.minY;
+    polyX[3] = box.minX;
+    polyY[3] = box.minY;
     return new XYPolygon(polyX, polyY);
   }
 
   public static XYRectangle nextBox(Random random) {
     // prevent lines instead of boxes
-    double x0 = nextDouble(random);
-    double x1 = nextDouble(random);
+    float x0 = nextFloat(random);
+    float x1 = nextFloat(random);
     while (x0 == x1) {
-      x1 = nextDouble(random);
+      x1 = nextFloat(random);
     }
     // prevent lines instead of boxes
-    double y0 = nextDouble(random);
-    double y1 = nextDouble(random);
+    float y0 = nextFloat(random);
+    float y1 = nextFloat(random);
     while (y0 == y1) {
-      y1 = nextDouble(random);
+      y1 = nextFloat(random);
     }
 
     if (x1 < x0) {
-      double x = x0;
+      float x = x0;
       x0 = x1;
       x1 = x;
     }
 
     if (y1 < y0) {
-      double y = y0;
+      float y = y0;
       y0 = y1;
       y1 = y;
     }
@@ -104,16 +115,16 @@ public class ShapeTestUtil {
   private static XYPolygon boxPolygon(XYRectangle box) {
     final float[] polyX = new float[5];
     final float[] polyY = new float[5];
-    polyX[0] = (float)box.minX;
-    polyY[0] = (float)box.minY;
-    polyX[1] = (float)box.minX;
-    polyY[1] = (float)box.minY;
-    polyX[2] = (float)box.minX;
-    polyY[2] = (float)box.minY;
-    polyX[3] = (float)box.minX;
-    polyY[3] = (float)box.minY;
-    polyX[4] = (float)box.minX;
-    polyY[4] = (float)box.minY;
+    polyX[0] = box.minX;
+    polyY[0] = box.minY;
+    polyX[1] = box.minX;
+    polyY[1] = box.minY;
+    polyX[2] = box.minX;
+    polyY[2] = box.minY;
+    polyX[3] = box.minX;
+    polyY[3] = box.minY;
+    polyX[4] = box.minX;
+    polyY[4] = box.minY;
     return new XYPolygon(polyX, polyY);
   }
 
@@ -121,8 +132,8 @@ public class ShapeTestUtil {
     // repeat until we get a poly that doesn't cross dateline:
     while (true) {
       //System.out.println("\nPOLY ITER");
-      double centerX = nextDouble(random);
-      double centerY = nextDouble(random);
+      float centerX = nextFloat(random);
+      float centerY = nextFloat(random);
       double radius = 0.1 + 20 * random.nextDouble();
       double radiusDelta = random.nextDouble();
 
@@ -136,8 +147,8 @@ public class ShapeTestUtil {
           break;
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random.nextDouble());
-        double maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
-        double maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
+        float maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
+        float maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
 
         len = StrictMath.min(len, StrictMath.min(maxX, maxY));
 
@@ -196,8 +207,8 @@ public class ShapeTestUtil {
     return new XYPolygon(result[0], result[1]);
   }
 
-  public static double nextDouble(Random random) {
-    return BiasedNumbers.randomDoubleBetween(random, -Float.MAX_VALUE, Float.MAX_VALUE);
+  public static float nextFloat(Random random) {
+    return BiasedNumbers.randomFloatBetween(random, -Float.MAX_VALUE, Float.MAX_VALUE);
   }
 
   /** Keep it simple, we don't need to take arbitrary Random for geo tests */
