@@ -180,6 +180,9 @@ Other Changes
 
 * SOLR-13996: Refactor HttpShardHandler.prepDistributed method. (shalin)
 
+* SOLR-13794: Replace redundent test only copy of '_default' configset with SolrTestCase logic to correctly
+  set 'solr.default.confdir' system property (hossman)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
