@@ -291,8 +291,8 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
-        output.writeVInt(fi.getPointDataDimensionCount());
-        if (fi.getPointDataDimensionCount() != 0) {
+        output.writeVInt(fi.getPointDimensionCount());
+        if (fi.getPointDimensionCount() != 0) {
           output.writeVInt(fi.getPointIndexDimensionCount());
           output.writeVInt(fi.getPointNumBytes());
         }

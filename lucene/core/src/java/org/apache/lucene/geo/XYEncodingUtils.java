@@ -33,11 +33,12 @@ public final class XYEncodingUtils {
   private XYEncodingUtils() {
   }
 
-  /** validates value is within +/-{@link Float#MAX_VALUE} coordinate bounds */
-  public static void checkVal(double x) {
-    if (Double.isNaN(x) || x < MIN_VAL_INCL || x > MAX_VAL_INCL) {
+  /** validates value is a number and finite */
+  static float checkVal(float x) {
+    if (Float.isFinite(x) == false) {
       throw new IllegalArgumentException("invalid value " + x + "; must be between " + MIN_VAL_INCL + " and " + MAX_VAL_INCL);
     }
+    return x;
   }
 
   /**
@@ -46,9 +47,8 @@ public final class XYEncodingUtils {
    * @return encoded value as a 32-bit {@code int}
    * @throws IllegalArgumentException if value is out of bounds
    */
-  public static int encode(double x) {
-    checkVal(x);
-    return NumericUtils.floatToSortableInt((float)x);
+  public static int encode(float x) {
+    return NumericUtils.floatToSortableInt(checkVal(x));
   }
 
   /**
@@ -56,8 +56,8 @@ public final class XYEncodingUtils {
    * @param encoded encoded value: 32-bit quantized value.
    * @return decoded value value.
    */
-  public static double decode(int encoded) {
-    double result = NumericUtils.sortableIntToFloat(encoded);
+  public static float decode(int encoded) {
+    float result = NumericUtils.sortableIntToFloat(encoded);
     assert result >=  MIN_VAL_INCL && result <= MAX_VAL_INCL;
     return result;
   }
@@ -68,7 +68,15 @@ public final class XYEncodingUtils {
    * @param offset offset into {@code src} to decode from.
    * @return decoded value.
    */
-  public static double decode(byte[] src, int offset) {
+  public static float decode(byte[] src, int offset) {
     return decode(NumericUtils.sortableBytesToInt(src, offset));
+  }
+
+  static double[] floatArrayToDoubleArray(float[] f) {
+    double[] d = new double[f.length];
+    for (int i = 0; i < f.length; i++) {
+      d[i] = f[i];
+    }
+    return d;
   }
 }

@@ -43,7 +43,7 @@ import org.apache.lucene.util.fst.FST;
  * </ul>
  * <p>
  * <a id="Completionictionary"></a>
- * <h3>Completion Dictionary</h3>
+ * <h2>Completion Dictionary</h2>
  * <p>The .lkp file contains an FST for each suggest field
  * </p>
  * <ul>
@@ -60,7 +60,7 @@ import org.apache.lucene.util.fst.FST;
  *   <li>FST maps all analyzed forms to surface forms of a SuggestField</li>
  * </ul>
  * <a id="Completionindex"></a>
- * <h3>Completion Index</h3>
+ * <h2>Completion Index</h2>
  * <p>The .cmp file contains an index into the completion dictionary, so that it can be
  * accessed randomly.</p>
  * <ul>

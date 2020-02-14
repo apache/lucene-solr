@@ -529,18 +529,13 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         label = idx > 0 ? path.substring(idx + 1) : path;
       }
       json.startObject();
-      //writeKeyValue(json, "data", label, true );
-      json.writeString("data");
-      json.writeNameSeparator();
-
-      json.startObject();
-      writeKeyValue(json, "title", label, true);
+      writeKeyValue(json, "text", label, true);
       json.writeValueSeparator();
-      json.writeString("attr");
+      json.writeString("a_attr");
       json.writeNameSeparator();
       json.startObject();
-      writeKeyValue(json, "href", "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, "UTF-8"), true);
-      json.endObject();
+      String href = "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+      writeKeyValue(json, "href", href, true);
       json.endObject();
 
       Stat stat = new Stat();

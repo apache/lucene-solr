@@ -153,7 +153,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
  * 
- * <h3>Class and instance setup.</h3>
+ * <h2>Class and instance setup.</h2>
  * 
  * <p>
  * The preferred way to specify class (suite-level) setup/cleanup is to use
@@ -170,13 +170,13 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * your subclass, make sure you call <code>super.setUp()</code> and
  * <code>super.tearDown()</code>. This is detected and enforced.
  * 
- * <h3>Specifying test cases</h3>
+ * <h2>Specifying test cases</h2>
  * 
  * <p>
  * Any test method with a <code>testXXX</code> prefix is considered a test case.
  * Any test method annotated with {@link Test} is considered a test case.
  * 
- * <h3>Randomized execution and test facilities</h3>
+ * <h2>Randomized execution and test facilities</h2>
  * 
  * <p>
  * {@link LuceneTestCase} uses {@link RandomizedRunner} to execute test cases.
@@ -2677,10 +2677,10 @@ public abstract class LuceneTestCase extends Assert {
     FieldInfos fieldInfos1 = FieldInfos.getMergedFieldInfos(leftReader);
     FieldInfos fieldInfos2 = FieldInfos.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
-      if (fieldInfo1.getPointDataDimensionCount() != 0) {
+      if (fieldInfo1.getPointDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
         // same data dimension count?
-        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo2.getPointDataDimensionCount());
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
         // same index dimension count?
         assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo2.getPointIndexDimensionCount());
         // same bytes per dimension?
@@ -2694,10 +2694,10 @@ public abstract class LuceneTestCase extends Assert {
 
     // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
     for(FieldInfo fieldInfo2 : fieldInfos2) {
-      if (fieldInfo2.getPointDataDimensionCount() != 0) {
+      if (fieldInfo2.getPointDimensionCount() != 0) {
         FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
         // same data dimension count?
-        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo1.getPointDataDimensionCount());
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
         // same index dimension count?
         assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo1.getPointIndexDimensionCount());
         // same bytes per dimension?

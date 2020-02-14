@@ -202,7 +202,7 @@ final class DefaultIndexingChain extends DocConsumer {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.pointValuesWriter != null) {
-            if (perField.fieldInfo.getPointDataDimensionCount() == 0) {
+            if (perField.fieldInfo.getPointDimensionCount() == 0) {
               // BUG
               throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no points but wrote them");
             }
@@ -217,7 +217,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
             perField.pointValuesWriter.flush(state, sortMap, pointsWriter);
             perField.pointValuesWriter = null;
-          } else if (perField.fieldInfo.getPointDataDimensionCount() != 0) {
+          } else if (perField.fieldInfo.getPointDimensionCount() != 0) {
             // BUG
             throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has points but did not write them");
           }
@@ -478,7 +478,7 @@ final class DefaultIndexingChain extends DocConsumer {
       }
       indexDocValue(fp, dvType, field);
     }
-    if (fieldType.pointDataDimensionCount() != 0) {
+    if (fieldType.pointDimensionCount() != 0) {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }
@@ -509,18 +509,18 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Called from processDocument to index one field's point */
   private void indexPoint(PerField fp, IndexableField field) throws IOException {
-    int pointDataDimensionCount = field.fieldType().pointDataDimensionCount();
+    int pointDimensionCount = field.fieldType().pointDimensionCount();
     int pointIndexDimensionCount = field.fieldType().pointIndexDimensionCount();
 
     int dimensionNumBytes = field.fieldType().pointNumBytes();
 
     // Record dimensions for this field; this setter will throw IllegalArgExc if
     // the dimensions were already set to something different:
-    if (fp.fieldInfo.getPointDataDimensionCount() == 0) {
-      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, pointDataDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
+    if (fp.fieldInfo.getPointDimensionCount() == 0) {
+      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
     }
 
-    fp.fieldInfo.setPointDimensions(pointDataDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
+    fp.fieldInfo.setPointDimensions(pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
 
     if (fp.pointValuesWriter == null) {
       fp.pointValuesWriter = new PointValuesWriter(docWriter, fp.fieldInfo);

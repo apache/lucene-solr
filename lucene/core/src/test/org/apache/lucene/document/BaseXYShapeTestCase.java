@@ -137,8 +137,8 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     float[] x = new float[poly.numPoints() - 1];
     float[] y = new float[x.length];
     for (int i = 0; i < x.length; ++i) {
-      x[i] = (float) poly.getPolyX(i);
-      y[i] = (float) poly.getPolyY(i);
+      x[i] = poly.getPolyX(i);
+      y[i] = poly.getPolyY(i);
     }
 
     return new XYLine(x, y);
@@ -155,8 +155,8 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     int numPoints = TestUtil.nextInt(random, 1, 20);
     float[][] points = new float[numPoints][2];
     for (int i = 0; i < numPoints; i++) {
-      points[i][0] = (float) ShapeTestUtil.nextDouble(random);
-      points[i][1] = (float) ShapeTestUtil.nextDouble(random);
+      points[i][0] =  ShapeTestUtil.nextFloat(random);
+      points[i][1] =  ShapeTestUtil.nextFloat(random);
     }
     return points;
   }
@@ -181,22 +181,22 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       }
       @Override
       double quantizeX(double raw) {
-        return decode(encode(raw));
+        return decode(encode((float) raw));
       }
 
       @Override
       double quantizeXCeil(double raw) {
-        return decode(encode(raw));
+        return decode(encode((float) raw));
       }
 
       @Override
       double quantizeY(double raw) {
-        return decode(encode(raw));
+        return decode(encode((float) raw));
       }
 
       @Override
       double quantizeYCeil(double raw) {
-        return decode(encode(raw));
+        return decode(encode((float) raw));
       }
 
       @Override
@@ -208,7 +208,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       @Override
       ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), ab, encode(by), encode(bx), bc, encode(cy), encode(cx), ca);
+        ShapeField.encodeTriangle(encoded, encode((float) ay), encode((float) ax), ab, encode((float) by), encode((float) bx), bc, encode((float) cy), encode((float) cx), ca);
         ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
         ShapeField.decodeTriangle(encoded, triangle);
         return triangle;

@@ -108,6 +108,8 @@ API Changes
 
 * LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
 
+* LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
+
 New Features
 ---------------------
 
@@ -115,6 +117,8 @@ New Features
 
 Improvements
 ---------------------
+
+* LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 

@@ -18,24 +18,26 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /**
  * Represents a line in cartesian space. You can construct the Line directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
  */
 public class XYLine extends XYGeometry {
   /** array of x coordinates */
-  private final double[] x;
+  private final float[] x;
   /** array of y coordinates */
-  private final double[] y;
+  private final float[] y;
 
   /** minimum x of this line's bounding box */
-  public final double minX;
+  public final float minX;
   /** maximum y of this line's bounding box */
-  public final double maxX;
+  public final float maxX;
   /** minimum y of this line's bounding box */
-  public final double minY;
+  public final float minY;
   /** maximum y of this line's bounding box */
-  public final double maxY;
+  public final float maxY;
 
   /**
    * Creates a new Line from the supplied X/Y array.
@@ -55,23 +57,19 @@ public class XYLine extends XYGeometry {
     }
 
     // compute bounding box
-    double minX = x[0];
-    double minY = y[0];
-    double maxX = x[0];
-    double maxY = y[0];
+    float minX = Float.MAX_VALUE;
+    float minY = Float.MAX_VALUE;
+    float maxX = -Float.MAX_VALUE;
+    float maxY = -Float.MAX_VALUE;
     for (int i = 0; i < x.length; ++i) {
-      minX = Math.min(x[i], minX);
-      minY = Math.min(y[i], minY);
+      minX = Math.min(checkVal(x[i]), minX);
+      minY = Math.min(checkVal(y[i]), minY);
       maxX = Math.max(x[i], maxX);
       maxY = Math.max(y[i], maxY);
     }
+    this.x = x.clone();
+    this.y = y.clone();
 
-    this.x = new double[x.length];
-    this.y = new double[y.length];
-    for (int i = 0; i < x.length; ++i) {
-      this.x[i] = (double)x[i];
-      this.y[i] = (double)y[i];
-    }
     this.minX = minX;
     this.maxX = maxX;
     this.minY = minY;
@@ -84,36 +82,28 @@ public class XYLine extends XYGeometry {
   }
 
   /** Returns x value at given index */
-  public double getX(int vertex) {
+  public float getX(int vertex) {
     return x[vertex];
   }
 
   /** Returns y value at given index */
-  public double getY(int vertex) {
+  public float getY(int vertex) {
     return y[vertex];
   }
 
   /** Returns a copy of the internal x array */
-  public double[] getX() {
+  public float[] getX() {
     return x.clone();
   }
 
   /** Returns a copy of the internal y array */
-  public double[] getY() {
+  public float[] getY() {
     return y.clone();
   }
 
   @Override
   protected Component2D toComponent2D() {
     return Line2D.create(this);
-  }
-
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(Polygon.verticesToGeoJSON(x, y));
-    sb.append("]");
-    return sb.toString();
   }
 
   @Override
