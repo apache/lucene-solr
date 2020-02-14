@@ -140,6 +140,10 @@ public class LatLonShape {
       // we need to handle the case of bounding boxes crossing the dateline
       return makeContainsGeometryQuery(field, latLonGeometries);
     } else {
+      if (latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {
+        // use specialize query in this case
+        return new LatLonShapeBoundingBoxQuery(field, QueryRelation.CONTAINS, (Rectangle) latLonGeometries[0]);
+      }
       return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
     }
   }
