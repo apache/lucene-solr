@@ -35,7 +35,7 @@ public final class XYEncodingUtils {
 
   /** validates value is a number and finite */
   static float checkVal(float x) {
-    if (Float.isNaN(x) || Float.isInfinite(x)) {
+    if (Float.isFinite(x) == false) {
       throw new IllegalArgumentException("invalid value " + x + "; must be between " + MIN_VAL_INCL + " and " + MAX_VAL_INCL);
     }
     return x;
@@ -72,7 +72,7 @@ public final class XYEncodingUtils {
     return decode(NumericUtils.sortableBytesToInt(src, offset));
   }
 
-  static double[] floatToDouble(float[] f) {
+  static double[] floatArrayToDoubleArray(float[] f) {
     double[] d = new double[f.length];
     for (int i = 0; i < f.length; i++) {
       d[i] = f[i];

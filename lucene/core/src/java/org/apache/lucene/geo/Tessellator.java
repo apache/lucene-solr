@@ -123,7 +123,7 @@ final public class Tessellator {
   public static final List<Triangle> tessellate(final XYPolygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.0
-    Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatToDouble(polygon.getPolyX()), XYEncodingUtils.floatToDouble(polygon.getPolyY()),
+    Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
         polygon.getWindingOrder(), false, 0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
@@ -193,8 +193,8 @@ final public class Tessellator {
     int nodeIndex = polygon.numPoints() ;
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
-      Node list = createDoublyLinkedList(XYEncodingUtils.floatToDouble(holes[i].getPolyX()),
-          XYEncodingUtils.floatToDouble(holes[i].getPolyY()), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
+      Node list = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyX()),
+          XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyY()), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
