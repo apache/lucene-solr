@@ -18,14 +18,23 @@
 package org.apache.solr;
 
 import java.lang.invoke.MethodHandles;
+import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 
@@ -45,6 +54,41 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @ClassRule
+  public static TestRule solrClassRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule())
+             .around(new RevertDefaultThreadHandlerRule());
+
+  /**
+   * Sets the <code>solr.default.confdir</code> system property to the value of 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, 
+   * and the <code>DEFAULT_CONFIGSET</code> exists and is a readable directory.
+   * <p>
+   * Logs INFO/WARNing messages as appropriate based on these 2 conditions.
+   * </p>
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   */
+  @BeforeClass
+  public static void setDefaultConfigDirSysPropIfNotSet() {
+    final String existingValue = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    if (null != existingValue) {
+      log.info("Test env includes configset dir system property '{}'='{}'");
+      return;
+    }
+    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    if (extPath.canRead(/* implies exists() */) && extPath.isDirectory()) {
+      log.info("Setting '{}' system property to test-framework derived value of '{}'",
+               SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+      assert null == existingValue;
+      System.setProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+    } else {
+      log.warn("System property '{}' is not already set, but test-framework derived value ('{}') either " +
+               "does not exist or is not a readable directory, you may need to set the property yourself " +
+               "for tests to run properly",
+               SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+    }
+  }
+  
   /** 
    * Special hook for sanity checking if any tests trigger failures when an
    * Assumption failure occures in a {@link BeforeClass} method
