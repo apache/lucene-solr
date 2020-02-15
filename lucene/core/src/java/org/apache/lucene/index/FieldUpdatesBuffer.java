@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -51,6 +52,7 @@ final class FieldUpdatesBuffer {
   // on CPU for those. We also save on not needing to sort in order to apply the terms in order
   // since by definition we store them in order.
   private final BytesRefArray termValues;
+  private Supplier<BytesRefArray.Iterator> termsIteratorProvider;
   private final BytesRefArray byteValues; // this will be null if we are buffering numerics
   private int[] docsUpTo;
   private long[] numericValues; // this will be null if we are buffering binaries
@@ -195,8 +197,28 @@ final class FieldUpdatesBuffer {
     return numUpdates++;
   }
 
+  void finish() {
+    assert termsIteratorProvider == null;
+    if (isSortedTerms()) {
+      termsIteratorProvider = termValues.iteratorProvider(BytesRef::compareTo);
+      bytesUsed.addAndGet(termValues.size() * Integer.BYTES); // sorted indices of the iterators
+    } else {
+      termsIteratorProvider = termValues.iteratorProvider(null);
+    }
+  }
+
   BufferedUpdateIterator iterator() {
+    assert termsIteratorProvider != null : "finish is not called yet";
     return new BufferedUpdateIterator();
+  }
+
+  /**
+   * If all updates update a single field to the same value, then we can apply these
+   * updates in the term order instead of the request order as both will yield the same result.
+   * This optimization allows us to iterate the term dictionary faster and de-duplicate updates.
+   */
+  boolean isSortedTerms() {
+    return hasSingleValue() && hasValues == null && fields.length == 1;
   }
 
   boolean isNumeric() {
@@ -264,14 +286,13 @@ final class FieldUpdatesBuffer {
    * An iterator that iterates over all updates in insertion order
    */
   class BufferedUpdateIterator {
-    private final BytesRefIterator termValuesIterator;
+    private final BytesRefArray.Iterator termValuesIterator;
     private final BytesRefIterator byteValuesIterator;
     private final BufferedUpdate bufferedUpdate = new BufferedUpdate();
     private final Bits updatesWithValue;
-    private int index = 0;
 
     BufferedUpdateIterator() {
-      this.termValuesIterator = termValues.iterator();
+      this.termValuesIterator = termsIteratorProvider.get();
       this.byteValuesIterator = isNumeric ? null : byteValues.iterator();
       updatesWithValue = hasValues == null ? new Bits.MatchAllBits(numUpdates) : hasValues;
     }
@@ -283,7 +304,7 @@ final class FieldUpdatesBuffer {
     BufferedUpdate next() throws IOException {
       BytesRef next = termValuesIterator.next();
       if (next != null) {
-        final int idx = index++;
+        final int idx = termValuesIterator.currentIndex();
         bufferedUpdate.termValue = next;
         bufferedUpdate.hasValue = updatesWithValue.get(idx);
         bufferedUpdate.termField = fields[getArrayIndex(fields.length, idx)];

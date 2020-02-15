@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -46,6 +47,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     assertTrue(buffer.isNumeric());
     assertEquals(13, buffer.getMaxNumeric());
     assertEquals(6, buffer.getMinNumeric());
+    buffer.finish();
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value = iterator.next();
     assertNotNull(value);
@@ -99,6 +101,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       buffer.addNoValue(new Term("id", "3"), Integer.MAX_VALUE);
     }
     buffer.addUpdate(new Term("id", "4"), intValue, Integer.MAX_VALUE);
+    buffer.finish();
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value;
     int count = 0;
@@ -131,6 +134,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       buffer.addNoValue(new Term("id", "3"), Integer.MAX_VALUE);
     }
     buffer.addUpdate(new Term("id", "4"), new BytesRef(""), Integer.MAX_VALUE);
+    buffer.finish();
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value;
     int count = 0;
@@ -181,6 +185,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpto);
       }
     }
+    buffer.finish();
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value;
 
@@ -216,6 +221,50 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpto);
       }
     }
+    buffer.finish();
+    DocValuesUpdate.NumericDocValuesUpdate lastUpdate = randomUpdate;
+    boolean termsSorted = lastUpdate.hasValue && updates.stream()
+        .allMatch(update -> update.field.equals(lastUpdate.field) &&
+            update.hasValue && update.getValue() == lastUpdate.getValue());
+    if (termsSorted) {
+      updates.sort(Comparator.comparing(update -> update.term.bytes));
+    }
+    assertBufferUpdates(buffer, updates);
+  }
+
+  public void testNoNumericValue() {
+    DocValuesUpdate.NumericDocValuesUpdate update =
+        new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", null);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(Counter.newCounter(), update, update.docIDUpto);
+    assertEquals(0, buffer.getMinNumeric());
+    assertEquals(0, buffer.getMaxNumeric());
+  }
+
+  public void testSortNumericUpdatesByTerms() throws IOException {
+    List<DocValuesUpdate.NumericDocValuesUpdate> updates = new ArrayList<>();
+    int numUpdates = 1 + random().nextInt(1000);
+    Counter counter = Counter.newCounter();
+    String termField = RandomPicks.randomFrom(random(), Arrays.asList("id", "_id", "some_other_field"));
+    long docValue = 1 + random().nextInt(1000);
+    DocValuesUpdate.NumericDocValuesUpdate randomUpdate = new DocValuesUpdate.NumericDocValuesUpdate(
+        new Term(termField, Integer.toString(random().nextInt(1000))), "numeric", docValue);
+    randomUpdate.prepareForApply(random().nextBoolean() ? Integer.MAX_VALUE : random().nextInt(10000));
+    updates.add(randomUpdate);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
+    for (int i = 0; i < numUpdates; i++) {
+      randomUpdate = new DocValuesUpdate.NumericDocValuesUpdate(
+          new Term(termField, Integer.toString(random().nextInt(1000))), "numeric", docValue);
+      randomUpdate.prepareForApply(random().nextBoolean() ? Integer.MAX_VALUE : random().nextInt(10000));
+      updates.add(randomUpdate);
+      buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
+    }
+    buffer.finish();
+    updates.sort(Comparator.comparing(c -> c.term));
+    assertBufferUpdates(buffer, updates);
+  }
+
+  void assertBufferUpdates(FieldUpdatesBuffer buffer,
+                           List<DocValuesUpdate.NumericDocValuesUpdate> updates) throws IOException {
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value;
 
@@ -223,14 +272,15 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     long min = Long.MAX_VALUE;
     long max = Long.MIN_VALUE;
     boolean hasAtLeastOneValue = false;
+    DocValuesUpdate.NumericDocValuesUpdate expectedUpdate;
     while ((value = iterator.next()) != null) {
       long v = buffer.getNumericValue(count);
-      randomUpdate = updates.get(count++);
-      assertEquals(randomUpdate.term.bytes.utf8ToString(), value.termValue.utf8ToString());
-      assertEquals(randomUpdate.term.field, value.termField);
-      assertEquals(randomUpdate.hasValue, value.hasValue);
-      if (randomUpdate.hasValue) {
-        assertEquals(randomUpdate.getValue(), value.numericValue);
+      expectedUpdate = updates.get(count++);
+      assertEquals(expectedUpdate.term.bytes.utf8ToString(), value.termValue.utf8ToString());
+      assertEquals(expectedUpdate.term.field, value.termField);
+      assertEquals(expectedUpdate.hasValue, value.hasValue);
+      if (expectedUpdate.hasValue) {
+        assertEquals(expectedUpdate.getValue(), value.numericValue);
         assertEquals(v, value.numericValue);
         min = Math.min(min, v);
         max = Math.max(max, v);
@@ -239,7 +289,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         assertEquals(0, value.numericValue);
         assertEquals(0, v);
       }
-      assertEquals(randomUpdate.docIDUpto, value.docUpTo);
+      assertEquals(expectedUpdate.docIDUpto, value.docUpTo);
     }
     if (hasAtLeastOneValue) {
       assertEquals(max, buffer.getMaxNumeric());
@@ -249,13 +299,5 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       assertEquals(0, buffer.getMinNumeric());
     }
     assertEquals(count, updates.size());
-  }
-
-  public void testNoNumericValue() {
-    DocValuesUpdate.NumericDocValuesUpdate update =
-        new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", null);
-    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(Counter.newCounter(), update, update.docIDUpto);
-    assertEquals(0, buffer.getMinNumeric());
-    assertEquals(0, buffer.getMaxNumeric());
   }
 }

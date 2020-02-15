@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -185,20 +186,45 @@ public final class BytesRefArray implements SortableBytesRefArray {
    */
   @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
-    final BytesRefBuilder spare = new BytesRefBuilder();
-    final BytesRef result = new BytesRef();
+    return iteratorProvider(comp).get();
+  }
+
+  /**
+   * Prefer using either {@link #iterator()} or {@link #iterator(Comparator)}.
+   * This method is only useful if multiple iterators with a non-null {@link Comparator}
+   * are requires as it avoids sorting the array multiple times.
+   */
+  public Supplier<Iterator> iteratorProvider(final Comparator<BytesRef> comp) {
     final int size = size();
     final int[] indices = comp == null ? null : sort(comp);
-    return new BytesRefIterator() {
-      int pos = 0;
+
+    return () -> new Iterator() {
+      final BytesRefBuilder spare = new BytesRefBuilder();
+      final BytesRef result = new BytesRef();
+      int pos = -1;
+
       @Override
       public BytesRef next() {
+        ++pos;
         if (pos < size) {
-          setBytesRef(spare, result, indices == null ? pos++ : indices[pos++]);
+          setBytesRef(spare, result, currentIndex());
           return result;
         }
         return null;
       }
+
+      @Override
+      public int currentIndex() {
+        return indices == null ? pos : indices[pos];
+      }
     };
+  }
+
+  public interface Iterator extends BytesRefIterator {
+    /**
+     * Returns the index of the element that was returned by the latest {@link #next()}. Do not call
+     * this method if {@link #next()} is not called yet or the last call returned a null value.
+     */
+    int currentIndex();
   }
 }
