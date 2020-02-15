@@ -37,6 +37,9 @@ Other Changes
 
 * SOLR-14258: DocList no longer extends DocSet. (David Smiley)
 
+* SOLR-14256: Remove HashDocSet; add DocSet.getBits() instead.  DocSet is now strictly immutable and ascending order.
+  It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
