@@ -1,0 +1,118 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "de.undercouch.download"
+
+configure(rootProject) {
+  ext {
+    snowballWorkDir    = file("${buildDir}/snowball")
+    snowballStemmerDir = file("${buildDir}/snowball/stemmers")
+    snowballPatchedDir = file("${buildDir}/snowball/patched")
+    snowballWebsiteDir = file("${buildDir}/snowball/website")
+    snowballDataDir    = file("${buildDir}/snowball/data")
+  }
+
+  task snowball()  {
+    description "Regenerate snowball-based sources, stopwords, and tests for ...lucene/analysis."
+    group "generation"
+
+    dependsOn ":lucene:analysis:common:snowballGen"
+  }
+
+  task downloadSnowballStemmers(type: Download) {
+    def stemmerZip = file("${snowballWorkDir}/stemmers.zip")
+
+    src "https://github.com/snowballstem/snowball/archive/53739a805cfa6c77ff8496dc711dc1c106d987c1.zip"
+    dest stemmerZip
+    onlyIfModified true
+    useETag "all"
+    cachedETagsFile file("${snowballWorkDir}/stemmers.json")
+
+    doLast {
+      ant.unzip(src: stemmerZip, dest: snowballStemmerDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+    }
+  }
+
+  task downloadSnowballWebsite(type: Download) {
+    def websiteZip = file("${snowballWorkDir}/website.zip")
+
+    src "https://github.com/snowballstem/snowball-website/archive/ff891e74f08e7315523ee3c0cad55bb1b7831b9d.zip"
+    dest websiteZip
+    onlyIfModified true
+    useETag "all"
+    cachedETagsFile file("${snowballWorkDir}/website.json")
+
+    doLast {
+      ant.unzip(src: websiteZip, dest: snowballWebsiteDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+    }
+  }
+
+  task downloadSnowballData(type: Download) {
+    def dataZip = file("${snowballWorkDir}/data.zip")
+
+    src "https://github.com/snowballstem/snowball-data/archive/9145f8732ec952c8a3d1066be251da198a8bc792.zip"
+    dest dataZip
+    onlyIfModified true
+    useETag "all"
+    cachedETagsFile file("${snowballWorkDir}/data.json")
+
+    doLast {
+      ant.unzip(src: dataZip, dest: snowballDataDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+    }
+  }
+
+  task cleanSnowballCheckout(type: Delete) {
+    dependsOn downloadSnowballStemmers
+    delete snowballPatchedDir
+  }
+
+  task patchSnowball(type: Copy) {
+    dependsOn cleanSnowballCheckout
+
+    from fileTree(snowballStemmerDir) {
+      include '**/*'
+    }
+    into snowballPatchedDir
+
+    doLast {
+      ant.patch(patchfile: rootProject.file("gradle/generation/snowball.patch"), dir: snowballPatchedDir, strip: "1")
+    }
+  }
+}
+
+configure(project(":lucene:analysis:common")) {
+  task snowballGen() {
+    description "Patch and Regenerate snowball sources, stopwords, and tests"
+    group "generation"
+    dependsOn rootProject.patchSnowball
+    dependsOn rootProject.downloadSnowballWebsite
+    dependsOn rootProject.downloadSnowballData
+
+    doLast {
+      project.exec {
+        executable "bash"
+        args = [rootProject.file("gradle/generation/snowball.sh"), snowballPatchedDir, snowballWebsiteDir, snowballDataDir, projectDir]
+      }
+    }
+  }
+}

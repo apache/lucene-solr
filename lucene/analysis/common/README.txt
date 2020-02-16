@@ -5,7 +5,8 @@ now located at https://github.com/snowballstem/snowball/tree/53739a805cfa6c77ff8
 together with classes integrating them with the Lucene search engine.
 
 The snowball tree needs patches applied to properly generate efficient code for lucene.
-You can find the most recent patch on https://issues.apache.org/jira/browse/LUCENE-9220
+You can regenerate everything with 'gradlew -p lucene/analysis/common snowballGen'
+Refer to gradle/generation/snowball* files in the build for upgrading snowball.
 
 IMPORTANT NOTICE ON BACKWARDS COMPATIBILITY!
 
