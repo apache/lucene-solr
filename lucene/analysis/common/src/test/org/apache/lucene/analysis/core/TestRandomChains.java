@@ -406,7 +406,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     });
     put(SnowballStemmer.class, random ->  {
         try {
-          String lang = TestSnowball.SNOWBALL_LANGS[random.nextInt(TestSnowball.SNOWBALL_LANGS.length)];
+          String lang = TestSnowball.SNOWBALL_LANGS.get(random.nextInt(TestSnowball.SNOWBALL_LANGS.size()));
           Class<? extends SnowballStemmer> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballStemmer.class);
           return clazz.getConstructor().newInstance();
         } catch (Exception ex) {

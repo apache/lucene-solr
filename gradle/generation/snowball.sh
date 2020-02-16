@@ -51,6 +51,7 @@ for file in "SnowballStemmer.java" "Among.java" "SnowballProgram.java"; do
 done
 
 rm ${DESTDIR}/ext/*Stemmer.java
+rm -f ${TESTDSTDIR}/languages.txt
 for file in ${SRCDIR}/java/org/tartarus/snowball/ext/*.java; do
   # title-case the classes (fooStemmer -> FooStemmer) so they obey normal java conventions
   base=$(basename $file)
@@ -61,6 +62,7 @@ for file in ${SRCDIR}/java/org/tartarus/snowball/ext/*.java; do
   else
     newclazz=${oldclazz^}
   fi
+  echo ${newclazz} | sed -e 's/Stemmer//' >> ${TESTDSTDIR}/languages.txt
   cat $file | sed "s/${oldclazz}/${newclazz}/g" > ${DESTDIR}/ext/${newclazz}.java
   reformat_java ${DESTDIR}/ext/${newclazz}.java
 done
