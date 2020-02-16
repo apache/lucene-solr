@@ -16,213 +16,213 @@ public class FinnishStemmer extends org.tartarus.snowball.SnowballStemmer {
   private static final long serialVersionUID = 1L;
   private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();
 
-  private final static Among a_0[] = {
-    new Among("pa", -1, 1),
-    new Among("sti", -1, 2),
-    new Among("kaan", -1, 1),
-    new Among("han", -1, 1),
-    new Among("kin", -1, 1),
-    new Among("h\u00E4n", -1, 1),
-    new Among("k\u00E4\u00E4n", -1, 1),
-    new Among("ko", -1, 1),
-    new Among("p\u00E4", -1, 1),
-    new Among("k\u00F6", -1, 1)
-  };
+private final static Among a_0[] = {
+  new Among("pa", -1, 1),
+  new Among("sti", -1, 2),
+  new Among("kaan", -1, 1),
+  new Among("han", -1, 1),
+  new Among("kin", -1, 1),
+  new Among("h\u00E4n", -1, 1),
+  new Among("k\u00E4\u00E4n", -1, 1),
+  new Among("ko", -1, 1),
+  new Among("p\u00E4", -1, 1),
+  new Among("k\u00F6", -1, 1)
+};
 
-  private final static Among a_1[] = {
-    new Among("lla", -1, -1),
-    new Among("na", -1, -1),
-    new Among("ssa", -1, -1),
-    new Among("ta", -1, -1),
-    new Among("lta", 3, -1),
-    new Among("sta", 3, -1)
-  };
+private final static Among a_1[] = {
+  new Among("lla", -1, -1),
+  new Among("na", -1, -1),
+  new Among("ssa", -1, -1),
+  new Among("ta", -1, -1),
+  new Among("lta", 3, -1),
+  new Among("sta", 3, -1)
+};
 
-  private final static Among a_2[] = {
-    new Among("ll\u00E4", -1, -1),
-    new Among("n\u00E4", -1, -1),
-    new Among("ss\u00E4", -1, -1),
-    new Among("t\u00E4", -1, -1),
-    new Among("lt\u00E4", 3, -1),
-    new Among("st\u00E4", 3, -1)
-  };
+private final static Among a_2[] = {
+  new Among("ll\u00E4", -1, -1),
+  new Among("n\u00E4", -1, -1),
+  new Among("ss\u00E4", -1, -1),
+  new Among("t\u00E4", -1, -1),
+  new Among("lt\u00E4", 3, -1),
+  new Among("st\u00E4", 3, -1)
+};
 
-  private final static Among a_3[] = {
-    new Among("lle", -1, -1),
-    new Among("ine", -1, -1)
-  };
+private final static Among a_3[] = {
+  new Among("lle", -1, -1),
+  new Among("ine", -1, -1)
+};
 
-  private final static Among a_4[] = {
-    new Among("nsa", -1, 3),
-    new Among("mme", -1, 3),
-    new Among("nne", -1, 3),
-    new Among("ni", -1, 2),
-    new Among("si", -1, 1),
-    new Among("an", -1, 4),
-    new Among("en", -1, 6),
-    new Among("\u00E4n", -1, 5),
-    new Among("ns\u00E4", -1, 3)
-  };
+private final static Among a_4[] = {
+  new Among("nsa", -1, 3),
+  new Among("mme", -1, 3),
+  new Among("nne", -1, 3),
+  new Among("ni", -1, 2),
+  new Among("si", -1, 1),
+  new Among("an", -1, 4),
+  new Among("en", -1, 6),
+  new Among("\u00E4n", -1, 5),
+  new Among("ns\u00E4", -1, 3)
+};
 
-  private final static Among a_5[] = {
-    new Among("aa", -1, -1),
-    new Among("ee", -1, -1),
-    new Among("ii", -1, -1),
-    new Among("oo", -1, -1),
-    new Among("uu", -1, -1),
-    new Among("\u00E4\u00E4", -1, -1),
-    new Among("\u00F6\u00F6", -1, -1)
-  };
+private final static Among a_5[] = {
+  new Among("aa", -1, -1),
+  new Among("ee", -1, -1),
+  new Among("ii", -1, -1),
+  new Among("oo", -1, -1),
+  new Among("uu", -1, -1),
+  new Among("\u00E4\u00E4", -1, -1),
+  new Among("\u00F6\u00F6", -1, -1)
+};
 
-  private final static Among a_6[] = {
-    new Among("a", -1, 8),
-    new Among("lla", 0, -1),
-    new Among("na", 0, -1),
-    new Among("ssa", 0, -1),
-    new Among("ta", 0, -1),
-    new Among("lta", 4, -1),
-    new Among("sta", 4, -1),
-    new Among("tta", 4, 2),
-    new Among("lle", -1, -1),
-    new Among("ine", -1, -1),
-    new Among("ksi", -1, -1),
-    new Among("n", -1, 7),
-    new Among("han", 11, 1),
-    new Among("den", 11, -1, "r_VI", methodObject),
-    new Among("seen", 11, -1, "r_LONG", methodObject),
-    new Among("hen", 11, 2),
-    new Among("tten", 11, -1, "r_VI", methodObject),
-    new Among("hin", 11, 3),
-    new Among("siin", 11, -1, "r_VI", methodObject),
-    new Among("hon", 11, 4),
-    new Among("h\u00E4n", 11, 5),
-    new Among("h\u00F6n", 11, 6),
-    new Among("\u00E4", -1, 8),
-    new Among("ll\u00E4", 22, -1),
-    new Among("n\u00E4", 22, -1),
-    new Among("ss\u00E4", 22, -1),
-    new Among("t\u00E4", 22, -1),
-    new Among("lt\u00E4", 26, -1),
-    new Among("st\u00E4", 26, -1),
-    new Among("tt\u00E4", 26, 2)
-  };
+private final static Among a_6[] = {
+  new Among("a", -1, 8),
+  new Among("lla", 0, -1),
+  new Among("na", 0, -1),
+  new Among("ssa", 0, -1),
+  new Among("ta", 0, -1),
+  new Among("lta", 4, -1),
+  new Among("sta", 4, -1),
+  new Among("tta", 4, 2),
+  new Among("lle", -1, -1),
+  new Among("ine", -1, -1),
+  new Among("ksi", -1, -1),
+  new Among("n", -1, 7),
+  new Among("han", 11, 1),
+  new Among("den", 11, -1, "r_VI", methodObject),
+  new Among("seen", 11, -1, "r_LONG", methodObject),
+  new Among("hen", 11, 2),
+  new Among("tten", 11, -1, "r_VI", methodObject),
+  new Among("hin", 11, 3),
+  new Among("siin", 11, -1, "r_VI", methodObject),
+  new Among("hon", 11, 4),
+  new Among("h\u00E4n", 11, 5),
+  new Among("h\u00F6n", 11, 6),
+  new Among("\u00E4", -1, 8),
+  new Among("ll\u00E4", 22, -1),
+  new Among("n\u00E4", 22, -1),
+  new Among("ss\u00E4", 22, -1),
+  new Among("t\u00E4", 22, -1),
+  new Among("lt\u00E4", 26, -1),
+  new Among("st\u00E4", 26, -1),
+  new Among("tt\u00E4", 26, 2)
+};
 
-  private final static Among a_7[] = {
-    new Among("eja", -1, -1),
-    new Among("mma", -1, 1),
-    new Among("imma", 1, -1),
-    new Among("mpa", -1, 1),
-    new Among("impa", 3, -1),
-    new Among("mmi", -1, 1),
-    new Among("immi", 5, -1),
-    new Among("mpi", -1, 1),
-    new Among("impi", 7, -1),
-    new Among("ej\u00E4", -1, -1),
-    new Among("mm\u00E4", -1, 1),
-    new Among("imm\u00E4", 10, -1),
-    new Among("mp\u00E4", -1, 1),
-    new Among("imp\u00E4", 12, -1)
-  };
+private final static Among a_7[] = {
+  new Among("eja", -1, -1),
+  new Among("mma", -1, 1),
+  new Among("imma", 1, -1),
+  new Among("mpa", -1, 1),
+  new Among("impa", 3, -1),
+  new Among("mmi", -1, 1),
+  new Among("immi", 5, -1),
+  new Among("mpi", -1, 1),
+  new Among("impi", 7, -1),
+  new Among("ej\u00E4", -1, -1),
+  new Among("mm\u00E4", -1, 1),
+  new Among("imm\u00E4", 10, -1),
+  new Among("mp\u00E4", -1, 1),
+  new Among("imp\u00E4", 12, -1)
+};
 
-  private final static Among a_8[] = {
-    new Among("i", -1, -1),
-    new Among("j", -1, -1)
-  };
+private final static Among a_8[] = {
+  new Among("i", -1, -1),
+  new Among("j", -1, -1)
+};
 
-  private final static Among a_9[] = {
-    new Among("mma", -1, 1),
-    new Among("imma", 0, -1)
-  };
+private final static Among a_9[] = {
+  new Among("mma", -1, 1),
+  new Among("imma", 0, -1)
+};
 
-  private static final char g_AEI[] = {17, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8 };
+private static final char g_AEI[] = {17, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8 };
 
-  private static final char g_C[] = {119, 223, 119, 1 };
+private static final char g_C[] = {119, 223, 119, 1 };
 
-  private static final char g_V1[] = {17, 65, 16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
+private static final char g_V1[] = {17, 65, 16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
-  private static final char g_V2[] = {17, 65, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
+private static final char g_V2[] = {17, 65, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
-  private static final char g_particle_end[] = {17, 97, 24, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
+private static final char g_particle_end[] = {17, 97, 24, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
-  private boolean B_ending_removed;
-  private java.lang.StringBuilder S_x = new java.lang.StringBuilder();
-  private int I_p2;
-  private int I_p1;
+private boolean B_ending_removed;
+private java.lang.StringBuilder S_x = new java.lang.StringBuilder();
+private int I_p2;
+private int I_p1;
 
 
-  private boolean r_mark_regions() {
-    I_p1 = limit;
-    I_p2 = limit;
-golab0: while(true)
-        {
-          int v_1 = cursor;
-lab1: {
-        if (!(in_grouping(g_V1, 97, 246)))
-        {
-          break lab1;
-        }
-        cursor = v_1;
-        break golab0;
-}
-cursor = v_1;
-if (cursor >= limit)
-{
-  return false;
-}
-cursor++;
-        }
-golab2: while(true)
-{
-lab3: {
-        if (!(out_grouping(g_V1, 97, 246)))
-        {
-          break lab3;
-        }
-        break golab2;
-}
-if (cursor >= limit)
-{
-  return false;
-}
-cursor++;
-}
-I_p1 = cursor;
-golab4: while(true)
-{
-  int v_3 = cursor;
-lab5: {
-        if (!(in_grouping(g_V1, 97, 246)))
-        {
-          break lab5;
-        }
-        cursor = v_3;
-        break golab4;
-}
-cursor = v_3;
-if (cursor >= limit)
-{
-  return false;
-}
-cursor++;
-}
-golab6: while(true)
-{
-lab7: {
-        if (!(out_grouping(g_V1, 97, 246)))
-        {
-          break lab7;
-        }
-        break golab6;
-}
-if (cursor >= limit)
-{
-  return false;
-}
-cursor++;
-}
-I_p2 = cursor;
-return true;
+private boolean r_mark_regions() {
+  I_p1 = limit;
+  I_p2 = limit;
+  golab0: while(true)
+  {
+    int v_1 = cursor;
+    lab1: {
+      if (!(in_grouping(g_V1, 97, 246)))
+      {
+        break lab1;
+      }
+      cursor = v_1;
+      break golab0;
+    }
+    cursor = v_1;
+    if (cursor >= limit)
+    {
+      return false;
+    }
+    cursor++;
   }
+  golab2: while(true)
+  {
+    lab3: {
+      if (!(out_grouping(g_V1, 97, 246)))
+      {
+        break lab3;
+      }
+      break golab2;
+    }
+    if (cursor >= limit)
+    {
+      return false;
+    }
+    cursor++;
+  }
+  I_p1 = cursor;
+  golab4: while(true)
+  {
+    int v_3 = cursor;
+    lab5: {
+      if (!(in_grouping(g_V1, 97, 246)))
+      {
+        break lab5;
+      }
+      cursor = v_3;
+      break golab4;
+    }
+    cursor = v_3;
+    if (cursor >= limit)
+    {
+      return false;
+    }
+    cursor++;
+  }
+  golab6: while(true)
+  {
+    lab7: {
+      if (!(out_grouping(g_V1, 97, 246)))
+      {
+        break lab7;
+      }
+      break golab6;
+    }
+    if (cursor >= limit)
+    {
+      return false;
+    }
+    cursor++;
+  }
+  I_p2 = cursor;
+  return true;
+}
 
 private boolean r_R2() {
   if (!(I_p2 <= cursor))
@@ -288,53 +288,53 @@ private boolean r_possessive() {
     case 1:
       {
         int v_3 = limit - cursor;
-lab0: {
-        if (!(eq_s_b("k")))
-        {
-          break lab0;
+        lab0: {
+          if (!(eq_s_b("k")))
+          {
+            break lab0;
+          }
+          return false;
         }
-        return false;
-}
-cursor = limit - v_3;
+        cursor = limit - v_3;
       }
-slice_del();
-break;
-case 2:
-slice_del();
-ket = cursor;
-if (!(eq_s_b("kse")))
-{
-  return false;
-}
-bra = cursor;
-slice_from("ksi");
-break;
-case 3:
-slice_del();
-break;
-case 4:
-if (find_among_b(a_1) == 0)
-{
-  return false;
-}
-slice_del();
-break;
-case 5:
-if (find_among_b(a_2) == 0)
-{
-  return false;
-}
-slice_del();
-break;
-case 6:
-if (find_among_b(a_3) == 0)
-{
-  return false;
-}
-slice_del();
-break;
+      slice_del();
+      break;
+    case 2:
+      slice_del();
+      ket = cursor;
+      if (!(eq_s_b("kse")))
+      {
+        return false;
+      }
+      bra = cursor;
+      slice_from("ksi");
+      break;
+    case 3:
+      slice_del();
+      break;
+    case 4:
+      if (find_among_b(a_1) == 0)
+      {
+        return false;
+      }
+      slice_del();
+      break;
+    case 5:
+      if (find_among_b(a_2) == 0)
+      {
+        return false;
+      }
+      slice_del();
+      break;
+    case 6:
+      if (find_among_b(a_3) == 0)
+      {
+        return false;
+      }
+      slice_del();
+      break;
   }
-return true;
+  return true;
 }
 
 public boolean r_LONG() {
@@ -413,48 +413,48 @@ private boolean r_case_ending() {
       break;
     case 7:
       int v_3 = limit - cursor;
-lab0: {
+      lab0: {
         int v_4 = limit - cursor;
-lab1: {
-        int v_5 = limit - cursor;
-lab2: {
-        if (!r_LONG())
-        {
-          break lab2;
+        lab1: {
+          int v_5 = limit - cursor;
+          lab2: {
+            if (!r_LONG())
+            {
+              break lab2;
+            }
+            break lab1;
+          }
+          cursor = limit - v_5;
+          if (!(eq_s_b("ie")))
+          {
+            cursor = limit - v_3;
+            break lab0;
+          }
         }
-        break lab1;
-}
-cursor = limit - v_5;
-if (!(eq_s_b("ie")))
-{
-  cursor = limit - v_3;
-  break lab0;
-}
-}
-cursor = limit - v_4;
-if (cursor <= limit_backward)
-{
-  cursor = limit - v_3;
-  break lab0;
-}
-cursor--;
-bra = cursor;
-}
-break;
-case 8:
-if (!(in_grouping_b(g_V1, 97, 246)))
-{
-  return false;
-}
-if (!(in_grouping_b(g_C, 98, 122)))
-{
-  return false;
-}
-break;
+        cursor = limit - v_4;
+        if (cursor <= limit_backward)
+        {
+          cursor = limit - v_3;
+          break lab0;
+        }
+        cursor--;
+        bra = cursor;
+      }
+      break;
+    case 8:
+      if (!(in_grouping_b(g_V1, 97, 246)))
+      {
+        return false;
+      }
+      if (!(in_grouping_b(g_C, 98, 122)))
+      {
+        return false;
+      }
+      break;
   }
-slice_del();
-B_ending_removed = true;
-return true;
+  slice_del();
+  B_ending_removed = true;
+  return true;
 }
 
 private boolean r_other_endings() {
@@ -478,19 +478,19 @@ private boolean r_other_endings() {
     case 1:
       {
         int v_3 = limit - cursor;
-lab0: {
-        if (!(eq_s_b("po")))
-        {
-          break lab0;
+        lab0: {
+          if (!(eq_s_b("po")))
+          {
+            break lab0;
+          }
+          return false;
         }
-        return false;
-}
-cursor = limit - v_3;
+        cursor = limit - v_3;
       }
-break;
+      break;
   }
-slice_del();
-return true;
+  slice_del();
+  return true;
 }
 
 private boolean r_i_plural() {
@@ -555,19 +555,19 @@ private boolean r_t_plural() {
     case 1:
       {
         int v_6 = limit - cursor;
-lab0: {
-        if (!(eq_s_b("po")))
-        {
-          break lab0;
+        lab0: {
+          if (!(eq_s_b("po")))
+          {
+            break lab0;
+          }
+          return false;
         }
-        return false;
-}
-cursor = limit - v_6;
+        cursor = limit - v_6;
       }
-break;
+      break;
   }
-slice_del();
-return true;
+  slice_del();
+  return true;
 }
 
 private boolean r_tidy() {
@@ -578,111 +578,111 @@ private boolean r_tidy() {
   int v_2 = limit_backward;
   limit_backward = I_p1;
   int v_3 = limit - cursor;
-lab0: {
-        int v_4 = limit - cursor;
-        if (!r_LONG())
-        {
-          break lab0;
-        }
-        cursor = limit - v_4;
-        ket = cursor;
-        if (cursor <= limit_backward)
-        {
-          break lab0;
-        }
-        cursor--;
-        bra = cursor;
-        slice_del();
-}
-cursor = limit - v_3;
-int v_5 = limit - cursor;
-lab1: {
-        ket = cursor;
-        if (!(in_grouping_b(g_AEI, 97, 228)))
-        {
-          break lab1;
-        }
-        bra = cursor;
-        if (!(in_grouping_b(g_C, 98, 122)))
-        {
-          break lab1;
-        }
-        slice_del();
-}
-cursor = limit - v_5;
-int v_6 = limit - cursor;
-lab2: {
-        ket = cursor;
-        if (!(eq_s_b("j")))
-        {
-          break lab2;
-        }
-        bra = cursor;
-lab3: {
-        int v_7 = limit - cursor;
-lab4: {
+  lab0: {
+    int v_4 = limit - cursor;
+    if (!r_LONG())
+    {
+      break lab0;
+    }
+    cursor = limit - v_4;
+    ket = cursor;
+    if (cursor <= limit_backward)
+    {
+      break lab0;
+    }
+    cursor--;
+    bra = cursor;
+    slice_del();
+  }
+  cursor = limit - v_3;
+  int v_5 = limit - cursor;
+  lab1: {
+    ket = cursor;
+    if (!(in_grouping_b(g_AEI, 97, 228)))
+    {
+      break lab1;
+    }
+    bra = cursor;
+    if (!(in_grouping_b(g_C, 98, 122)))
+    {
+      break lab1;
+    }
+    slice_del();
+  }
+  cursor = limit - v_5;
+  int v_6 = limit - cursor;
+  lab2: {
+    ket = cursor;
+    if (!(eq_s_b("j")))
+    {
+      break lab2;
+    }
+    bra = cursor;
+    lab3: {
+      int v_7 = limit - cursor;
+      lab4: {
         if (!(eq_s_b("o")))
         {
           break lab4;
         }
         break lab3;
-}
-cursor = limit - v_7;
-if (!(eq_s_b("u")))
-{
-  break lab2;
-}
-}
-slice_del();
-}
-cursor = limit - v_6;
-int v_8 = limit - cursor;
-lab5: {
-        ket = cursor;
-        if (!(eq_s_b("o")))
-        {
-          break lab5;
-        }
-        bra = cursor;
-        if (!(eq_s_b("j")))
-        {
-          break lab5;
-        }
-        slice_del();
-}
-cursor = limit - v_8;
-limit_backward = v_2;
-golab6: while(true)
-{
-  int v_9 = limit - cursor;
-lab7: {
-        if (!(out_grouping_b(g_V1, 97, 246)))
-        {
-          break lab7;
-        }
-        cursor = limit - v_9;
-        break golab6;
-}
-cursor = limit - v_9;
-if (cursor <= limit_backward)
-{
-  return false;
-}
-cursor--;
-}
-ket = cursor;
-if (!(in_grouping_b(g_C, 98, 122)))
-{
-  return false;
-}
-bra = cursor;
-slice_to(S_x);
-if (!(eq_s_b(S_x)))
-{
-  return false;
-}
-slice_del();
-return true;
+      }
+      cursor = limit - v_7;
+      if (!(eq_s_b("u")))
+      {
+        break lab2;
+      }
+    }
+    slice_del();
+  }
+  cursor = limit - v_6;
+  int v_8 = limit - cursor;
+  lab5: {
+    ket = cursor;
+    if (!(eq_s_b("o")))
+    {
+      break lab5;
+    }
+    bra = cursor;
+    if (!(eq_s_b("j")))
+    {
+      break lab5;
+    }
+    slice_del();
+  }
+  cursor = limit - v_8;
+  limit_backward = v_2;
+  golab6: while(true)
+  {
+    int v_9 = limit - cursor;
+    lab7: {
+      if (!(out_grouping_b(g_V1, 97, 246)))
+      {
+        break lab7;
+      }
+      cursor = limit - v_9;
+      break golab6;
+    }
+    cursor = limit - v_9;
+    if (cursor <= limit_backward)
+    {
+      return false;
+    }
+    cursor--;
+  }
+  ket = cursor;
+  if (!(in_grouping_b(g_C, 98, 122)))
+  {
+    return false;
+  }
+  bra = cursor;
+  slice_to(S_x);
+  if (!(eq_s_b(S_x)))
+  {
+    return false;
+  }
+  slice_del();
+  return true;
 }
 
 public boolean stem() {
@@ -704,26 +704,26 @@ public boolean stem() {
   int v_5 = limit - cursor;
   r_other_endings();
   cursor = limit - v_5;
-lab0: {
-lab1: {
-        if (!(B_ending_removed))
-        {
-          break lab1;
-        }
-        int v_7 = limit - cursor;
-        r_i_plural();
-        cursor = limit - v_7;
-        break lab0;
-}
-int v_8 = limit - cursor;
-r_t_plural();
-cursor = limit - v_8;
-}
-int v_9 = limit - cursor;
-r_tidy();
-cursor = limit - v_9;
-cursor = limit_backward;
-return true;
+  lab0: {
+    lab1: {
+      if (!(B_ending_removed))
+      {
+        break lab1;
+      }
+      int v_7 = limit - cursor;
+      r_i_plural();
+      cursor = limit - v_7;
+      break lab0;
+    }
+    int v_8 = limit - cursor;
+    r_t_plural();
+    cursor = limit - v_8;
+  }
+  int v_9 = limit - cursor;
+  r_tidy();
+  cursor = limit - v_9;
+  cursor = limit_backward;
+  return true;
 }
 
 @Override

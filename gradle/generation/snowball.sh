@@ -14,21 +14,11 @@ test $# -eq 4
 trap ': "*** BUILD FAILED ***" $BASH_SOURCE:$LINENO: error: "$BASH_COMMAND" returned $?' ERR
 set -eExuo pipefail
 
-# completely reformats file with vim, to kill the crazy space/tabs mix.
+# reformats file indentation to kill the crazy space/tabs mix.
 # prevents early blindness !
 function reformat_java() {
-  target=$1
-  vimrc=$(mktemp)
-  cat > ${vimrc} << EOF
-syntax on
-filetype plugin indent on
-set tabstop=2
-set softtabstop=2
-set shiftwidth=2
-set expandtab
-EOF
-  vim -u ${vimrc} -c 'normal gg=G' -c ':wq' ${target}
-  rm ${vimrc}
+  # convert tabs to 8 spaces, then reduce indent from 4 space to 2 space
+  sed --in-place -e 's/\t/        /g' -e 's/    /  /g' $1
 }
 
 # generate stuff with existing makefile, just 'make' will try to do crazy stuff with e.g. python

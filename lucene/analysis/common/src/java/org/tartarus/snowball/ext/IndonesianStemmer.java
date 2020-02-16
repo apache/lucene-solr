@@ -16,116 +16,116 @@ public class IndonesianStemmer extends org.tartarus.snowball.SnowballStemmer {
   private static final long serialVersionUID = 1L;
   private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();
 
-  private final static Among a_0[] = {
-    new Among("kah", -1, 1),
-    new Among("lah", -1, 1),
-    new Among("pun", -1, 1)
-  };
+private final static Among a_0[] = {
+  new Among("kah", -1, 1),
+  new Among("lah", -1, 1),
+  new Among("pun", -1, 1)
+};
 
-  private final static Among a_1[] = {
-    new Among("nya", -1, 1),
-    new Among("ku", -1, 1),
-    new Among("mu", -1, 1)
-  };
+private final static Among a_1[] = {
+  new Among("nya", -1, 1),
+  new Among("ku", -1, 1),
+  new Among("mu", -1, 1)
+};
 
-  private final static Among a_2[] = {
-    new Among("i", -1, 1, "r_SUFFIX_I_OK", methodObject),
-    new Among("an", -1, 1, "r_SUFFIX_AN_OK", methodObject),
-    new Among("kan", 1, 1, "r_SUFFIX_KAN_OK", methodObject)
-  };
+private final static Among a_2[] = {
+  new Among("i", -1, 1, "r_SUFFIX_I_OK", methodObject),
+  new Among("an", -1, 1, "r_SUFFIX_AN_OK", methodObject),
+  new Among("kan", 1, 1, "r_SUFFIX_KAN_OK", methodObject)
+};
 
-  private final static Among a_3[] = {
-    new Among("di", -1, 1),
-    new Among("ke", -1, 2),
-    new Among("me", -1, 1),
-    new Among("mem", 2, 5),
-    new Among("men", 2, 1),
-    new Among("meng", 4, 1),
-    new Among("meny", 4, 3, "r_VOWEL", methodObject),
-    new Among("pem", -1, 6),
-    new Among("pen", -1, 2),
-    new Among("peng", 8, 2),
-    new Among("peny", 8, 4, "r_VOWEL", methodObject),
-    new Among("ter", -1, 1)
-  };
+private final static Among a_3[] = {
+  new Among("di", -1, 1),
+  new Among("ke", -1, 2),
+  new Among("me", -1, 1),
+  new Among("mem", 2, 5),
+  new Among("men", 2, 1),
+  new Among("meng", 4, 1),
+  new Among("meny", 4, 3, "r_VOWEL", methodObject),
+  new Among("pem", -1, 6),
+  new Among("pen", -1, 2),
+  new Among("peng", 8, 2),
+  new Among("peny", 8, 4, "r_VOWEL", methodObject),
+  new Among("ter", -1, 1)
+};
 
-  private final static Among a_4[] = {
-    new Among("be", -1, 3, "r_KER", methodObject),
-    new Among("belajar", 0, 4),
-    new Among("ber", 0, 3),
-    new Among("pe", -1, 1),
-    new Among("pelajar", 3, 2),
-    new Among("per", 3, 1)
-  };
+private final static Among a_4[] = {
+  new Among("be", -1, 3, "r_KER", methodObject),
+  new Among("belajar", 0, 4),
+  new Among("ber", 0, 3),
+  new Among("pe", -1, 1),
+  new Among("pelajar", 3, 2),
+  new Among("per", 3, 1)
+};
 
-  private static final char g_vowel[] = {17, 65, 16 };
+private static final char g_vowel[] = {17, 65, 16 };
 
-  private int I_prefix;
-  private int I_measure;
+private int I_prefix;
+private int I_measure;
 
 
-  private boolean r_remove_particle() {
-    ket = cursor;
-    if (find_among_b(a_0) == 0)
-    {
-      return false;
-    }
-    bra = cursor;
-    slice_del();
-    I_measure -= 1;
-    return true;
+private boolean r_remove_particle() {
+  ket = cursor;
+  if (find_among_b(a_0) == 0)
+  {
+    return false;
   }
-
-  private boolean r_remove_possessive_pronoun() {
-    ket = cursor;
-    if (find_among_b(a_1) == 0)
-    {
-      return false;
-    }
-    bra = cursor;
-    slice_del();
-    I_measure -= 1;
-    return true;
-  }
-
-  public boolean r_SUFFIX_KAN_OK() {
-    if (!(I_prefix != 3))
-    {
-      return false;
-    }
-    if (!(I_prefix != 2))
-    {
-      return false;
-    }
-    return true;
-  }
-
-  public boolean r_SUFFIX_AN_OK() {
-    if (!(I_prefix != 1))
-    {
-      return false;
-    }
-    return true;
-  }
-
-  public boolean r_SUFFIX_I_OK() {
-    if (!(I_prefix <= 2))
-    {
-      return false;
-    }
-    {
-      int v_1 = limit - cursor;
-lab0: {
-        if (!(eq_s_b("s")))
-        {
-          break lab0;
-        }
-        return false;
+  bra = cursor;
+  slice_del();
+  I_measure -= 1;
+  return true;
 }
-cursor = limit - v_1;
-    }
-return true;
+
+private boolean r_remove_possessive_pronoun() {
+  ket = cursor;
+  if (find_among_b(a_1) == 0)
+  {
+    return false;
   }
+  bra = cursor;
+  slice_del();
+  I_measure -= 1;
+  return true;
+}
+
+public boolean r_SUFFIX_KAN_OK() {
+  if (!(I_prefix != 3))
+  {
+    return false;
+  }
+  if (!(I_prefix != 2))
+  {
+    return false;
+  }
+  return true;
+}
+
+public boolean r_SUFFIX_AN_OK() {
+  if (!(I_prefix != 1))
+  {
+    return false;
+  }
+  return true;
+}
+
+public boolean r_SUFFIX_I_OK() {
+  if (!(I_prefix <= 2))
+  {
+    return false;
+  }
+  {
+    int v_1 = limit - cursor;
+    lab0: {
+      if (!(eq_s_b("s")))
+      {
+        break lab0;
+      }
+      return false;
+    }
+    cursor = limit - v_1;
+  }
+  return true;
+}
 
 private boolean r_remove_suffix() {
   ket = cursor;
@@ -192,43 +192,43 @@ private boolean r_remove_first_order_prefix() {
     case 5:
       I_prefix = 1;
       I_measure -= 1;
-lab0: {
+      lab0: {
         int v_1 = cursor;
-lab1: {
-        int v_2 = cursor;
-        if (!(in_grouping(g_vowel, 97, 117)))
-        {
-          break lab1;
+        lab1: {
+          int v_2 = cursor;
+          if (!(in_grouping(g_vowel, 97, 117)))
+          {
+            break lab1;
+          }
+          cursor = v_2;
+          slice_from("p");
+          break lab0;
         }
-        cursor = v_2;
-        slice_from("p");
-        break lab0;
-}
-cursor = v_1;
-slice_del();
-}
-break;
-case 6:
-I_prefix = 3;
-I_measure -= 1;
-lab2: {
+        cursor = v_1;
+        slice_del();
+      }
+      break;
+    case 6:
+      I_prefix = 3;
+      I_measure -= 1;
+      lab2: {
         int v_3 = cursor;
-lab3: {
-        int v_4 = cursor;
-        if (!(in_grouping(g_vowel, 97, 117)))
-        {
-          break lab3;
+        lab3: {
+          int v_4 = cursor;
+          if (!(in_grouping(g_vowel, 97, 117)))
+          {
+            break lab3;
+          }
+          cursor = v_4;
+          slice_from("p");
+          break lab2;
         }
-        cursor = v_4;
-        slice_from("p");
-        break lab2;
-}
-cursor = v_3;
-slice_del();
-}
-break;
+        cursor = v_3;
+        slice_del();
+      }
+      break;
   }
-return true;
+  return true;
 }
 
 private boolean r_remove_second_order_prefix() {
@@ -267,66 +267,66 @@ private boolean r_remove_second_order_prefix() {
 public boolean stem() {
   I_measure = 0;
   int v_1 = cursor;
-lab0: {
-        while(true)
+  lab0: {
+    while(true)
+    {
+      int v_2 = cursor;
+      lab1: {
+        golab2: while(true)
         {
-          int v_2 = cursor;
-lab1: {
-golab2: while(true)
-        {
-lab3: {
-        if (!(in_grouping(g_vowel, 97, 117)))
-        {
-          break lab3;
+          lab3: {
+            if (!(in_grouping(g_vowel, 97, 117)))
+            {
+              break lab3;
+            }
+            break golab2;
+          }
+          if (cursor >= limit)
+          {
+            break lab1;
+          }
+          cursor++;
         }
-        break golab2;
-}
-if (cursor >= limit)
-{
-  break lab1;
-}
-cursor++;
-        }
-I_measure += 1;
-continue;
-}
-cursor = v_2;
-break;
-        }
-}
-cursor = v_1;
-if (!(I_measure > 2))
-{
-  return false;
-}
-I_prefix = 0;
-limit_backward = cursor;
-cursor = limit;
-int v_4 = limit - cursor;
-r_remove_particle();
-cursor = limit - v_4;
-if (!(I_measure > 2))
-{
-  return false;
-}
-int v_5 = limit - cursor;
-r_remove_possessive_pronoun();
-cursor = limit - v_5;
-cursor = limit_backward;
-if (!(I_measure > 2))
-{
-  return false;
-}
-lab4: {
-        int v_6 = cursor;
-lab5: {
-        int v_7 = cursor;
-        if (!r_remove_first_order_prefix())
-        {
-          break lab5;
-        }
-        int v_8 = cursor;
-lab6: {
+        I_measure += 1;
+        continue;
+      }
+      cursor = v_2;
+      break;
+    }
+  }
+  cursor = v_1;
+  if (!(I_measure > 2))
+  {
+    return false;
+  }
+  I_prefix = 0;
+  limit_backward = cursor;
+  cursor = limit;
+  int v_4 = limit - cursor;
+  r_remove_particle();
+  cursor = limit - v_4;
+  if (!(I_measure > 2))
+  {
+    return false;
+  }
+  int v_5 = limit - cursor;
+  r_remove_possessive_pronoun();
+  cursor = limit - v_5;
+  cursor = limit_backward;
+  if (!(I_measure > 2))
+  {
+    return false;
+  }
+  lab4: {
+    int v_6 = cursor;
+    lab5: {
+      int v_7 = cursor;
+      if (!r_remove_first_order_prefix())
+      {
+        break lab5;
+      }
+      int v_8 = cursor;
+      lab6: {
         int v_9 = cursor;
         if (!(I_measure > 2))
         {
@@ -348,32 +348,32 @@ lab6: {
         {
           break lab6;
         }
-}
-cursor = v_8;
-cursor = v_7;
-break lab4;
-}
-cursor = v_6;
-int v_10 = cursor;
-r_remove_second_order_prefix();
-cursor = v_10;
-int v_11 = cursor;
-lab7: {
-        if (!(I_measure > 2))
-        {
-          break lab7;
-        }
-        limit_backward = cursor;
-        cursor = limit;
-        if (!r_remove_suffix())
-        {
-          break lab7;
-        }
-        cursor = limit_backward;
-}
-cursor = v_11;
-}
-return true;
+      }
+      cursor = v_8;
+      cursor = v_7;
+      break lab4;
+    }
+    cursor = v_6;
+    int v_10 = cursor;
+    r_remove_second_order_prefix();
+    cursor = v_10;
+    int v_11 = cursor;
+    lab7: {
+      if (!(I_measure > 2))
+      {
+        break lab7;
+      }
+      limit_backward = cursor;
+      cursor = limit;
+      if (!r_remove_suffix())
+      {
+        break lab7;
+      }
+      cursor = limit_backward;
+    }
+    cursor = v_11;
+  }
+  return true;
 }
 
 @Override
