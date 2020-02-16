@@ -11,8 +11,8 @@ TESTDSTDIR="${PROJECTDIR}/src/test/org/apache/lucene/analysis/snowball"
 trap 'echo "usage: ./snowball.sh <snowball> <snowball-website> <snowball-data> <analysis-common>" && exit 2' ERR
 test $# -eq 4
 
-trap ': "*** BUILD FAILED ***" $BASH_SOURCE:$LINENO: error: "$BASH_COMMAND" returned $?' ERR
-set -eExuo pipefail
+trap 'echo "*** BUILD FAILED ***" $BASH_SOURCE:$LINENO: error: "$BASH_COMMAND" returned $?' ERR
+set -eEuo pipefail
 
 # reformats file indentation to kill the crazy space/tabs mix.
 # prevents early blindness !
@@ -70,7 +70,7 @@ for file in ${TESTSRCDIR}/*; do
         shuf -n ${row_limit} --random-source=<(${myrandom} < /dev/zero 2>/dev/null) ${file}/${data} > ${tmpdir}/${data} \
           && touch -t ${arbitrary_timestamp} ${tmpdir}/${data}
       done
-      zip --junk-paths -X -9 ${TESTDSTDIR}/${language}.zip ${tmpdir}/voc.txt ${tmpdir}/output.txt
+      zip --quiet --junk-paths -X -9 ${TESTDSTDIR}/${language}.zip ${tmpdir}/voc.txt ${tmpdir}/output.txt
       echo "${language}" >> ${TESTDSTDIR}/test_languages.txt
       rm -r ${tmpdir}
     fi
