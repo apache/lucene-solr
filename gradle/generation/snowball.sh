@@ -72,29 +72,27 @@ done
 
 # regenerate test data
 rm -f ${TESTDSTDIR}/test_languages.txt
+rm -f ${TESTDSTDIR}/*.zip
 for file in ${TESTSRCDIR}/*; do
-  if [ -f "${file}/voc.txt" ] && [ -f "${file}/output.txt" ]; then
+  # look for input (voc.txt) and expected output (output.txt) without any special licenses (COPYING)
+  if [ -f "${file}/voc.txt" ] && [ -f "${file}/output.txt" ] && [ ! -f "${file}/COPYING" ]; then
     language=$(basename ${file})
     if [ "${language}" == "kraaij_pohlmann" ]; then
       language="kp"
     fi
-    rm -f ${TESTDSTDIR}/${language}.zip
     # make the .zip reproducible if data hasn't changed.
     arbitrary_timestamp="200001010000"
     # some test files are yuge, randomly sample up to this amount
     row_limit="2000"
-    # TODO: for now don't deal with any special licenses
-    if [ ! -f "${file}/COPYING" ]; then
-      tmpdir=$(mktemp -d)
-      myrandom="openssl enc -aes-256-ctr -k ${arbitrary_timestamp} -nosalt -iv 0 -md md5"
-      for data in "voc.txt" "output.txt"; do
-        shuf -n ${row_limit} --random-source=<(${myrandom} < /dev/zero 2>/dev/null) ${file}/${data} > ${tmpdir}/${data} \
-          && touch -t ${arbitrary_timestamp} ${tmpdir}/${data}
-      done
-      zip --quiet --junk-paths -X -9 ${TESTDSTDIR}/${language}.zip ${tmpdir}/voc.txt ${tmpdir}/output.txt
-      echo "${language}" >> ${TESTDSTDIR}/test_languages.txt
-      rm -r ${tmpdir}
-    fi
+    tmpdir=$(mktemp -d)
+    myrandom="openssl enc -aes-256-ctr -k ${arbitrary_timestamp} -nosalt -iv 0 -md md5"
+    for data in "voc.txt" "output.txt"; do
+      shuf -n ${row_limit} --random-source=<(${myrandom} < /dev/zero 2>/dev/null) ${file}/${data} > ${tmpdir}/${data} \
+        && touch -t ${arbitrary_timestamp} ${tmpdir}/${data}
+    done
+    zip --quiet --junk-paths -X -9 ${TESTDSTDIR}/${language}.zip ${tmpdir}/voc.txt ${tmpdir}/output.txt
+    echo "${language}" >> ${TESTDSTDIR}/test_languages.txt
+    rm -r ${tmpdir}
   fi
 done
 
