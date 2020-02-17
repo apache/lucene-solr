@@ -449,13 +449,13 @@ class Circle2D implements Component2D {
     }
   }
 
-  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using haversin distance.*/
+  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using cartesian distance.*/
   static Component2D create(XYCircle circle) {
     DistanceCalculator calculator = new CartesianDistance(circle.getX(), circle.getY(), circle.getRadius());
     return new Circle2D(calculator);
   }
 
-  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using cartesian distance. */
+  /** Builds a Circle2D from Circle. Distance calculations are performed using haversin distance. */
   static Component2D create(Circle circle) {
     DistanceCalculator calculator = new HaversinDistance(circle.getLon(), circle.getLat(), circle.getRadius());
     return new Circle2D(calculator);
