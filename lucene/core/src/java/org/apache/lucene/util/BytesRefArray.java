@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.IntBinaryOperator;
 import java.util.function.Supplier;
 
 /**
@@ -119,7 +120,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
     pool.setBytesRef(spare, result, offset, length);
   }
   
-  private int[] sort(final Comparator<BytesRef> comp) {
+  private int[] sort(final Comparator<BytesRef> comp, final IntBinaryOperator tieComparator) {
     final int[] orderedEntries = new int[size()];
     for (int i = 0; i < orderedEntries.length; i++) {
       orderedEntries[i] = i;
@@ -137,22 +138,28 @@ public final class BytesRefArray implements SortableBytesRefArray {
         final int idx1 = orderedEntries[i], idx2 = orderedEntries[j];
         setBytesRef(scratch1, scratchBytes1, idx1);
         setBytesRef(scratch2, scratchBytes2, idx2);
-        return comp.compare(scratchBytes1, scratchBytes2);
+        return compare(idx1, scratchBytes1, idx2, scratchBytes2);
       }
       
       @Override
       protected void setPivot(int i) {
-        final int index = orderedEntries[i];
-        setBytesRef(pivotBuilder, pivot, index);
+        pivotIndex = orderedEntries[i];
+        setBytesRef(pivotBuilder, pivot, pivotIndex);
       }
       
       @Override
       protected int comparePivot(int j) {
         final int index = orderedEntries[j];
         setBytesRef(scratch2, scratchBytes2, index);
-        return comp.compare(pivot, scratchBytes2);
+        return compare(pivotIndex, pivot, index, scratchBytes2);
       }
 
+      private int compare(int i1, BytesRef b1, int i2, BytesRef b2) {
+        int res = comp.compare(b1, b2);
+        return res == 0 ? tieComparator.applyAsInt(i1, i2): res;
+      }
+
+      private int pivotIndex;
       private final BytesRef pivot = new BytesRef();
       private final BytesRef scratchBytes1 = new BytesRef();
       private final BytesRef scratchBytes2 = new BytesRef();
@@ -186,17 +193,18 @@ public final class BytesRefArray implements SortableBytesRefArray {
    */
   @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
-    return iteratorProvider(comp).get();
+    return iteratorProvider(comp, (i, j) -> 0).get();
   }
 
   /**
    * Prefer using either {@link #iterator()} or {@link #iterator(Comparator)}.
    * This method is only useful if multiple iterators with a non-null {@link Comparator}
-   * are requires as it avoids sorting the array multiple times.
+   * are required as it avoids sorting the array multiple times. Elements are first sorted
+   * by {@code bytesRefComparator} then by {@code tieComparator}.
    */
-  public Supplier<Iterator> iteratorProvider(final Comparator<BytesRef> comp) {
+  public Supplier<Iterator> iteratorProvider(Comparator<BytesRef> bytesRefComparator, IntBinaryOperator tieComparator) {
     final int size = size();
-    final int[] indices = comp == null ? null : sort(comp);
+    final int[] indices = bytesRefComparator == null ? null : sort(bytesRefComparator, tieComparator);
 
     return () -> new Iterator() {
       final BytesRefBuilder spare = new BytesRefBuilder();
@@ -207,14 +215,14 @@ public final class BytesRefArray implements SortableBytesRefArray {
       public BytesRef next() {
         ++pos;
         if (pos < size) {
-          setBytesRef(spare, result, currentIndex());
+          setBytesRef(spare, result, ord());
           return result;
         }
         return null;
       }
 
       @Override
-      public int currentIndex() {
+      public int ord() {
         return indices == null ? pos : indices[pos];
       }
     };
@@ -225,9 +233,9 @@ public final class BytesRefArray implements SortableBytesRefArray {
    */
   public interface Iterator extends BytesRefIterator {
     /**
-     * Returns the index of the element that was returned by the latest {@link #next()}. Do not call
-     * this method if {@link #next()} is not called yet or the last call returned a null value.
+     * Returns the ordinal position of the element that was returned in the latest call of {@link #next()}.
+     * Do not call this method if {@link #next()} is not called yet or the last call returned a null value.
      */
-    int currentIndex();
+    int ord();
   }
 }

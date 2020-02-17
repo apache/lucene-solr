@@ -45,7 +45,7 @@ final class FreqProxTermsWriter extends TermsHash {
       Collections.sort(deleteTerms);
       FrozenBufferedUpdates.TermDocsIterator iterator = new FrozenBufferedUpdates.TermDocsIterator(fields, true);
       for(Term deleteTerm : deleteTerms) {
-        DocIdSetIterator postings = iterator.nextTerm(deleteTerm.field(), deleteTerm.bytes());
+        DocIdSetIterator postings = iterator.nextTerm(deleteTerm.field(), deleteTerm.bytes(), false);
         if (postings != null ) {
           int delDocLimit = segDeletes.get(deleteTerm);
           assert delDocLimit < PostingsEnum.NO_MORE_DOCS;

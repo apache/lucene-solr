@@ -469,7 +469,6 @@ final class FrozenBufferedUpdates {
                                             Map<String, FieldUpdatesBuffer> updates,
                                             long delGen,
                                             boolean segmentPrivateDeletes) throws IOException {
-
     // TODO: we can process the updates per DV field, from last to first so that
     // if multiple terms affect same document for the same field, we add an update
     // only once (that of the last term). To do that, we can keep a bitset which
@@ -479,7 +478,6 @@ final class FrozenBufferedUpdates {
     // the update.
     // We can also use that bitset as 'liveDocs' to pass to TermEnum.docs(), so
     // that these documents aren't even returned.
-
     long updateCount = 0;
 
     // We first write all our updates private, and only in the end publish to the ReadersAndUpdates */
@@ -493,7 +491,6 @@ final class FrozenBufferedUpdates {
       FieldUpdatesBuffer.BufferedUpdate bufferedUpdate;
       final boolean sortedTerms = value.isSortedTerms();
       TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, sortedTerms);
-      DocIdSetIterator docIdSetIterator = null;
       while ((bufferedUpdate = iterator.next()) != null) {
         // TODO: we traverse the terms in update order (not term order) so that we
         // apply the updates in the correct order, i.e. if two terms update the
@@ -505,7 +502,7 @@ final class FrozenBufferedUpdates {
         // which will get same docIDUpto, yet will still need to respect the order
         // those updates arrived.
         // TODO: we could at least *collate* by field?
-        docIdSetIterator = termDocsIterator.nextTerm(bufferedUpdate.termField, bufferedUpdate.termValue, docIdSetIterator);
+        final DocIdSetIterator docIdSetIterator = termDocsIterator.nextTerm(bufferedUpdate.termField, bufferedUpdate.termValue, sortedTerms);
         if (docIdSetIterator != null) {
           final int limit;
           if (delGen == segState.delGen) {
@@ -548,15 +545,10 @@ final class FrozenBufferedUpdates {
             docIdConsumer = doc -> update.add(doc, binaryValue);
           }
           final Bits acceptDocs = segState.rld.getLiveDocs();
-          int doc = docIdSetIterator.docID();
-          if (doc == -1) {
-            doc = docIdSetIterator.nextDoc();
-          } else {
-            assert sortedTerms;
-          }
           if (segState.rld.sortMap != null && segmentPrivateDeletes) {
             // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
-            for (; doc != DocIdSetIterator.NO_MORE_DOCS; doc = docIdSetIterator.nextDoc()) {
+            int doc;
+            while ((doc = docIdSetIterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
               if (acceptDocs == null || acceptDocs.get(doc)) {
                 // The limit is in the pre-sorted doc space:
                 if (segState.rld.sortMap.newToOld(doc) < limit) {
@@ -566,7 +558,8 @@ final class FrozenBufferedUpdates {
               }
             }
           } else {
-            for (; doc != DocIdSetIterator.NO_MORE_DOCS; doc = docIdSetIterator.nextDoc()) {
+            int doc;
+            while ((doc = docIdSetIterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
               if (doc >= limit) {
                 break; // no more docs that can be updated for this term
               }
@@ -698,7 +691,7 @@ final class FrozenBufferedUpdates {
       BytesRef delTerm;
       TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, true);
       while ((delTerm = iter.next()) != null) {
-        final DocIdSetIterator iterator = termDocsIterator.nextTerm(iter.field(), delTerm);
+        final DocIdSetIterator iterator = termDocsIterator.nextTerm(iter.field(), delTerm, false);
         if (iterator != null) {
           int docID;
           while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -780,6 +773,7 @@ final class FrozenBufferedUpdates {
     private PostingsEnum postingsEnum;
     private final boolean sortedTerms;
     private BytesRef readerTerm;
+    private boolean currentTermVisited; // did we visit the current term?
     private BytesRef lastTerm; // only set with asserts
 
     @FunctionalInterface
@@ -800,7 +794,7 @@ final class FrozenBufferedUpdates {
       this.provider = provider;
     }
 
-    private boolean setField(String field) throws IOException {
+    private void setField(String field) throws IOException {
       if (this.field == null || this.field.equals(field) == false) {
         this.field = field;
 
@@ -814,24 +808,18 @@ final class FrozenBufferedUpdates {
         } else {
           termsEnum = null;
         }
-        return true;
+        currentTermVisited = false;
       }
-      return false;
     }
 
     /**
-     * Returns a {@link DocIdSetIterator} of the given field and term if exists.
+     * Returns a {@link DocIdSetIterator} for the given field and term if exists. If the parameter
+     * {@code skipIfTermVisited} is true, then this method will return null if the given and field
+     * was visited already. This optimization is currently used in
+     * {@link #applyDocValuesUpdates(BufferedUpdatesStream.SegmentState, Map, long, boolean)}
      */
-    DocIdSetIterator nextTerm(String field, BytesRef term) throws IOException {
-      return nextTerm(field, term, null);
-    }
-
-    /**
-     * Used only by {@link #applyDocValuesUpdates(BufferedUpdatesStream.SegmentState, Map, long, boolean)}
-     * to skip documents that were applied in the previous runs with the same field and term.
-     */
-    private DocIdSetIterator nextTerm(String field, BytesRef term, DocIdSetIterator currentIterator) throws IOException {
-      final boolean fieldChanged = setField(field);
+    DocIdSetIterator nextTerm(String field, BytesRef term, boolean skipIfTermVisited) throws IOException {
+      setField(field);
       if (termsEnum != null) {
         if (sortedTerms) {
           assert assertSorted(term);
@@ -842,8 +830,8 @@ final class FrozenBufferedUpdates {
           if (cmp < 0) {
             return null; // requested term does not exist in this segment
           } else if (cmp == 0) {
-            if (fieldChanged == false && currentIterator != null) {
-              return currentIterator; // return the current iterator so we can skip already applied documents
+            if (currentTermVisited && skipIfTermVisited) {
+              return null;
             }
             return getDocs();
           } else {
@@ -852,6 +840,7 @@ final class FrozenBufferedUpdates {
               case FOUND:
                 return getDocs();
               case NOT_FOUND:
+                currentTermVisited = false;
                 readerTerm = termsEnum.term();
                 return null;
               case END:
@@ -878,6 +867,7 @@ final class FrozenBufferedUpdates {
 
     private DocIdSetIterator getDocs() throws IOException {
       assert termsEnum != null;
+      currentTermVisited = true;
       return postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
     }
   }

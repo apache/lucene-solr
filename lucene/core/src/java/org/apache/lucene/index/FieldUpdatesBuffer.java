@@ -200,10 +200,14 @@ final class FieldUpdatesBuffer {
   void finish() {
     assert termsIteratorProvider == null;
     if (isSortedTerms()) {
-      termsIteratorProvider = termValues.iteratorProvider(BytesRef::compareTo);
+      // sort by ascending by term, then sort descending by docsUpTo
+      termsIteratorProvider = termValues.iteratorProvider(BytesRef::compareTo,
+          (i1, i2) -> Integer.compare(
+              docsUpTo[getArrayIndex(docsUpTo.length, i2)],
+              docsUpTo[getArrayIndex(docsUpTo.length, i1)]));
       bytesUsed.addAndGet(termValues.size() * Integer.BYTES); // sorted indices of the iterators
     } else {
-      termsIteratorProvider = termValues.iteratorProvider(null);
+      termsIteratorProvider = termValues.iteratorProvider(null, null);
     }
   }
 
@@ -304,7 +308,7 @@ final class FieldUpdatesBuffer {
     BufferedUpdate next() throws IOException {
       BytesRef next = termValuesIterator.next();
       if (next != null) {
-        final int idx = termValuesIterator.currentIndex();
+        final int idx = termValuesIterator.ord();
         bufferedUpdate.termValue = next;
         bufferedUpdate.hasValue = updatesWithValue.get(idx);
         bufferedUpdate.termField = fields[getArrayIndex(fields.length, idx)];
