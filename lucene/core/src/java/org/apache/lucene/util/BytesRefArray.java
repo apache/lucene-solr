@@ -220,6 +220,9 @@ public final class BytesRefArray implements SortableBytesRefArray {
     };
   }
 
+  /**
+   * An extension of {@link BytesRefIterator} that allows retrieving the index of the current element
+   */
   public interface Iterator extends BytesRefIterator {
     /**
      * Returns the index of the element that was returned by the latest {@link #next()}. Do not call
