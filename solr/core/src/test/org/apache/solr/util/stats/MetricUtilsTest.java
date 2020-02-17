@@ -84,6 +84,11 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     am.set("foo", 10);
     am.set("bar", 1);
     am.set("bar", 2);
+    am.set("baz", false);
+    am.set("neg", -10);
+    am.set("neg", -20);
+    am.set("neg", -15);
+    am.set("neg", -10);
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
     Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
@@ -103,16 +108,29 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
       } else if (k.startsWith("histogram")) {
         assertEquals(1L, v.get("count"));
       } else if (k.startsWith("aggregate")) {
-        assertEquals(2, v.get("count"));
+        assertEquals(4, v.get("count"));
         Map<String, Object> values = (Map<String, Object>)v.get("values");
         assertNotNull(values);
-        assertEquals(2, values.size());
+        assertEquals(4, values.size());
         Map<String, Object> update = (Map<String, Object>)values.get("foo");
         assertEquals(10, update.get("value"));
         assertEquals(1, update.get("updateCount"));
         update = (Map<String, Object>)values.get("bar");
         assertEquals(2, update.get("value"));
+        // assertEquals(1.5, update.get("mean"));
         assertEquals(2, update.get("updateCount"));
+        update = (Map<String, Object>)values.get("baz");
+        assertEquals(false, update.get("value"));
+        // assertEquals(0, update.get("mean"));
+        // assertEquals(0, update.get("min"));
+        // assertEquals(0, update.get("max"));
+        assertEquals(1, update.get("updateCount"));        
+        update = (Map<String, Object>)values.get("neg");
+        assertEquals(-10, update.get("value"));
+        // assertEquals(-10, update.get("max"));
+        // assertEquals(-20, update.get("min"));
+        // assertEquals(-15, update.get("mean"));
+        assertEquals(4, update.get("updateCount"));
       } else if (k.startsWith("memory.expected.error")) {
         assertNull(v);
       }
@@ -142,16 +160,17 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
           } else if (k.startsWith("aggregate")) {
             assertTrue(o instanceof Map);
             Map v = (Map)o;
-            assertEquals(2, v.get("count"));
+            assertEquals(4, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
             assertNotNull(values);
-            assertEquals(2, values.size());
+            assertEquals(4, values.size());
             Map<String, Object> update = (Map<String, Object>)values.get("foo");
             assertEquals(10, update.get("value"));
             assertEquals(1, update.get("updateCount"));
             update = (Map<String, Object>)values.get("bar");
             assertEquals(2, update.get("value"));
             assertEquals(2, update.get("updateCount"));
+            // assertEquals(1.5, update.get("mean"));
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
