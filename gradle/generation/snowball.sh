@@ -83,7 +83,7 @@ for file in ${TESTSRCDIR}/*; do
     # TODO: for now don't deal with any special licenses
     if [ ! -f "${file}/COPYING" ]; then
       tmpdir=$(mktemp -d)
-      myrandom="openssl enc -aes-256-ctr -pass pass:${arbitrary_timestamp} -nosalt"
+      myrandom="openssl enc -aes-256-ctr -k ${arbitrary_timestamp} -nosalt -iv 0 -md md5"
       for data in "voc.txt" "output.txt"; do
         shuf -n ${row_limit} --random-source=<(${myrandom} < /dev/zero 2>/dev/null) ${file}/${data} > ${tmpdir}/${data} \
           && touch -t ${arbitrary_timestamp} ${tmpdir}/${data}
