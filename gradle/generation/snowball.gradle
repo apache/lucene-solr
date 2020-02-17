@@ -28,42 +28,49 @@ configure(rootProject) {
 
 configure(project(":lucene:analysis:common")) {
   ext {
+    // git commit hash of source code https://github.com/snowballstem/snowball/
+    snowballStemmerCommit = "53739a805cfa6c77ff8496dc711dc1c106d987c1"
+    // git commit hash of stopwords https://github.com/snowballstem/snowball-website
+    snowballWebsiteCommit = "ff891e74f08e7315523ee3c0cad55bb1b7831b9d"
+    // git commit hash of test data https://github.com/snowballstem/snowball-data
+    snowballDataCommit    = "9145f8732ec952c8a3d1066be251da198a8bc792"
+
     snowballWorkDir    = file("${buildDir}/snowball")
-    snowballStemmerDir = file("${snowballWorkDir}/stemmers")
-    snowballPatchedDir = file("${snowballWorkDir}/patched")
-    snowballWebsiteDir = file("${snowballWorkDir}/website")
-    snowballDataDir    = file("${snowballWorkDir}/data")
+
+    snowballStemmerDir = file("${snowballWorkDir}/stemmers-${snowballStemmerCommit}")
+    snowballStemmerZip = file("${snowballStemmerDir}.zip")
+    snowballWebsiteDir = file("${snowballWorkDir}/website-${snowballWebsiteCommit}")
+    snowballWebsiteZip = file("${snowballWebsiteDir}.zip")
+    snowballDataDir    = file("${snowballWorkDir}/data-${snowballDataCommit}")
+    snowballDataZip    = file("${snowballDataDir}.zip")
+
+    snowballPatchFile  = rootProject.file("gradle/generation/snowball.patch")
+    snowballScript     = rootProject.file("gradle/generation/snowball.sh")
   }
 
   // downloads snowball stemmers (or use cached copy)
   task downloadSnowballStemmers(type: Download) {
-    def stemmerZip = file("${snowballWorkDir}/stemmers.zip")
-
-    src "https://github.com/snowballstem/snowball/archive/53739a805cfa6c77ff8496dc711dc1c106d987c1.zip"
-    dest stemmerZip
-    onlyIfModified true
-    useETag "all"
-    cachedETagsFile file("${snowballWorkDir}/stemmers.json")
+    inputs.file(snowballPatchFile)
+    src "https://github.com/snowballstem/snowball/archive/${snowballStemmerCommit}.zip"
+    dest snowballStemmerZip
+    overwrite false
 
     doLast {
-      ant.unzip(src: stemmerZip, dest: snowballStemmerDir, overwrite: "true") {
+      ant.unzip(src: snowballStemmerZip, dest: snowballStemmerDir, overwrite: "true") {
         ant.cutdirsmapper(dirs: "1")
       }
+      ant.patch(patchfile: snowballPatchFile, dir: snowballStemmerDir, strip: "1")
     }
   }
 
   // downloads snowball website (or use cached copy)
   task downloadSnowballWebsite(type: Download) {
-    def websiteZip = file("${snowballWorkDir}/website.zip")
-
-    src "https://github.com/snowballstem/snowball-website/archive/ff891e74f08e7315523ee3c0cad55bb1b7831b9d.zip"
-    dest websiteZip
-    onlyIfModified true
-    useETag "all"
-    cachedETagsFile file("${snowballWorkDir}/website.json")
+    src "https://github.com/snowballstem/snowball-website/archive/${snowballWebsiteCommit}.zip"
+    dest snowballWebsiteZip
+    overwrite false
 
     doLast {
-      ant.unzip(src: websiteZip, dest: snowballWebsiteDir, overwrite: "true") {
+      ant.unzip(src: snowballWebsiteZip, dest: snowballWebsiteDir, overwrite: "true") {
         ant.cutdirsmapper(dirs: "1")
       }
     }
@@ -71,49 +78,27 @@ configure(project(":lucene:analysis:common")) {
 
   // downloads snowball test data (or use cached copy)
   task downloadSnowballData(type: Download) {
-    def dataZip = file("${snowballWorkDir}/data.zip")
-
-    src "https://github.com/snowballstem/snowball-data/archive/9145f8732ec952c8a3d1066be251da198a8bc792.zip"
-    dest dataZip
-    onlyIfModified true
-    useETag "all"
-    cachedETagsFile file("${snowballWorkDir}/data.json")
+    src "https://github.com/snowballstem/snowball-data/archive/${snowballDataCommit}.zip"
+    dest snowballDataZip
+    overwrite false
 
     doLast {
-      ant.unzip(src: dataZip, dest: snowballDataDir, overwrite: "true") {
+      ant.unzip(src: snowballDataZip, dest: snowballDataDir, overwrite: "true") {
         ant.cutdirsmapper(dirs: "1")
       }
     }
   }
 
-  // makes a clean copy of snowball stemmers source and applies lucene patch to it.
-  task patchSnowball(type: Copy) {
-    dependsOn downloadSnowballStemmers
-
-    from fileTree(snowballStemmerDir) {
-      include '**/*'
-    }
-    into snowballPatchedDir
-
-    doFirst {
-      delete snowballPatchedDir
-    }
-
-    doLast {
-      ant.patch(patchfile: rootProject.file("gradle/generation/snowball.patch"), dir: snowballPatchedDir, strip: "1")
-    }
-  }
-
   // runs shell script to regenerate stemmers, base stemming subclasses, test data, and stopwords.
   task snowballGen() {
-    dependsOn patchSnowball
+    dependsOn downloadSnowballStemmers
     dependsOn downloadSnowballWebsite
     dependsOn downloadSnowballData
 
     doLast {
       project.exec {
         executable "bash"
-        args = [rootProject.file("gradle/generation/snowball.sh"), snowballPatchedDir, snowballWebsiteDir, snowballDataDir, projectDir]
+        args = [snowballScript, snowballStemmerDir, snowballWebsiteDir, snowballDataDir, projectDir]
       }
     }
   }
