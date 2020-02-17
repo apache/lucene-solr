@@ -1,7 +1,7 @@
- | From svn.tartarus.org/snowball/trunk/website/algorithms/french/stop.txt
+ | From https://snowballstem.org/algorithms/french/stop.txt
  | This file is distributed under the BSD License.
- | See http://snowball.tartarus.org/license.php
- | Also see http://www.opensource.org/licenses/bsd-license.html
+ | See https://snowballstem.org/license.html
+ | Also see https://opensource.org/licenses/bsd-license.html
  |  - Encoding was converted to UTF-8.
  |  - This notice was added.
  |
@@ -169,8 +169,8 @@ eussent
 
                | Later additions (from Jean-Christophe Deschamps)
 ceci           |  this
-cela           |  that
-celà           |  that
+cela           |  that (added 11 Apr 2012. Omission reported by Adrien Grand)
+celà           |  that (incorrect, though common)
 cet            |  this
 cette          |  this
 ici            |  here
