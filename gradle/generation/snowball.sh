@@ -34,7 +34,10 @@ set -eEuo pipefail
 # prevents early blindness !
 function reformat_java() {
   # convert tabs to 8 spaces, then reduce indent from 4 space to 2 space
-  sed --in-place -e 's/\t/        /g' -e 's/    /  /g' $1
+  target=$1
+  tmpfile=$(mktemp)
+  cat ${target} | perl -p -e 's/\t/        /g' | perl -p -e 's/    /  /g' > ${tmpfile}
+  mv ${tmpfile} ${target}
 }
 
 # generate stuff with existing makefile, just 'make' will try to do crazy stuff with e.g. python
