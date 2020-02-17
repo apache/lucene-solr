@@ -62,7 +62,7 @@ public class AggregateMetric implements Metric {
           '}';
     }
 
-    public double toDouble() {
+    private double toDouble() {
       if (value instanceof Boolean) {
         return 0;
       } 
@@ -71,7 +71,11 @@ public class AggregateMetric implements Metric {
         return 0;
       }
       Number n = (Number)value;
-      return n.doubleValue();
+      double d = n.doubleValue();
+      if (d<0) {
+        log.warn("negative metric value: " + d);
+      }
+      return d;
     }
   }
 
