@@ -35,6 +35,7 @@ configure(project(":lucene:analysis:common")) {
     snowballDataDir    = file("${snowballWorkDir}/data")
   }
 
+  // downloads snowball stemmers (or use cached copy)
   task downloadSnowballStemmers(type: Download) {
     def stemmerZip = file("${snowballWorkDir}/stemmers.zip")
 
@@ -51,6 +52,7 @@ configure(project(":lucene:analysis:common")) {
     }
   }
 
+  // downloads snowball website (or use cached copy)
   task downloadSnowballWebsite(type: Download) {
     def websiteZip = file("${snowballWorkDir}/website.zip")
 
@@ -67,6 +69,7 @@ configure(project(":lucene:analysis:common")) {
     }
   }
 
+  // downloads snowball test data (or use cached copy)
   task downloadSnowballData(type: Download) {
     def dataZip = file("${snowballWorkDir}/data.zip")
 
@@ -83,24 +86,25 @@ configure(project(":lucene:analysis:common")) {
     }
   }
 
-  task cleanSnowballCheckout(type: Delete) {
-    dependsOn downloadSnowballStemmers
-    delete snowballPatchedDir
-  }
-
+  // makes a clean copy of snowball stemmers source and applies lucene patch to it.
   task patchSnowball(type: Copy) {
-    dependsOn cleanSnowballCheckout
+    dependsOn downloadSnowballStemmers
 
     from fileTree(snowballStemmerDir) {
       include '**/*'
     }
     into snowballPatchedDir
 
+    doFirst {
+      delete snowballPatchedDir
+    }
+
     doLast {
       ant.patch(patchfile: rootProject.file("gradle/generation/snowball.patch"), dir: snowballPatchedDir, strip: "1")
     }
   }
 
+  // runs shell script to regenerate stemmers, base stemming subclasses, test data, and stopwords.
   task snowballGen() {
     dependsOn patchSnowball
     dependsOn downloadSnowballWebsite
