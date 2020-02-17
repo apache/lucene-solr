@@ -38,11 +38,8 @@ configure(project(":lucene:analysis:common")) {
     snowballWorkDir    = file("${buildDir}/snowball")
 
     snowballStemmerDir = file("${snowballWorkDir}/stemmers-${snowballStemmerCommit}")
-    snowballStemmerZip = file("${snowballStemmerDir}.zip")
     snowballWebsiteDir = file("${snowballWorkDir}/website-${snowballWebsiteCommit}")
-    snowballWebsiteZip = file("${snowballWebsiteDir}.zip")
     snowballDataDir    = file("${snowballWorkDir}/data-${snowballDataCommit}")
-    snowballDataZip    = file("${snowballDataDir}.zip")
 
     snowballPatchFile  = rootProject.file("gradle/generation/snowball.patch")
     snowballScript     = rootProject.file("gradle/generation/snowball.sh")
@@ -52,8 +49,10 @@ configure(project(":lucene:analysis:common")) {
   task downloadSnowballStemmers(type: Download) {
     inputs.file(snowballPatchFile)
     src "https://github.com/snowballstem/snowball/archive/${snowballStemmerCommit}.zip"
+    def snowballStemmerZip = file("${snowballStemmerDir}.zip")
     dest snowballStemmerZip
     overwrite false
+    tempAndMove true
 
     doLast {
       ant.unzip(src: snowballStemmerZip, dest: snowballStemmerDir, overwrite: "true") {
@@ -66,8 +65,10 @@ configure(project(":lucene:analysis:common")) {
   // downloads snowball website (or use cached copy)
   task downloadSnowballWebsite(type: Download) {
     src "https://github.com/snowballstem/snowball-website/archive/${snowballWebsiteCommit}.zip"
+    def snowballWebsiteZip = file("${snowballWebsiteDir}.zip")
     dest snowballWebsiteZip
     overwrite false
+    tempAndMove true
 
     doLast {
       ant.unzip(src: snowballWebsiteZip, dest: snowballWebsiteDir, overwrite: "true") {
@@ -79,8 +80,10 @@ configure(project(":lucene:analysis:common")) {
   // downloads snowball test data (or use cached copy)
   task downloadSnowballData(type: Download) {
     src "https://github.com/snowballstem/snowball-data/archive/${snowballDataCommit}.zip"
+    def snowballDataZip = file("${snowballDataDir}.zip")
     dest snowballDataZip
     overwrite false
+    tempAndMove true
 
     doLast {
       ant.unzip(src: snowballDataZip, dest: snowballDataDir, overwrite: "true") {
