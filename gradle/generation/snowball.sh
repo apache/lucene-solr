@@ -90,6 +90,8 @@ for file in ${TESTSRCDIR}/*; do
       shuf -n ${row_limit} --random-source=<(${myrandom} < /dev/zero 2>/dev/null) ${file}/${data} > ${tmpdir}/${data} \
         && touch -t ${arbitrary_timestamp} ${tmpdir}/${data}
     done
+    # explicitly set permissions in case someone has a crazy umask (otherwise zip will differ)
+    chmod 644 ${tmpdir}/voc.txt ${tmpdir}/output.txt
     zip --quiet --junk-paths -X -9 ${TESTDSTDIR}/${language}.zip ${tmpdir}/voc.txt ${tmpdir}/output.txt
     echo "${language}" >> ${TESTDSTDIR}/test_languages.txt
     rm -r ${tmpdir}
