@@ -18,19 +18,21 @@
 apply plugin: "de.undercouch.download"
 
 configure(rootProject) {
-  ext {
-    snowballWorkDir    = file("${buildDir}/snowball")
-    snowballStemmerDir = file("${buildDir}/snowball/stemmers")
-    snowballPatchedDir = file("${buildDir}/snowball/patched")
-    snowballWebsiteDir = file("${buildDir}/snowball/website")
-    snowballDataDir    = file("${buildDir}/snowball/data")
-  }
-
   task snowball()  {
     description "Regenerate snowball-based sources, stopwords, and tests for ...lucene/analysis."
     group "generation"
 
     dependsOn ":lucene:analysis:common:snowballGen"
+  }
+}
+
+configure(project(":lucene:analysis:common")) {
+  ext {
+    snowballWorkDir    = file("${buildDir}/snowball")
+    snowballStemmerDir = file("${snowballWorkDir}/stemmers")
+    snowballPatchedDir = file("${snowballWorkDir}/patched")
+    snowballWebsiteDir = file("${snowballWorkDir}/website")
+    snowballDataDir    = file("${snowballWorkDir}/data")
   }
 
   task downloadSnowballStemmers(type: Download) {
@@ -98,15 +100,11 @@ configure(rootProject) {
       ant.patch(patchfile: rootProject.file("gradle/generation/snowball.patch"), dir: snowballPatchedDir, strip: "1")
     }
   }
-}
 
-configure(project(":lucene:analysis:common")) {
   task snowballGen() {
-    description "Patch and Regenerate snowball sources, stopwords, and tests"
-    group "generation"
-    dependsOn rootProject.patchSnowball
-    dependsOn rootProject.downloadSnowballWebsite
-    dependsOn rootProject.downloadSnowballData
+    dependsOn patchSnowball
+    dependsOn downloadSnowballWebsite
+    dependsOn downloadSnowballData
 
     doLast {
       project.exec {
