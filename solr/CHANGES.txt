@@ -135,6 +135,9 @@ Bug Fixes
 * SOLR-14058: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
   under certain circumstances. (yonik)
 
+* SOLR-13041: Add hashCode for autoscaling.Condition to accompany the already present equals.
+  (Zsolt Gyulavari via Christine Poerschke)
+
 Other Changes
 ---------------------
 
