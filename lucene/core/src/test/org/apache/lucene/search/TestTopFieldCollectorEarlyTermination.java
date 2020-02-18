@@ -173,11 +173,11 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     
     assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(SortField.FIELD_DOC),
-        null));
+        (Sort) null));
 
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
-        null));
+        (Sort) null));
 
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
@@ -215,7 +215,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
 
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG, true)),
-        null));
+        (Sort) null));
     
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG, true)),
