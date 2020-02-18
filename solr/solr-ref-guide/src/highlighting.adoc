@@ -173,6 +173,7 @@ The Original Highlighter, sometimes called the "Standard Highlighter" or "Defaul
 Its query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
 +
 The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available.
+If the text isn't "stored" but is in doc values (`docValues="true"`), this highlighter can work with it.
 +
 Where this highlighter falls short is performance; it's often twice as slow as the Unified Highlighter. And despite being the most customizable, it doesn't have a BreakIterator based fragmenter (all the others do), which could pose a challenge for some languages.
 

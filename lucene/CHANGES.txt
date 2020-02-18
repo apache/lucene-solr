@@ -72,6 +72,10 @@ Improvements
   This tool no longer forceMerge(1)s to a single segment by default. If you
   rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
 
+* LUCENE-9220: Upgrade snowball to 2.0. New snowball stemmers: Hindi, Indonesian,
+  Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
+  task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -107,6 +111,8 @@ API Changes
 * LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
 
 * LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
+
+* LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
 
 New Features
 ---------------------

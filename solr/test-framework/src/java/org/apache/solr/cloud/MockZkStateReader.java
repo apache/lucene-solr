@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.ZkStateReader;
 
 // does not yet mock zkclient at all
@@ -36,4 +37,10 @@ public class MockZkStateReader extends ZkStateReader {
     return collections;
   }
 
+  @Override
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
+    // the doc collection will never be changed by this mock
+    // so we just call onStateChanged once with the existing DocCollection object an return
+    stateWatcher.onStateChanged(clusterState.getCollectionOrNull(collection));
+  }
 }

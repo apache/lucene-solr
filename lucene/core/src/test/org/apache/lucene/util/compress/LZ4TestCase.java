@@ -30,6 +30,37 @@ public abstract class LZ4TestCase extends LuceneTestCase {
 
   protected abstract LZ4.HashTable newHashTable();
 
+  protected static class AssertingHashTable extends LZ4.HashTable {
+
+    private final LZ4.HashTable in;
+
+    AssertingHashTable(LZ4.HashTable in) {
+      this.in = in;
+    }
+
+    @Override
+    void reset(byte[] b, int off, int len) {
+      in.reset(b, off, len);
+      assertTrue(in.assertReset());
+    }
+
+    @Override
+    int get(int off) {
+      return in.get(off);
+    }
+
+    @Override
+    int previous(int off) {
+      return in.previous(off);
+    }
+
+    @Override
+    boolean assertReset() {
+      throw new UnsupportedOperationException();
+    }
+
+  }
+
   private void doTest(byte[] data, LZ4.HashTable hashTable) throws IOException {
     int offset = random().nextBoolean()
         ? random().nextInt(10)

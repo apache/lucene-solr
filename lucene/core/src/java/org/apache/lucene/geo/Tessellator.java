@@ -122,9 +122,9 @@ final public class Tessellator {
 
   public static final List<Triangle> tessellate(final XYPolygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
-    // then filter instances of intersections.
-    Node outerNode = createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
-        0, WindingOrder.CW);
+    // then filter instances of intersections.0
+    Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
+        polygon.getWindingOrder(), false, 0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
       throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
@@ -193,7 +193,8 @@ final public class Tessellator {
     int nodeIndex = polygon.numPoints() ;
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
-      Node list = createDoublyLinkedList(holes[i].getPolyX(), holes[i].getPolyY(), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
+      Node list = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyX()),
+          XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyY()), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
@@ -1059,8 +1060,9 @@ final public class Tessellator {
       this.vrtxIdx = vertexIndex;
       this.polyX = x;
       this.polyY = y;
-      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : XYEncodingUtils.encode(polyY[vrtxIdx]);
-      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : XYEncodingUtils.encode(polyX[vrtxIdx]);
+      // casting to float is safe as original values for non-geo are represented as floats
+      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : XYEncodingUtils.encode((float) polyY[vrtxIdx]);
+      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : XYEncodingUtils.encode((float) polyX[vrtxIdx]);
       this.morton = BitUtil.interleave(this.x ^ 0x80000000, this.y ^ 0x80000000);
       this.previous = null;
       this.next = null;
