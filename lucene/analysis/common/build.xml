@@ -45,7 +45,7 @@
   <target name="generate-jflex-html-char-entities">
     <exec dir="src/java/org/apache/lucene/analysis/charfilter"
           output="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex"
-          executable="${python.exe}" failonerror="true" logerror="true">
+          executable="${python2.exe}" failonerror="true" logerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="htmlentity.py"/>

@@ -57,7 +57,7 @@ configure(project(":lucene:core")) {
         logger.lifecycle("Executing: ${prog} in ${targetDir}")
         project.exec {
           workingDir targetDir
-          executable "python"
+          executable "python2.7"
           args = ['-B', "${prog}"]
         }
       }
@@ -82,7 +82,7 @@ configure(project(":lucene:core")) {
         ['True', 'False'].each { transpose ->
           project.exec {
             workingDir targetDir
-            executable "python"
+            executable "python2.7"
             args = ['-B', 'createLevAutomata.py', num, transpose, "${momanDir}/finenight/python"]
           }
         }

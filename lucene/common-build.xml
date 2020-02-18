@@ -247,10 +247,10 @@
 
   <property name="git.exe" value="git" />
   <property name="perl.exe" value="perl" />
-  
-  <property name="python.exe" value="python" />
-  <!-- todo: rename this variable -->
-  <property name="python32.exe" value="python3" />
+
+  <!-- we default to python2.7 because not all OSs (e.g. mac) have a python2 link -->
+  <property name="python2.exe" value="python2.7" />
+  <property name="python3.exe" value="python3" />
 
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />
@@ -2440,7 +2440,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="check-broken-links">
        <attribute name="dir"/>
      <sequential>
-       <exec dir="." executable="${python32.exe}" failonerror="true">
+       <exec dir="." executable="${python3.exe}" failonerror="true">
          <!-- Tell Python not to write any bytecode cache into the filesystem: -->
          <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
@@ -2453,7 +2453,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
        <attribute name="dir"/>
        <attribute name="level" default="class"/>
      <sequential>
-       <exec dir="." executable="${python32.exe}" failonerror="true">
+       <exec dir="." executable="${python3.exe}" failonerror="true">
          <!-- Tell Python not to write any bytecode cache into the filesystem: -->
          <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
