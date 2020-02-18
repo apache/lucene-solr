@@ -186,6 +186,8 @@ Other Changes
 * SOLR-13794: Replace redundent test only copy of '_default' configset with SolrTestCase logic to correctly
   set 'solr.default.confdir' system property (hossman)
 
+* SOLR-14263: Update jvm-settings.adoc (Erick Erickson)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
