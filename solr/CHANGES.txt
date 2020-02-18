@@ -53,6 +53,8 @@ Bug fixes
 * SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
   templates and rendering templates from request parameters has been removed.
 
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
 
 ==================  7.7.2 ==================
 
