@@ -82,9 +82,8 @@ public class TestFrozenBufferedUpdates extends LuceneTestCase {
           FixedBitSet bitSet = new FixedBitSet(reader.maxDoc());
           BytesRef ref;
           while ((ref = values.next()) != null) {
-            final boolean skipIfTermVisited = random().nextBoolean();
-            DocIdSetIterator docIdSetIterator = iterator.nextTerm("field", ref, skipIfTermVisited);
-            if (nonMatches == false && skipIfTermVisited == false) {
+            DocIdSetIterator docIdSetIterator = iterator.nextTerm("field", ref);
+            if (nonMatches == false) {
               assertNotNull(docIdSetIterator);
             }
             if (docIdSetIterator != null) {

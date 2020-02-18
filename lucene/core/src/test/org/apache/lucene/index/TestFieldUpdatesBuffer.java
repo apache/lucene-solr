@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.util.BytesRef;
@@ -234,11 +236,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     boolean termsSorted = lastUpdate.hasValue && updates.stream()
         .allMatch(update -> update.field.equals(lastUpdate.field) &&
             update.hasValue && update.getValue() == lastUpdate.getValue());
-    if (termsSorted) {
-      updates.sort(Comparator.<DocValuesUpdate.NumericDocValuesUpdate, BytesRef>comparing(update -> update.term.bytes)
-          .thenComparing(Comparator.<DocValuesUpdate.NumericDocValuesUpdate>comparingInt(update -> update.docIDUpto).reversed()));
-    }
-    assertBufferUpdates(buffer, updates);
+    assertBufferUpdates(buffer, updates, termsSorted);
   }
 
   public void testNoNumericValue() {
@@ -249,7 +247,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     assertEquals(0, buffer.getMaxNumeric());
   }
 
-  public void testSortNumericUpdatesByTerms() throws IOException {
+  public void testSortAndDedupNumericUpdatesByTerms() throws IOException {
     List<DocValuesUpdate.NumericDocValuesUpdate> updates = new ArrayList<>();
     int numUpdates = 1 + random().nextInt(1000);
     Counter counter = Counter.newCounter();
@@ -268,13 +266,20 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
     }
     buffer.finish();
-    updates.sort(Comparator.<DocValuesUpdate.NumericDocValuesUpdate, BytesRef>comparing(update -> update.term.bytes)
-        .thenComparing(Comparator.<DocValuesUpdate.NumericDocValuesUpdate>comparingInt(update -> update.docIDUpto).reversed()));
-    assertBufferUpdates(buffer, updates);
+    assertBufferUpdates(buffer, updates, true);
   }
 
   void assertBufferUpdates(FieldUpdatesBuffer buffer,
-                           List<DocValuesUpdate.NumericDocValuesUpdate> updates) throws IOException {
+                           List<DocValuesUpdate.NumericDocValuesUpdate> updates,
+                           boolean termSorted) throws IOException {
+    if (termSorted) {
+      updates.sort(Comparator.comparing(u -> u.term.bytes));
+      SortedMap<BytesRef, DocValuesUpdate.NumericDocValuesUpdate> byTerms = new TreeMap<>();
+      for (DocValuesUpdate.NumericDocValuesUpdate update : updates) {
+        byTerms.compute(update.term.bytes, (k, v) -> v != null && v.docIDUpto >= update.docIDUpto ? v : update);
+      }
+      updates = new ArrayList<>(byTerms.values());
+    }
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value;
 

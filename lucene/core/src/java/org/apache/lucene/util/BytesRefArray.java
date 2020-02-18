@@ -156,7 +156,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
 
       private int compare(int i1, BytesRef b1, int i2, BytesRef b2) {
         int res = comp.compare(b1, b2);
-        return res == 0 ? tieComparator.applyAsInt(i1, i2): res;
+        return res == 0 ? tieComparator.applyAsInt(i1, i2) : res;
       }
 
       private int pivotIndex;

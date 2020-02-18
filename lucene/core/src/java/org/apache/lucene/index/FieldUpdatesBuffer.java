@@ -117,6 +117,7 @@ final class FieldUpdatesBuffer {
   }
 
   void add(String field, int docUpTo, int ord, boolean hasValue) {
+    assert termsIteratorProvider == null : "buffer was finished already";
     if (fields[0].equals(field) == false || fields.length != 1 ) {
       if (fields.length <= ord) {
         String[] array = ArrayUtil.grow(fields, ord+1);
@@ -291,12 +292,16 @@ final class FieldUpdatesBuffer {
    */
   class BufferedUpdateIterator {
     private final BytesRefArray.Iterator termValuesIterator;
+    private final BytesRefArray.Iterator lookAheadTermIterator;
     private final BytesRefIterator byteValuesIterator;
     private final BufferedUpdate bufferedUpdate = new BufferedUpdate();
     private final Bits updatesWithValue;
+    private final boolean sortedTerms;
 
     BufferedUpdateIterator() {
+      this.sortedTerms = isSortedTerms();
       this.termValuesIterator = termsIteratorProvider.get();
+      this.lookAheadTermIterator = sortedTerms ? termsIteratorProvider.get() : null;
       this.byteValuesIterator = isNumeric ? null : byteValues.iterator();
       updatesWithValue = hasValues == null ? new Bits.MatchAllBits(numUpdates) : hasValues;
     }
@@ -306,7 +311,7 @@ final class FieldUpdatesBuffer {
      * The returned instance is a shared instance and must be fully consumed before the next call to this method.
      */
     BufferedUpdate next() throws IOException {
-      BytesRef next = termValuesIterator.next();
+      BytesRef next = nextTerm();
       if (next != null) {
         final int idx = termValuesIterator.ord();
         bufferedUpdate.termValue = next;
@@ -328,6 +333,20 @@ final class FieldUpdatesBuffer {
       } else {
         return null;
       }
+    }
+
+    BytesRef nextTerm() throws IOException {
+      if (sortedTerms) {
+        final BytesRef lastTerm = bufferedUpdate.termValue;
+        BytesRef lookAheadTerm;
+        while ((lookAheadTerm = lookAheadTermIterator.next()) != null && lookAheadTerm.equals(lastTerm)) {
+          BytesRef discardedTerm = termValuesIterator.next(); // discard as the docUpTo of the previous update is higher
+          assert discardedTerm.equals(lookAheadTerm) : "[" + discardedTerm + "] != [" + lookAheadTerm + "]";
+          assert docsUpTo[getArrayIndex(docsUpTo.length, termValuesIterator.ord())] <= bufferedUpdate.docUpTo :
+              docsUpTo[getArrayIndex(docsUpTo.length, termValuesIterator.ord())] + ">" + bufferedUpdate.docUpTo;
+        }
+      }
+      return termValuesIterator.next();
     }
   }
 
