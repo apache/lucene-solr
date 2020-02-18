@@ -78,7 +78,7 @@
       <attribute name="n"/>
       <sequential>
       <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
+            executable="${python2.exe}" failonerror="true">
         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
         <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
@@ -86,7 +86,7 @@
         <arg value="True"/>
       </exec>
       <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
+            executable="${python2.exe}" failonerror="true">
         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
         <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
@@ -99,25 +99,25 @@
 
   <target name="createPackedIntSources">
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python2.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_BulkOperation.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python2.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_Direct.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python2.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_Packed64SingleBlock.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python2.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_PackedThreeBlocks.py"/>
