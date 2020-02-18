@@ -32,6 +32,8 @@ New Features
 Improvements
 ---------------------
 
+* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
+
 * LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
