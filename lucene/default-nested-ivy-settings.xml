@@ -34,7 +34,6 @@
   <resolvers>
     <ibiblio name="sonatype-releases" root="https://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.com" root="https://maven.restlet.talend.com" m2compatible="true" />
-    <ibiblio name="mirrors.cloudera.com" root="https://repository.cloudera.com/artifactory/cloudera-mirror" m2compatible="true" />
 
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
@@ -49,7 +48,6 @@
       <resolver ref="main"/>
       <resolver ref="maven.restlet.com" />
       <resolver ref="sonatype-releases" />
-      <resolver ref="mirrors.cloudera.com"/>
     </chain>
   </resolvers>
 

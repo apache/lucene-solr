@@ -80,11 +80,6 @@
       <name>Public online Restlet repository</name>
       <url>https://maven.restlet.talend.com</url>
     </repository>
-    <repository>
-      <id>mirrors.cloudera.com</id>
-      <name>Cloudera Mirrors</name>
-      <url>https://repository.cloudera.com/artifactory/cloudera-mirror/</url>
-    </repository>
   </repositories>
   <build>
     <pluginManagement>
