@@ -152,7 +152,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
 
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
                                  omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts),
-                                 dimensionalCount, indexDimensionalCount, dimensionalNumBytes, isSoftDeletesField);
+                                 dimensionalCount, indexDimensionalCount, dimensionalNumBytes, 0, isSoftDeletesField);
       }
 
       SimpleTextUtil.checkFooter(input);
