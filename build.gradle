@@ -43,6 +43,7 @@ ext {
       "apache-rat": "0.11",
       "javacc": "5.0",
       "jflex": "1.7.0",
+      "ecj": "3.19.0"
   ]
 }
 
@@ -53,6 +54,10 @@ ext {
 // eagerly).
 
 apply from: file('gradle/generate-defaults.gradle')
+
+// Ant-compatibility layer: apply folder layout early so that
+// evaluation of other scripts doesn't need to be deferred.
+apply from: file('gradle/ant-compat/folder-layout.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
@@ -80,11 +85,13 @@ apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+apply from: file('gradle/validation/ecj-lint.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
 apply from: file('gradle/generation/javacc.gradle')
 apply from: file('gradle/generation/util.gradle')
+apply from: file('gradle/generation/snowball.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
@@ -98,7 +105,6 @@ apply from: file('gradle/help.gradle')
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/force-versions.gradle')
-apply from: file('gradle/ant-compat/folder-layout.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/resolve.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')

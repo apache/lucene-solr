@@ -72,7 +72,7 @@ final class Point2D implements Component2D {
       return contains(ax, ay) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy)) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }

@@ -34,6 +34,7 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.geo.Circle;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -94,6 +95,21 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       pointArray[i] = new org.apache.lucene.geo.Point(p[i][0], p[i][1]);
     }
     return LatLonGeometry.create(pointArray);
+  }
+
+  @Override
+  protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
+    return LatLonShape.newDistanceQuery(field, queryRelation, (Circle) circle);
+  }
+
+  @Override
+  protected Component2D toCircle2D(Object circle) {
+    return LatLonGeometry.create((Circle) circle);
+  }
+
+  @Override
+  protected Circle nextCircle() {
+    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAX_RADIUS);
   }
 
   @Override

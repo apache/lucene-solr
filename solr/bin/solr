@@ -73,6 +73,7 @@ while [ -h "$SOLR_SCRIPT" ] ; do
   fi
 done
 
+CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=`dirname "$SOLR_SCRIPT"`/..
 SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"

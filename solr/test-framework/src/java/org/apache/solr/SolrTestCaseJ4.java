@@ -148,7 +148,6 @@ import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
@@ -159,7 +158,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -264,11 +262,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
-
-  @ClassRule
-  public static TestRule solrClassRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule())
-             .around(new RevertDefaultThreadHandlerRule());
 
   @Rule
   public TestRule solrTestRules = 
