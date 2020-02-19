@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.IntBinaryOperator;
-import java.util.function.Supplier;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -119,8 +118,12 @@ public final class BytesRefArray implements SortableBytesRefArray {
     }
     pool.setBytesRef(spare, result, offset, length);
   }
-  
-  private int[] sort(final Comparator<BytesRef> comp, final IntBinaryOperator tieComparator) {
+
+
+  /**
+   * Returns a {@link SortState} representing the order of elements in this array. This is a non-destructive operation.
+   */
+  public SortState sort(final Comparator<BytesRef> comp, final IntBinaryOperator tieComparator) {
     final int[] orderedEntries = new int[size()];
     for (int i = 0; i < orderedEntries.length; i++) {
       orderedEntries[i] = i;
@@ -167,14 +170,14 @@ public final class BytesRefArray implements SortableBytesRefArray {
       private final BytesRefBuilder scratch1 = new BytesRefBuilder();
       private final BytesRefBuilder scratch2 = new BytesRefBuilder();
     }.sort(0, size());
-    return orderedEntries;
+    return new SortState(orderedEntries);
   }
   
   /**
    * sugar for {@link #iterator(Comparator)} with a <code>null</code> comparator
    */
   public BytesRefIterator iterator() {
-    return iterator(null);
+    return iterator((SortState) null);
   }
   
   /**
@@ -193,29 +196,30 @@ public final class BytesRefArray implements SortableBytesRefArray {
    */
   @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
-    return iteratorProvider(comp, (i, j) -> 0).get();
+    return iterator(sort(comp, (i, j) -> 0));
   }
 
   /**
-   * Prefer using either {@link #iterator()} or {@link #iterator(Comparator)}.
-   * This method is only useful if multiple iterators with a non-null {@link Comparator}
-   * are required as it avoids sorting the array multiple times. Elements are first sorted
-   * by {@code bytesRefComparator} then by {@code tieComparator}.
+   * Returns an {@link IndexedBytesRefIterator} with point in time semantics. The iterator provides access to all
+   * so far appended {@link BytesRef} instances. If a non-null sortState is specified then the iterator will iterate
+   * the byte values in the order of the sortState; otherwise, the order is the same as the values were appended.
    */
-  public Supplier<Iterator> iteratorProvider(Comparator<BytesRef> bytesRefComparator, IntBinaryOperator tieComparator) {
+  public IndexedBytesRefIterator iterator(final SortState sortState) {
     final int size = size();
-    final int[] indices = bytesRefComparator == null ? null : sort(bytesRefComparator, tieComparator);
+    final int[] indices = sortState == null ? null : sortState.indices;
+    assert indices == null || indices.length == size : indices.length + " != " + size;
+    final BytesRefBuilder spare = new BytesRefBuilder();
+    final BytesRef result = new BytesRef();
 
-    return () -> new Iterator() {
-      final BytesRefBuilder spare = new BytesRefBuilder();
-      final BytesRef result = new BytesRef();
+    return new IndexedBytesRefIterator() {
       int pos = -1;
-
+      int ord = 0;
       @Override
       public BytesRef next() {
         ++pos;
         if (pos < size) {
-          setBytesRef(spare, result, ord());
+          ord = indices == null ? pos : indices[pos];
+          setBytesRef(spare, result, ord);
           return result;
         }
         return null;
@@ -223,15 +227,31 @@ public final class BytesRefArray implements SortableBytesRefArray {
 
       @Override
       public int ord() {
-        return indices == null ? pos : indices[pos];
+        return ord;
       }
     };
   }
 
   /**
+   * Used to iterate the elements an array in a given order.
+   */
+  public final static class SortState implements Accountable {
+    private final int[] indices;
+
+    private SortState(int[] indices) {
+      this.indices = indices;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + indices.length * Integer.BYTES;
+    }
+  }
+
+  /**
    * An extension of {@link BytesRefIterator} that allows retrieving the index of the current element
    */
-  public interface Iterator extends BytesRefIterator {
+  public interface IndexedBytesRefIterator extends BytesRefIterator {
     /**
      * Returns the ordinal position of the element that was returned in the latest call of {@link #next()}.
      * Do not call this method if {@link #next()} is not called yet or the last call returned a null value.

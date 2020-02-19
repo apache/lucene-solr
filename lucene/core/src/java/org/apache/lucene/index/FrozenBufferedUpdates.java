@@ -491,7 +491,7 @@ final class FrozenBufferedUpdates {
       boolean isNumeric = value.isNumeric();
       FieldUpdatesBuffer.BufferedUpdateIterator iterator = value.iterator();
       FieldUpdatesBuffer.BufferedUpdate bufferedUpdate;
-      TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, value.isSortedTerms());
+      TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, iterator.isSortedTerms());
       while ((bufferedUpdate = iterator.next()) != null) {
         // TODO: we traverse the terms in update order (not term order) so that we
         // apply the updates in the correct order, i.e. if two terms update the

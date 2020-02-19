@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.Supplier;
+import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -52,7 +52,7 @@ final class FieldUpdatesBuffer {
   // on CPU for those. We also save on not needing to sort in order to apply the terms in order
   // since by definition we store them in order.
   private final BytesRefArray termValues;
-  private Supplier<BytesRefArray.Iterator> termsIteratorProvider;
+  private BytesRefArray.SortState termSortState;
   private final BytesRefArray byteValues; // this will be null if we are buffering numerics
   private int[] docsUpTo;
   private long[] numericValues; // this will be null if we are buffering binaries
@@ -61,6 +61,7 @@ final class FieldUpdatesBuffer {
   private long minNumeric = Long.MAX_VALUE;
   private String[] fields;
   private final boolean isNumeric;
+  private boolean finished = false;
 
   private FieldUpdatesBuffer(Counter bytesUsed, DocValuesUpdate initialValue, int docUpTo, boolean isNumeric) {
     this.bytesUsed = bytesUsed;
@@ -117,7 +118,7 @@ final class FieldUpdatesBuffer {
   }
 
   void add(String field, int docUpTo, int ord, boolean hasValue) {
-    assert termsIteratorProvider == null : "buffer was finished already";
+    assert finished == false : "buffer was finished already";
     if (fields[0].equals(field) == false || fields.length != 1 ) {
       if (fields.length <= ord) {
         String[] array = ArrayUtil.grow(fields, ord+1);
@@ -199,31 +200,26 @@ final class FieldUpdatesBuffer {
   }
 
   void finish() {
-    assert termsIteratorProvider == null;
-    if (isSortedTerms()) {
-      // sort by ascending by term, then sort descending by docsUpTo
-      termsIteratorProvider = termValues.iteratorProvider(BytesRef::compareTo,
+    if (finished) {
+      throw new IllegalStateException("buffer was finished already");
+    }
+    finished = true;
+    final boolean sortedTerms = hasSingleValue() && hasValues == null && fields.length == 1;
+    if (sortedTerms) {
+      // sort by ascending by term, then sort descending by docsUpTo so that we can skip updates with lower docUpTo.
+      termSortState = termValues.sort(Comparator.naturalOrder(),
           (i1, i2) -> Integer.compare(
               docsUpTo[getArrayIndex(docsUpTo.length, i2)],
               docsUpTo[getArrayIndex(docsUpTo.length, i1)]));
-      bytesUsed.addAndGet(termValues.size() * Integer.BYTES); // sorted indices of the iterators
-    } else {
-      termsIteratorProvider = termValues.iteratorProvider(null, null);
+      bytesUsed.addAndGet(termSortState.ramBytesUsed());
     }
   }
 
   BufferedUpdateIterator iterator() {
-    assert termsIteratorProvider != null : "finish is not called yet";
+    if (finished == false) {
+      throw new IllegalStateException("buffer is not finished yet");
+    }
     return new BufferedUpdateIterator();
-  }
-
-  /**
-   * If all updates update a single field to the same value, then we can apply these
-   * updates in the term order instead of the request order as both will yield the same result.
-   * This optimization allows us to iterate the term dictionary faster and de-duplicate updates.
-   */
-  boolean isSortedTerms() {
-    return hasSingleValue() && hasValues == null && fields.length == 1;
   }
 
   boolean isNumeric() {
@@ -291,19 +287,26 @@ final class FieldUpdatesBuffer {
    * An iterator that iterates over all updates in insertion order
    */
   class BufferedUpdateIterator {
-    private final BytesRefArray.Iterator termValuesIterator;
-    private final BytesRefArray.Iterator lookAheadTermIterator;
+    private final BytesRefArray.IndexedBytesRefIterator termValuesIterator;
+    private final BytesRefArray.IndexedBytesRefIterator lookAheadTermIterator;
     private final BytesRefIterator byteValuesIterator;
     private final BufferedUpdate bufferedUpdate = new BufferedUpdate();
     private final Bits updatesWithValue;
-    private final boolean sortedTerms;
 
     BufferedUpdateIterator() {
-      this.sortedTerms = isSortedTerms();
-      this.termValuesIterator = termsIteratorProvider.get();
-      this.lookAheadTermIterator = sortedTerms ? termsIteratorProvider.get() : null;
+      this.termValuesIterator = termValues.iterator(termSortState);
+      this.lookAheadTermIterator = termSortState != null ? termValues.iterator(termSortState) : null;
       this.byteValuesIterator = isNumeric ? null : byteValues.iterator();
       updatesWithValue = hasValues == null ? new Bits.MatchAllBits(numUpdates) : hasValues;
+    }
+
+    /**
+     * If all updates update a single field to the same value, then we can apply these
+     * updates in the term order instead of the request order as both will yield the same result.
+     * This optimization allows us to iterate the term dictionary faster and de-duplicate updates.
+     */
+    boolean isSortedTerms() {
+      return termSortState != null;
     }
 
     /**
@@ -336,7 +339,7 @@ final class FieldUpdatesBuffer {
     }
 
     BytesRef nextTerm() throws IOException {
-      if (sortedTerms) {
+      if (lookAheadTermIterator != null) {
         final BytesRef lastTerm = bufferedUpdate.termValue;
         BytesRef lookAheadTerm;
         while ((lookAheadTerm = lookAheadTermIterator.next()) != null && lookAheadTerm.equals(lastTerm)) {
