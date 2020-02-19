@@ -142,38 +142,35 @@ public class LatLonShape {
   /** create a query to find all indexed geo shapes that intersect a provided geometry (or array of geometries).
    **/
   public static Query newGeometryQuery(String field, QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
-    if (queryRelation == QueryRelation.CONTAINS) {
-      // we need to handle the case of bounding boxes crossing the dateline
-      return makeContainsGeometryQuery(field, latLonGeometries);
-    } else {
-      if (latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {
-        // use specialize query in this case
-        return new LatLonShapeBoundingBoxQuery(field, QueryRelation.CONTAINS, (Rectangle) latLonGeometries[0]);
+    if  (latLonGeometries.length == 1) {
+      LatLonGeometry geometry = latLonGeometries[0];
+      if (geometry instanceof Rectangle) {
+        Rectangle rect = (Rectangle) geometry;
+        return newBoxQuery(field, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      } else {
+        return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
       }
-      return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
+    } else {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return makeContainsGeometryQuery(field, latLonGeometries);
+      } else {
+        return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
+      }
     }
   }
 
   private static Query makeContainsGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
-    if (latLonGeometries.length == 1) {
-      if (latLonGeometries[0] instanceof Rectangle) {
-        Rectangle rect = (Rectangle) latLonGeometries[0];
-        return newBoxQuery(field, QueryRelation.CONTAINS, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (LatLonGeometry geometry : latLonGeometries) {
+      if (geometry instanceof Rectangle) {
+        // this handles rectangles across the dateline
+        Rectangle rect = (Rectangle) geometry;
+        builder.add(newBoxQuery(field, QueryRelation.CONTAINS, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon), BooleanClause.Occur.MUST);
       } else {
-        return new LatLonShapeQuery(field, QueryRelation.CONTAINS, latLonGeometries);
+        builder.add(new LatLonShapeQuery(field, QueryRelation.CONTAINS, geometry), BooleanClause.Occur.MUST);
       }
-    } else {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (LatLonGeometry geometry : latLonGeometries) {
-        if (geometry instanceof Rectangle) {
-          Rectangle rect = (Rectangle) geometry;
-          builder.add(newBoxQuery(field, QueryRelation.CONTAINS, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon), BooleanClause.Occur.MUST);
-        } else {
-          builder.add(new LatLonShapeQuery(field, QueryRelation.CONTAINS, geometry), BooleanClause.Occur.MUST);
-        }
-      }
-      return builder.build();
     }
+    return builder.build();
   }
 
 }
