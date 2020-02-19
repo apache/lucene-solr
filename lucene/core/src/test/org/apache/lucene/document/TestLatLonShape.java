@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
@@ -409,8 +410,8 @@ public class TestLatLonShape extends LuceneTestCase {
 
     byte[] encoded = new byte[7 * ShapeField.BYTES];
     ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.isEdgefromPolygon(0),
-                                       encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
-                                       encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
+        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
+        encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
     ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(encoded, decoded);
 
@@ -739,5 +740,52 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
+  }
+
+
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    double lat = GeoTestUtil.nextLatitude();
+    double lon = GeoTestUtil.nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    }
+    Circle circle = new Circle(lat, lon, radiusMeters);
+    Component2D circle2D = LatLonGeometry.create(circle);
+    int expected;
+    int expectedDisjoint;
+    if (circle2D.contains(p.lon, p.lat))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
   }
 }

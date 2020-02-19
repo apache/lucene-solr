@@ -384,6 +384,13 @@ public class GeoTestUtil {
     return new Polygon(result[0], result[1]);
   }
 
+  public static Circle nextCircle() {
+    double lat = nextLatitude();
+    double lon = nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    return new Circle(lat, lon, radiusMeters);
+  }
+
   /** returns next pseudorandom polygon */
   public static Polygon nextPolygon() {
     if (random().nextBoolean()) {
