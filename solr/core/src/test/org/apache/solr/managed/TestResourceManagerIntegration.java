@@ -57,7 +57,7 @@ public class TestResourceManagerIntegration extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("_default"))
+        .addConfig("conf", configset("cloud-cache"))
         .configure();
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
@@ -96,12 +96,12 @@ public class TestResourceManagerIntegration extends SolrCloudTestCase {
       expectedPools.forEach(p -> {
         assertNotNull("default pool " + p + " is missing!", result.get(p));
         NamedList<Object> pool = (NamedList<Object>) result.get(p);
-        assertTrue(pool.toString(), pool.get("type") != null && pool.get("type").toString().equals("cache"));
-        assertTrue(pool.toString(), pool.get("size") != null && ((Number)pool.get("size")).intValue() > 0);
-        assertTrue(pool.toString(), pool.get("limits") != null);
-        assertTrue(pool.toString(), pool.get("params") != null);
-        assertTrue(pool.toString(), pool.get("components") != null);
-        assertTrue(pool.toString(), pool.get("values") != null);
+        assertTrue(p + " " + pool.toString(), pool.get("type") != null && pool.get("type").toString().equals("cache"));
+        assertTrue(p + " " + pool.toString(), pool.get("size") != null);
+        assertTrue(p + " " + pool.toString(), pool.get("limits") != null);
+        assertTrue(p + " " + pool.toString(), pool.get("params") != null);
+        assertTrue(p + " " + pool.toString(), pool.get("components") != null);
+        assertTrue(p + " " + pool.toString(), pool.get("values") != null);
       });
     }
 

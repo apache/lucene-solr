@@ -96,7 +96,7 @@ public class TestCacheDynamics extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("_default"))
+        .addConfig("conf", configset("cloud-cache"))
         .configure();
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
