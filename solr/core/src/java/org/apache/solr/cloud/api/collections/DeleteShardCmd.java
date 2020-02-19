@@ -156,17 +156,19 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
   
   private void cleanupZooKeeperShardMetadata(SolrZkClient client, String collection, String sliceId) throws InterruptedException {
-    String leaderElectPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId;
-    String shardLeaderPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId;
-    String shardTermsPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId;
+    String[] cleanupPaths = new String[] {
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId,
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId,
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId
+    };
     
-    try {
-      client.clean(leaderElectPath);
-      client.clean(shardLeaderPath);
-      client.clean(shardTermsPath);
-    } catch (KeeperException ex) {
-      log.warn("Non-fatal error occured attempting to delete shard metadata on zooker for collection " + 
-          collection + " and sliceId." + sliceId, ex);
+    for (String path : cleanupPaths) {
+      try {
+        client.clean(path);
+      } catch (KeeperException ex) {
+        log.warn("Non-fatal error occurred attempting to delete shard metadata on zookeeper for collection " + 
+            collection + " and sliceId " + sliceId + " at path " + path, ex);
+      }
     }
   }
 
