@@ -126,8 +126,8 @@ public class TestCircle2D extends LuceneTestCase {
         assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
         assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       } else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
-        assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertNotEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
   }
