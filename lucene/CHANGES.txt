@@ -117,7 +117,9 @@ API Changes
 New Features
 ---------------------
 
-* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
+* LUCENE-8903: Add LatLonShape and XYShape point query. (Ignacio Vera)
+
+* LUCENE-8707: Add LatLonShape and XYShape distance query. (Ignacio Vera)
 
 Improvements
 ---------------------

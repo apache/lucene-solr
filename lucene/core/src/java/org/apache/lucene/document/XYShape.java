@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPoint;
 import org.apache.lucene.geo.XYRectangle;
@@ -115,6 +116,11 @@ public class XYShape {
       pointArray[i] = new XYPoint(points[i][0], points[i][1]);
     }
     return newGeometryQuery(field, queryRelation, pointArray);
+  }
+
+  /** create a query to find all cartesian shapes that intersect a provided circle (or arrays of circles) **/
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, XYCircle... circle) {
+    return newGeometryQuery(field, queryRelation, circle);
   }
 
   /** create a query to find all indexed geo shapes that intersect a provided geometry collection
