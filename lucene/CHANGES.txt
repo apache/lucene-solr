@@ -72,6 +72,10 @@ Improvements
   This tool no longer forceMerge(1)s to a single segment by default. If you
   rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
 
+* LUCENE-9220: Upgrade snowball to 2.0. New snowball stemmers: Hindi, Indonesian,
+  Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
+  task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -117,6 +121,8 @@ New Features
 
 Improvements
 ---------------------
+
+* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
 
 * LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
