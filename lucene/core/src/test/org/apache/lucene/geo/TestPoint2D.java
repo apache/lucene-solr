@@ -23,7 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestPoint2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 4;
     double ay = 4;
     double bx = 5;
@@ -36,20 +36,20 @@ public class TestPoint2D extends LuceneTestCase {
   }
 
   public void testTriangleIntersects() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 0.0;
     double ay = 0.0;
     double bx = 1;
     double by = 0;
     double cx = 0;
     double cy = 1;
-    assertEquals(Relation.CELL_INSIDE_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Relation.CELL_CROSSES_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
     assertEquals(Component2D.WithinRelation.CANDIDATE,
         point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
   }
 
   public void testTriangleContains() {
-    Component2D point2D = Point2D.create(new double[] {0, 0});
+    Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 0.0;
     double ay = 0.0;
     double bx = 0;
@@ -63,7 +63,7 @@ public class TestPoint2D extends LuceneTestCase {
 
 
   public void testRandomTriangles() {
-    Component2D point2D = Point2D.create(new double[] {GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()});
+    Component2D point2D = Point2D.create(new Point(GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()));
 
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();

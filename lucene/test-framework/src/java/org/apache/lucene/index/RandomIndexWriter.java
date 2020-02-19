@@ -536,7 +536,7 @@ public class RandomIndexWriter implements Closeable {
   }
 
   /**
-   * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
+   * Simple interface that is executed for each <code>TP</code> {@link InfoStream} component
    * message. See also {@link RandomIndexWriter#mockIndexWriter(Random, Directory, IndexWriterConfig, TestPoint)}
    */
   public interface TestPoint {

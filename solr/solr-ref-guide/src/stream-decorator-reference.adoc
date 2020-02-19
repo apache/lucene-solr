@@ -595,6 +595,45 @@ while(true) {
 daemonStream.close();
 ----
 
+== delete
+
+The `delete` function wraps another functions and uses the `id` and `\_version_` values found to sends the tuples to a SolrCloud collection as <<uploading-data-with-index-handlers.adoc#delete-operations,Delete By Id>> commands.
+
+This is similar to the `<<#update,update()>>` function described below.
+
+=== delete Parameters
+
+* `destinationCollection`: (Mandatory) The collection where the tuples will deleted.
+* `batchSize`: (Mandatory) The indexing batch size.
+* `pruneVersionField`: (Optional, defaults to `false`) Wether to prune `\_version_` values from tuples
+* `StreamExpression`: (Mandatory)
+
+=== delete Syntax
+
+[source,text]
+----
+ delete(collection1
+        batchSize=500,
+        search(collection1,
+               q=old_data:true,
+               qt="/export",
+               fl="id",
+               sort="a_f asc, a_i asc"))
+
+----
+
+The example above consumes the tuples returned by the `search` function against `collection1` and converts the `id` value of each document found into a delete request against the same `collection1`.
+
+[NOTE]
+====
+Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false` -- preserving any `\_version_` values found in the inner stream when converting the tuples to "Delete By ID" requests, to ensure that using this stream will not (by default) result in deleting any documents that were updated _after_ the `search(...)` was executed, but _before_ the `delete(...)` processed that tuple (leveraging <<updating-parts-of-documents.adoc#optimistic-concurrency,Optimistic concurrency>> constraints).
+
+Users who wish to ignore concurrent updates, and delete all matched documents should set `pruneVersionField=false` (or ensure that the inner stream tuples do not include any `\_version_` values).
+
+Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuraing the {solr-javadocs}/solr-core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
+====
+
+
 == eval
 
 The `eval` function allows for use cases where new streaming expressions are generated on the fly and then evaluated.
@@ -1273,12 +1312,13 @@ unique(
 
 == update
 
-The `update` function wraps another functions and sends the tuples to a SolrCloud collection for indexing.
+The `update` function wraps another functions and sends the tuples to a SolrCloud collection for indexing as Documents.
 
 === update Parameters
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will indexed.
 * `batchSize`: (Mandatory) The indexing batch size.
+* `pruneVersionField`: (Optional, defaults to `true`) Wether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
 === update Syntax
@@ -1296,3 +1336,5 @@ The `update` function wraps another functions and sends the tuples to a SolrClou
 ----
 
 The example above sends the tuples returned by the `search` function to the `destinationCollection` to be indexed.
+
+Wrapping `search(...)` as showing in this example is the common case usage of this decorator: to read documents from a collection as tuples, process or modify them in some way, and then add them back to a new collection.  For this reason, `pruneVersionField=true` is the default behavior -- stripping any `\_version_` values found in the inner stream when converting the tuples to Solr documents to prevent any unexpected errors from <<updating-parts-of-documents.adoc#optimistic-concurrency,Optimistic concurrency>> constraints.

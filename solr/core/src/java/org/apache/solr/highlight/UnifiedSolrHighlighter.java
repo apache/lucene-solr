@@ -18,7 +18,6 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -26,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -37,6 +35,7 @@ import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.search.uhighlight.WholeBreakIterator;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -49,6 +48,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
@@ -210,13 +210,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     IndexSchema schema = searcher.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
     if (keyField != null) {
-      Set<String> selector = Collections.singleton(keyField.getName());
+      SolrReturnFields returnFields = new SolrReturnFields(keyField.getName(), null);
       String[] uniqueKeys = new String[docIDs.length];
       for (int i = 0; i < docIDs.length; i++) {
         int docid = docIDs[i];
-        Document doc = searcher.doc(docid, selector);
-        String id = schema.printableUniqueKey(doc);
-        uniqueKeys[i] = id;
+        SolrDocument solrDoc = searcher.getDocFetcher().solrDoc(docid, returnFields);
+        uniqueKeys[i] = schema.printableUniqueKey(solrDoc);
       }
       return uniqueKeys;
     } else {

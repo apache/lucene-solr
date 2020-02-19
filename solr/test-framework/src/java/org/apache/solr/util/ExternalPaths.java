@@ -38,14 +38,16 @@ public class ExternalPaths {
    * meaningful.
    */
   public static final String SOURCE_HOME = determineSourceHome();
-  /* @see #SOURCE_HOME */
+  /** @see #SOURCE_HOME */
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
-  /* @see #SOURCE_HOME */
+  /** @see #SOURCE_HOME */
   public static String DEFAULT_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
+  /** @see #SOURCE_HOME */
   public static String TECHPRODUCTS_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf").getAbsolutePath();
 
+  /** @see #SOURCE_HOME */
   public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
 
   /**

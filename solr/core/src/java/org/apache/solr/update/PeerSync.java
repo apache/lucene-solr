@@ -753,7 +753,7 @@ public class PeerSync implements SolrMetricProducer {
           ourUpdatesIndex--;
         } else {
           long rangeStart = otherVersions.get(otherUpdatesIndex);
-          while ((otherUpdatesIndex < otherVersions.size())
+          while (otherUpdatesIndex >= 0
               && (Math.abs(otherVersions.get(otherUpdatesIndex)) < Math.abs(ourUpdates.get(ourUpdatesIndex)))) {
             otherUpdatesIndex--;
             totalRequestedVersions++;

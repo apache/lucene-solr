@@ -431,8 +431,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   /**
    * Creates a new completion service for use by a single set of distributed requests.
    */
-  public CompletionService newCompletionService() {
-    return new ExecutorCompletionService<ShardResponse>(commExecutor);
+  public CompletionService<ShardResponse> newCompletionService() {
+    return new ExecutorCompletionService<>(commExecutor);
   }
 
   /**

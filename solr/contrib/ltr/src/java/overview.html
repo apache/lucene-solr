@@ -33,7 +33,7 @@ to easily build their own learning to rank systems and access the rich
 matching features readily available in Solr. It also provides tools to perform
 feature engineering and feature extraction.
 </p>
-<h2> Code structure </h2>
+<h1> Code structure </h1>
 <p>
 A Learning to Rank model is plugged into the ranking through the {@link org.apache.solr.ltr.search.LTRQParserPlugin},
 a {@link org.apache.solr.search.QParserPlugin}. The plugin will
@@ -80,8 +80,8 @@ provided by {@link org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransf
 Models are registered into a unique {@link org.apache.solr.ltr.store.ModelStore ModelStore},
 and each model specifies a particular {@link org.apache.solr.ltr.store.FeatureStore FeatureStore} that
 will contain a particular subset of features.
-<p>
 </p>
+<p>
 Features and models can be managed through a REST API, provided by the
 {@link org.apache.solr.rest.ManagedResource Managed Resources}
 {@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedFeatureStore}

@@ -43,7 +43,8 @@ final class TrackingTmpOutputDirectoryWrapper extends FilterDirectory {
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
-    String tmpName = fileNames.get(name);
+    // keep the original file name if no match, it might be a temp file already
+    String tmpName = fileNames.getOrDefault(name, name);
     return super.openInput(tmpName, context);
   }
 

@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
@@ -63,6 +62,7 @@ import org.apache.lucene.search.vectorhighlight.FieldQuery;
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.lucene.util.AttributeSource.State;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -73,11 +73,13 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -445,10 +447,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String[] fieldNames = getHighlightFields(query, req, defaultFields);
 
     Set<String> preFetchFieldNames = getDocPrefetchFieldNames(fieldNames, req);
+    SolrReturnFields returnFields;
     if (preFetchFieldNames != null) {
       preFetchFieldNames.add(keyField.getName());
+      returnFields = new SolrReturnFields(preFetchFieldNames.toArray(new String[0]), req);
+    } else {
+      returnFields = new SolrReturnFields(new String[0], req);
     }
-
     FvhContainer fvhContainer = new FvhContainer(null, null); // Lazy container for fvh and fieldQuery
 
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
@@ -458,7 +463,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      Document doc = searcher.doc(docId, preFetchFieldNames);
+      SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, returnFields);
 
       @SuppressWarnings("rawtypes")
       NamedList docHighlights = new SimpleOrderedMap();
@@ -482,9 +487,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return fragments;
   }
 
-  protected Object doHighlightingOfField(Document doc, int docId, SchemaField schemaField,
-                                       FvhContainer fvhContainer, Query query, IndexReader reader, SolrQueryRequest req,
-                                       SolrParams params) throws IOException {
+  protected Object doHighlightingOfField(SolrDocument doc, int docId, SchemaField schemaField,
+                                         FvhContainer fvhContainer, Query query, IndexReader reader, SolrQueryRequest req,
+                                         SolrParams params) throws IOException {
     Object fieldHighlights;
     if (schemaField == null) {
       fieldHighlights = null;
@@ -527,12 +532,20 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return fieldHighlights;
   }
 
-  /** Returns the field names to be passed to {@link SolrIndexSearcher#doc(int, Set)}.
+  /**
+   * Returns the field names to be passed to {@link org.apache.solr.search.SolrDocumentFetcher#solrDoc(int, SolrReturnFields)}.
    * Subclasses might over-ride to include fields in search-results and other stored field values needed so as to avoid
-   * the possibility of extra trips to disk.  The uniqueKey will be added after if the result isn't null. */
+   * the possibility of extra trips to disk.  The uniqueKey will be added after if the result isn't null.
+   */
   protected Set<String> getDocPrefetchFieldNames(String[] hlFieldNames, SolrQueryRequest req) {
     Set<String> preFetchFieldNames = new HashSet<>(hlFieldNames.length + 1);//+1 for uniqueyKey added after
     Collections.addAll(preFetchFieldNames, hlFieldNames);
+    for (String hlFieldName : hlFieldNames) {
+      String alternateField = req.getParams().getFieldParam(hlFieldName, HighlightParams.ALTERNATE_FIELD);
+      if (alternateField != null) {
+        preFetchFieldNames.add(alternateField);
+      }
+    }
     return preFetchFieldNames;
   }
 
@@ -555,7 +568,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Highlights and returns the highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object doHighlightingByFastVectorHighlighter(Document doc, int docId,
+  protected Object doHighlightingByFastVectorHighlighter(SolrDocument doc, int docId,
                                                          SchemaField schemaField, FvhContainer fvhContainer,
                                                          IndexReader reader, SolrQueryRequest req) throws IOException {
     SolrParams params = req.getParams();
@@ -577,7 +590,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Highlights and returns the highlight object for this field -- a String[] by default. Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object doHighlightingByHighlighter(Document doc, int docId, SchemaField schemaField, Query query,
+  protected Object doHighlightingByHighlighter(SolrDocument doc, int docId, SchemaField schemaField, Query query,
                                                IndexReader reader, SolrQueryRequest req) throws IOException {
     final SolrParams params = req.getParams();
     final String fieldName = schemaField.getName();
@@ -709,18 +722,25 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   /** Fetches field values to highlight. If the field value should come from an atypical place (or another aliased
    * field name, then a subclass could override to implement that.
    */
-  protected List<String> getFieldValues(Document doc, String fieldName, int maxValues, int maxCharsToAnalyze,
+  protected List<String> getFieldValues(SolrDocument doc, String fieldName, int maxValues, int maxCharsToAnalyze,
                                         SolrQueryRequest req) {
     // Collect the Fields we will examine (could be more than one if multi-valued)
+    Collection<Object> fieldValues = doc.getFieldValues(fieldName);
+    if (fieldValues == null) {
+      return Collections.emptyList();
+    }
+    FieldType fieldType = req.getSchema().getFieldType(fieldName);
     List<String> result = new ArrayList<>();
-    for (IndexableField thisField : doc.getFields()) {
-      if (! thisField.name().equals(fieldName)) {
-        continue;
+    for (Object value : fieldValues) {
+      String strValue;
+      if (value instanceof IndexableField) {
+        strValue = fieldType.toExternal((IndexableField)value);
+      } else {
+        strValue = value.toString(); // TODO FieldType needs an API for this, e.g. toExternalFromDv()
       }
-      String value = thisField.stringValue();
-      result.add(value);
+      result.add(strValue);
 
-      maxCharsToAnalyze -= value.length();//we exit early if we'll never get to analyze the value
+      maxCharsToAnalyze -= strValue.length();//we exit early if we'll never get to analyze the value
       maxValues--;
       if (maxValues <= 0 || maxCharsToAnalyze <= 0) {
         break;
@@ -743,7 +763,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Returns the alternate highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object alternateField(Document doc, int docId, String fieldName, FvhContainer fvhContainer, Query query,
+  protected Object alternateField(SolrDocument doc, int docId, String fieldName, FvhContainer fvhContainer, Query query,
                                   IndexReader reader, SolrQueryRequest req) throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
     SolrParams params = req.getParams();
@@ -775,20 +795,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
 
     // Fallback to static non-highlighted
-    IndexableField[] docFields = doc.getFields(alternateField);
-    if (docFields.length == 0) {
+    List<String> listFields = getFieldValues(doc, alternateField, Integer.MAX_VALUE, Integer.MAX_VALUE, req);
+    if (listFields.isEmpty()) {
       // The alternate field did not exist, treat the original field as fallback instead
-      docFields = doc.getFields(fieldName);
-    }
-    List<String> listFields = new ArrayList<>();
-    for (IndexableField field : docFields) {
-      if (field.binaryValue() == null)
-        listFields.add(field.stringValue());
+      listFields = getFieldValues(doc, fieldName, Integer.MAX_VALUE, Integer.MAX_VALUE, req);
+      if (listFields.isEmpty()) {
+        return null;
+      }
     }
 
-    if (listFields.isEmpty()) {
-      return null;
-    }
     String[] altTexts = listFields.toArray(new String[listFields.size()]);
 
     Encoder encoder = getEncoder(fieldName, params);

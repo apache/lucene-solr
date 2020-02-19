@@ -3464,6 +3464,62 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  public void testDateFacets() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    boolean multiValue = random().nextBoolean();
+    String dateField = multiValue? "b_dts": "b_dt";
+    String dateRange = multiValue? "b_drfs": "b_drf";
+
+    client.add(sdoc("id", "1", "cat_s", "A", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"), null);
+    client.add(sdoc("id", "2", "cat_s", "B", dateField, "2015-01-03T00:00:00Z",
+        dateRange, "2015-01-03T00:00:00Z"), null);
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(sdoc("id", "4", "cat_s", "A", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"), null);
+    client.add(sdoc("id", "5", "cat_s", "B", dateField, "2015-01-03T00:00:00Z",
+        dateRange, "2015-01-03T00:00:00Z"),null);
+    client.commit();
+    client.add(sdoc("id", "6", "cat_s", "B", dateField, "2014-03-15T12:00:00Z",
+        dateRange, "2014-03-15T12:00:00Z"),null);
+    client.commit();
+
+    SolrParams p = params("q", "*:*", "rows", "0");
+    for (String s : new String[]{dateField, dateRange}) {
+      client.testJQ(params(p, "json.facet"
+          , "{date:{type : range, mincount:1, field :" + s +
+              ",start:'2013-11-01T00:00:00Z',end:NOW,gap:'+90DAY'}}"),
+          "facets=={count:6, date:{buckets:" +
+              "[{val:\"2014-01-30T00:00:00Z\",count:3}, {val:\"2014-10-27T00:00:00Z\",count:2}]" +
+              "}}");
+
+      // with ranges
+      client.testJQ(params(p, "json.facet"
+          , "{date:{type : range, mincount:1, field :" + s +
+              ",ranges:[{from:'2013-11-01T00:00:00Z', to:'2014-04-30T00:00:00Z'}," +
+              "{from:'2015-01-01T00:00:00Z', to:'2020-01-30T00:00:00Z'}]}}"),
+          "facets=={count:6, date:{buckets:" +
+              "[{val:\"[2013-11-01T00:00:00Z,2014-04-30T00:00:00Z)\",count:3}," +
+              " {val:\"[2015-01-01T00:00:00Z,2020-01-30T00:00:00Z)\",count:2}]" +
+              "}}");
+    }
+
+    client.add(sdoc("id", "7", "cat_s", "B", dateRange, "[2010 TO 2014-05-21]"),null);
+    client.commit();
+    client.testJQ(params(p, "json.facet"
+        , "{date:{type : range, other:'before', field :" + dateRange +
+            ",start:'2011-11-01T00:00:00Z',end:'2016-01-30T00:00:00Z',gap:'+1YEAR'}}"),
+        "facets=={count:7, date:{buckets:[" +
+            "{val:\"2011-11-01T00:00:00Z\",count:1}, {val:\"2012-11-01T00:00:00Z\",count:1}," +
+            "{val:\"2013-11-01T00:00:00Z\",count:4}, {val:\"2014-11-01T00:00:00Z\",count:2}," +
+            "{val:\"2015-11-01T00:00:00Z\",count:0}" +
+            "],before:{count:1}" +
+            "}}");
+  }
+
+  @Test
   public void testRangeFacetWithRangesInNewFormat() throws Exception {
     Client client = Client.localClient();
     client.deleteByQuery("*:*", null);

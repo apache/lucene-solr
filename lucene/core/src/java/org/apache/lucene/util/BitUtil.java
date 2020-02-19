@@ -167,8 +167,8 @@ public final class BitUtil {
    /**
     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">Zig-zag</a>
     * encode the provided long. Assuming the input is a signed long whose
-    * absolute value can be stored on <tt>n</tt> bits, the returned value will
-    * be an unsigned long that can be stored on <tt>n+1</tt> bits.
+    * absolute value can be stored on <code>n</code> bits, the returned value will
+    * be an unsigned long that can be stored on <code>n+1</code> bits.
     */
    public static long zigZagEncode(long l) {
      return (l >> 63) ^ (l << 1);

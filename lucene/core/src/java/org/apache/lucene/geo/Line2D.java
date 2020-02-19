@@ -23,17 +23,16 @@ import org.apache.lucene.index.PointValues.Relation;
  * <p>
  * Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree construction.
  * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.
- * @lucene.internal
  */
-public final class Line2D implements Component2D {
+final class Line2D implements Component2D {
 
-  /** minimum latitude of this geometry's bounding box area */
+  /** minimum Y of this geometry's bounding box area */
   final private double minY;
-  /** maximum latitude of this geometry's bounding box area */
+  /** maximum Y of this geometry's bounding box area */
   final private double maxY;
-  /** minimum longitude of this geometry's bounding box area */
+  /** minimum X of this geometry's bounding box area */
   final private double minX;
-  /** maximum longitude of this geometry's bounding box area */
+  /** maximum X of this geometry's bounding box area */
   final private double maxX;
   /** lines represented as a 2-d interval tree.*/
   final private EdgeTree tree;
@@ -51,7 +50,7 @@ public final class Line2D implements Component2D {
     this.maxY = line.maxY;
     this.minX = line.minX;
     this.maxX = line.maxX;
-    this.tree = EdgeTree.createTree(line.getX(), line.getY());
+    this.tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(line.getX()), XYEncodingUtils.floatArrayToDoubleArray(line.getY()));
   }
 
   @Override
@@ -184,21 +183,13 @@ public final class Line2D implements Component2D {
     return relation;
   }
 
-  /** create a Line2D edge tree from provided array of Linestrings */
-  public static Component2D create(Line... lines) {
-    Component2D components[] = new Component2D[lines.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Line2D(lines[i]);
-    }
-    return ComponentTree.create(components);
+  /** create a Line2D from the provided LatLon Linestring */
+  static Component2D create(Line line) {
+    return new Line2D(line);
   }
 
-  /** create a Line2D edge tree from provided array of Linestrings */
-  public static Component2D create(XYLine... lines) {
-    Line2D components[] = new Line2D[lines.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Line2D(lines[i]);
-    }
-    return ComponentTree.create(components);
+  /** create a Line2D from the provided XY Linestring */
+  static Component2D create(XYLine line) {
+    return new Line2D(line);
   }
 }
