@@ -72,9 +72,9 @@ Improvements
   This tool no longer forceMerge(1)s to a single segment by default. If you
   rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
 
-* LUCENE-9228: Sort dvUpdates in the term order before applying if they all update a
-  single field to the same value. This optimization can reduce the flush time by around
-  20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
+* LUCENE-9220: Upgrade snowball to 2.0. New snowball stemmers: Hindi, Indonesian,
+  Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
+  task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
 Bug fixes
 
@@ -117,10 +117,14 @@ API Changes
 New Features
 ---------------------
 
-* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
+* LUCENE-8903: Add LatLonShape and XYShape point query. (Ignacio Vera)
+
+* LUCENE-8707: Add LatLonShape and XYShape distance query. (Ignacio Vera)
 
 Improvements
 ---------------------
+
+* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
 
 * LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
@@ -157,6 +161,10 @@ Improvements
 
 * LUCENE-9194: Simplify XYShapeXQuery API by adding a new abstract class called XYGeometry. Queries are
   executed with input objects that extend such interface. (Ignacio Vera)
+
+* LUCENE-9228: Sort dvUpdates in the term order before applying if they all update a
+  single field to the same value. This optimization can reduce the flush time by around
+  20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
 
 Optimizations
 ---------------------
