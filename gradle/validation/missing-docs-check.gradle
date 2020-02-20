@@ -1,0 +1,124 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+allprojects {
+  task checkMissingDocs() {
+    group 'Verification'
+    description 'Check missing Javadocs'
+
+    dependsOn project.tasks.matching { task ->
+      task.name in [ 'checkMissingDocsPackage', 'checkMissingDocsClass', 'checkMissingDocsMethod' ]
+    }
+  }
+}
+
+configure(project(':lucene').subprojects) {
+
+  def methodLevelCheckProjects = [
+    project(':lucene:analysis:icu'),
+    project(':lucene:analysis:morfologik'),
+    project(':lucene:analysis:phonetic'),
+    project(':lucene:analysis:stempel'),
+    project(':lucene:classification'),
+    project(':lucene:demo'),
+    project(':lucene:expressions'),
+    project(':lucene:facet'),
+    project(':lucene:join'),
+    project(':lucene:memory'),
+    project(':lucene:suggest'),
+    project(':lucene:spatial3d')
+  ]
+
+  plugins.withType(JavaPlugin) {
+    if (project in methodLevelCheckProjects) {
+      // too many classes to fix overall to just enable the above to be level="method" right now,
+      // but we can prevent the modules that don't have problems from getting any worse
+      task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+        enabled = project.javadoc.destinationDir.exists()
+
+        dirs += [ project.javadoc.destinationDir.absolutePath ]
+        level = "method"
+      }
+    } else {
+      task checkMissingDocsClass(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+        enabled = project.javadoc.destinationDir.exists()
+
+        dirs += [ project.javadoc.destinationDir.absolutePath ]
+        level = "class"
+      }
+    }
+
+    if (project == project(':lucene:core')) {
+
+      def methodLevelCheckDirs = [
+        "/org/apache/lucene/util/automaton",
+        "/org/apache/lucene/analysis",
+        "/org/apache/lucene/document",
+        "/org/apache/lucene/search/similarities",
+        "/org/apache/lucene/index",
+        "/org/apache/lucene/codecs"
+      ].collect { path -> "${project.javadoc.destinationDir.absolutePath}${path}" }
+
+      // too much to fix core/ for now, but enforce full javadocs for key packages
+      task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+        dirs += methodLevelCheckDirs
+        level = "method"
+      }
+    }
+  }
+}
+
+configure(project(':solr').subprojects) {
+  plugins.withType(JavaPlugin) {
+    // todo: add missing docs for all classes and bump this to level=class
+    task checkMissingDocsPackage(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+      enabled = project.javadoc.destinationDir.exists()
+
+      dirs += [ project.javadoc.destinationDir.absolutePath ]
+      level = "package"
+    }
+  }
+}
+
+class CheckMissingDocsTask extends DefaultTask {
+
+  @Input
+  List<String> dirs = []
+
+  @Input
+  String level = "none"
+
+  def checkMissingJavadocs(String dir, String level) {
+    project.exec {
+      executable "python3"
+      args = [
+        "-B",
+        project.rootProject.file("dev-tools/scripts/checkJavaDocs.py").absolutePath,
+        dir,
+        level
+      ]
+    }
+  }
+
+  @TaskAction
+  def lint() {
+    dirs.each { dir ->
+      println("Checking for missing docs... (dir=${dir}, level=${level})")
+      checkMissingJavadocs(dir, level)
+    }
+  }
+}
