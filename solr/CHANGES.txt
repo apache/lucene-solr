@@ -28,6 +28,8 @@ Other Changes
 
 * LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
+* SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
