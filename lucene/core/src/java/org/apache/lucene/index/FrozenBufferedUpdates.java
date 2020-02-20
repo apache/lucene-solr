@@ -110,6 +110,7 @@ final class FrozenBufferedUpdates {
     // so that it maps to all fields it affects, sorted by their docUpto, and traverse
     // that Term only once, applying the update to all fields that still need to be
     // updated.
+    updates.fieldUpdates.values().forEach(FieldUpdatesBuffer::finish);
     this.fieldUpdates = Collections.unmodifiableMap(new HashMap<>(updates.fieldUpdates));
     this.fieldUpdatesCount = updates.numFieldUpdates.get();
 
@@ -491,7 +492,7 @@ final class FrozenBufferedUpdates {
       boolean isNumeric = value.isNumeric();
       FieldUpdatesBuffer.BufferedUpdateIterator iterator = value.iterator();
       FieldUpdatesBuffer.BufferedUpdate bufferedUpdate;
-      TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, false);
+      TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, iterator.isSortedTerms());
       while ((bufferedUpdate = iterator.next()) != null) {
         // TODO: we traverse the terms in update order (not term order) so that we
         // apply the updates in the correct order, i.e. if two terms update the
@@ -521,7 +522,6 @@ final class FrozenBufferedUpdates {
             longValue = bufferedUpdate.numericValue;
             binaryValue = bufferedUpdate.binaryValue;
           }
-           termDocsIterator.getDocs();
           if (dvUpdates == null) {
             if (isNumeric) {
               if (value.hasSingleValue()) {
@@ -825,7 +825,7 @@ final class FrozenBufferedUpdates {
             return null; // requested term does not exist in this segment
           } else if (cmp == 0) {
             return getDocs();
-          } else if (cmp > 0) {
+          } else {
             TermsEnum.SeekStatus status = termsEnum.seekCeil(term);
             switch (status) {
               case FOUND:
