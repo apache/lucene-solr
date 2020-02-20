@@ -37,13 +37,14 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
-  // Workaround for this one, for now:
-  // https://github.com/palantir/gradle-consistent-versions/issues/383
+  // Declare script dependency versions outside of palantir's
+  // version unification control. These are not our main dependencies.
   scriptDepVersions = [
       "apache-rat": "0.11",
+      "ecj": "3.19.0",
       "javacc": "5.0",
       "jflex": "1.7.0",
-      "ecj": "3.19.0"
+      "jgit": "5.3.0.201903130848-r",
   ]
 }
 
