@@ -94,6 +94,8 @@ Improvements
 * SOLR-14194: Highlighting now works when the uniqueKey field is not stored but has docValues.  And the original
   highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
 
+* SOLR-14270: export command to have an option to write to a zip file (noble)
+
 Optimizations
 ---------------------
 
