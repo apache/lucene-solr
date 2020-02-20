@@ -48,8 +48,6 @@
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:5000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:30000}</int> <!-- We are running tests - the default should be low, not like production -->
     <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
-    <int name="autoReplicaFailoverWorkLoopDelay">${autoReplicaFailoverWorkLoopDelay:10000}</int>
-    <int name="autoReplicaFailoverBadNodeExpiration">${autoReplicaFailoverBadNodeExpiration:60000}</int>
   </solrcloud>
   
 </solr>
