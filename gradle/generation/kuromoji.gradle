@@ -1,0 +1,107 @@
+
+// This downloads and compiles Kuromoji dictionaries.
+
+configure(project(":lucene:analysis:kuromoji")) {
+  apply plugin: 'java-library'
+  apply plugin: "de.undercouch.download"
+
+  ext {
+    targetDir = file("src/resources")
+  }
+
+  task compileMecabIpadic(type: Download) {
+    description "Recompile mecab dictionaries."
+    group "generation"
+
+    dependsOn sourceSets.main.runtimeClasspath
+
+    def dictionaryName = "mecab-ipadic-2.7.0-20070801"
+    def dictionarySource = "https://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/2.7.0-20070801/${dictionaryName}.tar.gz"
+    def dictionaryFile = file("${buildDir}/generate/${dictionaryName}.tar.gz")
+    def unpackedDir = file("${buildDir}/generate/${dictionaryName}")
+
+    src dictionarySource
+    dest dictionaryFile
+    onlyIfModified true
+
+    doLast {
+      // Unpack the downloaded archive.
+      delete unpackedDir
+      ant.untar(src: dictionaryFile, dest: unpackedDir, compression: "gzip") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+
+      // Apply patch via local git.
+      project.exec {
+        workingDir = unpackedDir
+        executable "git"
+        args += [
+            "apply",
+            file("src/tools/patches/Noun.proper.csv.patch").absolutePath
+        ]
+      }
+
+      // Compile the dictionary
+      project.javaexec {
+        main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
+        classpath = sourceSets.main.runtimeClasspath
+
+        jvmArgs '-Xmx1G'
+
+        args += [
+            "ipadic",
+            unpackedDir,
+            targetDir,
+            "euc-jp",
+            false
+        ]
+
+        logger.lifecycle("Automaton regenerated from dictionary: ${dictionaryName}")
+      }
+    }
+  }
+
+  /*
+  TODO: this currently doesn't work because DictionaryBuilder no longer supports this type?
+
+  task compileNaist(type: Download) {
+    description "Recompile naist dictionaries."
+    group "generation"
+
+    dependsOn sourceSets.main.runtimeClasspath
+
+    def dictionaryName = "mecab-naist-jdic-0.6.3b-20111013"
+    def dictionarySource = "https://rwthaachen.dl.osdn.jp/naist-jdic/53500/${dictionaryName}.tar.gz"
+    def dictionaryFile = file("${buildDir}/generate/${dictionaryName}.tar.gz")
+    def unpackedDir = file("${buildDir}/generate/${dictionaryName}")
+
+    src dictionarySource
+    dest dictionaryFile
+    onlyIfModified true
+
+    doLast {
+      // Unpack the downloaded archive.
+      delete unpackedDir
+      ant.untar(src: dictionaryFile, dest: unpackedDir, compression: "gzip") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+
+      // Compile the dictionary
+      project.javaexec {
+        main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
+        classpath = sourceSets.main.runtimeClasspath
+
+        jvmArgs '-Xmx1G'
+
+        args += [
+            "naist",
+            unpackedDir,
+            targetDir,
+            "euc-jp",
+            false
+        ]
+      }
+    }
+  }
+   */
+}
