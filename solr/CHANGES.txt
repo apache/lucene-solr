@@ -159,6 +159,9 @@ Bug Fixes
 * SOLR-13041: Add hashCode for autoscaling.Condition to accompany the already present equals.
   (Zsolt Gyulavari via Christine Poerschke)
 
+* SOLR-12550: ConcurrentUpdateSolrClient doesn't respect timeouts for commits and optimize.
+  (Marc A. Morissette, Bérénice MAUREL via shalin)
+
 Other Changes
 ---------------------
 
