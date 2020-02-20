@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -192,6 +193,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     abstract void start() throws IOException ;
 
+    @SuppressForbidden(reason = "Command line tool prints out to console")
     void accept(SolrDocument document) throws IOException {
       long count = info.docsWritten.incrementAndGet();
 
@@ -348,14 +350,17 @@ public class ExportTool extends SolrCLI.ToolBase {
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
     Map<String, CoreHandler> corehandlers = new HashMap();
-    private long startTime = System.currentTimeMillis();
+    private long startTime ;
 
+    @SuppressForbidden(reason = "Need to print out time")
     public MultiThreadedRunner(String url) {
       super(url);
+      startTime= System.currentTimeMillis();
     }
 
 
     @Override
+    @SuppressForbidden(reason = "Need to print out time")
     void exportDocs() throws Exception {
       sink = getSink();
       fetchUniqueKey();
