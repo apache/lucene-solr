@@ -233,7 +233,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
   }
 
   /**
-   * Used to iterate the elements an array in a given order.
+   * Used to iterate the elements of an array in a given order.
    */
   public final static class SortState implements Accountable {
     private final int[] indices;

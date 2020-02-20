@@ -72,6 +72,10 @@ Improvements
   This tool no longer forceMerge(1)s to a single segment by default. If you
   rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
 
+* LUCENE-9228: Sort dvUpdates in the term order before applying if they all update a
+  single field to the same value. This optimization can reduce the flush time by around
+  20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
