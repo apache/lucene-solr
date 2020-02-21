@@ -155,8 +155,8 @@ public class ShapeTestUtil {
 
         len = StrictMath.min(len, StrictMath.min(maxX, maxY));
 
-        float x = (float)(centerX + len * Math.cos(Math.toRadians(angle)));
-        float y = (float)(centerY + len * Math.sin(Math.toRadians(angle)));
+        float x = (float)(centerX + len * Math.cos(StrictMath.toRadians(angle)));
+        float y = (float)(centerY + len * Math.sin(StrictMath.toRadians(angle)));
 
         xList.add(x);
         yList.add(y);
