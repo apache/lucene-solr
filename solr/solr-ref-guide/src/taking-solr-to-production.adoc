@@ -179,11 +179,11 @@ Alternatively, the boolean system property `lucene.cms.override_spins` can be se
 
 === Memory and GC Settings
 
-By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx512m), which is fine for getting started with Solr. For production, you’ll want to increase the maximum heap size based on the memory requirements of your search application; values between 8 and 16 gigabytes are not uncommon for production servers. When you need to change the memory settings for your Solr server, use the `SOLR_JAVA_MEM` variable in the include file, such as:
+By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx512m), which is fine for getting started with Solr. For production, you’ll want to increase the maximum heap size based on the memory requirements of your search application; values between 8 and 16 gigabytes are not uncommon for production servers. When you need to change the memory settings for your Solr server, use the `SOLR_HEAP` variable in the include file, such as:
 
 [source,bash]
 ----
-SOLR_JAVA_MEM="-Xms8g -Xmx8g"
+SOLR_HEAP="8g"
 ----
 
 [NOTE]
