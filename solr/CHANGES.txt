@@ -28,6 +28,8 @@ Other Changes
 
 * LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
+* SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -93,6 +95,8 @@ Improvements
 
 * SOLR-14194: Highlighting now works when the uniqueKey field is not stored but has docValues.  And the original
   highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
+
+* SOLR-14270: export command to have an option to write to a zip file (noble)
 
 Optimizations
 ---------------------
@@ -161,6 +165,8 @@ Bug Fixes
 
 * SOLR-12550: ConcurrentUpdateSolrClient doesn't respect timeouts for commits and optimize.
   (Marc A. Morissette, Bérénice MAUREL via shalin)
+
+* SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
 
 Other Changes
 ---------------------

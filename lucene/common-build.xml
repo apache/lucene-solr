@@ -248,8 +248,6 @@
   <property name="git.exe" value="git" />
   <property name="perl.exe" value="perl" />
 
-  <!-- we default to python2.7 because not all OSs (e.g. mac) have a python2 link -->
-  <property name="python2.exe" value="python2.7" />
   <property name="python3.exe" value="python3" />
 
   <property name="gpg.exe" value="gpg" />
