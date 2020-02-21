@@ -1287,7 +1287,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     boolean success = false;
     try (Closeable finalizer = acquireModificationLease()) {
-      long seqNo = processEvents(docWriter.updateDocuments(docs, analyzer, delNode));
+      long seqNo = maybeProcessEvents(docWriter.updateDocuments(docs, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1521,7 +1521,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   public long deleteDocuments(Term... terms) throws IOException {
     ensureOpen();
     try (Closeable finalizer = acquireModificationLease()) {
-      return processEvents(docWriter.deleteTerms(terms));
+      return maybeProcessEvents(docWriter.deleteTerms(terms));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Term..)");
       throw tragedy;
@@ -1552,7 +1552,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     try (Closeable finalizer = acquireModificationLease()) {
-      return processEvents(docWriter.deleteQueries(queries));
+      return maybeProcessEvents(docWriter.deleteQueries(queries));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Query..)");
       throw tragedy;
@@ -1597,7 +1597,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     boolean success = false;
     try (Closeable finalizer = acquireModificationLease()) {
-      long seqNo = processEvents(docWriter.updateDocument(doc, analyzer, delNode));
+      long seqNo = maybeProcessEvents(docWriter.updateDocument(doc, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1687,7 +1687,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
     }
     try (Closeable finalizer = acquireModificationLease()) {
-      return processEvents(docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value)));
+      return maybeProcessEvents(docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateNumericDocValue");
       throw tragedy;
@@ -1728,7 +1728,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }
     try (Closeable finalizer = acquireModificationLease()) {
-      return processEvents(docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value)));
+      return maybeProcessEvents(docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateBinaryDocValue");
       throw tragedy;
@@ -1759,7 +1759,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates);
     try (Closeable finalizer = acquireModificationLease()) {
-      return processEvents(docWriter.updateDocValues(dvUpdates));
+      return maybeProcessEvents(docWriter.updateDocValues(dvUpdates));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocValues");
       throw tragedy;
@@ -5097,10 +5097,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   /**
    * Processes all events and might trigger a merge if the given seqNo is negative
-   * @param seqNo
+   * @param seqNo if the seqNo is less than 0 this method will process events otherwise it's a no-op.
    * @return the given seqId inverted if negative.
    */
-  private long processEvents(long seqNo) throws IOException {
+  private long maybeProcessEvents(long seqNo) throws IOException {
     if (seqNo < 0) {
       seqNo = -seqNo;
       processEvents(true);
