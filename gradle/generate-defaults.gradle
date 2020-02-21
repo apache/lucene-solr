@@ -39,11 +39,14 @@ if (!hasDefaults) {
                 "# These settings have been generated automatically on the first run.",
                 "# See gradlew :helpLocalSettings for more information.",
                 "systemProp.file.encoding=UTF-8",
-                "org.gradle.daemon=true",
                 "org.gradle.jvmargs=-Xmx2g",
                 "org.gradle.parallel=true",
                 "org.gradle.priority=normal",
                 "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.
+                "",
+                "# You may disable the background daemon if it consumes too much memory.",
+                "org.gradle.daemon=true",
+                "org.gradle.daemon.idletimeout=900000", // timeout after 15 mins.
                 "",
                 "# Maximum number of parallel gradle workers.",
                 "org.gradle.workers.max=${maxWorkers}",

@@ -28,6 +28,8 @@ Other Changes
 
 * LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
+* SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -94,6 +96,8 @@ Improvements
 * SOLR-14194: Highlighting now works when the uniqueKey field is not stored but has docValues.  And the original
   highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
 
+* SOLR-14270: export command to have an option to write to a zip file (noble)
+
 Optimizations
 ---------------------
 
@@ -156,6 +160,12 @@ Bug Fixes
 * SOLR-14058: Fix IndexOutOfBoundsException in PeerSync that can prevent nodes from recovering
   under certain circumstances. (yonik)
 
+* SOLR-13041: Add hashCode for autoscaling.Condition to accompany the already present equals.
+  (Zsolt Gyulavari via Christine Poerschke)
+
+* SOLR-12550: ConcurrentUpdateSolrClient doesn't respect timeouts for commits and optimize.
+  (Marc A. Morissette, Bérénice MAUREL via shalin)
+
 Other Changes
 ---------------------
 
@@ -179,6 +189,11 @@ Other Changes
 * SOLR-14209: Upgrade JQuery to 3.4.1 (Kevin Risden)
 
 * SOLR-13996: Refactor HttpShardHandler.prepDistributed method. (shalin)
+
+* SOLR-13794: Replace redundent test only copy of '_default' configset with SolrTestCase logic to correctly
+  set 'solr.default.confdir' system property (hossman)
+
+* SOLR-14263: Update jvm-settings.adoc (Erick Erickson)
 
 * SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
 
@@ -11326,7 +11341,7 @@ Upgrading from Solr 4.7
   Oracle Java 7 or OpenJDK 7, be sure to not use the GA build 147 or
   update versions u40, u45 and u51! We recommend using u55 or later.
   An overview of known JVM bugs can be found on
-  http://wiki.apache.org/lucene-java/JavaBugs
+  https://cwiki.apache.org/confluence/display/lucene/JavaBugs
 
 * ZooKeeper is upgraded from 3.4.5 to 3.4.6.
 
@@ -14638,7 +14653,7 @@ Other Changes
   in the migration of existing clients.  (yonik)
 
 * SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
-  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
+  See https://lucene.apache.org/solr/guide/post-tool.html for examples (janhoy)
 
 * SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
 
@@ -14768,7 +14783,7 @@ New Features
   same name.  (hossman, steffkes)
 
 * SOLR-1280: Added commented-out example of the new script update processor
-  to the example configuration.  See http://wiki.apache.org/solr/ScriptUpdateProcessor (ehatcher)
+  to the example configuration. (ehatcher)
 
 * SOLR-3672: SimplePostTool: Improvements for posting files
   Support for auto mode, recursive and wildcards (janhoy)
@@ -14907,7 +14922,7 @@ Other Changes
 ==================  4.0.0-ALPHA ==================
 More information about this release, including any errata related to the
 release notes, upgrade instructions, or other changes may be found online at:
-   https://wiki.apache.org/solr/Solr4.0
+   https://cwiki.apache.org/confluence/display/solr/Solr4.0
 
 
 Versions of Major Components
@@ -16732,7 +16747,7 @@ New Features
   Great Circle (haversine), Manhattan, Euclidean and String (using the
   StringDistance methods in the Lucene spellchecker).
   Also added geohash(), deg() and rad() convenience functions.
-  See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
+  See https://lucene.apache.org/solr/guide/function-queries.html (gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,

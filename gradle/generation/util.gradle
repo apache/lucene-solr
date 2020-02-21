@@ -33,7 +33,7 @@ configure(rootProject) {
   task installMoman(type: Download) {
     def momanZip = file("${momanDir}/moman.zip")
 
-    src "https://bitbucket.org/jpbarrette/moman/get/5c5c2a1e4dea.zip"
+    src "https://github.com/jpbarrette/moman/archive/497c90e34e412b6494db6dabf0d95db8034bd325.zip"
     dest momanZip
     onlyIfModified true
 
@@ -57,7 +57,7 @@ configure(project(":lucene:core")) {
         logger.lifecycle("Executing: ${prog} in ${targetDir}")
         project.exec {
           workingDir targetDir
-          executable "python"
+          executable "python3"
           args = ['-B', "${prog}"]
         }
       }
@@ -82,7 +82,7 @@ configure(project(":lucene:core")) {
         ['True', 'False'].each { transpose ->
           project.exec {
             workingDir targetDir
-            executable "python"
+            executable "python3"
             args = ['-B', 'createLevAutomata.py', num, transpose, "${momanDir}/finenight/python"]
           }
         }

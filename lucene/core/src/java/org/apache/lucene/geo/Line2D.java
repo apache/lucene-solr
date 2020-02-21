@@ -50,7 +50,7 @@ final class Line2D implements Component2D {
     this.maxY = line.maxY;
     this.minX = line.minX;
     this.maxX = line.maxX;
-    this.tree = EdgeTree.createTree(line.getX(), line.getY());
+    this.tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(line.getX()), XYEncodingUtils.floatArrayToDoubleArray(line.getY()));
   }
 
   @Override

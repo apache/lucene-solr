@@ -143,7 +143,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   }
 
   public String getDescription() {
-    return "StreamHandler";
+    return "GraphHandler";
   }
 
   public String getSource() {

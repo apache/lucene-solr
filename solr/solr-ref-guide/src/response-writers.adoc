@@ -307,7 +307,7 @@ See the <<velocity-response-writer.adoc#velocity-response-writer,Velocity Respon
 
 == Smile Response Writer
 
-The Smile format is a JSON-compatible binary format, described in detail here: http://wiki.fasterxml.com/SmileFormat.
+The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]
 
 == XLSX Response Writer
 
