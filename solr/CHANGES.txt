@@ -166,6 +166,8 @@ Bug Fixes
 * SOLR-12550: ConcurrentUpdateSolrClient doesn't respect timeouts for commits and optimize.
   (Marc A. Morissette, Bérénice MAUREL via shalin)
 
+* SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
+
 Other Changes
 ---------------------
 
