@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
@@ -131,6 +132,11 @@ public class LatLonShape {
     return newGeometryQuery(field, queryRelation, pointArray);
   }
 
+  /** create a query to find all polygons that intersect a provided circle. */
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, Circle... circle) {
+    return newGeometryQuery(field, queryRelation, circle);
+  }
+
   /** create a query to find all indexed geo shapes that intersect a provided geometry (or array of geometries).
    **/
   public static Query newGeometryQuery(String field, QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
@@ -143,4 +149,5 @@ public class LatLonShape {
     }
     return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
   }
+
 }

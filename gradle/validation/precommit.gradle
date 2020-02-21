@@ -39,6 +39,7 @@ configure(rootProject) {
           "licenses",
           "javadoc",
           "rat",
+          "ecjLint"
       ]}
     }
   }

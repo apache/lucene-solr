@@ -21,15 +21,13 @@ import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.errors.*;
 
-
 buildscript {
   repositories {
     mavenCentral()
   }
 
   dependencies {
-    classpath 'org.eclipse.jgit:org.eclipse.jgit:5.3.0.201903130848-r'
-    classpath 'commons-codec:commons-codec:1.6'
+    classpath "org.eclipse.jgit:org.eclipse.jgit:${scriptDepVersions['jgit']}"
   }
 }
 

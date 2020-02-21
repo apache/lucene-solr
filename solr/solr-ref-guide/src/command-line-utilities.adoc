@@ -154,3 +154,28 @@ Unlike the CLUSTERPROP command on the <<cluster-node-management.adoc#clusterprop
 ----
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181 -cmd clusterprop -name urlScheme -val https
 ----
+
+=== Export data from a collection to a file
+
+This command downloads documents from all shards in parallel and write the documents to a single file. The supported format are `jsonl` and `javabin`
+
+Arguments are:
+
+ `-url` :: (Requred parameter) Url of the collection
+ `-out` :: (Optional) Name of the file to write to. default file name is `<collection-name>.json` . If the file name ends with `.json.gz` , the output is a zip file of json
+ `-format` :: (Optional) Supported values are json/javabin
+ `-limit` :: (Optional) No:of docs to export. By default the entire collection is exported
+ `-fields` :: (Optional) Fields to be exported. By default, all fields are exported
+
+example 1: Export all documents in a collection `gettingstarted` into a file called `gettingstarted.json`
+[source,bash]
+----
+bin/solr export -url http://localhost:8983/solr/gettingstarted
+----
+
+example 2: export 1M docs of collection `gettingstarted` into a file called `1MDocs.json.gz` as a zipped json file
+[source,bash]
+----
+bin/solr export -url http://localhost:8983/solr/gettingstarted -out 1MDocs.json.gz
+----
+

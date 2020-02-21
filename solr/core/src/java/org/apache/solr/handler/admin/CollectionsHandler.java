@@ -301,14 +301,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  /*
-   * In SOLR-11739 we change the way the async IDs are checked to decide if one has
-   * already been used or not. For backward compatibility, we continue to check in the
-   * old way (meaning, in all the queues) for now. This extra check should be removed
-   * in Solr 9
-   */
-  private static final boolean CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS = true;
-
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
@@ -330,34 +322,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       NamedList<String> r = new NamedList<>();
 
-      if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
-          coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
-              coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
-              coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
-              overseerCollectionQueueContains(asyncId))) {
-        // for back compatibility, check in the old places. This can be removed in Solr 9
-        r.add("error", "Task with the same requestid already exists.");
-      } else {
-        if (coreContainer.getZkController().claimAsyncId(asyncId)) {
-          boolean success = false;
-          try {
-            coreContainer.getZkController().getOverseerCollectionQueue()
-                .offer(Utils.toJSON(m));
-            success = true;
-          } finally {
-            if (!success) {
-              try {
-                coreContainer.getZkController().clearAsyncId(asyncId);
-              } catch (Exception e) {
-                // let the original exception bubble up
-                log.error("Unable to release async ID={}", asyncId, e);
-                SolrZkClient.checkInterrupted(e);
-              }
+
+      if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+        boolean success = false;
+        try {
+          coreContainer.getZkController().getOverseerCollectionQueue()
+              .offer(Utils.toJSON(m));
+          success = true;
+        } finally {
+          if (!success) {
+            try {
+              coreContainer.getZkController().clearAsyncId(asyncId);
+            } catch (Exception e) {
+              // let the original exception bubble up
+              log.error("Unable to release async ID={}", asyncId, e);
+              SolrZkClient.checkInterrupted(e);
             }
           }
-        } else {
-          r.add("error", "Task with the same requestid already exists.");
         }
+      } else {
+        r.add("error", "Task with the same requestid already exists.");
       }
       r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
 
@@ -959,7 +943,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
-    OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> (Map) new LinkedHashMap<>()),
+    OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
 
     /**
      * Handle list collection request.
@@ -1041,7 +1025,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (!shardUnique && !SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(prop)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
             + " the property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'. " +
-            " Property: " + prop + " shardUnique: " + Boolean.toString(shardUnique));
+            " Property: " + prop + " shardUnique: " + shardUnique);
       }
 
       return copy(req.getParams(), map, ONLY_ACTIVE_NODES, SHARD_UNIQUE);
@@ -1442,7 +1426,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
           }
 
-          if ((replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount)) return true;
+          return (replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount);
         }
         return false;
       });

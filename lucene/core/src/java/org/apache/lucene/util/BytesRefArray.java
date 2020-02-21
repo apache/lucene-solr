@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.IntBinaryOperator;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -117,8 +118,12 @@ public final class BytesRefArray implements SortableBytesRefArray {
     }
     pool.setBytesRef(spare, result, offset, length);
   }
-  
-  private int[] sort(final Comparator<BytesRef> comp) {
+
+
+  /**
+   * Returns a {@link SortState} representing the order of elements in this array. This is a non-destructive operation.
+   */
+  public SortState sort(final Comparator<BytesRef> comp, final IntBinaryOperator tieComparator) {
     final int[] orderedEntries = new int[size()];
     for (int i = 0; i < orderedEntries.length; i++) {
       orderedEntries[i] = i;
@@ -136,22 +141,28 @@ public final class BytesRefArray implements SortableBytesRefArray {
         final int idx1 = orderedEntries[i], idx2 = orderedEntries[j];
         setBytesRef(scratch1, scratchBytes1, idx1);
         setBytesRef(scratch2, scratchBytes2, idx2);
-        return comp.compare(scratchBytes1, scratchBytes2);
+        return compare(idx1, scratchBytes1, idx2, scratchBytes2);
       }
       
       @Override
       protected void setPivot(int i) {
-        final int index = orderedEntries[i];
-        setBytesRef(pivotBuilder, pivot, index);
+        pivotIndex = orderedEntries[i];
+        setBytesRef(pivotBuilder, pivot, pivotIndex);
       }
       
       @Override
       protected int comparePivot(int j) {
         final int index = orderedEntries[j];
         setBytesRef(scratch2, scratchBytes2, index);
-        return comp.compare(pivot, scratchBytes2);
+        return compare(pivotIndex, pivot, index, scratchBytes2);
       }
 
+      private int compare(int i1, BytesRef b1, int i2, BytesRef b2) {
+        int res = comp.compare(b1, b2);
+        return res == 0 ? tieComparator.applyAsInt(i1, i2) : res;
+      }
+
+      private int pivotIndex;
       private final BytesRef pivot = new BytesRef();
       private final BytesRef scratchBytes1 = new BytesRef();
       private final BytesRef scratchBytes2 = new BytesRef();
@@ -159,14 +170,14 @@ public final class BytesRefArray implements SortableBytesRefArray {
       private final BytesRefBuilder scratch1 = new BytesRefBuilder();
       private final BytesRefBuilder scratch2 = new BytesRefBuilder();
     }.sort(0, size());
-    return orderedEntries;
+    return new SortState(orderedEntries);
   }
   
   /**
    * sugar for {@link #iterator(Comparator)} with a <code>null</code> comparator
    */
   public BytesRefIterator iterator() {
-    return iterator(null);
+    return iterator((SortState) null);
   }
   
   /**
@@ -185,20 +196,66 @@ public final class BytesRefArray implements SortableBytesRefArray {
    */
   @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
+    return iterator(sort(comp, (i, j) -> 0));
+  }
+
+  /**
+   * Returns an {@link IndexedBytesRefIterator} with point in time semantics. The iterator provides access to all
+   * so far appended {@link BytesRef} instances. If a non-null sortState is specified then the iterator will iterate
+   * the byte values in the order of the sortState; otherwise, the order is the same as the values were appended.
+   */
+  public IndexedBytesRefIterator iterator(final SortState sortState) {
+    final int size = size();
+    final int[] indices = sortState == null ? null : sortState.indices;
+    assert indices == null || indices.length == size : indices.length + " != " + size;
     final BytesRefBuilder spare = new BytesRefBuilder();
     final BytesRef result = new BytesRef();
-    final int size = size();
-    final int[] indices = comp == null ? null : sort(comp);
-    return new BytesRefIterator() {
-      int pos = 0;
+
+    return new IndexedBytesRefIterator() {
+      int pos = -1;
+      int ord = 0;
       @Override
       public BytesRef next() {
+        ++pos;
         if (pos < size) {
-          setBytesRef(spare, result, indices == null ? pos++ : indices[pos++]);
+          ord = indices == null ? pos : indices[pos];
+          setBytesRef(spare, result, ord);
           return result;
         }
         return null;
       }
+
+      @Override
+      public int ord() {
+        return ord;
+      }
     };
+  }
+
+  /**
+   * Used to iterate the elements of an array in a given order.
+   */
+  public final static class SortState implements Accountable {
+    private final int[] indices;
+
+    private SortState(int[] indices) {
+      this.indices = indices;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + indices.length * Integer.BYTES;
+    }
+  }
+
+  /**
+   * An extension of {@link BytesRefIterator} that allows retrieving the index of the current element
+   */
+  public interface IndexedBytesRefIterator extends BytesRefIterator {
+    /**
+     * Returns the ordinal position of the element that was returned in the latest call of {@link #next()}.
+     * Do not call this method if {@link #next()} is not called yet or the last call returned a null value.
+     */
+    int ord();
   }
 }

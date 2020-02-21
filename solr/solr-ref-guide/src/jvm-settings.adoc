@@ -18,25 +18,28 @@
 
 Optimizing the JVM can be a key factor in getting the most from your Solr installation.
 
-Configuring your JVM can be a complex topic and a full discussion is beyond the scope of this document. Luckily, most modern JVMs are quite good at making the best use of available resources with default settings. The following sections contain a few tips that may be helpful when the defaults are not optimal for your situation.
+Configuring your JVM is be a complex topic and a full discussion is beyond the scope of this document. Luckily, most modern JVMs are quite good at making the best use of available resources with default settings. The following sections contain a few tips that may be helpful when the defaults are not optimal for your situation.
 
 For more general information about improving Solr performance, see https://cwiki.apache.org/confluence/display/solr/SolrPerformanceFactors[Solr Performance Factors] in the Solr Wiki.
 
 == Choosing Memory Heap Settings
 
-The most important JVM configuration settings are those that determine the amount of memory it is allowed to allocate. There are two primary command-line options that set memory limits for the JVM. These are `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size to which the heap is allowed to grow.
+The most important JVM configuration settings control the heap allocated to the JVM: `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size of the heap. Setting these two options to the same value is a common practice.
 
-If your Solr application requires more heap space than you specify with the `-Xms` option, the heap will grow automatically. It's quite reasonable to not specify an initial size and let the heap grow as needed. The only downside is a somewhat slower startup time since the application will take longer to initialize. Setting the initial heap size higher than the default may avoid a series of heap expansions, which often results in objects being shuffled around within the heap, as the application spins up.
+Heap size is critical and unfortunately there is no "one size fits all" solution, you must test with your data and your application. The best way to determine the correct size is to analyze the garbage collection (GC) logs located in your logs directory. There are various tools that help analyze these logs and, in particular, show the amount of memory used after GC has completed (GCViewer and GCEasy are two). Also you can attach jconsole (distributed with most Java runtimes) to check memory consumption as Solr is running. This will show the absolute miminum amount of memory required; adding 25-50% "headroom" is a reasonable starting point.
 
-The maximum heap size, set with `-Xmx`, is more critical. If the memory heap grows to this size, object creation may begin to fail and throw `OutOfMemoryException`. Setting this limit too low can cause spurious errors in your application, but setting it too high can be detrimental as well.
+There are several points to keep in mind:
 
-It doesn't always cause an error when the heap reaches the maximum size. Before an error is raised, the JVM will first try to reclaim any available space that already exists in the heap. Only if all garbage collection attempts fail will your application see an exception. As long as the maximum is big enough, your app will run without error, but it may run more slowly if forced garbage collection kicks in frequently.
+ * Running Solr with too little "headroom" allocated for the heap can cause excessive resources to be consumed by continual GC. Thus the 25-50% recommendation above.
+ * Lucene/Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index. Therefore, as much memory as possible should be left for the operating system to use for this purpose.
+ * The heap allocated should be as small as possible while maintaining good performance. 8-16G is quite common, and larger heaps are sometimes used. When heaps grow to larger sizes, it is imperative to test extensively before going to production.
+ * The G1GC garbage collector is currently preferred when using a JVM that supports it (Java 9 and later)
+ * Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps.
+ * It's good practice to periodically re-analyze the GC logs and/or monitor with  <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
+ * On *nix systems, we recommend that Solr be run with the "oom killer script" (see solr/bin/oom_solr.sh). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
+ * All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed. If, through monitoring, these collections are frequent and greater than your application can tolerate, additional tuning should be considered. "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.
 
-The larger the heap the longer it takes to do garbage collection. This can mean minor, random pauses or, in extreme cases, "freeze the world" pauses of a minute or more. As a practical matter, this can become a serious problem for heap sizes that exceed about two gigabytes, even if far more physical memory is available. On robust hardware, you may get better results running multiple JVMs, rather than just one with a large memory heap. Some specialized JVM implementations may have customized garbage collection algorithms that do better with large heaps. Consult your JVM vendor's documentation.
-
-When setting the maximum heap size, be careful not to let the JVM consume all available physical memory. If the JVM process space grows too large, the operating system will start swapping it, which will severely impact performance. In addition, the operating system uses memory space not allocated to processes for file system cache and other purposes. This is especially important for I/O-intensive applications, like Lucene/Solr. The larger your indexes, the more you will benefit from filesystem caching by the OS. It may require some experimentation to determine the optimal tradeoff between heap space for the JVM and memory space for the OS to use.
-
-On systems with many CPUs/cores, it can also be beneficial to tune the layout of the heap and/or the behavior of the garbage collector. Adjusting the relative sizes of the generational pools in the heap can affect how often GC sweeps occur and whether they run concurrently. Configuring the various settings of how the garbage collector should behave can greatly reduce the overall performance impact when it does run. There is a lot of good information on this topic available on Sun's website. A good place to start is here: http://www.oracle.com/technetwork/java/javase/tech/index-jsp-140228.html[Oracle's Java HotSpot Garbage Collection].
+Consult your JVM vendor's documentation for specifics in your particular case, the recommendations above are intended as starting points.
 
 == Use the Server HotSpot VM
 
@@ -45,5 +48,3 @@ If you are using Sun's JVM, add the `-server` command-line option when you start
 == Checking JVM Settings
 
 A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `solr/admin/system`. This request handler will display a wealth of server statistics and settings.
-
-You can also use any of the tools that are compatible with the Java Management Extensions (JMX). See the section <<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>> for more information.

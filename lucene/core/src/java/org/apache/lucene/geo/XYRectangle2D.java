@@ -235,9 +235,6 @@ final class XYRectangle2D implements Component2D {
 
   /** create a component2D from the provided XY rectangle */
   static Component2D create(XYRectangle rectangle) {
-    return new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minX)),
-        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxX)),
-        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minY)),
-        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxY)));
+    return new XYRectangle2D(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
   }
 }
