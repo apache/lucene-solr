@@ -15,82 +15,76 @@
  * limitations under the License.
  */
 
+configure(rootProject) {
+  ext {
+    // too many classes to fix overall to just enable the above to be level="method" right now,
+    // but we can prevent the modules that don't have problems from getting any worse
+    methodLevels = [
+      ':lucene:analysis:icu',
+      ':lucene:analysis:morfologik',
+      ':lucene:analysis:phonetic',
+      ':lucene:analysis:stempel',
+      ':lucene:classification',
+      ':lucene:demo',
+      ':lucene:expressions',
+      ':lucene:facet',
+      ':lucene:join',
+      ':lucene:memory',
+      ':lucene:suggest',
+      ':lucene:spatial3d',
+    ]
+  }
+}
+
 allprojects {
-  task checkMissingDocs() {
-    group 'Verification'
-    description 'Check missing Javadocs'
-
-    dependsOn project.tasks.matching { task ->
-      task.name in [ 'checkMissingDocsPackage', 'checkMissingDocsClass', 'checkMissingDocsMethod' ]
-    }
-  }
-}
-
-configure(project(':lucene').subprojects) {
-
-  def methodLevelCheckProjects = [
-    project(':lucene:analysis:icu'),
-    project(':lucene:analysis:morfologik'),
-    project(':lucene:analysis:phonetic'),
-    project(':lucene:analysis:stempel'),
-    project(':lucene:classification'),
-    project(':lucene:demo'),
-    project(':lucene:expressions'),
-    project(':lucene:facet'),
-    project(':lucene:join'),
-    project(':lucene:memory'),
-    project(':lucene:suggest'),
-    project(':lucene:spatial3d')
-  ]
-
   plugins.withType(JavaPlugin) {
-    if (project in methodLevelCheckProjects) {
-      // too many classes to fix overall to just enable the above to be level="method" right now,
-      // but we can prevent the modules that don't have problems from getting any worse
-      task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
-        enabled = project.javadoc.destinationDir.exists()
 
-        dirs += [ project.javadoc.destinationDir.absolutePath ]
-        level = "method"
-      }
-    } else {
-      task checkMissingDocsClass(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
-        enabled = project.javadoc.destinationDir.exists()
-
-        dirs += [ project.javadoc.destinationDir.absolutePath ]
-        level = "class"
-      }
+    // set the default check level for each project
+    def lv = {
+      if (project.path.startsWith(':solr')) 'package'  // todo: add missing docs for all classes and bump this to level=class
+      else if (project.path in rootProject.methodLevels ) 'method'
+      else 'class'
     }
 
-    if (project == project(':lucene:core')) {
-
-      def methodLevelCheckDirs = [
-        "/org/apache/lucene/util/automaton",
-        "/org/apache/lucene/analysis",
-        "/org/apache/lucene/document",
-        "/org/apache/lucene/search/similarities",
-        "/org/apache/lucene/index",
-        "/org/apache/lucene/codecs"
-      ].collect { path -> "${project.javadoc.destinationDir.absolutePath}${path}" }
-
-      // too much to fix core/ for now, but enforce full javadocs for key packages
-      task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
-        dirs += methodLevelCheckDirs
-        level = "method"
-      }
-    }
-  }
-}
-
-configure(project(':solr').subprojects) {
-  plugins.withType(JavaPlugin) {
-    // todo: add missing docs for all classes and bump this to level=class
-    task checkMissingDocsPackage(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
       enabled = project.javadoc.destinationDir.exists()
-
       dirs += [ project.javadoc.destinationDir.absolutePath ]
-      level = "package"
+      level = lv.call()
     }
+
+    task checkMissingDocs() {
+      group 'Verification'
+      description 'Check missing Javadocs'
+
+      dependsOn checkMissingDocsDefault
+    }
+
+  }
+}
+
+configure(project(':lucene:core')) {
+  plugins.withType(JavaPlugin) {
+
+    // too much to fix core/ for now, but enforce full javadocs for key packages
+    def checkedDirs = [
+      "/org/apache/lucene/util/automaton",
+      "/org/apache/lucene/analysis",
+      "/org/apache/lucene/document",
+      "/org/apache/lucene/search/similarities",
+      "/org/apache/lucene/index",
+      "/org/apache/lucene/codecs"
+    ].collect { path -> "${project.javadoc.destinationDir.absolutePath}${path}" }
+
+    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+      dirs = checkedDirs
+      level = 'method'
+    }
+
+    checkMissingDocs {
+      dependsOn checkMissingDocsDefault
+      dependsOn checkMissingDocsMethod
+    }
+
   }
 }
 
