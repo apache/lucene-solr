@@ -1091,25 +1091,33 @@ final public class Operations {
    * @return common prefix, which can be an empty (length 0) BytesRef (never null)
    */
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
-    BytesRefBuilder builder = new BytesRefBuilder();
-    HashSet<Integer> visited = new HashSet<>();
     int s = 0;
-    boolean done;
-    Transition t = new Transition();
-    do {
-      done = true;
-      visited.add(s);
+    Transition t = null;
+    HashSet<Integer> visited = null;
+    BytesRefBuilder builder = null;
+    while (true) {
       if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
+        if (t == null) {
+          t = new Transition();
+        }
         a.getTransition(s, 0, t);
-        if (t.min == t.max && !visited.contains(t.dest)) {
-          builder.append((byte) t.min);
-          s = t.dest;
-          done = false;
+        if (t.min == t.max) {
+          if (visited == null) {
+            visited = new HashSet<>();
+            visited.add(0);
+          }
+          if (visited.add(s = t.dest)) {
+            if (builder == null) {
+              builder = new BytesRefBuilder();
+            }
+            builder.append((byte) t.min);
+            continue;
+          }
         }
       }
-    } while (!done);
-
-    return builder.get();
+      break;
+    }
+    return builder == null ? new BytesRef() : builder.get();
   }
 
   /** If this automaton accepts a single input, return it.  Else, return null.
