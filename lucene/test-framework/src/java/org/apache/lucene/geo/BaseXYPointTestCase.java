@@ -539,7 +539,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
       }
 
-      Query query = newRectQuery(FIELD_NAME, (float) rect.minX, (float) rect.maxX, (float) rect.minY, (float) rect.maxY);
+      Query query = newRectQuery(FIELD_NAME, rect.minX, rect.maxX, rect.minY, rect.maxY);
 
       final FixedBitSet hits = new FixedBitSet(r.maxDoc());
       s.search(query, new SimpleCollector() {

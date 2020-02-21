@@ -41,7 +41,7 @@ import org.apache.lucene.search.SortField;
  * <p>
  * If you also need query operations, you should add a separate {@link XYPointField} instance.
  * If you also need to store the value, you should add a separate {@link StoredField} instance.
- * <p>
+ *
  * @see XYPointField
  */
 public class XYDocValuesField extends Field {

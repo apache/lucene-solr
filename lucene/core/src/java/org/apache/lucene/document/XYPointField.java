@@ -44,7 +44,6 @@ import org.apache.lucene.util.NumericUtils;
  * <p>
  * If you also need per-document operations such as sort by distance, add a separate {@link XYDocValuesField} instance.
  * If you also need to store the value, you should add a separate {@link StoredField} instance.
- * <p>
  *
  * @see PointValues
  * @see XYDocValuesField

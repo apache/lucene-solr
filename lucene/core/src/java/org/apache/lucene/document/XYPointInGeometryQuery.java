@@ -39,8 +39,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
-
 
 /** Finds all previously indexed points that fall within the specified XY geometries.
  *
