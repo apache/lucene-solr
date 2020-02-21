@@ -17,6 +17,18 @@
 
 // This downloads and compiles Kuromoji dictionaries.
 
+def recompileDictionary(project, dictionaryName, Closure closure) {
+  project.javaexec {
+    main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
+    classpath = project.sourceSets.main.runtimeClasspath
+
+    jvmArgs '-Xmx1G'
+
+    with closure
+  }
+  project.logger.lifecycle("Automaton regenerated from dictionary: ${dictionaryName}")
+}
+
 configure(project(":lucene:analysis:kuromoji")) {
   apply plugin: 'java-library'
   apply plugin: "de.undercouch.download"
@@ -25,10 +37,21 @@ configure(project(":lucene:analysis:kuromoji")) {
     targetDir = file("src/resources")
   }
 
-  task compileMecabIpadic(type: Download) {
-    description "Recompile mecab dictionaries."
+  task deleteDictionaryData() {
+    // There should really be just one but since we don't know which
+    // one it'll be, let's process all of them.
+    doFirst {
+      sourceSets.main.resources.srcDirs.each { location ->
+        delete fileTree(dir: location, include: "org/apache/lucene/analysis/ja/dict/*.dat")
+      }
+    }
+  }
+
+  task compileMecab(type: Download) {
+    description "Recompile dictionaries from Mecab data."
     group "generation"
 
+    dependsOn deleteDictionaryData
     dependsOn sourceSets.main.runtimeClasspath
 
     def dictionaryName = "mecab-ipadic-2.7.0-20070801"
@@ -58,12 +81,7 @@ configure(project(":lucene:analysis:kuromoji")) {
       }
 
       // Compile the dictionary
-      project.javaexec {
-        main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
-        classpath = sourceSets.main.runtimeClasspath
-
-        jvmArgs '-Xmx1G'
-
+      recompileDictionary(project, dictionaryName, {
         args += [
             "ipadic",
             unpackedDir,
@@ -71,19 +89,15 @@ configure(project(":lucene:analysis:kuromoji")) {
             "euc-jp",
             false
         ]
-
-        logger.lifecycle("Automaton regenerated from dictionary: ${dictionaryName}")
-      }
+      })
     }
   }
 
-  /*
-  TODO: this currently doesn't work because DictionaryBuilder no longer supports this type?
-
   task compileNaist(type: Download) {
-    description "Recompile naist dictionaries."
+    description "Recompile dictionaries from Naist data."
     group "generation"
 
+    dependsOn deleteDictionaryData
     dependsOn sourceSets.main.runtimeClasspath
 
     def dictionaryName = "mecab-naist-jdic-0.6.3b-20111013"
@@ -103,21 +117,15 @@ configure(project(":lucene:analysis:kuromoji")) {
       }
 
       // Compile the dictionary
-      project.javaexec {
-        main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
-        classpath = sourceSets.main.runtimeClasspath
-
-        jvmArgs '-Xmx1G'
-
+      recompileDictionary(project, dictionaryName, {
         args += [
-            "naist",
+            "ipadic",
             unpackedDir,
             targetDir,
             "euc-jp",
             false
         ]
-      }
+      })
     }
   }
-   */
 }
