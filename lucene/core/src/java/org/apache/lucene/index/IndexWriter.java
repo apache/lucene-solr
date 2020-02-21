@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,6 +69,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
@@ -324,6 +326,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private long mergeGen;
   private boolean stopMerges;
   private boolean didMessageState;
+  // This allows to ensure that all modifying threads have left IW before we are closing / rolling back
+  // see {@link IndexWriter#rollbackInternal}
+  private final Semaphore modificationLease = new Semaphore(Integer.MAX_VALUE, true);
 
   final AtomicInteger flushCount = new AtomicInteger();
 
@@ -332,7 +337,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final ReaderPool readerPool;
   final BufferedUpdatesStream bufferedUpdatesStream;
 
-  /** Counts how many merges have completed; this is used by {@link FrozenBufferedUpdates#apply}
+  /** Counts how many merges have completed; this is used by {@link FrozenBufferedUpdates#forceApply(IndexWriter)}
    *  to handle concurrently apply deletes/updates with merges completing. */
   final AtomicLong mergeFinishedGen = new AtomicLong();
 
@@ -459,6 +464,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *
    * @throws IOException If there is a low-level I/O error
    */
+  @SuppressWarnings("try")
   DirectoryReader getReader(boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     ensureOpen();
 
@@ -486,7 +492,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      * directory reader!
      */
     boolean success2 = false;
-    try {
+    try (Closeable finalizer = acquireModificationLease()) {
       boolean success = false;
       synchronized (fullFlushLock) {
         try {
@@ -1044,11 +1050,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         flush(true, true);
         waitForMerges();
         commitInternal(config.getMergePolicy());
-        rollbackInternal(); // ie close, since we just committed
+        rollbackInternal(true); // ie close, since we just committed
       } catch (Throwable t) {
         // Be certain to close the index on any exception
         try {
-          rollbackInternal();
+          rollbackInternal(true);
         } catch (Throwable t1) {
           t.addSuppressed(t1);
         }
@@ -1277,15 +1283,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return updateDocuments(delTerm == null ? null : DocumentsWriterDeleteQueue.newNode(delTerm), docs);
   }
 
+  @SuppressWarnings("try")
   private long updateDocuments(final DocumentsWriterDeleteQueue.Node<?> delNode, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     ensureOpen();
     boolean success = false;
-    try {
-      long seqNo = docWriter.updateDocuments(docs, analyzer, delNode);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
+    try (Closeable finalizer = acquireModificationLease()) {
+      long seqNo = processEvents(docWriter.updateDocuments(docs, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1515,15 +1518,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  @SuppressWarnings("try")
   public long deleteDocuments(Term... terms) throws IOException {
     ensureOpen();
-    try {
-      long seqNo = docWriter.deleteTerms(terms);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+    try (Closeable finalizer = acquireModificationLease()) {
+      return processEvents(docWriter.deleteTerms(terms));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Term..)");
       throw tragedy;
@@ -1542,6 +1541,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  @SuppressWarnings("try")
   public long deleteDocuments(Query... queries) throws IOException {
     ensureOpen();
 
@@ -1552,18 +1552,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    try {
-      long seqNo = docWriter.deleteQueries(queries);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-
-      return seqNo;
+    try (Closeable finalizer = acquireModificationLease()) {
+      return processEvents(docWriter.deleteQueries(queries));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Query..)");
       throw tragedy;
     }
+  }
+  private Closeable acquireModificationLease() {
+    return acquireModificationLease(null);
+  }
+
+  private Closeable acquireModificationLease(Closeable in) {
+    if (modificationLease.tryAcquire() == false) {
+      assert closing;
+      ensureOpen();
+      assert false : "We should not have reached this point, if we can't acquire any lease we should be closing";
+    }
+    return () -> IOUtils.close(in, modificationLease::release);
   }
 
   /**
@@ -1586,16 +1592,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return updateDocument(term == null ? null : DocumentsWriterDeleteQueue.newNode(term), doc);
   }
 
+  @SuppressWarnings("try")
   private long updateDocument(final DocumentsWriterDeleteQueue.Node<?> delNode,
                               Iterable<? extends IndexableField> doc) throws IOException {
-    ensureOpen();
+
     boolean success = false;
-    try {
-      long seqNo = docWriter.updateDocument(doc, analyzer, delNode);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
+    try (Closeable finalizer = acquireModificationLease()) {
+      long seqNo = processEvents(docWriter.updateDocument(doc, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1675,6 +1678,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @throws IOException
    *           if there is a low-level IO error
    */
+  @SuppressWarnings("try")
   public long updateNumericDocValue(Term term, String field, long value) throws IOException {
     ensureOpen();
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
@@ -1683,13 +1687,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (config.getIndexSortFields().contains(field)) {
       throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
     }
-    try {
-      long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+    try (Closeable finalizer = acquireModificationLease()) {
+      return processEvents(docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateNumericDocValue");
       throw tragedy;
@@ -1720,6 +1719,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @throws IOException
    *           if there is a low-level IO error
    */
+  @SuppressWarnings("try")
   public long updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
     ensureOpen();
     if (value == null) {
@@ -1728,13 +1728,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (!globalFieldNumberMap.contains(field, DocValuesType.BINARY)) {
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }
-    try {
-      long seqNo = docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value));
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+    try (Closeable finalizer = acquireModificationLease()) {
+      return processEvents(docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateBinaryDocValue");
       throw tragedy;
@@ -1760,16 +1755,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @throws IOException
    *           if there is a low-level IO error
    */
+  @SuppressWarnings("try")
   public long updateDocValues(Term term, Field... updates) throws IOException {
     ensureOpen();
     DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates);
-    try {
-      long seqNo = docWriter.updateDocValues(dvUpdates);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+    try (Closeable finalizer = acquireModificationLease()) {
+      return processEvents(docWriter.updateDocValues(dvUpdates));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocValues");
       throw tragedy;
@@ -2242,15 +2233,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
     if (shouldClose(true)) {
-      rollbackInternal();
+      rollbackInternal(true);
     }
   }
 
-  private void rollbackInternal() throws IOException {
+  private void rollbackInternal(boolean gracefully) throws IOException {
     // Make sure no commit is running, else e.g. we can close while another thread is still fsync'ing:
     synchronized(commitLock) {
-      rollbackInternalNoCommit();
-
+      // we might rollback due to a tragic event which means we potentially already have
+      // a lease in this case we we can't acquire all leases. In this case rolling back in best effort in terms
+      // off letting all threads gracefully finish. In such a situation some threads might run into
+      // AlreadyClosedExceptions in places they normally wouldn't which doesn't have any impact on
+      // correctness or consistency. The tragic event is fatal anyway.
+      final int leases;
+      if (gracefully) { // in the case
+        leases = Integer.MAX_VALUE;
+        modificationLease.acquireUninterruptibly(leases);
+      } else {
+        // still try to draon all permits to prevent any new threads modifying the index.
+        leases = modificationLease.drainPermits();
+      }
+      // at this point we hold the commit lock and all modification leases - no one should be modifying
+      // the IW anymore at this point we can close safely.
+      try {
+        rollbackInternalNoCommit();
+      } finally {
+        modificationLease.release(leases);
+      }
       assert pendingNumDocs.get() == segmentInfos.totalMaxDoc()
           : "pendingNumDocs " + pendingNumDocs.get() + " != " + segmentInfos.totalMaxDoc() + " totalMaxDoc";
     }
@@ -2273,8 +2282,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes
       assert !Thread.holdsLock(this) : "IndexWriter lock should never be hold when aborting";
-      docWriter.abort(); // don't sync on IW here
-      docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
+      docWriter.abort(); // don't sync on IW here - this waits for all concurrently running flushes
       publishFlushedSegments(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
       synchronized (this) {
 
@@ -2417,7 +2425,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      */
     try {
       synchronized (fullFlushLock) {
-        try (Closeable finalizer = docWriter.lockAndAbortAll()) {
+        try (Closeable finalizer = acquireModificationLease(docWriter.lockAndAbortAll())) {
           processEvents(false);
           synchronized (this) {
             try {
@@ -3132,8 +3140,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @return <code>true</code> iff this method flushed at least on segment to disk.
    * @lucene.experimental
    */
+  @SuppressWarnings("try")
   public final boolean flushNextBuffer() throws IOException {
-    try {
+    try (Closeable finalizer = acquireModificationLease()){
       if (docWriter.flushOneDWPT()) {
         processEvents(true);
         return true; // we wrote a segment
@@ -3552,6 +3561,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /** Returns true a segment was flushed or deletes were applied. */
+  @SuppressWarnings("try")
   private boolean doFlush(boolean applyAllDeletes) throws IOException {
     if (tragedy.get() != null) {
       throw new IllegalStateException("this writer hit an unrecoverable error; cannot flush", tragedy.get());
@@ -3560,25 +3570,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     doBeforeFlush();
     testPoint("startDoFlush");
     boolean success = false;
-    try {
+    try (Closeable finalizer = acquireModificationLease()){
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "  start flush: applyAllDeletes=" + applyAllDeletes);
         infoStream.message("IW", "  index before flush " + segString());
       }
-      boolean anyChanges = false;
+      boolean anyChanges;
       
       synchronized (fullFlushLock) {
         boolean flushSuccess = false;
         try {
-          long seqNo = docWriter.flushAllThreads();
-          if (seqNo < 0) {
-            seqNo = -seqNo;
-            anyChanges = true;
-          } else {
-            anyChanges = false;
-          }
-          if (!anyChanges) {
+          anyChanges = docWriter.flushAllThreads() < 0;
+          if (anyChanges == false) {
             // flushCount is incremented in flushAllThreads
             flushCount.incrementAndGet();
           }
@@ -4891,7 +4895,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     assert Thread.holdsLock(fullFlushLock) == false;
     // if we are already closed (e.g. called by rollback), this will be a no-op.
     if (this.tragedy.get() != null && shouldClose(false)) {
-      rollbackInternal();
+      rollbackInternal(false);
     }
   }
 
@@ -5090,6 +5094,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "decRefDeleter for NRT reader version=" + segmentInfos.getVersion() + " segments=" + segString(segmentInfos));
     }
+  }
+
+  /**
+   * Processes all events and might trigger a merge if the given seqNo is negative
+   * @param seqNo
+   * @return the given seqId inverted if negative.
+   */
+  private long processEvents(long seqNo) throws IOException {
+    if (seqNo < 0) {
+      seqNo = -seqNo;
+      processEvents(true);
+    }
+    return seqNo;
   }
   
   private void processEvents(boolean triggerMerge) throws IOException {
