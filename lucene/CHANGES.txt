@@ -121,6 +121,9 @@ New Features
 
 * LUCENE-8707: Add LatLonShape and XYShape distance query. (Ignacio Vera)
 
+* LUCENE-9238: New XYPointField field and Queries for indexing, searching and sorting
+  cartesian points. (Ignacio Vera)
+
 Improvements
 ---------------------
 
