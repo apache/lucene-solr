@@ -87,6 +87,7 @@ apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
+apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
