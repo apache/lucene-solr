@@ -307,7 +307,7 @@ Check these limits every time you upgrade your kernel or operating system. These
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
 ====
 
-=== Avoid Swapping
+=== Avoid Swapping (*nix Operating Systems)
 
 When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation. We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system. So our recommendation is to disable swap on the host altogether or reduce the "swappiness". These instructions are valid for Linux environments. Also note that when running Solr in a Docker container, these changes must be applied to the *host*.
 
@@ -320,7 +320,7 @@ To disable swap on a Linux system temporarily, you can run the `swapoff` command
 sudo swapoff -a
 ----
 
-If you want to make this setting permanent, first make sure you have more than enough physical RAM on your host and then consult the documentation for correct procedure to disable swap.
+If you want to make this setting permanent, first make sure you have more than enough physical RAM on your host and then consult the documentation for your Linux system for the correct procedure to disable swap.
 
 ==== Reduce Swappiness
 
@@ -331,14 +331,14 @@ An alternative option is to reduce the "swappiness" of your system. A Linux syst
 cat /proc/sys/vm/swappiness
 ----
 
-Next, to change the setting permanently, open ``/etc/sysctl.conf` as the root user. Then, change or add this line to the file:
+Next, to change the setting permanently, open `/etc/sysctl.conf` as the root user. Then, change or add this line to the file:
 
 [source,bash]
 ----
 vm.swappiness = 1
 ----
 
-Alternatively, you can change the setting temporarily, run this comamnd:
+Alternatively, you can change the setting temporarily by running this comamnd:
 
 [source,bash]
 ----
