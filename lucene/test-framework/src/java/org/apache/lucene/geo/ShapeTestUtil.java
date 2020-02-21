@@ -21,8 +21,6 @@ import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
-import org.apache.lucene.util.SloppyMath;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -43,7 +41,7 @@ public class ShapeTestUtil {
         try {
           return createRegularPolygon(nextFloat(random), nextFloat(random), radius, gons);
         } catch (IllegalArgumentException iae) {
-          // we tried to cross dateline or pole ... try again
+          // something went wrong, try again
         }
       }
     }
@@ -137,9 +135,7 @@ public class ShapeTestUtil {
   }
 
   private static XYPolygon surpriseMePolygon(Random random) {
-    // repeat until we get a poly that doesn't cross dateline:
     while (true) {
-      //System.out.println("\nPOLY ITER");
       float centerX = nextFloat(random);
       float centerY = nextFloat(random);
       double radius = 0.1 + 20 * random.nextDouble();
@@ -150,7 +146,6 @@ public class ShapeTestUtil {
       double angle = 0.0;
       while (true) {
         angle += random.nextDouble()*40.0;
-        //System.out.println("  angle " + angle);
         if (angle > 360) {
           break;
         }
@@ -160,14 +155,11 @@ public class ShapeTestUtil {
 
         len = StrictMath.min(len, StrictMath.min(maxX, maxY));
 
-        //System.out.println("    len=" + len);
-        float x = (float)(centerX + len * Math.cos(SloppyMath.toRadians(angle)));
-        float y = (float)(centerY + len * Math.sin(SloppyMath.toRadians(angle)));
+        float x = (float)(centerX + len * Math.cos(Math.toRadians(angle)));
+        float y = (float)(centerY + len * Math.sin(Math.toRadians(angle)));
 
         xList.add(x);
         yList.add(y);
-
-        //System.out.println("    lat=" + lats.get(lats.size()-1) + " lon=" + lons.get(lons.size()-1));
       }
 
       // close it
@@ -222,5 +214,68 @@ public class ShapeTestUtil {
   /** Keep it simple, we don't need to take arbitrary Random for geo tests */
   private static Random random() {
     return RandomizedContext.current().getRandom();
+  }
+
+  /**
+   * Simple slow point in polygon check (for testing)
+   */
+  // direct port of PNPOLY C code (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html)
+  // this allows us to improve the code yet still ensure we have its properties
+  // it is under the BSD license (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
+  //
+  // Copyright (c) 1970-2003, Wm. Randolph Franklin
+  //
+  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  // documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+  // to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  //
+  // 1. Redistributions of source code must retain the above copyright
+  //    notice, this list of conditions and the following disclaimers.
+  // 2. Redistributions in binary form must reproduce the above copyright
+  //    notice in the documentation and/or other materials provided with
+  //    the distribution.
+  // 3. The name of W. Randolph Franklin may not be used to endorse or
+  //    promote products derived from this Software without specific
+  //    prior written permission.
+  //
+  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  // IN THE SOFTWARE.
+  public static boolean containsSlowly(XYPolygon polygon, double x, double y) {
+    if (polygon.getHoles().length > 0) {
+      throw new UnsupportedOperationException("this testing method does not support holes");
+    }
+    double polyXs[] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX());
+    double polyYs[] =XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY());
+    // bounding box check required due to rounding errors (we don't solve that problem)
+    if (x < polygon.minX || x > polygon.maxX || y < polygon.minY || y > polygon.maxY) {
+      return false;
+    }
+
+    boolean c = false;
+    int i, j;
+    int nvert = polyYs.length;
+    double verty[] = polyYs;
+    double vertx[] = polyXs;
+    double testy = y;
+    double testx = x;
+    for (i = 0, j = 1; j < nvert; ++i, ++j) {
+      if (testy == verty[j] && testy == verty[i] ||
+          ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
+        if ((testx == vertx[j] && testx == vertx[i]) ||
+            ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i]) &&
+                GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
+          // return true if point is on boundary
+          return true;
+        } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&
+            (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ) {
+          c = !c;
+        }
+      }
+    }
+    return c;
   }
 }
