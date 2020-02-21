@@ -188,7 +188,7 @@ SOLR_HEAP="8g"
 
 [NOTE]
 ====
-Do not allocate a very large Java Heap unless you know you need it. See <<jvm-settings.adoc#choosingmemory-heap-settings,Choosing Memory Heap Settings>> for details.
+Do not allocate a very large Java Heap unless you know you need it. See <<jvm-settings.adoc#choosing-memory-heap-settings,Choosing Memory Heap Settings>> for details.
 ====
 
 Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
