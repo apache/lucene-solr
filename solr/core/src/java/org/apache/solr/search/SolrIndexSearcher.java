@@ -782,49 +782,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return answerBits;
   }
 
-  /**
-   * Returns the set of document ids matching a query. This method is cache-aware and attempts to retrieve the answer
-   * from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a result of
-   * this call. This method can handle negative queries.
-   * <p>
-   * The DocSet returned should <b>not</b> be modified.
-   */
-  public DocSet getDocSet(Query query) throws IOException {
-    if (query instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) query;
-      if (!eq.getCache()) {
-        if (query instanceof WrappedQuery) {
-          query = ((WrappedQuery) query).getWrappedQuery();
-        }
-        query = QueryUtils.makeQueryable(query);
-        return getDocSetNC(query, null);
-      }
-    }
-
-    // Get the absolute value (positive version) of this query. If we
-    // get back the same reference, we know it's positive.
-    Query absQ = QueryUtils.getAbs(query);
-    boolean positive = query == absQ;
-
-    if (filterCache != null) {
-      DocSet absAnswer = filterCache.get(absQ);
-      if (absAnswer != null) {
-        if (positive) return absAnswer;
-        else return getLiveDocSet().andNot(absAnswer);
-      }
-    }
-
-    DocSet absAnswer = getDocSetNC(absQ, null);
-    DocSet answer = positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
-
-    if (filterCache != null) {
-      // cache negative queries as positive
-      filterCache.put(absQ, absAnswer);
-    }
-
-    return answer;
-  }
-
   // only handle positive (non negative) queries
   DocSet getPositiveDocSet(Query q) throws IOException {
     DocSet answer;
@@ -1163,45 +1120,58 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Returns the set of document ids matching both the query and the filter. This method is cache-aware and attempts to
-   * retrieve the answer from the cache if possible. If the answer was not cached, it may have been inserted into the
-   * cache as a result of this call.
-   * <p>
+   * Returns the set of document ids matching both the query.
+   * This method is cache-aware and attempts to retrieve a DocSet of the query from the cache if possible.
+   * If the answer was not cached, it may have been inserted into the cache as a result of this call.
    *
-   * @param filter
-   *          may be null
-   * @return DocSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @return Non-null DocSet meeting the specified criteria.  Should <b>not</b> be modified by the caller.
+   * @see #getDocSet(Query,DocSet)
+   */
+  public DocSet getDocSet(Query query) throws IOException {
+    return getDocSet(query, null);
+  }
+
+  /**
+   * Returns the set of document ids matching both the query and the filter.
+   * This method is cache-aware and attempts to retrieve a DocSet of the query from the cache if possible.
+   * If the answer was not cached, it may have been inserted into the cache as a result of this call.
+   *
+   * @param filter may be null if none
+   * @return Non-null DocSet meeting the specified criteria.  Should <b>not</b> be modified by the caller.
    */
   public DocSet getDocSet(Query query, DocSet filter) throws IOException {
-    if (filter == null) return getDocSet(query);
-
+    boolean doCache = filterCache != null;
     if (query instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) query;
-      if (!eq.getCache()) {
-        if (query instanceof WrappedQuery) {
-          query = ((WrappedQuery) query).getWrappedQuery();
-        }
-        query = QueryUtils.makeQueryable(query);
-        return getDocSetNC(query, filter);
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
+      }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
       }
     }
 
-    // Negative query if absolute value different from original
+    if (!doCache) {
+      query = QueryUtils.makeQueryable(query);
+      return getDocSetNC(query, filter);
+    }
+
+    // Get the absolute value (positive version) of this query. If we
+    // get back the same reference, we know it's positive.
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = absQ == query;
 
-    DocSet first;
-    if (filterCache != null) {
-      first = filterCache.get(absQ);
-      if (first == null) {
-        first = getDocSetNC(absQ, null);
-        filterCache.put(absQ, first);
-      }
-      return positive ? first.intersection(filter) : filter.andNot(first);
+    // note: can't use computeIfAbsent because can be recursive
+    DocSet absAnswer = filterCache.get(absQ);
+    if (absAnswer == null) {
+      absAnswer = getDocSetNC(absQ, null);
+      filterCache.put(absQ, absAnswer);
     }
 
-    // If there isn't a cache, then do a single filtered query if positive.
-    return positive ? getDocSetNC(absQ, filter) : filter.andNot(getPositiveDocSet(absQ));
+    if (filter == null) {
+      return positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
+    } else {
+      return positive ? absAnswer.intersection(filter) : filter.andNot(absAnswer);
+    }
   }
 
   /**
