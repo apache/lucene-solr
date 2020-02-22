@@ -2239,32 +2239,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private void rollbackInternal(boolean gracefully) throws IOException {
     // Make sure no commit is running, else e.g. we can close while another thread is still fsync'ing:
     synchronized(commitLock) {
-      // we might rollback due to a tragic event which means we potentially already have
-      // a lease in this case we we can't acquire all leases. In this case rolling back in best effort in terms
-      // off letting all threads gracefully finish. In such a situation some threads might run into
-      // AlreadyClosedExceptions in places they normally wouldn't which doesn't have any impact on
-      // correctness or consistency. The tragic event is fatal anyway.
-      final int leases;
-      if (gracefully) { // in the case
-        leases = Integer.MAX_VALUE;
-        modificationLease.acquireUninterruptibly(leases);
-      } else {
-        // still try to draon all permits to prevent any new threads modifying the index.
-        leases = modificationLease.drainPermits();
-      }
       // at this point we hold the commit lock and all modification leases - no one should be modifying
       // the IW anymore at this point we can close safely.
-      try {
-        rollbackInternalNoCommit();
-      } finally {
-        modificationLease.release(leases);
-      }
+      rollbackInternalNoCommit(gracefully);
       assert pendingNumDocs.get() == segmentInfos.totalMaxDoc()
           : "pendingNumDocs " + pendingNumDocs.get() + " != " + segmentInfos.totalMaxDoc() + " totalMaxDoc";
     }
   }
 
-  private void rollbackInternalNoCommit() throws IOException {
+  private void rollbackInternalNoCommit(boolean gracefully) throws IOException {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "rollback");
     }
@@ -2283,54 +2266,71 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       assert !Thread.holdsLock(this) : "IndexWriter lock should never be hold when aborting";
       docWriter.abort(); // don't sync on IW here - this waits for all concurrently running flushes
       publishFlushedSegments(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
-      synchronized (this) {
-
-        if (pendingCommit != null) {
-          pendingCommit.rollbackCommit(directory);
-          try {
-            deleter.decRef(pendingCommit);
-          } finally {
-            pendingCommit = null;
-            notifyAll();
+      // we might rollback due to a tragic event which means we potentially already have
+      // a lease in this case we we can't acquire all leases. In this case rolling back in best effort in terms
+      // off letting all threads gracefully finish. In such a situation some threads might run into
+      // AlreadyClosedExceptions in places they normally wouldn't which doesn't have any impact on
+      // correctness or consistency. The tragic event is fatal anyway.
+      final int leases;
+      if (gracefully) { // in the case
+        leases = Integer.MAX_VALUE;
+        modificationLease.acquireUninterruptibly(leases);
+      } else {
+        // still try to drain all permits to prevent any new threads modifying the index.
+        leases = modificationLease.drainPermits();
+      }
+      try {
+        synchronized (this) {
+          if (pendingCommit != null) {
+            pendingCommit.rollbackCommit(directory);
+            try {
+              deleter.decRef(pendingCommit);
+            } finally {
+              pendingCommit = null;
+              notifyAll();
+            }
           }
+          final int totalMaxDoc = segmentInfos.totalMaxDoc();
+          // Keep the same segmentInfos instance but replace all
+          // of its SegmentInfo instances so IFD below will remove
+          // any segments we flushed since the last commit:
+          segmentInfos.rollbackSegmentInfos(rollbackSegments);
+          int rollbackMaxDoc = segmentInfos.totalMaxDoc();
+          // now we need to adjust this back to the rolled back SI but don't set it to the absolute value
+          // otherwise we might hide internal bugsf
+          adjustPendingNumDocs(-(totalMaxDoc - rollbackMaxDoc));
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
+          }
+
+          testPoint("rollback before checkpoint");
+
+          // Ask deleter to locate unreferenced files & remove
+          // them ... only when we are not experiencing a tragedy, else
+          // these methods throw ACE:
+          if (tragedy.get() == null) {
+            deleter.checkpoint(segmentInfos, false);
+            deleter.refresh();
+            deleter.close();
+          }
+
+          lastCommitChangeCount = changeCount.get();
+          // Don't bother saving any changes in our segmentInfos
+          readerPool.close();
+
+          // Must set closed while inside same sync block where we call deleter.refresh, else concurrent threads may try to sneak a flush in,
+          // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
+          closed = true;
+
+          IOUtils.close(writeLock); // release write lock
+          writeLock = null;
+          closed = true;
+          closing = false;
+          // So any "concurrently closing" threads wake up and see that the close has now completed:
+          notifyAll();
         }
-        final int totalMaxDoc = segmentInfos.totalMaxDoc();
-        // Keep the same segmentInfos instance but replace all
-        // of its SegmentInfo instances so IFD below will remove
-        // any segments we flushed since the last commit:
-        segmentInfos.rollbackSegmentInfos(rollbackSegments);
-        int rollbackMaxDoc = segmentInfos.totalMaxDoc();
-        // now we need to adjust this back to the rolled back SI but don't set it to the absolute value
-        // otherwise we might hide internal bugsf
-        adjustPendingNumDocs(-(totalMaxDoc - rollbackMaxDoc));
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
-        }
-
-        testPoint("rollback before checkpoint");
-
-        // Ask deleter to locate unreferenced files & remove
-        // them ... only when we are not experiencing a tragedy, else
-        // these methods throw ACE:
-        if (tragedy.get() == null) {
-          deleter.checkpoint(segmentInfos, false);
-          deleter.refresh();
-          deleter.close();
-        }
-
-        lastCommitChangeCount = changeCount.get();
-        // Don't bother saving any changes in our segmentInfos
-        readerPool.close();
-        // Must set closed while inside same sync block where we call deleter.refresh, else concurrent threads may try to sneak a flush in,
-        // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
-        closed = true;
-
-        IOUtils.close(writeLock); // release write lock
-        writeLock = null;
-        closed = true;
-        closing = false;
-        // So any "concurrently closing" threads wake up and see that the close has now completed:
-        notifyAll();
+      } finally {
+        modificationLease.release(leases);
       }
     } catch (Throwable throwable) {
       try {
