@@ -18,9 +18,14 @@
 package org.apache.lucene.codecs.lucene80;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.codecs.composite.CompositeDocValuesProducer;
+import org.apache.lucene.codecs.composite.CompositeFieldMetadata;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Accountable;
@@ -29,11 +34,40 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 
-public class Lucene80BinaryProducer {
+public class Lucene80BinaryProducer implements CompositeDocValuesProducer.BinaryProducer{
   private final int maxDoc;
+  private final Map<String, BinaryEntry> binaries = new HashMap<>();
 
   public Lucene80BinaryProducer(int maxDoc) {
     this.maxDoc = maxDoc;
+  }
+
+  @Override
+  public BinaryDocValues getBinary(FieldInfo field, CompositeFieldMetadata compositeFieldMetadata, IndexInput indexInput) throws IOException {
+    BinaryEntry entry = getBinaryEntry(field, compositeFieldMetadata.getMetaStartFP(), indexInput);
+    return getBinaryFromEntry(entry, indexInput, maxDoc);
+  }
+
+  private BinaryEntry getBinaryEntry(FieldInfo field, long metaStartFP, IndexInput indexInput) throws IOException {
+    BinaryEntry binaryEntry = binaries.get(field.name);
+    if (binaryEntry != null) {
+      return binaryEntry;
+    }
+    IndexInput clone = indexInput.clone();
+    clone.seek(metaStartFP);
+    binaryEntry = readBinary(clone, Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED);
+
+    binaries.put(field.name, binaryEntry);
+    return binaryEntry;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long ramBytesUsed = 0L;
+    for (Accountable accountable : binaries.values()) {
+      ramBytesUsed += accountable.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
   static BinaryEntry readBinary(IndexInput meta, int version) throws IOException {

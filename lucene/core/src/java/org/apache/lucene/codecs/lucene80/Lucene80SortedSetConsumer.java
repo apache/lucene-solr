@@ -20,7 +20,10 @@ package org.apache.lucene.codecs.lucene80;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.composite.CompositeDocValuesConsumer;
+import org.apache.lucene.codecs.composite.CompositeFieldMetadata;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -40,11 +43,31 @@ import org.apache.lucene.util.packed.DirectWriter;
 
 import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
 
-public class Lucene80SortedSetConsumer{
+public class Lucene80SortedSetConsumer implements CompositeDocValuesConsumer.SortedConsumer, CompositeDocValuesConsumer.SortedSetConsumer {
   private final int maxDoc;
 
   public Lucene80SortedSetConsumer(SegmentWriteState state) {
     this.maxDoc = state.segmentInfo.maxDoc();
+  }
+
+  @Override
+  public CompositeFieldMetadata addSorted(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput indexOutput) throws IOException {
+    ByteBuffersDataOutput delegate = ByteBuffersDataOutput.newResettableInstance();
+    ByteBuffersIndexOutput metadataRamBuffer = new ByteBuffersIndexOutput(delegate, "meta", "meta");
+    addSortedField(field, valuesProducer, indexOutput, metadataRamBuffer);
+    long metaStartFP = indexOutput.getFilePointer();
+    delegate.copyTo(indexOutput);
+    return new CompositeFieldMetadata(field.number, DocValuesType.SORTED, metaStartFP);
+  }
+
+  @Override
+  public CompositeFieldMetadata addSortedSet(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput indexOutput) throws IOException {
+    ByteBuffersDataOutput delegate = ByteBuffersDataOutput.newResettableInstance();
+    ByteBuffersIndexOutput metadataRamBuffer = new ByteBuffersIndexOutput(delegate, "meta", "meta");
+    addSortedSetField(field, valuesProducer, indexOutput, metadataRamBuffer);
+    long metaStartFP = indexOutput.getFilePointer();
+    delegate.copyTo(indexOutput);
+    return new CompositeFieldMetadata(field.number, DocValuesType.SORTED_SET, metaStartFP);
   }
 
   public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput data, IndexOutput meta) throws IOException {

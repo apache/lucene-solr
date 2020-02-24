@@ -23,11 +23,16 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.composite.CompositeDocValuesConsumer;
+import org.apache.lucene.codecs.composite.CompositeFieldMetadata;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -39,13 +44,23 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
 
-public class Lucene80BinaryConsumer {
+public class Lucene80BinaryConsumer implements CompositeDocValuesConsumer.BinaryConsumer{
   private final SegmentWriteState state;
   private final int maxDoc;
 
   public Lucene80BinaryConsumer(SegmentWriteState state) {
     this.state = state;
     this.maxDoc = state.segmentInfo.maxDoc();
+  }
+
+  @Override
+  public CompositeFieldMetadata addBinary(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput indexOutput) throws IOException {
+    ByteBuffersDataOutput delegate = ByteBuffersDataOutput.newResettableInstance();
+    ByteBuffersIndexOutput metadataRamBuffer = new ByteBuffersIndexOutput(delegate, "meta", "meta");
+    addBinary(field, valuesProducer, indexOutput, metadataRamBuffer);
+    long metaStartFP = indexOutput.getFilePointer();
+    delegate.copyTo(indexOutput);
+    return new CompositeFieldMetadata(field.number, DocValuesType.BINARY, metaStartFP);
   }
 
   public void addBinary(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput data, IndexOutput meta) throws IOException {

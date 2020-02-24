@@ -18,10 +18,15 @@
 package org.apache.lucene.codecs.lucene80;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.codecs.composite.CompositeDocValuesProducer;
+import org.apache.lucene.codecs.composite.CompositeFieldMetadata;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
@@ -35,11 +40,64 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
 
-public class Lucene80SortedSetProducer {
+public class Lucene80SortedSetProducer implements CompositeDocValuesProducer.SortedProducer, CompositeDocValuesProducer.SortedSetProducer {
   private final int maxDoc;
+
+  private final Map<String, SortedEntry> sorted = new HashMap<>();
+  private final Map<String, SortedSetEntry> sortedSets = new HashMap<>();
 
   public Lucene80SortedSetProducer(int maxDoc) {
     this.maxDoc = maxDoc;
+  }
+
+  @Override
+  public SortedDocValues getSorted(FieldInfo field, CompositeFieldMetadata fieldMetadata, IndexInput indexInput) throws IOException {
+    SortedEntry sortedEntry = getSortedEntry(field, fieldMetadata.getMetaStartFP(), indexInput);
+    return getSorted(sortedEntry, indexInput);
+  }
+
+  private SortedEntry getSortedEntry(FieldInfo field, long metaStartFP, IndexInput indexInput) throws IOException {
+    SortedEntry sortedEntry = sorted.get(field.name);
+    if (sortedEntry != null) {
+      return sortedEntry;
+    }
+    IndexInput clone = indexInput.clone();
+    clone.seek(metaStartFP);
+    sortedEntry = readSorted(clone);
+
+    sorted.put(field.name, sortedEntry);
+    return sortedEntry;
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSet(FieldInfo field, CompositeFieldMetadata compositeFieldMetadata, IndexInput indexInput) throws IOException {
+    SortedSetEntry sortedSetEntry = getSortedSetEntry(field, compositeFieldMetadata.getMetaStartFP(), indexInput);
+    return getSortedSet(sortedSetEntry, indexInput);
+  }
+
+  private SortedSetEntry getSortedSetEntry(FieldInfo field, long metaStartFP, IndexInput indexInput) throws IOException {
+    SortedSetEntry sortedSetEntry = sortedSets.get(field.name);
+    if (sortedSetEntry != null) {
+      return sortedSetEntry;
+    }
+    IndexInput clone = indexInput.clone();
+    clone.seek(metaStartFP);
+    sortedSetEntry = readSortedSet(clone);
+
+    sortedSets.put(field.name, sortedSetEntry);
+    return sortedSetEntry;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long ramBytesUsed = 0L;
+    for (Accountable accountable : sorted.values()) {
+      ramBytesUsed += accountable.ramBytesUsed();
+    }
+    for (Accountable accountable : sortedSets.values()) {
+      ramBytesUsed += accountable.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
   public SortedSetDocValues getSortedSet(SortedSetEntry entry, IndexInput data) throws IOException {

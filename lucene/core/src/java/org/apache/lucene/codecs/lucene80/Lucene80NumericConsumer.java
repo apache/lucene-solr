@@ -25,11 +25,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.composite.CompositeDocValuesConsumer;
+import org.apache.lucene.codecs.composite.CompositeFieldMetadata;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.MathUtil;
@@ -40,12 +46,37 @@ import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.DIRECT_M
 import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_BLOCK_SHIFT;
 import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE;
 
-public class Lucene80NumericConsumer{
+public class Lucene80NumericConsumer implements CompositeDocValuesConsumer.NumericConsumer, CompositeDocValuesConsumer.SortedNumericConsumer {
 
   private final int maxDoc;
 
   public Lucene80NumericConsumer(SegmentWriteState state) {
     this.maxDoc = state.segmentInfo.maxDoc();
+  }
+
+  @Override
+  public CompositeFieldMetadata addNumeric(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput indexOutput) throws IOException {
+    ByteBuffersDataOutput delegate = ByteBuffersDataOutput.newResettableInstance();
+    ByteBuffersIndexOutput metadataRamBuffer = new ByteBuffersIndexOutput(delegate, "meta", "meta");
+    writeValues(field, new EmptyDocValuesProducer() {
+      @Override
+      public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+        return DocValues.singleton(valuesProducer.getNumeric(field));
+      }
+    }, indexOutput, metadataRamBuffer);
+    long metaStartFP = indexOutput.getFilePointer();
+    delegate.copyTo(indexOutput);
+    return new CompositeFieldMetadata(field.number, DocValuesType.NUMERIC, metaStartFP);
+  }
+
+  @Override
+  public CompositeFieldMetadata addSortedNumeric(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput indexOutput) throws IOException {
+    ByteBuffersDataOutput delegate = ByteBuffersDataOutput.newResettableInstance();
+    ByteBuffersIndexOutput metadataRamBuffer = new ByteBuffersIndexOutput(delegate, "meta", "meta");
+    addSortedNumericField(field, valuesProducer, indexOutput, metadataRamBuffer);
+    long metaStartFP = indexOutput.getFilePointer();
+    delegate.copyTo(indexOutput);
+    return new CompositeFieldMetadata(field.number, DocValuesType.SORTED_NUMERIC, metaStartFP);
   }
 
   public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer, IndexOutput data, IndexOutput meta) throws IOException {

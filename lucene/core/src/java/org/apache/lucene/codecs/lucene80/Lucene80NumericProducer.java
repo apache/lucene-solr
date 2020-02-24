@@ -36,11 +36,67 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
 
-public class Lucene80NumericProducer{
+public class Lucene80NumericProducer implements CompositeDocValuesProducer.NumericProducer, CompositeDocValuesProducer.SortedNumericProducer {
   private final int maxDoc;
+
+  private final Map<String, NumericEntry> numerics = new HashMap<>();
+  private final Map<String, SortedNumericEntry> sortedNumerics = new HashMap<>();
 
   public Lucene80NumericProducer(int maxDoc) {
     this.maxDoc = maxDoc;
+  }
+
+  @Override
+  public NumericDocValues getNumeric(FieldInfo field, CompositeFieldMetadata compositeFieldMetadata, IndexInput indexInput) throws IOException {
+    NumericEntry entry = getNumericEntry(field, compositeFieldMetadata.getMetaStartFP(), indexInput);
+    return getNumeric(entry, indexInput);
+  }
+
+  @Override
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field, CompositeFieldMetadata compositeFieldMetadata, IndexInput indexInput) throws IOException {
+    SortedNumericEntry sortedNumericEntry = getSortedNumericEntry(field, compositeFieldMetadata.getMetaStartFP(), indexInput);
+    return getSortedNumeric(sortedNumericEntry, indexInput);
+  }
+
+  private NumericEntry getNumericEntry(FieldInfo field, long metaStartFP, IndexInput indexInput) throws IOException {
+    NumericEntry numericEntry = numerics.get(field.name);
+    if (numericEntry != null) {
+      return numericEntry;
+    }
+    IndexInput clone = indexInput.clone();
+    clone.seek(metaStartFP);
+    numericEntry = new NumericEntry();
+    readNumeric(clone, numericEntry);
+
+    numerics.put(field.name, numericEntry);
+
+    return numericEntry;
+  }
+
+  private SortedNumericEntry getSortedNumericEntry(FieldInfo field, long metaStartFP, IndexInput indexInput) throws IOException {
+    SortedNumericEntry sortedNumericEntry = sortedNumerics.get(field.name);
+    if (sortedNumericEntry != null) {
+      return sortedNumericEntry;
+    }
+    IndexInput clone = indexInput.clone();
+    clone.seek(metaStartFP);
+    sortedNumericEntry = readSortedNumeric(clone);
+
+    sortedNumerics.put(field.name, sortedNumericEntry);
+
+    return sortedNumericEntry;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long ramBytesUsed = 0L;
+    for (Accountable accountable : numerics.values()) {
+      ramBytesUsed += accountable.ramBytesUsed();
+    }
+    for (Accountable accountable : sortedNumerics.values()) {
+      ramBytesUsed += accountable.ramBytesUsed();
+    }
+    return ramBytesUsed;
   }
 
   static class NumericEntry implements Accountable {
