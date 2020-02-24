@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockSynonymFilter;
@@ -32,6 +33,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -505,5 +508,52 @@ public class TestQueryBuilder extends LuceneTestCase {
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
       expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphPhrase(ts, "", 0));
     }
+  }
+
+  private static final class MockBoostTokenFilter extends TokenFilter {
+
+    final BoostAttribute boostAtt = addAttribute(BoostAttribute.class);
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    protected MockBoostTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken() == false) {
+        return false;
+      }
+      if (termAtt.length() == 3) {
+        boostAtt.setBoost(0.5f);
+      }
+      return true;
+    }
+  }
+
+  public void testTokenStreamBoosts() {
+    Analyzer msa = new MockSynonymAnalyzer();
+    Analyzer a = new AnalyzerWrapper(msa.getReuseStrategy()) {
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        return msa;
+      }
+      @Override
+      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+        return new TokenStreamComponents(components.getSource(), new MockBoostTokenFilter(components.getTokenStream()));
+      }
+    };
+
+    QueryBuilder builder = new QueryBuilder(a);
+    Query q = builder.createBooleanQuery("field", "hot dogs");
+    Query expected = new BooleanQuery.Builder()
+        .add(new BoostQuery(new TermQuery(new Term("field", "hot")), 0.5f), BooleanClause.Occur.SHOULD)
+        .add(new SynonymQuery.Builder("field")
+            .addTerm(new Term("field", "dogs"))
+            .addTerm(new Term("field", "dog"), 0.5f)
+            .build(), BooleanClause.Occur.SHOULD)
+        .build();
+
+    assertEquals(expected, q);
   }
 }
