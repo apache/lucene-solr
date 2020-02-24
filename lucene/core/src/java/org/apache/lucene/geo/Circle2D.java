@@ -273,7 +273,8 @@ class Circle2D implements Component2D {
       this.centerX = centerX;
       this.centerY = centerY;
       this.rectangle = XYRectangle.fromPointDistance(centerX, centerY, radius);
-      this.radiusSquared = radius * (double) radius;
+      // product performed with doubles
+      this.radiusSquared = (double) radius *  radius;
     }
 
     @Override
