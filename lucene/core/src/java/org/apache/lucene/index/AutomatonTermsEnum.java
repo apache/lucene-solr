@@ -90,9 +90,25 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     this.automaton = compiled.automaton;
 
     // used for path tracking, where each bit is a numbered state.
-    visited = new short[runAutomaton.getSize()];
+    visited = finite ? null : new short[runAutomaton.getSize()];
   }
-  
+
+  /**
+   * Records the given state has been visited.
+   */
+  private void setVisited(int state) {
+    if (!finite) {
+      visited[state] = curGen;
+    }
+  }
+
+  /**
+   * Indicates whether the given state has been visited.
+   */
+  private boolean isVisited(int state) {
+    return !finite && visited[state] == curGen;
+  }
+
   /**
    * Returns true if the term matches the automaton. Also stashes away the term
    * to assist with smart enumeration.
@@ -188,21 +204,20 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     savedStates.setIntAt(0, 0);
     
     while (true) {
-      if (++curGen == 0) {
-        // Clear the visited states every time curGen overflows (so very infrequently to not impact average perf).
-        curGen++;
-        Arrays.fill(visited, (short) 0);
+      if (!finite && ++curGen == 0) {
+        // Clear the visited states every time curGen wraps (so very infrequently to not impact average perf).
+        Arrays.fill(visited, (short) -1);
       }
       linear = false;
       // walk the automaton until a character is rejected.
       for (state = savedStates.intAt(pos); pos < seekBytesRef.length(); pos++) {
-        visited[state] = curGen;
+        setVisited(state);
         int nextState = runAutomaton.step(state, seekBytesRef.byteAt(pos) & 0xff);
         if (nextState == -1)
           break;
         savedStates.setIntAt(pos+1, nextState);
         // we found a loop, record it for faster enumeration
-        if (!finite && !linear && visited[nextState] == curGen) {
+        if (!linear && isVisited(nextState)) {
           setLinear(pos);
         }
         state = nextState;
@@ -261,7 +276,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
 
     seekBytesRef.setLength(position);
-    visited[state] = curGen;
+    setVisited(state);
 
     final int numTransitions = automaton.getNumTransitions(state);
     automaton.initTransition(state, transition);
@@ -279,8 +294,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
          * as long as is possible, continue down the minimal path in
          * lexicographic order. if a loop or accept state is encountered, stop.
          */
-        while (visited[state] != curGen && !runAutomaton.isAccept(state)) {
-          visited[state] = curGen;
+        while (!isVisited(state) && !runAutomaton.isAccept(state)) {
+          setVisited(state);
           /* 
            * Note: we work with a DFA with no transitions to dead states.
            * so the below is ok, if it is not an accept state,
@@ -295,7 +310,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
           seekBytesRef.append((byte) transition.min);
           
           // we found a loop, record it for faster enumeration
-          if (!finite && !linear && visited[state] == curGen) {
+          if (!linear && isVisited(state)) {
             setLinear(seekBytesRef.length()-1);
           }
         }
