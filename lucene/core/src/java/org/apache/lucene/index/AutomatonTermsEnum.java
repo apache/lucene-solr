@@ -67,7 +67,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   // when this is true, linearUpperBound indicate the end of range
   // of terms where we should simply do sequential reads instead.
   private boolean linear;
-  private BytesRef linearUpperBound;
+  private final BytesRef linearUpperBound = new BytesRef();
   private final Transition transition = new Transition();
   private final IntsRefBuilder savedStates = new IntsRefBuilder();
 
@@ -161,9 +161,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     if (maxInterval != 0xff)
       maxInterval++;
     int length = position + 1; /* position + maxTransition */
-    if (linearUpperBound == null) {
-      linearUpperBound = new BytesRef(ArrayUtil.oversize(Math.max(length, 16), Byte.BYTES));
-    } else if (linearUpperBound.bytes.length < length) {
+    if (linearUpperBound.bytes.length < length) {
       linearUpperBound.bytes = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
     }
     System.arraycopy(seekBytesRef.bytes(), 0, linearUpperBound.bytes, 0, position);

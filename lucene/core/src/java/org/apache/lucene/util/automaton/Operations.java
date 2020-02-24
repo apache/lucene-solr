@@ -1105,11 +1105,9 @@ final public class Operations {
           if (visited == null) {
             visited = new HashSet<>();
             visited.add(0);
+            builder = new BytesRefBuilder();
           }
           if (visited.add(s = t.dest)) {
-            if (builder == null) {
-              builder = new BytesRefBuilder();
-            }
             builder.append((byte) t.min);
             continue;
           }
