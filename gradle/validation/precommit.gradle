@@ -39,7 +39,9 @@ configure(rootProject) {
           "licenses",
           "javadoc",
           "rat",
-          "ecjLint"
+          "ecjLint",
+          // FIXME: enable this line once Javadocs are correctly generated
+          // "checkMissingDocs"
       ]}
     }
   }
