@@ -114,7 +114,7 @@ class TokenInfoDictionaryBuilder {
         scratch.grow(surfaceForm.length());
         scratch.setLength(surfaceForm.length());
         for (int i = 0; i < surfaceForm.length(); i++) {
-          scratch.setIntAt(i, (int) surfaceForm.charAt(i));
+          scratch.setIntAt(i, surfaceForm.charAt(i));
         }
         fstBuilder.add(scratch.get(), ord);
       }

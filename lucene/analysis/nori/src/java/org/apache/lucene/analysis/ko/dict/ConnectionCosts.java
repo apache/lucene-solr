@@ -40,7 +40,7 @@ public final class ConnectionCosts {
 
   private ConnectionCosts() throws IOException {
     InputStream is = null;
-    ByteBuffer buffer = null;
+    ByteBuffer buffer;
     boolean success = false;
     try {
       is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
