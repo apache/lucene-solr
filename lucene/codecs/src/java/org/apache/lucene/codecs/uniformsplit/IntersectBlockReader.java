@@ -387,7 +387,7 @@ public class IntersectBlockReader extends BlockReader {
     // when this is true, linearUpperBound indicate the end of range
     // of terms where we should simply do sequential reads instead.
     protected boolean linear;
-    protected BytesRef linearUpperBound;
+    protected final BytesRef linearUpperBound = new BytesRef();
     protected final Transition transition = new Transition();
     protected final IntsRefBuilder savedStates = new IntsRefBuilder();
 
@@ -454,9 +454,7 @@ public class IntersectBlockReader extends BlockReader {
       if (maxInterval != 0xff)
         maxInterval++;
       int length = position + 1; /* position + maxTransition */
-      if (linearUpperBound == null) {
-        linearUpperBound = new BytesRef(ArrayUtil.oversize(Math.max(length, 16), Byte.BYTES));
-      } else if (linearUpperBound.bytes.length < length) {
+      if (linearUpperBound.bytes.length < length) {
         linearUpperBound.bytes = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
       }
       System.arraycopy(seekBytesRef.bytes(), 0, linearUpperBound.bytes, 0, position);
