@@ -73,6 +73,8 @@ Improvements
 
 * SOLR-14270: export command to have an option to write to a zip file (noble)
 
+* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
+
 Optimizations
 ---------------------
 
