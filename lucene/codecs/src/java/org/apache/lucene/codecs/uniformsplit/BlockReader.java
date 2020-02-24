@@ -129,6 +129,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   // Scratch objects to avoid object reallocation.
   protected BytesRef scratchBlockBytes;
   protected final BlockTermState scratchTermState;
+  protected BlockLine scratchBlockLine;
 
   /**
    * @param dictionaryBrowserSupplier to load the {@link IndexDictionary.Browser}
@@ -300,7 +301,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     }
     boolean isIncrementalEncodingSeed = lineIndexInBlock == 0 || lineIndexInBlock == blockHeader.getMiddleLineIndex();
     lineIndexInBlock++;
-    return blockLine = blockLineReader.readLine(blockReadBuffer, isIncrementalEncodingSeed, blockLine);
+    return blockLine = blockLineReader.readLine(blockReadBuffer, isIncrementalEncodingSeed, scratchBlockLine);
   }
 
   /**
@@ -413,6 +414,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
       termStatesReadBuffer = new ByteArrayDataInput();
       termStateSerializer = createDeltaBaseTermStateSerializer();
       scratchBlockBytes = new BytesRef();
+      scratchBlockLine = new BlockLine(new TermBytes(0, scratchBlockBytes), 0);
     }
   }
 
@@ -559,7 +561,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     termStateForced = false;
   }
 
-  private CorruptIndexException newCorruptIndexException(String msg, Long fp) {
+  protected CorruptIndexException newCorruptIndexException(String msg, Long fp) {
     return new CorruptIndexException(msg
         + (fp == null ? "" : " at FP " + fp)
         + " for field \"" + fieldMetadata.getFieldInfo().name + "\"", blockInput);
