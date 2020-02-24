@@ -197,6 +197,9 @@ Other Changes
 
 * SOLR-14263: Update jvm-settings.adoc (Erick Erickson)
 
+* SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches
+  during SolrCore reload. Removed Bandaid kludge. (Erick Erickson)
+
 * SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
 
 ==================  8.4.1 ==================

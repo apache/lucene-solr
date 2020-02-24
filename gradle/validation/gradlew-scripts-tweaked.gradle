@@ -1,3 +1,5 @@
+import java.nio.charset.StandardCharsets
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,35 +17,28 @@
  * limitations under the License.
  */
 
-// This adds top-level 'precommit' task.
+// This ensures 'gradlew*' scripts contain the manual fix so that they
+// don't fork a daemon subprocess on the initial run.
 
 configure(rootProject) {
-  task precommit() {
-    group = 'Precommit'
-    description = "All precommit checks"
+  task gradlewScriptsTweaked() {
+    def scripts = [
+        file("gradlew"),
+        file("gradlew.bat")
+    ]
 
-    // Root-level validation tasks.
-    dependsOn ":verifyLocks"
-    dependsOn ":versionsPropsAreSorted"
-    dependsOn ":checkWorkingCopyClean"
-    dependsOn ":validateSourcePatterns"
+    inputs.files(scripts)
+    outputs.upToDateWhen { true }
 
-    // Solr validation tasks.
-    dependsOn ":solr:validateConfigFileSanity"
-
-    // Attach all these tasks from all projects that have them.
-    // This uses lazy collections as they may not yet be defined.
-    dependsOn allprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name in [
-          "forbiddenApis",
-          "licenses",
-          "javadoc",
-          "rat",
-          "ecjLint",
-          // FIXME: enable this line once Javadocs are correctly generated
-          // "checkMissingDocs"
-      ]}
+    doFirst {
+      scripts.each { file ->
+        def content = new String(file.readBytes(), StandardCharsets.US_ASCII)
+        if (content.indexOf("Don't fork a daemon mode on initial run that generates local defaults") < 0) {
+          throw new GradleException("Launch script ${file} does not have a manual daemon tweak (see LUCENE-9232).")
+        }
+      }
     }
   }
-}
 
+  check.dependsOn gradlewScriptsTweaked
+}

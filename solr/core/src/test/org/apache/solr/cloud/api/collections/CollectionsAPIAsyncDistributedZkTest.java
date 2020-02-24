@@ -278,17 +278,4 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       }
     }
   }
-  
-  public void testAsyncIdBackCompat() throws Exception {
-    //remove with Solr 9
-    cluster.getZkClient().makePath("/overseer/collection-map-completed/mn-testAsyncIdBackCompat", true, true);
-    try {
-      CollectionAdminRequest.createCollection("testAsyncIdBackCompat","conf1",1,1)
-      .processAsync("testAsyncIdBackCompat", cluster.getSolrClient());
-      fail("Expecting exception");
-    } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("Task with the same requestid already exists"));
-    }
-  }
-
 }
