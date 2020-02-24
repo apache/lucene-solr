@@ -41,8 +41,7 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertNull(dictionary.getMorphemes(wordIds.get(0), sArray, 0, s.length()));
 
     Dictionary.Morpheme[] decompound = dictionary.getMorphemes(wordIds.get(1), sArray, 0, s.length());
-    assertNotNull(decompound);
-    assertEquals(2, decompound.length);
+    assertTrue(decompound.length == 2);
     assertEquals(decompound[0].posTag, POS.Tag.NNG);
     assertEquals(decompound[0].surfaceForm, "세종");
     assertEquals(decompound[1].posTag, POS.Tag.NNG);
@@ -56,7 +55,7 @@ public class UserDictionaryTest extends LuceneTestCase {
   }
   
   @Test
-  public void testRead() {
+  public void testRead() throws IOException {
     UserDictionary dictionary = TestKoreanTokenizer.readDict();
     assertNotNull(dictionary);
   }
