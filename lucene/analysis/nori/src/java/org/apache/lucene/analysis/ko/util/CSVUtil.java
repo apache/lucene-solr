@@ -70,7 +70,7 @@ public final class CSVUtil {
       return new String[0];
     }
     
-    return result.toArray(new String[0]);
+    return result.toArray(new String[result.size()]);
   }
   
   private static String unQuoteUnEscape(String original) {
@@ -84,7 +84,7 @@ public final class CSVUtil {
       }
     
       // Unescape
-      if (result.contains(ESCAPED_QUOTE)) {
+      if (result.indexOf(ESCAPED_QUOTE) >= 0) {
         result = result.replace(ESCAPED_QUOTE, "\"");
       }
     }

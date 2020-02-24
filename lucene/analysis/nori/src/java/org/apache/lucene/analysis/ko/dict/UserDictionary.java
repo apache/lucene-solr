@@ -37,26 +37,26 @@ public final class UserDictionary implements Dictionary {
   // text -> wordID
   private final TokenInfoFST fst;
 
-  private static final int WORD_COST = -100000;
+  public static final int WORD_COST = -100000;
 
   // NNG left
-  private static final short LEFT_ID = 1781;
+  public static final short LEFT_ID = 1781;
 
   // NNG right
-  private static final short RIGHT_ID = 3533;
+  public static final short RIGHT_ID = 3533;
   // NNG right with hangul and a coda on the last char
-  private static final short RIGHT_ID_T = 3535;
+  public static final short RIGHT_ID_T = 3535;
   // NNG right with hangul and no coda on the last char
-  private static final short RIGHT_ID_F = 3534;
+  public static final short RIGHT_ID_F = 3534;
 
   // length, length... indexed by compound ID or null for simple noun
-  private final int[][] segmentations;
+  private final int segmentations[][];
   private final short[] rightIds;
 
   public static UserDictionary open(Reader reader) throws IOException {
 
     BufferedReader br = new BufferedReader(reader);
-    String line;
+    String line = null;
     List<String> entries = new ArrayList<>();
 
     // text + optional segmentations
@@ -127,7 +127,7 @@ public final class UserDictionary implements Dictionary {
       scratch.grow(token.length());
       scratch.setLength(token.length());
       for (int i = 0; i < token.length(); i++) {
-        scratch.setIntAt(i, token.charAt(i));
+        scratch.setIntAt(i, (int) token.charAt(i));
       }
       fstBuilder.add(scratch.get(), ord);
       lastToken = token;

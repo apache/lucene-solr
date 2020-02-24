@@ -136,11 +136,11 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
         POS.Tag rightPOS = tid.getRightPOS(wordId);
 
         if (type == POS.Type.MORPHEME) {
-          assertSame(leftPOS, rightPOS);
+          assertTrue(leftPOS == rightPOS);
           String reading = tid.getReading(wordId);
           boolean isHanja = charDef.isHanja(surfaceForm.charAt(0));
           if (isHanja) {
-            assertNotNull(reading);
+            assertTrue(reading != null);
             for (int j = 0; j < reading.length(); j++) {
               assertTrue(charDef.isHangul(reading.charAt(j)));
             }
@@ -150,7 +150,7 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
           }
         } else {
           if (type == POS.Type.COMPOUND) {
-            assertSame(leftPOS, rightPOS);
+            assertTrue(leftPOS == rightPOS);
             assertTrue(leftPOS == POS.Tag.NNG || rightPOS == POS.Tag.NNP);
           }
           Dictionary.Morpheme[] decompound = tid.getMorphemes(wordId,  chars, 0, chars.length);
