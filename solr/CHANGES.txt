@@ -200,6 +200,8 @@ Other Changes
 * SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches
   during SolrCore reload. Removed Bandaid kludge. (Erick Erickson)
 
+* SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
