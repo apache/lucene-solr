@@ -1,0 +1,116 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    // Too many classes to fix overall to just enable the above to be level="method" right now,
+    // but we can prevent the modules that don't have problems from getting any worse.
+    def methodLevelProjects = [
+        ':lucene:analysis:icu',
+        ':lucene:analysis:morfologik',
+        ':lucene:analysis:phonetic',
+        ':lucene:analysis:stempel',
+        ':lucene:classification',
+        ':lucene:demo',
+        ':lucene:expressions',
+        ':lucene:facet',
+        ':lucene:join',
+        ':lucene:memory',
+        ':lucene:suggest',
+        ':lucene:spatial3d',
+    ]
+
+    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+      dirs += [ project.javadoc.destinationDir ]
+
+      // TODO: add missing docs for all classes and bump this to level=class
+      if (project.path.startsWith(":solr")) {
+        level = 'package'
+      } else if (project.path in methodLevelProjects) {
+        level = 'method'
+      } else {
+        level = 'class'
+      }
+    }
+
+    task checkMissingDocs() {
+      group 'Verification'
+      description 'Check missing Javadocs'
+
+      dependsOn checkMissingDocsDefault
+    }
+  }
+}
+
+configure(project(':lucene:core')) {
+  // Defer until java plugin has been applied, otherwise we can't resolve project.javadoc.
+  plugins.withType(JavaPlugin) {
+    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+      level = 'method'
+    }
+
+    // Too much to fix core/ for now, but enforce full javadocs for key packages.
+    checkMissingDocsMethod.dirs = [
+        "org/apache/lucene/util/automaton",
+        "org/apache/lucene/analysis",
+        "org/apache/lucene/document",
+        "org/apache/lucene/search/similarities",
+        "org/apache/lucene/index",
+        "org/apache/lucene/codecs"
+    ].collect { path -> file("${project.javadoc.destinationDir}/${path}") }
+
+    checkMissingDocs {
+      dependsOn checkMissingDocsMethod
+    }
+  }
+}
+
+class CheckMissingDocsTask extends DefaultTask {
+  @Input
+  List<File> dirs = []
+
+  @Input
+  String level = "none"
+
+  def checkMissingJavadocs(File dir, String level) {
+    def output = new ByteArrayOutputStream()
+    def result = project.exec {
+      executable "python3"
+      ignoreExitValue = true
+      standardOutput = output
+      errorOutput = output
+      args = [
+        "-B",
+        project.rootProject.file("dev-tools/scripts/checkJavaDocs.py").absolutePath,
+        dir.absolutePath,
+        level
+      ]
+    }
+
+    if (result.getExitValue() != 0) {
+      throw new GradleException("Javadoc verification failed:\n${output}")
+    }
+  }
+
+  @TaskAction
+  def lint() {
+    dirs.findAll { it.exists() }.each { dir ->
+      project.logger.info("Checking for missing docs... (dir=${dir}, level=${level})")
+      checkMissingJavadocs(dir, level)
+    }
+  }
+}

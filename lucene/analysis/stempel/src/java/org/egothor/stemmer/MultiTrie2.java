@@ -81,7 +81,7 @@ public class MultiTrie2 extends MultiTrie {
   /**
    * Constructor for the MultiTrie2 object
    * 
-   * @param forward set to <tt>true</tt> if the elements should be read left to
+   * @param forward set to <code>true</code> if the elements should be read left to
    *          right
    */
   public MultiTrie2(boolean forward) {
@@ -187,7 +187,7 @@ public class MultiTrie2 extends MultiTrie {
    * Add an element to this structure consisting of the given key and patch
    * command. 
    * <p>
-   * This method will return without executing if the <tt>cmd</tt>
+   * This method will return without executing if the <code>cmd</code>
    * parameter's length is 0.
    * 
    * @param key the key

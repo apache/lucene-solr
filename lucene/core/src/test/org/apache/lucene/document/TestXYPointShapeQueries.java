@@ -23,9 +23,9 @@ import java.util.Random;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random cartesian bounding box, line, and polygon query tests for random generated {@code x, y} points */
@@ -53,8 +53,8 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
           x[j] = p.x;
           y[j] = p.y;
         } else {
-          x[j] = (float)ShapeTestUtil.nextDouble(random);
-          y[j] = (float)ShapeTestUtil.nextDouble(random);
+          x[j] = ShapeTestUtil.nextFloat(random);
+          y[j] = ShapeTestUtil.nextFloat(random);
         }
       }
       return new XYLine(x, y);
@@ -80,7 +80,7 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 

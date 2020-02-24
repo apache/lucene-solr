@@ -50,6 +50,7 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -337,6 +338,18 @@ public class IndexSchema {
   public String printableUniqueKey(org.apache.lucene.document.Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
     return f==null ? null : uniqueKeyFieldType.toExternal(f);
+  }
+
+  /** Like {@link #printableUniqueKey(org.apache.lucene.document.Document)} */
+  public String printableUniqueKey(SolrDocument solrDoc) {
+    Object val = solrDoc.getFieldValue(uniqueKeyFieldName);
+    if (val == null) {
+      return null;
+    } else if (val instanceof IndexableField) {
+      return uniqueKeyFieldType.toExternal((IndexableField) val);
+    } else {
+      return val.toString();
+    }
   }
 
   private SchemaField getIndexedField(String fname) {

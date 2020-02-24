@@ -379,13 +379,13 @@ public class TestUninvertingReader extends SolrTestCase {
 
     FieldInfo intFInfo = fieldInfos.fieldInfo("int");
     assertEquals(DocValuesType.NUMERIC, intFInfo.getDocValuesType());
-    assertEquals(0, intFInfo.getPointDataDimensionCount());
+    assertEquals(0, intFInfo.getPointDimensionCount());
     assertEquals(0, intFInfo.getPointIndexDimensionCount());
     assertEquals(0, intFInfo.getPointNumBytes());
 
     FieldInfo dintFInfo = fieldInfos.fieldInfo("dint");
     assertEquals(DocValuesType.NUMERIC, dintFInfo.getDocValuesType());
-    assertEquals(1, dintFInfo.getPointDataDimensionCount());
+    assertEquals(1, dintFInfo.getPointDimensionCount());
     assertEquals(1, dintFInfo.getPointIndexDimensionCount());
     assertEquals(4, dintFInfo.getPointNumBytes());
 

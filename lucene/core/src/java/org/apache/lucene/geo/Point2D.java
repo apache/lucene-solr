@@ -21,15 +21,13 @@ import org.apache.lucene.index.PointValues;
 
 /**
  * 2D point implementation containing geo spatial logic.
- *
- * @lucene.internal
  */
-public class Point2D implements Component2D {
+final class Point2D implements Component2D {
 
   final private double x;
   final private double y;
 
-  Point2D(double x, double y) {
+  private Point2D(double x, double y) {
     this.x = x;
     this.y = y;
   }
@@ -74,7 +72,7 @@ public class Point2D implements Component2D {
       return contains(ax, ay) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy)) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
@@ -88,22 +86,14 @@ public class Point2D implements Component2D {
     return WithinRelation.DISJOINT;
   }
 
-  /** create a Point2D component tree from provided array of LatLon points.  */
-  public static Component2D create(double[]... points) {
-    Point2D components[] = new Point2D[points.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Point2D(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(points[i][1]))
-          , GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(points[i][0])));
-    }
-    return ComponentTree.create(components);
+  /** create a Point2D component tree from a LatLon point */
+  static Component2D create(Point point) {
+    return new Point2D(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(point.getLon())),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(point.getLat())));
   }
 
-  /** create a Point2D component tree from provided array of XY points.  */
-  public static Component2D create(float[]... xyPoints) {
-    Point2D components[] = new Point2D[xyPoints.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Point2D(xyPoints[i][0], xyPoints[i][1]);
-    }
-    return ComponentTree.create(components);
+  /** create a Point2D component tree from a XY point */
+  static Component2D create(XYPoint xyPoint) {
+    return new Point2D(xyPoint.getX(), xyPoint.getY());
   }
 }

@@ -1,5 +1,11 @@
 # Apache Lucene Migration Guide
 
+## o.a.l.misc.IndexMergeTool defaults changes (LUCENE-9206) ##
+
+This command-line tool no longer forceMerges to a single segment. Instead, by
+default it just follows (configurable) merge policy. If you really want to merge
+to a single segment, you can pass -max-segments 1.
+
 ## o.a.l.util.fst.Builder is renamed FSTCompiler with fluent-style Builder (LUCENE-9089) ##
 
 Simply use FSTCompiler instead of the previous Builder. Use either the simple constructor with default settings, or

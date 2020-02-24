@@ -376,9 +376,9 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
+    public int getNumDimensions() throws IOException {
       checkAndThrow();
-      return in.getNumDataDimensions();
+      return in.getNumDimensions();
     }
 
     @Override

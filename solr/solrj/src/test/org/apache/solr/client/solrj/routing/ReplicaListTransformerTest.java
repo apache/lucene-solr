@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.lang.invoke.MethodHandles;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +34,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplicaListTransformerTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // A transformer that keeps only matching choices
   private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer {
@@ -46,6 +52,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     public void transform(List<?> choices)
     {
+      log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();
       while (it.hasNext()) {
         Object choice = it.next();
@@ -58,7 +65,9 @@ public class ReplicaListTransformerTest extends SolrTestCase {
         } else {
           url = null;
         }
+        log.info("considering: {} w/url={}", choice, url);
         if (url == null || !url.matches(regex)) {
+          log.info("removing {}", choice);
           it.remove();
         }
       }
@@ -76,6 +85,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     public void transform(List<?> choices)
     {
       // no-op
+      log.info("No-Op transform ignoring input: {}", choices);
     }
 
   }
@@ -87,11 +97,11 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     final ReplicaListTransformer transformer;
     if (random().nextBoolean()) {
-
+      log.info("Using ToyMatching Transfomer");
       transformer = new ToyMatchingReplicaListTransformer(regex);
 
     } else {
-
+      log.info("Using conditional Transfomer");
       transformer = new HttpShardHandlerFactory() {
 
         @Override
@@ -126,22 +136,29 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final String url = urls.get(ii);
       final Map<String,Object> propMap = new HashMap<String,Object>();
       propMap.put("base_url", url);
+      propMap.put("core", "test_core");
+      propMap.put("node_name", "test_node");
+      propMap.put("type", "NRT");
       // a skeleton replica, good enough for this test's purposes
       final Replica replica = new Replica(name, propMap,"c1","s1");
 
       inputs.add(replica);
-      if (url.matches(regex)) {
+      final String coreUrl = replica.getCoreUrl();
+      if (coreUrl.matches(regex)) {
+        log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
+                 replica, coreUrl, regex);
         expectedTransformed.add(replica);
+      } else {
+        log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
+                 replica, coreUrl, regex);
       }
+      
     }
 
     final List<Replica> actualTransformed = new ArrayList<>(inputs);
     transformer.transform(actualTransformed);
 
-    assertEquals(expectedTransformed.size(), actualTransformed.size());
-    for (int ii=0; ii<expectedTransformed.size(); ++ii) {
-      assertEquals("mismatch for ii="+ii, expectedTransformed.get(ii), actualTransformed.get(ii));
-    }
+    assertEquals(expectedTransformed, actualTransformed);
   }
 
   private final List<String> createRandomUrls() throws Exception {

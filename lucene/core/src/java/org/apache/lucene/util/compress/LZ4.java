@@ -202,6 +202,9 @@ public final class LZ4 {
      * offsets. A return value of {@code -1} indicates that no other index could
      * be found. */
     abstract int previous(int off);
+
+    // For testing
+    abstract boolean assertReset();
   }
 
   /**
@@ -261,6 +264,11 @@ public final class LZ4 {
     @Override
     public int previous(int off) {
       return -1;
+    }
+
+    @Override
+    boolean assertReset() {
+      return true;
     }
 
   }
@@ -368,6 +376,14 @@ public final class LZ4 {
         }
       }
       return -1;
+    }
+
+    @Override
+    boolean assertReset() {
+      for (int i = 0; i < chainTable.length; ++i) {
+        assert chainTable[i] == (short) 0xFFFF : i;
+      }
+      return true;
     }
   }
 
