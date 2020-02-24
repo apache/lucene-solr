@@ -28,6 +28,7 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -742,7 +743,6 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(w, reader, dir);
   }
 
-
   public void testPointIndexAndDistanceQuery() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -785,6 +785,32 @@ public class TestLatLonShape extends LuceneTestCase {
 
     q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
     assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
+  }
+
+  public void testLucene9239() throws Exception {
+
+    double[] lats = new double[] {-22.350172194105966, 90.0, 90.0, -22.350172194105966, -22.350172194105966};// 6.12283244781244, 81.7520930577503, 81.7520930577503, 76.12283244781244, 76.12283244781244, -22.350172194105966};
+    double[] lons = new double[] {49.931598911327825, 49.931598911327825,51.40819689137876, 51.408196891378765, 49.931598911327825};//, -28.218674420982268, -28.218674420982268, -1.0286448278003566E-32, -1.0286448278003566E-32, -28.218674420982268, 49.931598911327825};
+
+    Polygon polygon = new Polygon(lats, lons);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    Circle circle = new Circle(78.01086555431775, 0.9513280497489234, 1097753.4254892308);
+    // Circle is not within the polygon
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
+    assertEquals(0, s.count(q));
 
     IOUtils.close(r, dir);
   }
