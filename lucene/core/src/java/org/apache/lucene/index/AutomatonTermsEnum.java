@@ -58,8 +58,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private final Automaton automaton;
   // for path tracking: each short records gen when we last
   // visited the state; we use gens to avoid having to clear
-  protected final short[] visited;
-  protected short curGen;
+  private final short[] visited;
+  private short curGen;
   // the reference used for seeking forwards through the term dictionary
   private final BytesRefBuilder seekBytesRef = new BytesRefBuilder(); 
   // true if we are enumerating an infinite portion of the DFA.
