@@ -18,7 +18,6 @@ package org.apache.lucene.geo;
 
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestXYRectangle extends LuceneTestCase {
 
