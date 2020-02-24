@@ -62,6 +62,26 @@ public final class XYRectangle extends XYGeometry {
 
   }
 
+  /** Compute Bounding Box for a circle in cartesian geometry */
+  public static XYRectangle fromPointDistance(final float x, final float y, final float radius) {
+    checkVal(x);
+    checkVal(y);
+    if (radius < 0) {
+      throw new IllegalArgumentException("radius must be bigger than 0, got " + radius);
+    }
+    if (Float.isFinite(radius) == false) {
+      throw new IllegalArgumentException("radius must be finite, got " + radius);
+    }
+    // LUCENE-9243: We need to add a small amount to the bounding box to avoid
+    // numerical errors.
+    double distanceBox = radius + 1e-5 * radius;
+    float minX = (float) Math.max(-Float.MAX_VALUE, x - distanceBox);
+    float maxX = (float) Math.min(Float.MAX_VALUE, x + distanceBox);
+    float minY = (float) Math.max(-Float.MAX_VALUE, y - distanceBox);
+    float maxY = (float) Math.min(Float.MAX_VALUE, y + distanceBox);
+    return new XYRectangle(minX, maxX, minY, maxY);
+  }
+
   @Override
   public int hashCode() {
     int result;
