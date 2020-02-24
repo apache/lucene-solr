@@ -497,7 +497,7 @@ public class IntersectBlockReader extends BlockReader {
       savedStates.setIntAt(0, 0);
 
       while (true) {
-        if (++curGen == 0) {
+        if (!finite && ++curGen == 0) {
           // Clear the visited states every time curGen wraps (so very infrequently to not impact average perf).
           Arrays.fill(visited, (short) -1);
         }
