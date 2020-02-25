@@ -74,7 +74,6 @@ public class KoreanAnalyzer extends Analyzer {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new LowerCaseFilter(in);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.ko;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -98,9 +99,7 @@ public class KoreanNumberFilter extends TokenFilter {
 
   static {
     numerals = new char[0x10000];
-    for (int i = 0; i < numerals.length; i++) {
-      numerals[i] = NO_NUMERAL;
-    }
+    Arrays.fill(numerals, NO_NUMERAL);
     numerals['영'] = 0; // 영 U+C601 0
     numerals['일'] = 1; // 일 U+C77C 1
     numerals['이'] = 2; // 이 U+C774 2
@@ -113,9 +112,7 @@ public class KoreanNumberFilter extends TokenFilter {
     numerals['구'] = 9; // 구 U+AD6C 9
 
     exponents = new char[0x10000];
-    for (int i = 0; i < exponents.length; i++) {
-      exponents[i] = 0;
-    }
+    Arrays.fill(exponents, (char) 0);
     exponents['십'] = 1;  // 십 U+C2ED 10
     exponents['백'] = 2;  // 백 U+BC31 100
     exponents['천'] = 3;  // 천 U+CC9C 1,000

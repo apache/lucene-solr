@@ -50,12 +50,12 @@ public class TestKoreanNumberFilterFactory extends BaseTokenStreamTestCase {
   }
 
   /** Test that bogus arguments result in exception */
-  public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new KoreanNumberFilterFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+  public void testBogusArguments() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
+        new KoreanNumberFilterFactory(new HashMap<String, String>() {{
+          put("bogusArg", "bogusValue");
+        }})
+    );
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.ko;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -41,7 +41,7 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopTags() throws IOException {
-    Set<POS.Tag> stopTags = Arrays.asList(POS.Tag.NNP, POS.Tag.NNG).stream().collect(Collectors.toSet());
+    Set<POS.Tag> stopTags = new HashSet<>(Arrays.asList(POS.Tag.NNP, POS.Tag.NNG));
     Analyzer a = new KoreanAnalyzer(null, KoreanTokenizer.DecompoundMode.DISCARD, stopTags, false);
     assertAnalyzesTo(a, "한국은 대단한 나라입니다.",
         new String[]{"은", "대단", "하", "ᆫ", "이", "ᄇ니다"},
