@@ -729,7 +729,7 @@ public class SimCloudManager implements SolrCloudManager {
       //      by the testcase.  we're going to immediately catch & re-throw any exceptions, so we don't
       //      need/want to be wrapped in a LoggingCallable w/getBackgroundTaskFailureCount() tracking
       Future<SolrResponse> rsp = simCloudManagerPool.submit(() -> simHandleSolrRequest(req));
-      return rsp.get(120, TimeUnit.SECONDS); // longer then this and something is seriously wrong
+      return rsp.get(6000, TimeUnit.SECONDS); // longer then this and something is seriously wrong
     } catch (Exception e) {
       throw new IOException(e);
     }

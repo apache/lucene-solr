@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -102,9 +104,14 @@ public class InactiveShardPlanAction extends TriggerActionBase {
         String parentPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll.getName();
         List<String> locks;
         try {
-          locks = cloudManager.getDistribStateManager().listData(parentPath).stream()
-              .filter(name -> name.endsWith("-splitting"))
-              .collect(Collectors.toList());
+          DistribStateManager stateManager = cloudManager.getDistribStateManager();
+          if (stateManager.hasData(parentPath)) {
+            locks = cloudManager.getDistribStateManager().listData(parentPath).stream()
+                .filter(name -> name.endsWith("-splitting"))
+                .collect(Collectors.toList());
+          } else {
+            locks = Collections.emptyList();
+          }
           for (String lock : locks) {
             try {
               String lockPath = parentPath + "/" + lock;

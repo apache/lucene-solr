@@ -120,6 +120,7 @@ public abstract class Suggester implements MapWriter {
     return this;
   }
 
+  // is this addition breaking any policy rules?
   protected boolean isNodeSuitableForReplicaAddition(Row targetRow, Row srcRow) {
     if (!targetRow.isLive) return false;
     if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) return false;
@@ -322,15 +323,21 @@ public abstract class Suggester implements MapWriter {
   }
 
   List<Violation> testChangedMatrix(boolean executeInStrictMode, Policy.Session session) {
+    return testChangedMatrix(executeInStrictMode, null, session);
+  }
+
+  List<Violation> testChangedMatrix(boolean executeInStrictMode, Row changedRow, Policy.Session session) {
     if (this.deviations != null) this.lastBestDeviation = this.deviations;
     this.deviations = null;
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
+    if (changedRow != null) {
+      Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
+    }
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
       if (this.deviations == null) this.deviations = new LinkedHashMap<>();
       this.deviations.put(originalClause, new double[1]);
-      List<Violation> errs = clause.test(session, this.deviations == null ? null : this.deviations.get(originalClause));
+      List<Violation> errs = clause.test(session, changedRow, this.deviations == null ? null : this.deviations.get(originalClause));
       if (!errs.isEmpty() &&
           (executeInStrictMode || clause.strict)) errors.addAll(errs);
     }

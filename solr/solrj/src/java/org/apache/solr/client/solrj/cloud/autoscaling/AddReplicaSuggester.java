@@ -51,7 +51,7 @@ class AddReplicaSuggester extends Suggester {
         Row row = getMatrix().get(i);
         if (!isNodeSuitableForReplicaAddition(row, null)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type, strict);
-        List<Violation> errs = testChangedMatrix(strict, tmpRow.session);
+        List<Violation> errs = testChangedMatrix(strict, tmpRow, tmpRow.session);
         if (!containsNewErrors(errs)) {
           if ((errs.isEmpty() && isLessDeviant()) ||//there are no violations but this is deviating less
               isLessSerious(errs, leastSeriousViolation)) {//there are errors , but this has less serious violation

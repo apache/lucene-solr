@@ -658,6 +658,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   public List<Violation> test(Policy.Session session, double[] deviations) {
+    return test(session, null, deviations);
+  }
+
+  public List<Violation> test(Policy.Session session, Row changedRow, double[] deviations) {
     if (isPerCollectiontag()) {
       if(nodeSetPresent) {
         if(put == Put.ON_EACH){
@@ -674,7 +678,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
       Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
-      for (Row r : session.matrix) {
+      Collection<Row> rows = changedRow != null ? Collections.singleton(changedRow) : session.matrix;
+      for (Row r : rows) {
         computedValueEvaluator.node = r.node;
         SealedClause sealedClause = getSealedClause(computedValueEvaluator);
         if (!sealedClause.getGlobalTag().isPass(r)) {
