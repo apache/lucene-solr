@@ -16,6 +16,8 @@ Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
+
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -29,6 +31,9 @@ Other Changes
 * LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
 * SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
+
+* SOLR-14272: Remove autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay for 9.0 as it was
+  deprecated in 7.1 (Anshum Gupta)
 
 ==================  8.5.0 ==================
 
