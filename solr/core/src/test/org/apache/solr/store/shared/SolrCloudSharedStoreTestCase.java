@@ -188,7 +188,8 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
       }
     };
 
-    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
+    BlobProcessUtil testUtil = new BlobProcessUtil();
+    testUtil.load(cpf);
     setupTestBlobProcessUtilForNode(testUtil, runner);
     return asyncPullTracker;
   }

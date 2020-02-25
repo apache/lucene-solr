@@ -16,14 +16,16 @@
  */
 package org.apache.solr.store.shared;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Provides access to Shared Store processes. Note that this class is meant to be 
@@ -48,14 +50,15 @@ public class SharedStoreManager {
     corePullTracker = new CorePullTracker();
     sharedShardMetadataController = new SharedShardMetadataController(zkController.getSolrCloudManager());
     sharedCoreConcurrencyController = new SharedCoreConcurrencyController(sharedShardMetadataController);
+    blobCoreSyncer = new BlobCoreSyncer();
+    blobProcessUtil = new BlobProcessUtil();
   }
   
   /**
-   * Start blob processes that depend on an initiated SharedStoreManager
+   * Start blob processes that depend on an initiated {@link SharedStoreManager} in {@link CoreContainer}
    */
-  public void load() {
-    blobCoreSyncer = new BlobCoreSyncer();
-    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
+  public void load(CoreContainer coreContainer) {
+    blobProcessUtil.load(coreContainer);
   }
 
   public SharedShardMetadataController getSharedShardMetadataController() {
@@ -75,7 +78,7 @@ public class SharedStoreManager {
   }
   
   public CorePullTracker getCorePullTracker() {
-    return corePullTracker ;
+    return corePullTracker;
   }
   
   public BlobCoreSyncer getBlobCoreSyncer() {
@@ -84,6 +87,15 @@ public class SharedStoreManager {
 
   public SharedCoreConcurrencyController getSharedCoreConcurrencyController() {
     return sharedCoreConcurrencyController;
+  }
+  
+  public void shutdown() {
+    if (blobProcessUtil != null) {
+      blobProcessUtil.shutdown();
+    }
+    if (blobDeleteManager != null) {
+      blobDeleteManager.shutdown();
+    }
   }
 
   @VisibleForTesting

@@ -69,7 +69,7 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testCreateCollectionSharedDisabled() throws Exception {
-    setupClusterSharedDisable(3);
+    setupClusterSharedDisable(1);
     String collectionName = "BlobBasedCollectionName1";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     

@@ -18,9 +18,12 @@ package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Utils related to blob background process e.g. init/shutdown of blob's background processes
@@ -33,18 +36,19 @@ public class BlobProcessUtil {
   /*
    * Start the Blob store async core pull machinery
    */
-  public BlobProcessUtil(CoreContainer coreContainer) {
-    this(coreContainer, new CorePullerFeeder(coreContainer));
+  public void load(CoreContainer coreContainer) {
+    load(new CorePullerFeeder(coreContainer));
   }
   
-  /*
-   * Start the Blob store async core pull machinery
-   */
-  public BlobProcessUtil(CoreContainer coreContainer, CorePullerFeeder cpf) {    
+  @VisibleForTesting
+  public void load(CorePullerFeeder cpf) {
     runningFeeder = initializeCorePullerFeeder(cpf);
   }
   
   public CorePullerFeeder getCorePullerFeeder() {
+    if (runningFeeder == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "BlobProcessUtil has not been initialized yet!");
+    }
     return runningFeeder;
   }
   
