@@ -110,6 +110,9 @@ Improvements
 
 * SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
 
+* SOLR-14281: Make sharedLib configurable through SysProp and allow multiple comma separated paths.
+  See Reference Guide 'format-of-solr-xml.adoc for details' and comment in solr.in.sh for details (janhoy)
+
 Optimizations
 ---------------------
 
