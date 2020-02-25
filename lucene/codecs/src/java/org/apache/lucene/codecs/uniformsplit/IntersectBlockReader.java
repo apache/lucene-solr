@@ -101,7 +101,6 @@ public class IntersectBlockReader extends BlockReader {
                                  PostingsReaderBase postingsReader, FieldMetadata fieldMetadata,
                                  BlockDecoder blockDecoder) throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
-    checkIntersectAutomatonType(compiled);
     automaton = compiled.automaton;
     runAutomaton = compiled.runAutomaton;
     finite = compiled.finite;
@@ -109,12 +108,6 @@ public class IntersectBlockReader extends BlockReader {
     minTermLength = getMinTermLength();
     nextStringCalculator = new AutomatonNextTermCalculator(compiled);
     seekTerm = startTerm;
-  }
-
-  protected void checkIntersectAutomatonType(CompiledAutomaton compiled) {
-    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
-      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
-    }
   }
 
   /**
@@ -130,11 +123,10 @@ public class IntersectBlockReader extends BlockReader {
     if (!finite) {
       return commonSuffixLength;
     }
+    // Since we are only dealing with finite language, there is no loop to detect.
     int commonPrefixLength = 0;
     int state = 0;
     Transition t = null;
-    int[] visited = null;
-    int visitedLength = 0;
     while (true) {
       if (runAutomaton.isAccept(state)) {
         // The common prefix reaches a final state. So common prefix and common suffix overlap.
@@ -148,32 +140,14 @@ public class IntersectBlockReader extends BlockReader {
         automaton.getTransition(state, 0, t);
         if (t.min == t.max) {
           state = t.dest;
-          if (visited == null) {
-            visited = new int[8];
-            visited[visitedLength++] = 0;
-          }
-          if (!contains(visited, visitedLength, state)) {
-            visited = ArrayUtil.grow(visited, ++visitedLength);
-            visited[visitedLength - 1] = state;
-            commonPrefixLength++;
-            continue;
-          }
+          commonPrefixLength++;
+          continue;
         }
       }
       break;
     }
     // Min term length is the sum of common prefix and common suffix lengths.
     return commonPrefixLength + commonSuffixLength;
-  }
-
-  private static boolean contains(int[] ints, int length, int value) {
-    assert length <= ints.length;
-    for (int i = 0; i < length; i++) {
-      if (ints[i] == value) {
-        return true;
-      }
-    }
-    return false;
   }
 
   @Override
@@ -229,27 +203,24 @@ public class IntersectBlockReader extends BlockReader {
       assert numMatchedBytes == 0;
       assert numConsecutivelyRejectedTerms == 0;
     }
-    int[] states = this.states;
     while (true) {
       TermBytes lineTermBytes = blockLine.getTermBytes();
       BytesRef lineTerm = lineTermBytes.getTerm();
       assert lineTerm.offset == 0;
-      byte[] termBytes = lineTerm.bytes;
-      int termLength = lineTerm.length;
-      if (states.length <= termLength) {
-        states = this.states = ArrayUtil.growExact(states, ArrayUtil.oversize(termLength + 1, Byte.BYTES));
+      if (states.length <= lineTerm.length) {
+        states = ArrayUtil.growExact(states, ArrayUtil.oversize(lineTerm.length + 1, Byte.BYTES));
       }
-      // Since terms a delta encoded, we may start the automaton steps from the last state reached by the previous term.
+      // Since terms are delta encoded, we may start the automaton steps from the last state reached by the previous term.
       int index = Math.min(lineTermBytes.getSuffixOffset(), numMatchedBytes);
       // Skip this term early if it is shorter than the min term length, or if it does not end with the common suffix
       // accepted by the automaton.
-      if (termLength >= minTermLength && (commonSuffix == null || endsWithCommonSuffix(termBytes, termLength))) {
+      if (lineTerm.length >= minTermLength && (commonSuffix == null || endsWithCommonSuffix(lineTerm.bytes, lineTerm.length))) {
         int state = states[index];
         while (true) {
-          if (index == termLength) {
+          if (index == lineTerm.length) {
             if (runAutomaton.isAccept(state)) {
               // The automaton accepts the current term. Record the number of matched bytes and return the term.
-              assert runAutomaton.run(termBytes, 0, termLength);
+              assert runAutomaton.run(lineTerm.bytes, 0, lineTerm.length);
               numMatchedBytes = index;
               if (numConsecutivelyRejectedTerms > 0) {
                 numConsecutivelyRejectedTerms = 0;
@@ -259,7 +230,7 @@ public class IntersectBlockReader extends BlockReader {
             }
             break;
           }
-          state = runAutomaton.step(state, termBytes[index] & 0xff);
+          state = runAutomaton.step(state, lineTerm.bytes[index] & 0xff);
           if (state == -1) {
             // The automaton rejects the current term.
             break;
@@ -270,10 +241,10 @@ public class IntersectBlockReader extends BlockReader {
       }
       // The current term is not accepted by the automaton.
       // Still record the reached automaton state to start the next term steps from there.
-      assert !runAutomaton.run(termBytes, 0, termLength);
+      assert !runAutomaton.run(lineTerm.bytes, 0, lineTerm.length);
       numMatchedBytes = index;
-      // If the number of consecutively rejected terms reaches the threshold, then determine whether it is worth to
-      // jump to a block away.
+      // If the number of consecutively rejected terms reaches the threshold,
+      // then determine whether it is worthwhile to jump to a block away.
       if (++numConsecutivelyRejectedTerms >= NUM_CONSECUTIVELY_REJECTED_TERMS_THRESHOLD
           && lineIndexInBlock < blockHeader.getLinesCount() - 1
           && !nextStringCalculator.isLinearState(lineTerm)) {
@@ -282,16 +253,16 @@ public class IntersectBlockReader extends BlockReader {
           blockIteration = BlockIteration.END;
           return null;
         }
-        // It is worth to jump to a block away if the next term accepted is after the next term in the block.
+        // It is worthwhile to jump to a block away if the next term accepted is after the next term in the block.
         // Actually the block away may be the current block, but this is a good heuristic.
         readLineInBlock();
         if (seekTerm.compareTo(blockLine.getTermBytes().getTerm()) > 0) {
-          // Stop this block terms a set the iteration order to jump to a block away by seeking seekTerm.
+          // Stop scanning this block terms and set the iteration order to jump to a block away by seeking seekTerm.
           blockIteration = BlockIteration.SEEK;
           return null;
         }
         seekTerm = null;
-        // If it is not worth to jump to a block away, do not attempt anymore for the current block.
+        // If it is not worthwhile to jump to a block away, do not attempt anymore for the current block.
         numConsecutivelyRejectedTerms = Integer.MIN_VALUE;
       } else if (readLineInBlock() == null) {
         // No more terms in the block. The iteration order is to open the very next block.
@@ -372,7 +343,7 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * This is a copy of AutomatonTermsEnum.  Since it's an inner class, the outer class can
+   * This is mostly a copy of AutomatonTermsEnum.  Since it's an inner class, the outer class can
    * call methods that ATE does not expose.  It'd be nice if ATE's logic could be more extensible.
    */
   protected class AutomatonNextTermCalculator {

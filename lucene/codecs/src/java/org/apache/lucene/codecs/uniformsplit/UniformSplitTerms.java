@@ -82,7 +82,15 @@ public class UniformSplitTerms extends Terms implements Accountable {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+    checkIntersectAutomatonType(compiled);
     return new IntersectBlockReader(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
+  }
+
+  protected void checkIntersectAutomatonType(CompiledAutomaton automaton) {
+    // This check is consistent with other impls and precondition stated in javadoc.
+    if (automaton.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+    }
   }
 
   @Override
