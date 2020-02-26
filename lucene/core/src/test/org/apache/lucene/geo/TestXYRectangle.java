@@ -18,6 +18,7 @@ package org.apache.lucene.geo;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestXYRectangle extends LuceneTestCase {
 
@@ -113,7 +114,7 @@ public class TestXYRectangle extends LuceneTestCase {
 
       final float radius;
       if (random().nextBoolean()) {
-        radius = random().nextFloat() * 10000;
+        radius = random().nextFloat() * TestUtil.nextInt(random(), 1, 100000);
       } else {
         radius = Math.abs(ShapeTestUtil.nextFloat(random()));
       }
@@ -124,17 +125,17 @@ public class TestXYRectangle extends LuceneTestCase {
       int numPointsToTry = 1000;
       for(int i = 0; i < numPointsToTry; i++) {
 
-        float x;
+        double x;
         if (random().nextBoolean()) {
-          x = centerX + radius + random().nextFloat();
+          x = Math.min(Float.MAX_VALUE, centerX + radius + random().nextDouble());
         } else {
-          x = centerX + radius - random().nextFloat();
+          x = Math.max(-Float.MAX_VALUE, centerX + radius - random().nextDouble());
         }
-        float y;
+        double y;
         if (random().nextBoolean()) {
-          y = centerY + radius + random().nextFloat();
+          y = Math.min(Float.MAX_VALUE, centerY + radius + random().nextDouble());
         } else {
-          y = centerY + radius - random().nextFloat();
+          y = Math.max(-Float.MAX_VALUE, centerY + radius - random().nextDouble());
         }
 
         // cartesian says it's within the circle:
