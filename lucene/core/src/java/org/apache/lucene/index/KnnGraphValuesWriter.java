@@ -49,7 +49,7 @@ public class KnnGraphValuesWriter implements Accountable {
     this.docsWithFieldVec = new DocsWithFieldSet();
     this.docsWithFieldGrp = new DocsWithFieldSet();
     this.hnswGraphWriter = new HNSWGraphWriter(fieldInfo.getVectorNumDimensions(), fieldInfo.getVectorDistFunc());
-    this.bytesUsed = docsWithFieldGrp.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(hnswGraphWriter);
+    this.bytesUsed = docsWithFieldVec.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(hnswGraphWriter);
     if (iwBytesUsed != null) {
       iwBytesUsed.addAndGet(bytesUsed);
     }
