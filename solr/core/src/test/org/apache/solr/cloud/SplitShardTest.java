@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -306,6 +307,7 @@ public class SplitShardTest extends SolrCloudTestCase {
     final AtomicInteger failures = new AtomicInteger();
     // allows waiting for a given number of update requests, regardless of if they succeed for fail
     final AtomicReference<CountDownLatch> updateLatch = new AtomicReference<>(new CountDownLatch(random().nextInt(4)));
+    final AtomicReference<CountDownLatch> updateSuccessLatch = new AtomicReference<>(new CountDownLatch(0));
     Thread[] indexThreads = new Thread[nThreads];
     try {
 
@@ -331,6 +333,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               updateLatch.get().countDown();
               if (ursp.getStatus() == 0) {
                 model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
+                updateSuccessLatch.get().countDown();
               } else {
                 failures.incrementAndGet();
                 if (!updateFailureOK) {
@@ -366,9 +369,12 @@ public class SplitShardTest extends SolrCloudTestCase {
         leaderJetty.stop();
       }
 
-      // wait for a few more update requests
-      updateLatch.set(new CountDownLatch(10));
-      updateLatch.get().await();
+      // wait for some update successes
+      updateSuccessLatch.set(new CountDownLatch(10));
+      if (!updateSuccessLatch.get().await(1, TimeUnit.MINUTES)) {
+        log.error("CLUSTER STATE AFTER WAITING:\n" + client.getZkStateReader().getClusterState().getCollection(collectionName));
+        fail("FAILED to index more documents");
+      }
 
     } finally {
       // shut down the indexers
@@ -378,26 +384,26 @@ public class SplitShardTest extends SolrCloudTestCase {
       }
     }
 
-
-    Thread.sleep(10 * 1000);  // nocommit... give things a chance to settle, new leader elected, etc
-
     client.commit();  // final commit is needed for visibility
 
+    log.info("END CLUSTER STATE:\n" + client.getZkStateReader().getClusterState().getCollection(collectionName));
+
+    // Index can legitimately have more documents than our model because of failed requests that actually succeeded.
+    // For this reason, don't limit rows by the model size, but by the actual number of docs.  It would be really nice if "-1" worked for "give me all"...
     long numDocs = getNumDocs(client);
-    if (numDocs != model.size()) {
-      SolrDocumentList results = client.query(new SolrQuery("DBG","FINAL_QUERY", "q","*:*", "fl","id", "rows", Integer.toString(model.size()) )).getResults();
-      Map<String,Long> leftover = new HashMap<>(model);
-      for (SolrDocument doc : results) {
-        String id = (String) doc.get("id");
-        leftover.remove(id);
-      }
+    SolrDocumentList results = client.query(new SolrQuery("DBG","FINAL_QUERY", "q","*:*", "fl","id", "rows", Long.toString(numDocs*2))).getResults();
+    Map<String,Long> leftover = new HashMap<>(model);
+    for (SolrDocument doc : results) {
+      String id = (String) doc.get("id");
+      leftover.remove(id);
+    }
+    if (leftover.size() > 0) {
       log.error("MISSING DOCUMENTS: " + leftover);
     }
-    log.warn("END CLUSTER STATE:\n" + client.getZkStateReader().getClusterState().getCollection(collectionName));
 
+    log.info("Number of documents attempted to be indexed : " + numDocs + " update request failures=" + failures.get());
 
-    assertEquals("Documents are missing!", model.size(), numDocs);
-    log.info("Number of documents indexed and queried : " + numDocs + " failures during splitting=" + failures.get());
+    assertTrue("Documents are missing! " + leftover, leftover.size() == 0);
   }
 
   public void testLiveSplitFail() throws Exception {
