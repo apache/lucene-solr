@@ -1180,7 +1180,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       QParser qParser = QParser.getParser("text:grackle", req);
       qParser.setParams(sowTrueParams);
       Query q = qParser.getQuery();
-      assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
 
       for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
         qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
@@ -1407,30 +1407,30 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   }
 
-  public void testSynonymsBoost_phraseQueryMultiTermSynonymsBoost_shouldParseBoostedSpanQuery() throws Exception {
+  public void testSynonymsBoost_phraseQueryMultiTermSynonymsBoost() throws Exception {
     Query q = QParser.getParser("\"snow leopard lion\"", req(params("df", "t_pick_best_boosted_foo", "sow", "false"))).getQuery();
-    assertEquals("spanNear([" +
-        "spanOr([" +
-        "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:uncia], 0, true))^0.9," +
-        " (spanNear([t_pick_best_boosted_foo:big, t_pick_best_boosted_foo:cat], 0, true))^0.8," +
-        " (t_pick_best_boosted_foo:white_leopard)^0.6," +
-        " spanNear([t_pick_best_boosted_foo:snow, t_pick_best_boosted_foo:leopard], 0, true)])," +
-        " spanOr([" +
-        "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:leo], 0, true))^0.9," +
-        " (spanNear([t_pick_best_boosted_foo:simba, t_pick_best_boosted_foo:leo], 0, true))^0.8," +
-        " (t_pick_best_boosted_foo:kimba)^0.75])], 0, true)", q.toString());
+    assertEquals("(t_pick_best_boosted_foo:\"panthera uncia panthera leo\")^0.80999994 " +
+        "(t_pick_best_boosted_foo:\"panthera uncia simba leo\")^0.71999997 " +
+        "(t_pick_best_boosted_foo:\"panthera uncia kimba\")^0.67499995 " +
+        "(t_pick_best_boosted_foo:\"big cat panthera leo\")^0.71999997 " +
+        "(t_pick_best_boosted_foo:\"big cat simba leo\")^0.64000005 " +
+        "(t_pick_best_boosted_foo:\"big cat kimba\")^0.6 " +
+        "(t_pick_best_boosted_foo:\"white_leopard panthera leo\")^0.54 " +
+        "(t_pick_best_boosted_foo:\"white_leopard simba leo\")^0.48000002 " +
+        "(t_pick_best_boosted_foo:\"white_leopard kimba\")^0.45000002 " +
+        "(t_pick_best_boosted_foo:\"snow leopard panthera leo\")^0.9 " +
+        "(t_pick_best_boosted_foo:\"snow leopard simba leo\")^0.8 " +
+        "(t_pick_best_boosted_foo:\"snow leopard kimba\")^0.75", q.toString());
   }
 
-  public void testSynonymsBoost_phraseQueryMultiTermSynonymsMultipleBoost_shouldParseMultiplicativeBoostedSpanQuery() throws Exception {
+  public void testSynonymsBoost_phraseQueryMultiTermSynonymsMultipleBoost() throws Exception {
     Query q = QParser.getParser("\"panthera blytheae lion\"", req(params("df", "t_pick_best_boosted_foo", "sow", "false"))).getQuery();
-    assertEquals("spanNear([" +
-            "spanOr([" +
-            "(spanNear([t_pick_best_boosted_foo:oldest, t_pick_best_boosted_foo:ancient, t_pick_best_boosted_foo:panthera], 0, true))^0.45," +
-            " spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:blytheae], 0, true)])," +
-            " spanOr([" +
-            "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:leo], 0, true))^0.9," +
-            " (spanNear([t_pick_best_boosted_foo:simba, t_pick_best_boosted_foo:leo], 0, true))^0.8," +
-            " (t_pick_best_boosted_foo:kimba)^0.75])], 0, true)", q.toString());
+    assertEquals("(t_pick_best_boosted_foo:\"oldest ancient panthera panthera leo\")^0.40499997 " +
+        "(t_pick_best_boosted_foo:\"oldest ancient panthera simba leo\")^0.35999998 " +
+        "(t_pick_best_boosted_foo:\"oldest ancient panthera kimba\")^0.33749998 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae panthera leo\")^0.9 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae simba leo\")^0.8 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae kimba\")^0.75", q.toString());
   }
 
   public void testSynonymsBoost_BoostMissing_shouldAssignDefaultBoost() throws Exception {
