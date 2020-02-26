@@ -52,11 +52,7 @@ This will produce pages with a DRAFT watermark across them. While these are fine
 
 == Upload to the Website
 
-NOTE: When the RM changes the `LUCENE_LATEST_RELEASE` variable in https://github.com/apache/lucene-site/blob/master/pelicanconf.py in the website git repo, the default redirect for https://lucene.apache.org/solr/guide/mypage.html will automatically redirect to the latest `X_Y` version. Thus you should always publish a DRAFT guide to that location *before* the release of Solr. Then you can publish a final version later, overwriting the previous.
-
-// Some steps are covered by the releaseWizard.py script
-
-UPDATE: After the switch to website in GIT, built by Pelican (https://github.com/apache/lucene-site) we no longer need to update `extpaths.txt`. We only need to update the `solr/guide.md` page with a link to the newest version. Once the guide is pushed to Subversion production tree, it will be available "by magic" in the site (production only, not staged).
+NOTE: After the switch to website in GIT, built by Pelican (https://github.com/apache/lucene-site) we no longer need to update `extpaths.txt`. When the RM changes the `LUCENE_LATEST_RELEASE` variable in https://github.com/apache/lucene-site/blob/master/pelicanconf.py in the website git repo, the default redirect for https://lucene.apache.org/solr/guide/mypage.html will automatically redirect to the latest `X_Y` version. Thus you should always publish a DRAFT guide to that location *before* the release of Solr. Then you can publish a final version later, overwriting the previous.
 
 Push the Guide directly to production via Subversion `import` from where you built it.
 
