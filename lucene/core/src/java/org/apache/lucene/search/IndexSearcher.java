@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -123,6 +124,9 @@ public class IndexSearcher {
   // These are only used for multi-threaded search
   private final Executor executor;
 
+  // Used internally for load balancing threads executing for the query
+  private final SliceExecutionControlPlane<List<Future>, FutureTask> sliceExecutionControlPlane;
+
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
 
@@ -211,6 +215,18 @@ public class IndexSearcher {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
+    this.sliceExecutionControlPlane = executor == null ? null : getSliceExecutionControlPlane(executor);
+    this.readerContext = context;
+    leafContexts = context.leaves();
+    this.leafSlices = executor == null ? null : slices(leafContexts);
+  }
+
+  // Package private for testing
+  IndexSearcher(IndexReaderContext context, Executor executor, SliceExecutionControlPlane sliceExecutionControlPlane) {
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    reader = context.reader();
+    this.executor = executor;
+    this.sliceExecutionControlPlane = executor == null ? null : sliceExecutionControlPlane;
     this.readerContext = context;
     leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
@@ -662,29 +678,20 @@ public class IndexSearcher {
       }
       query = rewrite(query);
       final Weight weight = createWeight(query, scoreMode, 1);
-      final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
-      for (int i = 0; i < leafSlices.length - 1; ++i) {
+      final List<FutureTask> listTasks = new ArrayList<>();
+      for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
         FutureTask<C> task = new FutureTask<>(() -> {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
-        boolean executedOnCallerThread = false;
-        try {
-          executor.execute(task);
-        } catch (RejectedExecutionException e) {
-          // Execute on caller thread
-          search(Arrays.asList(leaves), weight, collector);
-          topDocsFutures.add(CompletableFuture.completedFuture(collector));
-          executedOnCallerThread = true;
-        }
 
-        // Do not add the task's future if it was not used
-        if (executedOnCallerThread == false) {
-          topDocsFutures.add(task);
-        }
+        listTasks.add(task);
       }
+
+      final List<Future> topDocsFutures = sliceExecutionControlPlane.invokeAll(listTasks);
+
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
       // execute the last on the caller thread
@@ -878,7 +885,7 @@ public class IndexSearcher {
 
   @Override
   public String toString() {
-    return "IndexSearcher(" + reader + "; executor=" + executor + ")";
+    return "IndexSearcher(" + reader + "; executor=" + executor + "; sliceExecutionControlPlane " + sliceExecutionControlPlane + ")";
   }
   
   /**
@@ -933,6 +940,13 @@ public class IndexSearcher {
     return executor;
   }
 
+  /**
+   * Returns this searchers slice execution control plane or <code>null</code> if no executor was provided
+   */
+  public SliceExecutionControlPlane getSliceExecutionControlPlane() {
+    return sliceExecutionControlPlane;
+  }
+
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. This typically happens if
    * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery
@@ -942,5 +956,20 @@ public class IndexSearcher {
     public TooManyClauses() {
       super("maxClauseCount is set to " + maxClauseCount);
     }
+  }
+
+  /**
+   * Return the SliceExecutionControlPlane instance to be used for this IndexSearcher instance
+   */
+  private static DefaultSliceExecutionControlPlane getSliceExecutionControlPlane(Executor executor) {
+    if (executor == null) {
+      return null;
+    }
+
+    if (executor instanceof ThreadPoolExecutor) {
+      return new QueueSizeBasedExecutionControlPlane((ThreadPoolExecutor) executor);
+    }
+
+    return new DefaultSliceExecutionControlPlane(executor);
   }
 }

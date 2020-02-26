@@ -22,10 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,11 +58,14 @@ import org.junit.Test;
 public class TestIndexSearcher extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
+  Directory dir2;
+  IndexReader reader2;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
+    dir2 = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
@@ -70,6 +76,22 @@ public class TestIndexSearcher extends LuceneTestCase {
     }
     reader = iw.getReader();
     iw.close();
+
+    Random random = random();
+    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    for (int i = 0; i < 100; i++) {
+      Document doc = new Document();
+      doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
+      doc.add(newStringField("field2", Boolean.toString(i % 2 == 0), Field.Store.NO));
+      doc.add(new SortedDocValuesField("field2", new BytesRef(Boolean.toString(i % 2 == 0))));
+      iw2.addDocument(doc);
+
+      if (random.nextBoolean()) {
+        iw2.commit();
+      }
+    }
+    reader2 = iw2.getReader();
+    iw2.close();
   }
 
   @Override
@@ -77,6 +99,8 @@ public class TestIndexSearcher extends LuceneTestCase {
     super.tearDown();
     reader.close();
     dir.close();
+    reader2.close();
+    dir2.close();
   }
 
   // should not throw exception
@@ -345,6 +369,91 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     public void execute(final Runnable runnable) {
       throw new RejectedExecutionException();
+    }
+  }
+
+  public void testQueueSizeBasedCP() throws Exception {
+    ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    runCPTest(service, false);
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  public void testRandomBlockingCP() throws Exception {
+    ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    runCPTest(service, true);
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  private void runCPTest(ThreadPoolExecutor service, boolean useRandomCP) throws Exception {
+    SliceExecutionControlPlane sliceExecutionControlPlane = useRandomCP == true ? new RandomBlockingSliceExecutionControlPlane(service) :
+                                                              new QueueSizeBasedExecutionControlPlane(service);
+
+    IndexSearcher searcher = new IndexSearcher(reader2.getContext(), service, sliceExecutionControlPlane);
+
+    assert searcher.getSlices().length > 1;
+
+    Query queries[] = new Query[] {
+        new MatchAllDocsQuery(),
+        new TermQuery(new Term("field", "1"))
+    };
+    Sort sorts[] = new Sort[] {
+        null,
+        new Sort(new SortField("field2", SortField.Type.STRING))
+    };
+    ScoreDoc afters[] = new ScoreDoc[] {
+        null,
+        new FieldDoc(0, 0f, new Object[] { new BytesRef("boo!") })
+    };
+
+    for (ScoreDoc after : afters) {
+      for (Query query : queries) {
+        for (Sort sort : sorts) {
+          searcher.search(query, Integer.MAX_VALUE);
+          searcher.searchAfter(after, query, Integer.MAX_VALUE);
+          if (sort != null) {
+            searcher.search(query, Integer.MAX_VALUE, sort);
+            searcher.search(query, Integer.MAX_VALUE, sort, true);
+            searcher.search(query, Integer.MAX_VALUE, sort, false);
+            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
+            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
+            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
+          }
+        }
+      }
+    }
+  }
+
+  private class RandomBlockingSliceExecutionControlPlane extends DefaultSliceExecutionControlPlane {
+
+    public RandomBlockingSliceExecutionControlPlane(Executor executor) {
+      super(executor);
+    }
+
+    @Override
+    public List<Future> invokeAll(Collection<FutureTask> tasks) {
+      List<Future> futures = new ArrayList();
+
+      for (FutureTask task : tasks) {
+        boolean shouldExecuteOnCallerThread = false;
+
+        if (random().nextBoolean()) {
+          shouldExecuteOnCallerThread = true;
+        }
+
+        processTask(task, futures, shouldExecuteOnCallerThread);
+
+        futures.add(task);
+      }
+
+      return futures;
     }
   }
 }
