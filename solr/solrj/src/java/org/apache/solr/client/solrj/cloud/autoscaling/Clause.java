@@ -461,6 +461,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   List<Violation> testGroupNodes(Policy.Session session, double[] deviations) {
+    return testGroupNodes(session, null, deviations);
+  }
+
+  List<Violation> testGroupNodes(Policy.Session session, Row changedRow, double[] deviations) {
     //e.g:  {replica:'#EQUAL', shard:'#EACH',  sysprop.zone:'#EACH'}
     ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
     eval.collName = (String) collection.getValue();
@@ -469,7 +473,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Set tags = getUniqueTags(session, eval);
     if (tags.isEmpty()) return Collections.emptyList();
 
-    Set<String> shards = getShardNames(session, eval);
+    Set<String> shards = getShardNames(session, changedRow, eval);
 
     for (String s : shards) {
       final ReplicaCount replicaCount = new ReplicaCount();
@@ -477,7 +481,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
       for (Object tag : tags) {
         replicaCount.reset();
-        for (Row row : session.matrix) {
+        List<Row> rows = changedRow != null ? Collections.singletonList(changedRow) : session.matrix;
+        for (Row row : rows) {
          if(!isRowPass(eval, tag, row)) continue;
           addReplicaCountsForNode(eval, replicaCount, row);
         }
@@ -598,14 +603,19 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   List<Violation> testPerNode(Policy.Session session, double[] deviations) {
+    return testPerNode(session, null, deviations);
+  }
+
+  List<Violation> testPerNode(Policy.Session session, Row changedRow, double[] deviations) {
     ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
     eval.collName = (String) collection.getValue();
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
-    Set<String> shards = getShardNames(session, eval);
+    Set<String> shards = getShardNames(session, changedRow, eval);
     for (String s : shards) {
       final ReplicaCount replicaCount = new ReplicaCount();
       eval.shardName = s;
-      for (Row row : session.matrix) {
+      List<Row> rows = changedRow != null ? Collections.singletonList(changedRow) : session.matrix;
+      for (Row row : rows) {
         replicaCount.reset();
         eval.node = row.node;
         Condition tag = this.tag;
@@ -639,12 +649,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   private Set<String> getShardNames(Policy.Session session,
+                                    Row changedRow,
                                     ComputedValueEvaluator eval) {
     Set<String> shards = new HashSet<>();
     if (isShardAbsent()) {
       shards.add(Policy.ANY); //consider the entire collection is a single shard
     } else {
-      for (Row row : session.matrix) {
+      List<Row> rows = changedRow != null ? Collections.singletonList(changedRow) : session.matrix;
+      for (Row row : rows) {
         row.forEachShard(eval.collName, (shard, r) -> {
           if (this.shard.isPass(shard)) shards.add(shard); // add relevant shards
         });
@@ -665,16 +677,16 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (isPerCollectiontag()) {
       if(nodeSetPresent) {
         if(put == Put.ON_EACH){
-          return testPerNode(session, deviations) ;
+          return testPerNode(session, changedRow, deviations) ;
         } else {
-          return testGroupNodes(session, deviations);
+          return testGroupNodes(session, changedRow, deviations);
         }
       }
 
       return tag.varType == Type.NODE ||
           (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
-          testPerNode(session, deviations) :
-          testGroupNodes(session, deviations);
+          testPerNode(session, changedRow, deviations) :
+          testGroupNodes(session, changedRow, deviations);
     } else {
       ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
       Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);

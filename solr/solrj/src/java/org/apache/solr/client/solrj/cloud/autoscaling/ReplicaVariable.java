@@ -33,20 +33,32 @@ class ReplicaVariable extends VariableBase {
   public static final String REPLICASCOUNT = "relevantReplicas";
 
 
+  private static final class ReplicaCounter {
+    final String collection, shard;
+    final Clause clause;
 
+    ReplicaCounter(String collection, String shard, Clause clause) {
+      this.collection = collection;
+      this.shard = shard;
+      this.clause = clause;
+    }
+
+    int calculate(Row row) {
+      int[] result = new int[1];
+      row.forEachReplica(collection, replicaInfo -> {
+        if (clause.isMatch(replicaInfo, collection, shard))
+          result[0]++;
+      });
+      return result[0];
+    }
+  }
 
   static int getRelevantReplicasCount(Policy.Session session, Condition cv, String collection, String shard) {
     int totalReplicasOfInterest = 0;
     Clause clause = cv.getClause();
+    ReplicaCounter counter = new ReplicaCounter(collection, shard, clause);
     for (Row row : session.matrix) {
-      Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> {
-        int[] result = new int[1];
-        row.forEachReplica(collection, replicaInfo -> {
-          if (clause.isMatch(replicaInfo, collection, shard))
-            result[0]++;
-        });
-        return result[0];
-      });
+      Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> counter.calculate(row));
       if (perShardCount != null)
         totalReplicasOfInterest += perShardCount;
     }

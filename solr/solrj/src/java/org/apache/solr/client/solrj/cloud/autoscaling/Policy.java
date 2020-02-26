@@ -335,6 +335,74 @@ public class Policy implements MapWriter {
     }
   }
 
+  static void setChangedRowOrder(List<Preference> clusterPreferences, Row changedRow, List<Row> matrix) {
+    List<Row> matrixCopy = new ArrayList<>(matrix);
+    List<Row> deadNodes = null;
+    Iterator<Row> it =matrix.iterator();
+    Row rowToInsert = null;
+    while (it.hasNext()){
+      Row row = it.next();
+      if(!row.isLive){
+        if(deadNodes == null) deadNodes = new ArrayList<>();
+        deadNodes.add(row);
+        it.remove();
+      } else {
+        // remove the changed row from the matrix
+        if (row == changedRow) {
+          rowToInsert = row;
+          it.remove();
+        }
+      }
+    }
+    if (rowToInsert == null) {
+      throw new RuntimeException("the changed row is missing from the matrix! " + changedRow);
+    }
+
+    if (!clusterPreferences.isEmpty()) {
+      //this is to set the approximate value according to the precision
+      ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      Row[] lastComparison = new Row[2];
+      for (Preference p : clusterPreferences) {
+        try {
+          tmpMatrix.sort((r1, r2) -> {
+            lastComparison[0] = r1;
+            lastComparison[1] = r2;
+            return p.compare(r1, r2, false);
+          });
+        } catch (Exception e) {
+          try {
+            Map m = Collections.singletonMap("diagnostics", (MapWriter) ew -> {
+              PolicyHelper.writeNodes(ew, matrixCopy);
+              ew.put("config", matrix.get(0).session.getPolicy());
+            });
+            log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
+                clusterPreferences,
+                lastComparison[0].node,
+                lastComparison[1].node,
+                Utils.writeJson(m, new StringWriter(), true).toString());
+          } catch (IOException e1) {
+            //
+          }
+          throw new RuntimeException(e.getMessage());
+        }
+        p.setApproxVal(tmpMatrix);
+      }
+      // the tmpMatrix was needed only to set the approximate values, now we sort the real matrix
+      // recursing through each preference
+      matrix.sort((Row r1, Row r2) -> {
+        int result = clusterPreferences.get(0).compare(r1, r2, true);
+        if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+        return result;
+      });
+
+      if(deadNodes != null){
+        for (Row deadNode : deadNodes) {
+          matrix.add(0, deadNode);
+        }
+      }
+    }
+  }
+
   /**
    * Insert the collection name into the clauses where collection is not specified
    */

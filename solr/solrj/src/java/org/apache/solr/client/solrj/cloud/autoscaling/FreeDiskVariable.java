@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -144,20 +145,30 @@ public class FreeDiskVariable extends VariableBase {
 
   }
 
-  //When a replica is added, freedisk should be incremented
+  //When a replica is added, freedisk should be decremented
   @Override
   public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
     //go through other replicas of this shard and copy the index size value into this
+    AtomicBoolean indexSizeSet = new AtomicBoolean();
     for (Row row : cell.getRow().session.matrix) {
-      row.forEachReplica(replicaInfo -> {
-        if (ri != replicaInfo &&
-            ri.getCollection().equals(replicaInfo.getCollection()) &&
-            ri.getShard().equals(replicaInfo.getShard()) &&
-            ri.getVariable(CORE_IDX.tagName) == null &&
-            replicaInfo.getVariable(CORE_IDX.tagName) != null) {
-          ri.getVariables().put(CORE_IDX.tagName, validate(CORE_IDX.tagName, replicaInfo.getVariable(CORE_IDX.tagName), false));
-        }
+      Object indexSize = row.computeCacheIfAbsent(ri.getCollection(), ri.getShard(), "freedisk", CORE_IDX.tagName, o -> {
+        Object[] result = new Object[1];
+        row.forEachShard(ri.getCollection(), (shard, replicas) -> {
+          if (ri.getShard().equals(shard)) {
+            for (ReplicaInfo replicaInfo : replicas) {
+              if (replicaInfo.getVariable(CORE_IDX.tagName) != null) {
+                result[0] = replicaInfo.getVariable(CORE_IDX.tagName);
+                return;
+              }
+            }
+          }
+        });
+        return result[0];
       });
+      if (indexSize != null) {
+        ri.getVariables().put(CORE_IDX.tagName, validate(CORE_IDX.tagName, indexSize, false));
+        break;
+      }
     }
     Double idxSize = (Double) validate(CORE_IDX.tagName, ri.getVariable(CORE_IDX.tagName), false);
     if (idxSize == null) return;

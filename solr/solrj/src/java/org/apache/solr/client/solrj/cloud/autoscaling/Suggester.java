@@ -329,9 +329,7 @@ public abstract class Suggester implements MapWriter {
   List<Violation> testChangedMatrix(boolean executeInStrictMode, Row changedRow, Policy.Session session) {
     if (this.deviations != null) this.lastBestDeviation = this.deviations;
     this.deviations = null;
-    if (changedRow != null) {
-      Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
-    }
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
