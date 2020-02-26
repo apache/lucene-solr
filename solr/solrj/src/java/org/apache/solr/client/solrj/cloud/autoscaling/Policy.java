@@ -682,7 +682,7 @@ public class Policy implements MapWriter {
       sortNodes();
 
       for (Clause clause : expandedClauses) {
-        List<Violation> errs = clause.test(this, null);
+        List<Violation> errs = clause.test(this, null, null);
         violations.addAll(errs);
       }
     }

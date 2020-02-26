@@ -268,6 +268,10 @@ public class Row implements MapWriter {
     isAlreadyCopied = true;
   }
 
+  boolean isEmpty() {
+    return collectionVsShardVsReplicas.isEmpty();
+  }
+
   boolean hasColl(String coll) {
     return collectionVsShardVsReplicas.containsKey(coll);
   }

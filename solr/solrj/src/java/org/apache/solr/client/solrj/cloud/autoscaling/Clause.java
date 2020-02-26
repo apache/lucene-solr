@@ -669,9 +669,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return Policy.ANY.equals(shard.val);
   }
 
-  public List<Violation> test(Policy.Session session, double[] deviations) {
-    return test(session, null, deviations);
-  }
+//  public List<Violation> test(Policy.Session session, double[] deviations) {
+//    return test(session, null, deviations);
+//  }
 
   public List<Violation> test(Policy.Session session, Row changedRow, double[] deviations) {
     if (isPerCollectiontag()) {

@@ -58,6 +58,9 @@ class ReplicaVariable extends VariableBase {
     Clause clause = cv.getClause();
     ReplicaCounter counter = new ReplicaCounter(collection, shard, clause);
     for (Row row : session.matrix) {
+      if (row.isEmpty() || !row.isLive() || !row.hasColl(collection)) {
+        continue;
+      }
       Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> counter.calculate(row));
       if (perShardCount != null)
         totalReplicasOfInterest += perShardCount;
