@@ -37,6 +37,8 @@ NOTE: Builds are available via https://builds.apache.org/view/L/view/Lucene/[Jen
 
 == Build the DRAFT Guide
 
+NOTE: After the switch to website in GIT, built by Pelican (https://github.com/apache/lucene-site) we no longer need to update `extpaths.txt`. When the RM changes the `LUCENE_LATEST_RELEASE` variable in https://github.com/apache/lucene-site/blob/master/pelicanconf.py in the website git repo, the default redirect for https://lucene.apache.org/solr/guide/mypage.html will automatically redirect to the latest `X_Y` version. Thus you should always publish a DRAFT guide to that location *before* the release of Solr. Then you can publish a final version later, overwriting the previous.
+
 The build process generates the page hierarchy and builds the HTML pages with custom templates the Lucene/Solr project has defined.
 
 To build the HTML:
@@ -51,8 +53,6 @@ This will produce pages with a DRAFT watermark across them. While these are fine
 . The resulting Guide will be in `solr/build/solr-ref-guide`. The HTML files themselves will be in `solr/build/solr-ref-guide/html-site`.
 
 == Upload to the Website
-
-NOTE: After the switch to website in GIT, built by Pelican (https://github.com/apache/lucene-site) we no longer need to update `extpaths.txt`. When the RM changes the `LUCENE_LATEST_RELEASE` variable in https://github.com/apache/lucene-site/blob/master/pelicanconf.py in the website git repo, the default redirect for https://lucene.apache.org/solr/guide/mypage.html will automatically redirect to the latest `X_Y` version. Thus you should always publish a DRAFT guide to that location *before* the release of Solr. Then you can publish a final version later, overwriting the previous.
 
 Push the Guide directly to production via Subversion `import` from where you built it.
 
