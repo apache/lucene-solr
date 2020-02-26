@@ -19,6 +19,7 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 
 public class TestCircle2D extends LuceneTestCase {
 
@@ -56,6 +57,19 @@ public class TestCircle2D extends LuceneTestCase {
     double by = 1;
     double cx = 0;
     double cy = 90;
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+  }
+
+  public void testTriangleDateLineIntersects() {
+    Component2D circle2D = LatLonGeometry.create(new Circle(0, 179, 222400));
+    double ax = -179;
+    double ay = 1;
+    double bx = -179;
+    double by = -1;
+    double cx = -178;
+    double cy = 0;
+    // we just touch the edge from the dateline
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
