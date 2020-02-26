@@ -614,7 +614,7 @@ public class CoreContainer {
     libDirs.add("lib");
 
     if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
-      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split(", *"));
+      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
       libDirs.addAll(sharedLibs);
     }
 

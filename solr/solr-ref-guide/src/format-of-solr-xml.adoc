@@ -29,7 +29,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
 <solr>
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
-  <str name="sharedLib">${solr.sharedLib}</str>
+  <str name="sharedLib">${solr.sharedLib:}</str>
 
   <solrcloud>
     <str name="host">${host:}</str>
