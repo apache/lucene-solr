@@ -115,6 +115,6 @@ The only edit we need to do in the website itself is adding a link to the latest
 
 You can use your favourite git client to merge master into branch `production`. Or you can use GitHub website:
 
-. Make a new pull request from https://github.com/apache/lucene-site/compare/production...master
+. Make a new pull request from https://github.com/apache/lucene-site/compare/production%2E%2E%2Emaster
 . Note: If there are other changes staged, you will see those as well if you merge `master` into `production`
 . Click the "Merge" button on the PR
