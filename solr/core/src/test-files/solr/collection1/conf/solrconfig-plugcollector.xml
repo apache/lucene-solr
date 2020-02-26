@@ -161,10 +161,6 @@
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
-  <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
-If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
-based HashBitset. -->
-
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the 'qt' param matching the
      name of registered handlers.
