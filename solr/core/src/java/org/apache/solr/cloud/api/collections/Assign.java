@@ -55,6 +55,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.store.blob.client.BlobClientUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -187,7 +188,7 @@ public class Assign {
    * exclusively for shared store-based collections.
    */
   public static String buildSharedShardName(String collectionName, String shard) {
-    return collectionName + "_" + shard;
+    return collectionName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER + shard;
   }
 
   private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {

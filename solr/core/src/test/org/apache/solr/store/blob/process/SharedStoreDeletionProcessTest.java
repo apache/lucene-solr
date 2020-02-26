@@ -138,10 +138,13 @@ public class SharedStoreDeletionProcessTest extends SolrCloudSharedStoreTestCase
     
     // set up the collection
     String collectionName = "SharedCollection";
+    String collectionName2 = "SharedCollection_shard1";
     int maxShardsPerNode = 10;
     int numReplicas = 1;
     String shardNames = "shard1,shard2";
     setupSharedCollectionWithShardNames(collectionName, maxShardsPerNode, numReplicas, shardNames);
+    // setup a somewhat similarly named collection
+    setupSharedCollectionWithShardNames(collectionName2, maxShardsPerNode, numReplicas, shardNames);
     
     // index a bunch of docs
     for (int i = 0; i < 10; i++) {
@@ -163,6 +166,13 @@ public class SharedStoreDeletionProcessTest extends SolrCloudSharedStoreTestCase
     // the collection should no longer exist on zookeeper
     cloudClient.getZkStateReader().forceUpdateCollection(collectionName);
     assertNull(cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collectionName));
+    assertNotNull(cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collectionName2));
+    
+    // verify the right collection was deleted
+    for (String file : result.getFilesDeleted()) {
+      String coll = file.substring(0, file.indexOf("/"));
+      assertEquals("A file from the wrong collection was deleted!", collectionName, coll);
+    }
     
     // verify the files in the deletion tasks were all deleted
     CoreStorageClient storageClient = node.getCoreContainer().getSharedStoreManager().getBlobStorageProvider().getClient();

@@ -108,8 +108,8 @@ public class BlobDeleteProcessor implements Closeable {
    * @param allowRetry flag indicating if the task should be retried if it fails
    */
   public CompletableFuture<BlobDeleterTaskResult> deleteCollection(String collectionName, boolean allowRetry) {
-    BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, collectionName, 
-        allowRetry, maxDeleteAttempts);
+    BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, 
+        collectionName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER, allowRetry, maxDeleteAttempts);
     return enqueue(task, false);
   }
   

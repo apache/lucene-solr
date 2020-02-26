@@ -241,7 +241,6 @@ public class LocalStorageClient implements CoreStorageClient {
       
   }
   
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @Override
   public List<String> listCoreBlobFiles(String prefix) throws BlobException {
     try {

@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.store.blob.client.BlobClientUtils;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
@@ -152,7 +153,7 @@ public class SharedStorageShardMetadataTest extends SolrCloudSharedStoreTestCase
     
     // single shard sanity check; <shardname>_<counter> is the nomenclature for sub shards
     Slice slice = collection.getActiveSlicesMap().get("shard1_1");
-    assertEquals(collectionName + "_shard1_1", slice.getProperties().get(ZkStateReader.SHARED_SHARD_NAME));
+    assertEquals(collectionName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER + "shard1_1", slice.getProperties().get(ZkStateReader.SHARED_SHARD_NAME));
         
     // check them all
     assertSharedCollectionMetadataExists(collection);

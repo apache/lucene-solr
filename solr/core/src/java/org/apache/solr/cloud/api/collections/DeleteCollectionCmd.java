@@ -168,7 +168,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           t = ex;
         }
         if (t != null || !result.isSuccess()) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting collection" + 
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting collection " + 
               collection + " from shared store, files belonging to this collection"
                   + " may be orphaned.", t);
         }
