@@ -19,7 +19,6 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SloppyMath;
 
 public class TestCircle2D extends LuceneTestCase {
 
