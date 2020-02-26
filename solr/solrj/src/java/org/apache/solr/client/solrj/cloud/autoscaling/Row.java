@@ -121,37 +121,33 @@ public class Row implements MapWriter {
 
 
   public <R> R computeCacheIfAbsent(String cacheName, Function<Object, R> supplier) {
-    AtomicBoolean created = new AtomicBoolean();
-    R result = (R) globalCache.computeIfAbsent(cacheName, c -> {
-      created.set(true);
-      return supplier.apply(cacheName);
-    });
-    if (created.get()) {
-      CacheEntry.miss(cacheName);
+    R result = (R) globalCache.get(cacheName);
+    if (result != null) {
+      assert CacheEntry.hit(cacheName);
+      return result;
     } else {
-      CacheEntry.hit(cacheName);
+      assert CacheEntry.miss(cacheName);
+      globalCache.put(cacheName, result = supplier.apply(cacheName));
+      return result;
     }
-    return result;
   }
 
   public <R> R computeCacheIfAbsent(String coll, String shard, String cacheName, Object key, Function<Object, R> supplier) {
-    Map collMap = (Map) this.perCollCache.computeIfAbsent(coll, c -> new HashMap());
-    //if (collMap == null) this.perCollCache.put(coll, collMap = new HashMap());
-    Map shardMap = (Map) collMap.computeIfAbsent(shard, s -> new HashMap<>());
-//    if (shardMap == null) collMap.put(shard, shardMap = new HashMap());
-    Map cacheNameMap = (Map) shardMap.computeIfAbsent(cacheName, c -> new HashMap<>());
-//    if (cacheNameMap == null) shardMap.put(cacheName, cacheNameMap = new HashMap());
-    AtomicBoolean created = new AtomicBoolean();
-    R result = (R) cacheNameMap.computeIfAbsent(key, k -> {
-      created.set(true);
-      return supplier.apply(k);
-    });
-    if (created.get()) {
+    Map collMap = (Map) this.perCollCache.get(coll);
+    if (collMap == null) this.perCollCache.put(coll, collMap = new HashMap());
+    Map shardMap = (Map) collMap.get(shard);
+    if (shardMap == null) collMap.put(shard, shardMap = new HashMap());
+    Map cacheNameMap = (Map) shardMap.get(cacheName);
+    if (cacheNameMap == null) shardMap.put(cacheName, cacheNameMap = new HashMap());
+    R result = (R) cacheNameMap.get(key);
+    if (result == null) {
       CacheEntry.miss(cacheName);
+      cacheNameMap.put(key, result = supplier.apply(key));
+      return result;
     } else {
       CacheEntry.hit(cacheName);
+      return result;
     }
-    return result;
   }
 
 
