@@ -22,10 +22,19 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 
 public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
+
+  /**
+   * Randomly test that it is possible to use SolrTestCaseJ4 even if
+   * {@link org.apache.solr.util.ExternalPaths#SOURCE_HOME} is null. This
+   * will be common for usages of Solr Test Framework outside of solr.
+   */
+  @ClassRule
+  public static final SourceHomeNullifier shn = new SourceHomeNullifier();
 
   private static String tmpSolrHome;
 
