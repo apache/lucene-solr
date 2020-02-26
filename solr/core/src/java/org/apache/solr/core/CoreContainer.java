@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +77,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -610,7 +611,7 @@ public class CoreContainer {
     log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
     // Always add $SOLR_HOME/lib to the shared resource loader
-    Set<String> libDirs = new HashSet<>();
+    Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
     if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
