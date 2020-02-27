@@ -27,7 +27,11 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -279,12 +283,39 @@ public class ExportTool extends SolrCLI.ToolBase {
             field = ((List) field).get(0);
           }
         }
+        field = constructDateStr(field);
+        if (field instanceof List) {
+          List list = (List) field;
+          if (hasdate(list)) {
+            ArrayList<Object> listCopy = new ArrayList<>(list.size());
+            for (Object o : list) listCopy.add(constructDateStr(o));
+            field = listCopy;
+          }
+        }
         m.put(s, field);
       });
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
       super.accept(doc);
+    }
+
+    private boolean hasdate(List list) {
+      boolean hasDate = false;
+      for (Object o : list) {
+        if(o instanceof Date){
+          hasDate = true;
+          break;
+        }
+      }
+      return hasDate;
+    }
+
+    private Object constructDateStr(Object field) {
+      if (field instanceof Date) {
+        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+      }
+      return field;
     }
   }
 
