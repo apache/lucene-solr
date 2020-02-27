@@ -73,7 +73,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     CoreContainer container = null;
     try {
       container = setupContainer(TEST_PATH().resolve("configsets").toString());
-      Path solrHome = container.solrHome;
+      Path solrHome = Paths.get(container.getSolrHome());
 
       SolrCore core1 = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));

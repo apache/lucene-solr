@@ -104,7 +104,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private RestManager.Registry managedResourceRegistry;
 
   /** @see #reloadLuceneSPI() */
-  private boolean needToReloadLuceneSPI = false;
+  private boolean needToReloadLuceneSPI = false; // requires synchronization
 
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
@@ -171,7 +171,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    *
    * @param urls    the URLs of files to add
    */
-  void addToClassLoader(List<URL> urls) {
+  synchronized void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
     if (newLoader == classLoader) {
       return; // short-circuit
@@ -193,7 +193,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * This method must be called after {@link #addToClassLoader(List)}
    * and before using this ResourceLoader.
    */
-  void reloadLuceneSPI() {
+  synchronized void reloadLuceneSPI() {
     // TODO improve to use a static Set<URL> to check when we need to
     if (!needToReloadLuceneSPI) {
       return;
