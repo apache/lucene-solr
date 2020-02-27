@@ -185,6 +185,8 @@ Bug Fixes
 
 * SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
 
+* SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
+
 Other Changes
 ---------------------
 
