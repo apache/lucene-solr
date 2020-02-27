@@ -23,6 +23,7 @@ dependencies {
   implementation ("io.jaegertracing:jaeger-thrift", {
     exclude group: "com.squareup.okhttp3", module: "okhttp"
     exclude group: "com.google.code.gson", module: "gson"
+    exclude group: "javax.annotation", module: "javax.annotation-api"
   })
 
   testImplementation project(':solr:test-framework')
