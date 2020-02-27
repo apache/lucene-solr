@@ -115,6 +115,9 @@ Improvements
 
 * SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
 
+* SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
+  See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
+
 Optimizations
 ---------------------
 

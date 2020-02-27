@@ -29,11 +29,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -607,18 +609,30 @@ public class CoreContainer {
   public void load() {
     log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    boolean modified = false;
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    String libDir = cfg.getSharedLibDirectory();
-    if (libDir != null) {
+    for (String libDir : libDirs) {
       Path libPath = loader.getInstancePath().resolve(libDir);
       try {
         loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-        loader.reloadLuceneSPI();
+        modified = true;
       } catch (IOException e) {
         if (!libDir.equals("lib")) { // Don't complain if default "lib" dir does not exist
           log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
         }
       }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
