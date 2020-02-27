@@ -18,7 +18,11 @@
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.uniformsplit.TestUniformSplitPostingFormat;
+import org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat;
+import org.apache.lucene.codecs.uniformsplit.UniformSplitRot13PostingsFormat;
+import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsWriter;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -26,10 +30,10 @@ import org.apache.lucene.util.TestUtil;
  */
 public class TestSTUniformSplitPostingFormat extends TestUniformSplitPostingFormat {
 
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new STUniformSplitRot13PostingsFormat());
-
   @Override
-  protected Codec getCodec() {
-    return codec;
+  protected PostingsFormat getPostingsFormat() {
+    return checkEncoding ? new STUniformSplitRot13PostingsFormat(random().nextBoolean())
+        : new STUniformSplitPostingsFormat(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, random().nextBoolean());
   }
 }

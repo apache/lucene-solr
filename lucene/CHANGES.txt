@@ -118,7 +118,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9254: UniformSplit keeps FST off-heap. (Bruno Roustant)
 
 Bug Fixes
 ---------------------

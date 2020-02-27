@@ -140,6 +140,6 @@ public class TestFSTDictionary extends LuceneTestCase {
   private static FSTDictionary serializeAndReadDictionary(FSTDictionary srcDictionary, boolean shouldEncrypt) throws IOException {
     ByteBuffersDataOutput output = ByteBuffersDataOutput.newResettableInstance();
     srcDictionary.write(output, shouldEncrypt ? Rot13CypherTestUtil.getBlockEncoder() : null);
-    return FSTDictionary.read(output.toDataInput(), shouldEncrypt ? Rot13CypherTestUtil.getBlockDecoder() : null);
+    return FSTDictionary.read(output.toDataInput(), shouldEncrypt ? Rot13CypherTestUtil.getBlockDecoder() : null, random().nextBoolean());
   }
 }
