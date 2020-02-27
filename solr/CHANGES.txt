@@ -187,6 +187,8 @@ Bug Fixes
 
 * SOLR-13411: Deny atomic update for route.field, uniqueKey, version and throw exception. (Dr Oleg Savrasov via Mikhail Khludnev) 
 
+* SOLR-14252: Avoid NullPointerException in AggregateMetric. (Andy Webb via ab)
+
 Other Changes
 ---------------------
 
