@@ -73,6 +73,7 @@ while [ -h "$SOLR_SCRIPT" ] ; do
   fi
 done
 
+CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=`dirname "$SOLR_SCRIPT"`/..
 SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
@@ -2086,12 +2087,12 @@ else
   REMOTE_JMX_OPTS=()
 fi
 
-# Enable java security manager (limiting filesystem access and other things)
-if [ "$SOLR_SECURITY_MANAGER_ENABLED" == "true" ]; then
+# Enable java security manager (allowing filesystem access and other things)
+if [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true" ]; then
   SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
-    "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
-    "-Djava.security.properties=${SOLR_SERVER_DIR}/etc/security.properties" \
-    '-Dsolr.internal.network.permission=*')
+      "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
+      "-Djava.security.properties=${SOLR_SERVER_DIR}/etc/security.properties" \
+      '-Dsolr.internal.network.permission=*')
 else
   SECURITY_MANAGER_OPTS=()
 fi

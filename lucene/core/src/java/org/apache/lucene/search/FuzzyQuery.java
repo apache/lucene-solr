@@ -254,23 +254,15 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
       return false;
     return true;
   }
-  
-  /**
-   * @deprecated pass integer edit distances instead.
-   */
-  @Deprecated
-  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
 
   /**
-   * Helper function to convert from deprecated "minimumSimilarity" fractions
+   * Helper function to convert from "minimumSimilarity" fractions
    * to raw edit distances.
    * 
    * @param minimumSimilarity scaled similarity
    * @param termLen length (in unicode codepoints) of the term.
    * @return equivalent number of maxEdits
-   * @deprecated pass integer edit distances instead.
    */
-  @Deprecated
   public static int floatToEdits(float minimumSimilarity, int termLen) {
     if (minimumSimilarity >= 1f) {
       return (int) Math.min(minimumSimilarity, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);

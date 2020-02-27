@@ -34,9 +34,9 @@ import org.apache.lucene.store.IndexOutput;
  * <p>
  * Files:
  * <ul>
- *    <li><tt>.cfs</tt>: An optional "virtual" file consisting of all the other 
+ *    <li><code>.cfs</code>: An optional "virtual" file consisting of all the other 
  *    index files for systems that frequently run out of file handles.
- *    <li><tt>.cfe</tt>: The "virtual" compound file's entry table holding all 
+ *    <li><code>.cfe</code>: The "virtual" compound file's entry table holding all 
  *    entries in the corresponding .cfs file.
  * </ul>
  * <p>Description:</p>

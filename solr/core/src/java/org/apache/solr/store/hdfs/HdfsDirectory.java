@@ -24,9 +24,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -54,7 +56,10 @@ public class HdfsDirectory extends BaseDirectory {
   private final FileContext fileContext;
 
   private final int bufferSize;
-  
+
+  /** Used to generate temp file names in {@link #createTempOutput}. */
+  private final AtomicLong nextTempFileCounter = new AtomicLong();
+
   public HdfsDirectory(Path hdfsDirPath, Configuration configuration) throws IOException {
     this(hdfsDirPath, HdfsLockFactory.INSTANCE, configuration, DEFAULT_BUFFER_SIZE);
   }
@@ -111,12 +116,25 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
-    return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
+    try {
+      return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
+    } catch (FileAlreadyExistsException e) {
+      java.nio.file.FileAlreadyExistsException ex = new java.nio.file.FileAlreadyExistsException(e.getMessage());
+      ex.initCause(e);
+      throw ex;
+    }
   }
 
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
-    throw new UnsupportedOperationException();
+    while (true) {
+      try {
+        String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
+        return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
+      } catch (FileAlreadyExistsException faee) {
+        // Retry with next incremented name
+      }
+    }
   }
   
   private String[] getNormalNames(List<String> files) {

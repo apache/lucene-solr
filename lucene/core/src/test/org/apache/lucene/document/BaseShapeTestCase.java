@@ -164,6 +164,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   protected abstract Object[] nextPoints();
 
+  protected abstract Object nextCircle();
+
   protected abstract double rectMinX(Object rect);
   protected abstract double rectMaxX(Object rect);
   protected abstract double rectMinY(Object rect);
@@ -183,6 +185,10 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     return nextPolygon();
   }
 
+  protected Object randomQueryCircle() {
+    return nextCircle();
+  }
+
   /** factory method to create a new bounding box query */
   protected abstract Query newRectQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY);
 
@@ -192,14 +198,19 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected abstract Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons);
 
-  /** factory method to create a new polygon query */
+  /** factory method to create a new point query */
   protected abstract Query newPointsQuery(String field, QueryRelation queryRelation, Object... points);
+
+  /** factory method to create a new distance query */
+  protected abstract Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle);
 
   protected abstract Component2D toLine2D(Object... line);
 
   protected abstract Component2D toPolygon2D(Object... polygon);
 
   protected abstract Component2D toPoint2D(Object... points);
+
+  protected abstract Component2D toCircle2D(Object circle);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -261,6 +272,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     verifyRandomPolygonQueries(reader, shapes);
     // test random point queries
     verifyRandomPointQueries(reader, shapes);
+    // test random distance queries
+    verifyRandomDistanceQueries(reader, shapes);
   }
 
   /** test random generated bounding boxes */
@@ -641,6 +654,97 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
           b.append("  rect=Points(" + Arrays.toString(queryPoints) + ")\n");
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+  }
+
+  /** test random generated circles */
+  protected void verifyRandomDistanceQueries(IndexReader reader, Object... shapes) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = scaledIterationCount(shapes.length);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
+      }
+
+      // Polygon
+      Object queryCircle = randomQueryCircle();
+      Component2D queryCircle2D = toCircle2D(queryCircle);
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newDistanceQuery(FIELD_NAME, queryRelation, queryCircle);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query + ", relation=" + queryRelation);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (shapes[id] == null) {
+          expected = false;
+        } else {
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryCircle2D, shapes[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  relation=" + queryRelation + "\n");
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  distanceQuery=" + queryCircle.toString());
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {

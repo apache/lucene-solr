@@ -372,7 +372,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
       }
 
       @Override
-      public int getNumDataDimensions() throws IOException {
+      public int getNumDimensions() throws IOException {
         throw new UnsupportedOperationException();
       }
 

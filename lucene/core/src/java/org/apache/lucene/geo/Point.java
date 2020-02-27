@@ -56,9 +56,7 @@ public final class Point extends LatLonGeometry {
 
   @Override
   protected Component2D toComponent2D() {
-    double qLat = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(lat));
-    double qLon = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(lon));
-    return Point2D.create(new double[] {qLat, qLon});
+    return Point2D.create(this);
   }
 
   @Override

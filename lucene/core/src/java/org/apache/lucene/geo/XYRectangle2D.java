@@ -24,17 +24,15 @@ import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D rectangle implementation containing cartesian spatial logic.
- *
- * @lucene.internal
  */
-public class XYRectangle2D implements Component2D {
+final class XYRectangle2D implements Component2D {
 
   private final double minX;
   private final double maxX;
   private final double minY;
   private final double maxY;
 
-  protected XYRectangle2D(double minX, double maxX, double minY, double maxY) {
+  private XYRectangle2D(double minX, double maxX, double minY, double maxY) {
     this.minX =  minX;
     this.maxX =  maxX;
     this.minY =  minY;
@@ -235,15 +233,8 @@ public class XYRectangle2D implements Component2D {
     return sb.toString();
   }
 
-  /** create a component2D from provided array of rectangles */
-  public static Component2D create(XYRectangle... rectangles) {
-    XYRectangle2D[] components = new XYRectangle2D[rectangles.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minX)),
-          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxX)),
-          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minY)),
-          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxY)));
-    }
-    return ComponentTree.create(components);
+  /** create a component2D from the provided XY rectangle */
+  static Component2D create(XYRectangle rectangle) {
+    return new XYRectangle2D(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
   }
 }

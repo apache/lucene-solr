@@ -28,14 +28,15 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 
 /**
  * A {@link StoredFieldsFormat} that compresses documents in chunks in
  * order to improve the compression ratio.
  * <p>
- * For a chunk size of <tt>chunkSize</tt> bytes, this {@link StoredFieldsFormat}
- * does not support documents larger than (<tt>2<sup>31</sup> - chunkSize</tt>)
+ * For a chunk size of <var>chunkSize</var> bytes, this {@link StoredFieldsFormat}
+ * does not support documents larger than (<code>2<sup>31</sup> - chunkSize</code>)
  * bytes.
  * <p>
  * For optimal performance, you should use a {@link MergePolicy} that returns
@@ -49,7 +50,7 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   private final CompressionMode compressionMode;
   private final int chunkSize;
   private final int maxDocsPerChunk;
-  private final int blockSize;
+  private final int blockShift;
 
   /**
    * Create a new {@link CompressingStoredFieldsFormat} with an empty segment 
@@ -57,8 +58,8 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * 
    * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int, int, int)
    */
-  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
-    this(formatName, "", compressionMode, chunkSize, maxDocsPerChunk, blockSize);
+  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) {
+    this(formatName, "", compressionMode, chunkSize, maxDocsPerChunk, blockShift);
   }
   
   /**
@@ -93,11 +94,11 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
    * @param maxDocsPerChunk the maximum number of documents in a single chunk
-   * @param blockSize the number of chunks to store in an index block
+   * @param blockShift the log in base 2 of number of chunks to store in an index block
    * @see CompressionMode
    */
   public CompressingStoredFieldsFormat(String formatName, String segmentSuffix, 
-                                       CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
+                                       CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -109,10 +110,11 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
       throw new IllegalArgumentException("maxDocsPerChunk must be >= 1");
     }
     this.maxDocsPerChunk = maxDocsPerChunk;
-    if (blockSize < 1) {
-      throw new IllegalArgumentException("blockSize must be >= 1");
+    if (blockShift < DirectMonotonicWriter.MIN_BLOCK_SHIFT || blockShift > DirectMonotonicWriter.MAX_BLOCK_SHIFT) {
+      throw new IllegalArgumentException("blockSize must be in " + DirectMonotonicWriter.MIN_BLOCK_SHIFT + "-" +
+          DirectMonotonicWriter.MAX_BLOCK_SHIFT + ", got " + blockShift);
     }
-    this.blockSize = blockSize;
+    this.blockShift = blockShift;
   }
 
   @Override
@@ -126,13 +128,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, segmentSuffix, context,
-        formatName, compressionMode, chunkSize, maxDocsPerChunk, blockSize);
+        formatName, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ", maxDocsPerChunk=" + maxDocsPerChunk + ", blockSize=" + blockSize + ")";
+        + ", chunkSize=" + chunkSize + ", maxDocsPerChunk=" + maxDocsPerChunk + ", blockShift=" + blockShift + ")";
   }
 
 }

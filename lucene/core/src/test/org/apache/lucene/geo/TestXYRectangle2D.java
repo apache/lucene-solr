@@ -26,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestXYRectangle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
-    XYRectangle rectangle = new XYRectangle(0d, 1d, 0d, 1d);
+    XYRectangle rectangle = new XYRectangle(0f, 1f, 0f, 1f);
     Component2D rectangle2D = XYRectangle2D.create(rectangle);
     float ax = 4f;
     float ay = 4f;
@@ -38,7 +38,7 @@ public class TestXYRectangle2D extends LuceneTestCase {
   }
 
   public void testTriangleIntersects() {
-    XYRectangle rectangle = new XYRectangle(0d, 1d, 0d, 1d);
+    XYRectangle rectangle = new XYRectangle(0f, 1f, 0f, 1f);
     Component2D rectangle2D =  XYRectangle2D.create(rectangle);
     float ax = 0.5f;
     float ay = 0.5f;
@@ -66,12 +66,12 @@ public class TestXYRectangle2D extends LuceneTestCase {
     XYRectangle rectangle = ShapeTestUtil.nextBox(random);
     Component2D rectangle2D = XYRectangle2D.create(rectangle);
     for (int i =0; i < 100; i++) {
-      float ax = (float) ShapeTestUtil.nextDouble(random);
-      float ay = (float) ShapeTestUtil.nextDouble(random);
-      float bx = (float) ShapeTestUtil.nextDouble(random);
-      float by = (float) ShapeTestUtil.nextDouble(random);
-      float cx = (float) ShapeTestUtil.nextDouble(random);
-      float cy = (float) ShapeTestUtil.nextDouble(random);
+      float ax = ShapeTestUtil.nextFloat(random);
+      float ay = ShapeTestUtil.nextFloat(random);
+      float bx = ShapeTestUtil.nextFloat(random);
+      float by = ShapeTestUtil.nextFloat(random);
+      float cx = ShapeTestUtil.nextFloat(random);
+      float cy = ShapeTestUtil.nextFloat(random);
 
       float tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
       float tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);

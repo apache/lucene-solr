@@ -41,6 +41,9 @@ API Changes
 * LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
   (Bruno Roustant)
 
+* LUCENE-9212: Deprecated Intervals.multiterm() methods that take a bare Automaton
+  have been removed (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -68,6 +71,14 @@ Improvements
 * LUCENE-9110: Refactor stack analysis in tests to use generalized LuceneTestCase
   methods that use StackWalker (Uwe Schindler)
 
+* LUCENE-9206: IndexMergeTool gets additional options to control the merging.
+  This tool no longer forceMerge(1)s to a single segment by default. If you
+  rely upon this behavior, pass -max-segments 1 instead. (Robert Muir)
+
+* LUCENE-9220: Upgrade snowball to 2.0. New snowball stemmers: Hindi, Indonesian,
+  Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
+  task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -81,6 +92,9 @@ Other
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
 * LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
+
+* LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
+  queryparser code (Alan Woodward, Erick Erickson)
 
 ======================= Lucene 8.5.0 =======================
 
@@ -101,13 +115,27 @@ API Changes
 
 * LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
 
+* LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
+
+* LUCENE-9212: Intervals.multiterm() takes CompiledAutomaton rather than plain Automaton
+  (Alan Woodward)
+
 New Features
 ---------------------
 
-* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
+* LUCENE-8903: Add LatLonShape and XYShape point query. (Ignacio Vera)
+
+* LUCENE-8707: Add LatLonShape and XYShape distance query. (Ignacio Vera)
+
+* LUCENE-9238: New XYPointField field and Queries for indexing, searching and sorting
+  cartesian points. (Ignacio Vera)
 
 Improvements
 ---------------------
+
+* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
+
+* LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 
@@ -137,12 +165,25 @@ Improvements
 * LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
   executed with input objects that extend such interface. (Ignacio Vera)
 
+* LUCENE-9123: Add new JapaneseTokenizer constructors with discardCompoundToken option that controls whether
+  the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
+
+* LUCENE-9194: Simplify XYShapeXQuery API by adding a new abstract class called XYGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
+
+* LUCENE-9228: Sort dvUpdates in the term order before applying if they all update a
+  single field to the same value. This optimization can reduce the flush time by around
+  20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
+
 Optimizations
 ---------------------
 
 * LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
 * LUCENE-9125: Optimize Automaton.step() with binary search and introduce Automaton.next(). (Bruno Roustant)
+
+* LUCENE-9147: The index of stored fields and term vectors in now off-heap.
+  (Adrien Grand)
 
 Bug Fixes
 ---------------------
@@ -156,6 +197,16 @@ Bug Fixes
   (Ignacio Vera)
 
 * LUCENE-9135: Make UniformSplit FieldMetadata counters long. (Bruno Roustant)
+
+* LUCENE-9200: Fix TieredMergePolicy to use double (not float) math to make its merging decisions, fixing
+  a corner-case bug uncovered by fun randomized tests (Robert Muir, Mike McCandless)
+
+* LUCENE-9099: Unordered and Ordered interval queries now correctly handle
+  repeated subterms - ordered intervals could supply an 'extra' minimized
+  interval, resulting in odd matches when combined with eg CONTAINS queries;
+  and unordered intervals would match duplicate subterms on the same position,
+  so an query for UNORDERED(foo, foo) would match a document containing 'foo'
+  only once.  (Alan Woodward)
 
 Other
 ---------------------

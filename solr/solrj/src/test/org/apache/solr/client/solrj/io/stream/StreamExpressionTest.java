@@ -2625,7 +2625,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     updateRequest.add(id, "hello1", "test_t", "l b c d c");
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
+    String expr = "search("+COLLECTIONORALIAS+", q=\"`c d c`\", fl=\"id,test_t\", sort=\"id desc\")";
 
     //Add a Stream and an Evaluator to the Tuple.
     String cat = "tuple(results="+expr+", sum=add(1,1))";
@@ -2649,6 +2649,32 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(0).getLong("sum").equals(2L));
 
   }
+
+  @Test
+  public void testSearchBacktick() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c");
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"`c d c e`\", fl=\"id,test_t\", sort=\"id desc\")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    assertTrue(tuple.get("id").equals("hello"));
+    assertTrue(tuple.get("test_t").equals("l b c d c e"));
+  }
+
 
 
   private Map<String,Double> getIdToLabel(TupleStream stream, String outField) throws IOException {

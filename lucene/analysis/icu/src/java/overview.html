@@ -47,8 +47,8 @@ This module exposes the following functionality:
   <li><a href="#transform">Text Transformation</a>: Transforms Unicode text in
   a context-sensitive fashion: e.g. mapping Traditional to Simplified Chinese</li>
 </ul>
-<hr/>
-<h1><a name="segmentation">Text Segmentation</a></h1>
+<hr>
+<h1><a id="segmentation">Text Segmentation</a></h1>
 <p>
 Text Segmentation (Tokenization) divides document and query text into index terms
 (typically words). Unicode provides special properties and rules so that this can
@@ -76,8 +76,8 @@ algorithm.
    */
   Tokenizer tokenizer = new ICUTokenizer(reader);
 </pre>
-<hr/>
-<h1><a name="collation">Collation</a></h1>
+<hr>
+<h1><a id="collation">Collation</a></h1>
 <p>
   <code>ICUCollationKeyAnalyzer</code>
   converts each token into its binary <code>CollationKey</code> using the 
@@ -225,8 +225,8 @@ algorithm.
   you use <code>CollationKeyAnalyzer</code> to generate index terms, do not use
   <code>ICUCollationKeyAnalyzer</code> on the query side, or vice versa.
 </p>
-<hr/>
-<h1><a name="normalization">Normalization</a></h1>
+<hr>
+<h1><a id="normalization">Normalization</a></h1>
 <p>
   <code>ICUNormalizer2Filter</code> normalizes term text to a 
   <a href="http://unicode.org/reports/tr15/">Unicode Normalization Form</a>, so 
@@ -253,8 +253,8 @@ algorithm.
    */
   TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer, normalizer);
 </pre>
-<hr/>
-<h1><a name="casefolding">Case Folding</a></h1>
+<hr>
+<h1><a id="casefolding">Case Folding</a></h1>
 <p>
 Default caseless matching, or case-folding is more than just conversion to
 lowercase. For example, it handles cases such as the Greek sigma, so that
@@ -288,8 +288,8 @@ this integration. To perform case-folding, you use normalization with the form
    */
   TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer);
 </pre>
-<hr/>
-<h1><a name="searchfolding">Search Term Folding</a></h1>
+<hr>
+<h1><a id="searchfolding">Search Term Folding</a></h1>
 <p>
 Search term folding removes distinctions (such as accent marks) between 
 similar characters. It is useful for a fuzzy or loose search.
@@ -316,8 +316,8 @@ many character foldings recursively.
    */
   TokenStream tokenstream = new ICUFoldingFilter(tokenizer);
 </pre>
-<hr/>
-<h1><a name="transform">Text Transformation</a></h1>
+<hr>
+<h1><a id="transform">Text Transformation</a></h1>
 <p>
 ICU provides text-transformation functionality via its Transliteration API. This allows
 you to transform text in a variety of ways, taking context into account.
@@ -352,8 +352,8 @@ and
    */
   TokenStream tokenstream = new ICUTransformFilter(tokenizer, Transliterator.getInstance("Serbian-Latin/BGN"));
 </pre>
-<hr/>
-<h1><a name="backcompat">Backwards Compatibility</a></h1>
+<hr>
+<h1><a id="backcompat">Backwards Compatibility</a></h1>
 <p>
 This module exists to provide up-to-date Unicode functionality that supports
 the most recent version of Unicode (currently 11.0). However, some users who wish
