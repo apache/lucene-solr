@@ -79,11 +79,23 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     meter.mark();
     Histogram histogram = registry.histogram("histogram");
     histogram.update(10);
-    AggregateMetric am = new AggregateMetric();
-    registry.register("aggregate", am);
-    am.set("foo", 10);
-    am.set("bar", 1);
-    am.set("bar", 2);
+
+    // SOLR-14252: check that negative values are supported correctly
+    // NB a-d represent the same metric from multiple nodes
+    AggregateMetric am1 = new AggregateMetric();
+    registry.register("aggregate1", am1);
+    am1.set("a", -10);
+    am1.set("b", 1);
+    am1.set("b", -2);
+    am1.set("c", -3);
+    am1.set("d", -5);
+
+    // SOLR-14252: check that aggregation of non-Number metrics don't trigger NullPointerException
+    AggregateMetric am2 = new AggregateMetric();
+    registry.register("aggregate2", am2);
+    am2.set("a", false);
+    am2.set("b", true);
+
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
     Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
@@ -102,17 +114,26 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         assertEquals(1L, v.get("count"));
       } else if (k.startsWith("histogram")) {
         assertEquals(1L, v.get("count"));
-      } else if (k.startsWith("aggregate")) {
-        assertEquals(2, v.get("count"));
+      } else if (k.startsWith("aggregate1")) {
+        assertEquals(4, v.get("count"));
         Map<String, Object> values = (Map<String, Object>)v.get("values");
         assertNotNull(values);
-        assertEquals(2, values.size());
-        Map<String, Object> update = (Map<String, Object>)values.get("foo");
-        assertEquals(10, update.get("value"));
+        assertEquals(4, values.size());
+        Map<String, Object> update = (Map<String, Object>)values.get("a");
+        assertEquals(-10, update.get("value"));
         assertEquals(1, update.get("updateCount"));
-        update = (Map<String, Object>)values.get("bar");
-        assertEquals(2, update.get("value"));
+        update = (Map<String, Object>)values.get("b");
+        assertEquals(-2, update.get("value"));
         assertEquals(2, update.get("updateCount"));
+        assertEquals(-10D, v.get("min"));
+        assertEquals(-2D, v.get("max"));
+        assertEquals(-5D, v.get("mean"));
+      } else if (k.startsWith("aggregate2")) {
+        // SOLR-14252: non-Number metric aggregations should return 0 rather than throwing NPE
+        assertEquals(2, v.get("count"));
+        assertEquals(0D, v.get("min"));
+        assertEquals(0D, v.get("max"));
+        assertEquals(0D, v.get("mean"));
       } else if (k.startsWith("memory.expected.error")) {
         assertNull(v);
       }
@@ -139,19 +160,32 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertTrue(o instanceof Map);
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
-          } else if (k.startsWith("aggregate")) {
+          } else if (k.startsWith("aggregate1")) {
+            assertTrue(o instanceof Map);
+            Map v = (Map)o;
+            assertEquals(4, v.get("count"));
+            Map<String, Object> values = (Map<String, Object>)v.get("values");
+            assertNotNull(values);
+            assertEquals(4, values.size());
+            Map<String, Object> update = (Map<String, Object>)values.get("a");
+            assertEquals(-10, update.get("value"));
+            assertEquals(1, update.get("updateCount"));
+            update = (Map<String, Object>)values.get("b");
+            assertEquals(-2, update.get("value"));
+            assertEquals(2, update.get("updateCount"));
+          } else if (k.startsWith("aggregate2")) {
             assertTrue(o instanceof Map);
             Map v = (Map)o;
             assertEquals(2, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
             assertNotNull(values);
             assertEquals(2, values.size());
-            Map<String, Object> update = (Map<String, Object>)values.get("foo");
-            assertEquals(10, update.get("value"));
+            Map<String, Object> update = (Map<String, Object>)values.get("a");
+            assertEquals(false, update.get("value"));
             assertEquals(1, update.get("updateCount"));
-            update = (Map<String, Object>)values.get("bar");
-            assertEquals(2, update.get("value"));
-            assertEquals(2, update.get("updateCount"));
+            update = (Map<String, Object>)values.get("b");
+            assertEquals(true, update.get("value"));
+            assertEquals(1, update.get("updateCount"));
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
