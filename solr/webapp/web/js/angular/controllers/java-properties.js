@@ -24,7 +24,7 @@ solrAdminApp.controller('JavaPropertiesController',
         var sep = sysprops["path.separator"]
         var props = [];
         for (var key in sysprops) {
-          var value = sysprops[key].replace(sep, sep+'&#8203;');
+          var value = sysprops[key];
           var key = key.replace(/\./g, '.&#8203;');
           props.push({name: key, values: [value]});
         }
