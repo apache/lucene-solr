@@ -398,8 +398,6 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader2.getContext(), service, sliceExecutionControlPlane);
 
-    assert searcher.getSlices().length > 1;
-
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
         new TermQuery(new Term("field", "1"))

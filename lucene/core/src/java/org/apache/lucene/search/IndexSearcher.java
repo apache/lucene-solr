@@ -26,12 +26,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.lucene.document.Document;
@@ -691,12 +689,6 @@ public class IndexSearcher {
       }
 
       final List<Future> topDocsFutures = sliceExecutionControlPlane.invokeAll(listTasks);
-
-      final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
-      final C collector = collectors.get(leafSlices.length - 1);
-      // execute the last on the caller thread
-      search(Arrays.asList(leaves), weight, collector);
-      topDocsFutures.add(CompletableFuture.completedFuture(collector));
       final List<C> collectedCollectors = new ArrayList<>();
       for (Future<C> future : topDocsFutures) {
         try {

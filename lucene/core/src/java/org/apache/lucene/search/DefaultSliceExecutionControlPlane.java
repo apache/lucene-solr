@@ -86,7 +86,7 @@ public class DefaultSliceExecutionControlPlane implements SliceExecutionControlP
       try {
         task.run();
       } catch (Exception e) {
-        throw new RuntimeException(e.getMessage());
+        throw new RuntimeException(e);
       }
     }
 
@@ -96,7 +96,7 @@ public class DefaultSliceExecutionControlPlane implements SliceExecutionControlP
       try {
         futures.add(CompletableFuture.completedFuture(task.get()));
       } catch (Exception e) {
-        throw new RuntimeException(e.getMessage());
+        throw new RuntimeException(e);
       }
     }
   }
