@@ -181,7 +181,7 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
       }
     };
     
-    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer().getSharedStoreManager()) {  
       @Override
       protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
         return callback;

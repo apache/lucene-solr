@@ -20,15 +20,17 @@ import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.blob.util.DeduplicatingList;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Sets;
 
 /**
  * A pull version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -57,8 +59,8 @@ public class CorePullerFeeder extends CoreSyncFeeder {
    */
   private final Set<String> coresCreatedNotPulledYet = Sets.newHashSet();
 
-  protected CorePullerFeeder(CoreContainer cores) {
-    super(cores, numPullerThreads);
+  protected CorePullerFeeder(SharedStoreManager storeManager) {
+    super(storeManager, numPullerThreads);
     this.pullTaskQueue = new DeduplicatingList<>(ALMOST_MAX_WORKER_QUEUE_SIZE, new CorePullTask.PullTaskMerger());
     this.callback = new CorePullResult();
   }
@@ -95,7 +97,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
   @Override
   void feedTheMonsters() throws InterruptedException {
-    CorePullTracker tracker = cores.getSharedStoreManager().getCorePullTracker();
+    CorePullTracker tracker = storeManager.getCorePullTracker();
     final long minMsBetweenLogs = 15000;
     long lastLoggedTimestamp = 0L;
     long syncsEnqueuedSinceLastLog = 0; // This is the non-deduped count
@@ -104,7 +106,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       PullCoreInfo pci = tracker.getCoreToPull();
 
       // Add the core to the list consumed by the thread doing the actual work
-      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback(), coresCreatedNotPulledYet);
+      CorePullTask pt = new CorePullTask(storeManager, pci, getCorePullTaskCallback(), coresCreatedNotPulledYet);
       pullTaskQueue.addDeduplicated(pt, /* isReenqueue */ false);
       syncsEnqueuedSinceLastLog++;
 
@@ -219,7 +221,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
           log.warn(String.format(Locale.ROOT, "Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         }
-        BlobCoreSyncer syncer = cores.getSharedStoreManager().getBlobCoreSyncer();
+        BlobCoreSyncer syncer = storeManager.getBlobCoreSyncer();
         syncer.finishedPull(pullCoreInfo.getSharedStoreName(), status, blobMetadata, message);
       } catch (InterruptedException ie) {
         close();

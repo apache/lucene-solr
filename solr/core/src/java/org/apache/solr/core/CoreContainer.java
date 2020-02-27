@@ -741,8 +741,8 @@ public class CoreContainer {
       
       if (cfg.getSharedStoreConfig() != null) {
         log.info("Shared storage is enabled in Solr Cloud. Initiating SharedStoreManager.");
-        sharedStoreManager = new SharedStoreManager(getZkController());
-        sharedStoreManager.load(this);
+        sharedStoreManager = new SharedStoreManager(this);
+        sharedStoreManager.load();
       }
     }
 

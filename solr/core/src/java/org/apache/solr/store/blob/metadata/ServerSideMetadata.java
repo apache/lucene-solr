@@ -45,6 +45,7 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobException;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class ServerSideMetadata {
   private final long generation;
   private final SolrCore core;
   private final String coreName;
-  private final CoreContainer container;
+  private final CoreContainer coreContainer;
 
   /**
    * Given a core name, builds the local metadata
@@ -107,10 +108,10 @@ public class ServerSideMetadata {
    *
    * @throws Exception if core corresponding to <code>coreName</code> can't be found.
    */
-  public ServerSideMetadata(String coreName, CoreContainer container, boolean reserveCommit) throws Exception {
+  public ServerSideMetadata(String coreName, CoreContainer coreContainer, boolean reserveCommit) throws Exception {
     this.coreName = coreName;
-    this.container = container;
-    this.core = container.getCore(coreName);
+    this.coreContainer = coreContainer;
+    this.core = coreContainer.getCore(coreName);
 
     if (core == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
@@ -193,7 +194,7 @@ public class ServerSideMetadata {
   }
 
   public CoreContainer getCoreContainer() {
-    return this.container;
+    return coreContainer;
   }
 
   public long getGeneration() {

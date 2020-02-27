@@ -23,8 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -44,10 +42,14 @@ import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
 
 /**
  * Code for pulling updates on a specific core to the Blob store.
@@ -63,7 +65,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   private static final long MIN_RETRY_DELAY_MS = 20000;
 
-  private final CoreContainer coreContainer;
+  private final SharedStoreManager storeManager;
   private final PullCoreInfo pullCoreInfo;
   
   /**
@@ -78,14 +80,14 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private long lastAttemptTimestamp;
   private final PullCoreCallback callback;
 
-  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
-    this(coreContainer, pullCoreInfo, BlobStoreUtils.getCurrentTimeMs(), 0, 0L, callback, coresCreatedNotPulledYet);
+  CorePullTask(SharedStoreManager storeManager, PullCoreInfo pullCoreInfo, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
+    this(storeManager, pullCoreInfo, BlobStoreUtils.getCurrentTimeMs(), 0, 0L, callback, coresCreatedNotPulledYet);
   }
 
   @VisibleForTesting
-  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
+  CorePullTask(SharedStoreManager storeManager, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
       long lastAttemptTimestamp, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
-    this.coreContainer = coreContainer;
+    this.storeManager = storeManager;
     this.pullCoreInfo = pullCoreInfo;
     this.queuedTimeMs = queuedTimeMs;
     this.attempts = attempts;
@@ -117,7 +119,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     @Override
     public CorePullTask merge(CorePullTask task1, CorePullTask task2) {
       // The asserts below are not guaranteed by construction but we know that's the case
-      assert task1.coreContainer == task2.coreContainer;
+      assert task1.storeManager == task2.storeManager;
       assert task1.callback == task2.callback;
 
       int mergedAttempts;
@@ -149,7 +151,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
       
       // We merge the tasks.
-      return new CorePullTask(task1.coreContainer, mergedPullCoreInfo,
+      return new CorePullTask(task1.storeManager, mergedPullCoreInfo,
           Math.min(task1.queuedTimeMs, task2.queuedTimeMs), mergedAttempts, mergedLatAttemptsTimestamp,
           task1.callback, task1.coresCreatedNotPulledYet);
     }
@@ -184,7 +186,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   }
 
   public CoreContainer getCoreContainer() {
-    return coreContainer;
+    return storeManager.getCoreContainer();
   }
 
   /**
@@ -194,7 +196,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   void pullCoreFromBlob(boolean isLeaderPulling) throws InterruptedException {
     BlobCoreMetadata blobMetadata = null;
-    if (coreContainer.isShutDown()) {
+    if (storeManager.getCoreContainer().isShutDown()) {
       this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.SHUTTING_DOWN, null);
       // TODO could throw InterruptedException here or interrupt ourselves if we wanted to signal to
       // CorePullerThread to stop everything.
@@ -213,20 +215,20 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
     }
 
-    SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
+    SharedCoreConcurrencyController concurrencyController = storeManager.getSharedCoreConcurrencyController();
     CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
     // Auxiliary information related to pull outcome. It can be metadata resolver message which can be null or exception detail in case of failure 
     String message = null;
     try {
       // Do the sequence of actions required to pull a core from the Blob store.
-      BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
+      BlobStorageProvider blobProvider = storeManager.getBlobStorageProvider(); 
       CoreStorageClient blobClient = blobProvider.getClient();
 
       SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(pullCoreInfo.getCollectionName(),
           pullCoreInfo.getShardName(),
           pullCoreInfo.getCoreName());
 
-      SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
+      SharedShardMetadataController metadataController = storeManager.getSharedShardMetadataController();
       SharedShardVersionMetadata shardVersionMetadata =  metadataController.readMetadataValue(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName());
       
       if(concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
@@ -284,7 +286,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
 
       // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
-      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer, false);
+      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), storeManager.getCoreContainer(), false);
       SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
           serverMetadata, blobMetadata);
       
@@ -292,7 +294,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       // If we call pullUpdateFromBlob with an empty list of files to pull, we'll see an NPE down the line.
       // TODO: might be better to handle this error in CorePushPull.pullUpdateFromBlob
       if (resolutionResult.getFilesToPull().size() > 0) {
-        BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
+        BlobDeleteManager deleteManager = storeManager.getBlobDeleteManager();
         CorePushPull cp = new CorePushPull(blobClient, deleteManager, pullCoreInfo, resolutionResult, serverMetadata, blobMetadata);
         // TODO: we are computing/tracking attempts but we are not passing it along
         cp.pullUpdateFromBlob(/* waitForSearcher */ true);
@@ -365,9 +367,9 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private boolean coreExists(String coreName) {
 
     SolrCore core = null;
-    File coreIndexDir = new File(coreContainer.getCoreRootDirectory() + "/" + coreName);
+    File coreIndexDir = new File(storeManager.getCoreContainer().getCoreRootDirectory() + "/" + coreName);
     if (coreIndexDir.exists()) {
-      core = coreContainer.getCore(coreName);
+      core = storeManager.getCoreContainer().getCore(coreName);
     }
 
     log.info("Core " + coreName + " expected in dir " + coreIndexDir.getAbsolutePath() + " exists=" + coreIndexDir.exists()
@@ -389,6 +391,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
     log.info("About to create local core " + pci.getCoreName());
 
+    CoreContainer coreContainer = storeManager.getCoreContainer();
     ZkController controller = coreContainer.getZkController();
     DocCollection collection = controller.getZkStateReader().
         getClusterState().getCollection(pci.getCollectionName());

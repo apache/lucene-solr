@@ -19,7 +19,7 @@ package org.apache.solr.store.blob.process;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +36,8 @@ public class BlobProcessUtil {
   /*
    * Start the Blob store async core pull machinery
    */
-  public void load(CoreContainer coreContainer) {
-    load(new CorePullerFeeder(coreContainer));
+  public void load(SharedStoreManager storeManager) {
+    load(new CorePullerFeeder(storeManager));
   }
   
   @VisibleForTesting

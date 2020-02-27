@@ -34,7 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class SharedStoreManager {
   
-  private ZkController zkController;
+  private CoreContainer coreContainer;
   private SharedShardMetadataController sharedShardMetadataController;
   private BlobStorageProvider blobStorageProvider;
   private BlobDeleteManager blobDeleteManager;
@@ -43,8 +43,10 @@ public class SharedStoreManager {
   private BlobCoreSyncer blobCoreSyncer;
   private SharedCoreConcurrencyController sharedCoreConcurrencyController;
 
-  public SharedStoreManager(ZkController controller) {
-    zkController = controller;
+  public SharedStoreManager(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+    ZkController zkController = coreContainer.getZkController();
+    
     blobStorageProvider = new BlobStorageProvider();
     blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getClient());
     corePullTracker = new CorePullTracker();
@@ -57,8 +59,8 @@ public class SharedStoreManager {
   /**
    * Start blob processes that depend on an initiated {@link SharedStoreManager} in {@link CoreContainer}
    */
-  public void load(CoreContainer coreContainer) {
-    blobProcessUtil.load(coreContainer);
+  public void load() {
+    blobProcessUtil.load(this);
   }
 
   public SharedShardMetadataController getSharedShardMetadataController() {
@@ -87,6 +89,10 @@ public class SharedStoreManager {
 
   public SharedCoreConcurrencyController getSharedCoreConcurrencyController() {
     return sharedCoreConcurrencyController;
+  }
+  
+  public CoreContainer getCoreContainer() {
+    return coreContainer;
   }
   
   public void shutdown() {
