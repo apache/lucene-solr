@@ -1086,8 +1086,8 @@ groups:
           cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-site.git lucene-site
           logfile: website_git_clone.log
   - !Todo
-    id: website_javadoc_redirect
-    title: Update redirect to latest Javadoc
+    id: website_update_versions
+    title: Update version variables
     depends: website_git_clone
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
