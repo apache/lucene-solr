@@ -203,7 +203,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     );
     resetExceptionIgnores();
     assertEquals(400, se.code());
-    assertTrue(se.getMessage().contains("Invalid update of id field"));
+    assertTrue(se.getMessage().contains("Updating unique key, version or route field is not allowed"));
 
     afterUpdate.call();
 

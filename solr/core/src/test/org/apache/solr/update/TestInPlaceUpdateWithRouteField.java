@@ -113,14 +113,20 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
         newVersion > initialVersion);
     Assert.assertThat( "Doc value must be updated", solrDocument.get("inplace_updatable_int"), is(newDocValue));
     Assert.assertThat("Lucene doc id should not be changed for In-Place Updates.", solrDocument.get("[docid]"), is(luceneDocId));
-    
+
+    sdoc.remove("shardName");
+    checkWrongCommandFailure(sdoc);
+
+    sdoc.addField("shardName",  map("set", "newShardName"));
+    checkWrongCommandFailure(sdoc);
+  }
+
+  private void checkWrongCommandFailure(SolrInputDocument sdoc) throws SolrServerException, IOException {
     try {
-      sdoc.remove("shardName");
-      new UpdateRequest()
-         .add(sdoc).process(cluster.getSolrClient(), COLLECTION);
-      fail("expect  an exception w/o route field");
-    }catch(SolrException ex) {
-      assertThat("expecting 400 in "+ex.getMessage(), ex.code(), is(400));
+      new UpdateRequest().add(sdoc).process(cluster.getSolrClient(), COLLECTION);
+      fail("expect an exception for wrong update command");
+    } catch (SolrException ex) {
+      assertThat("expecting 400 in " + ex.getMessage(), ex.code(), is(400));
     }
   }
 
