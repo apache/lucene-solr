@@ -78,6 +78,8 @@ Improvements
 
 * SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
 
+* SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
+
 Optimizations
 ---------------------
 
