@@ -193,7 +193,7 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   /**
-   * Create a new KoreanTokenizer supplying a custom system dictionary and unknown dictionary.
+   * <p>Create a new KoreanTokenizer supplying a custom system dictionary and unknown dictionary.
    * This constructor provides an entry point for users that want to construct custom language models
    * that can be used as input to {@link org.apache.lucene.analysis.ko.util.DictionaryBuilder}.</p>
    *
