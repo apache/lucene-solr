@@ -45,7 +45,6 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobException;
-import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +97,7 @@ public class ServerSideMetadata {
   private final long generation;
   private final SolrCore core;
   private final String coreName;
-  private final CoreContainer coreContainer;
+  private final CoreContainer container;
 
   /**
    * Given a core name, builds the local metadata
@@ -110,7 +109,7 @@ public class ServerSideMetadata {
    */
   public ServerSideMetadata(String coreName, CoreContainer coreContainer, boolean reserveCommit) throws Exception {
     this.coreName = coreName;
-    this.coreContainer = coreContainer;
+    this.container = coreContainer;
     this.core = coreContainer.getCore(coreName);
 
     if (core == null) {
@@ -194,7 +193,7 @@ public class ServerSideMetadata {
   }
 
   public CoreContainer getCoreContainer() {
-    return coreContainer;
+    return container;
   }
 
   public long getGeneration() {
