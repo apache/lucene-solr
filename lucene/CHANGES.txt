@@ -82,6 +82,8 @@ Improvements
   single field to the same value. This optimization can reduce the flush time by around
   20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
 
+* LUCENE-9245: Reduce AutomatonTermsEnum memory usage. (Bruno Roustant, Robert Muir)
+
 Optimizations
 ---------------------
 
