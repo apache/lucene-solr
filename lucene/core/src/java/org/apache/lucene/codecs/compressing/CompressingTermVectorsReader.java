@@ -1109,6 +1109,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   
   @Override
   public void checkIntegrity() throws IOException {
+    indexReader.checkIntegrity();
     CodecUtil.checksumEntireFile(vectorsStream);
   }
 
