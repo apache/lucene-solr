@@ -67,8 +67,8 @@ public class DefaultSliceExecutionControlPlane implements SliceExecutionControlP
   }
 
   // Helper method to execute a single task
-  protected void processTask(FutureTask task, List<Future> futures,
-                             boolean shouldExecuteOnCallerThread) {
+  protected void processTask(final FutureTask task, final List<Future> futures,
+                             final boolean shouldExecuteOnCallerThread) {
     if (task == null) {
       throw new IllegalArgumentException("Input is null");
     }
@@ -76,28 +76,29 @@ public class DefaultSliceExecutionControlPlane implements SliceExecutionControlP
     if (!shouldExecuteOnCallerThread) {
       try {
         executor.execute(task);
+        futures.add(task);
+
+        return;
       } catch (RejectedExecutionException e) {
         // Execute on caller thread
-        shouldExecuteOnCallerThread = true;
       }
     }
 
-    if (shouldExecuteOnCallerThread) {
-      try {
-        task.run();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
+    runTaskOnCallerThread(task);
 
-    if (!shouldExecuteOnCallerThread) {
-      futures.add(task);
-    } else {
-      try {
-        futures.add(CompletableFuture.completedFuture(task.get()));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+    try {
+      futures.add(CompletableFuture.completedFuture(task.get()));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // Private helper method to run a task on the caller thread
+  private void runTaskOnCallerThread(FutureTask task) {
+    try {
+      task.run();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }
