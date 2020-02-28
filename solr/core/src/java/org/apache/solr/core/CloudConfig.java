@@ -46,10 +46,14 @@ public class CloudConfig {
 
   private final boolean createCollectionCheckLeaderActive;
 
+  private final String pkiHandlerPrivateKeyPath;
+
+  private final String pkiHandlerPublicKeyPath;
+
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
               int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration,
               String zkCredentialsProviderClass, String zkACLProviderClass, int createCollectionWaitTimeTillActive,
-              boolean createCollectionCheckLeaderActive) {
+              boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath, String pkiHandlerPublicKeyPath) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -63,6 +67,8 @@ public class CloudConfig {
     this.zkACLProviderClass = zkACLProviderClass;
     this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
     this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
+    this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
+    this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
 
     if (this.hostPort == -1)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
@@ -122,6 +128,14 @@ public class CloudConfig {
     return createCollectionCheckLeaderActive;
   }
 
+  public String getPkiHandlerPrivateKeyPath() {
+    return pkiHandlerPrivateKeyPath;
+  }
+
+  public String getPkiHandlerPublicKeyPath() {
+    return pkiHandlerPublicKeyPath;
+  }
+
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
@@ -145,6 +159,8 @@ public class CloudConfig {
     private String zkACLProviderClass;
     private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
     private boolean createCollectionCheckLeaderActive = DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
+    private String pkiHandlerPrivateKeyPath;
+    private String pkiHandlerPublicKeyPath;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -206,10 +222,20 @@ public class CloudConfig {
       return this;
     }
 
+    public CloudConfigBuilder setPkiHandlerPrivateKeyPath(String pkiHandlerPrivateKeyPath) {
+      this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
+      return this;
+    }
+
+    public CloudConfigBuilder setPkiHandlerPublicKeyPath(String pkiHandlerPublicKeyPath) {
+      this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
+      return this;
+    }
+
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
           leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
-          createCollectionCheckLeaderActive);
+          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
     }
   }
 }

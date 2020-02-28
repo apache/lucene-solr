@@ -387,10 +387,6 @@ public class SolrXmlConfig {
         case "zkClientTimeout":
           builder.setZkClientTimeout(parseInt(name, value));
           break;
-        case "autoReplicaFailoverBadNodeExpiration": case "autoReplicaFailoverWorkLoopDelay":
-          //TODO remove this in Solr 8.0
-          log.info("Configuration parameter " + name + " is ignored");
-          break;
         case "autoReplicaFailoverWaitAfterExpiration":
           builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
           break;
@@ -411,6 +407,12 @@ public class SolrXmlConfig {
           break;
         case "createCollectionCheckLeaderActive":
           builder.setCreateCollectionCheckLeaderActive(Boolean.parseBoolean(value));
+          break;
+        case "pkiHandlerPrivateKeyPath":
+          builder.setPkiHandlerPrivateKeyPath(value);
+          break;
+        case "pkiHandlerPublicKeyPath":
+          builder.setPkiHandlerPublicKeyPath(value);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
