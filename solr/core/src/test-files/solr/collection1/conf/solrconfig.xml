@@ -135,9 +135,6 @@
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
-    <!-- set maxSize artificially low to exercise both types of sets -->
-    <HashDocSet maxSize="3" loadFactor="0.75"/>
-
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
          the threshold (represented as a fraction of the total index)
@@ -174,10 +171,6 @@
   
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
-
-  <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
-       If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
-       based HashBitset. -->
 
   <!-- requestHandler plugins
   -->

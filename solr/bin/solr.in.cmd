@@ -192,7 +192,12 @@ REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
-REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.environment=prod"
+
+REM Specifies the path to a common library directory that will be shared across all cores.
+REM Any JAR files in this directory will be added to the search path for Solr plugins.
+REM If the specified path is not absolute, it will be relative to `%SOLR_HOME%`.
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib"
 
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)

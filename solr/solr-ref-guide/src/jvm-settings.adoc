@@ -26,7 +26,7 @@ For more general information about improving Solr performance, see https://cwiki
 
 The most important JVM configuration settings control the heap allocated to the JVM: `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size of the heap. Setting these two options to the same value is a common practice.
 
-Heap size is critical and unfortunately there is no "one size fits all" solution, you must test with your data and your application. The best way to determine the correct size is to analyze the garbage collection (GC) logs located in your logs directory. There are various tools that help analyze these logs and, in particular, show the amount of memory used after GC has completed (GCViewer and GCEasy are two). Also you can attach jconsole (distributed with most Java runtimes) to check memory consumption as Solr is running. This will show the absolute miminum amount of memory required; adding 25-50% "headroom" is a reasonable starting point.
+Heap size is critical and unfortunately there is no "one size fits all" solution, you must test with your data and your application. The best way to determine the correct size is to analyze the garbage collection (GC) logs located in your logs directory. There are various tools that help analyze these logs and, in particular, show the amount of memory used after GC has completed (GCViewer and GCEasy are two). Also you can attach jconsole (distributed with most Java runtimes) to check memory consumption as Solr is running. This will show the absolute minimum amount of memory required; adding 25-50% "headroom" is a reasonable starting point.
 
 There are several points to keep in mind:
 
@@ -34,8 +34,8 @@ There are several points to keep in mind:
  * Lucene/Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index. Therefore, as much memory as possible should be left for the operating system to use for this purpose.
  * The heap allocated should be as small as possible while maintaining good performance. 8-16G is quite common, and larger heaps are sometimes used. When heaps grow to larger sizes, it is imperative to test extensively before going to production.
  * The G1GC garbage collector is currently preferred when using a JVM that supports it (Java 9 and later)
- * Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps.
- * It's good practice to periodically re-analyze the GC logs and/or monitor with  <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
+ * Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps. One way to achieve this is to run Solr as a Docker container.
+ * It's good practice to periodically re-analyze the GC logs and/or monitor with <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
  * On *nix systems, we recommend that Solr be run with the "oom killer script" (see solr/bin/oom_solr.sh). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
  * All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed. If, through monitoring, these collections are frequent and greater than your application can tolerate, additional tuning should be considered. "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.
 
@@ -47,4 +47,4 @@ If you are using Sun's JVM, add the `-server` command-line option when you start
 
 == Checking JVM Settings
 
-A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `solr/admin/system`. This request handler will display a wealth of server statistics and settings.
+A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `/solr/admin/info/system`. This request handler will display a wealth of server statistics and settings.

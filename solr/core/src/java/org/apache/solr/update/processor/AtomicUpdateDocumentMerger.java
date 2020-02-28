@@ -183,12 +183,17 @@ public class AtomicUpdateDocumentMerger {
     // first pass, check the things that are virtually free,
     // and bail out early if anything is obviously not a valid in-place update
     for (String fieldName : sdoc.getFieldNames()) {
+      Object fieldValue = sdoc.getField(fieldName).getValue();
       if (fieldName.equals(uniqueKeyFieldName)
           || fieldName.equals(CommonParams.VERSION_FIELD)
           || fieldName.equals(routeFieldOrNull)) {
-        continue;
+        if (fieldValue instanceof Map ) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Updating unique key, version or route field is not allowed: " + sdoc.getField(fieldName));
+        } else {
+          continue;
+        }
       }
-      Object fieldValue = sdoc.getField(fieldName).getValue();
       if (! (fieldValue instanceof Map) ) {
         // not an in-place update if there are fields that are not maps
         return Collections.emptySet();

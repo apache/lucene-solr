@@ -28,7 +28,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @since solr 0.9
  */
-public class DocSlice extends DocSetBase implements DocList {
+public class DocSlice implements DocList, Accountable {
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DocSlice.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   final int offset;    // starting position of the docs (zero based)
@@ -92,15 +92,6 @@ public class DocSlice extends DocSetBase implements DocList {
   public long matches() { return matches; }
 
 
-  @Override
-  public boolean exists(int doc) {
-    int end = offset+len;
-    for (int i=offset; i<end; i++) {
-      if (docs[i]==doc) return true;
-    }
-    return false;
-  }
-
   // Hmmm, maybe I could have reused the scorer interface here...
   // except that it carries Similarity baggage...
   @Override
@@ -136,39 +127,6 @@ public class DocSlice extends DocSetBase implements DocList {
         return scores[pos-1];
       }
     };
-  }
-
-
-  @Override
-  public DocSet intersection(DocSet other) {
-    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
-      return other.intersection(this);
-    }
-    HashDocSet h = new HashDocSet(docs,offset,len);
-    return h.intersection(other);
-  }
-
-  @Override
-  public int intersectionSize(DocSet other) {
-    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
-      return other.intersectionSize(this);
-    }
-    HashDocSet h = new HashDocSet(docs,offset,len);
-    return h.intersectionSize(other);  
-  }
-
-  @Override
-  public boolean intersects(DocSet other) {
-    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
-      return other.intersects(this);
-    }
-    HashDocSet h = new HashDocSet(docs,offset,len);
-    return h.intersects(other);
-  }
-
-  @Override
-  public DocSlice clone() {
-    return (DocSlice) super.clone();
   }
 
   /** WARNING: this can over-estimate real memory use since backing arrays are shared with other DocSlice instances */
