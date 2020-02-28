@@ -38,3 +38,17 @@ tabby => tabby, cat, feline, animal
 persian => persian, cat, feline, animal
 
 jeans, denim pants
+
+# Boosted Synonyms
+tiger, tigre|0.9
+lynx => lince|0.8, lynx_canadensis|0.9
+
+leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
+lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
+
+panthera pardus, leopard|0.6
+panthera tigris => tiger|0.99
+
+snow leopard, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
+panthera onca => jaguar|0.95, big cat|0.85, black panther|0.65
+panthera blytheae, oldest|0.5 ancient|0.9 panthera

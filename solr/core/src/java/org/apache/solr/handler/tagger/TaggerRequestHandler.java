@@ -62,7 +62,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
@@ -324,23 +323,8 @@ public class TaggerRequestHandler extends RequestHandlerBase {
       }
 
       final DocSet docSet = searcher.getDocSet(filterQueries);//hopefully in the cache
-      //note: before Solr 4.7 we could call docSet.getBits() but no longer.
-      if (docSet instanceof BitDocSet) {
-        docBits = ((BitDocSet)docSet).getBits();
-      } else {
-        docBits = new Bits() {
 
-          @Override
-          public boolean get(int index) {
-            return docSet.exists(index);
-          }
-
-          @Override
-          public int length() {
-            return searcher.maxDoc();
-          }
-        };
-      }
+      docBits = docSet.getBits();
     } else {
       docBits = searcher.getSlowAtomicReader().getLiveDocs();
     }
