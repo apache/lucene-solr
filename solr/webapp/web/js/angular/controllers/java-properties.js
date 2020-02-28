@@ -25,9 +25,18 @@ solrAdminApp.controller('JavaPropertiesController',
         var props = [];
         for (var key in sysprops) {
           var value = sysprops[key];
-          var key = key.replace(/\./g, '.&#8203;');
-          props.push({name: key, values: [value]});
+          var values = value.split(sep);
+          if (value === sep) {
+            values = [':'];
+          }
+          props.push({
+            name: key.replace(/\./g, '.&#8203;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;'),
+            values: values
+          });
         }
+        $scope.pathSeparator = sep;
         $scope.props = props;
       });
     };
