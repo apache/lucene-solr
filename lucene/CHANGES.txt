@@ -177,6 +177,8 @@ Improvements
 
 * LUCENE-9245: Reduce AutomatonTermsEnum memory usage. (Bruno Roustant, Robert Muir)
 
+* LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
+
 Optimizations
 ---------------------
 
