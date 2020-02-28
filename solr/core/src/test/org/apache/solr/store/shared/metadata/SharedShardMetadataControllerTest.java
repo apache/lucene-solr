@@ -22,9 +22,9 @@ import java.util.NoSuchElementException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Tests for {@link SharedShardMetadataController}
  */
-public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
+public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestCase {
 
   static final String TEST_COLLECTION_NAME = "testCollectionName1";
   static final String TEST_SHARD_NAME = "testShardName";
@@ -47,9 +47,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     assumeWorkingMockito();
-    configureCluster(1)
-      .addConfig("conf", configset("cloud-minimal"))
-      .configure();
+    setupCluster(1);
     
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().
         getZkController().getSolrCloudManager();

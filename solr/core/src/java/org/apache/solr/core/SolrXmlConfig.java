@@ -16,10 +16,8 @@
  */
 package org.apache.solr.core;
 
-import javax.management.MBeanServer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -34,7 +32,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import com.google.common.base.Strings;
+import javax.management.MBeanServer;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -51,7 +53,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+import com.google.common.base.Strings;
 
 
 /**
@@ -95,6 +97,12 @@ public class SolrXmlConfig {
       }
       updateConfig = deprecatedUpdateConfig;
     }
+    
+    SharedStoreConfig sharedStoreConfig = null;
+    if (config.getNodeList("solr/sharedStore", false).getLength() > 0) {
+      sharedStoreConfig = SharedStoreConfig.loadSharedStoreConfig(
+          readNodeListAsNamedList(config, "solr/sharedStore/*[@name]", "<sharedStore>"));
+    }
 
     NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
@@ -107,6 +115,7 @@ public class SolrXmlConfig {
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
+    configBuilder.setSharedStoreConfig(sharedStoreConfig);
     return fillSolrSection(configBuilder, entries);
   }
 

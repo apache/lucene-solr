@@ -25,7 +25,7 @@ import java.util.Set;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 //import com.force.commons.util.concurrent.NamedThreadFactory; difference?
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final CoreContainer cores;
+  protected final SharedStoreManager storeManager;
 
   /**
    * Maximum number of elements in the queue, NOT counting re-inserts after failures. Total queue size might therefore
@@ -64,9 +64,9 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
   private volatile Thread executionThread;
   private volatile boolean closed = false;
 
-  protected CoreSyncFeeder(CoreContainer cores, int numSyncThreads) {
+  protected CoreSyncFeeder(SharedStoreManager storeManager, int numSyncThreads) {
     this.numSyncThreads = numSyncThreads;
-    this.cores = cores;
+    this.storeManager = storeManager;
   }
 
   @Override
@@ -115,7 +115,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
   }
 
   boolean shouldContinueRunning() {
-    return !this.cores.isShutDown();
+    return !this.storeManager.getCoreContainer().isShutDown();
   }
 
   @Override

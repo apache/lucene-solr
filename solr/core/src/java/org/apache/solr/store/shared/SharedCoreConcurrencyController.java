@@ -132,15 +132,15 @@ public class SharedCoreConcurrencyController {
    */
   public static int MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK = 10;
 
-  private final CoreContainer cores;
+  private final SharedShardMetadataController metadataController;
   /**
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
    * shared store given indexing first happens locally before being propagated to shared store).
    */
   private final ConcurrentHashMap<String, SharedCoreVersionMetadata> coresVersionMetadata;
 
-  public SharedCoreConcurrencyController(CoreContainer cores) {
-    this.cores = cores;
+  public SharedCoreConcurrencyController(SharedShardMetadataController metadataController) {
+    this.metadataController = metadataController;
     coresVersionMetadata = buildMetadataCache();
   }
 
@@ -301,7 +301,6 @@ public class SharedCoreConcurrencyController {
 
   @VisibleForTesting
   protected void ensureShardVersionMetadataNodeExists(String collectionName, String shardName) {
-    SharedShardMetadataController metadataController = cores.getSharedStoreManager().getSharedShardMetadataController();
     try {
       // creates the metadata node if it doesn't exist
       metadataController.ensureMetadataNodeExists(collectionName, shardName);

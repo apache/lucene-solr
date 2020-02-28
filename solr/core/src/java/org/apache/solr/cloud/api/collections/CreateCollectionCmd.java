@@ -109,11 +109,18 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }
+    final boolean sharedIndex = message.getBool(SHARED_INDEX, false);
     final Aliases aliases = ocmh.zkStateReader.getAliases();
     final String collectionName = message.getStr(NAME);
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
+    
+    if (sharedIndex && !ocmh.overseer.getCoreContainer().isSharedStoreEnabled()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+          "Collection " + collectionName + " cannot be created because shared storage is not enabled on this cluster."
+              + " Check solr.xml for the correct configurations");
+    }
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
