@@ -787,7 +787,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   }
 
-  public static class ReadBytesDirectoryWrapper extends FilterDirectory {
+  private static class ReadBytesDirectoryWrapper extends FilterDirectory {
 
     ReadBytesDirectoryWrapper(Directory in) {
       super(in);
