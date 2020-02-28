@@ -35,18 +35,21 @@ public class SourceHomeNullifier extends TestWatcher {
 
   @Override
   protected void starting(Description description) {
-    boolean nullify = RandomizedContext.current().getRandom().nextBoolean();
-    if (nullify) {
-      oldSourceHome = ExternalPaths.SOURCE_HOME;
-      try {
-        sourceHomeField = ExternalPaths.class.getDeclaredField("SOURCE_HOME");
-        setFinalStatic(sourceHomeField, null);
-      } catch (Exception e) {
-        e.printStackTrace();
-        fail(e.getMessage());
+    // see https://stackoverflow.com/a/2591122
+    // this test is only meant to run under java < 9.0
+    if (System.getProperty("java.version").startsWith("1.")) {
+      boolean nullify = RandomizedContext.current().getRandom().nextBoolean();
+      if (nullify) {
+        oldSourceHome = ExternalPaths.SOURCE_HOME;
+        try {
+          sourceHomeField = ExternalPaths.class.getDeclaredField("SOURCE_HOME");
+          setFinalStatic(sourceHomeField, null);
+        } catch (Exception e) {
+          e.printStackTrace();
+          fail(e.getMessage());
+        }
       }
     }
-    super.starting(description);
   }
 
   @SuppressForbidden(reason = "Need to tweak the value of a static final field on a per test basis")
@@ -62,14 +65,17 @@ public class SourceHomeNullifier extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
-    if (sourceHomeField != null) {
-      try {
-        sourceHomeField.set(null, oldSourceHome);
-      } catch (IllegalAccessException e) {
-        e.printStackTrace();
-        fail(e.getMessage());
+    // see https://stackoverflow.com/a/2591122
+    // this test is only meant to run under java < 9.0
+    if (System.getProperty("java.version").startsWith("1.")) {
+      if (sourceHomeField != null) {
+        try {
+          sourceHomeField.set(null, oldSourceHome);
+        } catch (IllegalAccessException e) {
+          e.printStackTrace();
+          fail(e.getMessage());
+        }
       }
     }
-    super.finished(description);
   }
 }
