@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
@@ -197,31 +196,30 @@ public final class Intervals {
   }
 
   /**
-   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that's accepted by the given automaton 
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that are accepted by the given automaton
    *
-   * @param automaton accepts terms for to expand to
-   * @param pattern string representation of the given automaton, mostly used in exception messages  
+   * @param ca      an automaton accepting matching terms
+   * @param pattern string representation of the given automaton, mostly used in exception messages
    *
    * @throws IllegalStateException if the automaton accepts more than 128 terms
    */
-  public static IntervalsSource multiterm(Automaton automaton, String pattern) {
-    return multiterm(automaton, 128, pattern);
+  public static IntervalsSource multiterm(CompiledAutomaton ca, String pattern) {
+    return multiterm(ca, 128, pattern);
   }
 
   /**
-   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that's accepted by the given automaton 
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that are accepted by the given automaton
    *
    * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
    * can be both slow and memory-intensive
    *
-   * @param automaton accepts terms for to expand to
+   * @param ca            an automaton accepting matching terms
    * @param maxExpansions the maximum number of terms to expand to
-   * @param pattern string representation of the given automaton, mostly used in exception messages  
+   * @param pattern string representation of the given automaton, mostly used in exception messages
    *
    * @throws IllegalStateException if the automaton accepts more than {@code maxExpansions} terms
    */
-  public static IntervalsSource multiterm(Automaton automaton, int maxExpansions, String pattern) {
-    CompiledAutomaton ca = new CompiledAutomaton(automaton);
+  public static IntervalsSource multiterm(CompiledAutomaton ca, int maxExpansions, String pattern) {
     return new MultiTermIntervalsSource(ca, maxExpansions, pattern);
   }
   

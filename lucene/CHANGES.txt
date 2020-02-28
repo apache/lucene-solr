@@ -41,6 +41,9 @@ API Changes
 * LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
   (Bruno Roustant)
 
+* LUCENE-9212: Deprecated Intervals.multiterm() methods that take a bare Automaton
+  have been removed (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -113,6 +116,9 @@ API Changes
 * LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
 
 * LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
+
+* LUCENE-9212: Intervals.multiterm() takes CompiledAutomaton rather than plain Automaton
+  (Alan Woodward)
 
 New Features
 ---------------------

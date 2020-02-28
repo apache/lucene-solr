@@ -409,10 +409,11 @@ class JoinQuery extends Query {
       List<DocSet> resultList = new ArrayList<>(10);
 
       // make sure we have a set that is fast for random access, if we will use it for that
-      DocSet fastForRandomSet = fromSet;
-      if (minDocFreqFrom>0 && fromSet instanceof SortedIntDocSet) {
-        SortedIntDocSet sset = (SortedIntDocSet)fromSet;
-        fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
+      Bits fastForRandomSet;
+      if (minDocFreqFrom <= 0) {
+        fastForRandomSet = null;
+      } else {
+        fastForRandomSet = fromSet.getBits();
       }
 
 
@@ -480,7 +481,7 @@ class JoinQuery extends Query {
               int base = sub.slice.start;
               int docid;
               while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (fastForRandomSet.exists(docid+base)) {
+                if (fastForRandomSet.get(docid+base)) {
                   intersects = true;
                   break outer;
                 }
@@ -489,7 +490,7 @@ class JoinQuery extends Query {
           } else {
             int docid;
             while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              if (fastForRandomSet.exists(docid)) {
+              if (fastForRandomSet.get(docid)) {
                 intersects = true;
                 break;
               }
@@ -521,10 +522,10 @@ class JoinQuery extends Query {
               DocSet toTermSet = toSearcher.getDocSet(toDeState);
               resultListDocs += toTermSet.size();
               if (resultBits != null) {
-                toTermSet.addAllTo(new BitDocSet(resultBits));
+                toTermSet.addAllTo(resultBits);
               } else {
                 if (toTermSet instanceof BitDocSet) {
-                  resultBits = ((BitDocSet)toTermSet).bits.clone();
+                  resultBits = ((BitDocSet)toTermSet).getBits().clone();
                 } else {
                   resultList.add(toTermSet);
                 }
@@ -568,11 +569,10 @@ class JoinQuery extends Query {
       smallSetsDeferred = resultList.size();
 
       if (resultBits != null) {
-        BitDocSet bitSet = new BitDocSet(resultBits);
         for (DocSet set : resultList) {
-          set.addAllTo(bitSet);
+          set.addAllTo(resultBits);
         }
-        return bitSet;
+        return new BitDocSet(resultBits);
       }
 
       if (resultList.size()==0) {

@@ -161,6 +161,13 @@ public class NodeConfig {
     return replayUpdatesThreads;
   }
 
+  /**
+   * Returns a directory, optionally a comma separated list of directories
+   * that will be added to Solr's class path for searching for classes and plugins.
+   * The path is either absolute or relative to SOLR_HOME. Note that SOLR_HOME/lib
+   * will always be added to the search path even if not included in this list.
+   * @return a comma separated list of path strings or null if no paths defined
+   */
   public String getSharedLibDirectory() {
     return sharedLibDirectory;
   }
@@ -240,7 +247,7 @@ public class NodeConfig {
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
-    private String sharedLibDirectory = "lib";
+    private String sharedLibDirectory;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
