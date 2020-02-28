@@ -136,4 +136,9 @@ final class FieldsIndexReader extends FieldsIndex {
   public long getMaxPointer() {
     return maxPointer;
   }
+
+  @Override
+  void checkIntegrity() throws IOException {
+    CodecUtil.checksumEntireFile(indexInput);
+  }
 }
