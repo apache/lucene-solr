@@ -37,8 +37,6 @@ NOTE: Builds are available via https://builds.apache.org/view/L/view/Lucene/[Jen
 
 == Build the DRAFT Guide
 
-NOTE: After the switch to website in GIT, built by Pelican (https://github.com/apache/lucene-site) we no longer need to update `extpaths.txt`. When the RM changes the `LUCENE_LATEST_RELEASE` variable in https://github.com/apache/lucene-site/blob/master/pelicanconf.py in the website git repo, the default redirect for https://lucene.apache.org/solr/guide/mypage.html will automatically redirect to the latest `X_Y` version. Thus you should always publish a DRAFT guide to that location *before* the release of Solr. Then you can publish a final version later, overwriting the previous.
-
 The build process generates the page hierarchy and builds the HTML pages with custom templates the Lucene/Solr project has defined.
 
 To build the HTML:
@@ -62,14 +60,13 @@ svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-gu
 Confirm you can browse to Guide manually by going to the new URL. For example:
 https://lucene.apache.org/solr/guide/7_7
 
-== Publish the Guide without watermark
+== Publish the Guide
 
 There are two steps to publishing the Guide: first, uploading the DRAFT pages with the production-ready version; and second, updating links to point to the new Guide.
 
 === Update DRAFT for Release
 
-Since the Guide has already been published, you need to update the production
-website repository and overwrite the existing files:
+Since the Guide has already been uploaded to SVN, you need to overwrite the existing files in svn with a version of the production version of the guide:
 
 *Build Production Guide*
 
@@ -84,7 +81,7 @@ IMPORTANT: The `-Dsolr-guide-version` system property is optional if you build d
 
 *Pull Production Repo and Upload New Files*
 
-. Checkout the directory you need to update from the production repo:
+. Checkout the directory you need to update from the svn production repo:
 +
 [source,bash]
 $ svn co https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/<dir>
@@ -118,3 +115,5 @@ You can use your favourite git client to merge master into branch `production`. 
 . Make a new pull request from https://github.com/apache/lucene-site/compare/production%2E%2E%2Emaster
 . Note: If there are other changes staged, you will see those as well if you merge `master` into `production`
 . Click the "Merge" button on the PR
+
+The ordinary Solr release process will update the `LUCENE_LATEST_RELEASE` property of the website, which will ensure that Ref Guide URLs without a version in the path (e.g. `/solr/guide/mypage.adoc`) will automatically redirect to the latest Guide.
