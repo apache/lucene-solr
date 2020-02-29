@@ -896,6 +896,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     Set<String> unreadFiles = new HashSet<>(Arrays.asList(readBytesWrapperDir.listAll()));
     unreadFiles.removeAll(readBytesMap.keySet());
+    unreadFiles.remove(IndexWriter.WRITE_LOCK_NAME);
     assertTrue("Some files have not been open: " + unreadFiles, unreadFiles.isEmpty());
 
     List<String> messages = new ArrayList<>();
