@@ -916,7 +916,7 @@ final public class Tessellator {
       prevNode = node.previous;
       // we can filter points when:
       if (isVertexEquals(node, nextNode)  ||   // 1. they are the same,
-         // isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
+          isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
           (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon && // 3.- they are co-linear and both edges have the same value in .isNextEdgeFromPolygon
               area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
         // Remove the node
