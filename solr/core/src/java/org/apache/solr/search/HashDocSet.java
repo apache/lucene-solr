@@ -33,6 +33,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @since solr 0.9
  */
+@Deprecated // see SOLR-14256
 public final class HashDocSet extends DocSetBase {
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(HashDocSet.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 

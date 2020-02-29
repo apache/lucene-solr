@@ -38,6 +38,7 @@ public interface DocSet extends Accountable, Cloneable /* extends Collection<Int
    * @see #addUnique
    * @throws SolrException if the implementation does not allow modifications
    */
+  @Deprecated // to-be read-only, see SOLR-14256
   public void add(int doc);
 
   /**
@@ -52,6 +53,7 @@ public interface DocSet extends Accountable, Cloneable /* extends Collection<Int
    * @see #add
    * @throws SolrException if the implementation does not allow modifications
    */
+  @Deprecated // to-be read-only, see SOLR-14256
   public void addUnique(int doc);
 
   /**
@@ -127,6 +129,7 @@ public interface DocSet extends Accountable, Cloneable /* extends Collection<Int
    * sized large enough to accommodate all of the documents before calling this
    * method.
    */
+  @Deprecated // to-be read-only, see SOLR-14256
   public void addAllTo(DocSet target);
 
   public DocSet clone();

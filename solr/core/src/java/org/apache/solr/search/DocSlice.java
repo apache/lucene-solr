@@ -93,6 +93,7 @@ public class DocSlice extends DocSetBase implements DocList {
 
 
   @Override
+  @Deprecated // see SOLR-14258
   public boolean exists(int doc) {
     int end = offset+len;
     for (int i=offset; i<end; i++) {
@@ -140,6 +141,7 @@ public class DocSlice extends DocSetBase implements DocList {
 
 
   @Override
+  @Deprecated // see SOLR-14258
   public DocSet intersection(DocSet other) {
     if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
       return other.intersection(this);
@@ -149,6 +151,7 @@ public class DocSlice extends DocSetBase implements DocList {
   }
 
   @Override
+  @Deprecated // see SOLR-14258
   public int intersectionSize(DocSet other) {
     if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
       return other.intersectionSize(this);
@@ -158,6 +161,7 @@ public class DocSlice extends DocSetBase implements DocList {
   }
 
   @Override
+  @Deprecated // see SOLR-14258
   public boolean intersects(DocSet other) {
     if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
       return other.intersects(this);
@@ -167,6 +171,7 @@ public class DocSlice extends DocSetBase implements DocList {
   }
 
   @Override
+  @Deprecated // see SOLR-14258
   public DocSlice clone() {
     return (DocSlice) super.clone();
   }
