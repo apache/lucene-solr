@@ -19,7 +19,6 @@ package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,8 +72,8 @@ public final class HNSWGraph implements Accountable {
     Neighbor f = results.top();
     while (candidates.size() > 0) {
       Neighbor c = candidates.pollFirst();
-      assert c.isDeferred() == false;
-      assert f.isDeferred() == false;
+      assert !c.isDeferred();
+      assert !f.isDeferred();
       if (c.distance() > f.distance() && results.size() >= ef) {
         break;
       }
@@ -85,6 +84,9 @@ public final class HNSWGraph implements Accountable {
         visited.add(e.docId());
         float dist = distance(query, e.docId(), vectorValues);
         if (dist < f.distance() || results.size() < ef) {
+          if (results.size() == ef) {
+            results.pop();
+          }
           Neighbor n = new ImmutableNeighbor(e.docId(), dist);
           candidates.add(n);
           results.insertWithOverflow(n);
