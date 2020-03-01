@@ -34,8 +34,9 @@ allprojects {
         ':lucene:spatial3d',
     ]
 
-    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
-      dirs += [ project.javadoc.destinationDir ]
+    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'invokeJavadoc') {
+      //dirs += [ project.javadoc.destinationDir ]
+      dirs += [ project.file(project.javadocDestDir) ]
 
       // TODO: add missing docs for all classes and bump this to level=class
       if (project.path.startsWith(":solr")) {
@@ -59,7 +60,7 @@ allprojects {
 configure(project(':lucene:core')) {
   // Defer until java plugin has been applied, otherwise we can't resolve project.javadoc.
   plugins.withType(JavaPlugin) {
-    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'javadoc') {
+    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'invokeJavadoc') {
       level = 'method'
     }
 
