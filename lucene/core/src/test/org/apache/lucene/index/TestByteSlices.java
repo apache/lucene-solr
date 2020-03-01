@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.index;
 
+import java.util.Random;
+
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
@@ -23,9 +25,10 @@ import org.apache.lucene.util.RecyclingByteBlockAllocator;
 public class TestByteSlices extends LuceneTestCase {
 
   public void testBasic() throws Throwable {
+    Random random = random();
     ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random().nextInt(100)));
 
-    final int NUM_STREAM = atLeast(100);
+    final int NUM_STREAM = atLeast(random, 100);
 
     ByteSliceWriter writer = new ByteSliceWriter(pool);
 
@@ -42,13 +45,13 @@ public class TestByteSlices extends LuceneTestCase {
         counters[stream] = 0;
       }
       
-      int num = atLeast(3000);
+      int num = atLeast(random, 3000);
       for (int iter = 0; iter < num; iter++) {
         int stream;
-        if (random().nextBoolean()) {
-          stream = random().nextInt(3);
+        if (random.nextBoolean()) {
+          stream = random.nextInt(3);
         } else {
-          stream = random().nextInt(NUM_STREAM);
+          stream = random.nextInt(NUM_STREAM);
         }
 
         if (VERBOSE) {
@@ -65,12 +68,12 @@ public class TestByteSlices extends LuceneTestCase {
 
         writer.init(uptos[stream]);
         int numValue;
-        if (random().nextInt(10) == 3) {
-          numValue = random().nextInt(100);
-        } else if (random().nextInt(5) == 3) {
-          numValue = random().nextInt(3);
+        if (random.nextInt(10) == 3) {
+          numValue = random.nextInt(100);
+        } else if (random.nextInt(5) == 3) {
+          numValue = random.nextInt(3);
         } else {
-          numValue = random().nextInt(20);
+          numValue = random.nextInt(20);
         }
 
         for(int j=0;j<numValue;j++) {
@@ -78,7 +81,7 @@ public class TestByteSlices extends LuceneTestCase {
             System.out.println("    write " + (counters[stream]+j));
           }
           // write some large (incl. negative) ints:
-          writer.writeVInt(random().nextInt());
+          writer.writeVInt(random.nextInt());
           writer.writeVInt(counters[stream]+j);
         }
         counters[stream] += numValue;

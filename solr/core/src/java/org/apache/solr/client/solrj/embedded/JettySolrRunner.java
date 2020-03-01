@@ -411,7 +411,7 @@ public class JettySolrRunner {
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
-    gzipHandler.setMinGzipSize(0);
+    gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
     gzipHandler.setCheckGzExists(false);
     gzipHandler.setCompressionLevel(-1);
     gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
@@ -755,6 +755,15 @@ public class JettySolrRunner {
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public URL getBaseURLV2(){
+    try {
+      return new URL(protocol, host, jettyPort, "/api");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    }
+
   }
   /**
    * Returns a base URL consisting of the protocol, host, and port for a

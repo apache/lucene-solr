@@ -108,7 +108,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     byte[] pointValue = new byte[3];
     byte[] uniquePointValue = new byte[3];
     random().nextBytes(uniquePointValue);
-    final int numDocs = atLeast(10000); // make sure we have several leaves
+    final int numDocs = TEST_NIGHTLY ? atLeast(10000) : atLeast(500); // at night, make sure we have several leaves
     final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -196,7 +196,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     if (multiValues) {
       assertEquals(docCount, (long) (docCount * (1d - Math.pow( (numDocs -  pointCount) / points.size() , points.size() / docCount))));
     } else {
-      assertEquals(pointCount, docCount);
+      assertEquals(Math.min(pointCount, numDocs), docCount);
     }
     r.close();
     dir.close();
@@ -215,7 +215,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     uniquePointValue[1] = new byte[3];
     random().nextBytes(uniquePointValue[0]);
     random().nextBytes(uniquePointValue[1]);
-    final int numDocs = atLeast(10000); // make sure we have several leaves
+    final int numDocs = TEST_NIGHTLY? atLeast(10000) : atLeast(1000); // in nightly, make sure we have several leaves
     final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -259,7 +259,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     };
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1;
+    final int numLeaves = (int) Math.max(Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1, 1);
 
     assertEquals(numLeaves * actualMaxPointsInLeafNode, points.estimatePointCount(allPointsVisitor));
     assertEquals(numDocs, points.estimateDocCount(allPointsVisitor));
@@ -310,7 +310,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     if (multiValues) {
       assertEquals(docCount, (long) (docCount * (1d - Math.pow( (numDocs -  pointCount) / points.size() , points.size() / docCount))));
     } else {
-      assertEquals(pointCount, docCount);
+      assertEquals(Math.min(pointCount, numDocs), docCount);
     }
     r.close();
     dir.close();
@@ -372,7 +372,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
       }
 
       @Override
-      public int getNumDataDimensions() throws IOException {
+      public int getNumDimensions() throws IOException {
         throw new UnsupportedOperationException();
       }
 

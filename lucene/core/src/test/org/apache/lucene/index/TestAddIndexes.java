@@ -665,8 +665,7 @@ public class TestAddIndexes extends LuceneTestCase {
     volatile boolean didClose;
     final DirectoryReader[] readers;
     final int NUM_COPY;
-    final static int NUM_THREADS = 5;
-    final Thread[] threads = new Thread[NUM_THREADS];
+    final Thread[] threads;
 
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
@@ -685,11 +684,13 @@ public class TestAddIndexes extends LuceneTestCase {
       readers = new DirectoryReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
         readers[i] = DirectoryReader.open(dir);
+      int numThreads = TEST_NIGHTLY ? 5 : 2;
+      threads = new Thread[numThreads];
     }
 
     void launchThreads(final int numIter) {
 
-      for(int i=0;i<NUM_THREADS;i++) {
+      for(int i=0;i<threads.length;i++) {
         threads[i] = new Thread() {
             @Override
             public void run() {
@@ -714,13 +715,15 @@ public class TestAddIndexes extends LuceneTestCase {
           };
       }
 
-      for(int i=0;i<NUM_THREADS;i++)
-        threads[i].start();
+      for (Thread thread : threads) {
+        thread.start();
+      }
     }
 
     void joinThreads() throws Exception {
-      for(int i=0;i<NUM_THREADS;i++)
-        threads[i].join();
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
 
     void close(boolean doWait) throws Throwable {
@@ -815,7 +818,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     c.joinThreads();
 
-    int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS;
+    int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*c.threads.length*RunAddIndexesThreads.NUM_INIT_DOCS;
     assertEquals("expected num docs don't match - failures: " + c.failures, expectedNumDocs, c.writer2.getDocStats().numDocs);
 
     c.close(true);

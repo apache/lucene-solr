@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,67 +60,124 @@ import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JoinQParserPlugin extends QParserPlugin {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String NAME = "join";
+  /** Choose the internal algorithm */
+  private static final String METHOD = "method";
+
+  private static class JoinParams {
+    final String fromField;
+    final String fromCore;
+    final Query fromQuery;
+    final long fromCoreOpenTime;
+    final String toField;
+
+    public JoinParams(String fromField, String fromCore, Query fromQuery, long fromCoreOpenTime, String toField) {
+      this.fromField = fromField;
+      this.fromCore = fromCore;
+      this.fromQuery = fromQuery;
+      this.fromCoreOpenTime = fromCoreOpenTime;
+      this.toField = toField;
+    }
+  }
+
+  private enum Method {
+    index {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        final JoinParams jParams = parseJoin(qparser);
+        final JoinQuery q = new JoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
+        return q;
+      }
+    },
+    dvWithScore {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
+      }
+    },
+    topLevelDV {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        final JoinParams jParams = parseJoin(qparser);
+        final JoinQuery q = new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
+        return q;
+      }
+    };
+
+    abstract Query makeFilter(QParser qparser) throws SyntaxError;
+
+    JoinParams parseJoin(QParser qparser) throws SyntaxError {
+      final String fromField = qparser.getParam("from");
+      final String fromIndex = qparser.getParam("fromIndex");
+      final String toField = qparser.getParam("to");
+      final String v = qparser.localParams.get(QueryParsing.V);
+      final String coreName;
+
+      Query fromQuery;
+      long fromCoreOpenTime = 0;
+
+      if (fromIndex != null && !fromIndex.equals(qparser.req.getCore().getCoreDescriptor().getName()) ) {
+        CoreContainer container = qparser.req.getCore().getCoreContainer();
+
+        // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
+        coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
+
+        final SolrCore fromCore = container.getCore(coreName);
+        if (fromCore == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Cross-core join: no such core " + coreName);
+        }
+
+        RefCounted<SolrIndexSearcher> fromHolder = null;
+        LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, qparser.params);
+        try {
+          QParser parser = QParser.getParser(v, otherReq);
+          fromQuery = parser.getQuery();
+          fromHolder = fromCore.getRegisteredSearcher();
+          if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
+        } finally {
+          otherReq.close();
+          fromCore.close();
+          if (fromHolder != null) fromHolder.decref();
+        }
+      } else {
+        coreName = null;
+        QParser fromQueryParser = qparser.subQuery(v, null);
+        fromQueryParser.setIsFilter(true);
+        fromQuery = fromQueryParser.getQuery();
+      }
+
+      final String indexToUse = coreName == null ? fromIndex : coreName;
+      return new JoinParams(fromField, indexToUse, fromQuery, fromCoreOpenTime, toField);
+    }
+  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
-      
+
       @Override
       public Query parse() throws SyntaxError {
-        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
+        if (localParams != null && localParams.get(METHOD) != null) {
+          // TODO Make sure 'method' is valid value here and give users a nice error
+          final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
+          return explicitMethod.makeFilter(this);
+        }
+
+        // Legacy join behavior before introduction of SOLR-13892
+        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
-        }else{
-          return parseJoin();
-        }
-      }
-      
-      Query parseJoin() throws SyntaxError {
-        final String fromField = getParam("from");
-        final String fromIndex = getParam("fromIndex");
-        final String toField = getParam("to");
-        final String v = localParams.get("v");
-        final String coreName;
-
-        Query fromQuery;
-        long fromCoreOpenTime = 0;
-
-        if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
-          CoreContainer container = req.getCore().getCoreContainer();
-
-          // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
-
-          final SolrCore fromCore = container.getCore(coreName);
-          if (fromCore == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Cross-core join: no such core " + coreName);
-          }
-
-          RefCounted<SolrIndexSearcher> fromHolder = null;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
-          try {
-            QParser parser = QParser.getParser(v, otherReq);
-            fromQuery = parser.getQuery();
-            fromHolder = fromCore.getRegisteredSearcher();
-            if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
-          } finally {
-            otherReq.close();
-            fromCore.close();
-            if (fromHolder != null) fromHolder.decref();
-          }
         } else {
-          coreName = null;
-          QParser fromQueryParser = subQuery(v, null);
-          fromQueryParser.setIsFilter(true);
-          fromQuery = fromQueryParser.getQuery();
+          return Method.index.makeFilter(this);
         }
-
-        JoinQuery jq = new JoinQuery(fromField, toField, coreName == null ? fromIndex : coreName, fromQuery);
-        jq.fromCoreOpenTime = fromCoreOpenTime;
-        return jq;
       }
     };
   }
@@ -175,7 +233,7 @@ class JoinQuery extends Query {
     return new JoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
   }
 
-  private class JoinQueryWeight extends ConstantScoreWeight {
+  protected class JoinQueryWeight extends ConstantScoreWeight {
     SolrIndexSearcher fromSearcher;
     RefCounted<SolrIndexSearcher> fromRef;
     SolrIndexSearcher toSearcher;
@@ -351,10 +409,11 @@ class JoinQuery extends Query {
       List<DocSet> resultList = new ArrayList<>(10);
 
       // make sure we have a set that is fast for random access, if we will use it for that
-      DocSet fastForRandomSet = fromSet;
-      if (minDocFreqFrom>0 && fromSet instanceof SortedIntDocSet) {
-        SortedIntDocSet sset = (SortedIntDocSet)fromSet;
-        fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
+      Bits fastForRandomSet;
+      if (minDocFreqFrom <= 0) {
+        fastForRandomSet = null;
+      } else {
+        fastForRandomSet = fromSet.getBits();
       }
 
 
@@ -422,7 +481,7 @@ class JoinQuery extends Query {
               int base = sub.slice.start;
               int docid;
               while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (fastForRandomSet.exists(docid+base)) {
+                if (fastForRandomSet.get(docid+base)) {
                   intersects = true;
                   break outer;
                 }
@@ -431,7 +490,7 @@ class JoinQuery extends Query {
           } else {
             int docid;
             while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              if (fastForRandomSet.exists(docid)) {
+              if (fastForRandomSet.get(docid)) {
                 intersects = true;
                 break;
               }
@@ -463,10 +522,10 @@ class JoinQuery extends Query {
               DocSet toTermSet = toSearcher.getDocSet(toDeState);
               resultListDocs += toTermSet.size();
               if (resultBits != null) {
-                toTermSet.addAllTo(new BitDocSet(resultBits));
+                toTermSet.addAllTo(resultBits);
               } else {
                 if (toTermSet instanceof BitDocSet) {
-                  resultBits = ((BitDocSet)toTermSet).bits.clone();
+                  resultBits = ((BitDocSet)toTermSet).getBits().clone();
                 } else {
                   resultList.add(toTermSet);
                 }
@@ -510,11 +569,10 @@ class JoinQuery extends Query {
       smallSetsDeferred = resultList.size();
 
       if (resultBits != null) {
-        BitDocSet bitSet = new BitDocSet(resultBits);
         for (DocSet set : resultList) {
-          set.addAllTo(bitSet);
+          set.addAllTo(resultBits);
         }
-        return bitSet;
+        return new BitDocSet(resultBits);
       }
 
       if (resultList.size()==0) {
@@ -586,5 +644,4 @@ class JoinQuery extends Query {
     h = h * 31 + (int) fromCoreOpenTime;
     return h;
   }
-
 }

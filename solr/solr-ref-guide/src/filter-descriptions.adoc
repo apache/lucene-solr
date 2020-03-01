@@ -86,8 +86,6 @@ Arguments may be passed to tokenizer factories to modify their behavior by setti
 
 The following sections describe the filter factories that are included in this release of Solr.
 
-For user tips about Solr's filters, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
-
 == ASCII Folding Filter
 
 This filter converts alphabetic, numeric, and symbolic Unicode characters which are not in the Basic Latin Unicode block (the first 127 ASCII characters) to their ASCII equivalents, if one exists. This filter converts characters from the following Unicode blocks:
@@ -399,6 +397,72 @@ Discard original token (`inject="false"`).
 *Out:* "FR"(1), "SKR"(2), "ANT"(3), "KSSK"(4), "KXFS"(4)
 
 Note that "Kuczewski" has two encodings, which are added at the same position.
+
+== Delimited Boost Filter
+
+This filter adds a numeric floating point boost value to tokens, splitting on a delimiter character.
+
+*Factory class:* `solr.DelimitedBoostTokenFilterFactory`
+
+*Arguments:*
+
+`delimiter`:: The character used to separate the token and the boost. Defaults to '|'.
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-delimitedBoost]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-delimitedBoost]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.DelimitedBoostTokenFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "leopard|0.5 panthera uncia|0.9"
+
+*Tokenizer to Filter:* "leopard|0.5"(1), "panthera"(2), "uncia|0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+The numeric floating point in square brackets is a float token boost attribute.
+
+*Example:*
+
+Using a different delimiter (`delimiter="/"`).
+
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost" delimiter="/"/>
+</analyzer>
+----
+
+*In:* "leopard/0.5 panthera uncia/0.9"
+
+*Tokenizer to Filter:* "leopard/0.5"(1), "panthera"(2), "uncia/0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+*N.B.* make sure the delimiter is compatible with the tokenizer you use
 
 == Edge N-Gram Filter
 
@@ -2293,6 +2357,39 @@ small => tiny,teeny,weeny
 *Tokenizer to Filter:* "teh"(1), "ginormous"(2), "humungous"(3), "sofa"(4)
 
 *Out:* "the"(1), "large"(2), "large"(3), "couch"(4), "sofa"(4), "divan"(4)
+
+*Weighted Synonyms:*
+
+Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
+For more information feel free to refer to:
+https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
+For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
+
+[source,text]
+----
+leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
+lion => panthera leo|0.9, simba|0.8, kimba|0.75
+----
+
+*Example:*
+
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="boostedSynonyms.txt"/>
+  <filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+
+*In:* "lion"
+
+*Tokenizer to Filter:* "lion"(1)
+
+*Out:* "panthera"(1), "leo"(2)[0.9], "simba"(1)[0.8], "kimba"(1)[0.75]
 
 == Token Offset Payload Filter
 

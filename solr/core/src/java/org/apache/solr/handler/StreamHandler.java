@@ -75,10 +75,10 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * Solr Request Handler for streaming data.
  * </p>
  * <p>
- * It loads a default set of mappings via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
+ * It loads a Solr specific set of streaming expression functions via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
  * </p>
  * <p>
- * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * To add additional functions, just define them as plugins in solrconfig.xml via
  * {@code
  * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
  * }
@@ -123,17 +123,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
-    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
-    for (PluginInfo pluginInfo : pluginInfos) {
-      if (pluginInfo.pkgName != null) {
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
-        streamFactory.withFunctionName(pluginInfo.name,
-            () -> holder.getClazz());
-      } else {
-        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
-        streamFactory.withFunctionName(pluginInfo.name, clazz);
-      }
-    }
+    addExpressiblePlugins(streamFactory, core);
 
     core.addCloseHook(new CloseHook() {
       @Override
@@ -146,6 +136,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         clientCache.close();
       }
     });
+  }
+
+  public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
+    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    for (PluginInfo pluginInfo : pluginInfos) {
+      if (pluginInfo.pkgName != null) {
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        streamFactory.withFunctionName(pluginInfo.name,
+            () -> holder.getClazz());
+      } else {
+        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        streamFactory.withFunctionName(pluginInfo.name, clazz);
+      }
+    }
   }
 
   public static class ExpressibleHolder extends PackagePluginHolder {

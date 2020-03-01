@@ -35,7 +35,7 @@ public class OutputStreamIndexOutput extends IndexOutput {
   /**
    * Creates a new {@link OutputStreamIndexOutput} with the given buffer size. 
    * @param bufferSize the buffer size in bytes used to buffer writes internally.
-   * @throws IllegalArgumentException if the given buffer size is less or equal to <tt>0</tt>
+   * @throws IllegalArgumentException if the given buffer size is less or equal to <code>0</code>
    */
   public OutputStreamIndexOutput(String resourceDescription, String name, OutputStream out, int bufferSize) {
     super(resourceDescription, name);

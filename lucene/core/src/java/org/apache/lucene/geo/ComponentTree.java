@@ -25,17 +25,15 @@ import org.apache.lucene.util.ArrayUtil;
  * 2D multi-component geometry implementation represented as an interval tree of components.
  * <p>
  * Construction takes {@code O(n log n)} time for sorting and tree construction.
- *
- * @lucene.internal
  */
 final class ComponentTree implements Component2D {
-  /** minimum latitude of this geometry's bounding box area */
+  /** minimum Y of this geometry's bounding box area */
   private double minY;
-  /** maximum latitude of this geometry's bounding box area */
+  /** maximum Y of this geometry's bounding box area */
   private double maxY;
-  /** minimum longitude of this geometry's bounding box area */
+  /** minimum X of this geometry's bounding box area */
   private double minX;
-  /** maximum longitude of this geometry's bounding box area */
+  /** maximum X of this geometry's bounding box area */
   private double maxX;
   // child components, or null. Note internal nodes might mot have
   // a consistent bounding box. Internal nodes should not be accessed
@@ -48,7 +46,7 @@ final class ComponentTree implements Component2D {
   /** root node of edge tree */
   final private Component2D component;
 
-  protected ComponentTree(Component2D component, boolean splitX) {
+  private ComponentTree(Component2D component, boolean splitX) {
     this.minY = component.getMinY();
     this.maxY = component.getMaxY();
     this.minX = component.getMinX();
@@ -97,7 +95,6 @@ final class ComponentTree implements Component2D {
     return false;
   }
 
-  /** Returns relation to the provided triangle */
   @Override
   public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
                                  double ax, double ay, double bx, double by, double cx, double cy) {
@@ -131,7 +128,6 @@ final class ComponentTree implements Component2D {
     return component.withinTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
   }
 
-  /** Returns relation to the provided rectangle */
   @Override
   public Relation relate(double minX, double maxX, double minY, double maxY) {
     if (minY <= this.maxY && minX <= this.maxX) {
@@ -156,7 +152,7 @@ final class ComponentTree implements Component2D {
   }
 
   /** Creates tree from provided components */
-  public static Component2D create(Component2D[] components) {
+  static Component2D create(Component2D[] components) {
     if (components.length == 1) {
       return components[0];
     }

@@ -23,8 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -877,10 +875,12 @@ public class ZkController implements Closeable {
    * Gets the absolute filesystem path of the _default configset to bootstrap from.
    * First tries the sysprop "solr.default.confdir". If not found, tries to find
    * the _default dir relative to the sysprop "solr.install.dir".
-   * If that fails as well (usually for unit tests), tries to get the _default from the
-   * classpath. Returns null if not found anywhere.
+   * Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
-  private static String getDefaultConfigDirPath() {
+  public static String getDefaultConfigDirPath() {
     String configDirPath = null;
     String serverSubPath = "solr" + File.separator +
         "configsets" + File.separator + "_default" +
@@ -891,20 +891,8 @@ public class ZkController implements Closeable {
     } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
         new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
       configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
-    } else { // find "_default" in the classpath. This one is used for tests
-      configDirPath = getDefaultConfigDirFromClasspath(serverSubPath);
     }
     return configDirPath;
-  }
-
-  private static String getDefaultConfigDirFromClasspath(String serverSubPath) {
-    URL classpathUrl = ZkController.class.getClassLoader().getResource(serverSubPath);
-    try {
-      if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
-        return new File(classpathUrl.toURI()).getAbsolutePath();
-      }
-    } catch (URISyntaxException ex) {}
-    return null;
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
@@ -1204,11 +1192,12 @@ public class ZkController implements Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       if (replica.getType() != Type.PULL) {
-        shardTerms.registerTerm(coreZkNodeName);
+        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
       }
+
+      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       log.debug("Register replica - core:{} address:{} collection:{} shard:{}",
           coreName, baseUrl, collection, shardId);

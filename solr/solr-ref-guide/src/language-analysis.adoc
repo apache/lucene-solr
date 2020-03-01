@@ -887,10 +887,10 @@ There are two filters written specifically for dealing with Bengali language. Th
 [.tab-label]*With class name (legacy)*
 [source,xml]
 ----
-<analyzer> 
-  <tokenizer class="solr.StandardTokenizerFactory"/> 
-  <filter class="solr.BengaliNormalizationFilterFactory"/> 
-  <filter class="solr.BengaliStemFilterFactory"/>       
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.BengaliNormalizationFilterFactory"/>
+  <filter class="solr.BengaliStemFilterFactory"/>
 </analyzer>
 ----
 ====
@@ -898,7 +898,7 @@ There are two filters written specifically for dealing with Bengali language. Th
 
 *Normalisation* - `মানুষ` \-> `মানুস`
 
-*Stemming* - `সমস্ত` \-> `সমস্` 
+*Stemming* - `সমস্ত` \-> `সমস্`
 
 
 === Brazilian Portuguese
@@ -1869,6 +1869,8 @@ For some applications it might be good to use `search` mode for indexing and `no
 
 `discardPunctuation`:: set to `false` to keep punctuation, `true` to discard (the default)
 
+`discardCompoundToken`:: set to `false` to keep original compound tokens with the `search` mode, `true` to discard.
+
 ==== Japanese Base Form Filter
 
 Replaces original terms' text with the corresponding base form (lemma). (`JapaneseTokenizer` annotates each term with its base form.)
@@ -2455,7 +2457,7 @@ It's a semantically more destructive solution than `ScandinavianNormalizationFil
 
 Solr includes a filter that normalizes Serbian Cyrillic and Latin characters. Note that this filter only works with lowercased input.
 
-See the Solr wiki for tips & advice on using this filter: https://wiki.apache.org/solr/SerbianLanguageSupport
+For user tips & advice on using this filter, see https://cwiki.apache.org/confluence/display/solr/SerbianLanguageSupport[Serbian Language Support] in the Solr Wiki.
 
 *Factory class:* `solr.SerbianNormalizationFilterFactory`
 

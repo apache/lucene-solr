@@ -332,7 +332,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testAllEqual() throws Exception {
-    int numValues = atLeast(10000);
+    int numValues = atLeast(1000);
     long value = randomValue();
     long[] values = new long[numValues];
 
@@ -350,7 +350,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomLongsMedium() throws Exception {
-    doTestRandomLongs(10000);
+    doTestRandomLongs(1000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
@@ -602,13 +602,13 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(1000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
     if (VERBOSE) {
@@ -2175,6 +2175,7 @@ public class TestPointQueries extends LuceneTestCase {
     assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
   }
 
+  @Nightly
   public void testInversePointRange() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());

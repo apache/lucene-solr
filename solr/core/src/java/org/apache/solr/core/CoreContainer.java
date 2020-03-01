@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,11 +29,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -331,10 +334,14 @@ public class CoreContainer {
   }
 
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator, boolean asyncSolrCoreLoad) {
+    this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = loader.getInstancePath().toString();
-    containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler());
-    this.cfg = requireNonNull(config);
+    try {
+      containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
+    } catch (IOException | InvalidKeySpecException e) {
+      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
+    }
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
@@ -602,18 +609,30 @@ public class CoreContainer {
   public void load() {
     log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    boolean modified = false;
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    String libDir = cfg.getSharedLibDirectory();
-    if (libDir != null) {
+    for (String libDir : libDirs) {
       Path libPath = loader.getInstancePath().resolve(libDir);
       try {
         loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-        loader.reloadLuceneSPI();
+        modified = true;
       } catch (IOException e) {
         if (!libDir.equals("lib")) { // Don't complain if default "lib" dir does not exist
           log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
         }
       }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
@@ -655,6 +674,9 @@ public class CoreContainer {
       // use deprecated API for back-compat, remove in 9.0
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
+      packageLoader = new PackageLoader(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }
 
     MDCLoggingContext.setNode(this);
@@ -1158,7 +1180,7 @@ public class CoreContainer {
    */
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
 
-    CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), isZooKeeperAware());
+    CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
     // TODO: There's a race here, isn't there?
     // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
@@ -1272,7 +1294,7 @@ public class CoreContainer {
         zkSys.getZkController().preRegister(dcore, publishState);
       }
 
-      ConfigSet coreConfig = getConfigSet(dcore);
+      ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       try {
@@ -1318,14 +1340,10 @@ public class CoreContainer {
       if (core != null) {
         return core.getDirectoryFactory().isSharedStorage();
       } else {
-        ConfigSet configSet = getConfigSet(cd);
+        ConfigSet configSet = coreConfigService.loadConfigSet(cd);
         return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null).isSharedStorage();
       }
     }
-  }
-
-  private ConfigSet getConfigSet(CoreDescriptor cd) {
-    return coreConfigService.getConfig(cd);
   }
 
   /**
@@ -1530,7 +1548,7 @@ public class CoreContainer {
       boolean success = false;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
-        ConfigSet coreConfig = coreConfigService.getConfig(cd);
+        ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         newCore = core.reload(coreConfig);
 

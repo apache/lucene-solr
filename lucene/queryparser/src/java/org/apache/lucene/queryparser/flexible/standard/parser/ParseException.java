@@ -176,7 +176,7 @@ public class ParseException extends QueryNodeParseException {
            default:
               if ((ch = str.charAt(i)) < 0x20 || ch > 0x7e) {
                  String s = "0000" + Integer.toString(ch, 16);
-                 retval.append("\\u").append(s.substring(s.length() - 4, s.length()));
+                 retval.append("\\u" + s.substring(s.length() - 4, s.length()));
               } else {
                  retval.append(ch);
               }
@@ -187,4 +187,4 @@ public class ParseException extends QueryNodeParseException {
    }
 
 }
-/* JavaCC - OriginalChecksum=81401c29cf6f9909761c636b4778ccc0 (do not edit this line) */
+/* JavaCC - OriginalChecksum=4263a02db9988d7a863aa97ad2f6dc67 (do not edit this line) */

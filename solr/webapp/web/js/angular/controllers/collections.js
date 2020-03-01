@@ -79,7 +79,7 @@ solrAdminApp.controller('CollectionsController',
               $scope.configs = [];
               var items = data.tree[0].children;
               for (var i in items) {
-                  $scope.configs.push({name: items[i].data.title});
+                  $scope.configs.push({name: items[i].text});
               }
           });
       };

@@ -205,7 +205,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
     Path corePath = resourceLoader.getInstancePath().resolve("badcore");
-    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc.getContainerProperties(), cc.isZooKeeperAware(),
+    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
         "configSet", "nosuchconfigset");
 
     cl.add(badcore);
@@ -264,6 +264,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       jar2.closeEntry();
     }
 
+    File customLib2 = new File(tmpRoot.toFile(), "customLib2");
+    customLib2.mkdirs();
+
+    try (JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+      jar3.putNextEntry(new JarEntry("jar3File"));
+      jar3.closeEntry();
+    }
+
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
       cc1.loader.openResource("defaultSharedLibFile").close();
@@ -271,6 +279,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc1.shutdown();
     }
 
+    // Explicitly declaring 'lib' makes no change compared to the default
     final CoreContainer cc2 = init(tmpRoot, "<solr><str name=\"sharedLib\">lib</str></solr>");
     try {
       cc2.loader.openResource("defaultSharedLibFile").close();
@@ -278,11 +287,23 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc2.shutdown();
     }
 
+    // custom lib folder, added to path in addition to default 'lib' folder
     final CoreContainer cc3 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib</str></solr>");
     try {
+      cc3.loader.openResource("defaultSharedLibFile").close();
       cc3.loader.openResource("customSharedLibFile").close();
     } finally {
       cc3.shutdown();
+    }
+
+    // Comma separated list of lib folders
+    final CoreContainer cc4 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib, customLib2</str></solr>");
+    try {
+      cc4.loader.openResource("defaultSharedLibFile").close();
+      cc4.loader.openResource("customSharedLibFile").close();
+      cc4.loader.openResource("jar3File").close();
+    } finally {
+      cc4.shutdown();
     }
   }
 
@@ -455,10 +476,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
-    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "minimal"));
-    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "bad-mergepolicy"));
+    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"), cc,
+        "configSet", "minimal"));
+    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"), cc,
+        "configSet", "bad-mergepolicy"));
     cc.load();
 
     // check that we have the cores we expect

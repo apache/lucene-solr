@@ -189,7 +189,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
   public void testGeo3DRelations() throws Exception {
 
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(200);
     if (VERBOSE) {
       System.out.println("TEST: " + numDocs + " docs");
     }
@@ -207,8 +207,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
     int iters = atLeast(10);
 
     int recurseDepth = RandomNumbers.randomIntBetween(random(), 5, 15);
-
-    iters = atLeast(50);
     
     for(int iter=0;iter<iters;iter++) {
       GeoShape shape = randomShape();
@@ -472,7 +470,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(1000);
   }
 
   @Nightly

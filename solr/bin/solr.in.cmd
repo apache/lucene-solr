@@ -17,6 +17,7 @@
 @echo off
 
 REM Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
+
 REM of this file is completely commented.
 
 REM By default the script will use JAVA_HOME to determine which java
@@ -105,12 +106,16 @@ REM set SOLR_LOG_PRESTART_ROTATION=false
 REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=false
 
-REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
-REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
-REM set SOLR_JETTY_HOST=0.0.0.0
-
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983
+
+REM Sets the network interface the Solr binds to. To prevent administrators from
+REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
+REM Administrators should think carefully about their deployment environment and
+REM set this value as narrowly as required before going to production. In
+REM environments where security is not a concern, 0.0.0.0 can be used to allow
+REM Solr to accept connections on all network interfaces.
+REM set SOLR_JETTY_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
@@ -141,8 +146,8 @@ REM SSL Certificates contain host/ip "peer name" information that is validated b
 REM this to false can be useful to disable these checks when re-using a certificate on many hosts
 REM set SOLR_SSL_CHECK_PEER_NAME=true
 REM Override Key/Trust Store types if necessary
-REM set SOLR_SSL_KEY_STORE_TYPE=JKS
-REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
+REM set SOLR_SSL_KEY_STORE_TYPE=PKCS12
+REM set SOLR_SSL_TRUST_STORE_TYPE=PKCS12
 
 REM Uncomment if you want to override previously defined SSL values for HTTP client
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
@@ -187,10 +192,15 @@ REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
-REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.environment=prod"
+
+REM Specifies the path to a common library directory that will be shared across all cores.
+REM Any JAR files in this directory will be added to the search path for Solr plugins.
+REM If the specified path is not absolute, it will be relative to `%SOLR_HOME%`.
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib"
 
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
-REM set SOLR_SECURITY_MANAGER_ENABLED=false
+REM set SOLR_SECURITY_MANAGER_ENABLED=true

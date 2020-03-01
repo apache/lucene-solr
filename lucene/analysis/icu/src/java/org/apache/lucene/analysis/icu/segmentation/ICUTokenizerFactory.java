@@ -59,7 +59,7 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  *
  * <p>
  * To add per-script rules, add a "rulefiles" argument, which should contain a
- * comma-separated list of <tt>code:rulefile</tt> pairs in the following format:
+ * comma-separated list of <code>code:rulefile</code> pairs in the following format:
  * <a href="http://unicode.org/iso15924/iso15924-codes.html"
  * >four-letter ISO 15924 script code</a>, followed by a colon, then a resource
  * path.  E.g. to specify rules for Latin (script code "Latn") and Cyrillic

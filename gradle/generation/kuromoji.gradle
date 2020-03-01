@@ -1,0 +1,131 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This downloads and compiles Kuromoji dictionaries.
+
+def recompileDictionary(project, dictionaryName, Closure closure) {
+  project.javaexec {
+    main = "org.apache.lucene.analysis.ja.util.DictionaryBuilder"
+    classpath = project.sourceSets.main.runtimeClasspath
+
+    jvmArgs '-Xmx1G'
+
+    with closure
+  }
+  project.logger.lifecycle("Automaton regenerated from dictionary: ${dictionaryName}")
+}
+
+configure(project(":lucene:analysis:kuromoji")) {
+  apply plugin: 'java-library'
+  apply plugin: "de.undercouch.download"
+
+  ext {
+    targetDir = file("src/resources")
+  }
+
+  task deleteDictionaryData() {
+    // There should really be just one but since we don't know which
+    // one it'll be, let's process all of them.
+    doFirst {
+      sourceSets.main.resources.srcDirs.each { location ->
+        delete fileTree(dir: location, include: "org/apache/lucene/analysis/ja/dict/*.dat")
+      }
+    }
+  }
+
+  task compileMecab(type: Download) {
+    description "Recompile dictionaries from Mecab data."
+    group "generation"
+
+    dependsOn deleteDictionaryData
+    dependsOn sourceSets.main.runtimeClasspath
+
+    def dictionaryName = "mecab-ipadic-2.7.0-20070801"
+    def dictionarySource = "https://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/2.7.0-20070801/${dictionaryName}.tar.gz"
+    def dictionaryFile = file("${buildDir}/generate/${dictionaryName}.tar.gz")
+    def unpackedDir = file("${buildDir}/generate/${dictionaryName}")
+
+    src dictionarySource
+    dest dictionaryFile
+    onlyIfModified true
+
+    doLast {
+      // Unpack the downloaded archive.
+      delete unpackedDir
+      ant.untar(src: dictionaryFile, dest: unpackedDir, compression: "gzip") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+
+      // Apply patch via local git.
+      project.exec {
+        workingDir = unpackedDir
+        executable "git"
+        args += [
+            "apply",
+            file("src/tools/patches/Noun.proper.csv.patch").absolutePath
+        ]
+      }
+
+      // Compile the dictionary
+      recompileDictionary(project, dictionaryName, {
+        args += [
+            "ipadic",
+            unpackedDir,
+            targetDir,
+            "euc-jp",
+            false
+        ]
+      })
+    }
+  }
+
+  task compileNaist(type: Download) {
+    description "Recompile dictionaries from Naist data."
+    group "generation"
+
+    dependsOn deleteDictionaryData
+    dependsOn sourceSets.main.runtimeClasspath
+
+    def dictionaryName = "mecab-naist-jdic-0.6.3b-20111013"
+    def dictionarySource = "https://rwthaachen.dl.osdn.jp/naist-jdic/53500/${dictionaryName}.tar.gz"
+    def dictionaryFile = file("${buildDir}/generate/${dictionaryName}.tar.gz")
+    def unpackedDir = file("${buildDir}/generate/${dictionaryName}")
+
+    src dictionarySource
+    dest dictionaryFile
+    onlyIfModified true
+
+    doLast {
+      // Unpack the downloaded archive.
+      delete unpackedDir
+      ant.untar(src: dictionaryFile, dest: unpackedDir, compression: "gzip") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+
+      // Compile the dictionary
+      recompileDictionary(project, dictionaryName, {
+        args += [
+            "ipadic",
+            unpackedDir,
+            targetDir,
+            "euc-jp",
+            false
+        ]
+      })
+    }
+  }
+}

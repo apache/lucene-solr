@@ -19,12 +19,15 @@ package org.apache.solr.util;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -43,7 +46,6 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class PackageTool extends SolrCLI.ToolBase {
 
@@ -91,6 +93,10 @@ public class PackageTool extends SolrCLI.ToolBase {
                 String repoUrl = cli.getArgs()[2];
                 repositoryManager.addRepository(repoName, repoUrl);
                 PackageUtils.printGreen("Added repository: " + repoName);
+                break;
+              case "add-key":
+                String keyFilename = cli.getArgs()[1];
+                repositoryManager.addKey(FileUtils.readFileToByteArray(new File(keyFilename)), Paths.get(keyFilename).getFileName().toString());
                 break;
               case "list-installed":
                 PackageUtils.printGreen("Installed packages:\n-----");                

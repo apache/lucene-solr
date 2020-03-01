@@ -26,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
@@ -39,7 +40,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
@@ -137,7 +141,12 @@ public class PackageUtils {
    */
   public static String getJsonStringFromUrl(HttpClient client, String url) {
     try {
-      return IOUtils.toString(client.execute(new HttpGet(url)).getEntity().getContent(), "UTF-8");
+      HttpResponse resp = client.execute(new HttpGet(url));
+      if (resp.getStatusLine().getStatusCode() != 200) {
+        throw new SolrException(ErrorCode.NOT_FOUND,
+            "Error (code="+resp.getStatusLine().getStatusCode()+") fetching from URL: "+url);
+      }
+      return IOUtils.toString(resp.getEntity().getContent(), "UTF-8");
     } catch (UnsupportedOperationException | IOException e) {
       throw new RuntimeException(e);
     }
@@ -244,4 +253,11 @@ public class PackageUtils {
   public static String getCollectionParamsPath(String collection) {
     return "/api/collections/" + collection + "/config/params";
   }
+
+  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
+    ByteBuffer buf = ByteBuffer.wrap(bytes);
+    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
+    DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
+  }
+
 }

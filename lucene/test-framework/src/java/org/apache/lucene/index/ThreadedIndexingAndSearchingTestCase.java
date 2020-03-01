@@ -321,7 +321,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   }
 
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
-    final int numThreads = TestUtil.nextInt(random(), 1, 5);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 5) : 2;
     final Thread[] searchThreads = new Thread[numThreads];
     final AtomicLong totHits = new AtomicLong();
 
@@ -511,13 +511,13 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     final int NUM_INDEX_THREADS = TestUtil.nextInt(random(), 2, 4);
 
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
+    final int RUN_TIME_MSEC = LuceneTestCase.TEST_NIGHTLY ? 300000 : 100 * RANDOM_MULTIPLIER;
 
     final Set<String> delIDs = Collections.synchronizedSet(new HashSet<String>());
     final Set<String> delPackIDs = Collections.synchronizedSet(new HashSet<String>());
     final List<SubDocs> allSubDocs = Collections.synchronizedList(new ArrayList<SubDocs>());
 
-    final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC*1000;
+    final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
 
     final Thread[] indexThreads = launchIndexingThreads(docs, NUM_INDEX_THREADS, stopTime, delIDs, delPackIDs, allSubDocs);
 

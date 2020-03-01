@@ -36,9 +36,9 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
+import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -90,6 +90,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   
   @After
   public void afterTest() throws Exception {
+    TestInjection.reset(); // do after every test, don't wait for AfterClass
     shutdownCluster();
   }
 
@@ -97,7 +98,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -163,7 +164,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void corruptedLogTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();

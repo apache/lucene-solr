@@ -251,7 +251,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     CurrencyValue valueDefault;
     valueDefault = value.convertTo(provider, defaultCurrency);
 
-    return getRangeQuery(parser, field, valueDefault, valueDefault, true, true);
+    return getRangeQueryInternal(parser, field, valueDefault, valueDefault, true, true);
   }
 
   /**
@@ -316,8 +316,18 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         source);
   }
 
+  /**
+   * Override the default existenceQuery implementation to run an existence query on the underlying amountField instead.
+   */
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    // Use an existence query of the underlying amount field
+    SchemaField amountField = getAmountField(field);
+    return amountField.getType().getExistenceQuery(parser, amountField);
+  }
+
+  @Override
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
     final CurrencyValue p1 = CurrencyValue.parse(part1, defaultCurrency);
     final CurrencyValue p2 = CurrencyValue.parse(part2, defaultCurrency);
 
@@ -327,10 +337,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
               ": range queries only supported when upper and lower bound have same currency.");
     }
 
-    return getRangeQuery(parser, field, p1, p2, minInclusive, maxInclusive);
+    return getRangeQueryInternal(parser, field, p1, p2, minInclusive, maxInclusive);
   }
 
-  public Query getRangeQuery(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
+  private Query getRangeQueryInternal(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
     String currencyCode = (p1 != null) ? p1.getCurrencyCode() :
         (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 

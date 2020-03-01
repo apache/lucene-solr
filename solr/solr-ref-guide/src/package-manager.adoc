@@ -19,7 +19,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The package manager in Solr allows installation and update of Solr-specific packages in distributed and standalone environments.
+The package manager in Solr allows installation and updating of Solr-specific packages in Solr's cluster environment.
 
 In this system, a _package_ is a set of Java jar files (usually one) containing one or more <<solr-plugins.adoc#solr-plugins,Solr plugins>>. Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
 
@@ -27,7 +27,7 @@ A key design aspect of this system is the ability to install or update packages 
 
 Other elements of the design include the ability to install from a remote repository; package standardization; a command line interface (CLI); and a package store.
 
-This section will focus on how to use the package manager to install and update plugins.
+This section will focus on how to use the package manager to install and update packages.
 For technical details, see the section <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>.
 
 == Interacting with the Package Manager
@@ -158,6 +158,6 @@ You can run the `list-deployed` command to verify that this collection is using 
 
 == Security
 
-As noted above in the section <<Add Trusted Repositories>>, the `add-repo` step should only be executed using an HTTPS endpoint in Solr (all other steps can be executed using HTTP - see also <<package-manager-internals.adoc#package-manager-internals,Package Manager Internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to ZooKeeper. It is critical to protect ZooKeeper from unauthorized write access.
+The `add-repo` step should only be executed using HTTPS enabled repository urls only so as to prevent against MITM attacks when Solr is fetching the public key for the repository. This `add-repo` step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to the trusted store of the package store (a special location in the package store that cannot be written to using the package store APIs). Also, it is critical to protect ZooKeeper from unauthorized write access.
 
-Also, keep in mind, that it is possible to install *any* package from a repository once it has been added. If you want to use some packages in production, a best practice is to setup your own repository and add that to Solr instead of adding a generic third-party repository that is beyond your administrative control.
+Also, keep in mind, that it is possible to install *any* package from a repository once it has been added. If you want to use some packages in production, a best practice is to setup your own repository and add that to Solr instead of adding a generic third-party repository that is beyond your administrative control. You might want to re-sign packages from a third-party repository using your own private keys and host them at your own repository.
