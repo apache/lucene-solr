@@ -39,6 +39,7 @@ import org.apache.lucene.search.Weight;
  * @lucene.experimental
  */
 public abstract class ValueSourceScorer extends Scorer {
+  private static final int DEF_COST = 5;
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
@@ -55,7 +56,7 @@ public abstract class ValueSourceScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        return 100; // TODO: use cost of ValueSourceScorer.this.matches()
+        return DEF_COST + values.getScorer(weight, readerContext).twoPhaseIterator().matchCost();
       }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
