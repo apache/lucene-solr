@@ -169,7 +169,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param factory the AttributeFactory to use
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param mode Decompound mode.
-   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
     this(factory, userDictionary, mode, outputUnknownUnigrams, true);
@@ -181,7 +181,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param factory the AttributeFactory to use
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param mode Decompound mode.
-   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
@@ -203,7 +203,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param connectionCosts custom token transition costs
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param mode Decompound mode.
-   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @lucene.experimental
    */
