@@ -225,7 +225,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (get("query/boolTofilterOptimizer", null) != null)
       log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
     if (get("query/HashDocSet", null) != null)
-      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
+      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer used.");
 
 // TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
 //    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
@@ -258,9 +258,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
-
-    hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor", 0.75f);
-    hashDocSetMaxSize = getInt("//HashDocSet/@maxSize", 3000);
 
     if (get("jmx", null) != null) {
       log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
@@ -538,10 +535,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final boolean enableLazyFieldLoading;
   
   public final boolean useRangeVersionsForPeerSync;
-  
-  // DocSet
-  public final float hashSetInverseLoadFactor;
-  public final int hashDocSetMaxSize;
+
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
