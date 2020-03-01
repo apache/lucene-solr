@@ -175,6 +175,10 @@ Improvements
   single field to the same value. This optimization can reduce the flush time by around
   20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
 
+* LUCENE-9245: Reduce AutomatonTermsEnum memory usage. (Bruno Roustant, Robert Muir)
+
+* LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
+
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
 
 Optimizations
@@ -209,6 +213,8 @@ Bug Fixes
   and unordered intervals would match duplicate subterms on the same position,
   so an query for UNORDERED(foo, foo) would match a document containing 'foo'
   only once.  (Alan Woodward)
+
+* LUCENE-9250: Add support for Circle2d#intersectsLine around the dateline. (Ignacio Vera)
 
 Other
 ---------------------

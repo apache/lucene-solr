@@ -264,6 +264,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       jar2.closeEntry();
     }
 
+    File customLib2 = new File(tmpRoot.toFile(), "customLib2");
+    customLib2.mkdirs();
+
+    try (JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+      jar3.putNextEntry(new JarEntry("jar3File"));
+      jar3.closeEntry();
+    }
+
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
       cc1.loader.openResource("defaultSharedLibFile").close();
@@ -271,6 +279,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc1.shutdown();
     }
 
+    // Explicitly declaring 'lib' makes no change compared to the default
     final CoreContainer cc2 = init(tmpRoot, "<solr><str name=\"sharedLib\">lib</str></solr>");
     try {
       cc2.loader.openResource("defaultSharedLibFile").close();
@@ -278,11 +287,23 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc2.shutdown();
     }
 
+    // custom lib folder, added to path in addition to default 'lib' folder
     final CoreContainer cc3 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib</str></solr>");
     try {
+      cc3.loader.openResource("defaultSharedLibFile").close();
       cc3.loader.openResource("customSharedLibFile").close();
     } finally {
       cc3.shutdown();
+    }
+
+    // Comma separated list of lib folders
+    final CoreContainer cc4 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib, customLib2</str></solr>");
+    try {
+      cc4.loader.openResource("defaultSharedLibFile").close();
+      cc4.loader.openResource("customSharedLibFile").close();
+      cc4.loader.openResource("jar3File").close();
+    } finally {
+      cc4.shutdown();
     }
   }
 

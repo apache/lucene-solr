@@ -62,6 +62,9 @@ New Features
 
  * SOLR-14241: New delete() Stream Decorator (hossman)
 
+ * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
+   (Eric Pugh via Christine Poerschke)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -109,6 +112,11 @@ Improvements
 * SOLR-14270: export command to have an option to write to a zip file (noble)
 
 * SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
+
+* SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
+
+* SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
+  See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
 
 Optimizations
 ---------------------
@@ -179,6 +187,12 @@ Bug Fixes
   (Marc A. Morissette, Bérénice MAUREL via shalin)
 
 * SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
+
+* SOLR-13411: Deny atomic update for route.field, uniqueKey, version and throw exception. (Dr Oleg Savrasov via Mikhail Khludnev)
+
+* SOLR-14252: Avoid NullPointerException in AggregateMetric. (Andy Webb via ab)
+
+* SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
 
 Other Changes
 ---------------------
