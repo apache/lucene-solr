@@ -38,11 +38,11 @@ public class ConfigSet {
 
   private final boolean trusted;
 
-  public ConfigSet(String name, SolrConfig solrConfig, Supplier<IndexSchema> indexSchemaSupplier,
-                   NamedList properties, boolean trusted) {
+  public ConfigSet(String name, SolrConfig solrConfig, Supplier<IndexSchema> indexSchema,
+      NamedList properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
-    this.indexSchemaSupplier = indexSchemaSupplier;
+    this.indexSchemaSupplier = indexSchema;
     this.properties = properties;
     this.trusted = trusted;
   }
@@ -55,9 +55,6 @@ public class ConfigSet {
     return solrconfig;
   }
 
-  public Supplier<IndexSchema> getIndexSchemaSupplier() {
-    return indexSchemaSupplier;
-  }
   public IndexSchema getIndexSchema() {
     return indexSchemaSupplier.get();
   }

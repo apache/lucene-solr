@@ -70,8 +70,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     });
   }
 
-  private static String maxAllowedVersion(SolrCore core , String pkgName) {
-    RequestParams.ParamSet p = core.getSolrConfig().getRequestParams().getParams(PackageListeners.PACKAGE_VERSIONS);
+  private static String maxAllowedVersion(RequestParams requestParams, String pkgName) {
+    RequestParams.ParamSet p = requestParams.getParams(PackageListeners.PACKAGE_VERSIONS);
     if (p == null) {
       return null;
     }
@@ -82,7 +82,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
 
   private synchronized void reload(PackageLoader.Package pkg) {
-    PackageLoader.Package.Version rightVersion = getRightVersion(pkg, core);
+    PackageLoader.Package.Version rightVersion = getRightVersion(pkg, core.getSolrConfig().getRequestParams());
     if (pkgVersion != null) {
       if (rightVersion == pkgVersion) {
         //I'm already using the latest classloader in the package. nothing to do
@@ -99,8 +99,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   }
 
-  public static PackageLoader.Package.Version getRightVersion(PackageLoader.Package pkg, SolrCore core ) {
-    String lessThan = maxAllowedVersion(core, pkg.name);
+  public static PackageLoader.Package.Version getRightVersion(PackageLoader.Package pkg, RequestParams requestParams) {
+    String lessThan = maxAllowedVersion(requestParams, pkg.name);
     PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {
       log.error("No latest version available for package : {}", pkg.name());

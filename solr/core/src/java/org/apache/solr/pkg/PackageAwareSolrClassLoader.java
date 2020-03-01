@@ -20,14 +20,19 @@ package org.apache.solr.pkg;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import org.apache.solr.core.ConfigSet;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrClassLoader;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -40,27 +45,37 @@ import static java.util.Collections.singletonMap;
  * invoke a callback if anything is modified
  */
 public class PackageAwareSolrClassLoader implements SolrClassLoader {
-  final SolrCore core;
+//  final SolrCore core;
   final SolrResourceLoader loader;
   private Map<String, PackageAPI.PkgVersion> classNameVsPkg = new HashMap<>();
+  private Map<String, String > packageNameVsVersion = new HashMap<>();
+  private final PackageListeners packageListeners ;
+  private final PackageLoader packageLoader;
+  private SolrConfig config;
 
   private final List<PackageListeners.Listener> listeners = new ArrayList<>();
   private final Runnable reloadRunnable;
 
 
+
   /**
    *
-   * @param core The core where this belong to
+   * @param packageListeners The core where this belong to
    * @param runnable run a task if something is modified, say reload schema or reload core, refresh cache or something else
    */
-  public PackageAwareSolrClassLoader(SolrCore core,  Runnable runnable) {
-    this.core = core;
-    this.loader = core.getResourceLoader();
+  public PackageAwareSolrClassLoader(PackageListeners packageListeners ,
+                                     Runnable runnable, SolrResourceLoader loader,
+                                     PackageLoader packageLoader,
+                                     SolrConfig config) {
+    this.packageListeners = packageListeners;
+    this.loader = loader;
     this.reloadRunnable = runnable;
+    this.packageLoader = packageLoader;
+    this.config = config;
   }
 
-  SolrCore getCore() {
-    return core;
+  public SolrResourceLoader getResourceLoader(){
+    return loader;
   }
 
   @Override
@@ -85,16 +100,17 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
     if (parsedClassName.pkg == null) {
       return  fun.apply(loader, parsedClassName.klas);
     } else {
-      PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(parsedClassName.pkg);
-      PackageLoader.Package.Version ver = PackagePluginHolder.getRightVersion(pkg, core);
+      PackageLoader.Package pkg = packageLoader.getPackage(parsedClassName.pkg);
+      PackageLoader.Package.Version ver = PackagePluginHolder.getRightVersion(pkg, config.getRequestParams());
       T result = fun.apply(ver.getLoader(), parsedClassName.klas);
       if (result instanceof SolrCoreAware) {
         loader.registerSolrCoreAware((SolrCoreAware) result);
       }
       classNameVsPkg.put(cname, ver.getVersionInfo());
+      packageNameVsVersion.put(parsedClassName.pkg, ver.getVersion());
       PackageListeners.Listener listener = new PackageListener(expectedType, cname, parsedClassName);
       listeners.add(listener);
-      core.getPackageListeners().addListener(listener);
+      packageListeners.addListener(listener);
       return result;
     }
   }
@@ -114,7 +130,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
   @Override
   public void close() throws IOException {
     for (PackageListeners.Listener l : listeners) {
-      core.getPackageListeners().removeListener(l);
+      packageListeners.removeListener(l);
     }
   }
 
@@ -142,7 +158,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
 
     @Override
     public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
-      PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, core);
+      PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, config.getRequestParams());
       if (rightVersion == null ) return;
       PackageAPI.PkgVersion v = classNameVsPkg.get(parsedClassName.toString());
       if(Objects.equals(v.version ,rightVersion.getVersionInfo().version)) return; //nothing has changed no need to reload

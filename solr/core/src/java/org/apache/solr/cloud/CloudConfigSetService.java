@@ -29,6 +29,7 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -41,10 +42,15 @@ public class CloudConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final ZkController zkController;
+  private final PackageListeners packageListeners = new PackageListeners(null);
 
   public CloudConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
+  }
+
+  public PackageListeners getPackageListeners(){
+    return packageListeners;
   }
 
   @Override
@@ -77,6 +83,10 @@ public class CloudConfigSetService extends ConfigSetService {
 
     return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(),
         cd.getSubstitutableProperties(), zkController);
+  }
+
+  public ZkController getZkController(){
+    return zkController;
   }
 
   @Override

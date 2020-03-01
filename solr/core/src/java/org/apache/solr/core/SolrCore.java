@@ -189,6 +189,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
+  private ConfigSet configSet;
 
   private String name;
   private String logid; // used to show what name is set
@@ -239,7 +240,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
-  private final Supplier<IndexSchema> schemaSupplier;
 
   private PackageListeners packageListeners = new PackageListeners(this);
 
@@ -690,7 +690,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
         core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
-            () -> coreConfig.getIndexSchema(), coreConfig.getProperties(),
+             coreConfig.getIndexSchema(), coreConfig.getProperties(),
             cd, updateHandler, solrDelPolicy, currentCore, true);
 
         // we open a new IndexWriter to pick up the latest config
@@ -899,8 +899,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
-    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchemaSupplier(), coreConfig.getProperties(),
+    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
         cd, null, null, null, false);
+    this.configSet = coreConfig;
   }
 
   public CoreContainer getCoreContainer() {
@@ -908,10 +909,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public void refreshSchema() {
+    if(configSet == null){
+      log.error("Cannot reload schema. configSet is null");
+      return;
+    }
     log.info("Reloading schema...");
     IndexSchema old = schema;
-    schema = schemaSupplier.get();
-    closeWhileHandlingException(old);
+    schema = configSet.getIndexSchema();
+    if(old != schema) closeWhileHandlingException(old);
   }
 
   /**
@@ -920,11 +925,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    *
    * @param dataDir the index directory
    * @param config  a solr config instance
-   * @param schemaSupplier  a solr schema {@link Supplier}
+   * @param schema a solr schema {@link IndexSchema}
    * @since solr 1.3
    */
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
-                  Supplier<IndexSchema> schemaSupplier, NamedList configSetProperties,
+                  IndexSchema schema, NamedList configSetProperties,
                   CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
@@ -932,7 +937,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     this.coreContainer = coreContainer;
 
-    this.schemaSupplier = schemaSupplier;
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
@@ -969,14 +973,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
           this.dataDir);
 
-      IndexSchema schema = null;
-      try {
-        schema = schemaSupplier.get();
-      } catch (SolrException se){
-        throw se;
-      } catch (Exception e) {
-        throw new SolrException ( ErrorCode.SERVER_ERROR, "could not create schema", e);
-      }
+      this.schema = schema;
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
       // initialize core metrics

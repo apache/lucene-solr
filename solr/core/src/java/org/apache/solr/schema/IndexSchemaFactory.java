@@ -19,11 +19,14 @@ package org.apache.solr.schema;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageAwareSolrClassLoader;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
@@ -67,6 +70,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
    */
   public IndexSchema create(String resourceName, SolrConfig config) {
     SolrResourceLoader loader = config.getResourceLoader();
+    SolrClassLoader classLoader = loader;
     InputStream schemaInputStream = null;
 
     if (null == resourceName) {
@@ -80,9 +84,18 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
+    if (config.getConfigSetService() instanceof CloudConfigSetService) {
+      CloudConfigSetService configSetService = (CloudConfigSetService) config.getConfigSetService();
+      classLoader = new PackageAwareSolrClassLoader(
+          configSetService.getPackageListeners(),
+          () -> config.getConfigSetService().refreshAllSchema(config.getConfigsetName()),
+          config.getResourceLoader(),
+          configSetService.getZkController().getCoreContainer().getPackageLoader(),
+          config);
+    }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader);
+    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getConfigsetName());
     return schema;
   }
 

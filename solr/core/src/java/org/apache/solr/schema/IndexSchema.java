@@ -175,6 +175,9 @@ public class IndexSchema implements Closeable {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
+  private String configSet;
+
+
 
   /**
    * Constructs a schema using the specified resource name and stream.
@@ -182,9 +185,10 @@ public class IndexSchema implements Closeable {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrClassLoader resourceLoader, String configSet) {
     this(luceneVersion, resourceLoader);
 
+    this.configSet = configSet;
     this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
@@ -197,15 +201,13 @@ public class IndexSchema implements Closeable {
   public SolrClassLoader getSolrClassLoader(){
     return classLoader;
   }
-  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
+  protected IndexSchema(Version luceneVersion, SolrClassLoader loader) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
-    this.loader = loader;
-    if(loader.getCore() == null) {
-      this.classLoader = loader;
-    } else {
-      SolrCore core = loader.getCore();
-      this.classLoader = new PackageAwareSolrClassLoader(loader.getCore(), core::refreshSchema);
-    }
+    this.classLoader = loader;
+    this.loader = loader instanceof PackageAwareSolrClassLoader ?
+        ((PackageAwareSolrClassLoader) loader).getResourceLoader() :
+        (SolrResourceLoader) loader;
+
   }
 
   /**
@@ -2020,5 +2022,9 @@ public class IndexSchema implements Closeable {
     if (classLoader instanceof PackageAwareSolrClassLoader) {
       ((PackageAwareSolrClassLoader) classLoader).close();
     }
+  }
+
+  public String getConfigSet(){
+    return configSet;
   }
 }

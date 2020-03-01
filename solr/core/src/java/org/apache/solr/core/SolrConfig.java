@@ -132,6 +132,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private final SolrRequestParsers solrRequestParsers;
 
+  /**If this is loaded from a configset
+   *
+   */
+  private String configsetName;
+
+  private final ConfigSetService configSetService;
+
+
   /**
    * Creates a configuration instance from an instance directory, configuration name and stream.
    *
@@ -141,12 +149,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    */
   public SolrConfig(Path instanceDir, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted);
+    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted, null, null);
   }
 
-  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted) {
+  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, ConfigSetService configSetService, String configsetName) {
     try {
-      return new SolrConfig(loader, name, null, isConfigsetTrusted);
+      return new SolrConfig(loader, name, null, isConfigsetTrusted, configSetService,configsetName);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -168,9 +176,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * @param is                  the configuration stream
    * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
    */
-  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted)
+  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted, ConfigSetService configSetService, String configsetName)
       throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
+    this.configSetService = configSetService;
+    this.configsetName = configsetName;
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(isConfigsetTrusted);
@@ -215,7 +225,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (get("query/boolTofilterOptimizer", null) != null)
       log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
     if (get("query/HashDocSet", null) != null)
-      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer used.");
+      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
 
 // TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
 //    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
@@ -248,6 +258,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
+
+    hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor", 0.75f);
+    hashDocSetMaxSize = getInt("//HashDocSet/@maxSize", 3000);
 
     if (get("jmx", null) != null) {
       log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
@@ -526,6 +539,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   
   public final boolean useRangeVersionsForPeerSync;
   
+  // DocSet
+  public final float hashSetInverseLoadFactor;
+  public final int hashDocSetMaxSize;
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
@@ -948,4 +964,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return requestParams;
   }
 
+  public ConfigSetService getConfigSetService() {
+    return configSetService;
+  }
+
+  public String getConfigsetName(){
+    return configsetName;
+  }
 }
