@@ -175,6 +175,8 @@ Improvements
   single field to the same value. This optimization can reduce the flush time by around
   20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
 
+* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
 Optimizations
 ---------------------
 
