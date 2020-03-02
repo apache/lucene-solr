@@ -728,6 +728,39 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     return r;
   }
 
+  private static class FileTrackingDirectoryWrapper extends FilterDirectory {
+
+    private final Set<String> files = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
+    FileTrackingDirectoryWrapper(Directory in) {
+      super(in);
+    }
+
+    Set<String> getFiles() {
+      return Set.copyOf(files);
+    }
+
+    @Override
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      files.add(name);
+      return super.createOutput(name, context);
+    }
+
+    @Override
+    public void rename(String source, String dest) throws IOException {
+      files.remove(source);
+      files.add(dest);
+      super.rename(source, dest);
+    }
+
+    @Override
+    public void deleteFile(String name) throws IOException {
+      files.remove(name);
+      super.deleteFile(name);
+    }
+
+  }
+
   private static class ReadBytesIndexInputWrapper extends IndexInput {
 
     private final IndexInput in;
@@ -873,7 +906,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
    *  combination of opening a reader and calling checkIntegrity on it reads all bytes of all files. */
   public void testCheckIntegrityReadsAllBytes() throws Exception {
     assumeFalse("SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
-    Directory dir = applyCreatedVersionMajor(newDirectory());
+    FileTrackingDirectoryWrapper dir = new FileTrackingDirectoryWrapper(newDirectory());
+    applyCreatedVersionMajor(dir);
 
     IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, cfg);
@@ -894,7 +928,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     Map<String, FixedBitSet> readBytesMap = readBytesWrapperDir.getReadBytes();
 
-    Set<String> unreadFiles = new HashSet<>(Arrays.asList(readBytesWrapperDir.listAll()));
+    Set<String> unreadFiles = new HashSet<>(dir.getFiles());System.out.println(Arrays.toString(dir.listAll()));
     unreadFiles.removeAll(readBytesMap.keySet());
     unreadFiles.remove(IndexWriter.WRITE_LOCK_NAME);
     assertTrue("Some files have not been open: " + unreadFiles, unreadFiles.isEmpty());
