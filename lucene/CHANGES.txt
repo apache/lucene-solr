@@ -86,6 +86,8 @@ Improvements
 
 * LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
 
+* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
 Optimizations
 ---------------------
 
