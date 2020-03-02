@@ -121,6 +121,8 @@ Bug Fixes
 
 * LUCENE-9250: Add support for Circle2d#intersectsLine around the dateline. (Ignacio Vera)
 
+* LUCENE-9243: Add fudge factor when creating a bounding box of a XYCircle. (Ignacio Vera)
+
 Other
 ---------------------
 

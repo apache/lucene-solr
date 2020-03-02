@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.io.IOException;
 
 import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -84,14 +85,15 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
     // make bounding box(es) to exclude non-competitive hits, but start
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
-    if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
+    if (bottom < Float.MAX_VALUE && (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F)) {
 
+      XYRectangle rectangle = XYRectangle.fromPointDistance((float) x, (float) y, (float) bottom);
       // pre-encode our box to our integer encoding, so we don't have to decode
       // to double values for uncompetitive hits. This has some cost!
-      this.minX = XYEncodingUtils.encode((float) Math.max(-Float.MAX_VALUE, x - bottom));
-      this.maxX = XYEncodingUtils.encode((float) Math.min(Float.MAX_VALUE, x + bottom));
-      this.minY = XYEncodingUtils.encode((float) Math.max(-Float.MAX_VALUE, y - bottom));
-      this.maxY = XYEncodingUtils.encode((float) Math.min(Float.MAX_VALUE, y + bottom));
+      this.minX = XYEncodingUtils.encode(rectangle.minX);
+      this.maxX = XYEncodingUtils.encode(rectangle.maxX);
+      this.minY = XYEncodingUtils.encode(rectangle.minY);
+      this.maxY = XYEncodingUtils.encode(rectangle.maxY);
     }
     setBottomCounter++;
   }

@@ -272,19 +272,14 @@ class Circle2D implements Component2D {
     private final double centerX;
     private final double centerY;
     private final double radiusSquared;
-    private final double minX;
-    private final double maxX;
-    private final double minY;
-    private final double maxY;
+    private final XYRectangle rectangle;
 
-    public CartesianDistance(double centerX, double centerY, double radius) {
+    public CartesianDistance(float centerX, float centerY, float radius) {
       this.centerX = centerX;
       this.centerY = centerY;
-      this.minX = Math.max(-Float.MAX_VALUE, centerX - radius);
-      this.maxX = Math.min(Float.MAX_VALUE, centerX + radius);
-      this.minY = Math.max(-Float.MAX_VALUE, centerY - radius);
-      this.maxY = Math.min(Float.MAX_VALUE, centerY + radius);
-      this.radiusSquared = radius * radius;
+      this.rectangle = XYRectangle.fromPointDistance(centerX, centerY, radius);
+      // product performed with doubles
+      this.radiusSquared = (double) radius *  radius;
     }
 
     @Override
@@ -333,32 +328,32 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean disjoint(double minX, double maxX, double minY, double maxY) {
-      return Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY);
+      return Component2D.disjoint(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
     }
 
     @Override
     public boolean within(double minX, double maxX, double minY, double maxY) {
-      return Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY);
+      return Component2D.within(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
     }
 
     @Override
     public double getMinX() {
-      return minX;
+      return rectangle.minX;
     }
 
     @Override
     public double getMaxX() {
-      return maxX;
+      return rectangle.maxX;
     }
 
     @Override
     public double getMinY() {
-      return minY;
+      return rectangle.minY;
     }
 
     @Override
     public double getMaxY() {
-      return maxY;
+      return rectangle.maxY;
     }
 
     @Override
