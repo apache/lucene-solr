@@ -20,11 +20,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import java.io.File;
-import java.nio.file.Path;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -41,7 +36,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.apache.solr.update.AddUpdateCommand;
@@ -55,24 +49,15 @@ import org.mockito.Mockito;
  * Test for the {@link DistributedZkUpdateProcessor}.
  */
 public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCase {    
-
-  private static Path sharedStoreRootPath;
-  private static CoreStorageClient storageClient;
   
   @BeforeClass
   public static void setupTestClass() throws Exception {
-    assumeWorkingMockito();
-    sharedStoreRootPath = createTempDir("tempDir");
-    storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    
     assumeWorkingMockito();
   }
   
   @After
   public void teardownTest() throws Exception {
     shutdownCluster();
-    File blobPath = sharedStoreRootPath.toFile();
-    FileUtils.cleanDirectory(blobPath);
   }
   
   /**
@@ -83,7 +68,6 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCa
   @Test
   public void testNonLeaderSharedReplicaFailsOnForwardedCommit() throws Exception {
     setupCluster(1);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
 
     String collectionName = "sharedCollection";
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -174,7 +158,6 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCa
    */
   private void testReplicaUpdatesZk(Replica.Type replicaType, boolean isUpdateAnIsolatedCommit, boolean isWriteToSharedStoreExpected) throws Exception {
     setupCluster(1);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
 
     // Set collection name and create client
     String collectionName = "testCollection";
@@ -256,11 +239,6 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCa
   @Test
   public void testSharedReplicaSimpleUpdateOnLeaderSuccess() throws Exception {
     setupCluster(3);
-    
-    // configure same client for each runner, this isn't a concurrency test so this is fine
-    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), runner);
-    }
     
     String collectionName = "sharedCollection";
     CloudSolrClient cloudClient = cluster.getSolrClient();

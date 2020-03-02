@@ -16,47 +16,34 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Tests related to shared storage based collections, i.e. collections having only replicas of type {@link Type#SHARED}.
  */
 public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestCase {
-
-  private static Path sharedStoreRootPath;
-  
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    sharedStoreRootPath = createTempDir("tempDir");    
-  }
   
   @After
   public void teardownTest() throws Exception {
     if (cluster != null) {
       cluster.shutdown();
     }
-    // clean up the shared store after each test. The temp dir should clean up itself after the
-    // test class finishes
-    FileUtils.cleanDirectory(sharedStoreRootPath.toFile());
   }
   
   /**
@@ -66,7 +53,6 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
   @Test
   public void testCreateCollection() throws Exception {
     setupCluster(3);
-    setupSolrNodes();
     String collectionName = "BlobBasedCollectionName1";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
@@ -76,6 +62,28 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
     waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
     assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
   }
+  
+  /**
+   * Test that verifies that a collection creation command for a "shared" type collection fails
+   * if the cluster was not enabled with shared storage
+   */
+  @Test
+  public void testCreateCollectionSharedDisabled() throws Exception {
+    setupClusterSharedDisable(1);
+    String collectionName = "BlobBasedCollectionName1";
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 0).setSharedIndex(true).setSharedReplicas(1);
+    try {
+      create.process(cloudClient);
+      fail("Request should have failed");
+    } catch (SolrException ex) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage().contains("shared storage is not enabled"));
+    } catch (Exception ex) {
+      fail("Unexpected exception thrown " + ex.getMessage());
+    }
+  }
 
   /**
    * Test that verifies that adding a NRT replica to a shared collection fails but adding a SHARED replica
@@ -84,7 +92,6 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
   @Test
   public void testAddReplica() throws Exception {
     setupCluster(3);
-    setupSolrNodes();
     String collectionName = "BlobBasedCollectionName2";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
@@ -123,7 +130,6 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
     String shardNames = "shard1";
     
     // setup testing components
-    setupSolrNodes();
     AtomicInteger evictionCount = new AtomicInteger(0);
     SharedCoreConcurrencyController concurrencyController = 
         configureTestSharedConcurrencyControllerForNode(cluster.getJettySolrRunner(0), evictionCount);
@@ -161,18 +167,12 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
     assertEquals(null, scvm.getMetadataSuffix());
     assertEquals(null, scvm.getBlobCoreMetadata());
   }
-  
-  private void setupSolrNodes() throws Exception {
-    for (JettySolrRunner process : cluster.getJettySolrRunners()) {
-      CoreStorageClient storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-      setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), process);
-    }
-  }
 
   private SharedCoreConcurrencyController configureTestSharedConcurrencyControllerForNode(JettySolrRunner runner,
       AtomicInteger evictionCount) {
     SharedCoreConcurrencyController concurrencyController = 
-        new SharedCoreConcurrencyController(runner.getCoreContainer()) {
+        new SharedCoreConcurrencyController(runner.getCoreContainer().getSharedStoreManager()
+            .getSharedShardMetadataController()) {
       
       @Override
       public boolean removeCoreVersionMetadataIfPresent(String coreName) {

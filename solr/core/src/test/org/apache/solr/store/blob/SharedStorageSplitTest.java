@@ -17,7 +17,6 @@
 package org.apache.solr.store.blob;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -43,7 +42,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -60,21 +58,13 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
   static Map<String, Map<String, CountDownLatch>> solrProcessesTaskTracker = new HashMap<>();
   
   @BeforeClass
-  public static void setupCluster() throws Exception {    
-    configureCluster(2)
-      .addConfig("conf", configset("cloud-minimal"))
-      .configure();
+  public static void setupCluster() throws Exception {
+    setupCluster(2);
     
-    // we don't use this in testing
-    Path sharedStoreRootPath = createTempDir("tempDir");
-    CoreStorageClient storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    // configure same client for each runner, this isn't a concurrency test so this is fine
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), runner);
       solrProcessesTaskTracker.put(runner.getNodeName(), configureTestBlobProcessForNode(runner));
     }
   }
-  
   
   @AfterClass
   public static void teardownTest() throws Exception {

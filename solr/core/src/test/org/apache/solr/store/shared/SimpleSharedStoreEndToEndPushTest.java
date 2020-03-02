@@ -16,10 +16,8 @@
  */
 package org.apache.solr.store.shared;
 
-import java.nio.file.Path;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -36,7 +34,6 @@ import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -44,21 +41,11 @@ import org.junit.Test;
  */
 public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestCase {
   
-  private static Path sharedStoreRootPath;
-  
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    sharedStoreRootPath = createTempDir("tempDir");    
-  }
-  
   @After
   public void teardownTest() throws Exception {
     if (cluster != null) {
       cluster.shutdown();
     }
-    // clean up the shared store after each test. The temp dir should clean up itself after the
-    // test class finishes
-    FileUtils.cleanDirectory(sharedStoreRootPath.toFile());
   }
   
   /**
@@ -79,13 +66,8 @@ public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestC
   }
 
   public void testUpdatePushesToBlob(boolean withCommit) throws Exception {
-
     setupCluster(1);
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    
-    // setup the test harness
-    CoreStorageClient storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
-    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
     
     String collectionName = "sharedCollection";
     int maxShardsPerNode = 1;
@@ -122,6 +104,7 @@ public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestC
       String sharedShardName = (String) props.get(ZkStateReader.SHARED_SHARD_NAME);
       String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(shardMetadata.getMetadataSuffix());
       
+      CoreStorageClient storageClient = leaderCC.getSharedStoreManager().getBlobStorageProvider().getClient();
       // verify that we pushed the core to blob
       assertTrue(storageClient.coreMetadataExists(sharedShardName, blobCoreMetadataName));
       

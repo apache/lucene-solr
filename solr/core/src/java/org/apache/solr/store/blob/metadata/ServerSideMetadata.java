@@ -107,10 +107,10 @@ public class ServerSideMetadata {
    *
    * @throws Exception if core corresponding to <code>coreName</code> can't be found.
    */
-  public ServerSideMetadata(String coreName, CoreContainer container, boolean reserveCommit) throws Exception {
+  public ServerSideMetadata(String coreName, CoreContainer coreContainer, boolean reserveCommit) throws Exception {
     this.coreName = coreName;
-    this.container = container;
-    this.core = container.getCore(coreName);
+    this.container = coreContainer;
+    this.core = coreContainer.getCore(coreName);
 
     if (core == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
@@ -193,7 +193,7 @@ public class ServerSideMetadata {
   }
 
   public CoreContainer getCoreContainer() {
-    return this.container;
+    return container;
   }
 
   public long getGeneration() {
