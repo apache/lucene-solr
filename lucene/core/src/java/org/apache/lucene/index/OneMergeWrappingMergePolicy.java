@@ -59,6 +59,11 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
     return wrapSpec(in.findForcedDeletesMerges(segmentInfos, mergeContext));
   }
 
+  @Override
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return wrapSpec(in.findFullFlushMerges(mergeTrigger, segmentInfos, mergeContext));
+  }
+
   private MergeSpecification wrapSpec(MergeSpecification spec) {
     MergeSpecification wrapped = spec == null ? null : new MergeSpecification();
     if (wrapped != null) {
