@@ -36,7 +36,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -543,7 +542,7 @@ final class ReadersAndUpdates {
       if (this.reader == null) {
         reader = new SegmentReader(info, indexCreatedVersionMajor, true, IOContext.READONCE,
             // we don't need terms - lets leave them off-heap if possible
-            Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name()));
+            Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, FSTLoadMode.OFF_HEAP.name()));
         pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;

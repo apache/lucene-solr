@@ -51,7 +51,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84Codec;
@@ -71,6 +70,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.FSTLoadMode;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -934,7 +934,7 @@ public final class TestUtil {
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    * @lucene.internal this may disappear at any time
    */
-  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock, BlockTreeTermsReader.FSTLoadMode fstLoadMode) {
+  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock, FSTLoadMode fstLoadMode) {
     return new Lucene84PostingsFormat(minItemsPerBlock, maxItemsPerBlock, fstLoadMode);
   }
   

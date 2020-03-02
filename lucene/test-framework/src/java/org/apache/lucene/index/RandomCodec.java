@@ -39,7 +39,6 @@ import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
@@ -187,7 +186,7 @@ public class RandomCodec extends AssertingCodec {
     bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
-        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock, RandomPicks.randomFrom(random, BlockTreeTermsReader.FSTLoadMode.values())),
+        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock, RandomPicks.randomFrom(random, FSTLoadMode.values())),
         new FSTPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),

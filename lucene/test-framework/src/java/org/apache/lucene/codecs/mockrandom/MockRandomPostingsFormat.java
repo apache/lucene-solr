@@ -43,6 +43,7 @@ import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.codecs.memory.FSTTermsReader;
 import org.apache.lucene.codecs.memory.FSTTermsWriter;
+import org.apache.lucene.index.FSTLoadMode;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -294,7 +295,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsReader(postingsReader, state, RandomPicks.randomFrom(random, BlockTreeTermsReader.FSTLoadMode.values()));
+        fields = new BlockTreeTermsReader(postingsReader, state, RandomPicks.randomFrom(random, FSTLoadMode.values()));
         success = true;
       } finally {
         if (!success) {

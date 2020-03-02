@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FSTLoadMode;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
@@ -75,39 +76,6 @@ import org.apache.lucene.util.fst.Outputs;
  */
 
 public final class BlockTreeTermsReader extends FieldsProducer {
-
-  /**
-   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
-   */
-  public enum FSTLoadMode {
-    /**
-     * Always read FSTs from disk.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     */
-    OFF_HEAP,
-    /**
-     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
-     */
-    ON_HEAP,
-    /**
-     * Always read FSTs from disk.
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     * See {@link FSTLoadMode#AUTO}
-     */
-    OPTIMIZE_UPDATES_OFF_HEAP,
-    /**
-     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     */
-    AUTO
-  }
-
-  /** Attribute key for fst mode. */
-  public static final String FST_MODE_KEY = "blocktree.terms.fst";
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
@@ -197,7 +165,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
-      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY, defaultLoadMode);
+      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FSTLoadMode.ATTRIBUTE_KEY, defaultLoadMode);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
@@ -235,7 +203,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
-        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY + "." + fieldInfo.name, fstLoadMode);
+        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FSTLoadMode.ATTRIBUTE_KEY + "." + fieldInfo.name, fstLoadMode);
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fieldMap.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,

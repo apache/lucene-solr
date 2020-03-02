@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.index.FSTLoadMode;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -391,16 +392,16 @@ public class Lucene50PostingsFormat extends PostingsFormat {
    */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
-  private final BlockTreeTermsReader.FSTLoadMode fstLoadMode;
+  private final FSTLoadMode fstLoadMode;
 
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsReader.FSTLoadMode.AUTO);
+    this(FSTLoadMode.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat}. */
-  public Lucene50PostingsFormat(BlockTreeTermsReader.FSTLoadMode loadMode) {
+  public Lucene50PostingsFormat(FSTLoadMode loadMode) {
     super("Lucene50");
     this.fstLoadMode = loadMode;
   }

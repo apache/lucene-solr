@@ -39,7 +39,6 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
@@ -675,7 +674,7 @@ public final class CheckIndex implements Closeable {
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
         reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), false, IOContext.DEFAULT,
-            Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name())); // lets keep stuff on disk for check-index
+            Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, FSTLoadMode.OFF_HEAP.name())); // lets keep stuff on disk for check-index
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;

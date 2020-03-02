@@ -28,7 +28,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.codecs.lucene50.Lucene50ScoreSkipReader.MutableImpactList;
@@ -36,6 +35,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FSTLoadMode;
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -131,8 +131,8 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     try (Directory d = new SimpleFSDirectory(tempDir)) {
       // test per field
       Map<String, String> readerAttributes = new HashMap<>();
-      readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name());
-      readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY + ".field", BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name());
+      readerAttributes.put(FSTLoadMode.ATTRIBUTE_KEY, FSTLoadMode.OFF_HEAP.name());
+      readerAttributes.put(FSTLoadMode.ATTRIBUTE_KEY + ".field", FSTLoadMode.ON_HEAP.name());
       try (DirectoryReader r = DirectoryReader.open(d, readerAttributes)) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
@@ -145,19 +145,19 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     IllegalArgumentException invalid = expectThrows(IllegalArgumentException.class, () -> {
       try (Directory d = new SimpleFSDirectory(tempDir)) {
         Map<String, String> readerAttributes = new HashMap<>();
-        readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, "invalid");
+        readerAttributes.put(FSTLoadMode.ATTRIBUTE_KEY, "invalid");
         DirectoryReader.open(d, readerAttributes);
       }
     });
 
-    assertEquals("Invalid value for blocktree.terms.fst expected one of: [OFF_HEAP, ON_HEAP, OPTIMIZE_UPDATES_OFF_HEAP, AUTO] but was: invalid", invalid.getMessage());
+    assertEquals("Invalid value for " + FSTLoadMode.ATTRIBUTE_KEY + " expected one of: [OFF_HEAP, ON_HEAP, OPTIMIZE_UPDATES_OFF_HEAP, AUTO] but was: invalid", invalid.getMessage());
   }
 
   public void testDisableFSTOffHeap() throws IOException {
     Path tempDir = createTempDir();
     try (Directory d = MMapDirectory.open(tempDir)) {
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random()))
-          .setReaderAttributes(Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name())))) {
+          .setReaderAttributes(Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, FSTLoadMode.ON_HEAP.name())))) {
         assumeTrue("only works with mmap directory", d instanceof MMapDirectory);
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
@@ -191,7 +191,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         w.forceMerge(1);
         w.commit();
       }
-      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name()))) {
+      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, FSTLoadMode.ON_HEAP.name()))) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
         FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
@@ -203,15 +203,15 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   public void testAlwaysFSTOffHeap() throws IOException {
     boolean alsoLoadIdOffHeap = random().nextBoolean();
-    BlockTreeTermsReader.FSTLoadMode loadMode;
+    FSTLoadMode loadMode;
     if (alsoLoadIdOffHeap) {
-      loadMode = BlockTreeTermsReader.FSTLoadMode.OFF_HEAP;
+      loadMode = FSTLoadMode.OFF_HEAP;
     } else {
-      loadMode = BlockTreeTermsReader.FSTLoadMode.OPTIMIZE_UPDATES_OFF_HEAP;
+      loadMode = FSTLoadMode.OPTIMIZE_UPDATES_OFF_HEAP;
     }
     try (Directory d = newDirectory()) { // any directory should work now
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random()))
-          .setReaderAttributes(Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, loadMode.name())))) {
+          .setReaderAttributes(Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, loadMode.name())))) {
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
           Document doc = new Document();
@@ -248,7 +248,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         w.forceMerge(1);
         w.commit();
       }
-      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, loadMode.name()))) {
+      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(FSTLoadMode.ATTRIBUTE_KEY, loadMode.name()))) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
         FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
