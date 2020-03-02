@@ -3360,9 +3360,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               }
             }
           }
-        } catch (InterruptedException e) {
-          Thread.interrupted();
-          throw new IOException("Interrupted waiting for merges");
+        } catch (InterruptedException ie) {
+          throw new ThreadInterruptedException(ie);
         } finally {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", String.format(Locale.ROOT, "Waited %.1f ms for commit merges",

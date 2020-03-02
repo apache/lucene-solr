@@ -364,13 +364,14 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     for (int i = 0; i < numIndexingThreads; i++) {
       Thread t = new Thread(() -> {
         try {
+          startingGun.await();
           while (indexedDocs.getAndIncrement() < docCount) {
             writerWithMergePolicy.addDocument(lineFileDocs.nextDoc());
             if (rarely()) {
               writerWithMergePolicy.commit();
             }
           }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
           e.printStackTrace();
           fail();
         }
@@ -392,6 +393,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       Thread.sleep(100);
     }
     abandonedMerges.set(0);
+    // Ensure there's at least one pending change so merge on commit happens
+    TestIndexWriter.addDoc(writerWithMergePolicy);
     writerWithMergePolicy.commit();
     if (abandonedMerges.get() == 0) {
       assertEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
@@ -401,8 +404,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
     try (IndexReader reader = writerWithMergePolicy.getReader()) {
       IndexSearcher searcher = new IndexSearcher(reader);
-      assertEquals(docCount + 6, reader.numDocs());
-      assertEquals(docCount + 6, searcher.count(new MatchAllDocsQuery()));
+      assertEquals(docCount + 7, reader.numDocs());
+      assertEquals(docCount + 7, searcher.count(new MatchAllDocsQuery()));
     }
 
     writerWithMergePolicy.close();
