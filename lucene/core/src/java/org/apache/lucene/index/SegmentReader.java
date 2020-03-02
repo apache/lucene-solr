@@ -367,4 +367,12 @@ public final class SegmentReader extends CodecReader {
   public Bits getHardLiveDocs() {
     return hardLiveDocs;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    super.checkIntegrity();
+    if (core.cfsReader != null) {
+      core.cfsReader.checkIntegrity();
+    }
+  }
 }
