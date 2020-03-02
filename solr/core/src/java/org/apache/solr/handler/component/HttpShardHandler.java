@@ -326,7 +326,7 @@ public class HttpShardHandler extends ShardHandler {
         }
       }
     } else {
-      replicaSource = new LegacyReplicaSource.Builder()
+      replicaSource = new StandaloneReplicaSource.Builder()
           .whitelistHostChecker(hostChecker)
           .shards(shards)
           .build();
