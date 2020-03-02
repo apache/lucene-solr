@@ -183,6 +183,8 @@ Improvements
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
 
+* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
+
 Optimizations
 ---------------------
 
