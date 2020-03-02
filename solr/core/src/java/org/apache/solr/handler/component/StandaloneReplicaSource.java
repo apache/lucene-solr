@@ -25,10 +25,10 @@ import org.apache.solr.common.util.StrUtils;
 /**
  * A replica source for solr stand alone mode
  */
-class LegacyReplicaSource implements ReplicaSource {
+class StandaloneReplicaSource implements ReplicaSource {
   private List<String>[] replicas;
 
-  public LegacyReplicaSource(Builder builder) {
+  public StandaloneReplicaSource(Builder builder) {
     List<String> list = StrUtils.splitSmart(builder.shardsParam, ",", true);
     replicas = new List[list.size()];
     for (int i = 0; i < list.size(); i++) {
@@ -70,8 +70,8 @@ class LegacyReplicaSource implements ReplicaSource {
       return this;
     }
 
-    public LegacyReplicaSource build() {
-      return new LegacyReplicaSource(this);
+    public StandaloneReplicaSource build() {
+      return new StandaloneReplicaSource(this);
     }
   }
 }

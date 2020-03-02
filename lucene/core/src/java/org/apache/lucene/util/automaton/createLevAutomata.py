@@ -42,7 +42,7 @@ class LineOutput:
       self._indent = self._indent[:-2]
 
     if indent != 0:
-      indent0 = '  ' * (len(self._indent) / 2 + indent)
+      indent0 = '  ' * (len(self._indent) // 2 + indent)
     else:
       indent0 = self._indent
 
@@ -92,11 +92,11 @@ def charVarNumber(charVar):
 def main():
 
   if len(sys.argv) != 4:
-    print
-    print 'Usage: python -u %s N <True/False> path_to_moman_dir' % sys.argv[0]
-    print
-    print 'NOTE: the resulting .java file is created in the current working dir!'
-    print
+    print()
+    print('Usage: python -u %s N <True/False> path_to_moman_dir' % sys.argv[0])
+    print()
+    print('NOTE: the resulting .java file is created in the current working dir!')
+    print()
     sys.exit(1)
 
   n = int(sys.argv[1])
@@ -184,7 +184,7 @@ def main():
     if i != 0 and MODE == 'switch':
       w('switch(vector) {')
 
-    l = map.items()
+    l = list(map.items())
     l.sort()
 
     numCasesPerVector = None
@@ -203,7 +203,8 @@ def main():
         w('case %s: // <%s>' % (charVarNumber(charVar), ','.join([str(x) for x in charVar])))
         w.indent()
 
-      l = states.items()
+      l = list(states.items())
+      l.sort()
 
       byFromState = {}
 
@@ -307,12 +308,12 @@ def main():
         l, nbits = pack(toStateArray)
         subs.append(('NBITSSTATES%d' % i, str(nbits)))
         w('  private final static long[] toStates%d = new long[] /*%d bits per value */ %s;' % \
-          (i, nbits, renderList([hex(long(x)) for x in l])))
+          (i, nbits, renderList([(hex(int(x)) + "L") for x in l])))
 
         l, nbits = pack(toOffsetIncrsArray)
         subs.append(('NBITSOFFSET%d' % i, str(nbits)))
         w('  private final static long[] offsetIncrs%d = new long[] /*%d bits per value */ %s;' % \
-          (i, nbits, renderList([hex(long(x)) for x in l])))
+          (i, nbits, renderList([(hex(int(x)) + "L") for x in l])))
       else:
         w('  private final static int[] toStates%d = new int[] %s;' % \
           (i, renderList([str(x) for x in toStateArray])))
@@ -325,7 +326,7 @@ def main():
   w('// state map')
   sum = 0
   minErrors = []
-  for i in xrange(len(stateMap2) - 1):
+  for i in range(len(stateMap2) - 1):
     w('//   %s -> %s' % (i, stateMap2[i]))
     # we replace t-notation as it's not relevant here
     st = stateMap2[i].replace('t', '')
@@ -416,14 +417,14 @@ def main():
   for sub, repl in subs:
     s = s.replace(sub, repl)
 
-  open(fileOut, 'wb').write(s)
+  open(fileOut, 'w').write(s)
 
-  print 'Wrote %s [%d lines; %.1f KB]' % \
-        (fileOut, len(w.l), os.path.getsize(fileOut) / 1024.)
+  print('Wrote %s [%d lines; %.1f KB]' % \
+        (fileOut, len(w.l), os.path.getsize(fileOut) / 1024.))
 
 def renderList(l):
   lx = ['    ']
-  for i in xrange(len(l)):
+  for i in range(len(l)):
     if i > 0:
       lx.append(',')
       if i % 4 == 0:
@@ -433,7 +434,7 @@ def renderList(l):
 
 MASKS = []
 v = 2
-for i in xrange(63):
+for i in range(63):
   MASKS.append(v - 1)
   v *= 2
 
@@ -446,7 +447,7 @@ def pack(l):
   pendingValue = 0
 
   packed = []
-  for i in xrange(len(l)):
+  for i in range(len(l)):
     v = l[i]
     if pendingValue > 0:
       bitsUsed = math.ceil(math.log(pendingValue) / math.log(2.0))
@@ -495,8 +496,8 @@ def unpack(data, index, bitsPerValue):
 
 if __name__ == '__main__':
   if not __debug__:
-    print
-    print 'ERROR: please run without -O'
-    print
+    print()
+    print('ERROR: please run without -O')
+    print()
     sys.exit(1)
   main()

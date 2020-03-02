@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
+import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -130,6 +132,11 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     ByteBuffersDataOutput out2 = new ByteBuffersDataOutput();
     LZ4.compress(data, offset, length, out2, hashTable);
     assertArrayEquals(compressed, out2.toArrayCopy());
+
+    // Now restore and compare bytes
+    byte[] restored = new byte[length + random().nextInt(10)];
+    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored);
+    assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, 0, length));
   }
 
   public void testEmpty() throws IOException {

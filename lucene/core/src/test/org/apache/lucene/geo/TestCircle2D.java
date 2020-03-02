@@ -60,6 +60,19 @@ public class TestCircle2D extends LuceneTestCase {
     assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
+  public void testTriangleDateLineIntersects() {
+    Component2D circle2D = LatLonGeometry.create(new Circle(0, 179, 222400));
+    double ax = -179;
+    double ay = 1;
+    double bx = -179;
+    double by = -1;
+    double cx = -178;
+    double cy = 0;
+    // we just touch the edge from the dateline
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+  }
+
   public void testTriangleContains() {
     Component2D circle2D;
     if (random().nextBoolean()) {
@@ -126,8 +139,8 @@ public class TestCircle2D extends LuceneTestCase {
         assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
         assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       } else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
-        assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertNotEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
   }

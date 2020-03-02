@@ -20,7 +20,6 @@ package org.apache.lucene.queries.intervals;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
@@ -52,6 +50,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -886,36 +886,30 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testPrefix() throws IOException {
-    for (IntervalsSource source : List.of(Intervals.prefix(new BytesRef("p")),
-        Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("p")), "p*" ) )) {
-      checkIntervals(source, "field1", 5, new int[][]{
-          {},
-          { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27 },
-          { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
-          { 7, 7 },
-          { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
-          { 0, 0 }
-      });
-      MatchesIterator mi = getMatches(source, 1, "field1");
-      assertNotNull(mi);
-      assertMatch(mi, 0, 0, 0, 5);
-      assertMatch(mi, 1, 1, 6, 14);
-    }
+    IntervalsSource source = Intervals.prefix(new BytesRef("p"));
+    checkIntervals(source, "field1", 5, new int[][]{
+        {},
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27},
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10},
+        {7, 7},
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10},
+        {0, 0}
+    });
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 0, 0, 0, 5);
+    assertMatch(mi, 1, 1, 6, 14);
 
-    for (IntervalsSource noSuch : List.of(Intervals.prefix(new BytesRef("qqq")),
-        Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("qqq")), "qqq*" ))) {
-      checkIntervals(noSuch, "field1", 0, new int[][]{});
-    }
+    IntervalsSource noSuch = Intervals.prefix(new BytesRef("qqq"));
+    checkIntervals(noSuch, "field1", 0, new int[][]{});
 
-    for (IntervalsSource source : List.of(Intervals.prefix(new BytesRef("p"), 1), 
-        Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("p")), 1, "p*")) ) {
+    IntervalsSource s = Intervals.prefix(new BytesRef("p"), 1);
       IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
         for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
-          source.intervals("field1", ctx);
+          s.intervals("field1", ctx);
         }
       });
       assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
-    }
 
     checkVisits(Intervals.prefix(new BytesRef("p")), 1);
   }
@@ -963,6 +957,30 @@ public class TestIntervals extends LuceneTestCase {
         {}
     });
 
+  }
+
+  public void testMultiTerm() throws IOException {
+    RegExp re = new RegExp("p.*e");
+    IntervalsSource source = Intervals.multiterm(new CompiledAutomaton(re.toAutomaton()), re.toString());
+
+    checkIntervals(source, "field1", 5, new int[][]{
+        {},
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 0, 0 }
+    });
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.multiterm(new CompiledAutomaton(re.toAutomaton()), 1, re.toString());
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [\\p(.)*\\e] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(source, 1);
   }
 
 }

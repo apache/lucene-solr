@@ -69,6 +69,79 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
   }
 
+  private abstract class TopFieldLeafCollector extends MultiComparatorLeafCollector {
+
+    final boolean canEarlyTerminate;
+    boolean collectedAllCompetitiveHits = false;
+
+    TopFieldLeafCollector(FieldValueHitQueue<Entry> queue, Sort sort, LeafReaderContext context) throws IOException {
+      super(queue.getComparators(context), queue.getReverseMul());
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+    }
+
+    void countHit(int doc) throws IOException {
+      ++totalHits;
+      hitsThresholdChecker.incrementHitCount();
+
+      if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
+        updateGlobalMinCompetitiveScore(scorer);
+      }
+    }
+
+    boolean thresholdCheck(int doc) throws IOException {
+      if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+        // since docs are visited in doc Id order, if compare is 0, it means
+        // this document is largest than anything else in the queue, and
+        // therefore not competitive.
+        if (canEarlyTerminate) {
+          if (hitsThresholdChecker.isThresholdReached()) {
+            totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+            throw new CollectionTerminatedException();
+          } else {
+            collectedAllCompetitiveHits = true;
+          }
+        } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+          // we can start setting the min competitive score if the
+          // threshold is reached for the first time here.
+          updateMinCompetitiveScore(scorer);
+        }
+        return true;
+      }
+      return false;
+    }
+
+    void collectCompetitiveHit(int doc) throws IOException {
+      // This hit is competitive - replace bottom element in queue & adjustTop
+      comparator.copy(bottom.slot, doc);
+      updateBottom(doc);
+      comparator.setBottom(bottom.slot);
+      updateMinCompetitiveScore(scorer);
+    }
+
+    void collectAnyHit(int doc, int hitsCollected) throws IOException {
+      // Startup transient: queue hasn't gathered numHits yet
+      int slot = hitsCollected - 1;
+      // Copy hit into queue
+      comparator.copy(slot, doc);
+      add(slot, doc);
+      if (queueFull) {
+        comparator.setBottom(bottom.slot);
+        updateMinCompetitiveScore(scorer);
+      }
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      super.setScorer(scorer);
+      minCompetitiveScore = 0f;
+      updateMinCompetitiveScore(scorer);
+      if (minScoreAcc != null) {
+        updateGlobalMinCompetitiveScore(scorer);
+      }
+    }
+  }
+
   static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
     return canEarlyTerminateOnDocId(searchSort) ||
            canEarlyTerminateOnPrefix(searchSort, indexSort);
@@ -113,73 +186,20 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
 
-      final LeafFieldComparator[] comparators = queue.getComparators(context);
-      final int[] reverseMul = queue.getReverseMul();
-      final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
-
-      return new MultiComparatorLeafCollector(comparators, reverseMul) {
-
-        boolean collectedAllCompetitiveHits = false;
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          super.setScorer(scorer);
-          minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer);
-          if (minScoreAcc != null) {
-            updateGlobalMinCompetitiveScore(scorer);
-          }
-        }
+      return new TopFieldLeafCollector(queue, sort, context) {
 
         @Override
         public void collect(int doc) throws IOException {
-          ++totalHits;
-          hitsThresholdChecker.incrementHitCount();
-
-          if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
-            updateGlobalMinCompetitiveScore(scorer);
-          }
-
+          countHit(doc);
           if (queueFull) {
-            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
-              // since docs are visited in doc Id order, if compare is 0, it means
-              // this document is largest than anything else in the queue, and
-              // therefore not competitive.
-              if (canEarlyTerminate) {
-                if (hitsThresholdChecker.isThresholdReached()) {
-                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-                  throw new CollectionTerminatedException();
-                } else {
-                  collectedAllCompetitiveHits = true;
-                }
-              } else if (totalHitsRelation == Relation.EQUAL_TO) {
-                // we can start setting the min competitive score if the
-                // threshold is reached for the first time here.
-                updateMinCompetitiveScore(scorer);
-              }
+            if (thresholdCheck(doc)) {
               return;
             }
-
-            // This hit is competitive - replace bottom element in queue & adjustTop
-            comparator.copy(bottom.slot, doc);
-            updateBottom(doc);
-            comparator.setBottom(bottom.slot);
-            updateMinCompetitiveScore(scorer);
+            collectCompetitiveHit(doc);
           } else {
-            // Startup transient: queue hasn't gathered numHits yet
-            final int slot = totalHits - 1;
-
-            // Copy hit into queue
-            comparator.copy(slot, doc);
-            add(slot, doc);
-            if (queueFull) {
-              comparator.setBottom(bottom.slot);
-              updateMinCompetitiveScore(scorer);
-            }
+            collectAnyHit(doc, totalHits);
           }
         }
-
       };
     }
 
@@ -215,52 +235,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
-      final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
-      return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul()) {
 
-        boolean collectedAllCompetitiveHits = false;
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          super.setScorer(scorer);
-          minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer);
-          if (minScoreAcc != null) {
-            updateGlobalMinCompetitiveScore(scorer);
-          }
-        }
+      return new TopFieldLeafCollector(queue, sort, context) {
 
         @Override
         public void collect(int doc) throws IOException {
-          //System.out.println("  collect doc=" + doc);
-
-          totalHits++;
-          hitsThresholdChecker.incrementHitCount();
-
-          if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
-            updateGlobalMinCompetitiveScore(scorer);
-          }
-
+          countHit(doc);
           if (queueFull) {
-            // Fastmatch: return if this hit is no better than
-            // the worst hit currently in the queue:
-            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
-              // since docs are visited in doc Id order, if compare is 0, it means
-              // this document is largest than anything else in the queue, and
-              // therefore not competitive.
-              if (canEarlyTerminate) {
-                if (hitsThresholdChecker.isThresholdReached()) {
-                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-                  throw new CollectionTerminatedException();
-                } else {
-                  collectedAllCompetitiveHits = true;
-                }
-              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-                // we can start setting the min competitive score if the
-                // threshold is reached for the first time here.
-                updateMinCompetitiveScore(scorer);
-              }
+            if (thresholdCheck(doc)) {
               return;
             }
           }
@@ -277,28 +259,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           }
 
           if (queueFull) {
-            // This hit is competitive - replace bottom element in queue & adjustTop
-            comparator.copy(bottom.slot, doc);
-
-            updateBottom(doc);
-
-            comparator.setBottom(bottom.slot);
-            updateMinCompetitiveScore(scorer);
+            collectCompetitiveHit(doc);
           } else {
             collectedHits++;
-
-            // Startup transient: queue hasn't gathered numHits yet
-            final int slot = collectedHits - 1;
-            //System.out.println("    slot=" + slot);
-            // Copy hit into queue
-            comparator.copy(slot, doc);
-
-            bottom = pq.add(new Entry(slot, docBase + doc));
-            queueFull = collectedHits == numHits;
-            if (queueFull) {
-              comparator.setBottom(bottom.slot);
-              updateMinCompetitiveScore(scorer);
-            }
+            collectAnyHit(doc, collectedHits);
           }
         }
       };
@@ -555,7 +519,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final void add(int slot, int doc) {
     bottom = pq.add(new Entry(slot, docBase + doc));
-    queueFull = totalHits == numHits;
+    // The queue is full either when totalHits == numHits (in SimpleFieldCollector), in which case
+    // slot = totalHits - 1, or when hitsCollected == numHits (in PagingFieldCollector this is hits
+    // on the current page) and slot = hitsCollected - 1.
+    assert slot < numHits;
+    queueFull = slot == numHits - 1;
   }
 
   final void updateBottom(int doc) {
@@ -597,4 +565,5 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   public boolean isEarlyTerminated() {
     return totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO;
   }
+
 }

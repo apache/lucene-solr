@@ -84,9 +84,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -98,8 +95,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -120,7 +115,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -152,7 +146,6 @@ import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -300,6 +293,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+
+    System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
+    System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
+
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
@@ -3075,120 +3072,4 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
-
-  /**
-   * See SOLR-11035. There are various "impossible" failures, I can update some documents successfully then not find
-   * them.
-   * <p>
-   * At least one I've seen (Erick Erickson) cannot be cured by waiting on the client side.
-   * <p>
-   * This is a horrible hack, but until we fix the underlying cause using it will reduce the noise from tests. Once the
-   * root cause of SOLR-11035 is found, this should be removed.
-   * <p>
-   * I don't mind the extra commits (why do two?) as this should be pretty rare.
-   *
-   * This test fails 10% - 15% of the time without using this method, especially if you @Ignore all the other
-   * tests in that suite.
-   *
-   * ant test  -Dtestcase=DocValuesNotIndexedTest -Dtests.method=testGroupingDVOnly
-   * -Dtests.seed=54688F608E614440 -Dtests.slow=true -Dtests.locale=nl-BE
-   * -Dtests.timezone=America/North_Dakota/Beulah -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
-   *
-   * This only really works for adding documents. The test at the top of the method will succeed for an update of
-   * an existing doc and nothing will be done. If that becomes necessary we should probably create a new method
-   * that takes a docID, field and value.
-   *
-   * @param client - the client that we'll use to send the request
-   * @param collection - the target collection we'll add and remove the doc from
-   * @param idField - the uniqueKey for this collection. This MUST be a string
-   * @param expectedDocCount - numFound for the query
-   * @param query - The Solr query to check for expectedDocCount.
-   * @param tag - additional information to display on a failure. Often class.method is useful.
-   */
-
-  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
-                                      long expectedDocCount, String query,
-                                      String tag) throws IOException, SolrServerException {
-
-    Solr11035BandAid(client, collection, idField, expectedDocCount, query, tag, false);
-  }
-
-  // Pass true for failAnyway to have this bandaid fail if
-  // 1> it had to attempt the repair
-  // 2> it would have successfully repaired it
-  //
-  // This is useful for verifying that SOLR-11035.
-  //
-  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
-                                      long expectedDocCount, String query, String tag,
-                                      boolean failAnyway) throws IOException, SolrServerException {
-
-    final SolrQuery solrQuery = new SolrQuery(query);
-    QueryResponse rsp = client.query(collection, solrQuery);
-    long found = rsp.getResults().getNumFound();
-
-    if (found == expectedDocCount) {
-      return;
-    }
-
-    // OK, our counts differ. Insert a document _guaranteed_ to be unique, then delete it so whatever is counting
-    // anything has the correct counts.
-    log.warn("Solr11035BandAid attempting repair, found is {}, expected is {}", found, expectedDocCount);
-
-    String bogusID = java.util.UUID.randomUUID().toString();
-    SolrInputDocument bogus = new SolrInputDocument();
-    bogus.addField(idField, bogusID);
-
-    // Add the bogus doc
-    new UpdateRequest().add(bogus).commit(client, collection);
-
-    // Let's spin until we find the doc.
-    checkUniqueDoc(client, collection, idField, bogusID, true);
-
-    // Then remove it, we should be OK now since new searchers have been opened.
-    new UpdateRequest().deleteById(bogusID).commit(client, collection);
-
-    // Now spin until the doc is gone.
-    checkUniqueDoc(client, collection, idField, bogusID, false);
-
-    // At this point we're absolutely, totally, positive that a new searcher has been opened, so go ahead and check
-    // the actual condition.
-    rsp = client.query(collection, solrQuery);
-    found = rsp.getResults().getNumFound();
-
-    if (found != expectedDocCount) {
-      // It's good to see the total response. NOTE: some larger responses are over 10240,
-      // so change the pattern in log4j2.xml if you need to see the whole thing.
-      log.error("Dumping response" + rsp.toString());
-      assertEquals("Solr11035BandAid failed, counts differ after updates:", found, expectedDocCount);
-    } else if (failAnyway) {
-      fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
-          + "' extra info: '" + tag + "'");
-    } else {
-      log.warn("Solr11035BandAid, repair successful");
-    }
-  }
-  // Helper for bandaid
-  private static void checkUniqueDoc(SolrClient client, String collection, String idField, String id, boolean shouldBeThere) throws IOException, SolrServerException {
-    TimeOut timeOut = new TimeOut(100, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    final SolrQuery solrQuery = new SolrQuery(idField + ":" + id);
-
-    while (!timeOut.hasTimedOut()) {
-      QueryResponse rsp = client.query(collection, solrQuery);
-      long found = rsp.getResults().getNumFound();
-      if (shouldBeThere && found == 1) {
-        return;
-      }
-      if (shouldBeThere == false && found == 0) {
-        return;
-      }
-      log.warn("Solr11035BandAid should have succeeded in checkUniqueDoc, shouldBeThere == {}, numFound = {}. Will try again after 250 ms sleep", shouldBeThere, found);
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        return; // just bail
-      }
-    }
-
-  }
 }
