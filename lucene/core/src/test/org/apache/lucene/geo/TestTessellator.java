@@ -561,7 +561,7 @@ public class TestTessellator extends LuceneTestCase {
     checkPolygon(wkt);
   }
 
-  //@Nightly
+  @Nightly
   public void testComplexPolygon40() throws Exception {
     String wkt = GeoTestUtil.readShape("lucene-9251.wkt.gz");
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
