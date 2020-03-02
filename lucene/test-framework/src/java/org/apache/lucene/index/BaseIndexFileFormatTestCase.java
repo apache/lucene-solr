@@ -737,7 +737,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
 
     Set<String> getFiles() {
-      return Set.copyOf(files);
+      return Collections.unmodifiableSet(new HashSet<>(files));
     }
 
     @Override
