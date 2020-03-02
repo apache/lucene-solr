@@ -305,7 +305,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     final long countPerLeaf = (actualMaxPointsInLeafNode + 1) / 2;
     assertTrue(""+pointCount, pointCount % countPerLeaf == 0);
     // in extreme cases, a point can be be shared by 4 leaves
-    assertTrue(""+pointCount, pointCount / countPerLeaf <= 4 && pointCount / countPerLeaf > 0);
+    assertTrue(""+pointCount, pointCount / countPerLeaf <= 4 && pointCount / countPerLeaf >= 1);
 
     final long docCount = points.estimateDocCount(onePointMatchVisitor);
     if (multiValues) {
