@@ -316,7 +316,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       // a normal non-distributed request
 
       long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
-      if (timeAllowed > 0L) {
+      if (timeAllowed >= 0L) {
         SolrQueryTimeoutImpl.set(timeAllowed);
       }
       try {

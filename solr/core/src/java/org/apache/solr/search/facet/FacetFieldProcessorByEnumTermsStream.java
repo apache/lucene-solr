@@ -32,6 +32,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
@@ -39,9 +40,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.HashDocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 /**
@@ -57,7 +56,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
   boolean hasSubFacets;  // true if there are subfacets
   int minDfFilterCache;
   DocSet docs;
-  DocSet fastForRandomSet;
+  Bits fastForRandomSet;
   TermsEnum termsEnum = null;
   SolrIndexSearcher.DocsEnumState deState = null;
   PostingsEnum postingsEnum;
@@ -265,11 +264,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
 
           // lazy convert to fastForRandomSet
           if (fastForRandomSet == null) {
-            fastForRandomSet = docs;
-            if (docs instanceof SortedIntDocSet) {  // OFF-HEAP todo: also check for native version
-              SortedIntDocSet sset = (SortedIntDocSet) docs;
-              fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
-            }
+            fastForRandomSet = docs.getBits();
           }
           // iterate over TermDocs to calculate the intersection
           postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
@@ -285,12 +280,12 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
 
               if (countOnly) {
                 while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (fastForRandomSet.exists(docid + base)) c++;
+                  if (fastForRandomSet.get(docid + base)) c++;
                 }
               } else {
                 setNextReader(leaves[sub.slice.readerIndex]);
                 while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (fastForRandomSet.exists(docid + base)) {
+                  if (fastForRandomSet.get(docid + base)) {
                     c++;
                     collect(docid, 0, slotContext);
                   }
@@ -302,12 +297,12 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
             int docid;
             if (countOnly) {
               while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (fastForRandomSet.exists(docid)) c++;
+                if (fastForRandomSet.get(docid)) c++;
               }
             } else {
               setNextReader(leaves[0]);
               while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (fastForRandomSet.exists(docid)) {
+                if (fastForRandomSet.get(docid)) {
                   c++;
                   collect(docid, 0, slotContext);
                 }

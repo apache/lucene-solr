@@ -362,7 +362,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof SolrInputField) {
-      return writeKnownType(((SolrInputField) val).getRawValue());
+      return writeKnownType(((SolrInputField) val).getValue());
     }
     if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);
@@ -962,11 +962,15 @@ public class JavaBinCodec implements PushWriter {
 
   private Function<ByteArrayUtf8CharSequence, String> getStringProvider() {
     if (stringProvider == null) {
-      stringProvider = butf8cs -> {
-        synchronized (JavaBinCodec.this) {
-          arr.reset();
-          ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), arr);
-          return arr.toString();
+      stringProvider = new Function<>() {
+        final CharArr charArr = new CharArr(8);
+        @Override
+        public String apply(ByteArrayUtf8CharSequence butf8cs) {
+          synchronized (charArr) {
+            charArr.reset();
+            ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), charArr);
+            return charArr.toString();
+          }
         }
       };
     }

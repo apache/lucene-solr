@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -68,7 +69,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
    *                     It can be used for decompression or decryption.
    */
   public UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
-    this(postingsReader, state, blockDecoder, NAME, VERSION_START, VERSION_CURRENT,
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE, NAME, VERSION_START, VERSION_CURRENT,
         TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
    }
    
@@ -76,8 +77,10 @@ public class UniformSplitTermsReader extends FieldsProducer {
    * @param blockDecoder Optional block decoder, may be null if none.
    *                     It can be used for decompression or decryption.
    */
-  protected UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                     String codecName, int versionStart, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
+  protected UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
+                                    BlockDecoder blockDecoder, FieldMetadata.Serializer fieldMetadataReader,
+                                     String codecName, int versionStart, int versionCurrent,
+                                    String termsBlocksExtension, String dictionaryExtension) throws IOException {
      IndexInput dictionaryInput = null;
      IndexInput blockInput = null;
      boolean success = false;
@@ -99,7 +102,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
        CodecUtil.retrieveChecksum(blockInput);
 
        seekFieldsMetadata(blockInput);
-       Collection<FieldMetadata> fieldMetadataCollection = parseFieldsMetadata(blockInput, state.fieldInfos);
+       Collection<FieldMetadata> fieldMetadataCollection = parseFieldsMetadata(blockInput, state.fieldInfos, fieldMetadataReader, state.segmentInfo.maxDoc());
 
        fieldToTermsMap = new HashMap<>();
        this.blockInput = blockInput;
@@ -132,15 +135,18 @@ public class UniformSplitTermsReader extends FieldsProducer {
    * @param indexInput {@link IndexInput} must be positioned to the fields metadata
    *                   details by calling {@link #seekFieldsMetadata(IndexInput)} before this call.
    */
-  protected static Collection<FieldMetadata> parseFieldsMetadata(IndexInput indexInput, FieldInfos fieldInfos) throws IOException {
-    Collection<FieldMetadata> fieldMetadataCollection = new ArrayList<>();
-    int fieldsNumber = indexInput.readVInt();
-    for (int i = 0; i < fieldsNumber; i++) {
-      fieldMetadataCollection.add(FieldMetadata.read(indexInput, fieldInfos));
+  protected static Collection<FieldMetadata> parseFieldsMetadata(IndexInput indexInput, FieldInfos fieldInfos,
+                                                                 FieldMetadata.Serializer fieldMetadataReader, int maxNumDocs) throws IOException {
+    int numFields = indexInput.readVInt();
+    if (numFields < 0) {
+      throw new CorruptIndexException("Illegal number of fields= " + numFields, indexInput);
+    }
+    Collection<FieldMetadata> fieldMetadataCollection = new ArrayList<>(numFields);
+    for (int i = 0; i < numFields; i++) {
+      fieldMetadataCollection.add(fieldMetadataReader.read(indexInput, fieldInfos, maxNumDocs));
     }
     return fieldMetadataCollection;
   }
-
 
   @Override
   public void close() throws IOException {

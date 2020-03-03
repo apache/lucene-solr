@@ -54,21 +54,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail && isTestThread()) {
-        boolean isDoFlush = false;
-        boolean isClose = false;
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if (isDoFlush && isClose) {
-            break;
-          }
-          if ("flush".equals(trace[i].getMethodName())) {
-            isDoFlush = true;
-          }
-          if ("close".equals(trace[i].getMethodName())) {
-            isClose = true;
-          }
-        }
-        if (isDoFlush && !isClose && random().nextBoolean()) {
+        if (callStackContainsAnyOf("flush") && false == callStackContainsAnyOf("close") && random().nextBoolean()) {
           hitExc = true;
           throw new IOException(Thread.currentThread().getName() + ": now failing during flush");
         }
@@ -366,7 +352,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
     CountDownLatch atLeastOneMerge = new CountDownLatch(1);
     iwc.setMergeScheduler(new TrackingCMS(atLeastOneMerge));
@@ -641,7 +627,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int i=0;i<1000;i++) {
+    int numDocs = TEST_NIGHTLY ? 1000 : 100;
+    for(int i=0;i<numDocs;i++) {
       Document doc = new Document();
       doc.add(newStringField("field", ""+i, Field.Store.YES));
       w.addDocument(doc);

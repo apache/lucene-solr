@@ -91,19 +91,10 @@ public class StatsStream extends TupleStream implements Expressible  {
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Metric.class);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost is namedParameter so we don't need to count it twice
-    if(expression.getParameters().size() != 1 + namedParams.size() + metricExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
-    }
 
     // Collection Name
     if(null == collectionName){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
-    }
-
-    // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -111,6 +102,10 @@ public class StatsStream extends TupleStream implements Expressible  {
       if(!namedParam.getName().equals("zkHost")){
         params.set(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
+    }
+
+    if(params.get("q") == null) {
+      params.set("q", "*:*");
     }
 
     // zkHost, optional - if not provided then will look into factory list to get

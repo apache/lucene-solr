@@ -38,12 +38,12 @@ import org.apache.lucene.util.fst.FST;
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.lkp</tt>: <a href="#Completiondictionary">Completion Dictionary</a></li>
- *   <li><tt>.cmp</tt>: <a href="#Completionindex">Completion Index</a></li>
+ *   <li><code>.lkp</code>: <a href="#Completiondictionary">Completion Dictionary</a></li>
+ *   <li><code>.cmp</code>: <a href="#Completionindex">Completion Index</a></li>
  * </ul>
  * <p>
- * <a name="Completionictionary"></a>
- * <h3>Completion Dictionary</h3>
+ * <a id="Completionictionary"></a>
+ * <h2>Completion Dictionary</h2>
  * <p>The .lkp file contains an FST for each suggest field
  * </p>
  * <ul>
@@ -59,8 +59,8 @@ import org.apache.lucene.util.fst.FST;
  *     for the Completion implementation.</li>
  *   <li>FST maps all analyzed forms to surface forms of a SuggestField</li>
  * </ul>
- * <a name="Completionindex"></a>
- * <h3>Completion Index</h3>
+ * <a id="Completionindex"></a>
+ * <h2>Completion Index</h2>
  * <p>The .cmp file contains an index into the completion dictionary, so that it can be
  * accessed randomly.</p>
  * <ul>

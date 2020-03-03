@@ -20,7 +20,7 @@
  *
  * <h2>Query Nodes</h2>
  * <p>
- * The package <tt>org.apache.lucene.queryParser.nodes</tt> contains all the basic query nodes. The interface 
+ * The package <code>org.apache.lucene.queryParser.nodes</code> contains all the basic query nodes. The interface 
  * that represents a query node is {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
  * <p>
  * {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}s are used by the text parser to create a syntax tree.

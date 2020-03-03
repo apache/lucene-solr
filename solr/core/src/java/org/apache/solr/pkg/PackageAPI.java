@@ -64,6 +64,8 @@ public class PackageAPI {
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
+
   final CoreContainer coreContainer;
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private final PackageLoader packageLoader;
@@ -269,8 +271,18 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
-          packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN).add(new PkgVersion(add));
-          packages.znodeVersion = stat.getVersion() ;
+          List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
+          for (Object o : list) {
+            if (o instanceof PkgVersion) {
+              PkgVersion version = (PkgVersion) o;
+              if (Objects.equals(version.version, add.version)) {
+                payload.addError("Version '" + add.version + "' exists already");
+                return null;
+              }
+            }
+          }
+          list.add(new PkgVersion(add));
+          packages.znodeVersion = stat.getVersion() + 1;
           finalState[0] = packages;
           return Utils.toJSON(packages);
         });
@@ -331,9 +343,13 @@ public class PackageAPI {
 
   }
 
+  public boolean isEnabled() {
+    return enablePackages;
+  }
+
   private boolean checkEnabled(CommandOperation payload) {
     if (!enablePackages) {
-      payload.addError("Package loading is not enabled , Start your nodes with -Denable.packages=true");
+      payload.addError(ERR_MSG);
       return false;
     }
     return true;

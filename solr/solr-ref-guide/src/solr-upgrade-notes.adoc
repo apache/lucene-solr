@@ -21,19 +21,257 @@
 
 The following notes describe changes to Solr in recent releases that you should be aware of before upgrading.
 
-These notes highlight the biggest changes that may impact the largest number of implementations. It is not a comprehensive list of all changes to Solr in any release.
+These notes highlight the biggest changes that may impact the largest number of
+implementations. It is not a comprehensive list of all changes to Solr in any release.
 
-When planning your Solr upgrade, consider the customizations you have made to your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package. That file includes all the changes and updates that may effect your existing implementation.
+When planning your Solr upgrade, consider the customizations you have made to
+your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
+file found in your Solr package. That file includes all the changes and updates
+that may effect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+
+== Upgrading to 9.x Releases (NOT RELEASED)
+
+== Solr 9.0
+
+_(raw; not yet edited)_
+
+* LUCENE-8738: Move to Java 11 as minimum Java version.
+  (Adrien Grand, Uwe Schindler)
+
+* SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
+  in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
+  see comments in the log4j2 configuration files (log4j2.xml by default).
+
+* SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
+  expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
+  expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of
+  expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
+  (Gus Heck).
+
+* SOLR-13324: URLClassifyProcessor#getCanonicalUrl now throws MalformedURLException rather than hiding it. Although the
+  present code is unlikely to produce such an exception it may be possible in future changes or in subclasses.
+  Currently this change should only effect compatibility of custom code overriding this method (Gus Heck).
+
+* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
+  confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
+
+* SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default
+  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
+  (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
+
+* SOLR-13649: Property 'blockUnknown' of BasicAuthPlugin and JWTAuthPlugin now defaults to 'true'. This change is backward
+  incompatible. To achieve the previous default behavior, explicitly set 'blockUnknown':'false' in security.json
+  (marcussorealheis, janhoy, shalin)
+
+* SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
+  provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
+
+* SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
+
+* SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
+
+* SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
+  followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
+  other java.util.Map implementations based on AbstractMap (Chris Hennick).
+
+* SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
+  Users have to modify their existing configurations to use CaffeineCache instead. (ab)
+
+* SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
+  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
+  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
+
+* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis)
+
+* SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
+  This embedded zookeeper should not be used in production. If you rely
+  upon the previous behavior, then you can change the clientPortAddress
+  in solr/server/solr/zoo.cfg (Robert Muir)
 
 == Upgrading to 8.x Releases
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.5
+
+_(raw; not yet edited)_
+
+* SOLR-14026: Upgrade Jetty to 9.4.24.v20191120 and dropwizard to 4.1.2 (Erick Erickson)
+
+* SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+
+* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
+issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
+operations, to communicate operation results between the Overseer and the coordinator node, and by the
+REQUESTSTATUS API for displaying information about async Collection operations.
+This change won’t require you to change any client-side code you should see no differences on the client side,
+however, it does require some care when upgrading an existing SolrCloud cluster:
+- If you are upgrading Solr with an atomic restart strategy:
+- If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+- If you do use Collection API operations:
+1. pause Collection API operations
+2. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+if you use async operations
+3. upgrade and restart the nodes
+- If you are upgrading Solr with a rolling restart strategy:
+- If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+any issues.
+- If you do use Collection API operations, but you can pause their use during the restart the easiest
+way is to:
+1. pause Collection API operations
+2. upgrade and restart all nodes
+3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+if you use async operations
+4. Resume all normal operations
+- If you use Collection API operations and can’t pause them during the upgrade:
+1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+Overseer node is upgraded last
+2. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+system property
+If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
+
+* SOLR-13808: add cache=false into underneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
+filterCache. (Mikhail Khludnev)
+
+=== Solr 8.4
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Release Notes]
+for an overview of the main new features of Solr 8.4.
+
+When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
+
+*Package Management System*
+
+Version 8.4 introduces a package management system to Solr. The goals of the
+system are to allow hot (live) deployment of plugins, provide packaging
+guidelines for plugins, and standardize Solr's approach by following familiar
+concepts used in other package management systems.
+
+The system is designed to eventually replace use of the `<lib ../>` directive,
+the Blob Store, and other methods of deploying plugins and custom components
+to Solr.
+
+The system is currently considered experimental, so use with caution. It must
+be enabled with a system parameter passed at start up before it can be used.
+For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
+
+With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
+functionality is now deprecated and will likely be removed in 9.0.
+
+*Security*
+
+The follow mix of changes were all made with the intention of making Solr more secure out of the box.
+
+* The `solrconfig.xml` file in Solr's `_default` configset has been trimmed of
+ the following previously pre-configured items:
++
+** All `<lib .../>` directives. This means that Solr Cell (aka Tika), Learning
+to Rank, Clustering (with Carrot2), language identification, and Velocity (for
+the `/browse` sample search interface) are no longer enabled out of the box.
+** The `/browse`, `/tvrh`, and `/update/extract` request handlers.
+** The Term Vector Component.
+** The XSLT and Velocity response writers.
++
+All of these items can be added to your Solr implementation by manually editing
+`solrconfig.xml` to add them back in, or use the <<config-api.adoc#config-api,Config API>>.
++
+The `sample_techproducts_configs` and the examples found in `./example` are unchanged.
+
+* Configsets that have been uploaded with an unsecured Configset API (i.e., when authentication is not enabled) are considered "Untrusted Configsets".
++
+In order to bolster Solr's out-of-the-box security, these untrusted configsets
+are no longer allowed to use the `<lib .../>` directive to implement contribs
+or custom Jars.
++
+When upgrading to 8.4, if you are using untrusted configsets that contain `<lib ../>`
+directives, their corresponding collections will not load (they will cease to
+work). You have a few options in this case:
+
+** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication>>
+and re-upload the configset (using the `bin/solr zk upconfig ...`
+<<solr-control-script-reference.adoc#solr-control-script-reference,Solr CLI>> command);
+** You can put your custom Jars in Solr's classpath instead of `lib` directories;
+** You can try the new package management system to manage your custom Jars.
++
+See the section <<configsets-api.adoc#configsets-upload,Upload a Configset>>
+ for more details about trusted vs. untrusted configsets.
+
+* Our default Jetty configuration has been updated to now set a
+Content-Security-Policy (CSP) by default. See `./server/etc/jetty.xml` for
+details about how it is configured.
++
+As a result of this change, any custom HTML served by Solr's HTTP server that contains inline Javascript will no longer execute in modern browsers. The options for you are:
+
+** Change your JavaScript code to not run inline any longer;
+** Edit `jetty.xml` to remove CSP (creating weaker security protection);
+** Remove/alter the headers with a reverse proxy.
+
+* Solr's Blob Store and runtime libs functionality are now deprecated and are planned to be removed from Solr in version 9.0. It has been replaced with the new package management system.
+
+* The Velocity response writer is also now deprecated and is planned to be removed from Solr in version 9.0.
+
+*Using Collapse with Group Disallowed*
+
+Using the <<collapse-and-expand-results.adoc#collapse-and-expand-results,CollapsingQueryParser>>
+with <<result-grouping.adoc#result-grouping,Result Grouping>> has never been
+supported as it causes inconsistent behavior and NullPointerException errors.
+We have now explicitly disallowed this combination to prevent these errors.
+If you are using these together, you will need to modify your queries.
+
+*SolrJ*
+
+* SolrJ now supports the `shards.preference` parameter for single-shard
+scenarios to ensure multi-shard and single-shard request routing works in the same way.
++
+See <<using-solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
+<<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
+
+* `QueryResponse.getExplainMap()` type has changed from `Map<String, String>` to `Map<String, Object>` in order to support structured explanations.
++
+This change is expected to be mostly back-compatible. Compiled third-party
+components will work the same due to type erasure, but source code changes may
+be required.
+
+* Replica routing code has been moved to SolrJ, making those classes available
+to clients if necessary.
+
+*Streaming Expressions*
+
+* A new DBSCAN clustering streaming evaluator has been added.
+
+* The `precision` stream evaluator can now operate on matrices.
+
+* The `random` streaming expression can now create the x-axis.
+
+*JSON Facets*
+
+* Two new aggregations have been added: `missing` and `countvals`.
+
+* Several aggregations now support multi-valued fields: `min`, `max`, `avg`, `sum`, `sumsq`, `stddev`, `variance`, and `percentile`.
+
+*Caches*
+
+* After the addition of `CaffeineCache` in 8.3, legacy SolrCache
+implementations are deprecated and likely to be removed in 9.0.
++
+Users are encouraged to transition their cache configurations to use
+`org.apache.solr.search.CaffeineCache` as soon as feasible.
+
 === Solr 8.3
 
-See the 8.3 Release Notes for an overview of the main new features of Solr 8.3.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote83[8.3 Release Notes] for an overview of the main new features of Solr 8.3.
 
 When upgrading to 8.3.x users should be aware of the following major changes from 8.2.
 
@@ -98,7 +336,7 @@ This release adds support for tracing requests in Solr. Please review the sectio
 
 === Solr 8.1
 
-See the https://wiki.apache.org/solr/ReleaseNote810[8.1 Release Notes] for an overview of the main new features of Solr 8.1.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.1 Release Notes] for an overview of the main new features of Solr 8.1.
 
 When upgrading to 8.1.x, users should be aware of the following major changes from v8.0.
 

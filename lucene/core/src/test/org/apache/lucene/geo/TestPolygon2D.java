@@ -35,7 +35,7 @@ public class TestPolygon2D extends LuceneTestCase {
     Polygon hole = new Polygon(new double[] { -10, -10, 10, 10, -10 }, new double[] { -10, 10, 10, -10, -10 });
     Polygon outer = new Polygon(new double[] { -50, -50, 50, 50, -50 }, new double[] { -50, 50, 50, -50, -50 }, hole);
     Polygon island = new Polygon(new double[] { -5, -5, 5, 5, -5 }, new double[] { -5, 5, 5, -5, -5 } );
-    Component2D polygon = Polygon2D.create(outer, island);
+    Component2D polygon = LatLonGeometry.create(outer, island);
     
     // contains(point)
     assertTrue(polygon.contains(-2, 2)); // on the island
@@ -185,7 +185,8 @@ public class TestPolygon2D extends LuceneTestCase {
       Polygon polygon = nextPolygon();
       Component2D impl = Polygon2D.create(polygon);
       
-      for (int j = 0; j < 100; j++) {
+      int innerIters = atLeast(10);
+      for (int j = 0; j < innerIters; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
         // allowed to conservatively return true.
         if (impl.relate(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat) == Relation.CELL_OUTSIDE_QUERY) {
@@ -270,6 +271,23 @@ public class TestPolygon2D extends LuceneTestCase {
     assertTrue(poly.contains(-2, -1)); // left side: true
     assertTrue(poly.contains(-2, 0));  // left side: true
     assertTrue(poly.contains(-2, 1));  // left side: true
+  }
+
+  /** Tests edge case behavior with respect to insideness */
+  public void testIntersectsSameEdge() {
+    Component2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
+    // line inside edge
+    assertEquals(Relation.CELL_INSIDE_QUERY, poly.relateTriangle(-1, -1, 1, 1, -1, -1));
+    assertEquals(Relation.CELL_INSIDE_QUERY, poly.relateTriangle(-2, -2, 2, 2, -2, -2));
+    // line over edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-4, -4, 4, 4, -4, -4));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 4, 4, 4, 4));
+    // line inside edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-1, -1, 3, 3, 1, 1));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 3, 3, 2, 2));
+    // line over edge
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-4, -4, 7, 7, 4, 4));
+    assertEquals(Relation.CELL_CROSSES_QUERY, poly.relateTriangle(-2, -2, 7, 7, 4, 4));
   }
   
   /** Tests current impl against original algorithm */

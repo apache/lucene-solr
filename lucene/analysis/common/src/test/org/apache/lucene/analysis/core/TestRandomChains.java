@@ -108,7 +108,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.SnowballStemmer;
 import org.xml.sax.InputSource;
 
 /** tests random analysis chains */
@@ -404,10 +404,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           return null; // unreachable code
         }
     });
-    put(SnowballProgram.class, random ->  {
+    put(SnowballStemmer.class, random ->  {
         try {
-          String lang = TestSnowball.SNOWBALL_LANGS[random.nextInt(TestSnowball.SNOWBALL_LANGS.length)];
-          Class<? extends SnowballProgram> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballProgram.class);
+          String lang = TestSnowball.SNOWBALL_LANGS.get(random.nextInt(TestSnowball.SNOWBALL_LANGS.size()));
+          Class<? extends SnowballStemmer> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballStemmer.class);
           return clazz.getConstructor().newInstance();
         } catch (Exception ex) {
           Rethrow.rethrow(ex);

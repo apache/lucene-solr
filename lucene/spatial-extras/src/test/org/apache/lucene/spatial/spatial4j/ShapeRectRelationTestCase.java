@@ -46,14 +46,14 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
       super(ctx);
     }
 
-    //20 times each -- should be plenty
+    //2 times each -- should be plenty
 
     protected int getContainsMinimum(int laps) {
-      return 20;
+      return 2;
     }
 
     protected int getIntersectsMinimum(int laps) {
-      return 20;
+      return 2;
     }
 
     // producing "within" cases in Geo3D based on our random shapes doesn't happen often. It'd be nice to increase this.
@@ -62,11 +62,11 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
     }
 
     protected int getDisjointMinimum(int laps) {
-      return 20;
+      return 2;
     }
 
     protected int getBoundingMinimum(int laps) {
-      return 20;
+      return 2;
     }
   }
 
@@ -117,6 +117,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
     }.testRelateWithRectangle();
   }
 
+  // very slow, and test sources are not here, so no clue how to fix
   @Test
   public void testGeoPolygonRect() {
     new AbstractRectIntersectionTestHelper(ctx) {

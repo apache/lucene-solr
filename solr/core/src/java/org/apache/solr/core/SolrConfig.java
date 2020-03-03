@@ -133,53 +133,20 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   private final SolrRequestParsers solrRequestParsers;
 
   /**
-   * Creates a default instance from the solrconfig.xml.
-   */
-  public SolrConfig()
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, null);
-  }
-
-  /**
-   * Creates a configuration instance from a configuration name.
-   * A default resource loader will be created (@see SolrResourceLoader)
-   *
-   * @param name the configuration name used by the loader
-   */
-  public SolrConfig(String name)
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, null);
-  }
-
-  /**
-   * Creates a configuration instance from a configuration name and stream.
-   * A default resource loader will be created (@see SolrResourceLoader).
-   * If the stream is null, the resource loader will open the configuration stream.
-   * If the stream is not null, no attempt to load the resource will occur (the name is not used).
-   *
-   * @param name the configuration name
-   * @param is   the configuration stream
-   */
-  public SolrConfig(String name, InputSource is)
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, is);
-  }
-
-  /**
    * Creates a configuration instance from an instance directory, configuration name and stream.
    *
    * @param instanceDir the directory used to create the resource loader
    * @param name        the configuration name used by the loader if the stream is null
    * @param is          the configuration stream
    */
-  public SolrConfig(Path instanceDir, String name, InputSource is)
+  public SolrConfig(Path instanceDir, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is);
+    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted);
   }
 
-  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name) {
+  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted) {
     try {
-      return new SolrConfig(loader, name, null);
+      return new SolrConfig(loader, name, null, isConfigsetTrusted);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -196,16 +163,17 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
    *
-   * @param loader the resource loader
-   * @param name   the configuration name
-   * @param is     the configuration stream
+   * @param                     loader the resource loader
+   * @param name                the configuration name
+   * @param is                  the configuration stream
+   * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
    */
-  public SolrConfig(SolrResourceLoader loader, String name, InputSource is)
+  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     getOverlay();//just in case it is not initialized
     getRequestParams();
-    initLibs();
+    initLibs(isConfigsetTrusted);
     luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
@@ -247,7 +215,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (get("query/boolTofilterOptimizer", null) != null)
       log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
     if (get("query/HashDocSet", null) != null)
-      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
+      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer used.");
 
 // TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
 //    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
@@ -280,9 +248,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
-
-    hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor", 0.75f);
-    hashDocSetMaxSize = getInt("//HashDocSet/@maxSize", 3000);
 
     if (get("jmx", null) != null) {
       log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
@@ -561,9 +526,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   
   public final boolean useRangeVersionsForPeerSync;
   
-  // DocSet
-  public final float hashSetInverseLoadFactor;
-  public final int hashDocSetMaxSize;
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
@@ -786,9 +748,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         "Multiple plugins configured for type: " + type);
   }
 
-  private void initLibs() {
+  private void initLibs(boolean isConfigsetTrusted) {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
+    if (!isConfigsetTrusted) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+          + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
+          + " after enabling authentication and authorization.");
+    }
 
     log.debug("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();

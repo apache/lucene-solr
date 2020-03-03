@@ -184,7 +184,7 @@ public class SSLTestConfig {
 
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
-      public SslContextFactory createContextFactory() {
+      public SslContextFactory.Client createClientContextFactory() {
         SslContextFactory.Client factory = new SslContextFactory.Client(!checkPeerName);
         try {
           factory.setSslContext(buildClientSSLContext());
@@ -212,7 +212,7 @@ public class SSLTestConfig {
 
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
-      public SslContextFactory createContextFactory() {
+      public SslContextFactory.Server createContextFactory() {
         SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();

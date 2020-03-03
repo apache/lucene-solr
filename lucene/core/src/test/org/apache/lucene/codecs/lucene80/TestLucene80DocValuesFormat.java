@@ -83,11 +83,11 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
   // for now just keep them here, as we want to test this for this format.
   
-  @Slow
   public void testSortedSetVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(atLeast(300), 1, 32766, 16, 100);
+      int numDocs = TEST_NIGHTLY ? atLeast(100) : atLeast(10);
+      doTestSortedSetVsStoredFields(numDocs, 1, 32766, 16, 100);
     }
   }
   
@@ -103,7 +103,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(atLeast(300), 1d, 1, 32766);
+      doTestSortedVsStoredFields(atLeast(100), 1d, 1, 32766);
     }
   }
   
@@ -115,7 +115,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
-  @Slow
+  @Nightly
   public void testTermsEnumFixedWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -123,7 +123,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
-  @Slow
+  @Nightly
   public void testTermsEnumVariableWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -139,6 +139,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
+  @Nightly
   public void testTermsEnumLongSharedPrefixes() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -438,7 +439,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  @Slow
+  @Nightly
   public void testSortedSetAroundBlockSize() throws IOException {
     final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
@@ -491,7 +492,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  @Slow
+  @Nightly
   public void testSortedNumericAroundBlockSize() throws IOException {
     final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
@@ -533,29 +534,29 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  @Slow
+  @Nightly
   public void testSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 1, 3));
   }
 
-  @Slow
+  @Nightly
   public void testSparseSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 0, 2));
   }
 
-  @Slow
+  @Nightly
   public void testNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSparseNumericBlocksOfVariousBitsPerValue(1);
   }
 
-  @Slow
+  @Nightly
   public void testSparseNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSparseNumericBlocksOfVariousBitsPerValue(random().nextDouble());
   }
 
   // The LUCENE-8585 jump-tables enables O(1) skipping of IndexedDISI blocks, DENSE block lookup
   // and numeric multi blocks. This test focuses on testing these jumps.
-  @Slow
+  @Nightly
   public void testNumericFieldJumpTables() throws Exception {
     // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5 blocks to
     // trigger consecutive block skips

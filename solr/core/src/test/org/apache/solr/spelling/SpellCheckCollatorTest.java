@@ -45,10 +45,9 @@ import org.junit.Test;
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   
-  //if adding documents to this test, adjust me.
-  private static final int MAX_DOC_ID=16;
-  private static final int MIN_DOC_ID_WITH_EVERYOTHER=0;
-  private static final int MAX_DOC_ID_WITH_EVERYOTHER=15;
+  // if adding documents to this test, adjust me.
+  private static final int NUM_DOCS_WITH_TERM_EVERYOTHER=8;
+  private static final int NUM_DOCS=17;
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
@@ -564,13 +563,28 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // (we have to be kind of flexible with our definition of "decent"
     // since we're dealing with a fairly small index here)
     for (int val = 5; val <= 20; val++) {
-      int max = MAX_DOC_ID * val / (val + MIN_DOC_ID_WITH_EVERYOTHER + 1);
-      int min = MAX_DOC_ID * val / (val + MAX_DOC_ID_WITH_EVERYOTHER + 1);
+      String hitsXPath = xpathPrefix + "long[@name='hits']"; // we will append to this...
+      
+      if (val <= NUM_DOCS_WITH_TERM_EVERYOTHER) {
+        // strongest assertions we can make given an arbirary MergePolicy on such a small index
+        // is based on the idea that the docs may all come *first* or all come *last*
+        // and then do the math on what estimate should come from that if we collected *exactly* 'val'..
+        //
+        // if they are all "first" we will overestimate and assume everything is a match...
+        int max = NUM_DOCS;
+        // if they are all "last" we will under-estimate based on how non-matches we had to skip...
+        int min = (/* min collected */ val) / (/* max docs possibly scanned */ NUM_DOCS);
+        hitsXPath += "[" + min + " <= . and . <= " + max + "]";
+      } else {
+        // we've asked for a number greater then what can possibly be found in our tiny index, which should
+        // force it to scan all docs so our hits should be exact
+        hitsXPath += "[.=" + NUM_DOCS_WITH_TERM_EVERYOTHER + "]";
+      }
       assertQ(req(reusedParams,
                   CommonParams.Q, "teststop:everother",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:everyother'"
-              , xpathPrefix + "long[@name='hits' and " + min + " <= . and . <= " + max + "]"
+              , hitsXPath
               );
     }
 

@@ -28,8 +28,6 @@ import java.util.Set;
 
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
-
 
 /**
  * A concrete representation of a document within a Solr index.  Unlike a lucene
@@ -289,14 +287,14 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
       /** Get the field Value */
       @Override
       public Object get(Object key) { 
-        return convertCharSeq(getFirstValue( (String)key));
+        return getFirstValue( (String)key);
       }
       
       // Easily Supported methods
       @Override
       public boolean containsKey(Object key) { return _fields.containsKey( key ); }
       @Override
-      public Set<String>  keySet()           { return (Set<String>) convertCharSeq(_fields.keySet());  }
+      public Set<String>  keySet()           { return _fields.keySet();  }
       @Override
       public int          size()             { return _fields.size();    }
       @Override
@@ -368,7 +366,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Object remove(Object key) {
-    return convertCharSeq(_fields.remove(key));
+    return _fields.remove(key);
   }
 
   @Override
@@ -378,7 +376,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Collection<Object> values() {
-    return convertCharSeq(_fields.values());
+    return _fields.values();
   }
 
   @Override

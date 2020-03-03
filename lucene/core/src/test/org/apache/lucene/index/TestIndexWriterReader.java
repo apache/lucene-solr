@@ -49,7 +49,7 @@ import org.junit.Test;
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterReader extends LuceneTestCase {
   
-  private final int numThreads = TEST_NIGHTLY ? 5 : 3;
+  private final int numThreads = TEST_NIGHTLY ? 5 : 2;
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
@@ -371,8 +371,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   @Slow
   public void testAddIndexesAndDoDeletesThreads() throws Throwable {
-    final int numIter = 2;
-    int numDirs = 3;
+    final int numIter = TEST_NIGHTLY ? 2 : 1;
+    int numDirs = TEST_NIGHTLY ? 3 : 2;
     
     Directory mainDir = getAssertNoDeletesDirectory(newDirectory());
 
@@ -1067,17 +1067,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
         if (shouldFail.get()) {
-          for (int i = 0; i < trace.length; i++) {
-            if ("getReadOnlyClone".equals(trace[i].getMethodName())) {
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              shouldFail.set(false);
-              throw new FakeIOException();
+          if (callStackContainsAnyOf("getReadOnlyClone")) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; exc:");
+              new Throwable().printStackTrace(System.out);
             }
+            shouldFail.set(false);
+            throw new FakeIOException();
           }
         }
       }

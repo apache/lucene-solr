@@ -209,6 +209,10 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
     return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
   }
 
+  public static SolrQueryRequest request(String[] args, String... additional){
+    return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class), additional );
+  }
+  
   public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
     InputStream in = clazz.getResourceAsStream("/solr/analytics/legacy/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);

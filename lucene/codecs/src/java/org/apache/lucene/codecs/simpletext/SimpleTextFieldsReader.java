@@ -52,7 +52,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
@@ -539,11 +539,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     private void loadTerms() throws IOException {
       PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
-      final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
+      final FSTCompiler<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fstCompiler;
       final PairOutputs<Long,Long> outputsInner = new PairOutputs<>(posIntOutputs, posIntOutputs);
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<>(posIntOutputs,
           outputsInner);
-      b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
       IndexInput in = SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRefBuilder lastTerm = new BytesRefBuilder();
@@ -556,7 +556,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         SimpleTextUtil.readLine(in, scratch);
         if (scratch.get().equals(END) || StringHelper.startsWith(scratch.get(), FIELD)) {
           if (lastDocsStart != -1) {
-            b.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef),
+            fstCompiler.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef),
                 outputs.newPair(lastDocsStart,
                     outputsInner.newPair((long) docFreq, totalTermFreq)));
             sumTotalTermFreq += totalTermFreq;
@@ -574,7 +574,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length()) - 1;
         } else if (StringHelper.startsWith(scratch.get(), TERM)) {
           if (lastDocsStart != -1) {
-            b.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef), outputs.newPair(lastDocsStart,
+            fstCompiler.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef), outputs.newPair(lastDocsStart,
                 outputsInner.newPair((long) docFreq, totalTermFreq)));
           }
           lastDocsStart = in.getFilePointer();
@@ -589,7 +589,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         }
       }
       docCount = visitedDocs.cardinality();
-      fst = b.finish();
+      fst = fstCompiler.compile();
       /*
       PrintStream ps = new PrintStream("out.dot");
       fst.toDot(ps);

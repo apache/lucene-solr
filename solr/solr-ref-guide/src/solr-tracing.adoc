@@ -22,7 +22,7 @@ supported out of the box.
 
 A sampled distributed tracing query request on Jaeger looks like this:
 
-.Tracing of a solr query
+.Tracing of a Solr query
 image::images/solr-tracing/query-request-tracing.png[image,width=600]
 
 == Setup Tracer

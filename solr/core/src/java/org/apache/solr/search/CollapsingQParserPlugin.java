@@ -65,6 +65,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -279,6 +280,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+      // Don't allow collapsing if grouping is being used.
+      if (request.getParams().getBool(GroupParams.GROUP, false)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not use collapse with Grouping enabled");
+      }
+
       this.collapseField = localParams.get("field");
       if (this.collapseField == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required 'field' param is missing.");
@@ -436,7 +442,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               DocValuesType.NONE,
               fieldInfo.getDocValuesGen(),
               fieldInfo.attributes(),
-              fieldInfo.getPointDataDimensionCount(),
+              fieldInfo.getPointDimensionCount(),
               fieldInfo.getPointIndexDimensionCount(),
               fieldInfo.getPointNumBytes(),
               fieldInfo.isSoftDeletesField());

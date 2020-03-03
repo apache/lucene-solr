@@ -246,7 +246,7 @@ public final class IndexOptionsDialogFactory implements DialogOpener.DialogFacto
     storeTVOffCB.setSelected(fieldType.storeTermVectorOffsets());
     storeTVPayCB.setSelected(fieldType.storeTermVectorPayloads());
     dvTypeCombo.setSelectedItem(fieldType.docValuesType().name());
-    dimCountTF.setText(String.valueOf(fieldType.pointDataDimensionCount()));
+    dimCountTF.setText(String.valueOf(fieldType.pointDimensionCount()));
     dimNumBytesTF.setText(String.valueOf(fieldType.pointNumBytes()));
 
     if (nf.getType().equals(org.apache.lucene.document.TextField.class) ||

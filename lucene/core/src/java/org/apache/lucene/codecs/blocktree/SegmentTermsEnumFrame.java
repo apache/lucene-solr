@@ -18,8 +18,10 @@ package org.apache.lucene.codecs.blocktree;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -43,11 +45,16 @@ final class SegmentTermsEnumFrame {
   long fp;
   long fpOrig;
   long fpEnd;
+  long totalSuffixBytes; // for stats
 
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
 
+  byte[] suffixLengthBytes;
+  final ByteArrayDataInput suffixLengthsReader;
+
   byte[] statBytes = new byte[64];
+  int statsSingletonRunLength = 0;
   final ByteArrayDataInput statsReader = new ByteArrayDataInput();
 
   byte[] floorData = new byte[32];
@@ -84,20 +91,26 @@ final class SegmentTermsEnumFrame {
 
   final BlockTermState state;
 
-  // metadata buffer, holding monotonic values
-  final long[] longs;
-  // metadata buffer, holding general values
+  // metadata buffer
   byte[] bytes = new byte[32];
   final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
 
   private final SegmentTermsEnum ste;
+  private final int version;
 
   public SegmentTermsEnumFrame(SegmentTermsEnum ste, int ord) throws IOException {
     this.ste = ste;
     this.ord = ord;
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
-    this.longs = new long[ste.fr.longsSize];
+    this.version = ste.fr.parent.version;
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      suffixLengthBytes = new byte[32];
+      suffixLengthsReader = new ByteArrayDataInput();
+    } else {
+      suffixLengthBytes = null;
+      suffixLengthsReader = suffixesReader;
+    }
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -163,15 +176,46 @@ final class SegmentTermsEnumFrame {
     // instead of linear scan to find target term; eg
     // we could have simple array of offsets
 
+    final long startSuffixFP = ste.in.getFilePointer();
     // term suffixes:
-    code = ste.in.readVInt();
-    isLeafBlock = (code & 1) != 0;
-    int numBytes = code >>> 1;
-    if (suffixBytes.length < numBytes) {
-      suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      final long codeL = ste.in.readVLong();
+      isLeafBlock = (codeL & 0x04) != 0;
+      final int numSuffixBytes = (int) (codeL >>> 3);
+      if (suffixBytes.length < numSuffixBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
+      }
+      try {
+        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+      } catch (IllegalArgumentException e) {
+        throw new CorruptIndexException(e.getMessage(), ste.in, e);
+      }
+      compressionAlg.read(ste.in, suffixBytes, numSuffixBytes);
+      suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
+
+      int numSuffixLengthBytes = ste.in.readVInt();
+      final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
+      numSuffixLengthBytes >>>= 1;
+      if (suffixLengthBytes.length < numSuffixLengthBytes) {
+        suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
+      }
+      if (allEqual) {
+        Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ste.in.readByte());
+      } else {
+        ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+      }
+      suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
+    } else {
+      code = ste.in.readVInt();
+      isLeafBlock = (code & 1) != 0;
+      int numBytes = code >>> 1;
+      if (suffixBytes.length < numBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      ste.in.readBytes(suffixBytes, 0, numBytes);
+      suffixesReader.reset(suffixBytes, 0, numBytes);
     }
-    ste.in.readBytes(suffixBytes, 0, numBytes);
-    suffixesReader.reset(suffixBytes, 0, numBytes);
+    totalSuffixBytes = ste.in.getFilePointer() - startSuffixFP;
 
     /*if (DEBUG) {
       if (arc == null) {
@@ -182,12 +226,13 @@ final class SegmentTermsEnumFrame {
       }*/
 
     // stats
-    numBytes = ste.in.readVInt();
+    int numBytes = ste.in.readVInt();
     if (statBytes.length < numBytes) {
       statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
     ste.in.readBytes(statBytes, 0, numBytes);
     statsReader.reset(statBytes, 0, numBytes);
+    statsSingletonRunLength = 0;
     metaDataUpto = 0;
 
     state.termBlockOrd = 0;
@@ -274,7 +319,7 @@ final class SegmentTermsEnumFrame {
     //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
-    suffix = suffixesReader.readVInt();
+    suffix = suffixLengthsReader.readVInt();
     startBytePos = suffixesReader.getPosition();
     ste.term.setLength(prefix + suffix);
     ste.term.grow(ste.term.length());
@@ -298,7 +343,7 @@ final class SegmentTermsEnumFrame {
         
       assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
       nextEnt++;
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffix = code >>> 1;
       startBytePos = suffixesReader.getPosition();
       ste.term.setLength(prefix + suffix);
@@ -313,7 +358,7 @@ final class SegmentTermsEnumFrame {
       } else {
         // A sub-block; make sub-FP absolute:
         ste.termExists = false;
-        subCode = suffixesReader.readVLong();
+        subCode = suffixLengthsReader.readVLong();
         lastSubFP = fp - subCode;
         //if (DEBUG) {
         //System.out.println("    lastSubFP=" + lastSubFP);
@@ -414,20 +459,40 @@ final class SegmentTermsEnumFrame {
       // TODO: if docFreq were bulk decoded we could
       // just skipN here:
 
-      // stats
-      state.docFreq = statsReader.readVInt();
-      //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-        state.totalTermFreq = state.docFreq; // all postings have freq=1
+      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+        if (statsSingletonRunLength > 0) {
+          state.docFreq = 1;
+          state.totalTermFreq = 1;
+          statsSingletonRunLength--;
+        } else {
+          int token = statsReader.readVInt();
+          if ((token & 1) == 1) {
+            state.docFreq = 1;
+            state.totalTermFreq = 1;
+            statsSingletonRunLength = token >>> 1;
+          } else {
+            state.docFreq = token >>> 1;
+            if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+              state.totalTermFreq = state.docFreq;
+            } else {
+              state.totalTermFreq = state.docFreq + statsReader.readVLong();
+            }
+          }
+        }
       } else {
-        state.totalTermFreq = state.docFreq + statsReader.readVLong();
-        //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        assert statsSingletonRunLength == 0;
+        state.docFreq = statsReader.readVInt();
+        //if (DEBUG) System.out.println("    dF=" + state.docFreq);
+        if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+          state.totalTermFreq = state.docFreq; // all postings have freq=1
+        } else {
+          state.totalTermFreq = state.docFreq + statsReader.readVLong();
+          //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        }
       }
-      // metadata 
-      for (int i = 0; i < ste.fr.longsSize; i++) {
-        longs[i] = bytesReader.readVLong();
-      }
-      ste.fr.parent.postingsReader.decodeTerm(longs, bytesReader, ste.fr.fieldInfo, state, absolute);
+
+      // metadata
+      ste.fr.parent.postingsReader.decodeTerm(bytesReader, ste.fr.fieldInfo, state, absolute);
 
       metaDataUpto++;
       absolute = false;
@@ -463,10 +528,10 @@ final class SegmentTermsEnumFrame {
     while(true) {
       assert nextEnt < entCount;
       nextEnt++;
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffixesReader.skipBytes(code >>> 1);
       if ((code & 1) != 0) {
-        final long subCode = suffixesReader.readVLong();
+        final long subCode = suffixLengthsReader.readVLong();
         if (targetSubCode == subCode) {
           //if (DEBUG) System.out.println("        match!");
           lastSubFP = subFP;
@@ -486,6 +551,7 @@ final class SegmentTermsEnumFrame {
   private int startBytePos;
   private int suffix;
   private long subCode;
+  CompressionAlgorithm compressionAlg = CompressionAlgorithm.NO_COMPRESSION;
 
   // for debugging
   /*
@@ -522,12 +588,13 @@ final class SegmentTermsEnumFrame {
 
     assert prefixMatches(target);
 
+    // TODO: binary search when all terms have the same length, which is common for ID fields,
+    // which are also the most sensitive to lookup performance?
     // Loop over each entry (term or sub-block) in this block:
-    //nextTerm: while(nextEnt < entCount) {
-    nextTerm: while (true) {
+    do {
       nextEnt++;
 
-      suffix = suffixesReader.readVInt();
+      suffix = suffixLengthsReader.readVInt();
 
       // if (DEBUG) {
       //   BytesRef suffixBytesRef = new BytesRef();
@@ -537,60 +604,37 @@ final class SegmentTermsEnumFrame {
       //   System.out.println("      cycle: term " + (nextEnt-1) + " (of " + entCount + ") suffix=" + brToString(suffixBytesRef));
       // }
 
-      final int termLen = prefix + suffix;
       startBytePos = suffixesReader.getPosition();
       suffixesReader.skipBytes(suffix);
 
-      final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
-      int targetPos = target.offset + prefix;
+      // Loop over bytes in the suffix, comparing to the target
+      final int cmp = Arrays.compareUnsigned(
+          suffixBytes, startBytePos, startBytePos + suffix,
+          target.bytes, target.offset + prefix, target.offset + target.length);
 
-      // Loop over bytes in the suffix, comparing to
-      // the target
-      int bytePos = startBytePos;
-      while(true) {
-        final int cmp;
-        final boolean stop;
-        if (targetPos < targetLimit) {
-          cmp = (suffixBytes[bytePos++]&0xFF) - (target.bytes[targetPos++]&0xFF);
-          stop = false;
-        } else {
-          assert targetPos == targetLimit;
-          cmp = termLen - target.length;
-          stop = true;
-        }
+      if (cmp < 0) {
+        // Current entry is still before the target;
+        // keep scanning
+      } else if (cmp > 0) {
+        // Done!  Current entry is after target --
+        // return NOT_FOUND:
+        fillTerm();
 
-        if (cmp < 0) {
-          // Current entry is still before the target;
-          // keep scanning
+        //if (DEBUG) System.out.println("        not found");
+        return SeekStatus.NOT_FOUND;
+      } else {
+        // Exact match!
 
-          if (nextEnt == entCount) {
-            // We are done scanning this block
-            break nextTerm;
-          } else {
-            continue nextTerm;
-          }
-        } else if (cmp > 0) {
+        // This cannot be a sub-block because we
+        // would have followed the index to this
+        // sub-block from the start:
 
-          // Done!  Current entry is after target --
-          // return NOT_FOUND:
-          fillTerm();
-
-          //if (DEBUG) System.out.println("        not found");
-          return SeekStatus.NOT_FOUND;
-        } else if (stop) {
-          // Exact match!
-
-          // This cannot be a sub-block because we
-          // would have followed the index to this
-          // sub-block from the start:
-
-          assert ste.termExists;
-          fillTerm();
-          //if (DEBUG) System.out.println("        found!");
-          return SeekStatus.FOUND;
-        }
+        assert ste.termExists;
+        fillTerm();
+        //if (DEBUG) System.out.println("        found!");
+        return SeekStatus.FOUND;
       }
-    }
+    } while (nextEnt < entCount);
 
     // It is possible (and OK) that terms index pointed us
     // at this block, but, we scanned the entire block and
@@ -631,11 +675,11 @@ final class SegmentTermsEnumFrame {
     assert prefixMatches(target);
 
     // Loop over each entry (term or sub-block) in this block:
-    nextTerm: while(nextEnt < entCount) {
+    while(nextEnt < entCount) {
 
       nextEnt++;
 
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffix = code >>> 1;
 
       //if (DEBUG) {
@@ -654,69 +698,52 @@ final class SegmentTermsEnumFrame {
         state.termBlockOrd++;
         subCode = 0;
       } else {
-        subCode = suffixesReader.readVLong();
+        subCode = suffixLengthsReader.readVLong();
         lastSubFP = fp - subCode;
       }
 
-      final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
-      int targetPos = target.offset + prefix;
+      final int cmp = Arrays.compareUnsigned(
+          suffixBytes, startBytePos, startBytePos + suffix,
+          target.bytes, target.offset + prefix, target.offset + target.length);
 
-      // Loop over bytes in the suffix, comparing to
-      // the target
-      int bytePos = startBytePos;
-      while (true) {
-        final int cmp;
-        final boolean stop;
-        if (targetPos < targetLimit) {
-          cmp = (suffixBytes[bytePos++]&0xFF) - (target.bytes[targetPos++]&0xFF);
-          stop = false;
-        } else {
-          assert targetPos == targetLimit;
-          cmp = termLen - target.length;
-          stop = true;
-        }
+      if (cmp < 0) {
+        // Current entry is still before the target;
+        // keep scanning
+      } else if (cmp > 0) {
+        // Done!  Current entry is after target --
+        // return NOT_FOUND:
+        fillTerm();
 
-        if (cmp < 0) {
-          // Current entry is still before the target;
-          // keep scanning
-          continue nextTerm;
-        } else if (cmp > 0) {
+        //if (DEBUG) System.out.println("        maybe done exactOnly=" + exactOnly + " ste.termExists=" + ste.termExists);
 
-          // Done!  Current entry is after target --
-          // return NOT_FOUND:
-          fillTerm();
-
-          //if (DEBUG) System.out.println("        maybe done exactOnly=" + exactOnly + " ste.termExists=" + ste.termExists);
-
-          if (!exactOnly && !ste.termExists) {
-            //System.out.println("  now pushFrame");
-            // TODO this 
-            // We are on a sub-block, and caller wants
-            // us to position to the next term after
-            // the target, so we must recurse into the
-            // sub-frame(s):
-            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
+        if (!exactOnly && !ste.termExists) {
+          //System.out.println("  now pushFrame");
+          // TODO this 
+          // We are on a sub-block, and caller wants
+          // us to position to the next term after
+          // the target, so we must recurse into the
+          // sub-frame(s):
+          ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
+          ste.currentFrame.loadBlock();
+          while (ste.currentFrame.next()) {
+            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
             ste.currentFrame.loadBlock();
-            while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
-              ste.currentFrame.loadBlock();
-            }
           }
-                
-          //if (DEBUG) System.out.println("        not found");
-          return SeekStatus.NOT_FOUND;
-        } else if (stop) {
-          // Exact match!
-
-          // This cannot be a sub-block because we
-          // would have followed the index to this
-          // sub-block from the start:
-
-          assert ste.termExists;
-          fillTerm();
-          //if (DEBUG) System.out.println("        found!");
-          return SeekStatus.FOUND;
         }
+
+        //if (DEBUG) System.out.println("        not found");
+        return SeekStatus.NOT_FOUND;
+      } else {
+        // Exact match!
+
+        // This cannot be a sub-block because we
+        // would have followed the index to this
+        // sub-block from the start:
+
+        assert ste.termExists;
+        fillTerm();
+        //if (DEBUG) System.out.println("        found!");
+        return SeekStatus.FOUND;
       }
     }
 

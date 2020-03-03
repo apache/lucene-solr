@@ -556,8 +556,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     }
     if (searcher instanceof SolrIndexSearcher) {
       return ((SolrIndexSearcher) searcher).getLiveDocSet().getBits();
-    } else {
-      // TODO Does this ever happen?  In Solr should always be SolrIndexSearcher?
+    } else { // could happen in Delete-by-query situation
       //smallSetSize==0 thus will always produce a BitDocSet (FixedBitSet)
       DocSetCollector docSetCollector = new DocSetCollector(0, searcher.getIndexReader().maxDoc());
       searcher.search(new MatchAllDocsQuery(), docSetCollector);

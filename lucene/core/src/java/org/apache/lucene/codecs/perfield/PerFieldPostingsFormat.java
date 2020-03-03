@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +32,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -61,8 +61,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * {@link ServiceLoader Service Provider Interface} to resolve format names.
  * <p>
  * Files written by each posting format have an additional suffix containing the 
- * format name. For example, in a per-field configuration instead of <tt>_1.prx</tt> 
- * filenames would look like <tt>_1_Lucene40_0.prx</tt>.
+ * format name. For example, in a per-field configuration instead of <code>_1.prx</code> 
+ * filenames would look like <code>_1_Lucene40_0.prx</code>.
  * @see ServiceLoader
  * @lucene.experimental
  */
@@ -86,13 +86,41 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   /** Group of fields written by one PostingsFormat */
   static class FieldsGroup {
-    final Set<String> fields = new TreeSet<>();
-    int suffix;
-
+    final List<String> fields;
+    final int suffix;
     /** Custom SegmentWriteState for this group of fields,
      *  with the segmentSuffix uniqueified for this
      *  PostingsFormat */
-    SegmentWriteState state;
+    final SegmentWriteState state;
+
+    private FieldsGroup(List<String> fields, int suffix, SegmentWriteState state) {
+      this.fields = fields;
+      this.suffix = suffix;
+      this.state = state;
+    }
+
+    static class Builder {
+      final Set<String> fields;
+      final int suffix;
+      final SegmentWriteState state;
+
+      Builder(int suffix, SegmentWriteState state) {
+        this.suffix = suffix;
+        this.state = state;
+        fields = new HashSet<>();
+      }
+
+      Builder addField(String field) {
+        fields.add(field);
+        return this;
+      }
+
+      FieldsGroup build() {
+        List<String> fieldList = new ArrayList<>(fields);
+        fieldList.sort(null);
+        return new FieldsGroup(fieldList, suffix, state);
+      }
+    }
   };
 
   static String getSuffix(String formatName, String suffix) {
@@ -178,9 +206,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Iterable<String> indexedFieldNames) {
-      // Maps a PostingsFormat instance to the suffix it
-      // should use
-      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
+      // Maps a PostingsFormat instance to the suffix it should use
+      Map<PostingsFormat,FieldsGroup.Builder> formatToGroupBuilders = new HashMap<>();
 
       // Holds last suffix of each PostingFormat name
       Map<String,Integer> suffixes = new HashMap<>();
@@ -196,10 +223,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         }
         String formatName = format.getName();
 
-        FieldsGroup group = formatToGroups.get(format);
-        if (group == null) {
-          // First time we are seeing this format; create a
-          // new instance
+        FieldsGroup.Builder groupBuilder = formatToGroupBuilders.get(format);
+        if (groupBuilder == null) {
+          // First time we are seeing this format; create a new instance
 
           // bump the suffix
           Integer suffix = suffixes.get(formatName);
@@ -213,22 +239,23 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           String segmentSuffix = getFullSegmentSuffix(field,
                                                       writeState.segmentSuffix,
                                                       getSuffix(formatName, Integer.toString(suffix)));
-          group = new FieldsGroup();
-          group.state = new SegmentWriteState(writeState, segmentSuffix);
-          group.suffix = suffix;
-          formatToGroups.put(format, group);
+          groupBuilder = new FieldsGroup.Builder(suffix, new SegmentWriteState(writeState, segmentSuffix));
+          formatToGroupBuilders.put(format, groupBuilder);
         } else {
           // we've already seen this format, so just grab its suffix
           if (!suffixes.containsKey(formatName)) {
-            throw new IllegalStateException("no suffix for format name: " + formatName + ", expected: " + group.suffix);
+            throw new IllegalStateException("no suffix for format name: " + formatName + ", expected: " + groupBuilder.suffix);
           }
         }
 
-        group.fields.add(field);
+        groupBuilder.addField(field);
 
         fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-        fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(group.suffix));
+        fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(groupBuilder.suffix));
       }
+
+      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>((int) (formatToGroupBuilders.size() / 0.75f) + 1);
+      formatToGroupBuilders.forEach((postingsFormat, builder) -> formatToGroups.put(postingsFormat, builder.build()));
       return formatToGroups;
     }
 

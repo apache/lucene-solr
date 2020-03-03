@@ -177,7 +177,7 @@ public final class BlockPackedReaderIterator {
     return value;
   }
 
-  /** Read between <tt>1</tt> and <code>count</code> values. */
+  /** Read between <code>1</code> and <code>count</code> values. */
   public LongsRef next(int count) throws IOException {
     assert count > 0;
     if (ord == valueCount) {

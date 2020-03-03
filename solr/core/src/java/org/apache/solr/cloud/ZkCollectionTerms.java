@@ -47,6 +47,12 @@ class ZkCollectionTerms implements AutoCloseable {
     }
   }
 
+  public void register(String shardId, String coreNodeName) {
+    synchronized (terms)  {
+      getShard(shardId).registerTerm(coreNodeName);
+    }
+  }
+
   public void remove(String shardId, CoreDescriptor coreDescriptor) {
     synchronized (terms) {
       if (getShard(shardId).removeTerm(coreDescriptor)) {

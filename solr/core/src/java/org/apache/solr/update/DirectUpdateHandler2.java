@@ -228,6 +228,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     try {
       return addDoc0(cmd);
     } catch (SolrException e) {
@@ -414,6 +415,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     deleteByIdCommands.increment();
     deleteByIdCommandsCumulative.mark();
 
@@ -477,6 +479,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     deleteByQueryCommands.increment();
     deleteByQueryCommandsCumulative.mark();
     boolean madeIt=false;
@@ -542,6 +545,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     mergeIndexesCommands.mark();
     int rc;
 
@@ -605,6 +609,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
       prepareCommit(cmd);
       return;
@@ -754,6 +759,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    */
   @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     if (core.getCoreContainer().isZooKeeperAware()) {
       throw new UnsupportedOperationException("Rollback is currently not supported in SolrCloud mode. (SOLR-4895)");
     }
@@ -808,13 +814,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
-
-  public static volatile boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
-
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
-
+    log.trace("closeWriter({}): ulog={}", writer, ulog);
+    
     assert TestInjection.injectNonGracefullClose(core.getCoreContainer());
 
     boolean clearRequestInfo = false;
@@ -826,18 +830,21 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp)); // important for debugging
     }
     try {
-      if (!commitOnClose) {
+
+      if (TestInjection.injectSkipIndexWriterCommitOnClose(writer)) {
+        // if this TestInjection triggers, we do some simple rollback()
+        // (which closes the underlying IndexWriter) and then return immediately
+        log.warn("Skipping commit for IndexWriter.close() due to TestInjection");
         if (writer != null) {
           writer.rollback();
         }
-
         // we shouldn't close the transaction logs either, but leaving them open
         // means we can't delete them on windows (needed for tests)
         if (ulog != null) ulog.close(false);
 
         return;
       }
-
+      
       // do a commit before we quit?
       boolean tryToCommit = writer != null && ulog != null && ulog.hasUncommittedChanges()
           && ulog.getState() == UpdateLog.State.ACTIVE;
@@ -846,8 +853,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       solrCoreState.getCommitLock().lock();
       try {
         try {
+          log.info("Committing on IndexWriter.close() {}.",
+                   (tryToCommit ? "" : " ... SKIPPED (unnecessary)"));
           if (tryToCommit) {
-            log.info("Committing on IndexWriter close.");
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
             cmd.openSearcher = false;
             cmd.waitSearcher = false;

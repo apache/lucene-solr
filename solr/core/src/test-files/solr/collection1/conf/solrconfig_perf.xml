@@ -36,19 +36,16 @@
   
   <query>
     <filterCache
-      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
 
     <queryResultCache
-      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
 
     <documentCache
-      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>

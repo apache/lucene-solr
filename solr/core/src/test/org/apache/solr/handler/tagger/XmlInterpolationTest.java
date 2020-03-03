@@ -40,6 +40,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.InputSource;
@@ -57,6 +58,11 @@ public class XmlInterpolationTest extends TaggerTestCase {
     xmlDocBuilder = xmlDocBuilderFactory.newDocumentBuilder();
 
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    xmlDocBuilder = null;
   }
 
   @Override

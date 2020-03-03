@@ -186,8 +186,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-
 ====
 --
 
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
-
 [width="100%",cols="20%,90%",options="header",]
 |===
 |Parameter |Description
@@ -376,8 +374,6 @@ The output from the range facet above would look a bit like:
 ==== Range Facet Parameters
 
 Range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
-
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
 [width="100%",cols="10%,90%",options="header",]
 |===
@@ -574,8 +570,10 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
 |missing |`missing(author)` |number of documents which do not have value for given field or function
+|countvals |`countvals(author)` |number of values for a given field or function
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
-|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
+|uniqueBlock |`uniqueBlock(\_root_)` or `uniqueBlock($fldref)` where `fldref=_root_` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
+| |`uniqueBlock({!v=type:parent})` or `uniqueBlock({!v=$qryref})` where `qryref=type:parent` |same as above, but using bitset of the given query to aggregate hits.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |`sumsq(rent)` |sum of squares of field or function
@@ -745,7 +743,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 
 And the response will look something like:
 
-[source,java]
+[source,json]
 ----
 "facets":{
     "count":32,
@@ -763,7 +761,7 @@ And the response will look something like:
           "top_manufacturer":{
             "buckets":[{
                 "val":"boa",
-                "count":1}]}},
+                "count":1}]}}]}}
 ----
 
 
@@ -807,8 +805,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 ----
 ====
 --
-
-
 
 In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.  A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).  Only after the top candidate buckets have been refined, will the actual `sort` be used.
 
@@ -880,6 +876,7 @@ color: {
   limit: -1,
   facet: {
     productsCount: "uniqueBlock(_root_)"
+      // or "uniqueBlock({!v=type:product})"
   }
 }
 ----
@@ -912,7 +909,7 @@ ____
 
 The `relatedness(...)` function is used to "score" these relationships, relative to "Foreground" and "Background" sets of documents, specified in the function params as queries.
 
-Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
+Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from its parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
 NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 

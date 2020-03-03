@@ -39,7 +39,7 @@ public class TestLazyDocument extends LuceneTestCase {
     { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k" };
   public final int NUM_VALUES = atLeast(100);
 
-  public Directory dir = newDirectory();
+  public Directory dir;
   
   @After
   public void removeIndex() {
@@ -53,6 +53,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
   @Before
   public void createIndex() throws Exception {
+    dir = newDirectory();
 
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter

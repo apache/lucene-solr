@@ -296,7 +296,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
       assertTrue(expressionString.contains("rows=10"));
       assertTrue(expressionString.contains("offset=0"));
-      assertTrue(expressionString.contains("overfetch=150"));
+      assertTrue(expressionString.contains("overfetch=250"));
       assertTrue(expressionString.contains("sum(a_i)"));
       assertTrue(expressionString.contains("sum(a_f)"));
       assertTrue(expressionString.contains("min(a_i)"));
@@ -306,8 +306,8 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("avg(a_i,false)"));
       assertTrue(expressionString.contains("avg(a_f,false)"));
       assertTrue(expressionString.contains("count(*)"));
-      assertEquals(stream.getOverfetch(), 150);
-      assertEquals(stream.getBucketSizeLimit(), 160);
+      assertEquals(stream.getOverfetch(), 250);
+      assertEquals(stream.getBucketSizeLimit(), 260);
       assertEquals(stream.getRows(), 10);
       assertEquals(stream.getOffset(), 0);
     }
@@ -332,7 +332,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(!expressionString.contains("bucketSizeLimit"));
       assertTrue(expressionString.contains("rows=10"));
       assertTrue(expressionString.contains("offset=0"));
-      assertTrue(expressionString.contains("overfetch=150"));
+      assertTrue(expressionString.contains("overfetch=250"));
       assertTrue(expressionString.contains("method=dvhash"));
       assertTrue(expressionString.contains("sum(a_i)"));
       assertTrue(expressionString.contains("sum(a_f)"));
@@ -343,10 +343,10 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("avg(a_i,false)"));
       assertTrue(expressionString.contains("avg(a_f,false)"));
       assertTrue(expressionString.contains("count(*)"));
-      assertEquals(stream.getBucketSizeLimit(), 160);
+      assertEquals(stream.getBucketSizeLimit(), 260);
       assertEquals(stream.getRows(), 10);
       assertEquals(stream.getOffset(), 0);
-      assertEquals(stream.getOverfetch(), 150);
+      assertEquals(stream.getOverfetch(), 250);
 
     }
 

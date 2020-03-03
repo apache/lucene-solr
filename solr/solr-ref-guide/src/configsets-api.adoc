@@ -27,7 +27,7 @@ Once a configset has been uploaded to ZooKeeper, use the configset name when cre
 
 Configsets do not have to be shared between collections if they are uploaded with this API, but this API makes it easier to do so if you wish. An alternative to uploading your configsets in advance would be to put the configuration files into a directory under `server/solr/configsets` and using the directory name as the `-d` parameter when using `bin/solr create` to create a collection.
 
-NOTE: This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
+NOTE: This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Configsets>>.
 
 The API works by passing commands to the `configs` endpoint. The path to the endpoint varies depending on the API being used: the v1 API uses `solr/admin/configs`, while the v2 API uses `api/cluster/configs`. Examples of both types are provided below.
 
@@ -89,6 +89,7 @@ A configset is uploaded in a "trusted" mode if authentication is enabled and the
 * If specified in the configset, the DataImportHandler's ScriptTransformer will not initialize.
 * The XSLT transformer (`tr` parameter) cannot be used at request processing time.
 * If specified in the configset, the StatelessScriptUpdateProcessor will not initialize.
+* Collections won't initialize if <lib> directives are used in the configset. (Note: Libraries added to Solr's classpath don't need the <lib> directive)
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
 

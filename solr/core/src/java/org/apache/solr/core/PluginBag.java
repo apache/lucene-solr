@@ -47,7 +47,6 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
@@ -143,9 +142,7 @@ public class PluginBag<T> implements AutoCloseable {
     } else {
       if (info.pkgName != null) {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
-        return meta.clazz == UpdateRequestProcessorFactory.class ?
-            new PluginHolder(info, new LazyUpdateProcessorFactoryHolder(holder)) :
-            holder;
+        return holder;
       } else {
         T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
         initInstance(inst, info);

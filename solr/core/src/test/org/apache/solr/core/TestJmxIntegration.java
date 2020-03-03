@@ -100,6 +100,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       MBeanServerFactory.releaseMBeanServer(newMbeanServer);
     }
     mbeanServer = null;
+    newMbeanServer = null;
   }
 
   @Before

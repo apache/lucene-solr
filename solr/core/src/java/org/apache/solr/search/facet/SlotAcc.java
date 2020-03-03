@@ -431,13 +431,8 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
     }
   }
 
-  private double avg(double tot, int count) {
-    return count == 0 ? 0 : tot / count; // returns 0 instead of NaN.. todo - make configurable? if NaN, we need to
-                                         // handle comparisons though...
-  }
-
   private double avg(int slot) {
-    return avg(result[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -488,13 +483,8 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
     this.sum = resizer.resize(this.sum, 0);
   }
 
-  private double variance(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
-    return val;
-  }
-
   private double variance(int slot) {
-    return variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -550,13 +540,8 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
     this.result = resizer.resize(this.result, 0);
   }
 
-  private double stdDev(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2)); 
-    return val;
-  }
-
   private double stdDev(int slot) {
-    return stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override

@@ -660,10 +660,10 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
 
 `/admin/collections?action=REINDEXCOLLECTION&name=_name_`
 
-The REINDEXCOLLECTION command re-indexes a collection using existing data from the
+The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
 
-NOTE: Re-indexing is potentially a lossy operation - some of the existing indexed data that is not
+NOTE: Reindexing is potentially a lossy operation - some of the existing indexed data that is not
 available as stored fields may be lost, so users should use this command
 with caution, evaluating the potential impact by using different source and target
 collection names first, and preserving the source collection until the evaluation is
@@ -671,19 +671,19 @@ complete.
 
 The target collection must not exist (and may not be an alias). If the target
 collection name is the same as the source collection then first a unique sequential name
-will be generated for the target collection, and then after re-indexing is done an alias
+will be generated for the target collection, and then after reindexing is done an alias
 will be created that points from the source name to the actual sequentially-named target collection.
 
-When re-indexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
+When reindexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
 all source documents are properly processed.
 
 Using optional parameters a different index schema, collection shape (number of shards and replicas)
 or routing parameters can be requested for the target collection.
 
-Re-indexing is executed as a streaming expression daemon, which runs on one of the
+Reindexing is executed as a streaming expression daemon, which runs on one of the
 source collection's replicas. It is usually a time-consuming operation so it's recommended to execute
-it as an asynchronous request in order to avoid request time outs. Only one re-indexing operation may
-execute concurrently for a given source collection. Long-running, erroneous or crashed re-indexing
+it as an asynchronous request in order to avoid request time outs. Only one reindexing operation may
+execute concurrently for a given source collection. Long-running, erroneous or crashed reindexing
 operations may be terminated by using the `abort` option, which also removes partial results.
 
 === REINDEXCOLLECTION Parameters
@@ -694,9 +694,9 @@ Source collection name, may be an alias. This parameter is required.
 `cmd`::
 Optional command. Default command is `start`. Currently supported commands are:
 * `start` - default, starts processing if not already running,
-* `abort` - aborts an already running re-indexing (or clears a left-over status after a crash),
+* `abort` - aborts an already running reindexing (or clears a left-over status after a crash),
 and deletes partial results,
-* `status` - returns detailed status of a running re-indexing command.
+* `status` - returns detailed status of a running reindexing command.
 
 `target`::
 Target collection name, optional. If not specified a unique name will be generated and
@@ -705,10 +705,10 @@ collection name to the unique sequentially-named collection, effectively "hiding
 the original source collection from regular update and search operations.
 
 `q`::
-Optional query to select documents for re-indexing. Default value is `\*:*`.
+Optional query to select documents for reindexing. Default value is `\*:*`.
 
 `fl`::
-Optional list of fields to re-index. Default value is `*`.
+Optional list of fields to reindex. Default value is `*`.
 
 `rows`::
 Documents are transferred in batches. Depending on the average size of the document large
@@ -732,7 +732,7 @@ be deleted.
 `async`::
 Optional request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-When the re-indexing process has completed the target collection is marked using
+When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
 On any errors the command will delete any temporary and target collections and also reset the
 state of the source collection's read-only flag.
@@ -770,9 +770,9 @@ for the purpose of indexing and searching. The source collection is assumed to b
   }
 }
 ----
-As a result a new collection `.rx_newCollection_2` has been created, with selected documents re-indexed to 3 shards, and
+As a result a new collection `.rx_newCollection_2` has been created, with selected documents reindexed to 3 shards, and
 with an alias pointing from `newCollection` to this one. The status also shows that the source collection
-was already an alias to `.rx_newCollection_1`, which was likely a result of a previous re-indexing.
+was already an alias to `.rx_newCollection_1`, which was likely a result of a previous reindexing.
 
 [[colstatus]]
 == COLSTATUS: Detailed Status of a Collection's Indexes
@@ -860,7 +860,7 @@ This section also shows `topN` values by size from each field.
 
 Data types shown in the response can be roughly divided into the following groups:
 
-* `storedFields` - represents the raw uncompressed data in stored fields. Eg. for UTF-8 strings this represents
+* `storedFields` - represents the raw uncompressed data in stored fields. For example, for UTF-8 strings this represents
 the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
 
 * `terms_terms` - represents the aggregated size of the term dictionary. The size of this data is affected by the
@@ -876,7 +876,7 @@ has an `omitNorms` flag in the schema, which is common for fields that don't nee
 
 * `termVectors` - represents the aggregated size of term vectors.
 
-* `docValues_*` - represents aggregated size of doc values, by type (eg. `docValues_numeric`, `docValues_binary`, etc).
+* `docValues_*` - represents aggregated size of doc values, by type (e.g., `docValues_numeric`, `docValues_binary`, etc).
 
 * `points` - represents aggregated size of point values.
 
@@ -1239,6 +1239,9 @@ The BACKUP command will backup Solr indexes and configurations for a specified c
 `collection`::
 The name of the collection to be backed up. This parameter is required.
 
+`name`::
+What to name the backup that is created.  This is checked to make sure it doesn't already exist, and otherwise an error message is raised. This parameter is required.
+
 `location`::
 The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
@@ -1267,6 +1270,9 @@ You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> 
 
 `collection`::
 The collection where the indexes will be restored into. This parameter is required.
+
+`name`::
+The name of the existing backup that you want to restore. This parameter is required.
 
 `location`::
 The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.

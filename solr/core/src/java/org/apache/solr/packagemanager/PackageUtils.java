@@ -26,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
@@ -39,7 +40,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
@@ -58,6 +62,9 @@ public class PackageUtils {
    * Represents a version which denotes the latest version available at the moment.
    */
   public static String LATEST = "latest";
+  
+  public static String PACKAGE_PATH = "/api/cluster/package";
+  public static String REPOSITORIES_ZK_PATH = "/repositories.json";
  
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
@@ -134,7 +141,12 @@ public class PackageUtils {
    */
   public static String getJsonStringFromUrl(HttpClient client, String url) {
     try {
-      return IOUtils.toString(client.execute(new HttpGet(url)).getEntity().getContent(), "UTF-8");
+      HttpResponse resp = client.execute(new HttpGet(url));
+      if (resp.getStatusLine().getStatusCode() != 200) {
+        throw new SolrException(ErrorCode.NOT_FOUND,
+            "Error (code="+resp.getStatusLine().getStatusCode()+") fetching from URL: "+url);
+      }
+      return IOUtils.toString(resp.getEntity().getContent(), "UTF-8");
     } catch (UnsupportedOperationException | IOException e) {
       throw new RuntimeException(e);
     }
@@ -168,8 +180,10 @@ public class PackageUtils {
     // TODO: Should perhaps use Matchers etc. instead of this clumsy replaceAll().
 
     if (str == null) return null;
-    for (String param: defaults.keySet()) {
-      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    if (defaults != null) {
+      for (String param: defaults.keySet()) {
+        str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+      }
     }
     for (String param: overrides.keySet()) {
       str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
@@ -235,4 +249,15 @@ public class PackageUtils {
     }
     return collections;
   }
+  
+  public static String getCollectionParamsPath(String collection) {
+    return "/api/collections/" + collection + "/config/params";
+  }
+
+  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
+    ByteBuffer buf = ByteBuffer.wrap(bytes);
+    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
+    DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
+  }
+
 }

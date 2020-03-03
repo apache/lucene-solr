@@ -57,16 +57,18 @@ import org.apache.solr.schema.TextField;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
+import org.apache.solr.search.facet.CountValsAgg;
 import org.apache.solr.search.facet.HLLAgg;
 import org.apache.solr.search.facet.MinMaxAgg;
 import org.apache.solr.search.facet.MissingAgg;
 import org.apache.solr.search.facet.PercentileAgg;
+import org.apache.solr.search.facet.RelatednessAgg;
 import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
-import org.apache.solr.search.facet.RelatednessAgg;
 import org.apache.solr.search.facet.UniqueAgg;
-import org.apache.solr.search.facet.UniqueBlockAgg;
+import org.apache.solr.search.facet.UniqueBlockFieldAgg;
+import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
@@ -970,7 +972,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_uniqueBlock", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new UniqueBlockAgg(fp.parseArg());
+        if (fp.sp.peek() == QueryParsing.LOCALPARAM_START.charAt(0) ) {
+          return new UniqueBlockQueryAgg(fp.parseNestedQuery());
+        }
+        return new UniqueBlockFieldAgg(fp.parseArg());
       }
     });
 
@@ -984,35 +989,35 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_sum", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new SumAgg(fp.parseValueSource());
+        return new SumAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 
     addParser("agg_avg", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new AvgAgg(fp.parseValueSource());
+        return new AvgAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 
     addParser("agg_sumsq", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new SumsqAgg(fp.parseValueSource());
+        return new SumsqAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 
     addParser("agg_variance", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new VarianceAgg(fp.parseValueSource());
+        return new VarianceAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
     
     addParser("agg_stddev", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new StddevAgg(fp.parseValueSource());
+        return new StddevAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 
@@ -1020,6 +1025,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new MissingAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+      }
+    });
+
+    addParser("agg_countvals", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new CountValsAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
     
@@ -1046,7 +1058,26 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
-    addParser("agg_percentile", new PercentileAgg.Parser());
+    addParser("agg_percentile", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        List<Double> percentiles = new ArrayList<>();
+        ValueSource vs = fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE);
+        while (fp.hasMoreArguments()) {
+          double val = fp.parseDouble();
+          if (val<0 || val>100) {
+            throw new SyntaxError("requested percentile must be between 0 and 100.  got " + val);
+          }
+          percentiles.add(val);
+        }
+
+        if (percentiles.isEmpty()) {
+          throw new SyntaxError("expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
+        }
+
+        return new PercentileAgg(vs, percentiles);
+      }
+    });
     
     addParser("agg_" + RelatednessAgg.NAME, new ValueSourceParser() {
       @Override

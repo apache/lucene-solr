@@ -109,7 +109,7 @@ Solr supports modifying, adding and removing child documents as part of atomic u
 Schema and configuration requirements are detailed in
 <<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
 Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
-and re-indexes the structure after applying the atomic update. +
+and reindexes the structure after applying the atomic update. +
 Syntactically, nested/partial updates are very similar to a regular atomic update,
 as demonstrated by the examples below.
 
@@ -461,4 +461,4 @@ If `versionField` is specified as a list, then this parameter too must be specif
 `supportMissingVersionOnOldDocs`::
 This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.
 
-Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml;hb=HEAD[test solrconfig.xml file] for additional information and example usages.
+Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.

@@ -143,7 +143,7 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null)
       return null;
@@ -165,12 +165,22 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
     visitor.consumeTerms(new IntervalQuery(field, this), new Term(field, term));
   }
 
-  private MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+  private IntervalMatchesIterator matches(TermsEnum te, int doc) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.ALL);
     if (pe.advance(doc) != doc) {
       return null;
     }
-    return new MatchesIterator() {
+    return new IntervalMatchesIterator() {
+
+      @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
+      public int width() {
+        return 1;
+      }
 
       int upto = pe.freq();
       int pos = -1;

@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -73,7 +74,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null) {
       return null;
@@ -83,7 +84,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
     BytesRef term;
     int count = 0;
     while ((term = te.next()) != null) {
-      MatchesIterator mi = TermIntervalsSource.matches(te, doc);
+      MatchesIterator mi = TermIntervalsSource.matches(te, doc, field);
       if (mi != null) {
         subMatches.add(mi);
         if (count++ > maxExpansions) {
@@ -91,12 +92,61 @@ class MultiTermIntervalsSource extends IntervalsSource {
         }
       }
     }
-    return MatchesUtils.disjunction(subMatches);
+    MatchesIterator mi = MatchesUtils.disjunction(subMatches);
+    if (mi == null) {
+      return null;
+    }
+    return new IntervalMatchesIterator() {
+      @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
+      public int width() {
+        return 1;
+      }
+
+      @Override
+      public boolean next() throws IOException {
+        return mi.next();
+      }
+
+      @Override
+      public int startPosition() {
+        return mi.startPosition();
+      }
+
+      @Override
+      public int endPosition() {
+        return mi.endPosition();
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return mi.startOffset();
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return mi.endOffset();
+      }
+
+      @Override
+      public MatchesIterator getSubMatches() throws IOException {
+        return mi.getSubMatches();
+      }
+
+      @Override
+      public Query getQuery() {
+        return mi.getQuery();
+      }
+    };
   }
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-
+    automaton.visit(visitor, new IntervalQuery(field, this), field);
   }
 
   @Override

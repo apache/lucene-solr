@@ -381,7 +381,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
           nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-          nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
+          nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
           nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
@@ -651,7 +651,7 @@ var graphSubController = function ($scope, Zookeeper) {
         Zookeeper.liveNodes(function (data) {
             var live_nodes = {};
             for (var c in data.tree[0].children) {
-                live_nodes[data.tree[0].children[c].data.title] = true;
+                live_nodes[data.tree[0].children[c].text] = true;
             }
 
             var params = {view: "graph"};
@@ -668,7 +668,7 @@ var graphSubController = function ($scope, Zookeeper) {
             }
 
             Zookeeper.clusterState(params, function (data) {
-                    eval("var state=" + data.znode.data); // @todo fix horrid means to parse JSON
+                    var state = $.parseJSON(data.znode.data);
 
                     var leaf_count = 0;
                     var graph_data = {

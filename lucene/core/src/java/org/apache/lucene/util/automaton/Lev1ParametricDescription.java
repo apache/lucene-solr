@@ -88,26 +88,26 @@ class Lev1ParametricDescription extends ParametricDescription {
     
   // 4 vectors; 5 states per vector; array length = 20
   private final static long[] toStates2 = new long[] /*3 bits per value */ {
-    0x69a292450428003L
+    0x4da292442420003L
   };
   private final static long[] offsetIncrs2 = new long[] /*2 bits per value */ {
-    0x5555588000L
+    0x5555528000L
   };
     
   // 8 vectors; 5 states per vector; array length = 40
   private final static long[] toStates3 = new long[] /*3 bits per value */ {
-    0x1690a82152018003L,0xb1a2d346448a49L
+    0x14d0812112018003L,0xb1a29b46d48a49L
   };
   private final static long[] offsetIncrs3 = new long[] /*2 bits per value */ {
-    0x555555b8220f0000L,0x5555L
+    0x555555e80a0f0000L,0x5555L
   };
   
   // state map
   //   0 -> [(0, 0)]
   //   1 -> [(0, 1)]
   //   2 -> [(0, 1), (1, 1)]
-  //   3 -> [(0, 1), (2, 1)]
-  //   4 -> [(0, 1), (1, 1), (2, 1)]
+  //   3 -> [(0, 1), (1, 1), (2, 1)]
+  //   4 -> [(0, 1), (2, 1)]
   
   
   public Lev1ParametricDescription(int w) {

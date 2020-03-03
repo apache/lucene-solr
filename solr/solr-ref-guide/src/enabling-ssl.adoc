@@ -36,25 +36,14 @@ In addition to `localhost` and `127.0.0.1`, this example includes a LAN IP addre
 
 [source,bash]
 ----
-keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.jks -ext SAN=DNS:localhost,IP:192.168.1.3,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:192.168.1.3,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
 ----
 
-The above command will create a keystore file named `solr-ssl.keystore.jks` in the current directory.
+The above command will create a keystore file named `solr-ssl.keystore.p12` in the current directory.
 
 === Convert the Certificate and Key to PEM Format for Use with curl
 
-curl isn't capable of using JKS formatted keystores, so the JKS keystore needs to be converted to PEM format, which curl understands.
-
-First convert the JKS keystore into PKCS12 format using `keytool`:
-
-[source,bash]
-----
-keytool -importkeystore -srckeystore solr-ssl.keystore.jks -destkeystore solr-ssl.keystore.p12 -srcstoretype jks -deststoretype pkcs12
-----
-
-The keytool application will prompt you to create a destination keystore password and for the source keystore password, which was set when creating the keystore ("secret" in the example shown above).
-
-Next convert the PKCS12 format keystore, including both the certificate and the key, into PEM format using the http://www.openssl.org[`openssl`] command:
+Convert the PKCS12 format keystore, including both the certificate and the key, into PEM format using the http://www.openssl.org[`openssl`] command:
 
 [source,bash]
 ----
@@ -77,60 +66,50 @@ NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taki
 .bin/solr.in.sh example SOLR_SSL_* configuration
 [source,bash]
 ----
-# Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+# Enables HTTPS. It is implicitly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
 SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
-SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 SOLR_SSL_KEY_STORE_PASSWORD=secret
-SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 SOLR_SSL_TRUST_STORE_PASSWORD=secret
 # Require clients to authenticate
 SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
-# Verify client's hostname during SSL handshake
-SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
 # this to false can be useful to disable these checks when re-using a certificate on many hosts
 SOLR_SSL_CHECK_PEER_NAME=true
-# Override Key/Trust Store types if necessary
-SOLR_SSL_KEY_STORE_TYPE=JKS
-SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
 
 When you start Solr, the `bin/solr` script includes the settings in `bin/solr.in.sh` and will pass these SSL-related system properties to the JVM.
 
 .Client Authentication Settings
-WARNING: Enable either SOLR_SSL_NEED_CLIENT_AUTH or SOLR_SSL_WANT_CLIENT_AUTH but not both at the same time. They are mutually exclusive and Jetty will select one of them which may not be what you expect. SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION should be set to true if you only want requests from authenticated host-names to be accepted.
+WARNING: Enable either SOLR_SSL_NEED_CLIENT_AUTH or SOLR_SSL_WANT_CLIENT_AUTH but not both at the same time. They are mutually exclusive and Jetty will select one of them which may not be what you expect. SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION should be set to false if you want to disable hostname verification.
 
 Similarly, when you start Solr on Windows, the `bin\solr.cmd` script includes the settings in `bin\solr.in.cmd` - uncomment and update the set of properties beginning with `SOLR_SSL_*` to pass these SSL-related system properties to the JVM:
 
 .bin\solr.in.cmd example SOLR_SSL_* configuration
 [source,text]
 ----
-REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+REM Enables HTTPS. It is implicitly true if you set SOLR_SSL_KEY_STORE. Use this config
 REM to enable https module with custom jetty configuration.
 set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 set SOLR_SSL_KEY_STORE_PASSWORD=secret
-set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
-REM Verify client hostname during SSL handshake
-set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
 REM this to false can be useful to disable these checks when re-using a certificate on many hosts
 set SOLR_SSL_CHECK_PEER_NAME=true
-REM Override Key/Trust Store types if necessary
-set SOLR_SSL_KEY_STORE_TYPE=JKS
-set SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
 
 === Run Single Node Solr using SSL
@@ -334,7 +313,7 @@ NOTE: If your operating system does not include curl, you can download binaries 
 
 === Create a SolrCloud Collection using bin/solr
 
-Create a 2-shard, replicationFactor=1 collection named mycollection using the default configset (_default):
+Create a 2-shard, replicationFactor=1 collection named mycollection using the `_default` configset:
 
 .*nix command
 [source,bash]
@@ -403,7 +382,7 @@ Use `post.jar` to index some example documents to the SolrCloud collection creat
 ----
 cd example/exampledocs
 
-java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
+java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
 ----
 
 === Query Using curl
@@ -421,9 +400,9 @@ From a java client using SolrJ, index a document. In the code below, the `javax.
 
 [source,java]
 ----
-System.setProperty("javax.net.ssl.keyStore", "/path/to/solr-ssl.keystore.jks");
+System.setProperty("javax.net.ssl.keyStore", "/path/to/solr-ssl.keystore.p12");
 System.setProperty("javax.net.ssl.keyStorePassword", "secret");
-System.setProperty("javax.net.ssl.trustStore", "/path/to/solr-ssl.keystore.jks");
+System.setProperty("javax.net.ssl.trustStore", "/path/to/solr-ssl.keystore.p12");
 System.setProperty("javax.net.ssl.trustStorePassword", "secret");
 String zkHost = "127.0.0.1:2181";
 CloudSolrClient client = new CloudSolrClient.Builder().withZkHost(zkHost).build();

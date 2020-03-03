@@ -23,13 +23,13 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
@@ -103,95 +103,60 @@ public class FSTDictionary implements IndexDictionary {
     return new Browser();
   }
 
+  /**
+   * Stateful {@link Browser} to seek a term in this {@link FSTDictionary}
+   * and get its corresponding block file pointer in the block file.
+   */
   protected class Browser implements IndexDictionary.Browser {
 
     protected final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(dictionary);
 
-    protected static final int STATE_SEEK = 0, STATE_NEXT = 1, STATE_END = 2;
-    protected int state = STATE_SEEK;
-
-    //  Note: key and pointer are one position prior to the current fstEnum position,
-    //   since we need need the fstEnum to be one ahead to calculate the prefix.
-    protected final BytesRefBuilder keyBuilder = new BytesRefBuilder();
-    protected int blockPrefixLen = 0;
-    protected long blockFilePointer = -1;
-
     @Override
-    public long seekBlock(BytesRef term) {
-      state = STATE_SEEK;
-      try {
-        BytesRefFSTEnum.InputOutput<Long> seekFloor = fstEnum.seekFloor(term);
-        if (seekFloor == null) {
-          blockFilePointer = -1;
-        } else {
-          blockFilePointer = seekFloor.output;
-        }
-        return blockFilePointer;
-      } catch (IOException e) {
-        // Should never happen.
-        throw new RuntimeException(e);
-      }
+    public long seekBlock(BytesRef term) throws IOException {
+      BytesRefFSTEnum.InputOutput<Long> seekFloor = fstEnum.seekFloor(term);
+      return seekFloor == null ? -1 : seekFloor.output;
+    }
+  }
+
+  /**
+   * Provides stateful {@link Browser} to seek in the {@link FSTDictionary}.
+   *
+   * @lucene.experimental
+   */
+  public static class BrowserSupplier implements IndexDictionary.BrowserSupplier {
+
+    protected final IndexInput dictionaryInput;
+    protected final BlockDecoder blockDecoder;
+
+    /**
+     * Lazy loaded immutable index dictionary (trie hold in RAM).
+     */
+    protected IndexDictionary dictionary;
+
+    public BrowserSupplier(IndexInput dictionaryInput, long startFilePointer, BlockDecoder blockDecoder) throws IOException {
+      this.dictionaryInput = dictionaryInput.clone();
+      this.dictionaryInput.seek(startFilePointer);
+      this.blockDecoder = blockDecoder;
     }
 
     @Override
-    public BytesRef nextKey() {
-      try {
-        if (state == STATE_END) {
-          // if fstEnum is at end, then that's it.
-          return null;
-        }
-
-        if (state == STATE_SEEK && blockFilePointer == -1) { // see seekBlock
-          if (fstEnum.next() == null) { // advance.
-            state = STATE_END; // probably never happens (empty FST)?  We code defensively.
-            return null;
+    public IndexDictionary.Browser get() throws IOException {
+      // This double-check idiom does not require the dictionary to be volatile
+      // because it is immutable. See section "Double-Checked Locking Immutable Objects"
+      // of https://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html.
+      if (dictionary == null) {
+        synchronized (this) {
+          if (dictionary == null) {
+            dictionary = read(dictionaryInput, blockDecoder);
           }
         }
-        keyBuilder.copyBytes(fstEnum.current().input);
-        blockFilePointer = fstEnum.current().output;
-        assert blockFilePointer >= 0;
-
-        state = STATE_NEXT;
-
-        BytesRef key = keyBuilder.get();
-
-        // advance fstEnum
-        BytesRefFSTEnum.InputOutput<Long> inputOutput = fstEnum.next();
-
-        // calc common prefix
-        if (inputOutput == null) {
-          state = STATE_END; // for *next* call; current state is good
-          blockPrefixLen = 0;
-        } else {
-          int sortKeyLength = StringHelper.sortKeyLength(key, inputOutput.input);
-          assert sortKeyLength >= 1;
-          blockPrefixLen = sortKeyLength - 1;
-        }
-        return key;
-      } catch (IOException e) {
-        // Should never happen.
-        throw new RuntimeException(e);
       }
+      return dictionary.browser();
     }
 
     @Override
-    public BytesRef peekKey() {
-      assert state != STATE_SEEK;
-      return (state == STATE_END) ? null : fstEnum.current().input;
-    }
-
-    @Override
-    public int getBlockPrefixLen() {
-      assert state != STATE_SEEK;
-      assert blockPrefixLen >= 0;
-      return blockPrefixLen;
-    }
-
-    @Override
-    public long getBlockFilePointer() {
-      assert state != STATE_SEEK;
-      assert blockFilePointer >= 0;
-      return blockFilePointer;
+    public long ramBytesUsed() {
+      return dictionary == null ? 0 : dictionary.ramBytesUsed();
     }
   }
 
@@ -202,33 +167,23 @@ public class FSTDictionary implements IndexDictionary {
    */
   public static class Builder implements IndexDictionary.Builder {
 
-    protected final org.apache.lucene.util.fst.Builder<Long> fstBuilder;
+    protected final FSTCompiler<Long> fstCompiler;
     protected final IntsRefBuilder scratchInts;
 
     public Builder() {
       PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-      fstBuilder = new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
       scratchInts = new IntsRefBuilder();
     }
 
     @Override
-    public void add(BytesRef blockKey, long blockFilePointer) {
-      try {
-        fstBuilder.add(Util.toIntsRef(blockKey, scratchInts), blockFilePointer);
-      } catch (IOException e) {
-        // Should never happen.
-        throw new RuntimeException(e);
-      }
+    public void add(BytesRef blockKey, long blockFilePointer) throws IOException {
+      fstCompiler.add(Util.toIntsRef(blockKey, scratchInts), blockFilePointer);
     }
 
     @Override
-    public FSTDictionary build() {
-      try {
-        return new FSTDictionary(fstBuilder.finish());
-      } catch (IOException e) {
-        // Should never happen.
-        throw new RuntimeException(e);
-      }
+    public FSTDictionary build() throws IOException {
+      return new FSTDictionary(fstCompiler.compile());
     }
   }
 }

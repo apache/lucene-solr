@@ -86,7 +86,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile, null);
+      return new SolrConfig(solrHome.resolve(coreName), confFile, null, true);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
@@ -228,8 +228,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName),
-          cc.getContainerProperties(), cc.isZooKeeperAware(),
+      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc,
           CoreDescriptor.CORE_DATADIR, dataDir,
           CoreDescriptor.CORE_CONFIG, solrConfig,
           CoreDescriptor.CORE_SCHEMA, schema,

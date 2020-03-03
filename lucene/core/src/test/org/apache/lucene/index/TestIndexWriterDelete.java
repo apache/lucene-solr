@@ -482,10 +482,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     return hitCount;
   }
 
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
+  @Nightly
   public void testDeletesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(false);
   }
 
+  // TODO: can we fix MockDirectoryWrapper disk full checking to be more efficient (not recompute on every write)?
+  @Nightly
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);
   }
@@ -731,15 +735,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
           new Throwable().printStackTrace(System.out);
           if (sawMaybe && !failed) {
-            boolean seen = false;
-            StackTraceElement[] trace = new Exception().getStackTrace();
-            for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName()) ||
-                  "slowFileExists".equals(trace[i].getMethodName())) {
-                seen = true;
-                break;
-              }
-            }
+            boolean seen = callStackContainsAnyOf("applyDeletesAndUpdates", "slowFileExists");
             if (!seen) {
               // Only fail once we are no longer in applyDeletes
               failed = true;
@@ -751,16 +747,12 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             }
           }
           if (!failed) {
-            StackTraceElement[] trace = new Exception().getStackTrace();
-            for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
-                if (VERBOSE) {
-                  System.out.println("TEST: mock failure: saw applyDeletes");
-                  new Throwable().printStackTrace(System.out);
-                }
-                sawMaybe = true;
-                break;
+            if (callStackContainsAnyOf("applyDeletesAndUpdates")) {
+              if (VERBOSE) {
+                System.out.println("TEST: mock failure: saw applyDeletes");
+                new Throwable().printStackTrace(System.out);
               }
+              sawMaybe = true;
             }
           }
         }
@@ -990,6 +982,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
   
+  // TODO: this test can hit pathological cases (IW settings?) where it runs for far too long
+  @Nightly
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
@@ -1010,7 +1004,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                     .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(newTextField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO));
-    int num = atLeast(3);
+    int num = atLeast(1);
     for (int iter = 0; iter < num; iter++) {
       int count = 0;
 

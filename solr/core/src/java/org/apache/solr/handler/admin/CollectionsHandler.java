@@ -16,25 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -48,6 +29,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
@@ -102,6 +84,25 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
@@ -149,10 +150,10 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
@@ -300,14 +301,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  /*
-   * In SOLR-11739 we change the way the async IDs are checked to decide if one has
-   * already been used or not. For backward compatibility, we continue to check in the
-   * old way (meaning, in all the queues) for now. This extra check should be removed
-   * in Solr 9
-   */
-  private static final boolean CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS = true;
-
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
@@ -329,34 +322,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       NamedList<String> r = new NamedList<>();
 
-      if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
-          coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
-              coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
-              coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
-              overseerCollectionQueueContains(asyncId))) {
-        // for back compatibility, check in the old places. This can be removed in Solr 9
-        r.add("error", "Task with the same requestid already exists.");
-      } else {
-        if (coreContainer.getZkController().claimAsyncId(asyncId)) {
-          boolean success = false;
-          try {
-            coreContainer.getZkController().getOverseerCollectionQueue()
-                .offer(Utils.toJSON(m));
-            success = true;
-          } finally {
-            if (!success) {
-              try {
-                coreContainer.getZkController().clearAsyncId(asyncId);
-              } catch (Exception e) {
-                // let the original exception bubble up
-                log.error("Unable to release async ID={}", asyncId, e);
-                SolrZkClient.checkInterrupted(e);
-              }
+
+      if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+        boolean success = false;
+        try {
+          coreContainer.getZkController().getOverseerCollectionQueue()
+              .offer(Utils.toJSON(m));
+          success = true;
+        } finally {
+          if (!success) {
+            try {
+              coreContainer.getZkController().clearAsyncId(asyncId);
+            } catch (Exception e) {
+              // let the original exception bubble up
+              log.error("Unable to release async ID={}", asyncId, e);
+              SolrZkClient.checkInterrupted(e);
             }
           }
-        } else {
-          r.add("error", "Task with the same requestid already exists.");
         }
+      } else {
+        r.add("error", "Task with the same requestid already exists.");
       }
       r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
 
@@ -368,7 +353,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      return SolrResponse.deserialize(event.getBytes());
+      return OverseerSolrResponseSerializer.deserialize(event.getBytes());
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -874,11 +859,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       final NamedList<Object> results = new NamedList<>();
       if (zkController.getOverseerCompletedMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
-        rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, COMPLETED, "found [" + requestId + "] in completed tasks");
       } else if (zkController.getOverseerFailureMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerFailureMap().get(requestId);
-        rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, FAILED, "found [" + requestId + "] in failed tasks");
       } else if (zkController.getOverseerRunningMap().contains(requestId)) {
         addStatusToResponse(results, RUNNING, "found [" + requestId + "] in running tasks");
@@ -958,7 +943,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
-    OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> (Map) new LinkedHashMap<>()),
+    OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
 
     /**
      * Handle list collection request.
@@ -1040,7 +1025,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (!shardUnique && !SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(prop)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
             + " the property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'. " +
-            " Property: " + prop + " shardUnique: " + Boolean.toString(shardUnique));
+            " Property: " + prop + " shardUnique: " + shardUnique);
       }
 
       return copy(req.getParams(), map, ONLY_ACTIVE_NODES, SHARD_UNIQUE);
@@ -1441,7 +1426,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
           }
 
-          if ((replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount)) return true;
+          return (replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount);
         }
         return false;
       });

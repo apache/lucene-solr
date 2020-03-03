@@ -16,6 +16,8 @@
 
 @echo off
 
+@REM Make sure to keep line endings as CRLF for .cmd files
+
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
 
 set "PASS_TO_RUN_EXAMPLE="
@@ -80,6 +82,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
   )
 
+  IF NOT DEFINED SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION (
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  )
+
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
@@ -121,6 +127,11 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 ) ELSE (
   set SOLR_SSL_OPTS=
+)
+
+REM Requestlog options
+IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
 
 REM Authentication options
@@ -171,7 +182,7 @@ IF NOT "%SOLR_HOST%"=="" (
   set "SOLR_TOOL_HOST=localhost"
 )
 IF "%SOLR_JETTY_HOST%"=="" (
-  set SOLR_JETTY_HOST=0.0.0.0
+  set "SOLR_JETTY_HOST=127.0.0.1"
 )
 
 REM Verify Java is available
@@ -716,11 +727,13 @@ goto parse_args
 
 :set_debug
 set SOLR_LOG_LEVEL=DEBUG
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
 :set_warn
 set SOLR_LOG_LEVEL=WARN
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
@@ -952,6 +965,10 @@ IF "%verbose%"=="1" (
 
 IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=-Dhost=%SOLR_HOST%
+) ELSE IF "%SOLR_JETTY_HOST%"=="" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
+) ELSE IF "%SOLR_JETTY_HOST%"=="127.0.0.1" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
 ) ELSE (
   set SOLR_HOST_ARG=
 )
@@ -992,7 +1009,7 @@ set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set TMP_SOLR_HOME=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
-  set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+  set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
 
 set IS_RESTART=0
@@ -1077,6 +1094,10 @@ IF "!IS_RESTART!"=="1" set SCRIPT_CMD=start
 IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
+IF DEFINED SOLR_JETTY_HOST (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
+)
+
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
   For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
@@ -1147,6 +1168,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
   )
 )
 
+REM IP-based access control
+set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_WHITELIST%" ^
+-Dsolr.jetty.inetaccess.excludes="%SOLR_IP_BLACKLIST%"
+
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   IF "!RMI_PORT!"=="" set RMI_PORT=1%SOLR_PORT%
@@ -1160,6 +1185,18 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=%REMOTE_JMX_OPTS% -Djava.rmi.server.hostname=%SOLR_HOST%
 ) ELSE (
   set REMOTE_JMX_OPTS=
+)
+
+REM Enable java security manager by default (limiting filesystem access and other things)
+IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
+  set SOLR_SECURITY_MANAGER_ENABLED=true
+)
+
+IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
+  set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
+-Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
+-Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
+-Dsolr.internal.network.permission=*
 )
 
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
@@ -1249,10 +1286,12 @@ IF "%verbose%"=="1" (
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
+IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
@@ -1264,7 +1303,7 @@ set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
 set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
-IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
 cd /d "%SOLR_SERVER_DIR%"
 
@@ -1298,7 +1337,7 @@ IF "%FG%"=="1" (
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
-    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" ^
@@ -1306,7 +1345,7 @@ IF "%FG%"=="1" (
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
-    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 

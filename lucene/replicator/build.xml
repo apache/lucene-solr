@@ -22,7 +22,7 @@
   </description>
 
   <!-- TODO: go fix this in jetty, its stupid -->
-  <property name="tests.policy" location="../tools/junit4/solr-tests.policy"/>
+  <property name="tests.policy" location="../tools/junit4/replicator-tests.policy"/>
 
   <import file="../module-build.xml"/>
 

@@ -100,7 +100,7 @@ class CdcrReplicatorState {
     try {
       targetClient.close();
     } catch (IOException ioe) {
-      log.warn("Caught exception trying to close server: ", ioe.getMessage());
+      log.warn("Caught exception trying to close server: {}", ioe.getMessage());
     }
     this.closeLogReader();
   }
