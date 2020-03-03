@@ -36,7 +36,7 @@ import static org.apache.lucene.util.SloppyMath.toDegrees;
 import static org.apache.lucene.util.SloppyMath.toRadians;
 
 /** Represents a lat/lon rectangle. */
-public class Rectangle {
+public class Rectangle extends LatLonGeometry {
   /** maximum longitude value (in degrees) */
   public final double minLat;
   /** minimum longitude value (in degrees) */
@@ -61,6 +61,11 @@ public class Rectangle {
     assert maxLat >= minLat;
 
     // NOTE: cannot assert maxLon >= minLon since this rect could cross the dateline
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return Rectangle2D.create(this);
   }
 
   @Override
