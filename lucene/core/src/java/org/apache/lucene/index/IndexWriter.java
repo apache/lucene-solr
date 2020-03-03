@@ -1446,6 +1446,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   private synchronized long tryModifyDocument(IndexReader readerIn, int docID, DocModifier toApply) throws IOException {
+    // no modificationLease allowed here since we are synchronized on the IW
     final LeafReader reader;
     if (readerIn instanceof LeafReader) {
       // Reader is already atomic: use the incoming docID:
@@ -1474,7 +1475,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (segmentInfos.indexOf(info) != -1) {
       ReadersAndUpdates rld = getPooledInstance(info, false);
       if (rld != null) {
-        synchronized(bufferedUpdatesStream) {
+        synchronized (bufferedUpdatesStream) {
           toApply.run(docID, rld);
           return docWriter.deleteQueue.getNextSequenceNumber();
         }
@@ -1560,17 +1561,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw tragedy;
     }
   }
-  private Closeable acquireModificationLease() {
-    return acquireModificationLease(null);
-  }
 
-  private Closeable acquireModificationLease(Closeable in) {
+  private Closeable acquireModificationLease() {
+    assert Thread.holdsLock(this) == false : "Can't acquire modification lock while holding the IW lock";
     if (modificationLease.tryAcquire() == false) {
       assert closing;
       ensureOpen();
       assert false : "We should not have reached this point, if we can't acquire any lease we should be closing";
     }
-    return () -> IOUtils.close(in, modificationLease::release);
+    return modificationLease::release;
   }
 
   /**
@@ -2424,9 +2423,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      * We also drop global field numbering before during abort to make
      * sure it's just like a fresh index.
      */
-    try {
+    try (Closeable finalizer = acquireModificationLease()){
       synchronized (fullFlushLock) {
-        try (Closeable finalizer = acquireModificationLease(docWriter.lockAndAbortAll())) {
+        try (Closeable secFinalizer = docWriter.lockAndAbortAll()) {
           processEvents(false);
           synchronized (this) {
             try {
@@ -3143,7 +3142,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    */
   @SuppressWarnings("try")
   public final boolean flushNextBuffer() throws IOException {
-    try (Closeable finalizer = acquireModificationLease()){
+    try (Closeable finalizer = acquireModificationLease()) {
       if (docWriter.flushOneDWPT()) {
         processEvents(true);
         return true; // we wrote a segment
@@ -3678,7 +3677,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     doBeforeFlush();
     testPoint("startDoFlush");
     boolean success = false;
-    try (Closeable finalizer = acquireModificationLease()){
+    try (Closeable finalizer = acquireModificationLease()) {
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "  start flush: applyAllDeletes=" + applyAllDeletes);
@@ -5081,6 +5080,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  be deleted the next time commit() is called.
    */
   public synchronized void deleteUnusedFiles() throws IOException {
+    // no modificationLease allowed here since we are synchronized on the IW
     // TODO: should we remove this method now that it's the Directory's job to retry deletions?  Except, for the super expert IDP use case
     // it's still needed?
     ensureOpen(false);
@@ -5218,6 +5218,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
   
   private void processEvents(boolean triggerMerge) throws IOException {
+    assert modificationLease.availablePermits() != Integer.MAX_VALUE
+        || Thread.holdsLock(commitLock): "Must acquire modificationLease or the commitLock before processing events";
     if (tragedy.get() == null) {
       Event event;
       while ((event = eventQueue.poll()) != null)  {
