@@ -41,6 +41,9 @@ API Changes
 * LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
   (Bruno Roustant)
 
+* LUCENE-9212: Deprecated Intervals.multiterm() methods that take a bare Automaton
+  have been removed (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -114,6 +117,11 @@ API Changes
 
 * LUCENE-9218: XY geometries API works in float space. (Ignacio Vera)
 
+* LUCENE-9212: Intervals.multiterm() takes CompiledAutomaton rather than plain Automaton
+  (Alan Woodward)
+
+* LUCENE-9150: Restore support for dynamic PlanetModel in spatial3d. (Nick Knize)
+
 New Features
 ---------------------
 
@@ -169,6 +177,14 @@ Improvements
   single field to the same value. This optimization can reduce the flush time by around
   20% for the docValues update user cases. (Nhat Nguyen, Adrien Grand, Simon Willnauer)
 
+* LUCENE-9245: Reduce AutomatonTermsEnum memory usage. (Bruno Roustant, Robert Muir)
+
+* LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
+
+* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
+* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
+
 Optimizations
 ---------------------
 
@@ -202,6 +218,15 @@ Bug Fixes
   so an query for UNORDERED(foo, foo) would match a document containing 'foo'
   only once.  (Alan Woodward)
 
+* LUCENE-9250: Add support for Circle2d#intersectsLine around the dateline. (Ignacio Vera)
+
+* LUCENE-9243: Add fudge factor when creating a bounding box of a XYCircle. (Ignacio Vera)
+
+* LUCENE-9239: Circle2D#WithinTriangle detects properly if a triangle is Within distance. (Ignacio Vera)
+
+* LUCENE-9251: Fix bug in the polygon tessellator where edges with different value on #isEdgeFromPolygon
+  were bot filtered out properly. (Ignacio Vera)
+
 Other
 ---------------------
 
@@ -209,6 +234,8 @@ Other
   (kkewwei via Adrien Grand)
 
 * LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
+
+* LUCENE-9225: Rectangle extends LatLonGeometry so it can be used in a geometry collection. (Ignacio Vera)
 
 ======================= Lucene 8.4.1 =======================
 

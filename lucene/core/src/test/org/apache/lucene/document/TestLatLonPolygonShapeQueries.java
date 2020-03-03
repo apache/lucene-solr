@@ -20,9 +20,9 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 
@@ -66,35 +66,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon p = (Polygon)shape;
-      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
-      Component2D.WithinRelation withinRelation = Component2D.WithinRelation.DISJOINT;
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
-      for (Tessellator.Triangle t : tessellation) {
-        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
-            t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
-            t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
-        if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
-            return false;
-          }
-        } else if (queryRelation == QueryRelation.CONTAINS) {
-          Component2D.WithinRelation relation = rectangle2D.withinTriangle(decoded.aX, decoded.aY, decoded.ab, decoded.bX, decoded.bY, decoded.bc, decoded.cX, decoded.cY, decoded.ca);
-          if (relation == Component2D.WithinRelation.NOTWITHIN) {
-            return false;
-          } else if (relation == Component2D.WithinRelation.CANDIDATE) {
-            withinRelation = Component2D.WithinRelation.CANDIDATE;
-          }
-        } else {
-          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
-            return queryRelation == QueryRelation.INTERSECTS;
-          }
-        }
-      }
-      if (queryRelation == QueryRelation.CONTAINS) {
-        return withinRelation == Component2D.WithinRelation.CANDIDATE;
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
+      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override
