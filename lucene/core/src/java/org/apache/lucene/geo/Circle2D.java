@@ -102,50 +102,30 @@ class Circle2D implements Component2D {
       return WithinRelation.DISJOINT;
     }
 
-    // if any of the points is inside the polygon, the polygon cannot be within this indexed
-    // shape because points belong to the original indexed shape.
+    // if any of the points is inside the circle then we cannot be within this
+    // indexed shape
     if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
       return WithinRelation.NOTWITHIN;
     }
 
-    WithinRelation relation = WithinRelation.DISJOINT;
-    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
-    // if it only intersects edges that do not belong to the shape, then it is a candidate
-    // we skip edges at the dateline to support shapes crossing it
-    if (calculator.intersectsLine(ax, ay, bx, by)) {
-      if (ab == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
+    // we only check edges that belong to the original polygon. If we intersect any of them, then
+    // we are not within.
+    if (ab == true && calculator.intersectsLine(ax, ay, bx, by)) {
+      return WithinRelation.NOTWITHIN;
+    }
+    if (bc == true && calculator.intersectsLine(bx, by, cx, cy)) {
+      return WithinRelation.NOTWITHIN;
+    }
+    if (ca == true && calculator.intersectsLine(cx, cy, ax, ay)) {
+      return WithinRelation.NOTWITHIN;
     }
 
-    if (calculator.intersectsLine(bx, by, cx, cy)) {
-      if (bc == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (calculator.intersectsLine(cx, cy, ax, ay)) {
-      if (ca == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-
-    // if any of the edges crosses and edge that does not belong to the shape
-    // then it is a candidate for within
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
-    }
-
-    // Check if shape is within the triangle
+    // check if center is within the triangle. This is the only check that returns this circle as a candidate but that is ol
+    // is fine as the center must be inside to be one of the triangles.
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) == true) {
       return WithinRelation.CANDIDATE;
     }
-    return relation;
+    return WithinRelation.DISJOINT;
   }
 
   /** relates an indexed line segment (a "flat triangle") with the polygon */

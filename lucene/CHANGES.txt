@@ -129,6 +129,8 @@ Bug Fixes
 
 * LUCENE-9243: Add fudge factor when creating a bounding box of a XYCircle. (Ignacio Vera)
 
+* LUCENE-9239: Circle2D#WithinTriangle detects properly if a triangle is Within distance. (Ignacio Vera)
+
 Other
 ---------------------
 
