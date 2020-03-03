@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial.spatial4j;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
@@ -32,7 +33,7 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestCase {
 
-  PlanetModel planetModel = PlanetModel.WGS84;
+  PlanetModel planetModel = RandomPicks.randomFrom(random(), new PlanetModel[] {PlanetModel.WGS84, PlanetModel.CLARKE_1866});
 
   public Geo3dShapeWGS84ModelRectRelationTest() {
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
@@ -71,11 +72,11 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestC
   @Test
   public void testFailure3() {
     /*
-   [junit4]   1> S-R Rel: {}, Shape {}, Rectangle {}    lap# {} [CONTAINS, Geo3dShape{planetmodel=PlanetModel: {ab=1.0011188180710464, c=0.9977622539852008}, shape=GeoPath: {planetmodel=PlanetModel: {ab=1.0011188180710464, c=0.9977622539852008}, width=1.53588974175501(87.99999999999999),
+   [junit4]   1> S-R Rel: {}, Shape {}, Rectangle {}    lap# {} [CONTAINS, Geo3dShape{planetmodel=PlanetModel: {xyScaling=1.0011188180710464, zScaling=0.9977622539852008}, shape=GeoPath: {planetmodel=PlanetModel: {xyScaling=1.0011188180710464, zScaling=0.9977622539852008}, width=1.53588974175501(87.99999999999999),
     points={[[X=0.12097657665150223, Y=-0.6754177666095532, Z=0.7265376136709238], [X=-0.3837892785614207, Y=0.4258049113530899, Z=0.8180007850434892]]}}},
     Rect(minX=4.0,maxX=36.0,minY=16.0,maxY=16.0), 6981](no slf4j subst; sorry)
    [junit4] FAILURE 0.59s | Geo3dWGS84ShapeRectRelationTest.testGeoPathRect <<<
-   [junit4]    > Throwable #1: java.lang.AssertionError: Geo3dShape{planetmodel=PlanetModel: {ab=1.0011188180710464, c=0.9977622539852008}, shape=GeoPath: {planetmodel=PlanetModel: {ab=1.0011188180710464, c=0.9977622539852008}, width=1.53588974175501(87.99999999999999),
+   [junit4]    > Throwable #1: java.lang.AssertionError: Geo3dShape{planetmodel=PlanetModel: {xyScaling=1.0011188180710464, zScaling=0.9977622539852008}, shape=GeoPath: {planetmodel=PlanetModel: {xyScaling=1.0011188180710464, zScaling=0.9977622539852008}, width=1.53588974175501(87.99999999999999),
     points={[[X=0.12097657665150223, Y=-0.6754177666095532, Z=0.7265376136709238], [X=-0.3837892785614207, Y=0.4258049113530899, Z=0.8180007850434892]]}}} intersect Pt(x=23.81626064835212,y=16.0)
    [junit4]    >  at __randomizedtesting.SeedInfo.seed([2595268DA3F13FEA:6CC30D8C83453E5D]:0)
    [junit4]    >  at org.apache.lucene.spatial.spatial4j.RandomizedShapeTestCase._assertIntersect(RandomizedShapeTestCase.java:168)

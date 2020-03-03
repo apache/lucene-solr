@@ -1728,7 +1728,7 @@ public class IndexFetcher {
             long checkSumClient = checksum.getValue();
             if (checkSumClient != checkSumServer) {
               log.error("Checksum not matched between client and server for file: {}", fileName);
-              //if checksum is wrong it is a problem return for retry
+              //if checksum is wrong it is a problem return (there doesn't seem to be a retry in this case.)
               return 1;
             }
           }
@@ -1736,10 +1736,10 @@ public class IndexFetcher {
           file.write(buf, packetSize);
           bytesDownloaded += packetSize;
           log.debug("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
-          if (bytesDownloaded >= size)
-            return 0;
           //errorCount is always set to zero after a successful packet
           errorCount = 0;
+          if (bytesDownloaded >= size)
+            return 0;
         }
       } catch (ReplicationHandlerException e) {
         throw e;

@@ -120,6 +120,8 @@ API Changes
 * LUCENE-9212: Intervals.multiterm() takes CompiledAutomaton rather than plain Automaton
   (Alan Woodward)
 
+* LUCENE-9150: Restore support for dynamic PlanetModel in spatial3d. (Nick Knize)
+
 New Features
 ---------------------
 
@@ -177,6 +179,12 @@ Improvements
 
 * LUCENE-9245: Reduce AutomatonTermsEnum memory usage. (Bruno Roustant, Robert Muir)
 
+* LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
+
+* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
+* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
+
 Optimizations
 ---------------------
 
@@ -211,6 +219,8 @@ Bug Fixes
   only once.  (Alan Woodward)
 
 * LUCENE-9250: Add support for Circle2d#intersectsLine around the dateline. (Ignacio Vera)
+
+* LUCENE-9243: Add fudge factor when creating a bounding box of a XYCircle. (Ignacio Vera)
 
 Other
 ---------------------

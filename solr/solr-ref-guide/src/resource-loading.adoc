@@ -37,7 +37,7 @@ Prefer to put resources here.
 == Resources in Other Places
 
 Resources can also be placed in an arbitrary directory and <<libs.adoc#lib-directives-in-solrconfig,referenced>> from a `<lib />` directive in `solrconfig.xml`, provided the directive refers to a directory and not the actual resource file.  Example: `<lib path="/volume/models/" />`
-This choice may make sense if the resource is too large for a configSet in ZooKeeper.
+This choice may make sense if the resource is too large for a configset in ZooKeeper.
 However it's up to you to somehow ensure that all nodes in your cluster have access to these resources.
 
 Finally, and this is very unusual, resources can also be packaged inside `.jar` files from which they will be referenced.

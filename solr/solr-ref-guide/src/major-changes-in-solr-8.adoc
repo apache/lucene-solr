@@ -192,7 +192,7 @@ This syntax has been removed entirely and if sent to Solr it will now produce an
 The pattern language is very similar but not the same.
 Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and that's it.
 +
-For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, or simply examine the `_default` configSet (found in `server/solr/configsets`).
+For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, or simply examine the `_default` configset (found in `server/solr/configsets`).
 +
 Also note that the default set of date patterns (formats) have expanded from previous releases to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
 

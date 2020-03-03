@@ -51,6 +51,7 @@ public class STUniformSplitTerms extends UniformSplitTerms {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+    checkIntersectAutomatonType(compiled);
     return new STIntersectBlockReader(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder, fieldInfos);
   }
 
