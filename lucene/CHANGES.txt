@@ -224,6 +224,9 @@ Bug Fixes
 
 * LUCENE-9239: Circle2D#WithinTriangle detects properly if a triangle is Within distance. (Ignacio Vera)
 
+* LUCENE-9251: Fix bug in the polygon tessellator where edges with different value on #isEdgeFromPolygon
+  were bot filtered out properly. (Ignacio Vera)
+
 Other
 ---------------------
 
