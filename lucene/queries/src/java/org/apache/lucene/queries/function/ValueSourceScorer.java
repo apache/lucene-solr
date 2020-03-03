@@ -39,7 +39,9 @@ import org.apache.lucene.search.Weight;
  * @lucene.experimental
  */
 public abstract class ValueSourceScorer extends Scorer {
+  // Fixed cost for a single iteration of the TwoPhaseIterator instance
   private static final int DEF_COST = 5;
+
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
@@ -62,6 +64,7 @@ public abstract class ValueSourceScorer extends Scorer {
           return externallyMutableCost;
         }
 
+        // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
         return DEF_COST + values.cost();
       }
     };
@@ -104,7 +107,7 @@ public abstract class ValueSourceScorer extends Scorer {
   /**
    * Used to externally set a mutable cost for this instance. If set, this cost gets preference over the FunctionValues's cost
    *
-   * @expert
+   * @lucene.experimental
    */
   public void setExternallyMutableCost(float cost) {
     externallyMutableCost = cost;

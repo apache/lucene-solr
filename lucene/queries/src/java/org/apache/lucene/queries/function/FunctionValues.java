@@ -41,6 +41,7 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 //   want the Query carrying around big objects
 public abstract class FunctionValues {
 
+  // Default cost for FunctionValues -- ideally should be overriden by concrete implementations
   public static final int DEFAULT_COST = 100;
 
   public byte byteVal(int doc) throws IOException { throw new UnsupportedOperationException(); }
