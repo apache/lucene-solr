@@ -18,7 +18,7 @@
 
 Optimizing the JVM can be a key factor in getting the most from your Solr installation.
 
-Configuring your JVM is be a complex topic and a full discussion is beyond the scope of this document. Luckily, most modern JVMs are quite good at making the best use of available resources with default settings. The following sections contain a few tips that may be helpful when the defaults are not optimal for your situation.
+Configuring your JVM is a complex topic and a full discussion is beyond the scope of this document. Luckily, most modern JVMs are quite good at making the best use of available resources with default settings. The following sections contain a few tips that may be helpful when the defaults are not optimal for your situation.
 
 For more general information about improving Solr performance, see https://cwiki.apache.org/confluence/display/solr/SolrPerformanceFactors[Solr Performance Factors] in the Solr Wiki.
 
@@ -26,18 +26,18 @@ For more general information about improving Solr performance, see https://cwiki
 
 The most important JVM configuration settings control the heap allocated to the JVM: `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size of the heap. Setting these two options to the same value is a common practice.
 
-Heap size is critical and unfortunately there is no "one size fits all" solution, you must test with your data and your application. The best way to determine the correct size is to analyze the garbage collection (GC) logs located in your logs directory. There are various tools that help analyze these logs and, in particular, show the amount of memory used after GC has completed (GCViewer and GCEasy are two). Also you can attach jconsole (distributed with most Java runtimes) to check memory consumption as Solr is running. This will show the absolute minimum amount of memory required; adding 25-50% "headroom" is a reasonable starting point.
+Heap size is critical and unfortunately there is no "one size fits all" solution, you must test with your data and your application. The best way to determine the correct size is to analyze the garbage collection (GC) logs located in your logs directory. There are various tools that help analyze these logs and, in particular, show the amount of memory used after GC has completed (http://www.tagtraum.com/gcviewer.html[GCViewer] and https://gceasy.io/[GCEasy] are two). Also you can attach jconsole (distributed with most Java runtimes) to check memory consumption as Solr is running. This will show the absolute minimum amount of memory required; adding 25-50% "headroom" is a reasonable starting point.
 
 There are several points to keep in mind:
 
- * Running Solr with too little "headroom" allocated for the heap can cause excessive resources to be consumed by continual GC. Thus the 25-50% recommendation above.
- * Lucene/Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index. Therefore, as much memory as possible should be left for the operating system to use for this purpose.
- * The heap allocated should be as small as possible while maintaining good performance. 8-16G is quite common, and larger heaps are sometimes used. When heaps grow to larger sizes, it is imperative to test extensively before going to production.
- * The G1GC garbage collector is currently preferred when using a JVM that supports it (Java 9 and later)
- * Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps. One way to achieve this is to run Solr as a Docker container.
- * It's good practice to periodically re-analyze the GC logs and/or monitor with <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
- * On *nix systems, we recommend that Solr be run with the "oom killer script" (see solr/bin/oom_solr.sh). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
- * All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed. If, through monitoring, these collections are frequent and greater than your application can tolerate, additional tuning should be considered. "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.
+* Running Solr with too little "headroom" allocated for the heap can cause excessive resources to be consumed by continual GC. Thus the 25-50% recommendation above.
+* Lucene/Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index. Therefore, as much memory as possible should be left for the operating system to use for this purpose.
+* The heap allocated should be as small as possible while maintaining good performance. 8-16Gb is quite common, and larger heaps are sometimes used. When heaps grow to larger sizes, it is imperative to test extensively before going to production.
+* The G1GC garbage collector is currently preferred when using a JVM that supports it (Java 9 and later).
+* Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps. One way to achieve this is to run Solr as a https://hub.docker.com/_/solr?tab=tags[Docker container].
+* It's good practice to periodically re-analyze the GC logs and/or monitor with <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
+* On *nix systems, we recommend that Solr be run with the "OOM killer script" (see `solr/bin/oom_solr.sh`). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
+* All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed. If, through monitoring, these garbage collections are frequent and greater than your application can tolerate, additional tuning should be considered. "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.
 
 Consult your JVM vendor's documentation for specifics in your particular case, the recommendations above are intended as starting points.
 
