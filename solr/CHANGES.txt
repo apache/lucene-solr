@@ -16,6 +16,8 @@ Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
+
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -29,6 +31,14 @@ Other Changes
 * LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
 
 * SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
+
+* SOLR-14272: Remove autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay for 9.0 as it was
+  deprecated in 7.1 (Anshum Gupta)
+
+* SOLR-14258: DocList no longer extends DocSet. (David Smiley)
+
+* SOLR-14256: Remove HashDocSet; add DocSet.getBits() instead.  DocSet is now strictly immutable and ascending order.
+  It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
 
 ==================  8.5.0 ==================
 
@@ -51,6 +61,9 @@ New Features
  * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
 
  * SOLR-14241: New delete() Stream Decorator (hossman)
+
+ * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
+   (Eric Pugh via Christine Poerschke)
 
 Improvements
 ---------------------
@@ -97,6 +110,13 @@ Improvements
   highlighter can now highlight text fields from docValues. (Andrzej Wislowski, David Smiley)
 
 * SOLR-14270: export command to have an option to write to a zip file (noble)
+
+* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
+
+* SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
+
+* SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
+  See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
 
 Optimizations
 ---------------------
@@ -168,6 +188,14 @@ Bug Fixes
 
 * SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
 
+* SOLR-13411: Deny atomic update for route.field, uniqueKey, version and throw exception. (Dr Oleg Savrasov via Mikhail Khludnev)
+
+* SOLR-14252: Avoid NullPointerException in AggregateMetric. (Andy Webb via ab)
+
+* SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
+
+* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+
 Other Changes
 ---------------------
 
@@ -199,6 +227,8 @@ Other Changes
 
 * SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches
   during SolrCore reload. Removed Bandaid kludge. (Erick Erickson)
+
+* SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
 
 ==================  8.4.1 ==================
 

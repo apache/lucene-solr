@@ -82,7 +82,8 @@ public final class LZ4 {
    * enough to be able to hold <b>all</b> decompressed data (meaning that you
    * need to know the total decompressed length).
    */
-  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest, int dOff) throws IOException {
+  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest) throws IOException {
+    int dOff = 0;
     final int destEnd = dest.length;
 
     do {

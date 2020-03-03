@@ -22,26 +22,32 @@ This section will describe the default `solr.xml` file included with Solr and ho
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in ZooKeeper when using SolrCloud. The default `solr.xml` file looks like this:
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. The default `solr.xml` file looks like this:
 
 [source,xml]
 ----
 <solr>
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
+  <str name="sharedLib">${solr.sharedLib:}</str>
 
   <solrcloud>
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
     <str name="hostContext">${hostContext:solr}</str>
-    <int name="zkClientTimeout">${zkClientTimeout:15000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
+    <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
+    <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
+    <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
+    <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
+    <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
     class="HttpShardHandlerFactory">
     <int name="socketTimeout">${socketTimeout:600000}</int>
-    <int name="connTimeout">${connTimeout:600000}</int>
+    <int name="connTimeout">${connTimeout:60000}</int>
+    <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
 </solr>
@@ -83,7 +89,7 @@ The root of the core discovery tree, defaults to `$SOLR_HOME` (by default, `serv
 Currently non-operational.
 
 `sharedLib`::
-Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. This path is relative to `$SOLR_HOME`. Custom handlers may be placed in this directory.
+Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. If the specified path is not absolute, it will be relative to `$SOLR_HOME`. Custom handlers may be placed in this directory. Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's class path.
 
 `shareSchema`::
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.
@@ -202,6 +208,9 @@ If the threadpool uses a backing queue, what is its maximum size to use direct h
 
 `fairnessPolicy`::
 A boolean to configure if the threadpool favors fairness over throughput. Default is false to favor throughput.
+
+`shardsWhitelist`::
+When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can also be configured in `solr.in.sh`.
 
 `replicaRouting`::
 A NamedList specifying replica routing preference configuration. This may be used to select and configure replica routing preferences. `default=true` may be used to set the default base replica routing preference. Only positive default status assertions are respected; i.e., `default=false` has no effect. If no explicit default base replica routing preference is configured, the implicit default will be `random`.

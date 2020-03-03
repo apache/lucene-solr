@@ -128,17 +128,17 @@ on a convenient organization of the index, and should only be considered if norm
 Streaming Expressions respect the <<distributed-requests.adoc#shards-preference-parameter,shards.preference parameter>> for any call to Solr.
 
 The value of `shards.preference` that is used to route requests is determined in the following order. The first option available is used.
-- Provided as a parameter in the streaming expression (e.g. `search(...., shards.preference="replica.type:PULL")`)
-- Provided in the URL Params of the streaming expression (e.g. `http://solr_url:8983/solr/stream?expr=....&shards.preference=replica.type:PULL`)
+- Provided as a parameter in the streaming expression (e.g., `search(...., shards.preference="replica.type:PULL")`)
+- Provided in the URL Params of the streaming expression (e.g., `http://solr_url:8983/solr/stream?expr=....&shards.preference=replica.type:PULL`)
 - Set as a default in the Cluster properties.
 
 === Adding Custom Expressions
 
 Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
-list of known mappings for the `/stream` handler, you just need to declare it as a plugin in `solrconfig.xml` via:
+list of known mappings for the `/stream` and `/graph` handlers, you just need to declare it as a plugin in `solrconfig.xml` via:
 
 [source,xml]
-<expressible name="custom" class="org.example.CustomStreamingExpression"/> 
+<expressible name="custom" class="org.example.CustomStreamingExpression"/>
 
 
 == Types of Streaming Expressions

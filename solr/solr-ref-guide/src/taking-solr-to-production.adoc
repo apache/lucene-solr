@@ -179,12 +179,17 @@ Alternatively, the boolean system property `lucene.cms.override_spins` can be se
 
 === Memory and GC Settings
 
-By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx512m), which is fine for getting started with Solr. For production, you’ll want to increase the maximum heap size based on the memory requirements of your search application; values between 10 and 20 gigabytes are not uncommon for production servers. When you need to change the memory settings for your Solr server, use the `SOLR_JAVA_MEM` variable in the include file, such as:
+By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx512m), which is fine for getting started with Solr. For production, you’ll want to increase the maximum heap size based on the memory requirements of your search application; values between 8 and 16 gigabytes are not uncommon for production servers. When you need to change the memory settings for your Solr server, use the `SOLR_HEAP` variable in the include file, such as:
 
 [source,bash]
 ----
-SOLR_JAVA_MEM="-Xms10g -Xmx10g"
+SOLR_HEAP="8g"
 ----
+
+[NOTE]
+====
+Do not allocate a very large Java Heap unless you know you need it. See <<jvm-settings.adoc#choosing-memory-heap-settings,Choosing Memory Heap Settings>> for details.
+====
 
 Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about garbage collection settings refer to following articles:
@@ -239,7 +244,7 @@ SOLR_HOST=solr1.example.com
 
 Setting the hostname of the Solr server is recommended, especially when running in SolrCloud mode, as this determines the address of the node when it registers with ZooKeeper.
 
-=== Environment banner in Admin UI
+=== Environment Banner in Admin UI
 
 To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
 
@@ -301,6 +306,44 @@ Check these limits every time you upgrade your kernel or operating system. These
 ====
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
 ====
+
+=== Avoid Swapping (*nix Operating Systems)
+
+When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation. We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system. So our recommendation is to disable swap on the host altogether or reduce the "swappiness". These instructions are valid for Linux environments. Also note that when running Solr in a Docker container, these changes must be applied to the *host*.
+
+==== Disabling Swap
+
+To disable swap on a Linux system temporarily, you can run the `swapoff` command:
+
+[source,bash]
+----
+sudo swapoff -a
+----
+
+If you want to make this setting permanent, first make sure you have more than enough physical RAM on your host and then consult the documentation for your Linux system for the correct procedure to disable swap.
+
+==== Reduce Swappiness
+
+An alternative option is to reduce the "swappiness" of your system. A Linux system will by default be quite aggressive in swapping out memory to disk, by having a high default "swappiness" value. By reducing this to a very low value, it will have almost the same effect as using `swapoff`, but Linux will still be allowed to swap in case of emergency. To check the current swappiness setting, run:
+
+[source,bash]
+----
+cat /proc/sys/vm/swappiness
+----
+
+Next, to change the setting permanently, open `/etc/sysctl.conf` as the root user. Then, change or add this line to the file:
+
+[source,bash]
+----
+vm.swappiness = 1
+----
+
+Alternatively, you can change the setting temporarily by running this comamnd:
+
+[source,bash]
+----
+echo 1 > /proc/sys/vm/swappiness
+----
 
 == Security Considerations
 

@@ -25,6 +25,15 @@ import java.io.IOException;
 public final class UnknownDictionary extends BinaryDictionary {
   private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();
 
+  /**
+   * @param scheme scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath where to load resources from; a path, including the file base name without
+   * extension; this is used to match multiple files with the same base name.
+   */
+  public UnknownDictionary(ResourceScheme scheme, String resourcePath) throws IOException {
+    super(scheme, resourcePath);
+  }
+
   private UnknownDictionary() throws IOException {
     super();
   }
