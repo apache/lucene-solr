@@ -43,6 +43,7 @@ public abstract class ValueSourceScorer extends Scorer {
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
+  private float externallyMutableCost;
 
   protected ValueSourceScorer(Weight weight, LeafReaderContext readerContext, FunctionValues values) {
     super(weight);
@@ -56,7 +57,12 @@ public abstract class ValueSourceScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        return DEF_COST + values.getScorer(weight, readerContext).twoPhaseIterator().matchCost();
+        // If an external cost is set, use that
+        if (externallyMutableCost != 0.0) {
+          return externallyMutableCost;
+        }
+
+        return DEF_COST + values.cost();
       }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
@@ -95,4 +101,12 @@ public abstract class ValueSourceScorer extends Scorer {
     return Float.POSITIVE_INFINITY;
   }
 
+  /**
+   * Used to externally set a mutable cost for this instance. If set, this cost gets preference over the FunctionValues's cost
+   *
+   * @expert
+   */
+  public void setExternallyMutableCost(float cost) {
+    externallyMutableCost = cost;
+  }
 }

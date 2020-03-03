@@ -41,6 +41,8 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 //   want the Query carrying around big objects
 public abstract class FunctionValues {
 
+  public static final int DEFAULT_COST = 100;
+
   public byte byteVal(int doc) throws IOException { throw new UnsupportedOperationException(); }
   public short shortVal(int doc) throws IOException { throw new UnsupportedOperationException(); }
 
@@ -90,6 +92,9 @@ public abstract class FunctionValues {
    * @return the number of unique sort ordinals this instance has
    */
   public int numOrd() { throw new UnsupportedOperationException(); }
+
+  public float cost() { return DEFAULT_COST; }
+
   public abstract String toString(int doc) throws IOException;
 
   /**
