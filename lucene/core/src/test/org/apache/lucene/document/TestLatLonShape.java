@@ -25,8 +25,6 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -190,7 +188,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     // search a bounding box
     searcher = newSearcher(reader);
-    q = new LatLonShapeBoundingBoxQuery(FIELDNAME, QueryRelation.CONTAINS,0, 0, 0, 0);
+    q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.CONTAINS,0, 0, 0, 0);
     assertEquals(1, searcher.count(q));
     IOUtils.close(reader, dir);
   }
@@ -403,20 +401,6 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon poly = new Polygon(new double[] {-1.490648725633769E-132d, 90d, 90d, -1.490648725633769E-132d},
         new double[] {0d, 0d, 180d, 0d});
 
-    Rectangle rectangle = new Rectangle(-29.46555603761226d, 0.0d, 8.381903171539307E-8d, 0.9999999403953552d);
-    Rectangle2D rectangle2D = Rectangle2D.create(rectangle);
-
-    Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
-
-    byte[] encoded = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.isEdgefromPolygon(0),
-        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
-        encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
-    ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
-    ShapeField.decodeTriangle(encoded, decoded);
-
-    int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
-
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, poly);
     writer.addDocument(document);
@@ -428,7 +412,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     // search a bbox in the hole
     Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.DISJOINT,-29.46555603761226d, 0.0d, 8.381903171539307E-8d, 0.9999999403953552d);
-    assertEquals(expected, searcher.count(q));
+    assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
   }

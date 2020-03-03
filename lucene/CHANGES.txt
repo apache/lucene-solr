@@ -235,6 +235,8 @@ Other
 
 * LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
 
+* LUCENE-9225: Rectangle extends LatLonGeometry so it can be used in a geometry collection. (Ignacio Vera)
+
 ======================= Lucene 8.4.1 =======================
 
 Bug Fixes
