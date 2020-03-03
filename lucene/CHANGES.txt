@@ -179,6 +179,9 @@ Improvements
 
 * LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
 
+* LUCENE-9260: LeafReader#checkIntegrity verifies checksums of CFS files.
+  (Adrien Grand)
+
 Optimizations
 ---------------------
 
