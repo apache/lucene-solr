@@ -18,13 +18,21 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
@@ -276,6 +284,133 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testSetters() {
     assertSetters(new LogByteSizeMergePolicy());
     assertSetters(new LogDocMergePolicy());
+  }
+
+  public void testMergeOnCommit() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+
+    IndexWriter firstWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 5; i++) {
+      TestIndexWriter.addDoc(firstWriter);
+      firstWriter.flush();
+    }
+    DirectoryReader firstReader = DirectoryReader.open(firstWriter);
+    assertEquals(5, firstReader.leaves().size());
+    firstReader.close();
+    firstWriter.close();
+
+    MergePolicy mergeOnCommitPolicy = new LogDocMergePolicy() {
+      @Override
+      public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+        // Optimize down to a single segment on commit
+        if (mergeTrigger == MergeTrigger.COMMIT && segmentInfos.size() > 1) {
+          List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+          for (SegmentCommitInfo sci : segmentInfos) {
+            if (mergeContext.getMergingSegments().contains(sci) == false) {
+              nonMergingSegments.add(sci);
+            }
+          }
+          if (nonMergingSegments.size() > 1) {
+            MergeSpecification mergeSpecification = new MergeSpecification();
+            mergeSpecification.add(new OneMerge(nonMergingSegments));
+            return mergeSpecification;
+          }
+        }
+        return null;
+      }
+    };
+
+    AtomicInteger abandonedMerges = new AtomicInteger(0);
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(mergeOnCommitPolicy)
+        .setIndexWriterEvents(new IndexWriterEvents() {
+          @Override
+          public void beginMergeOnCommit() {
+
+          }
+
+          @Override
+          public void finishMergeOnCommit() {
+
+          }
+
+          @Override
+          public void abandonedMergesOnCommit(int abandonedCount) {
+            abandonedMerges.incrementAndGet();
+          }
+        });
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
+
+    writerWithMergePolicy.commit();
+
+    DirectoryReader unmergedReader = DirectoryReader.open(writerWithMergePolicy);
+    assertEquals(5, unmergedReader.leaves().size()); // Don't merge unless there's a change
+    unmergedReader.close();
+
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+    writerWithMergePolicy.commit();
+
+    DirectoryReader mergedReader = DirectoryReader.open(writerWithMergePolicy);
+    assertEquals(1, mergedReader.leaves().size()); // Now we merge on commit
+    mergedReader.close();
+
+    LineFileDocs lineFileDocs = new LineFileDocs(random());
+    int docCount = atLeast(1000);
+    AtomicInteger indexedDocs = new AtomicInteger(0);
+    int numIndexingThreads = atLeast(2);
+    CountDownLatch startingGun = new CountDownLatch(1);
+    Collection<Thread> indexingThreads = new ArrayList<>();
+    for (int i = 0; i < numIndexingThreads; i++) {
+      Thread t = new Thread(() -> {
+        try {
+          startingGun.await();
+          while (indexedDocs.getAndIncrement() < docCount) {
+            writerWithMergePolicy.addDocument(lineFileDocs.nextDoc());
+            if (rarely()) {
+              writerWithMergePolicy.commit();
+            }
+          }
+        } catch (IOException | InterruptedException e) {
+          e.printStackTrace();
+          fail();
+        }
+      });
+      t.start();
+      indexingThreads.add(t);
+    }
+    startingGun.countDown();
+    for (Thread t : indexingThreads) {
+      t.join();
+    }
+    for (int i = 0; i < 50; i++) {
+      // Wait for pending merges to finish
+      synchronized (writerWithMergePolicy) {
+        if (writerWithMergePolicy.getMergingSegments().isEmpty()) {
+          break;
+        }
+      }
+      Thread.sleep(100);
+    }
+    abandonedMerges.set(0);
+    // Ensure there's at least one pending change so merge on commit happens
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+    writerWithMergePolicy.commit();
+    if (abandonedMerges.get() == 0) {
+      assertEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
+    } else {
+      assertNotEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
+    }
+
+    try (IndexReader reader = writerWithMergePolicy.getReader()) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      assertEquals(docCount + 7, reader.numDocs());
+      assertEquals(docCount + 7, searcher.count(new MatchAllDocsQuery()));
+    }
+
+    writerWithMergePolicy.close();
+
+    dir.close();
   }
 
   private void assertSetters(MergePolicy lmp) {

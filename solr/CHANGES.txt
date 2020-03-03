@@ -65,6 +65,8 @@ New Features
  * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
    (Eric Pugh via Christine Poerschke)
 
+* SOLR-13942: /api/cluster/zk/* to fetch raw ZK data (noble)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -193,6 +195,8 @@ Bug Fixes
 * SOLR-14252: Avoid NullPointerException in AggregateMetric. (Andy Webb via ab)
 
 * SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
+
+* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
 
 Other Changes
 ---------------------

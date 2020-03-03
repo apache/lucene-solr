@@ -110,7 +110,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     checkHitsCircle(ctx.makePoint(1, 1), 5000, 3, 5, 6, 7);
     //Because we are generating a box based on the west/east longitudes and the south/north latitudes, which then
     //translates to a range query, which is slightly more inclusive.  Thus, even though 0.0 is 15.725 kms away,
-    //it will be included, b/c of the box calculation.
+    //it will be included, b/zScaling of the box calculation.
     checkHitsBBox(ctx.makePoint(0.1, 0.1), 15, 2, 5, 6);
     //try some more
     deleteAll();

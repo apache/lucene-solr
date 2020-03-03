@@ -43,7 +43,7 @@ public final class TokenInfoDictionary extends BinaryDictionary {
    * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
    * this class's name as the path.
    */
-  TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+  public TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
     super(resourceScheme, resourcePath);
     FST<Long> fst;
     try (InputStream is = new BufferedInputStream(getResource(FST_FILENAME_SUFFIX))) {
