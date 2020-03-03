@@ -26,8 +26,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
+import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
@@ -246,8 +246,8 @@ final class Rectangle2D implements Component2D {
     return new Rectangle2D(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
   }
 
-  private static double MIN_LON_INCL_QUANTIZE = decodeLongitude(encodeLongitude(MIN_LON_INCL));
-  private static double MAX_LON_INCL_QUANTIZE = decodeLongitude(encodeLongitude(MAX_LON_INCL));
+  private static double MIN_LON_INCL_QUANTIZE = decodeLongitude(MIN_LON_ENCODED);
+  private static double MAX_LON_INCL_QUANTIZE = decodeLongitude(MAX_LON_ENCODED);
 
   /** create a component2D from the provided LatLon rectangle */
   static Component2D create(Rectangle rectangle) {
