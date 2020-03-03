@@ -63,6 +63,10 @@ class MaxScoreTerminator {
   /** How many hits were requested: Collector's numHits. */
   private final int numHits;
 
+  /** the worst hit over all */
+  private final LeafState thresholdState;
+  private final LeafState scratchState;
+
   /** The total number of docs to collect: the max of the Collector's numHits and its early
    * termination threshold. */
   final int totalToCollect;
@@ -73,9 +77,6 @@ class MaxScoreTerminator {
   /** A lower bound on the total hits collected by all leaves */
   private volatile int totalCollected;
 
-  /** the worst hit over all */
-  private LeafState worstLeafState;
-
   /**
    * @param numHits the number of hits to be returned
    * @param collectionThreshold collect at least this many, even if numHits is less, for the sake of counting
@@ -85,6 +86,9 @@ class MaxScoreTerminator {
     this.numHits = numHits;
     this.totalToCollect = Math.max(numHits, collectionThreshold);
     setIntervalBits(DEFAULT_INTERVAL_BITS);
+    thresholdState = new LeafState();
+    thresholdState.set(Double.MAX_VALUE);
+    scratchState = new LeafState();
   }
 
   // for testing
@@ -95,9 +99,6 @@ class MaxScoreTerminator {
   synchronized LeafState addLeafState() {
     LeafState newLeafState = new LeafState();
     leafStates.add(newLeafState);
-    if (worstLeafState == null) {
-      worstLeafState = newLeafState;
-    }
     return newLeafState;
   }
 
@@ -122,59 +123,55 @@ class MaxScoreTerminator {
     totalCollected += interval;
     /*
     System.out.println(" scoreboard totalCollected = " + totalCollected + "/" + totalToCollect + " "
-        + newLeafState + " ? " + worstLeafState + ":" + newLeafState.compareTo(worstLeafState));
+        + newLeafState + " ? " + thresholdState + ":" + newLeafState.compareTo(thresholdState));
     */
     // (1) Until we collect totalToCollect we can't terminate anything
     // (2) after that, than any single leaf that has collected numHits can be terminated
     // (3) and we may be able to remove the worst leaf(s) even if they have not yet collected numHits
     if (totalCollected >= totalToCollect) {
       if (newLeafState.resultCount >= numHits) {
+        // This leaf has collected enough hits all on its own
         return true;
       }
-      if (newLeafState.compareTo(worstLeafState) >= 0) {
-        worstLeafState = newLeafState;
-        // in this case, we have enough scores: remove the worst leaves
-        updateWorstHit();
-        // and tell the current leaf collector to terminate since it can
-        // no longer contribute any top hits
+      if (totalCollected >= numHits + numExcludedBound) {
+        // If this is the case then we are prepared to terminate some leaves (although they may not
+        // include the one that just called updateLeafState()). We add the count of those leaves to
+        // numExcludedBound, and recompute the upper bound for competitive scores. We continue to
+        // track the terminated leaves until totalCollected crosses the new threshold.
+        excludeSuperfluousLeaves();
+      }
+      if (newLeafState.compareTo(thresholdState) >= 0) {
+        // Tell the current leaf collector to terminate since it can no longer contribute any top hits
         return true;
       }
     }
     return false;
   }
 
-  private void updateWorstHit() {
+  private void excludeSuperfluousLeaves() {
     //System.out.println("scoreboard updateWorstHit " + leafStates.get(leafStates.size() - 1));
     //System.out.println("   total:(" + totalCollected + "-" + numExcludedBound + ")" + " numHits: " + numHits);
-
-    if (totalCollected - numExcludedBound - worstLeafState.resultCount < numHits) {
-      return;
-    }
-    //System.out.println(" and remove " + worstLeafState.resultCount + " from " + totalCollected + "-" + numExcludedBound);
-    // We don't need the worst leaf in order to get enough results, so
-    // remember how many results (upper bound) it accounted for
-    numExcludedBound += worstLeafState.resultCount;
-    // and remove it from the list of worstHits
-    Collections.sort(leafStates);
-    leafStates.remove(leafStates.size() - 1);
-    /*
-    while (leafStates.size() > 1) {
+    //System.out.println(" and remove " + thresholdState.resultCount + " from " + totalCollected + "-" + numExcludedBound);
+    if (leafStates.size() > 1) {
       Collections.sort(leafStates);
-      LeafState worst = leafStates.get(leafStates.size() - 1);
-      if (totalCollected - numExcludedBound - worst.resultCount >= numHits) {
-        //System.out.println(" and remove " + worst.resultCount + " from " + totalCollected + "-" + numExcludedBound);
-        // We don't need the worst leaf in order to get enough results, so
-        // remember how many results (upper bound) it accounted for
-        numExcludedBound += worst.resultCount;
+      do {
+        // Make a copy so we can maintain the tightest bounds and use below for atomic compare and update,
+        // since these LeafStates are being updated concurrently
+        scratchState.updateFrom(leafStates.get(leafStates.size() - 1));
+
+        // We don't need the worst leaf in order to get enough results, so remember how many results
+        // (upper bound) it accounted for, setting a new threshold for hits collected
+        numExcludedBound += scratchState.resultCount;
         // and remove it from the list of worstHits
         leafStates.remove(leafStates.size() - 1);
-      } else {
-        break;
+        //System.out.println(" exclude " + scratchState + " from " + totalCollected + "-" + numExcludedBound);
+      } while (leafStates.size() > 1 && totalCollected >= numHits + numExcludedBound + scratchState.resultCount);
+      // And update the score threshold if the worst leaf remaining after exclusion has a lower max score
+      if (scratchState.compareTo(thresholdState) < 0) {
+        thresholdState.updateFrom(scratchState);
+        //System.out.println("  new threshold: " + scratchState.worstScore);
       }
     }
-    */
-    // and update the worstHit with the worst one that remains after exclusion
-    worstLeafState = leafStates.get(leafStates.size() - 1);
   }
 
   /**
@@ -182,13 +179,24 @@ class MaxScoreTerminator {
    */
   class LeafState implements Comparable<LeafState> {
 
-    private double worstScore = -Double.MAX_VALUE;;
+    // nocommit: tie-break using (global) docid
+    private double worstScore;
     int resultCount;
 
+    void set(double score) {
+      worstScore = score;
+    }
+
     void update(double score) {
+      // scores are nondecreasing
       assert score >= this.worstScore : "descending score: " + score + " < " + this.worstScore;
-      this.worstScore = score;
+      set(score);
       ++this.resultCount;
+    }
+
+    void updateFrom(LeafState other) {
+      this.worstScore = other.worstScore;
+      this.resultCount = other.resultCount;
     }
 
     @Override
