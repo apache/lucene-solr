@@ -20,21 +20,11 @@
 // 2) notice file
 // 3) checksum validation/ generation.
 
-import org.apache.commons.codec.digest.DigestUtils
+import java.nio.file.Files
+import java.security.MessageDigest
 
 // This should be false only for debugging.
 def failOnError = true
-
-// We're using commons-codec for computing checksums.
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
-  }
-}
 
 // Configure license checksum folder for top-level projects.
 // (The file("licenses") inside the configure scope resolves
@@ -151,7 +141,8 @@ subprojects {
                   jarName        : file.toPath().getFileName().toString(),
                   path           : file,
                   module         : resolvedArtifact.moduleVersion,
-                  checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
+                  checksum       : provider { String.format("%040x", new BigInteger(1 ,MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(file.toPath())))) },
+
                   // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
                   // so that we can determine unused dangling files later on.
                   referencedFiles: []
