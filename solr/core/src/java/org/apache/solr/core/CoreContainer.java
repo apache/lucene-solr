@@ -184,6 +184,8 @@ public class CoreContainer {
   private volatile ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreContainerWorkExecutor"));
 
+  final private ExecutorService collectorExecutor;
+
   private final OrderedExecutor replayUpdatesExecutor;
 
   protected volatile LogWatcher logging = null;
@@ -353,6 +355,8 @@ public class CoreContainer {
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
             new DefaultSolrThreadFactory("replayUpdatesExecutor")));
+    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(cfg.getCollectorsPoolSize(),
+        new DefaultSolrThreadFactory("searcherCollectorExecutor"));
   }
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
@@ -543,6 +547,7 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
+    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("searcherCollectorExecutor"));
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -960,6 +965,7 @@ public class CoreContainer {
     }
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
+    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
@@ -2054,6 +2060,10 @@ public class CoreContainer {
    */
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.submit(r);
+  }
+  
+  public ExecutorService getCollectorExecutor() {
+    return collectorExecutor;
   }
 }
 

@@ -24,7 +24,6 @@ import java.util.Locale;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -87,19 +86,14 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        System.out.println("Live: "+bitsString(live.getFixedBitSet()));
-        System.out.println("Set: "+bitsString(set.getFixedBitSet()));
-        FixedBitSet xor = live.getFixedBitSet().clone();
-        xor.xor(set.getFixedBitSet());
-        System.out.println("xor: "+bitsString(xor));
-        assertTrue( set.equals(live) );
+        assertTrue( equals(live, set) );
 
         cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
         cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set.equals(live) );
+        assertTrue( equals(live, set) );
       }
 
     } finally {
@@ -107,12 +101,23 @@ public class TestFiltering extends SolrTestCaseJ4 {
     }
   }
 
-  private String bitsString(Bits bits) {
-    String s = "";
-    for (int i=0; i<bits.length(); i++)
-      s+=bits.get(i)? 1: 0;
-    return s;
+  boolean equals(DocSet ds1, DocSet ds2) {
+    DocSet smaller = ds1.getFixedBitSet().length() < ds2.getFixedBitSet().length() ? ds1: ds2;
+    DocSet larger = ds1.getFixedBitSet().length() > ds2.getFixedBitSet().length() ? ds1: ds2;
+    for (int i=0; i<Math.max(smaller.getFixedBitSet().length(), larger.getFixedBitSet().length()); i++) {
+      if (i>=smaller.getFixedBitSet().length()) {
+        if (larger.getFixedBitSet().get(i) == true) {
+          return false;
+        }
+      } else {
+        if (larger.getFixedBitSet().get(i) != smaller.getFixedBitSet().get(i)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
+
     public void testCaching() throws Exception {
     clearIndex();
     assertU(adoc("id","4", "val_i","1"));
