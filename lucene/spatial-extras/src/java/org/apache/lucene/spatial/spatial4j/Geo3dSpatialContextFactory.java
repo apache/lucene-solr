@@ -72,6 +72,8 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
         this.planetModel = PlanetModel.SPHERE;
       } else if (planetModel.equalsIgnoreCase("wgs84")) {
         this.planetModel = PlanetModel.WGS84;
+      } else if (planetModel.equalsIgnoreCase("clarke1866")) {
+        this.planetModel = PlanetModel.CLARKE_1866;
       } else {
         throw new RuntimeException("Unknown planet model: " + planetModel);
       }

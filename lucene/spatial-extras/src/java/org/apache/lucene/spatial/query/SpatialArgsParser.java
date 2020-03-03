@@ -125,7 +125,7 @@ public class SpatialArgsParser {
     return v == null ? defaultValue : Boolean.parseBoolean(v);
   }
 
-  /** Parses "a=b c=d f" (whitespace separated) into name-value pairs. If there
+  /** Parses "a=b zScaling=d f" (whitespace separated) into name-value pairs. If there
    * is no '=' as in 'f' above then it's short for f=f. */
   protected static Map<String, String> parseMap(String body) {
     Map<String, String> map = new HashMap<>();
