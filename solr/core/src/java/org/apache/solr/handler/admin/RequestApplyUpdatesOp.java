@@ -94,8 +94,6 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       String shardName = cloudDesc.getShardId();
       String coreName = core.getName();
       SharedShardMetadataController metadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
-      // creates the metadata node
-      metadataController.ensureMetadataNodeExists(collectionName, shardName);
       SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
       // TODO: We should just be initialized to a default value since this is a new shard.  
       //       As of now we are only taking care of basic happy path. We still need to evaluate what will happen

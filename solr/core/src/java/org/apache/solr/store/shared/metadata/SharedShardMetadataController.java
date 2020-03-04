@@ -53,12 +53,12 @@ public class SharedShardMetadataController {
   
   /**
    * Creates a new metadata node if it doesn't exist for shared shared index whose correctness metadata 
-   * is managed by ZooKeeper
+   * is managed by ZooKeeper. This node should only be created during Shard creation or Recovery events
    *  
    * @param collectionName name of the collection that needs a metadata node
    * @param shardName name of the shard that needs a metadata node
    */
-  public void ensureMetadataNodeExists(String collectionName, String shardName) throws IOException {
+  public void initiateMetadataNode(String collectionName, String shardName) throws IOException {
     ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
     if (!collection.getSharedIndex()) {

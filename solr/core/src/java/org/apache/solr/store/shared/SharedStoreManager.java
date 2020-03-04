@@ -51,7 +51,7 @@ public class SharedStoreManager {
     blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getClient());
     corePullTracker = new CorePullTracker();
     sharedShardMetadataController = new SharedShardMetadataController(zkController.getSolrCloudManager());
-    sharedCoreConcurrencyController = new SharedCoreConcurrencyController(sharedShardMetadataController);
+    sharedCoreConcurrencyController = new SharedCoreConcurrencyController();
     blobCoreSyncer = new BlobCoreSyncer();
     blobProcessUtil = new BlobProcessUtil();
   }

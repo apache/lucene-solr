@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.junit.After;
 import org.junit.Test;
 
@@ -48,7 +49,7 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
   
   /**
    * Test that verifies that a basic collection creation command for a "shared" type collection 
-   * completes successfully
+   * completes successfully if the cluster is enabled with shared storage
    */
   @Test
   public void testCreateCollection() throws Exception {
@@ -84,7 +85,51 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
       fail("Unexpected exception thrown " + ex.getMessage());
     }
   }
-
+  
+  /**
+   * Test that verifies that common collection api commands that create new shards will
+   * initiate the metadataSuffix node in ZooKeeper
+   */
+  @Test
+  public void testShardCreationInitiatesMetadataNode() throws Exception {
+    setupCluster(1);
+    String collectionName = "BlobBasedCollectionName1";
+    String shardName = "shard1";
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    CollectionAdminRequest.Create create = CollectionAdminRequest.
+        createCollectionWithImplicitRouter(collectionName, null, shardName, 0)
+        .setSharedIndex(true).setSharedReplicas(1).setMaxShardsPerNode(50);
+    create.process(cloudClient).getResponse();
+    
+    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+    
+    // assert metadata node exists after collection creation
+    String metadataNodePath = getMetadataNodePath(collectionName, "shard1");
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(metadataNodePath, false));
+    
+    // assert metadata node exists after shard creation
+    CollectionAdminRequest.CreateShard createShard = CollectionAdminRequest
+        .createShard(collectionName, "shard2");
+    createShard.process(cloudClient).getResponse();
+    waitForState("Timed-out wait for shard to be created", collectionName, clusterShape(2, 1));
+    
+    metadataNodePath = getMetadataNodePath(collectionName, "shard2");
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(metadataNodePath, false));
+    
+    // assert metadata node exists after shard split
+    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest
+        .splitShard(collectionName).setShardName("shard1");
+    splitShard.process(cloudClient).getResponse();
+    
+    metadataNodePath = getMetadataNodePath(collectionName, "shard1_0");
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(metadataNodePath, false));
+    
+    metadataNodePath = getMetadataNodePath(collectionName, "shard1_1");
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(metadataNodePath, false));
+  }
+  
   /**
    * Test that verifies that adding a NRT replica to a shared collection fails but adding a SHARED replica
    * to a shard collection completes successfully
@@ -167,12 +212,17 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
     assertEquals(null, scvm.getMetadataSuffix());
     assertEquals(null, scvm.getBlobCoreMetadata());
   }
+  
+  private String getMetadataNodePath(String collectionName, String shardName) {
+    return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + 
+        "/" + ZkStateReader.SHARD_LEADERS_ZKNODE + "/" + shardName + "/" + 
+        SharedShardMetadataController.SUFFIX_NODE_NAME;
+  }
 
   private SharedCoreConcurrencyController configureTestSharedConcurrencyControllerForNode(JettySolrRunner runner,
       AtomicInteger evictionCount) {
     SharedCoreConcurrencyController concurrencyController = 
-        new SharedCoreConcurrencyController(runner.getCoreContainer().getSharedStoreManager()
-            .getSharedShardMetadataController()) {
+        new SharedCoreConcurrencyController() {
       
       @Override
       public boolean removeCoreVersionMetadataIfPresent(String coreName) {

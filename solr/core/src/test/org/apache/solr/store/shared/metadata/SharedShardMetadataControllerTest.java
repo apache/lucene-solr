@@ -77,7 +77,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testSetupMetadataNode() throws Exception {    
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
   }
   
@@ -94,7 +94,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
     
     waitForState("Timed-out wait for collection to be created", nonSharedCollectionName, clusterShape(1, 1));
     try {
-      shardMetadataController.ensureMetadataNodeExists(nonSharedCollectionName, "notSharedShard");
+      shardMetadataController.initiateMetadataNode(nonSharedCollectionName, "notSharedShard");
       fail();
     } catch (SolrException ex) {
       // we should fail
@@ -108,7 +108,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testUpdateMetadataNode() throws Exception {    
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue";
@@ -127,7 +127,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testConditionalUpdateOnMetadataNode() throws Exception {    
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue1";
@@ -171,7 +171,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    * Test reading the metadata node returns the expected value
    */
   public void testReadMetadataNode() throws Exception {
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue1";
