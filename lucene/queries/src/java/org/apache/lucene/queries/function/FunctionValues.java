@@ -41,9 +41,6 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 //   want the Query carrying around big objects
 public abstract class FunctionValues {
 
-  // Default cost for FunctionValues -- ideally should be overriden by concrete implementations
-  public static final int DEFAULT_COST = 100;
-
   public byte byteVal(int doc) throws IOException { throw new UnsupportedOperationException(); }
   public short shortVal(int doc) throws IOException { throw new UnsupportedOperationException(); }
 
@@ -101,7 +98,7 @@ public abstract class FunctionValues {
    * comparing two numbers and indexing an array.
    * The returned value must be positive.
    */
-  public float cost() { return DEFAULT_COST; }
+  public float cost() { return 100; }
 
   public abstract String toString(int doc) throws IOException;
 
@@ -165,8 +162,7 @@ public abstract class FunctionValues {
         return true;
       }
       @Override
-      public float costEvaluationFunction() {
-        // Match everything
+      public float matchCost() {
         return 0f;
       }
     };

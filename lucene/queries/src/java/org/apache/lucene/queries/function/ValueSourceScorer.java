@@ -58,7 +58,7 @@ public abstract class ValueSourceScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        return costEvaluationFunction();
+        return ValueSourceScorer.this.matchCost();
       }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
@@ -106,7 +106,7 @@ public abstract class ValueSourceScorer extends Scorer {
    *
    * @lucene.experimental
    */
-  protected float costEvaluationFunction() {
+  protected float matchCost() {
     // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
     return DEF_COST + values.cost();
   }
