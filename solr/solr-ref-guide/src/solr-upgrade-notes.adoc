@@ -59,7 +59,7 @@ If you are upgrading Solr with an atomic restart strategy:
 * If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
 * If you do use Collection API operations:
 . Pause Collection API operations.
-. Cleanup queues (See the section <<collections-api.html#deletestatus,DELETESTATUS>> for examples)
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
 if you use async operations.
 . Upgrade and restart the nodes.
 . Resume all normal operations.
@@ -72,7 +72,7 @@ any issues.
 way is to:
 . Pause Collection API operations.
 . Upgrade and restart all nodes.
-. Cleanup queues (See the section <<collections-api.html#deletestatus,DELETESTATUS>> for examples)
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
 if you use async operations.
 . Resume all normal operations.
 
@@ -104,7 +104,7 @@ See also the section <<securing-solr.adoc#enable-ip-access-control,Enable IP Acc
 
 The BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
 Users are encouraged to migrate to `uniqueBlock()` in JSON Facet API.
-More information about this is available in the section <<json-faceting-domain-changes.html#block-join-domain-changes,Block Join Domain Changes>>.
+More information about this is available in the section <<json-faceting-domain-changes.adoc#block-join-domain-changes,Block Join Domain Changes>>.
 
 *Caching with the Boolean Query Parser*
 

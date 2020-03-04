@@ -232,7 +232,7 @@ Other Changes
 
 * SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
 
-SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
 execute `uname -a` and "`uptime`" on non-Windows platforms is no longer made. (rmuir)
 
 ==================  8.4.1 ==================
