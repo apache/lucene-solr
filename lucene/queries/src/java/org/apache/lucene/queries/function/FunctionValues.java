@@ -164,6 +164,11 @@ public abstract class FunctionValues {
       public boolean matches(int doc) {
         return true;
       }
+      @Override
+      public float costEvaluationFunction() {
+        // Match everything
+        return 0f;
+      }
     };
   }
 

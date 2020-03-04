@@ -45,7 +45,6 @@ public abstract class ValueSourceScorer extends Scorer {
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
-  private Float matchCost;
 
   protected ValueSourceScorer(Weight weight, LeafReaderContext readerContext, FunctionValues values) {
     super(weight);
@@ -59,11 +58,6 @@ public abstract class ValueSourceScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        // If an external cost is set, use that
-        if (matchCost != 0.0) {
-          return matchCost;
-        }
-
         return costEvaluationFunction();
       }
     };
@@ -101,16 +95,6 @@ public abstract class ValueSourceScorer extends Scorer {
   @Override
   public float getMaxScore(int upTo) throws IOException {
     return Float.POSITIVE_INFINITY;
-  }
-
-  /**
-   * Used to externally set a mutable cost for this instance. If set, this cost gets preference over the FunctionValues's cost
-   * The value set here is used by {@link TwoPhaseIterator#matchCost()} for the TwoPhaseIterator owned by this class
-   *
-   * @lucene.experimental
-   */
-  public void setMatchCost(float cost) {
-    matchCost = cost;
   }
 
   /**
