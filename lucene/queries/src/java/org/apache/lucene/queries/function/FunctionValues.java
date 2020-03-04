@@ -94,6 +94,13 @@ public abstract class FunctionValues {
    */
   public int numOrd() { throw new UnsupportedOperationException(); }
 
+  /**
+   * An estimate of the expected cost to return a value for a document.
+   * It's intended to be used by TwoPhaseIterator.matchCost implementations.
+   * Returns an expected cost in number of simple operations like addition, multiplication,
+   * comparing two numbers and indexing an array.
+   * The returned value must be positive.
+   */
   public float cost() { return DEFAULT_COST; }
 
   public abstract String toString(int doc) throws IOException;

@@ -45,7 +45,7 @@ public abstract class ValueSourceScorer extends Scorer {
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
-  private float externallyMutableCost;
+  private Float matchCost;
 
   protected ValueSourceScorer(Weight weight, LeafReaderContext readerContext, FunctionValues values) {
     super(weight);
@@ -60,12 +60,11 @@ public abstract class ValueSourceScorer extends Scorer {
       @Override
       public float matchCost() {
         // If an external cost is set, use that
-        if (externallyMutableCost != 0.0) {
-          return externallyMutableCost;
+        if (matchCost != 0.0) {
+          return matchCost;
         }
 
-        // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
-        return DEF_COST + values.cost();
+        return costEvaluationFunction();
       }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
@@ -106,10 +105,25 @@ public abstract class ValueSourceScorer extends Scorer {
 
   /**
    * Used to externally set a mutable cost for this instance. If set, this cost gets preference over the FunctionValues's cost
+   * The value set here is used by {@link TwoPhaseIterator#matchCost()} for the TwoPhaseIterator owned by this class
    *
    * @lucene.experimental
    */
-  public void setExternallyMutableCost(float cost) {
-    externallyMutableCost = cost;
+  public void setMatchCost(float cost) {
+    matchCost = cost;
+  }
+
+  /**
+   * Cost evaluation function which defines the cost of access for the TwoPhaseIterator for this class
+   * This method should be overridden for specifying custom cost methods. Used by {@link TwoPhaseIterator#matchCost()}
+   * for the instance owned by this class
+   *
+   * @return cost of access
+   *
+   * @lucene.experimental
+   */
+  protected float costEvaluationFunction() {
+    // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
+    return DEF_COST + values.cost();
   }
 }
