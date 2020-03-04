@@ -310,11 +310,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           @Override
           public void collect(int doc) throws IOException {
             countHit(doc);
-          if (queueFull) {
-            if (thresholdCheck(doc)) {
-              return;
+            if (queueFull) {
+              if (thresholdCheck(doc)) {
+                return;
+              }
             }
-          }
             final int topCmp = reverseMul * comparator.compareTop(doc);
             if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
               // Already collected on a previous page

@@ -612,11 +612,9 @@ public class IndexSearcher {
       minScoreAcc = null;
       maxScoreTerminator = new MaxScoreTerminator(cappedNumHits, hitsThresholdChecker.getHitsThreshold());
       if (executor instanceof ThreadPoolExecutor) {
-        // Scale the update frequency used with MaxScoreTerminator. We want it as low(frequent) as
+        // Scale the update period used with MaxScoreTerminator. We want it as low (frequent) as
         // possible while avoiding thread contention.
         int numThreads = Math.min(((ThreadPoolExecutor) executor).getMaximumPoolSize(), leafSlices.length);
-        //System.out.println("numThreads=" + numThreads);
-        //int numThreads = 32;
         int numThreadsLog2 = 31 - Integer.numberOfLeadingZeros(numThreads);
         maxScoreTerminator.setIntervalBits(numThreadsLog2 + 1);
       }
