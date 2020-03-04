@@ -87,7 +87,7 @@ class MaxScoreTerminator {
     this.totalToCollect = Math.max(numHits, collectionThreshold);
     setIntervalBits(DEFAULT_INTERVAL_BITS);
     thresholdState = new LeafState();
-    thresholdState.set(Double.MAX_VALUE);
+    thresholdState.set(Double.MAX_VALUE, -1);
     scratchState = new LeafState();
   }
 
@@ -179,29 +179,34 @@ class MaxScoreTerminator {
    */
   class LeafState implements Comparable<LeafState> {
 
-    // nocommit: tie-break using (global) docid
     private double worstScore;
+    int docid = -1;             // the global docid
     int resultCount;
 
-    void set(double score) {
+    void set(double score, int docid) {
       worstScore = score;
+      this.docid = docid;
     }
 
-    void update(double score) {
+    void update(double score, int docid) {
       // scores are nondecreasing
-      assert score >= this.worstScore : "descending score: " + score + " < " + this.worstScore;
-      set(score);
+      assert score > this.worstScore || (score == this.worstScore && docid >= this.docid) :
+        "descending (score,docid): (" + score + "," + docid + ") < (" + this.worstScore + "," + this.docid + ")";
+      set(score, docid);
       ++this.resultCount;
     }
 
     void updateFrom(LeafState other) {
-      this.worstScore = other.worstScore;
-      this.resultCount = other.resultCount;
+      set(other.worstScore, other.resultCount);
     }
 
     @Override
     public int compareTo(LeafState o) {
-      return Double.compare(worstScore, o.worstScore);
+      int cmp = Double.compare(worstScore, o.worstScore);
+      if (cmp == 0) {
+        cmp = Integer.compare(docid, o.docid);
+      }
+      return cmp;
     }
 
     @Override

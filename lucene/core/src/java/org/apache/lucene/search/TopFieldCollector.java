@@ -142,7 +142,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     void updateTerminationState(int doc) {
-      leafTerminationState.update(context.ord);
+      leafTerminationState.update(score, context.docBase + doc);
       if ((leafTerminationState.resultCount & maxScoreTerminator.intervalMask) == 0) {
         //System.out.println("scoreboard update leaf " + context.ord + " total " + totalHits);
         if (maxScoreTerminator.updateLeafState(leafTerminationState)) {
