@@ -37,7 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -146,8 +146,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private void verify(Path backup, int nDocs) throws IOException {
     log.info("Verifying ndocs={} in {}", nDocs, backup);
-    try (Directory dir = new SimpleFSDirectory(backup);
-        IndexReader reader = DirectoryReader.open(dir)) {
+    try (Directory dir = new NIOFSDirectory(backup);
+         IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
       assertEquals(nDocs, hits.totalHits.value);

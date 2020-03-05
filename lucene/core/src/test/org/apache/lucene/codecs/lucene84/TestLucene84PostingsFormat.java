@@ -50,7 +50,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.TestUtil;
 
 public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
@@ -116,7 +116,7 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
       }
     }
 
-    try (Directory d = new SimpleFSDirectory(tempDir)) {
+    try (Directory d = new NIOFSDirectory(tempDir)) {
       // test auto
       try (DirectoryReader r = DirectoryReader.open(d)) {
         assertEquals(1, r.leaves().size());
@@ -127,7 +127,7 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
       }
     }
 
-    try (Directory d = new SimpleFSDirectory(tempDir)) {
+    try (Directory d = new NIOFSDirectory(tempDir)) {
       // test per field
       Map<String, String> readerAttributes = new HashMap<>();
       readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name());
@@ -142,7 +142,7 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
     }
 
     IllegalArgumentException invalid = expectThrows(IllegalArgumentException.class, () -> {
-      try (Directory d = new SimpleFSDirectory(tempDir)) {
+      try (Directory d = new NIOFSDirectory(tempDir)) {
         Map<String, String> readerAttributes = new HashMap<>();
         readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, "invalid");
         DirectoryReader.open(d, readerAttributes);
