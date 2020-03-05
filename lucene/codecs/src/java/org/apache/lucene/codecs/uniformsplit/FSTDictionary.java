@@ -25,10 +25,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
@@ -113,81 +111,10 @@ public class FSTDictionary implements IndexDictionary {
 
     protected final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(dictionary);
 
-    protected static final int STATE_SEEK = 0, STATE_NEXT = 1, STATE_END = 2;
-    protected int state = STATE_SEEK;
-
-    //  Note: key and pointer are one position prior to the current fstEnum position,
-    //   since we need need the fstEnum to be one ahead to calculate the prefix.
-    protected final BytesRefBuilder keyBuilder = new BytesRefBuilder();
-    protected int blockPrefixLen = 0;
-    protected long blockFilePointer = -1;
-
     @Override
     public long seekBlock(BytesRef term) throws IOException {
-      state = STATE_SEEK;
       BytesRefFSTEnum.InputOutput<Long> seekFloor = fstEnum.seekFloor(term);
-      if (seekFloor == null) {
-        blockFilePointer = -1;
-      } else {
-        blockFilePointer = seekFloor.output;
-      }
-      return blockFilePointer;
-    }
-
-    @Override
-    public BytesRef nextKey() throws IOException {
-      if (state == STATE_END) {
-        // if fstEnum is at end, then that's it.
-        return null;
-      }
-
-      if (state == STATE_SEEK && blockFilePointer == -1) { // see seekBlock
-        if (fstEnum.next() == null) { // advance.
-          state = STATE_END; // probably never happens (empty FST)?  We code defensively.
-          return null;
-        }
-      }
-      keyBuilder.copyBytes(fstEnum.current().input);
-      blockFilePointer = fstEnum.current().output;
-      assert blockFilePointer >= 0;
-
-      state = STATE_NEXT;
-
-      BytesRef key = keyBuilder.get();
-
-      // advance fstEnum
-      BytesRefFSTEnum.InputOutput<Long> inputOutput = fstEnum.next();
-
-      // calc common prefix
-      if (inputOutput == null) {
-        state = STATE_END; // for *next* call; current state is good
-        blockPrefixLen = 0;
-      } else {
-        int sortKeyLength = StringHelper.sortKeyLength(key, inputOutput.input);
-        assert sortKeyLength >= 1;
-        blockPrefixLen = sortKeyLength - 1;
-      }
-      return key;
-    }
-
-    @Override
-    public BytesRef peekKey() {
-      assert state != STATE_SEEK;
-      return (state == STATE_END) ? null : fstEnum.current().input;
-    }
-
-    @Override
-    public int getBlockPrefixLen() {
-      assert state != STATE_SEEK;
-      assert blockPrefixLen >= 0;
-      return blockPrefixLen;
-    }
-
-    @Override
-    public long getBlockFilePointer() {
-      assert state != STATE_SEEK;
-      assert blockFilePointer >= 0;
-      return blockFilePointer;
+      return seekFloor == null ? -1 : seekFloor.output;
     }
   }
 

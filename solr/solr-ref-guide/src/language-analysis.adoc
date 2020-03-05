@@ -1869,6 +1869,8 @@ For some applications it might be good to use `search` mode for indexing and `no
 
 `discardPunctuation`:: set to `false` to keep punctuation, `true` to discard (the default)
 
+`discardCompoundToken`:: set to `false` to keep original compound tokens with the `search` mode, `true` to discard.
+
 ==== Japanese Base Form Filter
 
 Replaces original terms' text with the corresponding base form (lemma). (`JapaneseTokenizer` annotates each term with its base form.)
