@@ -3176,7 +3176,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           // Commit thread timed out waiting for this merge and moved on. No need to manipulate toCommit.
           return;
         }
-        if (isAborted() == false) {
+        if (committed) {
           deleter.incRef(this.info.files());
           // Resolve "live" SegmentInfos segments to their toCommit cloned equivalents, based on segment name.
           Set<String> mergedSegmentNames = new HashSet<>();
@@ -4093,6 +4093,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     try (Closeable finalizer = this::checkpoint) {
+      merge.committed = true;
       // Must close before checkpoint, otherwise IFD won't be
       // able to delete the held-open files from the merge
       // readers:
