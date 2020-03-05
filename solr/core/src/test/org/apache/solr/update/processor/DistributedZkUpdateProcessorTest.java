@@ -57,7 +57,6 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCa
   
   @After
   public void teardownTest() throws Exception {
-    cluster.deleteAllCollections();
     shutdownCluster();
   }
   

@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.store.blob.client.BlobClientUtils;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.client.CoreStorageClient;
@@ -52,7 +53,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   private static CoreStorageClient storageClient;
   private static Path localBlobDir;
   
-  private String sharedBlobName = "collectionTest_shardTest";
+  private String sharedBlobName = Assign.buildSharedShardName("collectionTest", "shardTest");
   private String collectionName = "collectionTest";
   private String shardName = "shardTest";
   private String metadataSuffix = "metadataSuffix";
