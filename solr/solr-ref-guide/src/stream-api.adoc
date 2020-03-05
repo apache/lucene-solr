@@ -18,8 +18,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+The `/stream` request handler, beyond just running a streaming expression, also
+lets you find out what expressions are available to use and lets you control the
+behavior of any registered Daemon processes.
 
-These API commands work with the `/stream` request handler.
+NOTE: This API doesn't follow the v2 API structure. 
+
+
+
 
 [[plugins]]
 == PLUGINS: List all expressions registered
