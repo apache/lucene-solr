@@ -123,7 +123,7 @@ public class IndexSearcher {
   private final Executor executor;
 
   // Used internally for load balancing threads executing for the query
-  private final SliceExecutionControlPlane<List<Future>, FutureTask> sliceExecutionControlPlane;
+  private final SliceExecutionControlPlane sliceExecutionControlPlane;
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
@@ -953,7 +953,7 @@ public class IndexSearcher {
   /**
    * Return the SliceExecutionControlPlane instance to be used for this IndexSearcher instance
    */
-  private static DefaultSliceExecutionControlPlane getSliceExecutionControlPlane(Executor executor) {
+  private static SliceExecutionControlPlane getSliceExecutionControlPlane(Executor executor) {
     if (executor == null) {
       return null;
     }
@@ -962,6 +962,6 @@ public class IndexSearcher {
       return new QueueSizeBasedExecutionControlPlane((ThreadPoolExecutor) executor);
     }
 
-    return new DefaultSliceExecutionControlPlane(executor);
+    return new SliceExecutionControlPlane(executor);
   }
 }

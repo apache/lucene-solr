@@ -429,7 +429,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     }
   }
 
-  private class RandomBlockingSliceExecutionControlPlane extends DefaultSliceExecutionControlPlane {
+  private class RandomBlockingSliceExecutionControlPlane extends SliceExecutionControlPlane {
 
     public RandomBlockingSliceExecutionControlPlane(Executor executor) {
       super(executor);

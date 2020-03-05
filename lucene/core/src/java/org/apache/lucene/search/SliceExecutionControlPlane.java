@@ -17,16 +17,89 @@
 
 package org.apache.lucene.search;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Execution control plane which is responsible
  * for execution of slices based on the current status
  * of the system and current system load
  */
-public interface SliceExecutionControlPlane<C, T extends Runnable> {
-  /**
-   * Invoke all slices that are allocated for the query
-   */
-  C invokeAll(Collection<T> tasks);
+public class SliceExecutionControlPlane {
+  private final Executor executor;
+
+  public SliceExecutionControlPlane(Executor executor) {
+    this.executor = executor;
+  }
+
+  public List<Future> invokeAll(Collection<FutureTask> tasks) {
+
+    if (tasks == null) {
+      throw new IllegalArgumentException("Tasks is null");
+    }
+
+    if (executor == null) {
+      throw new IllegalArgumentException("Executor is null");
+    }
+
+    List<Future> futures = new ArrayList();
+
+    int i = 0;
+
+    for (FutureTask task : tasks) {
+      boolean shouldExecuteOnCallerThread = false;
+
+      // Execute last task on caller thread
+      if (i == tasks.size() - 1) {
+        shouldExecuteOnCallerThread = true;
+      }
+
+      processTask(task, futures, shouldExecuteOnCallerThread);
+      ++i;
+    }
+
+    return futures;
+  }
+
+  // Helper method to execute a single task
+  protected void processTask(final FutureTask task, final List<Future> futures,
+                             final boolean shouldExecuteOnCallerThread) {
+    if (task == null) {
+      throw new IllegalArgumentException("Input is null");
+    }
+
+    if (!shouldExecuteOnCallerThread) {
+      try {
+        executor.execute(task);
+        futures.add(task);
+
+        return;
+      } catch (RejectedExecutionException e) {
+        // Execute on caller thread
+      }
+    }
+
+    runTaskOnCallerThread(task);
+
+    try {
+      futures.add(CompletableFuture.completedFuture(task.get()));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // Private helper method to run a task on the caller thread
+  private void runTaskOnCallerThread(FutureTask task) {
+    try {
+      task.run();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
