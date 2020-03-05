@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -78,6 +79,20 @@ public class Row implements MapWriter {
     }
     this.globalCache = new HashMap();
     this.perCollCache = new HashMap();
+
+    // pre-compute and cache common variables
+    computeCacheIfAbsent(CoresVariable.TOTALCORES, o -> {
+      int[] result = new int[1];
+      Row.this.forEachReplica(replicaInfo -> result[0]++);
+      return result[0];
+    });
+    collectionVsShardVsReplicas.forEach((collection, shardVsReplicas) -> {
+      shardVsReplicas.forEach((shard, replicas) -> {
+        FreeDiskVariable.IndexSizeGetter getter = new FreeDiskVariable.IndexSizeGetter(collection, shard);
+        computeCacheIfAbsent(collection, shard, FreeDiskVariable.FREEDISK_CACHE, Variable.Type.CORE_IDX.tagName,
+            o -> getter.getIndexSize(Row.this));
+      });
+    });
     isAlreadyCopied = true;
   }
 
@@ -255,13 +270,13 @@ public class Row implements MapWriter {
   private void lazyCopyReplicas(String coll, String shard) {
     globalCache = new HashMap();
     Map cacheCopy = new HashMap<>(perCollCache);
-    cacheCopy.remove(coll);//todo optimize at shard level later
+    ((Map)cacheCopy.getOrDefault(coll, Collections.emptyMap())).remove(shard);
     perCollCache = cacheCopy;
     if (isAlreadyCopied) return;//caches need to be invalidated but the rest can remain as is
 
     Map<String, Map<String, List<ReplicaInfo>>> replicasCopy = new HashMap<>(collectionVsShardVsReplicas);
     Map<String, List<ReplicaInfo>> oneColl = replicasCopy.get(coll);
-    if (oneColl != null) {
+    if (oneColl != null && oneColl.get(shard) != null) {
       replicasCopy.put(coll, Utils.getDeepCopy(oneColl, 2));
     }
     collectionVsShardVsReplicas = replicasCopy;

@@ -320,7 +320,8 @@ public class Policy implements MapWriter {
         p.setApproxVal(tmpMatrix);
       }
       // the tmpMatrix was needed only to set the approximate values, now we sort the real matrix
-      // recursing through each preference
+      // recursing through each preference (Preference.compare uses Preference.next for recursion,
+      // which is set when Policy is initialized)
       matrix.sort((Row r1, Row r2) -> {
         int result = clusterPreferences.get(0).compare(r1, r2, true);
         if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
@@ -657,6 +658,10 @@ public class Policy implements MapWriter {
 
     Session copy() {
       return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, transaction);
+    }
+
+    Session shallowCopy() {
+      return new Session(nodes, cloudManager, new ArrayList<>(matrix), expandedClauses, znodeVersion, nodeStateProvider, transaction);
     }
 
     public Row getNode(String node) {

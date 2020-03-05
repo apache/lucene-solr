@@ -47,6 +47,8 @@ class AddReplicaSuggester extends Suggester {
       //iterate through  nodes and identify the least loaded
       List<Violation> leastSeriousViolation = null;
       Row bestNode = null;
+      // compare only up to that many eligible rows from the top
+      int limitTopRows = 3;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
         if (!isNodeSuitableForReplicaAddition(row, null)) continue;
@@ -57,6 +59,9 @@ class AddReplicaSuggester extends Suggester {
               isLessSerious(errs, leastSeriousViolation)) {//there are errors , but this has less serious violation
             leastSeriousViolation = errs;
             bestNode = tmpRow;
+          }
+          if (bestNode != null && limitTopRows-- < 0) {
+            break;
           }
         }
       }

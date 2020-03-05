@@ -37,6 +37,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 public class FreeDiskVariable extends VariableBase {
 
+  public static final String FREEDISK_CACHE = "freedisk";
+
   public FreeDiskVariable(Type type) {
     super(type);
   }
@@ -144,7 +146,7 @@ public class FreeDiskVariable extends VariableBase {
 
   }
 
-  private static final class IndexSizeGetter {
+  public static final class IndexSizeGetter {
     final String collection, shard;
 
     IndexSizeGetter(String collection, String shard) {
@@ -164,7 +166,7 @@ public class FreeDiskVariable extends VariableBase {
           }
         }
       });
-      return result[0];
+      return result[0] != null ? result[0] : 0L;
     }
   }
 
@@ -177,7 +179,7 @@ public class FreeDiskVariable extends VariableBase {
       if (row.isEmpty() || !row.isLive() || !row.hasColl(ri.getCollection())) {
         continue;
       }
-      Object indexSize = row.computeCacheIfAbsent(ri.getCollection(), ri.getShard(), "freedisk", CORE_IDX.tagName, o -> getter.getIndexSize(row));
+      Object indexSize = row.computeCacheIfAbsent(ri.getCollection(), ri.getShard(), FREEDISK_CACHE, CORE_IDX.tagName, o -> getter.getIndexSize(row));
       if (indexSize != null) {
         ri.getVariables().put(CORE_IDX.tagName, validate(CORE_IDX.tagName, indexSize, false));
         break;
