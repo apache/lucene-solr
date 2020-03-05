@@ -303,7 +303,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final CloseableQueue eventQueue = new CloseableQueue(this);
 
   static final class CloseableQueue implements Closeable {
-    private boolean closed = false;
+    private volatile boolean closed = false;
     private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
     private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
     private final IndexWriter writer;
@@ -346,6 +346,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
+    @Override
     public synchronized void close() throws IOException {
       assert closed == false : "we should never close this twice";
       closed = true;
