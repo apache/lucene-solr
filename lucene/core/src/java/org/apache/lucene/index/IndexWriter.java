@@ -33,6 +33,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -299,7 +300,70 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
-  private final Queue<Event> eventQueue = new ConcurrentLinkedQueue<>();
+  private final CloseableQueue eventQueue = new CloseableQueue();
+
+  static final class CloseableQueue  {
+    private boolean closed = false;
+    private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
+    private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
+
+    private void tryAcquire() {
+      if (permits.tryAcquire() == false) {
+        throw new AlreadyClosedException("queue is closed");
+      }
+      if (closed) {
+        throw new AlreadyClosedException("queue is closed");
+      }
+    }
+
+    boolean add(Event event) {
+      tryAcquire();
+      try {
+        return queue.add(event);
+      } finally {
+        permits.release();
+      }
+    }
+
+    void processEvents(IndexWriter writer) throws IOException {
+      tryAcquire();
+      try {
+        processEventsInternal(writer);
+      }finally {
+        permits.release();
+      }
+    }
+    private void processEventsInternal(IndexWriter writer) throws IOException {
+      assert Integer.MAX_VALUE - permits.availablePermits() > 0 : "must acquire a permit before processing events";
+      Event event;
+      while ((event = queue.poll()) != null) {
+        event.process(writer);
+      }
+    }
+
+    synchronized void close(IndexWriter writer) throws IOException {
+      assert closed == false : "we should never close this twice";
+      closed = true;
+      // it's possible that we close this queue while we are in a processEvents call
+      if (writer.getTragicException() != null) {
+        // we are already handling a tragic exception let's drop it all on the floor and return
+        queue.clear();
+      } else {
+        // now we acquire all the permits to ensure we are the only one processing the queue
+        try {
+          permits.acquire(Integer.MAX_VALUE);
+        } catch (InterruptedException e) {
+          throw new ThreadInterruptedException(e);
+        }
+        try {
+          processEventsInternal(writer);
+        } finally {
+          permits.release(Integer.MAX_VALUE);
+        }
+      }
+    }
+  }
+
   final IndexFileDeleter deleter;
 
   // used by forceMerge to note those needing merging
@@ -2278,6 +2342,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       docWriter.abort(); // don't sync on IW here
       docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
       publishFlushedSegments(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
+      eventQueue.close(this);
       synchronized (this) {
 
         if (pendingCommit != null) {
@@ -5203,10 +5268,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   
   private void processEvents(boolean triggerMerge) throws IOException {
     if (tragedy.get() == null) {
-      Event event;
-      while ((event = eventQueue.poll()) != null)  {
-        event.process(this);
-      }
+     eventQueue.processEvents(this);
     }
     if (triggerMerge) {
       maybeMerge(getConfig().getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
@@ -5220,7 +5282,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *
    */
   @FunctionalInterface
-  private interface Event {
+  interface Event {
     /**
      * Processes the event. This method is called by the {@link IndexWriter}
      * passed as the first argument.

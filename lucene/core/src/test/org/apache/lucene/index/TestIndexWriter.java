@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -3773,7 +3774,58 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
+      if (w.getTragicException() != null) {
+        w.getTragicException().printStackTrace();
+      }
+      assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
       IOUtils.close(sm, dir);
+    }
+  }
+
+  public void testCloseableQueue() throws IOException, InterruptedException {
+    try(Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      IndexWriter.CloseableQueue queue = new IndexWriter.CloseableQueue();
+      AtomicInteger executed = new AtomicInteger(0);
+
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.processEvents(writer);
+      assertEquals(2, executed.get());
+      queue.processEvents(writer);
+      assertEquals(2, executed.get());
+
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+
+
+      Thread t = new Thread(() -> {
+        try {
+          queue.processEvents(writer);
+        } catch (IOException e) {
+          throw new AssertionError();
+        } catch (AlreadyClosedException ex) {
+          // possible
+        }
+      });
+      t.start();
+      queue.close(writer);
+      t.join();
+      assertEquals(4, executed.get());
+      expectThrows(AlreadyClosedException.class, () -> queue.processEvents(writer));
+      expectThrows(AlreadyClosedException.class, () -> queue.add(w -> {}));
     }
   }
 }
