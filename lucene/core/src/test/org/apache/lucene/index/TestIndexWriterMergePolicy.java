@@ -19,10 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,7 +29,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 
-import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
@@ -346,51 +342,6 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       assertEquals(6, searcher.count(new MatchAllDocsQuery()));
     }
 
-    writerWithMergePolicy.close();
-    dir.close();
-  }
-
-   // Test that when we have multiple indexing threads merging on commit, we never throw an exception.
-  @Nightly
-  public void testMultithreadedMergeOnCommit() throws IOException, InterruptedException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY);
-
-    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
-    LineFileDocs lineFileDocs = new LineFileDocs(random());
-    int docCount = atLeast(1000);
-    AtomicInteger indexedDocs = new AtomicInteger(0);
-    int numIndexingThreads = atLeast(2);
-    CountDownLatch startingGun = new CountDownLatch(1);
-    Collection<Thread> indexingThreads = new ArrayList<>();
-    for (int i = 0; i < numIndexingThreads; i++) {
-      Thread t = new Thread(() -> {
-        try {
-          startingGun.await();
-          while (indexedDocs.getAndIncrement() < docCount) {
-            writerWithMergePolicy.addDocument(lineFileDocs.nextDoc());
-            if (rarely()) {
-              writerWithMergePolicy.commit();
-            }
-          }
-        } catch (IOException | InterruptedException e) {
-          e.printStackTrace();
-          fail();
-        }
-      });
-      t.start();
-      indexingThreads.add(t);
-    }
-    startingGun.countDown();
-    for (Thread t : indexingThreads) {
-      t.join();
-    }
-    try (IndexReader reader = writerWithMergePolicy.getReader()) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      assertEquals(docCount, reader.numDocs());
-      assertEquals(docCount, searcher.count(new MatchAllDocsQuery()));
-    }
     writerWithMergePolicy.close();
     dir.close();
   }
