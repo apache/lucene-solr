@@ -50,6 +50,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -1326,6 +1327,32 @@ public class TestGeo3DPoint extends LuceneTestCase {
       assertEquals(pointEnc.y, pointEnc2.y, 0.0);
       assertEquals(pointEnc.z, pointEnc2.z, 0.0);
     }
+  }
+
+  public void testDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    PlanetModel planetModel = randomPlanetModel();
+
+    // index two points:
+    Document doc = new Document();
+    doc.add(new Geo3DPoint("field", planetModel, 0.1 , 0.1));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new Geo3DPoint("field", planetModel, 90 , 1));
+    w.addDocument(doc);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+   // simple query, in any planet model one point should be inside and the other outside
+    Query q = Geo3DPoint.newDistanceQuery("field", planetModel, 0, 0, 100000);
+    assertEquals(1, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
   }
 
   /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
