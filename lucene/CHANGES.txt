@@ -79,6 +79,8 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
