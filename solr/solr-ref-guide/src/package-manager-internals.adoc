@@ -1,11 +1,29 @@
 = Package Manager Internals
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages. This document contains an overview of those APIs.
 
 == Salient Features
 
 * Zero disruption deployment (hot deployment): Should be possible to install and update packages without node restarts or core reloads, and hence deployments should be quick and without failed requests or stale caches.
 * Easy packaging:
-** Standard plugin concepts, e.g. query parser, search component, request handler, URP etc., should be supported without any special code/packaging changes.
+** Standard plugin concepts, e.g., query parser, search component, request handler, URP etc., should be supported without any special code/packaging changes.
 ** Artifacts (jars containing custom plugins) that users have already deployed (and are using in production) should be compatible, without needing to recompile or re-package, for greater adoption.
 ** Should support single jar packages as well as multiple jar packages.
 ** Use familiar / standard naming
@@ -44,22 +62,22 @@ $ bin/solr package add-key my_key.der
 Package store is a distributed file store which can store arbitrary files in the file system.
 
 * This is a fully replicated file system based repository.
-* It lives at <solr.home>/filestore on each Solr node
-* Every entry  is a file + metadata. The metadata is named .<filename>.json
-* The metadata file contains the sha256, signatures of the file
-* Users can’t create files starting with period (.)
-* It is agnostic of content type of files. You may store jars as well as other files.
+* It lives at <solr.home>/filestore on each Solr node.
+* Every entry  is a file + metadata. The metadata is named .<filename>.json.
+* The metadata file contains the sha256, signatures of the file.
+* Users can’t create files starting with period (.).
+* It is agnostic of content type of files. You may store jars as well as other files..
 
 === How Does the Package Store Work?
-When a file is uploaded to the PackageStore ,
+When a file is uploaded to the PackageStore, the following is true:
 
-* It’s saved to the local file system
+* It’s saved to the local file system.
 * It’s saved along with the metadata. The metadata file stores the sha512 and signatures of the jar files too.
-* Every live node in the cluster is asked to download it as well
+* Every live node in the cluster is asked to download it as well.
 
 === Package Store APIs
 
-The end points are
+The end points are:
 
 * `PUT /api/cluster/files/{full/path/to/file}` in each node
 * `GET /api/node/files/{full/path/to/file}` to download the file
@@ -70,30 +88,34 @@ The end points are
 
 Use the following steps to upload a jar signed with your public key:
 
-1) If you don't have a jar file with plugins, download a sample from github
-
+. If you don't have a jar file with plugins, download a sample from github:
++
 [source, bash]
 ----
 $ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
-
 ----
-2) Sign the jar with your private key
+
+. Sign the jar with your private key:
++
 [source, bash]
 ----
 $ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 ----
 
-3) Upload your jar with signature. (replace the `sig` param with the output you got from the previous command)
+. Upload your jar with signature, replacing the `sig` parameter with the output from the previous command:
++
 [source, bash]
 ----
 $ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
 ----
 
-4) Verify your jar upload
+. Verify your jar upload:
++
 [source, bash]
 ----
 $ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
 ----
++
 [source, json]
 ----
 {
@@ -104,22 +126,21 @@ $ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
   "sig":["elNjhmWIOgTgbAzeZ+OcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ=="]}]}}
 ----
 
-
 == Packages
 A Package have the following attributes:
 
 * A unique name
 * One or more versions with the following attributes:
-** `version` : The version string
-** `files` : An array of files from the package store
+** `version`: The version string
+** `files`: An array of files from the package store
 
-For every package / version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
+For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
 
 === packages.json
 
-The package configurations live in a file called /packages.json in ZooKeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version . Versions are sorted by their numeric value and the biggest is the latest.
+The package configurations live in a file called `packages.json` in ZooKeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version. Versions are sorted by their numeric value and the highest is the latest.
 
-*example:*
+For example:
 
 [source,json]
 ----
@@ -142,41 +163,44 @@ The package configurations live in a file called /packages.json in ZooKeeper. At
 * `GET /api/cluster/package` Get the list of packages
 * `POST /api/cluster/package` edit packages
 ** `add` command: add a version of a package
-** `delete` command :  delete a version of a package
+** `delete` command:  delete a version of a package
 
 === How to Upgrade?
-Use the add command to add a version that is bigger than the current version
 
-=== How to Downgrade ?
-Use the delete command to delete a version that is the highest and the next highest version will be chosen
+Use the `add` command to add a version that is higher than the current version.
+
+=== How to Downgrade?
+
+Use the `delete` command to delete the highest version and choose the next highest version.
 
 === Using Multiple Versions in Parallel
-We use the `params.json` in the collection config to store a version of a package it uses.  by default it is the $LATEST.
+
+We use `params.json` in the collection config to store a version of a package it uses. By default it is the `$LATEST`.
 
 [source, json]
 ----
 {"params":{
  "PKG_VERSIONS": {
-   "mypkg": "0.1",
-   "pkg2" : "$LATEST",
+   "mypkg": "0.1", <1>
+   "pkg2" : "$LATEST", <2>
  }}}
 ----
 
-* for `mypkg` use the version `0.1` irrespective of whether there is a newer version is available or not
-* for `pkg2` use the latest. This is optional. The default is ‘$LATEST’
+<1> For `mypkg`, use the version `0.1` irrespective of whether there is a newer version available or not.
+<2> For `pkg2`, use the latest. This is optional. The default is `$LATEST`.
 
-=== The Workflow
-* A new version of a package is added
-* The package loader loads the classes and notifies every plugin holder of the availability of the new version
-* It checks if it is supposed to use a specific version, Ignore the update
-* If not, reload the plugin
+=== Workflow
 
+* A new version of a package is added.
+* The package loader loads the classes and notifies every plugin holder of the availability of the new version.
+* It checks if it is supposed to use a specific version, Ignore the update.
+* If not, reload the plugin.
 
-=== Using Them in Plugins
-Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from. The plugins loaded from packages cannot depend on core level classes.
+=== Using Packages in Plugins
 
-*Plugin declaration in `solrconfig.xml`*
+Any class name can be prefixed with the package name, e.g., `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from. The plugins loaded from packages cannot depend on core level classes.
 
+.Plugin declaration in `solrconfig.xml`
 [source, xml]
 ----
 <requestHandler name="/myhandler" class="mypkg:full.path.to.MyClass">
@@ -185,8 +209,8 @@ Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified
 
 === Full Working Example
 
-1) create a package
-
+. Create a package:
++
 [source,bash]
 ----
 curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
@@ -195,13 +219,14 @@ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/jso
          "version":"1.0",
          "files" :["/mypkg/1.0/myplugins.jar"]}}'
 ----
-2) Verify the created package
 
+. Verify the created package:
++
 [source,bash]
 ----
 curl http://localhost:8983/api/cluster/package?omitHeader=true
 ----
-
++
 [source,json]
 ----
   {"result":{
@@ -211,20 +236,22 @@ curl http://localhost:8983/api/cluster/package?omitHeader=true
           "files":["/mypkg/1.0/myplugins.jar"]}]}}}
 ----
 
-3) The Package is ready to use now. Now, register a plugin in your collection from the package. Note the `"mypkg"` prefix applied to the `class` attribute. The same result can be achieved by editing your `solrconfig.xml` as well
+. The package should be ready to use at this point. Next, register a plugin in your collection from the package. Note the `mypkg:` prefix applied to the `class` attribute. The same result can be achieved by editing your `solrconfig.xml` as well:
++
 [source,bash]
 ----
 curl  http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
-          "create-requesthandler" : { "name" : "/test",
+          "create-requesthandler": { "name": "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
 
-4) Verify that the component is created and it is using the correct version of the package to load classes from
-
+. Verify that the component is created and it is using the correct version of the package to load classes from:
++
 [source,bash]
 ----
 curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
 ----
++
 [source,json]
 ----
 {
@@ -237,11 +264,13 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
           "files":["/mypkg/1.0/myplugins.jar"]}}}}}
 ----
 
-5) Test the request handler
+. Test the request handler:
++
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
++
 [source,json]
 ----
 {
@@ -255,23 +284,24 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
   "loader":"java.net.FactoryURLClassLoader"}
 ----
 
-6) Update the version of our component
-
-Get a new version of the jar, sign and upload it
-
+. Update the version of our component. Get a new version of the jar, sign and upload it:
++
 [source, bash]
 ----
 $ curl -o runtimelibs3.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+
 $ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+
 $ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
 ----
 
-7) Verify it
+. Verify it:
++
 [source, bash]
 ----
 $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
 ----
-
++
 [source, json]
 ----
 {
@@ -282,8 +312,8 @@ $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
         "sig":["ICkC+nGE+AqiANM0ajhVPNCQsbPbHLSWlIe5ETV5835e5HqndWrFHiV2R6nLVjDCxov/wLPo1uK0VzvAPIioUQ=="]}]}}
 ----
 
-8) Add a new version of the package
-
+. Add a new version of the package:
++
 [source,bash]
 ----
 $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
@@ -293,12 +323,13 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
          "files" :["/mypkg/2.0/myplugins.jar"]}}'
 ----
 
-9) Verify the plugin to see if the correct version of the package is being used
+. Verify the plugin to see if the correct version of the package is being used:
++
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
 ----
-
++
 [source,json]
 ----
 {
@@ -316,12 +347,13 @@ $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?component
         }}}}}
 ----
 
-10) Test the plugin
-
+. Test the plugin:
++
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
++
 [source,json]
 ----
 {
@@ -338,11 +370,11 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
   "Version": "2"
 }
 ----
-Note that the `Version` value is `"2"` . So the plugin is updated
+Note that the `Version` value is `"2"`, which means the plugin is updated.
 
 === How to Avoid Automatic Upgrade
 
-The default version used in any collection is always the latest. However, setting a per-collection property in the `params.json` ensures that the versions are always fixed irrespective of the new versions added
+The default version used in any collection is always the latest. However, setting a per-collection property in `params.json` ensures that the versions are always fixed irrespective of the new versions added.
 
 [source,bash]
 ----

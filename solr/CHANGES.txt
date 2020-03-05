@@ -46,8 +46,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
- * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named 
-   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
+ * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named
+   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names
    (Anatolii Siuniaev via Mikhail Khludnev)
 
  * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
@@ -64,6 +64,8 @@ New Features
 
  * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
    (Eric Pugh via Christine Poerschke)
+
+* SOLR-13942: /api/cluster/zk/* to fetch raw ZK data (noble)
 
 Improvements
 ---------------------
@@ -114,6 +116,9 @@ Improvements
 * SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
 
 * SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
+
+* SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
+  See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
 
 Optimizations
 ---------------------
@@ -185,9 +190,13 @@ Bug Fixes
 
 * SOLR-14250: Do not log error when trying to consume non-existing input stream due to Expect: 100-continue (janhoy)
 
-* SOLR-13411: Deny atomic update for route.field, uniqueKey, version and throw exception. (Dr Oleg Savrasov via Mikhail Khludnev) 
+* SOLR-13411: Deny atomic update for route.field, uniqueKey, version and throw exception. (Dr Oleg Savrasov via Mikhail Khludnev)
 
 * SOLR-14252: Avoid NullPointerException in AggregateMetric. (Andy Webb via ab)
+
+* SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
+
+* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
 
 Other Changes
 ---------------------
@@ -222,6 +231,9 @@ Other Changes
   during SolrCore reload. Removed Bandaid kludge. (Erick Erickson)
 
 * SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
+
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+execute `uname -a` and "`uptime`" on non-Windows platforms is no longer made. (rmuir)
 
 ==================  8.4.1 ==================
 
