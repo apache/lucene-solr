@@ -53,7 +53,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   private static CoreStorageClient storageClient;
   private static Path localBlobDir;
   
-  private String sharedBlobName = "collectionTest" + BlobClientUtils.BLOB_FILE_PATH_DELIMITER + "shardTest";
+  private String sharedBlobName = Assign.buildSharedShardName("collectionTest", "shardTest");
   private String collectionName = "collectionTest";
   private String shardName = "shardTest";
   private String metadataSuffix = "metadataSuffix";
