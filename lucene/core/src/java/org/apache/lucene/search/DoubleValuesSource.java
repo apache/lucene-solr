@@ -604,8 +604,13 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
       Scorer scorer = weight.scorer(ctx);
       if (scorer == null)
         return DoubleValues.EMPTY;
-      DocIdSetIterator it = scorer.iterator();
+      TwoPhaseIterator tpi = scorer.twoPhaseIterator();
+      DocIdSetIterator it = (tpi == null) ? scorer.iterator() : tpi.approximation();
+
       return new DoubleValues() {
+        int scorerDoc = it.docID();
+        boolean scorerMatch = tpi == null || (scorerDoc != -1 && tpi.matches());
+
         @Override
         public double doubleValue() throws IOException {
           return scorer.score();
@@ -613,9 +618,11 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
         @Override
         public boolean advanceExact(int doc) throws IOException {
-          if (it.docID() > doc)
-            return false;
-          return it.docID() == doc || it.advance(doc) == doc;
+          if (scorerDoc < doc) {
+            scorerDoc = it.advance(doc);
+            scorerMatch = tpi==null || tpi.matches();
+          }
+          return scorerDoc == doc && (tpi == null  || scorerMatch);
         }
       };
     }
