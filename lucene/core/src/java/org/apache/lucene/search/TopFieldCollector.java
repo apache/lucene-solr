@@ -76,6 +76,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final LeafReaderContext context;
     final boolean canEarlyTerminate;
     final MaxScoreTerminator.LeafState leafTerminationState;
+    private boolean collectedAllCompetitiveHits = false;
     private double score;
 
     TopFieldLeafCollector(FieldValueHitQueue<Entry> queue, Sort sort, LeafReaderContext context) throws IOException {
@@ -92,31 +93,44 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     void countHit(int doc) throws IOException {
       ++totalHits;
       hitsThresholdChecker.incrementHitCount();
-      if (minScoreAcc != null) {
-        if ((totalHits & minScoreAcc.modInterval) == 0) {
-          updateGlobalMinCompetitiveScore(scorer);
-        }
+
+      if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
+        updateGlobalMinCompetitiveScore(scorer);
       }
+    }
+
+    boolean thresholdCheck(int doc) throws IOException {
+      if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+        // since docs are visited in doc Id order, if compare is 0, it means
+        // this document is largest than anything else in the queue, and
+        // therefore not competitive.
+        if (canEarlyTerminate) {
+          if (hitsThresholdChecker.isThresholdReached()) {
+            totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+            throw new CollectionTerminatedException();
+          } else {
+            collectedAllCompetitiveHits = true;
+          }
+        } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+          // we can start setting the min competitive score if the
+          // threshold is reached for the first time here.
+          updateMinCompetitiveScore(scorer);
+        }
+        return true;
+      }
+      return false;
     }
 
     void collectCompetitiveHit(int doc) throws IOException {
       // If this hit is competitive, replace bottom element in queue & adjustTop
-      if (reverseMul * comparator.compareBottom(doc) > 0) {
-        comparator.copy(bottom.slot, doc);
-        if (firstComparator != null) {
-          score = getComparatorValue(bottom.slot);
-          //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
-        }
-        updateBottom(doc);
-        comparator.setBottom(bottom.slot);
-        updateMinCompetitiveScore(scorer);
-      } else if (firstComparator != null) {
-        // We do not have the score from this document, but this is
-        // a noncompetitive value that results in the right termination behavior
-        score = getComparatorValue(bottom.slot) + 1;
-      } else if (totalHitsRelation == Relation.EQUAL_TO) {
-        updateMinCompetitiveScore(scorer);
+      comparator.copy(bottom.slot, doc);
+      if (firstComparator != null) {
+        score = getComparatorValue(bottom.slot);
+        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
       }
+      updateBottom(doc);
+      comparator.setBottom(bottom.slot);
+      updateMinCompetitiveScore(scorer);
     }
 
     void collectAnyHit(int doc, int hitsCollected) throws IOException {
@@ -229,6 +243,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           public void collect(int doc) throws IOException {
             countHit(doc);
             if (queueFull) {
+              if (thresholdCheck(doc)) {
+                return;
+              }
               collectCompetitiveHit(doc);
             } else {
               collectAnyHit(doc, totalHits);
@@ -293,6 +310,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           @Override
           public void collect(int doc) throws IOException {
             countHit(doc);
+            if (queueFull) {
+              if (thresholdCheck(doc)) {
+                return;
+              }
+            }
             final int topCmp = reverseMul * comparator.compareTop(doc);
             if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
               // Already collected on a previous page

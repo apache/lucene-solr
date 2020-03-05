@@ -27,7 +27,7 @@ import java.util.List;
  * maximum) score and how many hits they have collected.  When enough hits are collected,
  * MaxScoreTerminator notifies noncompetitive leaf collectors when they can stop (early terminate)
  * by returning true from {@link #updateLeafState}.
- * 
+ *
  * <p>At any moment, N leaves have reported their counts of documents collected; documents are
  * collected in score order, so these counts represent the best for each leaf. And we also track
  * the scores of the lowest-scoring (most recently collected) document in each leaf.</p>
@@ -149,7 +149,7 @@ class MaxScoreTerminator {
   }
 
   private void excludeSuperfluousLeaves() {
-    //System.out.println("scoreboard updateWorstHit " + leafStates.get(leafStates.size() - 1));
+    //System.out.println("scoreboard excludeSuperfluousLeaves " + leafStates.get(leafStates.size() - 1));
     //System.out.println("   total:(" + totalCollected + "-" + numExcludedBound + ")" + " numHits: " + numHits);
     //System.out.println(" and remove " + thresholdState.resultCount + " from " + totalCollected + "-" + numExcludedBound);
     if (leafStates.size() > 1) {
