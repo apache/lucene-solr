@@ -36,6 +36,10 @@ import java.util.ArrayList;
 
 class Geo3DUtil {
 
+  /** Radius of earth as an  sphere of same volume. */
+  // see ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
+  final static double EARTH_MEAN_RADIUS_METER = 6371000.7900;
+
   /** How many radians are in one degree */
   final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
 
@@ -129,7 +133,7 @@ class Geo3DUtil {
       GeoUtils.checkLongitude(longitude);
       points[i] = new GeoPoint(planetModel, fromDegrees(latitude), fromDegrees(longitude));
     }
-    return GeoPathFactory.makeGeoPath(planetModel, planetModel.fromMeters(pathWidthMeters), points);
+    return GeoPathFactory.makeGeoPath(planetModel, fromMeters(planetModel, pathWidthMeters), points);
   }
   
   /**
@@ -142,7 +146,12 @@ class Geo3DUtil {
   static GeoCircle fromDistance(final PlanetModel planetModel, final double latitude, final double longitude, final double radiusMeters) {
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);
-    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), planetModel.fromMeters(radiusMeters));
+    double radiusRadians = radiusMeters / (EARTH_MEAN_RADIUS_METER * planetModel.xyScaling);
+    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), fromMeters(planetModel, radiusMeters));
+  }
+
+  private static double fromMeters(final PlanetModel planetModel, final double radiusMeters) {
+    return radiusMeters / (EARTH_MEAN_RADIUS_METER * planetModel.xyScaling);
   }
   
   /**

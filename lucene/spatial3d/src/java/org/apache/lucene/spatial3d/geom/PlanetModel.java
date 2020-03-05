@@ -25,7 +25,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 public class PlanetModel implements SerializableObject {
-  
+
   /** Planet model corresponding to sphere. */
   public static final PlanetModel SPHERE = new PlanetModel(1.0,1.0);
 
@@ -104,8 +104,6 @@ public class PlanetModel implements SerializableObject {
   public final int MAX_ENCODED_VALUE;
   /** Min encoded value */
   public final int MIN_ENCODED_VALUE;
-  /** computed radians per meter for *this* planet model */
-  public final double RADIANS_PER_METER;
   /** utility class used to encode/decode from lat/lon (decimal degrees) into doc value integers */
   public final DocValueEncoder docValueEncoder;
 
@@ -159,8 +157,6 @@ public class PlanetModel implements SerializableObject {
     this.DECODE = getNextSafeDouble(1/MUL);
     this.MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
     this.MAX_ENCODED_VALUE = encodeValue(MAX_VALUE);
-
-    this.RADIANS_PER_METER = 1.0 / xyScaling;
 
     this.docValueEncoder = new DocValueEncoder(this);
   }
@@ -304,11 +300,6 @@ public class PlanetModel implements SerializableObject {
     double result = Double.longBitsToDouble(bits);
     assert result >= x;
     return result;
-  }
-
-  /** Converts earth-surface meters to radians */
-  public double fromMeters(final double meters) {
-    return meters * RADIANS_PER_METER;
   }
 
   /** Check if point is on surface.

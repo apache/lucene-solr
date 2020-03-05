@@ -239,6 +239,8 @@ Other
 
 * LUCENE-9225: Rectangle extends LatLonGeometry so it can be used in a geometry collection. (Ignacio Vera)
 
+* LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
+
 ======================= Lucene 8.4.1 =======================
 
 Bug Fixes
