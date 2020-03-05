@@ -92,7 +92,7 @@ Solr now has the ability to run with a Java security manager enabled. To enable 
 
 In Solr 9.0, this will be the default.
 
-See also the section <<securing-solr.adoc#enable-security-manager,Enable Security Manager>>.
+// See SOLR-14147: See also the section <<securing-solr.adoc#enable-security-manager,Enable Security Manager>>.
 
 *Block/Allow Specific IPs*
 
