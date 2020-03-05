@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * that are used for a single query. At any point, no more than (maximum pool size of the executor * LIMITING_FACTOR)
  * threads should be active. If the limit is exceeded, further segments are searched on the caller thread
  */
-public class QueueSizeBasedExecutionControlPlane extends SliceExecutionControlPlane {
+class QueueSizeBasedExecutionControlPlane extends SliceExecutionControlPlane {
   private static final double LIMITING_FACTOR = 1.5;
 
   private final ThreadPoolExecutor threadPoolExecutor;

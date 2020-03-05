@@ -31,7 +31,7 @@ import java.util.concurrent.RejectedExecutionException;
  * for execution of slices based on the current status
  * of the system and current system load
  */
-public class SliceExecutionControlPlane {
+class SliceExecutionControlPlane {
   private final Executor executor;
 
   public SliceExecutionControlPlane(Executor executor) {
