@@ -3785,7 +3785,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testCloseableQueue() throws IOException, InterruptedException {
     try(Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
-      IndexWriter.CloseableQueue queue = new IndexWriter.CloseableQueue();
+      IndexWriter.CloseableQueue queue = new IndexWriter.CloseableQueue(writer);
       AtomicInteger executed = new AtomicInteger(0);
 
       queue.add(w -> {
@@ -3796,9 +3796,9 @@ public class TestIndexWriter extends LuceneTestCase {
         assertNotNull(w);
         executed.incrementAndGet();
       });
-      queue.processEvents(writer);
+      queue.processEvents();
       assertEquals(2, executed.get());
-      queue.processEvents(writer);
+      queue.processEvents();
       assertEquals(2, executed.get());
 
       queue.add(w -> {
@@ -3813,7 +3813,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       Thread t = new Thread(() -> {
         try {
-          queue.processEvents(writer);
+          queue.processEvents();
         } catch (IOException e) {
           throw new AssertionError();
         } catch (AlreadyClosedException ex) {
@@ -3821,10 +3821,10 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       });
       t.start();
-      queue.close(writer);
+      queue.close();
       t.join();
       assertEquals(4, executed.get());
-      expectThrows(AlreadyClosedException.class, () -> queue.processEvents(writer));
+      expectThrows(AlreadyClosedException.class, () -> queue.processEvents());
       expectThrows(AlreadyClosedException.class, () -> queue.add(w -> {}));
     }
   }

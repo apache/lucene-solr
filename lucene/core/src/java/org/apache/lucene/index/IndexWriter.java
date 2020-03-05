@@ -300,12 +300,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
-  private final CloseableQueue eventQueue = new CloseableQueue();
+  private final CloseableQueue eventQueue = new CloseableQueue(this);
 
-  static final class CloseableQueue  {
+  static final class CloseableQueue implements Closeable {
     private boolean closed = false;
     private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
     private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
+    private final IndexWriter writer;
+
+    CloseableQueue(IndexWriter writer) {
+      this.writer = writer;
+    }
 
     private void tryAcquire() {
       if (permits.tryAcquire() == false) {
@@ -325,15 +330,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    void processEvents(IndexWriter writer) throws IOException {
+    void processEvents() throws IOException {
       tryAcquire();
       try {
-        processEventsInternal(writer);
+        processEventsInternal();
       }finally {
         permits.release();
       }
     }
-    private void processEventsInternal(IndexWriter writer) throws IOException {
+    private void processEventsInternal() throws IOException {
       assert Integer.MAX_VALUE - permits.availablePermits() > 0 : "must acquire a permit before processing events";
       Event event;
       while ((event = queue.poll()) != null) {
@@ -341,7 +346,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    synchronized void close(IndexWriter writer) throws IOException {
+    public synchronized void close() throws IOException {
       assert closed == false : "we should never close this twice";
       closed = true;
       // it's possible that we close this queue while we are in a processEvents call
@@ -356,7 +361,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           throw new ThreadInterruptedException(e);
         }
         try {
-          processEventsInternal(writer);
+          processEventsInternal();
         } finally {
           permits.release(Integer.MAX_VALUE);
         }
@@ -2342,7 +2347,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       docWriter.abort(); // don't sync on IW here
       docWriter.flushControl.waitForFlush(); // wait for all concurrently running flushes
       publishFlushedSegments(true); // empty the flush ticket queue otherwise we might not have cleaned up all resources
-      eventQueue.close(this);
+      eventQueue.close();
       synchronized (this) {
 
         if (pendingCommit != null) {
@@ -5268,7 +5273,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   
   private void processEvents(boolean triggerMerge) throws IOException {
     if (tragedy.get() == null) {
-     eventQueue.processEvents(this);
+     eventQueue.processEvents();
     }
     if (triggerMerge) {
       maybeMerge(getConfig().getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
