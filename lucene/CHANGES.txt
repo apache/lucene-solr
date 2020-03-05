@@ -28,7 +28,8 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9257: Always keep FST off-heap. FSTLoadMode, Reader attributes and openedFromWriter removed. (Bruno Roustant)
 
 ======================= Lucene 8.5.0 =======================
 

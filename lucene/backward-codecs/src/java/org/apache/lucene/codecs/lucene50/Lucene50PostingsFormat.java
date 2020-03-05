@@ -391,18 +391,11 @@ public class Lucene50PostingsFormat extends PostingsFormat {
    */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
-  private final BlockTreeTermsReader.FSTLoadMode fstLoadMode;
 
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsReader.FSTLoadMode.AUTO);
-  }
-
-  /** Creates {@code Lucene50PostingsFormat}. */
-  public Lucene50PostingsFormat(BlockTreeTermsReader.FSTLoadMode loadMode) {
     super("Lucene50");
-    this.fstLoadMode = loadMode;
   }
 
   @Override
@@ -420,7 +413,7 @@ public class Lucene50PostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, fstLoadMode);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
       success = true;
       return ret;
     } finally {

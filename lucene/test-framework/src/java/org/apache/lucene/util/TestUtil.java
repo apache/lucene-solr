@@ -51,7 +51,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84Codec;
@@ -934,8 +933,8 @@ public final class TestUtil {
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    * @lucene.internal this may disappear at any time
    */
-  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock, BlockTreeTermsReader.FSTLoadMode fstLoadMode) {
-    return new Lucene84PostingsFormat(minItemsPerBlock, maxItemsPerBlock, fstLoadMode);
+  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
+    return new Lucene84PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
   }
   
   /** Returns a random postings format that supports term ordinals */
