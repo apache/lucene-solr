@@ -203,7 +203,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fieldMap.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, indexIn, minTerm, maxTerm, state.openedFromWriter));
+                                                          indexStartFP, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
