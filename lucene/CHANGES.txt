@@ -7,7 +7,8 @@ http://s.apache.org/luceneversions
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9265: SimpleFSDirectory is deprecated in favor of NIOFSDirectory. (Yannick Welsch)
 
 New Features
 ---------------------
@@ -54,8 +55,6 @@ API Changes
   (Alan Woodward)
 
 * LUCENE-9150: Restore support for dynamic PlanetModel in spatial3d. (Nick Knize)
-
-* LUCENE-9265: SimpleFSDirectory is deprecated in favor of NIOFSDirectory. (Yannick Welsch)
 
 New Features
 ---------------------
