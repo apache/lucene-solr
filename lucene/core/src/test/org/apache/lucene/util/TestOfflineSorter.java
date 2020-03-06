@@ -81,16 +81,17 @@ public class TestOfflineSorter extends LuceneTestCase {
     if (random().nextBoolean()) {
       return null;
     } else {
-      return new ThreadPoolExecutor(1, TestUtil.nextInt(random(), 2, 6), Long.MAX_VALUE, TimeUnit.MILLISECONDS,
+      int maxThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 6) : 2;
+      return new ThreadPoolExecutor(1, maxThreads, Long.MAX_VALUE, TimeUnit.MILLISECONDS,
                                     new LinkedBlockingQueue<Runnable>(),
-                                    new NamedThreadFactory("TestIndexSearcher"));
+                                    new NamedThreadFactory("TestOfflineSorter"));
     }
   }
 
   @Slow
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       ExecutorService exec = randomExecutorServiceOrNull();
       SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2, -1, exec, TestUtil.nextInt(random(), 1, 4)),
                                 generateRandom((int)OfflineSorter.MB * 20));
@@ -104,7 +105,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   @Slow
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       ExecutorService exec = randomExecutorServiceOrNull();
       SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, -1, exec, TestUtil.nextInt(random(), 1, 4)),
                                     generateRandom((int)OfflineSorter.MB * 20));
