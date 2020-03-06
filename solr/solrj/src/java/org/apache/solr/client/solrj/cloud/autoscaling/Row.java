@@ -80,6 +80,7 @@ public class Row implements MapWriter {
     this.globalCache = new HashMap();
     this.perCollCache = new HashMap();
 
+/*
     // pre-compute and cache common variables
     computeCacheIfAbsent(CoresVariable.TOTALCORES, o -> {
       int[] result = new int[1];
@@ -93,6 +94,8 @@ public class Row implements MapWriter {
             o -> getter.getIndexSize(Row.this));
       });
     });
+
+ */
     isAlreadyCopied = true;
   }
 
@@ -270,13 +273,14 @@ public class Row implements MapWriter {
   private void lazyCopyReplicas(String coll, String shard) {
     globalCache = new HashMap();
     Map cacheCopy = new HashMap<>(perCollCache);
-    ((Map)cacheCopy.getOrDefault(coll, Collections.emptyMap())).remove(shard);
+    // nocommit: per-shard removal has unexpected side-effects, TestPolicy.testFreeDiskSuggestions fails
+    cacheCopy.remove(coll);//todo optimize at shard level later
     perCollCache = cacheCopy;
     if (isAlreadyCopied) return;//caches need to be invalidated but the rest can remain as is
 
     Map<String, Map<String, List<ReplicaInfo>>> replicasCopy = new HashMap<>(collectionVsShardVsReplicas);
     Map<String, List<ReplicaInfo>> oneColl = replicasCopy.get(coll);
-    if (oneColl != null && oneColl.get(shard) != null) {
+    if (oneColl != null) {
       replicasCopy.put(coll, Utils.getDeepCopy(oneColl, 2));
     }
     collectionVsShardVsReplicas = replicasCopy;

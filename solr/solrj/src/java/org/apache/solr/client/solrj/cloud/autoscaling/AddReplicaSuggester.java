@@ -47,8 +47,11 @@ class AddReplicaSuggester extends Suggester {
       //iterate through  nodes and identify the least loaded
       List<Violation> leastSeriousViolation = null;
       Row bestNode = null;
-      // compare only up to that many eligible rows from the top
-      int limitTopRows = 3;
+      // nocommit
+      // possible optimization? for large clusters compare only up to
+      // that many eligible rows from the top
+      int limitTopRows = getMatrix().size() > 100 ? 10 : getMatrix().size();
+
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
         if (!isNodeSuitableForReplicaAddition(row, null)) continue;
