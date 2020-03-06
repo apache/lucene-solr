@@ -44,6 +44,8 @@ import java.util.concurrent.Future;
  * {@link Future#cancel(boolean)} you should use the legacy {@code RAFDirectory}
  * from the Lucene {@code misc} module in favor of {@link SimpleFSDirectory}.
  * </p>
+ * @deprecated This class is a less efficient implementation of what's available
+ * in {@link NIOFSDirectory}, and will be removed in future versions of Lucene.
  */
 public class SimpleFSDirectory extends FSDirectory {
     
