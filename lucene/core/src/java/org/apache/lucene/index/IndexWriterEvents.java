@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
 package org.apache.lucene.index;
 
 /**
