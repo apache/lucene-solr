@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -177,6 +178,11 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     @Override
     public Bits getLiveDocs() {
       return bits;
+    }
+
+    @Override
+    public VectorValues getVectorValues(String field) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

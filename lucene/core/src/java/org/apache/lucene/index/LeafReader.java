@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.util.Bits;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
@@ -230,6 +231,8 @@ public abstract class LeafReader extends IndexReader {
    *  spatial searches for the given field, or null if there
    *  are no point fields. */
   public abstract PointValues getPointValues(String field) throws IOException;
+
+  public abstract VectorValues getVectorValues(String field) throws IOException;
 
   /**
    * Checks consistency of this reader.

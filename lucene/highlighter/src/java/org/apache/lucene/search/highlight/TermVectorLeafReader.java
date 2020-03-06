@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -81,7 +82,7 @@ public class TermVectorLeafReader extends LeafReader {
     }
     FieldInfo fieldInfo = new FieldInfo(field, 0,
                                         true, true, terms.hasPayloads(),
-                                        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0, 0, false);
+                                        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0, 0, 0, false);
     fieldInfos = new FieldInfos(new FieldInfo[]{fieldInfo});
   }
 
@@ -136,6 +137,11 @@ public class TermVectorLeafReader extends LeafReader {
 
   @Override
   public PointValues getPointValues(String fieldName) {
+    return null;
+  }
+
+  @Override
+  public VectorValues getVectorValues(String field) throws IOException {
     return null;
   }
 

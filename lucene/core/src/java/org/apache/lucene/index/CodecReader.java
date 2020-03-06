@@ -30,6 +30,8 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.VectorValues;
+import org.apache.lucene.codecs.VectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 
@@ -77,7 +79,9 @@ public abstract class CodecReader extends LeafReader implements Accountable {
    * @lucene.internal
    */
   public abstract PointsReader getPointsReader();
-  
+
+  public abstract VectorsReader getVectorsReader();
+
   @Override
   public final void document(int docID, StoredFieldVisitor visitor) throws IOException {
     checkBounds(docID);
@@ -200,6 +204,18 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     }
 
     return getPointsReader().getValues(field);
+  }
+
+  @Override
+  public final VectorValues getVectorValues(String field) throws IOException {
+    ensureOpen();
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (fi == null || fi.getVectorDimension() == 0) {
+      // Field does not exist or does not index points
+      return null;
+    }
+
+    return getVectorsReader().getVectorValues(fi);
   }
 
   @Override

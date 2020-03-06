@@ -120,6 +120,7 @@ public class TestBlockWriter extends LuceneTestCase {
         0,
         0,
         0,
+        0,
         true
     );
   }

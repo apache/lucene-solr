@@ -203,6 +203,7 @@ public class STBlockReaderTest extends LuceneTestCase {
         0,
         0,
         0,
+        0,
         false
     );
   }

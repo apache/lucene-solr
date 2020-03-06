@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene90;
 
 
 import java.io.IOException;
@@ -39,17 +39,17 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
 /**
- * Lucene 5.0 Field Infos format.
- * <p>Field names are stored in the field info file, with suffix <code>.fnm</code>.
+ * Lucene 9.0 Field Infos format.
+ * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.
  * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
- * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer
+ * FieldBits,DocValuesBits,DocValuesGen,Attributes,DimensionCount,DimensionNumBytes,VectorDistFunctionByte,VectorIndexTypeByte&gt; <sup>FieldsCount</sup>,Footer
  * <p>Data types:
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#checkIndexHeader IndexHeader}</li>
  *   <li>FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, IndexOptions, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
- *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
+ *   <li>FieldNumber, DimensionCount, DimensionNumBytes --&gt; {@link DataOutput#writeInt VInt}</li>
  *   <li>Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}</li>
  *   <li>DocValuesGen --&gt; {@link DataOutput#writeLong(long) Int64}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
@@ -82,7 +82,7 @@ import org.apache.lucene.store.IndexOutput;
  *   </li>
  *   <li>DocValuesBits: a byte containing per-document value types. The type
  *       recorded as two four-bit integers, with the high-order bits representing
- *       <code>norms</code> options, and the low-order bits representing 
+ *       <code>norms</code> options, and the low-order bits representing
  *       {@code DocValues} options. Each four-bit integer can be decoded as such:
  *     <ul>
  *       <li>0: no DocValues for this field.</li>
@@ -92,37 +92,41 @@ import org.apache.lucene.store.IndexOutput;
  *      </ul>
  *   </li>
  *   <li>DocValuesGen is the generation count of the field's DocValues. If this is -1,
- *       there are no DocValues updates to that field. Anything above zero means there 
+ *       there are no DocValues updates to that field. Anything above zero means there
  *       are updates stored by {@link DocValuesFormat}.</li>
  *   <li>Attributes: a key-value map of codec-private attributes.</li>
+ *   <li>PointDimensionCount, PointNumBytes: these are non-zero only if the field is
+ *       indexed as points, e.g. using {@link org.apache.lucene.document.LongPoint}</li>
+ *   <li>VectorNumDimensions: it is non-zero if the field is indexed as vectors.</li>
  * </ul>
  *
  * @lucene.experimental
  */
-public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
+public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
 
   /** Sole constructor. */
-  public Lucene50FieldInfosFormat() {
+  public Lucene90FieldInfosFormat() {
   }
-  
+
   @Override
   public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (ChecksumIndexInput input = directory.openChecksumInput(fileName, context)) {
       Throwable priorE = null;
-      FieldInfo infos[] = null;
+      FieldInfo[] infos = null;
       try {
-        CodecUtil.checkIndexHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
-                                     Lucene50FieldInfosFormat.FORMAT_START, 
-                                     Lucene50FieldInfosFormat.FORMAT_CURRENT,
-                                     segmentInfo.getId(), segmentSuffix);
-        
+        int version = CodecUtil.checkIndexHeader(input,
+            Lucene90FieldInfosFormat.CODEC_NAME,
+            Lucene90FieldInfosFormat.FORMAT_START,
+            Lucene90FieldInfosFormat.FORMAT_CURRENT,
+            segmentInfo.getId(), segmentSuffix);
+
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];
-        
+
         // previous field's attribute map, we share when possible:
         Map<String,String> lastAttributes = Collections.emptyMap();
-        
+
         for (int i = 0; i < size; i++) {
           String name = input.readString();
           final int fieldNumber = input.readVInt();
@@ -133,22 +137,37 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
           boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
           boolean omitNorms = (bits & OMIT_NORMS) != 0;
           boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
+          boolean isSoftDeletesField = (bits & SOFT_DELETES_FIELD) != 0;
 
           final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
-          
+
           // DV Types are packed in one byte
           final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
           final long dvGen = input.readLong();
           Map<String,String> attributes = input.readMapOfStrings();
-
           // just use the last field's map if its the same
           if (attributes.equals(lastAttributes)) {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
+          int pointDataDimensionCount = input.readVInt();
+          int pointNumBytes;
+          int pointIndexDimensionCount = pointDataDimensionCount;
+          if (pointDataDimensionCount != 0) {
+            if (version >= Lucene90FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
+              pointIndexDimensionCount = input.readVInt();
+            }
+            pointNumBytes = input.readVInt();
+          } else {
+            pointNumBytes = 0;
+          }
+          final int vectorNumDimensions = input.readVInt();
+
           try {
-            infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, dvGen, attributes, 0, 0, 0, 0, false);
+            infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads,
+                indexOptions, docValuesType, dvGen, attributes,
+                pointDataDimensionCount, pointIndexDimensionCount, pointNumBytes,
+                vectorNumDimensions,  isSoftDeletesField);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -162,7 +181,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
       return new FieldInfos(infos);
     }
   }
-  
+
   static {
     // We "mirror" DocValues enum values with the constants below; let's try to ensure if we add a new DocValuesType while this format is
     // still used for writing, we remember to fix this encoding:
@@ -171,43 +190,42 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
 
   private static byte docValuesByte(DocValuesType type) {
     switch(type) {
-    case NONE:
-      return 0;
-    case NUMERIC:
-      return 1;
-    case BINARY:
-      return 2;
-    case SORTED:
-      return 3;
-    case SORTED_SET:
-      return 4;
-    case SORTED_NUMERIC:
-      return 5;
-    default:
-      // BUG
-      throw new AssertionError("unhandled DocValuesType: " + type);
+      case NONE:
+        return 0;
+      case NUMERIC:
+        return 1;
+      case BINARY:
+        return 2;
+      case SORTED:
+        return 3;
+      case SORTED_SET:
+        return 4;
+      case SORTED_NUMERIC:
+        return 5;
+      default:
+        // BUG
+        throw new AssertionError("unhandled DocValuesType: " + type);
     }
   }
 
   private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
     switch(b) {
-    case 0:
-      return DocValuesType.NONE;
-    case 1:
-      return DocValuesType.NUMERIC;
-    case 2:
-      return DocValuesType.BINARY;
-    case 3:
-      return DocValuesType.SORTED;
-    case 4:
-      return DocValuesType.SORTED_SET;
-    case 5:
-      return DocValuesType.SORTED_NUMERIC;
-    default:
-      throw new CorruptIndexException("invalid docvalues byte: " + b, input);
+      case 0:
+        return DocValuesType.NONE;
+      case 1:
+        return DocValuesType.NUMERIC;
+      case 2:
+        return DocValuesType.BINARY;
+      case 3:
+        return DocValuesType.SORTED;
+      case 4:
+        return DocValuesType.SORTED_SET;
+      case 5:
+        return DocValuesType.SORTED_NUMERIC;
+      default:
+        throw new CorruptIndexException("invalid docvalues byte: " + b, input);
     }
   }
-
   static {
     // We "mirror" IndexOptions enum values with the constants below; let's try to ensure if we add a new IndexOption while this format is
     // still used for writing, we remember to fix this encoding:
@@ -216,37 +234,37 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
 
   private static byte indexOptionsByte(IndexOptions indexOptions) {
     switch (indexOptions) {
-    case NONE:
-      return 0;
-    case DOCS:
-      return 1;
-    case DOCS_AND_FREQS:
-      return 2;
-    case DOCS_AND_FREQS_AND_POSITIONS:
-      return 3;
-    case DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS:
-      return 4;
-    default:
-      // BUG:
-      throw new AssertionError("unhandled IndexOptions: " + indexOptions);
+      case NONE:
+        return 0;
+      case DOCS:
+        return 1;
+      case DOCS_AND_FREQS:
+        return 2;
+      case DOCS_AND_FREQS_AND_POSITIONS:
+        return 3;
+      case DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS:
+        return 4;
+      default:
+        // BUG:
+        throw new AssertionError("unhandled IndexOptions: " + indexOptions);
     }
   }
-  
+
   private static IndexOptions getIndexOptions(IndexInput input, byte b) throws IOException {
     switch (b) {
-    case 0:
-      return IndexOptions.NONE;
-    case 1:
-      return IndexOptions.DOCS;
-    case 2:
-      return IndexOptions.DOCS_AND_FREQS;
-    case 3:
-      return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    case 4:
-      return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-    default:
-      // BUG
-      throw new CorruptIndexException("invalid IndexOptions byte: " + b, input);
+      case 0:
+        return IndexOptions.NONE;
+      case 1:
+        return IndexOptions.DOCS;
+      case 2:
+        return IndexOptions.DOCS_AND_FREQS;
+      case 3:
+        return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      case 4:
+        return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      default:
+        // BUG
+        throw new CorruptIndexException("invalid IndexOptions byte: " + b, input);
     }
   }
 
@@ -254,7 +272,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (IndexOutput output = directory.createOutput(fileName, context)) {
-      CodecUtil.writeIndexHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
+      CodecUtil.writeIndexHeader(output, Lucene90FieldInfosFormat.CODEC_NAME, Lucene90FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         fi.checkConsistency();
@@ -266,6 +284,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= OMIT_NORMS;
         if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+        if (fi.isSoftDeletesField()) bits |= SOFT_DELETES_FIELD;
         output.writeByte(bits);
 
         output.writeByte(indexOptionsByte(fi.getIndexOptions()));
@@ -274,22 +293,30 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
+        output.writeVInt(fi.getPointDimensionCount());
+        if (fi.getPointDimensionCount() != 0) {
+          output.writeVInt(fi.getPointIndexDimensionCount());
+          output.writeVInt(fi.getPointNumBytes());
+        }
+        output.writeVInt(fi.getVectorDimension());
       }
       CodecUtil.writeFooter(output);
     }
   }
-  
+
   /** Extension of field infos */
   static final String EXTENSION = "fnm";
-  
+
   // Codec header
-  static final String CODEC_NAME = "Lucene50FieldInfos";
-  static final int FORMAT_SAFE_MAPS = 1;
-  static final int FORMAT_START = FORMAT_SAFE_MAPS;
-  static final int FORMAT_CURRENT = FORMAT_SAFE_MAPS;
-  
+  static final String CODEC_NAME = "Lucene90FieldInfos";
+  static final int FORMAT_START = 0;
+  static final int FORMAT_SOFT_DELETES = 1;
+  static final int FORMAT_SELECTIVE_INDEXING = 2;
+  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
+
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;
   static final byte OMIT_NORMS = 0x2;
   static final byte STORE_PAYLOADS = 0x4;
+  static final byte SOFT_DELETES_FIELD = 0x8;
 }

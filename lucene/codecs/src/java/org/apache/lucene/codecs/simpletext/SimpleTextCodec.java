@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.VectorsFormat;
 
 /**
  * plain text index format.
@@ -99,5 +100,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public PointsFormat pointsFormat() {
     return pointsFormat;
+  }
+
+  @Override
+  public VectorsFormat vectorsFormat() {
+    return VectorsFormat.EMPTY;
   }
 }

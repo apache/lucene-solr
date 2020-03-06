@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
+import org.apache.lucene.codecs.VectorValues;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -220,6 +221,11 @@ public class QueryUtils {
 
       @Override
       public PointValues getPointValues(String fieldName) {
+        return null;
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) throws IOException {
         return null;
       }
 

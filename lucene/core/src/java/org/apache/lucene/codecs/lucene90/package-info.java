@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-dependencies {
-  api project(':lucene:core')
-  implementation files("py4j0.10.9.jar")
-  testImplementation project(':lucene:test-framework')
-}
+/**
+ * Lucene 9.0 file format.
+ */
+package org.apache.lucene.codecs.lucene90;

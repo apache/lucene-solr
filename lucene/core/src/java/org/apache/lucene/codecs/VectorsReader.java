@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+package org.apache.lucene.codecs;
 
-dependencies {
-  api project(':lucene:core')
-  implementation files("py4j0.10.9.jar")
-  testImplementation project(':lucene:test-framework')
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfo;
+
+public abstract class VectorsReader implements Closeable {
+  public abstract VectorValues getVectorValues(FieldInfo field);
+  public abstract void checkIntegrity() throws IOException;
 }

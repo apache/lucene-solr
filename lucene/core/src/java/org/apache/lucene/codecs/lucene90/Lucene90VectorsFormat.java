@@ -15,10 +15,24 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+package org.apache.lucene.codecs.lucene90;
 
-dependencies {
-  api project(':lucene:core')
-  implementation files("py4j0.10.9.jar")
-  testImplementation project(':lucene:test-framework')
+import java.io.IOException;
+
+import org.apache.lucene.codecs.VectorsFormat;
+import org.apache.lucene.codecs.VectorsReader;
+import org.apache.lucene.codecs.VectorsWriter;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
+
+public class Lucene90VectorsFormat extends VectorsFormat {
+  @Override
+  public VectorsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new Lucene90VectorsWriter(state);
+  }
+
+  @Override
+  public VectorsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new Lucene90VectorsReader(state);
+  }
 }
