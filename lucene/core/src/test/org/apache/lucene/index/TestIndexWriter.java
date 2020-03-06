@@ -3773,9 +3773,6 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
-      if (w.getTragicException() != null) {
-        w.getTragicException().printStackTrace();
-      }
       assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
       IOUtils.close(sm, dir);
     }
@@ -3784,7 +3781,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testCloseableQueue() throws IOException, InterruptedException {
     try(Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
-      IndexWriter.CloseableQueue queue = new IndexWriter.CloseableQueue(writer);
+      IndexWriter.EventQueue queue = new IndexWriter.EventQueue(writer);
       AtomicInteger executed = new AtomicInteger(0);
 
       queue.add(w -> {

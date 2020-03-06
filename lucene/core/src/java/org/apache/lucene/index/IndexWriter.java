@@ -300,15 +300,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
-  private final CloseableQueue eventQueue = new CloseableQueue(this);
+  private final EventQueue eventQueue = new EventQueue(this);
 
-  static final class CloseableQueue implements Closeable {
+  static final class EventQueue implements Closeable {
     private volatile boolean closed = false;
     private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
     private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
     private final IndexWriter writer;
 
-    CloseableQueue(IndexWriter writer) {
+    EventQueue(IndexWriter writer) {
       this.writer = writer;
     }
 
@@ -334,10 +334,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       tryAcquire();
       try {
         processEventsInternal();
-      }finally {
+      } finally {
         permits.release();
       }
     }
+
     private void processEventsInternal() throws IOException {
       assert Integer.MAX_VALUE - permits.availablePermits() > 0 : "must acquire a permit before processing events";
       Event event;
