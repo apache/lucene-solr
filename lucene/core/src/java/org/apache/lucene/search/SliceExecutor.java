@@ -27,18 +27,18 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Execution control plane which is responsible
+ * Executor which is responsible
  * for execution of slices based on the current status
  * of the system and current system load
  */
-class SliceExecutionControlPlane {
+class SliceExecutor {
   private final Executor executor;
 
-  public SliceExecutionControlPlane(Executor executor) {
+  public SliceExecutor(Executor executor) {
     this.executor = executor;
   }
 
-  public List<Future> invokeAll(Collection<FutureTask> tasks) {
+  public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
 
     if (tasks == null) {
       throw new IllegalArgumentException("Tasks is null");
@@ -48,7 +48,7 @@ class SliceExecutionControlPlane {
       throw new IllegalArgumentException("Executor is null");
     }
 
-    List<Future> futures = new ArrayList();
+    List<Future<C>> futures = new ArrayList();
 
     int i = 0;
 
@@ -68,7 +68,7 @@ class SliceExecutionControlPlane {
   }
 
   // Helper method to execute a single task
-  protected void processTask(final FutureTask task, final List<Future> futures,
+  protected <C> void processTask(final FutureTask<C> task, final List<Future<C>> futures,
                              final boolean shouldExecuteOnCallerThread) {
     if (task == null) {
       throw new IllegalArgumentException("Input is null");

@@ -25,23 +25,23 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * Derivative of SliceBasedExecutionControlPlane that controls the number of active threads
+ * Derivative of SliceExecutor that controls the number of active threads
  * that are used for a single query. At any point, no more than (maximum pool size of the executor * LIMITING_FACTOR)
  * threads should be active. If the limit is exceeded, further segments are searched on the caller thread
  */
-class QueueSizeBasedExecutionControlPlane extends SliceExecutionControlPlane {
+class QueueSizeBasedExecutor extends SliceExecutor {
   private static final double LIMITING_FACTOR = 1.5;
 
   private final ThreadPoolExecutor threadPoolExecutor;
 
-  public QueueSizeBasedExecutionControlPlane(ThreadPoolExecutor threadPoolExecutor) {
+  public QueueSizeBasedExecutor(ThreadPoolExecutor threadPoolExecutor) {
     super(threadPoolExecutor);
     this.threadPoolExecutor = threadPoolExecutor;
   }
 
   @Override
-  public List<Future> invokeAll(Collection<FutureTask> tasks) {
-    List<Future> futures = new ArrayList();
+  public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
+    List<Future<C>> futures = new ArrayList();
     int i = 0;
 
     for (FutureTask task : tasks) {

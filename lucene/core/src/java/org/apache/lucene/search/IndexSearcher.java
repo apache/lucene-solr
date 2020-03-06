@@ -123,7 +123,7 @@ public class IndexSearcher {
   private final Executor executor;
 
   // Used internally for load balancing threads executing for the query
-  private final SliceExecutionControlPlane sliceExecutionControlPlane;
+  private final SliceExecutor sliceExecutor;
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
@@ -213,18 +213,18 @@ public class IndexSearcher {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
-    this.sliceExecutionControlPlane = executor == null ? null : getSliceExecutionControlPlane(executor);
+    this.sliceExecutor = executor == null ? null : getSliceExecutionControlPlane(executor);
     this.readerContext = context;
     leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
   }
 
   // Package private for testing
-  IndexSearcher(IndexReaderContext context, Executor executor, SliceExecutionControlPlane sliceExecutionControlPlane) {
+  IndexSearcher(IndexReaderContext context, Executor executor, SliceExecutor sliceExecutor) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
-    this.sliceExecutionControlPlane = executor == null ? null : sliceExecutionControlPlane;
+    this.sliceExecutor = executor == null ? null : sliceExecutor;
     this.readerContext = context;
     leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
@@ -676,7 +676,7 @@ public class IndexSearcher {
       }
       query = rewrite(query);
       final Weight weight = createWeight(query, scoreMode, 1);
-      final List<FutureTask> listTasks = new ArrayList<>();
+      final List<FutureTask<C>> listTasks = new ArrayList<>();
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
@@ -688,7 +688,7 @@ public class IndexSearcher {
         listTasks.add(task);
       }
 
-      final List<Future> topDocsFutures = sliceExecutionControlPlane.invokeAll(listTasks);
+      final List<Future<C>> topDocsFutures = sliceExecutor.invokeAll(listTasks);
       final List<C> collectedCollectors = new ArrayList<>();
       for (Future<C> future : topDocsFutures) {
         try {
@@ -877,7 +877,7 @@ public class IndexSearcher {
 
   @Override
   public String toString() {
-    return "IndexSearcher(" + reader + "; executor=" + executor + "; sliceExecutionControlPlane " + sliceExecutionControlPlane + ")";
+    return "IndexSearcher(" + reader + "; executor=" + executor + "; sliceExecutionControlPlane " + sliceExecutor + ")";
   }
   
   /**
@@ -935,8 +935,8 @@ public class IndexSearcher {
   /**
    * Returns this searchers slice execution control plane or <code>null</code> if no executor was provided
    */
-  public SliceExecutionControlPlane getSliceExecutionControlPlane() {
-    return sliceExecutionControlPlane;
+  public SliceExecutor getSliceExecutor() {
+    return sliceExecutor;
   }
 
   /** Thrown when an attempt is made to add more than {@link
@@ -953,15 +953,15 @@ public class IndexSearcher {
   /**
    * Return the SliceExecutionControlPlane instance to be used for this IndexSearcher instance
    */
-  private static SliceExecutionControlPlane getSliceExecutionControlPlane(Executor executor) {
+  private static SliceExecutor getSliceExecutionControlPlane(Executor executor) {
     if (executor == null) {
       return null;
     }
 
     if (executor instanceof ThreadPoolExecutor) {
-      return new QueueSizeBasedExecutionControlPlane((ThreadPoolExecutor) executor);
+      return new QueueSizeBasedExecutor((ThreadPoolExecutor) executor);
     }
 
-    return new SliceExecutionControlPlane(executor);
+    return new SliceExecutor(executor);
   }
 }

@@ -393,10 +393,10 @@ public class TestIndexSearcher extends LuceneTestCase {
   }
 
   private void runCPTest(ThreadPoolExecutor service, boolean useRandomCP) throws Exception {
-    SliceExecutionControlPlane sliceExecutionControlPlane = useRandomCP == true ? new RandomBlockingSliceExecutionControlPlane(service) :
-                                                              new QueueSizeBasedExecutionControlPlane(service);
+    SliceExecutor sliceExecutor = useRandomCP == true ? new RandomBlockingSliceExecutor(service) :
+                                                              new QueueSizeBasedExecutor(service);
 
-    IndexSearcher searcher = new IndexSearcher(reader2.getContext(), service, sliceExecutionControlPlane);
+    IndexSearcher searcher = new IndexSearcher(reader2.getContext(), service, sliceExecutor);
 
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -429,15 +429,15 @@ public class TestIndexSearcher extends LuceneTestCase {
     }
   }
 
-  private class RandomBlockingSliceExecutionControlPlane extends SliceExecutionControlPlane {
+  private class RandomBlockingSliceExecutor extends SliceExecutor {
 
-    public RandomBlockingSliceExecutionControlPlane(Executor executor) {
+    public RandomBlockingSliceExecutor(Executor executor) {
       super(executor);
     }
 
     @Override
-    public List<Future> invokeAll(Collection<FutureTask> tasks) {
-      List<Future> futures = new ArrayList();
+    public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
+      List<Future<C>> futures = new ArrayList();
 
       for (FutureTask task : tasks) {
         boolean shouldExecuteOnCallerThread = false;
