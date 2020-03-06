@@ -45,7 +45,6 @@ public class TestDirectoryFactory extends SolrTestCaseJ4 {
                     NRTCachingDirectoryFactory.class,
                     NIOFSDirectoryFactory.class,
                     RAMDirectoryFactory.class,
-                    SimpleFSDirectoryFactory.class,
                     StandardDirectoryFactory.class);
   
   /* Test that MockDirectoryFactory's exist method behaves consistent w/other impls */

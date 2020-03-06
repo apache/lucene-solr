@@ -65,8 +65,6 @@ New Features
  * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
    (Eric Pugh via Christine Poerschke)
 
-* SOLR-13942: /api/cluster/zk/* to fetch raw ZK data (noble)
-
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using

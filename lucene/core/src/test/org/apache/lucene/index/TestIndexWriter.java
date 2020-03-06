@@ -96,7 +96,6 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -2685,7 +2684,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // MMapDirectory doesn't work because it closes its file handles after mapping!
     List<Closeable> toClose = new ArrayList<>();
-    try (FSDirectory dir = new SimpleFSDirectory(root);
+    try (FSDirectory dir = new NIOFSDirectory(root);
          Closeable closeable = () -> IOUtils.close(toClose)) {
       assert closeable != null;
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
@@ -2751,7 +2750,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Use WindowsFS to prevent open files from being deleted:
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path root = new FilterPath(path, fs);
-    try (FSDirectory _dir = new SimpleFSDirectory(root)) {
+    try (FSDirectory _dir = new NIOFSDirectory(root)) {
       Directory dir = new FilterDirectory(_dir) {};
 
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -2793,7 +2792,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexCommit indexCommit;
     DirectoryReader reader;
     // MMapDirectory doesn't work because it closes its file handles after mapping!
-    try (FSDirectory dir = new SimpleFSDirectory(root)) {
+    try (FSDirectory dir = new NIOFSDirectory(root)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
       IndexWriter w = new IndexWriter(dir, iwc);
       w.commit();
@@ -2835,7 +2834,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Path root = new FilterPath(path, fs);
     DirectoryReader reader;
     // MMapDirectory doesn't work because it closes its file handles after mapping!
-    try (FSDirectory dir = new SimpleFSDirectory(root)) {
+    try (FSDirectory dir = new NIOFSDirectory(root)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter w = new IndexWriter(dir, iwc);
       w.commit();
