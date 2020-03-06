@@ -33,7 +33,12 @@ public class TestCharBlockArray extends FacetTestCase {
     CharBlockArray array = new CharBlockArray();
     StringBuilder builder = new StringBuilder();
 
-    final int n = 100 * 1000;
+    final int n;
+    if (TEST_NIGHTLY) {
+      n = 100 * 1000;
+    } else {
+      n = 1000;
+    }
 
     byte[] buffer = new byte[50];
 

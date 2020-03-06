@@ -33,67 +33,7 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 == Upgrading to 9.x Releases (NOT RELEASED)
 
-== Solr 9.0
-
-_(raw; not yet edited)_
-
-* LUCENE-8738: Move to Java 11 as minimum Java version.
-  (Adrien Grand, Uwe Schindler)
-
-* SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
-  in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
-  see comments in the log4j2 configuration files (log4j2.xml by default).
-
-* SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
-  expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
-  expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of
-  expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
-  (Gus Heck).
-
-* SOLR-13324: URLClassifyProcessor#getCanonicalUrl now throws MalformedURLException rather than hiding it. Although the
-  present code is unlikely to produce such an exception it may be possible in future changes or in subclasses.
-  Currently this change should only effect compatibility of custom code overriding this method (Gus Heck).
-
-* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
-  confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
-
-* SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default
-  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
-  (Munendra S N, Mikhail Khludnev)
-
-* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
-
-* SOLR-13649: Property 'blockUnknown' of BasicAuthPlugin and JWTAuthPlugin now defaults to 'true'. This change is backward
-  incompatible. To achieve the previous default behavior, explicitly set 'blockUnknown':'false' in security.json
-  (marcussorealheis, janhoy, shalin)
-
-* SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
-  provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
-
-* SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
-
-* SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
-
-* SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
-  followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
-  other java.util.Map implementations based on AbstractMap (Chris Hennick).
-
-* SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
-  Users have to modify their existing configurations to use CaffeineCache instead. (ab)
-
-* SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
-  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
-
-* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
-  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
-  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
-
-* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis)
-
-* SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
-  This embedded zookeeper should not be used in production. If you rely
-  upon the previous behavior, then you can change the clientPortAddress
-  in solr/server/solr/zoo.cfg (Robert Muir)
+// DEVS: please put 9.0 Upgrade Notes in `major-changes-in-solr-9.adoc`!.
 
 == Upgrading to 8.x Releases
 
@@ -101,49 +41,91 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 
 === Solr 8.5
 
-_(raw; not yet edited)_
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
+for an overview of the main new features of Solr 8.5.
 
-* SOLR-14026: Upgrade Jetty to 9.4.24.v20191120 and dropwizard to 4.1.2 (Erick Erickson)
+When upgrading to 8.5.x users should be aware of the following major changes from 8.4.
 
-* SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
-Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+*Considerations for a SolrCloud Upgrade*
 
-* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
-execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+Solr 8.5 introduces a change in the format used for the elements in the Overseer queues and maps (see https://issues.apache.org/jira/browse/SOLR-14095[SOLR-14095] for technical discussion of the change). This queue is used internally by the Overseer to reliably handle
+operations, to communicate operation results between the Overseer and the coordinator node, and by the REQUESTSTATUS API for displaying information about async Collection operations.
 
-* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
-issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
-operations, to communicate operation results between the Overseer and the coordinator node, and by the
-REQUESTSTATUS API for displaying information about async Collection operations.
-This change won’t require you to change any client-side code you should see no differences on the client side,
-however, it does require some care when upgrading an existing SolrCloud cluster:
-- If you are upgrading Solr with an atomic restart strategy:
-- If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
-- If you do use Collection API operations:
-1. pause Collection API operations
-2. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
-if you use async operations
-3. upgrade and restart the nodes
-- If you are upgrading Solr with a rolling restart strategy:
-- If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+This change won’t require you to change any client-side code you should see no differences on the client side.
+However, it does require some care when upgrading an existing SolrCloud cluster depending on your upgrade strategy.
+
+If you are upgrading Solr with an atomic restart strategy:
+
+* If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+* If you do use Collection API operations:
+. Pause Collection API operations.
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+if you use async operations.
+. Upgrade and restart the nodes.
+. Resume all normal operations.
+
+If you are upgrading Solr with a rolling restart strategy:
+
+* If you don’t use Collection API operations, you should be able to do a rolling restart and not see
 any issues.
-- If you do use Collection API operations, but you can pause their use during the restart the easiest
+* If you do use Collection API operations, but you can pause their use during the restart the easiest
 way is to:
-1. pause Collection API operations
-2. upgrade and restart all nodes
-3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
-if you use async operations
-4. Resume all normal operations
-- If you use Collection API operations and can’t pause them during the upgrade:
-1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
-Overseer node is upgraded last
-2. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
-system property
-If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+. Pause Collection API operations.
+. Upgrade and restart all nodes.
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+if you use async operations.
+. Resume all normal operations.
+
+If you use Collection API operations and can’t pause them during the upgrade:
+
+. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+Overseer node is upgraded last.
+. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+system property.
+
+If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the system
 property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
 
-* SOLR-13808: add cache=false into underneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
-filterCache. (Mikhail Khludnev)
+*Security Manager*
+
+Solr now has the ability to run with a Java security manager enabled. To enable this, set the property `SOLR_SECURITY_MANAGER_ENABLED=true` in `solr.in.sh` or `solr.in.cmd`. Note that if you are using HDFS to store indexes, you cannot enable the security manager.
+
+In Solr 9.0, this will be the default.
+
+// See SOLR-14147: See also the section <<securing-solr.adoc#enable-security-manager,Enable Security Manager>>.
+
+*Block/Allow Specific IPs*
+
+Solr has two new parameters to allow you to restrict access to Solr using IP addresses. Use `SOLR_IP_WHITELIST` to configure a whitelist, and `SOLR_IP_BLACKLIST` to configure a blacklist. These properties are defined in `solr.in.sh` or `solr.in.cmd`.
+
+See also the section <<securing-solr.adoc#enable-ip-access-control,Enable IP Access Control>>.
+
+*BlockJoin Facet Deprecation*
+
+The BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+Users are encouraged to migrate to `uniqueBlock()` in JSON Facet API.
+More information about this is available in the section <<json-faceting-domain-changes.adoc#block-join-domain-changes,Block Join Domain Changes>>.
+
+*Caching with the Boolean Query Parser*
+
+By default, the <<other-parsers.adoc#boolean-query-parser,Boolean Query Parser>> caches queries in Solr's filterCache. It's now possible to disable this with the local param `cache=false`.
+
+*Indexing Log Files*
+
+Solr now includes a command line tool, `bin/postlogs` which will index Solr's log files into a collection.
+This provides an easy way to use Solr or visualization tools (such as Zeppelin) to troubleshoot problems with the system.
+
+This tool is not yet officially documented in the Reference Guide, but draft documentation is available in a branch and can be accessed https://github.com/apache/lucene-solr/blob/visual-guide/solr/solr-ref-guide/src/logs.adoc[via GitHub].
+
+*Highlighting*
+
+Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`. See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+
+*Shared Library System Parameter*
+
+Solr's `solr.xml` file has long had support for a `sharedLib` parameter, which allows you to define a common location for .jar files that may need to be in the path for all cores.
+
+This property can now be defined in `solr.in.sh` or `solr.in.cmd` as a system property (`-Dsolr.sharedLib=/path/to/lib`) added to `SOLR_OPTS` (see `solr.in.sh` or `solr.in.cmd` for details).
 
 === Solr 8.4
 

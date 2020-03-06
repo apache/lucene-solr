@@ -363,10 +363,9 @@ public final class CryptoKeys {
     public RSAKeyPair(URL privateKeyResourceName, URL publicKeyResourceName) throws IOException, InvalidKeySpecException {
       try (InputStream inPrivate = privateKeyResourceName.openStream()) {
         String privateString = new String(inPrivate.readAllBytes(), StandardCharsets.UTF_8)
-            .replaceAll("-----[A-Z ]*-----", "")
-            .replaceAll("\\n", "");
+            .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "");
 
-        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(Base64.base64ToByteArray(privateString));
+        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(java.util.Base64.getMimeDecoder().decode(privateString));
         KeyFactory rsaFactory = KeyFactory.getInstance("RSA");
         privateKey = rsaFactory.generatePrivate(privateSpec);
       } catch (NoSuchAlgorithmException e) {
