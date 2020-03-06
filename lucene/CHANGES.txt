@@ -239,7 +239,7 @@ Other
 
 * LUCENE-9225: Rectangle extends LatLonGeometry so it can be used in a geometry collection. (Ignacio Vera)
 
-* LUCENE-9257: Always keep FST off-heap. FSTLoadMode and Reader attributes removed. (Bruno Roustant)
+* LUCENE-9257: Always keep FST off-heap. FSTLoadMode, Reader attributes and openedFromWriter removed. (Bruno Roustant)
 
 ======================= Lucene 8.4.1 =======================
 
