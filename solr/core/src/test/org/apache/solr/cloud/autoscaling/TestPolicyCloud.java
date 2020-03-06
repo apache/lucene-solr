@@ -145,34 +145,34 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "}";
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
     AtomicInteger count = new AtomicInteger(0);
-    SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
-    String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
-    SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
-    Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
-    nodeStateProvider.forEachReplica(nodeName, replicaInfo -> {
-      if (replicaInfo.getVariables().containsKey("UPDATE./update.requests")) count.incrementAndGet();
-    });
-    assertTrue(count.get() > 0);
+    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
+      String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
+      SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
+      Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
+      nodeStateProvider.forEachReplica(nodeName, replicaInfo -> {
+        if (replicaInfo.getVariables().containsKey("UPDATE./update.requests")) count.incrementAndGet();
+      });
+      assertTrue(count.get() > 0);
 
-    Policy.Session session = config.getPolicy().createSession(cloudManager);
+      Policy.Session session = config.getPolicy().createSession(cloudManager);
 
-    for (Row row : session.getSortedNodes()) {
-      Object val = row.getVal(Type.TOTALDISK.tagName, null);
-      log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
-      assertTrue(val != null);
+      for (Row row : session.getSortedNodes()) {
+        Object val = row.getVal(Type.TOTALDISK.tagName, null);
+        log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
+        assertTrue(val != null);
 
+      }
+
+      count .set(0);
+      for (Row row : session.getSortedNodes()) {
+        row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
+          for (ReplicaInfo replicaInfo : replicaInfos) {
+            if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
+          }
+        }));
+      }
+      assertTrue(count.get() > 0);
     }
-
-    count .set(0);
-    for (Row row : session.getSortedNodes()) {
-      row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
-        for (ReplicaInfo replicaInfo : replicaInfos) {
-          if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
-        }
-      }));
-    }
-    assertTrue(count.get() > 0);
-
   }
   
   private static CollectionStatePredicate expectAllReplicasOnSpecificNode

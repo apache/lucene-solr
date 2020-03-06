@@ -40,7 +40,7 @@ final class LatLonShapeQuery extends ShapeQuery {
   /**
    * Creates a query that matches all indexed shapes to the provided array of {@link LatLonGeometry}
    */
-  LatLonShapeQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
+  LatLonShapeQuery(String field, QueryRelation queryRelation, LatLonGeometry... geometries) {
     super(field, queryRelation);
     if (queryRelation == QueryRelation.WITHIN) {
       for (LatLonGeometry geometry : geometries) {

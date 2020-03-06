@@ -37,6 +37,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -74,6 +75,15 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     super.tearDown();
   }
 
+  @Test
+  public void testZkread() throws Exception {
+    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+    try(  HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()){
+      Object o = Utils.executeGET(client.getHttpClient(), baseUrl.toString().replace("/solr", "/api"+ "/cluster/zk/security.json"), Utils.JSONCONSUMER );
+      assertNotNull(o);
+    }
+  }
+
   /*
     Test the monitoring endpoint, used in the Cloud => ZkStatus Admin UI screen
     NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"... 
@@ -87,13 +97,13 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
-    Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
+    Map<String, Object> zkStatus = (Map<String, Object>) nl.get("zkStatus");
     assertEquals("green", zkStatus.get("status"));
     assertEquals("standalone", zkStatus.get("mode"));
     assertEquals(1L, zkStatus.get("ensembleSize"));
-    List<Object> detailsList = (List<Object>)zkStatus.get("details");
+    List<Object> detailsList = (List<Object>) zkStatus.get("details");
     assertEquals(1, detailsList.size());
-    Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
+    Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
     solr.close();
@@ -106,12 +116,12 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(
         Arrays.asList("zk_version\t3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT",
-        "zk_avg_latency\t1"));
+            "zk_avg_latency\t1"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "conf")).thenReturn(
         Arrays.asList("clientPort=2181",
-        "secureClientPort=-1",
-        "thisIsUnexpected",
-        "membership: "));
+            "secureClientPort=-1",
+            "thisIsUnexpected",
+            "membership: "));
 
     when(zkStatusHandler.getZkRawResponse("zoo2:2181", "ruok")).thenReturn(Arrays.asList(""));
 

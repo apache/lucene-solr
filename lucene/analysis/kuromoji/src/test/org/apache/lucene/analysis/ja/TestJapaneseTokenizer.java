@@ -48,17 +48,9 @@ public class
     TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public static UserDictionary readDict() {
-    InputStream is = TestJapaneseTokenizer.class.getResourceAsStream("userdict.txt");
-    if (is == null) {
-      throw new RuntimeException("Cannot find userdict.txt in test classpath!");
-    }
-    try {
-      try {
-        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        return UserDictionary.open(reader);
-      } finally {
-        is.close();
-      }
+    try (InputStream stream = TestJapaneseTokenizer.class.getResourceAsStream("userdict.txt");
+         Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+      return UserDictionary.open(reader);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

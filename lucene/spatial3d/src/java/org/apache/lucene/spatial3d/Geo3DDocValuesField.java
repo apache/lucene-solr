@@ -48,43 +48,14 @@ import org.apache.lucene.spatial3d.geom.GeoOutsideDistance;
  * @see Geo3DPoint
  */
 public class Geo3DDocValuesField extends Field {
-
-  // These are the multiplicative constants we need to use to arrive at values that fit in 21 bits.
-  // The formula we use to go from double to encoded value is:  Math.floor((value - minimum) * factor + 0.5)
-  // If we plug in maximum for value, we should get 0x1FFFFF.
-  // So, 0x1FFFFF = Math.floor((maximum - minimum) * factor + 0.5)
-  // We factor out the 0.5 and Math.floor by stating instead:
-  // 0x1FFFFF = (maximum - minimum) * factor
-  // So, factor = 0x1FFFFF / (maximum - minimum)
-
-  private final static double inverseMaximumValue = 1.0 / (double)(0x1FFFFF);
-  
-  private final static double inverseXFactor = (PlanetModel.WGS84.getMaximumXValue() - PlanetModel.WGS84.getMinimumXValue()) * inverseMaximumValue;
-  private final static double inverseYFactor = (PlanetModel.WGS84.getMaximumYValue() - PlanetModel.WGS84.getMinimumYValue()) * inverseMaximumValue;
-  private final static double inverseZFactor = (PlanetModel.WGS84.getMaximumZValue() - PlanetModel.WGS84.getMinimumZValue()) * inverseMaximumValue;
-  
-  private final static double xFactor = 1.0 / inverseXFactor;
-  private final static double yFactor = 1.0 / inverseYFactor;
-  private final static double zFactor = 1.0 / inverseZFactor;
-  
-  // Fudge factor for step adjustments.  This is here solely to handle inaccuracies in bounding boxes
-  // that occur because of quantization.  For unknown reasons, the fudge factor needs to be
-  // 10.0 rather than 1.0.  See LUCENE-7430.
-  
-  private final static double STEP_FUDGE = 10.0;
-  
-  // These values are the delta between a value and the next value in each specific dimension
-  
-  private final static double xStep = inverseXFactor * STEP_FUDGE;
-  private final static double yStep = inverseYFactor * STEP_FUDGE;
-  private final static double zStep = inverseZFactor * STEP_FUDGE;
+  private final PlanetModel planetModel;
   
   /**
    * Type for a Geo3DDocValuesField
    * <p>
    * Each value stores a 64-bit long where the three values (x, y, and z) are given
    * 21 bits each.  Each 21-bit value represents the maximum extent in that dimension
-   * for the WGS84 planet model.
+   * for the defined planet model.
    */
   public static final FieldType TYPE = new FieldType();
   static {
@@ -98,8 +69,8 @@ public class Geo3DDocValuesField extends Field {
    * @param point is the point.
    * @throws IllegalArgumentException if the field name is null or the point is out of bounds
    */
-  public Geo3DDocValuesField(final String name, final GeoPoint point) {
-    super(name, TYPE);
+  public Geo3DDocValuesField(final String name, final GeoPoint point, final PlanetModel planetModel) {
+    this(name, TYPE, planetModel);
     setLocationValue(point);
   }
 
@@ -111,18 +82,23 @@ public class Geo3DDocValuesField extends Field {
    * @param z is the z value for the point.
    * @throws IllegalArgumentException if the field name is null or x, y, or z are out of bounds
    */
-  public Geo3DDocValuesField(final String name, final double x, final double y, final double z) {
-    super(name, TYPE);
+  public Geo3DDocValuesField(final String name, final double x, final double y, final double z, final PlanetModel planetModel) {
+    this(name, TYPE, planetModel);
     setLocationValue(x, y, z);
   }
-  
+
+  private Geo3DDocValuesField(final String name, final FieldType type, final PlanetModel planetModel) {
+    super(name, TYPE);
+    this.planetModel = planetModel;
+  }
+
   /**
    * Change the values of this field
    * @param point is the point.
    * @throws IllegalArgumentException if the point is out of bounds
    */
   public void setLocationValue(final GeoPoint point) {
-    fieldsData = Long.valueOf(encodePoint(point));
+    fieldsData = Long.valueOf(planetModel.getDocValueEncoder().encodePoint(point));
   }
 
   /**
@@ -133,158 +109,7 @@ public class Geo3DDocValuesField extends Field {
    * @throws IllegalArgumentException if x, y, or z are out of bounds
    */
   public void setLocationValue(final double x, final double y, final double z) {
-    fieldsData = Long.valueOf(encodePoint(x, y, z));
-  }
-  
-  /** Encode a point.
-   * @param point is the point
-   * @return the encoded long
-   */
-  public static long encodePoint(final GeoPoint point) {
-    return encodePoint(point.x, point.y, point.z);
-  }
-
-  /** Encode a point.
-   * @param x is the x value
-   * @param y is the y value
-   * @param z is the z value
-   * @return the encoded long
-   */
-  public static long encodePoint(final double x, final double y, final double z) {
-    int XEncoded = encodeX(x);
-    int YEncoded = encodeY(y);
-    int ZEncoded = encodeZ(z);
-    return
-      (((long)(XEncoded & 0x1FFFFF)) << 42) |
-      (((long)(YEncoded & 0x1FFFFF)) << 21) |
-      ((long)(ZEncoded & 0x1FFFFF));
-  }
-
-  /** Decode GeoPoint value from long docvalues value.
-   * @param docValue is the doc values value.
-   * @return the GeoPoint.
-   */
-  public static GeoPoint decodePoint(final long docValue) {
-    return new GeoPoint(decodeX(((int)(docValue >> 42)) & 0x1FFFFF),
-      decodeY(((int)(docValue >> 21)) & 0x1FFFFF),
-      decodeZ(((int)(docValue)) & 0x1FFFFF));
-  }
-  
-  /** Decode X value from long docvalues value.
-   * @param docValue is the doc values value.
-   * @return the x value.
-   */
-  public static double decodeXValue(final long docValue) {
-    return decodeX(((int)(docValue >> 42)) & 0x1FFFFF);
-  }
-  
-  /** Decode Y value from long docvalues value.
-   * @param docValue is the doc values value.
-   * @return the y value.
-   */
-  public static double decodeYValue(final long docValue) {
-    return decodeY(((int)(docValue >> 21)) & 0x1FFFFF);
-  }
-  
-  /** Decode Z value from long docvalues value.
-   * @param docValue is the doc values value.
-   * @return the z value.
-   */
-  public static double decodeZValue(final long docValue) {
-    return decodeZ(((int)(docValue)) & 0x1FFFFF);
-  }
-
-  /** Round the provided X value down, by encoding it, decrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundDownX(final double startValue) {
-    return startValue - xStep;
-  }
-
-  /** Round the provided X value up, by encoding it, incrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundUpX(final double startValue) {
-    return startValue + xStep;
-  }
-
-  /** Round the provided Y value down, by encoding it, decrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundDownY(final double startValue) {
-    return startValue - yStep;
-  }
-
-  /** Round the provided Y value up, by encoding it, incrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundUpY(final double startValue) {
-    return startValue + yStep;
-  }
-  
-  /** Round the provided Z value down, by encoding it, decrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundDownZ(final double startValue) {
-    return startValue - zStep;
-  }
-
-  /** Round the provided Z value up, by encoding it, incrementing it, and unencoding it.
-   * @param startValue is the starting value.
-   * @return the rounded value.
-   */
-  public static double roundUpZ(final double startValue) {
-    return startValue + zStep;
-  }
-
-  // For encoding/decoding, we generally want the following behavior:
-  // (1) If you encode the maximum value or the minimum value, the resulting int fits in 21 bits.
-  // (2) If you decode an encoded value, you get back the original value for both the minimum and maximum planet model values.
-  // (3) Rounding occurs such that a small delta from the minimum and maximum planet model values still returns the same
-  // values -- that is, these are in the center of the range of input values that should return the minimum or maximum when decoded
-  
-  private static int encodeX(final double x) {
-    if (x > PlanetModel.WGS84.getMaximumXValue()) {
-      throw new IllegalArgumentException("x value exceeds WGS84 maximum");
-    } else if (x < PlanetModel.WGS84.getMinimumXValue()) {
-      throw new IllegalArgumentException("x value less than WGS84 minimum");
-    }
-    return (int)Math.floor((x - PlanetModel.WGS84.getMinimumXValue()) * xFactor + 0.5);
-  }
-  
-  private static double decodeX(final int x) {
-    return x * inverseXFactor + PlanetModel.WGS84.getMinimumXValue();
-  }
-
-  private static int encodeY(final double y) {
-    if (y > PlanetModel.WGS84.getMaximumYValue()) {
-      throw new IllegalArgumentException("y value exceeds WGS84 maximum");
-    } else if (y < PlanetModel.WGS84.getMinimumYValue()) {
-      throw new IllegalArgumentException("y value less than WGS84 minimum");
-    }
-    return (int)Math.floor((y - PlanetModel.WGS84.getMinimumYValue()) * yFactor + 0.5);
-  }
-
-  private static double decodeY(final int y) {
-    return y * inverseYFactor + PlanetModel.WGS84.getMinimumYValue();
-  }
-
-  private static int encodeZ(final double z) {
-    if (z > PlanetModel.WGS84.getMaximumZValue()) {
-      throw new IllegalArgumentException("z value exceeds WGS84 maximum");
-    } else if (z < PlanetModel.WGS84.getMinimumZValue()) {
-      throw new IllegalArgumentException("z value less than WGS84 minimum");
-    }
-    return (int)Math.floor((z - PlanetModel.WGS84.getMinimumZValue()) * zFactor + 0.5);
-  }
-
-  private static double decodeZ(final int z) {
-    return z * inverseZFactor + PlanetModel.WGS84.getMinimumZValue();
+    fieldsData = Long.valueOf(planetModel.getDocValueEncoder().encodePoint(x, y, z));
   }
 
   /** helper: checks a fieldinfo and throws exception if its definitely not a Geo3DDocValuesField */
@@ -307,11 +132,11 @@ public class Geo3DDocValuesField extends Field {
 
     long currentValue = (Long)fieldsData;
     
-    result.append(decodeXValue(currentValue));
+    result.append(planetModel.getDocValueEncoder().decodeXValue(currentValue));
     result.append(',');
-    result.append(decodeYValue(currentValue));
+    result.append(planetModel.getDocValueEncoder().decodeYValue(currentValue));
     result.append(',');
-    result.append(decodeZValue(currentValue));
+    result.append(planetModel.getDocValueEncoder().decodeZValue(currentValue));
 
     result.append('>');
     return result.toString();
@@ -335,9 +160,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or circle has invalid coordinates.
    */
-  public static SortField newDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters) {
-    final GeoDistanceShape shape = Geo3DUtil.fromDistance(latitude, longitude, maxRadiusMeters);
-    return new Geo3DPointSortField(field, shape);
+  public static SortField newDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters, final PlanetModel planetModel) {
+    final GeoDistanceShape shape = Geo3DUtil.fromDistance(planetModel, latitude, longitude, maxRadiusMeters);
+    return new Geo3DPointSortField(field, planetModel, shape);
   }
 
   /**
@@ -358,9 +183,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or path has invalid coordinates.
    */
-  public static SortField newPathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
-    final GeoDistanceShape shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
-    return new Geo3DPointSortField(field, shape);
+  public static SortField newPathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters, final PlanetModel planetModel) {
+    final GeoDistanceShape shape = Geo3DUtil.fromPath(planetModel, pathLatitudes, pathLongitudes, pathWidthMeters);
+    return new Geo3DPointSortField(field, planetModel, shape);
   }
 
   // Outside distances
@@ -384,9 +209,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
    */
-  public static SortField newOutsideDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters) {
-    final GeoOutsideDistance shape = Geo3DUtil.fromDistance(latitude, longitude, maxRadiusMeters);
-    return new Geo3DPointOutsideSortField(field, shape);
+  public static SortField newOutsideDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters, final PlanetModel planetModel) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromDistance(planetModel, latitude, longitude, maxRadiusMeters);
+    return new Geo3DPointOutsideSortField(field, planetModel, shape);
   }
 
   /**
@@ -409,9 +234,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or box has invalid coordinates.
    */
-  public static SortField newOutsideBoxSort(final String field, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
-    final GeoOutsideDistance shape = Geo3DUtil.fromBox(minLatitude, maxLatitude, minLongitude, maxLongitude);
-    return new Geo3DPointOutsideSortField(field, shape);
+  public static SortField newOutsideBoxSort(final String field, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude, final PlanetModel planetModel) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromBox(planetModel, minLatitude, maxLatitude, minLongitude, maxLongitude);
+    return new Geo3DPointOutsideSortField(field, planetModel, shape);
   }
 
   /**
@@ -431,9 +256,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or polygon has invalid coordinates.
    */
-  public static SortField newOutsidePolygonSort(final String field, final Polygon... polygons) {
-    final GeoOutsideDistance shape = Geo3DUtil.fromPolygon(polygons);
-    return new Geo3DPointOutsideSortField(field, shape);
+  public static SortField newOutsidePolygonSort(final String field, final PlanetModel planetModel, final Polygon... polygons) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromPolygon(planetModel, polygons);
+    return new Geo3DPointOutsideSortField(field, planetModel, shape);
   }
 
   /**
@@ -454,9 +279,9 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or polygon has invalid coordinates.
    */
-  public static SortField newOutsideLargePolygonSort(final String field, final Polygon... polygons) {
-    final GeoOutsideDistance shape = Geo3DUtil.fromLargePolygon(polygons);
-    return new Geo3DPointOutsideSortField(field, shape);
+  public static SortField newOutsideLargePolygonSort(final String field, final PlanetModel planetModel, final Polygon... polygons) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromLargePolygon(planetModel, polygons);
+    return new Geo3DPointOutsideSortField(field, planetModel, shape);
   }
 
   /**
@@ -478,9 +303,8 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or path has invalid coordinates.
    */
-  public static SortField newOutsidePathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
-    final GeoOutsideDistance shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
-    return new Geo3DPointOutsideSortField(field, shape);
+  public static SortField newOutsidePathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters, final PlanetModel planetModel) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromPath(planetModel, pathLatitudes, pathLongitudes, pathWidthMeters);
+    return new Geo3DPointOutsideSortField(field, planetModel, shape);
   }
-
 }
