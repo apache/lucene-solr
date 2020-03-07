@@ -66,8 +66,6 @@ Improvements
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
 
-* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
-
 Optimizations
 ---------------------
 
@@ -84,11 +82,6 @@ Optimizations
 * LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
 
 * LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
-
-* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
-
-Optimizations
----------------------
 
 * LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
