@@ -112,12 +112,12 @@ public class PlanetModel implements SerializableObject {
    * @param semiMinorAxis is the semi minor axis (in meters) defined as 'b' in projection formulae.
    */
   public PlanetModel(final double semiMajorAxis, final double semiMinorAxis) {
+    this.a = semiMajorAxis;
+    this.b = semiMinorAxis;
     this.meanRadius = (2.0 * semiMajorAxis + semiMinorAxis) / 3.0;
     this.xyScaling = semiMajorAxis / meanRadius;
     this.zScaling = semiMinorAxis / meanRadius;
     this.scale = (2.0 * xyScaling + zScaling) / 3.0;
-    this.a = semiMajorAxis;
-    this.b = semiMinorAxis;
     this.inverseXYScaling = 1.0 / xyScaling;
     this.inverseZScaling = 1.0 / zScaling;
     this.scaledFlattening = (xyScaling - zScaling) * inverseXYScaling;
