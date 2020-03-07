@@ -149,8 +149,8 @@ public class PlanetModel implements SerializableObject {
 
   @Override
   public void write(final OutputStream outputStream) throws IOException {
-    SerializableObject.writeDouble(outputStream, xyScaling);
-    SerializableObject.writeDouble(outputStream, zScaling);
+    SerializableObject.writeDouble(outputStream, a);
+    SerializableObject.writeDouble(outputStream, b);
   }
 
   /** Does this planet model describe a sphere?
