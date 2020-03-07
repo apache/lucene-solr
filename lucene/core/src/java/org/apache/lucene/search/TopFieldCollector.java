@@ -124,13 +124,28 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     void collectCompetitiveHit(int doc) throws IOException {
       // If this hit is competitive, replace bottom element in queue & adjustTop
       comparator.copy(bottom.slot, doc);
-      if (firstComparator != null) {
-        score = getComparatorValue(bottom.slot);
-        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
-      }
       updateBottom(doc);
       comparator.setBottom(bottom.slot);
       updateMinCompetitiveScore(scorer);
+    }
+
+    void collectHitIfCompetitive(int doc) throws IOException {
+      if (reverseMul * comparator.compareBottom(doc) > 0) {
+        comparator.copy(bottom.slot, doc);
+        if (firstComparator != null) {
+          score = getComparatorValue(bottom.slot);
+          //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
+        }
+        updateBottom(doc);
+        comparator.setBottom(bottom.slot);
+        updateMinCompetitiveScore(scorer);
+      } else if (firstComparator != null) {
+        // We do not have the score from this document, but this is
+        // a noncompetitive value that results in the right termination behavior
+        score = getComparatorValue(bottom.slot) + 1;
+      } else if (totalHitsRelation == Relation.EQUAL_TO) {
+        updateMinCompetitiveScore(scorer);
+      }
     }
 
     void collectAnyHit(int doc, int hitsCollected) throws IOException {
@@ -138,9 +153,19 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       int slot = hitsCollected - 1;
       // Copy hit into queue
       comparator.copy(slot, doc);
-      if (firstComparator != null) {
-        score = getComparatorValue(slot);
+      add(slot, doc);
+      if (queueFull) {
+        comparator.setBottom(bottom.slot);
+        updateMinCompetitiveScore(scorer);
       }
+    }
+
+    void collectAnyHitAndScore(int doc, int hitsCollected) throws IOException {
+      // Startup transient: queue hasn't gathered numHits yet
+      int slot = hitsCollected - 1;
+      // Copy hit into queue
+      comparator.copy(slot, doc);
+      score = getComparatorValue(slot);
       add(slot, doc);
       if (queueFull) {
         comparator.setBottom(bottom.slot);
@@ -235,8 +260,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
 
-      if (maxScoreTerminator != null && canEarlyTerminate(sort, context)) {
+      if (maxScoreTerminator != null) {
+        return new TopFieldLeafCollector(queue, sort, context) {
 
+          @Override
+          public void collect(int doc) throws IOException {
+            countHit(doc);
+            if (queueFull) {
+              collectHitIfCompetitive(doc);
+            } else {
+              collectAnyHitAndScore(doc, totalHits);
+            }
+            updateTerminationState(doc);
+          }
+        };
+      } else {
         return new TopFieldLeafCollector(queue, sort, context) {
 
           @Override
@@ -250,26 +288,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             } else {
               collectAnyHit(doc, totalHits);
             }
-            updateTerminationState(doc);
-          }
-        };
-      } else {
-
-        return new TopFieldLeafCollector(queue, sort, context) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            countHit(doc);
-            if (queueFull) {
-              collectCompetitiveHit(doc);
-            } else {
-              collectAnyHit(doc, totalHits);
-            }
           }
         };
       }
     }
-
   }
 
   /*
@@ -303,18 +325,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
 
-      if (maxScoreTerminator != null && canEarlyTerminate(sort, context)) {
+      if (maxScoreTerminator != null) {
 
         return new TopFieldLeafCollector(queue, sort, context) {
 
           @Override
           public void collect(int doc) throws IOException {
             countHit(doc);
-            if (queueFull) {
-              if (thresholdCheck(doc)) {
-                return;
-              }
-            }
             final int topCmp = reverseMul * comparator.compareTop(doc);
             if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
               // Already collected on a previous page
@@ -324,10 +341,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 updateMinCompetitiveScore(scorer);
               }
             } else if (queueFull) {
-              collectCompetitiveHit(doc);
+              collectHitIfCompetitive(doc);
             } else {
               collectedHits++;
-              collectAnyHit(doc, collectedHits);
+              collectAnyHitAndScore(doc, collectedHits);
             }
             updateTerminationState(doc);
           }
@@ -360,6 +377,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
+  // Determined empirically; max-min threshold checking is faster for low N, and min-min for high N
+  private static final int TERMINATION_STRATEGY_HIT_THRESHOLD = 50;
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
   final int numHits;
@@ -408,22 +427,20 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       firstComparator = null;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
+      this.maxScoreTerminator = null;
     } else {
       relevanceComparator = null;
-      if (canTerminateUsingMaxScores(sort)) {
-          firstComparator = fieldComparator;
+      if (canTerminateUsingMaxScores(sort) && numHits > TERMINATION_STRATEGY_HIT_THRESHOLD) {
+        firstComparator = fieldComparator;
+        this.maxScoreTerminator = maxScoreTerminator;
       } else {
-          firstComparator = null;
+        firstComparator = null;
+        this.maxScoreTerminator = null;
       }
       scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
     }
     this.minScoreAcc = minScoreAcc;
-    if (firstComparator != null) {
-      this.maxScoreTerminator = maxScoreTerminator;
-    } else {
-      this.maxScoreTerminator = null;
-    }
   }
 
   @Override
