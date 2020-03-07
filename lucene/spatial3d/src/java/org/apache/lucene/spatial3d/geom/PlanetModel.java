@@ -219,7 +219,7 @@ public class PlanetModel implements SerializableObject {
     return this.zScaling;
   }
 
-  /** return the calculated mean radius (in uit provided by ab and c) */
+  /** return the calculated mean radius (in units provided by ab and c) */
   public double getMeanRadius() {
     return this.meanRadius;
   }
