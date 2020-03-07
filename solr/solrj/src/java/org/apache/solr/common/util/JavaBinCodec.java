@@ -402,7 +402,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof Map.Entry) {
-      writeMapEntry((Entry<Object, Object>)val);
+      writeMapEntry((Map.Entry)val);
       return true;
     }
     if (val instanceof MapSerializable) {
