@@ -43,7 +43,8 @@ public class STUniformSplitTerms extends UniformSplitTerms {
 
   protected STUniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
                                 FieldMetadata unionFieldMetadata, PostingsReaderBase postingsReader,
-                                BlockDecoder blockDecoder, FieldInfos fieldInfos, IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
+                                BlockDecoder blockDecoder, FieldInfos fieldInfos,
+                                IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
     super(blockInput, fieldMetadata, postingsReader, blockDecoder, dictionaryBrowserSupplier);
     this.unionFieldMetadata = unionFieldMetadata;
     this.fieldInfos = fieldInfos;

@@ -73,9 +73,8 @@ public class DistribPackageStore implements PackageStore {
 
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    solrhome = this.coreContainer.getResourceLoader().getInstancePath();
-    ensurePackageStoreDir(coreContainer.getResourceLoader().getInstancePath());
-
+    this.solrhome = Paths.get(this.coreContainer.getSolrHome());
+    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
 
   @Override

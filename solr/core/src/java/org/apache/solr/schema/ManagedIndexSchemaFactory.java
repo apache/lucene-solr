@@ -149,7 +149,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       if (null == schemaInputStream) {
         // The managed schema file could not be found - load the non-managed schema
         try {
-          schemaInputStream = loader.openSchema(resourceName);
+          schemaInputStream = loader.openResource(resourceName);
           loadedResource = resourceName;
           shouldUpgrade = true;
         } catch (Exception e) {
@@ -190,7 +190,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     InputStream schemaInputStream = null;
     try {
       // Attempt to load the managed schema
-      schemaInputStream = loader.openSchema(managedSchemaResourceName);
+      schemaInputStream = loader.openResource(managedSchemaResourceName);
       loadedResource = managedSchemaResourceName;
       warnIfNonManagedSchemaExists();
     } catch (IOException e) {
@@ -200,7 +200,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     if (null == schemaInputStream) {
       // The managed schema file could not be found - load the non-managed schema
       try {
-        schemaInputStream = loader.openSchema(resourceName);
+        schemaInputStream = loader.openResource(resourceName);
         loadedResource = resourceName;
         shouldUpgrade = true;
       } catch (Exception e) {
@@ -235,7 +235,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       } else { // Config is not in ZooKeeper
         InputStream nonManagedSchemaInputStream = null;
         try {
-          nonManagedSchemaInputStream = loader.openSchema(resourceName);
+          nonManagedSchemaInputStream = loader.openResource(resourceName);
           if (null != nonManagedSchemaInputStream) {
             exists = true;
           }
