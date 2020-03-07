@@ -16,20 +16,21 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.common.*;
-import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.params.CommonParams;
-import org.noggit.CharArr;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +38,22 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.apache.solr.common.ConditionalKeyMapWriter;
+import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.IteratorWriter.ItemWriter;
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.PushWriter;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
+import org.noggit.CharArr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
