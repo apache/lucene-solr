@@ -794,7 +794,7 @@ public class JavaBinCodec implements PushWriter {
     writeStr(enumFieldValue.toString());
   }
 
-  public void writeMapEntry(Entry<Object, Object> val) throws IOException {
+  public void writeMapEntry(Map.Entry val) throws IOException {
     writeTag(MAP_ENTRY);
     writeVal(val.getKey());
     writeVal(val.getValue());
