@@ -22,15 +22,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -410,7 +402,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof Map.Entry) {
-      writeMapEntry((Map.Entry)val);
+      writeMapEntry((Entry<Object, Object>)val);
       return true;
     }
     if (val instanceof MapSerializable) {
@@ -811,7 +803,7 @@ public class JavaBinCodec implements PushWriter {
     writeStr(enumFieldValue.toString());
   }
 
-  public void writeMapEntry(Map.Entry val) throws IOException {
+  public void writeMapEntry(Entry<Object, Object> val) throws IOException {
     writeTag(MAP_ENTRY);
     writeVal(val.getKey());
     writeVal(val.getValue());
@@ -832,7 +824,7 @@ public class JavaBinCodec implements PushWriter {
   public Map.Entry<Object,Object> readMapEntry(DataInputInputStream dis) throws IOException {
     final Object key = readVal(dis);
     final Object value = readVal(dis);
-    return new Map.Entry<Object,Object>() {
+    return new Map.Entry<>() {
 
       @Override
       public Object getKey() {
@@ -857,21 +849,22 @@ public class JavaBinCodec implements PushWriter {
       @Override
       public int hashCode() {
         int result = 31;
-        result *=31 + getKey().hashCode();
-        result *=31 + getValue().hashCode();
+        result *= 31 + getKey().hashCode();
+        result *= 31 + getValue().hashCode();
         return result;
       }
 
       @Override
       public boolean equals(Object obj) {
-        if(this == obj) {
+        if (this == obj) {
           return true;
         }
-        if(!(obj instanceof Entry)) {
+        if (obj instanceof Map.Entry<?,?>) {
+          Entry<?, ?> entry = (Entry<?, ?>) obj;
+          return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+        } else {
           return false;
         }
-        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
-        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
       }
     };
   }
