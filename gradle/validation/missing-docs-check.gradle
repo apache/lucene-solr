@@ -34,7 +34,7 @@ allprojects {
         ':lucene:spatial3d',
     ]
 
-    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'invokeJavadoc') {
+    task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
       //dirs += [ project.javadoc.destinationDir ]
       dirs += [ project.file(project.javadocDestDir) ]
 
@@ -60,7 +60,7 @@ allprojects {
 configure(project(':lucene:core')) {
   // Defer until java plugin has been applied, otherwise we can't resolve project.javadoc.
   plugins.withType(JavaPlugin) {
-    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'invokeJavadoc') {
+    task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
       level = 'method'
     }
 
@@ -72,7 +72,7 @@ configure(project(':lucene:core')) {
         "org/apache/lucene/search/similarities",
         "org/apache/lucene/index",
         "org/apache/lucene/codecs"
-    ].collect { path -> file("${project.javadoc.destinationDir}/${path}") }
+    ].collect { path -> file("${project.javadocDestDir}/${path}") }
 
     checkMissingDocs {
       dependsOn checkMissingDocsMethod
