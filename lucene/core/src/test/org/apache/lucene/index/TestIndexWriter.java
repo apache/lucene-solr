@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -61,6 +62,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -3774,5 +3776,121 @@ public class TestIndexWriter extends LuceneTestCase {
       refresher.join();
       IOUtils.close(sm, dir);
     }
+  }
+
+  public void testRandomOperations() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setMergePolicy(new FilterMergePolicy(newMergePolicy()) {
+      boolean keepFullyDeletedSegment = random().nextBoolean();
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+        return keepFullyDeletedSegment;
+      }
+    });
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    SearcherManager sm = new SearcherManager(writer, new SearcherFactory());
+    Semaphore permits = new Semaphore(100 + random().nextInt(1000));
+    boolean singleDoc = random().nextBoolean();
+    Thread[] threads = new Thread[1 + random().nextInt(4)];
+    CountDownLatch latch = new CountDownLatch(threads.length);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        try {
+          latch.await();
+          while (permits.tryAcquire()) {
+            String id = singleDoc ? "1" : Integer.toString(random().nextInt(10));
+            Document doc = new Document();
+            doc.add(new StringField("id", id, Field.Store.YES));
+            if (random().nextInt(10) <= 2) {
+              writer.updateDocument(new Term("id", id), doc);
+            } else if (random().nextInt(10) <= 2) {
+              writer.deleteDocuments(new Term("id", id));
+            } else {
+              writer.addDocument(doc);
+            }
+            if (random().nextInt(100) < 10) {
+              sm.maybeRefreshBlocking();
+            }
+            if (random().nextInt(100) < 5) {
+              writer.commit();
+            }
+            if (random().nextInt(100) < 1) {
+              writer.forceMerge(1 + random().nextInt(10), random().nextBoolean());
+            }
+          }
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    for (Thread thread : threads) {
+      thread.join();
+    }
+    sm.maybeRefreshBlocking();
+    IOUtils.close(writer, sm, dir);
+  }
+
+  public void testRandomOperationsWithSoftDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    AtomicInteger seqNo = new AtomicInteger(-1);
+    AtomicInteger retainingSeqNo = new AtomicInteger();
+    iwc.setSoftDeletesField("soft_deletes");
+    iwc.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_deletes",
+        () -> LongPoint.newRangeQuery("seq_no", retainingSeqNo.longValue(), Long.MAX_VALUE), newMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    SearcherManager sm = new SearcherManager(writer, new SearcherFactory());
+    Semaphore permits = new Semaphore(10 + random().nextInt(1000));
+    boolean singleDoc = random().nextBoolean();
+    Thread[] threads = new Thread[1 + random().nextInt(4)];
+    CountDownLatch latch = new CountDownLatch(threads.length);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        try {
+          latch.await();
+          while (permits.tryAcquire()) {
+            String id = singleDoc ? "1" : Integer.toString(random().nextInt(10));
+            Document doc = new Document();
+            doc.add(new StringField("id", id, Field.Store.YES));
+            doc.add(new LongPoint("seq_no", seqNo.getAndIncrement()));
+            if (random().nextInt(10) <= 2) {
+              if (random().nextBoolean()) {
+                doc.add(new NumericDocValuesField(iwc.softDeletesField, 1));
+              }
+              writer.softUpdateDocument(new Term("id", id), doc, new NumericDocValuesField(iwc.softDeletesField, 1));
+            } else {
+              writer.addDocument(doc);
+            }
+            if (random().nextInt(100) < 10) {
+              int min = retainingSeqNo.get();
+              int max = seqNo.get();
+              if (min < max && random().nextBoolean()) {
+                retainingSeqNo.compareAndSet(min, min - random().nextInt(max - min));
+              }
+            }
+            if (random().nextInt(100) < 10) {
+              sm.maybeRefreshBlocking();
+            }
+            if (random().nextInt(100) < 5) {
+              writer.commit();
+            }
+            if (random().nextInt(100) < 1) {
+              writer.forceMerge(1 + random().nextInt(10), random().nextBoolean());
+            }
+          }
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    for (Thread thread : threads) {
+      thread.join();
+    }
+    IOUtils.close(writer, sm, dir);
   }
 }
