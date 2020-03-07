@@ -119,6 +119,9 @@ Other
 
 * LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
 
+* LUCENE-9267: Update MatchingQueries documentation to correct
+  time unit. (Pierre-Luc Perron via Mike Drob)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
