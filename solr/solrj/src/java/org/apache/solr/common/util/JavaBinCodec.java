@@ -824,7 +824,7 @@ public class JavaBinCodec implements PushWriter {
   public Map.Entry<Object,Object> readMapEntry(DataInputInputStream dis) throws IOException {
     final Object key = readVal(dis);
     final Object value = readVal(dis);
-    return new Map.Entry<>() {
+    return new Map.Entry<Object, Object>() {
 
       @Override
       public Object getKey() {
@@ -849,8 +849,8 @@ public class JavaBinCodec implements PushWriter {
       @Override
       public int hashCode() {
         int result = 31;
-        result *= 31 + getKey().hashCode();
-        result *= 31 + getValue().hashCode();
+        result *=31 + getKey().hashCode();
+        result *=31 + getValue().hashCode();
         return result;
       }
 
