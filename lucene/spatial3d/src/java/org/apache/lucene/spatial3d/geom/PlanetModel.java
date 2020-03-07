@@ -60,7 +60,7 @@ public class PlanetModel implements SerializableObject {
   public final double scaledFlattening;
   /** The square ratio */
   public final double squareRatio;
-  /** The scale of the planet */
+  /** The mean radius of the planet */
   // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
   // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
   public final double meanRadius;
