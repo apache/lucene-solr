@@ -122,7 +122,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
 
 Other
 ---------------------
