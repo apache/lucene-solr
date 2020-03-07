@@ -31,21 +31,19 @@ public class PlanetModel implements SerializableObject {
 
   /** Planet model corresponding to WGS84 ellipsoid*/
   // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
-  public static final PlanetModel WGS84 = new PlanetModel(6378137.0d, 6356752.314245d, 298.257223563d);
+  public static final PlanetModel WGS84 = new PlanetModel(6378137.0d, 6356752.314245d);
 
   /** Planet model corresponding to Clarke 1866 ellipsoid*/
   // see https://georepository.com/ellipsoid_7008/Clarke-1866.html
-  public static final PlanetModel CLARKE_1866 = new PlanetModel(6378206.4d, 6356583.8d, 294.9786982d);
+  public static final PlanetModel CLARKE_1866 = new PlanetModel(6378206.4d, 6356583.8d);
 
   // Surface of the planet:
   // x^2/a^2 + y^2/b^2 + z^2/zScaling^2 = 1.0
   // Scaling factors are a,b,zScaling.  geo3d can only support models where a==b, so use xyScaling instead.
   /** Semi-major axis */
-  public double a;
+  public final double a;
   /** Semi-minor axis */
-  public double b;
-  /** Flattening factor */
-  public double f;
+  public final double b;
   /** The x/y scaling factor */
   public final double xyScaling;
   /** The z scaling factor */
@@ -63,19 +61,17 @@ public class PlanetModel implements SerializableObject {
   /** The square ratio */
   public final double squareRatio;
   /** The scale of the planet */
+  // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
+  // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
   public final double scale;
   /** The inverse of scale */
   public final double inverseScale;
   /** The mean radius of the planet model */
-  // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
-  // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
-  public double r1;
-
 
   // We do NOT include radius, because all computations in geo3d are in radians, not meters.
-  
+
   // Compute north and south pole for planet model, since these are commonly used.
-  
+
   /** North pole */
   public final GeoPoint NORTH_POLE;
   /** South pole */
@@ -108,34 +104,17 @@ public class PlanetModel implements SerializableObject {
   public final DocValueEncoder docValueEncoder;
 
   /**
-   * Construct a Planet Model from the semi major axis, semi minor axis, and radius of curvature.
-   *
-   * NOTE: These parameters are only used to compute the scaling factors used in all computations. If
-   * scaling factors are already known, use {@code PlanetModel(final double xyScaling, final double zScaling)} instead
+   * * Construct a Planet Model from the semi major axis, semi minor axis=.
    *
    * @param semiMajorAxis is the semi major axis (in meters) defined as 'a' in projection formulae.
    * @param semiMinorAxis is the semi minor axis (in meters) defined as 'b' in projection formulae.
-   * @param flattening is the flattening factor defined as a - b / a.
    */
-  public PlanetModel(final double semiMajorAxis, final double semiMinorAxis, final double flattening) { // final double zScaling) {
-    this(semiMajorAxis, semiMinorAxis, flattening, ((2d * semiMajorAxis) + semiMinorAxis) / 3d);
-  }
-
-  private PlanetModel(final double a, final double b, final double f, final double r1) {
-    this(a / r1, b / r1);
-    this.a = a;
-    this.b = b;
-    this.f = f;
-    this.r1 = r1;
-  }
-
-  /** Constructor.
-   * @param xyScaling is the x/y scaling factor.
-   * @param zScaling is the z scaling factor.
-   */
-  public PlanetModel(final double xyScaling, final double zScaling) {
-    this.xyScaling = xyScaling;
-    this.zScaling = zScaling;
+  public PlanetModel(final double semiMajorAxis, final double semiMinorAxis) {
+    this.scale = (2.0 * semiMajorAxis + semiMinorAxis) / 3.0;
+    this.xyScaling = semiMajorAxis / scale;
+    this.zScaling = semiMinorAxis / scale;
+    this.a = semiMajorAxis;
+    this.b = semiMinorAxis;
     this.inverseXYScaling = 1.0 / xyScaling;
     this.inverseZScaling = 1.0 / zScaling;
     this.scaledFlattening = (xyScaling - zScaling) * inverseXYScaling;
@@ -148,7 +127,7 @@ public class PlanetModel implements SerializableObject {
     this.MAX_X_POLE = new GeoPoint(xyScaling, 1.0, 0.0, 0.0, 0.0, 0.0);
     this.MIN_Y_POLE = new GeoPoint(xyScaling, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
     this.MAX_Y_POLE = new GeoPoint(xyScaling, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
-    this.scale = (2.0 * xyScaling + zScaling)/3.0;
+
     this.inverseScale = 1.0 / scale;
     this.minimumPoleDistance  = Math.min(surfaceDistance(NORTH_POLE, SOUTH_POLE), surfaceDistance(MIN_X_POLE, MAX_X_POLE));
 
@@ -167,20 +146,20 @@ public class PlanetModel implements SerializableObject {
   public PlanetModel(final InputStream inputStream) throws IOException {
     this(SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
   }
-  
+
   @Override
   public void write(final OutputStream outputStream) throws IOException {
     SerializableObject.writeDouble(outputStream, xyScaling);
     SerializableObject.writeDouble(outputStream, zScaling);
   }
-  
+
   /** Does this planet model describe a sphere?
    *@return true if so.
    */
   public boolean isSphere() {
     return this.xyScaling == this.zScaling;
   }
-  
+
   /** Find the minimum magnitude of all points on the ellipsoid.
    * @return the minimum magnitude for the planet.
    */
@@ -194,14 +173,14 @@ public class PlanetModel implements SerializableObject {
   public double getMaximumMagnitude() {
     return Math.max(this.xyScaling, this.zScaling);
   }
-  
+
   /** Find the minimum x value.
    *@return the minimum X value.
    */
   public double getMinimumXValue() {
     return -this.xyScaling;
   }
-  
+
   /** Find the maximum x value.
    *@return the maximum X value.
    */
@@ -215,21 +194,21 @@ public class PlanetModel implements SerializableObject {
   public double getMinimumYValue() {
     return -this.xyScaling;
   }
-  
+
   /** Find the maximum y value.
    *@return the maximum Y value.
    */
   public double getMaximumYValue() {
     return this.xyScaling;
   }
-  
+
   /** Find the minimum z value.
    *@return the minimum Z value.
    */
   public double getMinimumZValue() {
     return -this.zScaling;
   }
-  
+
   /** Find the maximum z value.
    *@return the maximum Z value.
    */
@@ -237,9 +216,11 @@ public class PlanetModel implements SerializableObject {
     return this.zScaling;
   }
 
-  /** return the calculated mean radius (in meters) */
-  public double getMeanRadiusMeters() {
-    return this.r1;
+  /** return the scale of the planet computed as (2a + b) / 3
+   * from: "Geodetic Reference System 1980" by H. Moritz
+   * ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf */
+  public double getScale() {
+    return this.scale;
   }
 
   /** encode the provided value from double to integer space */

@@ -133,7 +133,8 @@ class Geo3DUtil {
       GeoUtils.checkLongitude(longitude);
       points[i] = new GeoPoint(planetModel, fromDegrees(latitude), fromDegrees(longitude));
     }
-    return GeoPathFactory.makeGeoPath(planetModel, fromMeters(planetModel, pathWidthMeters), points);
+    double radiusRadians = pathWidthMeters / (planetModel.getScale() * planetModel.xyScaling);
+    return GeoPathFactory.makeGeoPath(planetModel, radiusRadians, points);
   }
   
   /**
@@ -146,12 +147,8 @@ class Geo3DUtil {
   static GeoCircle fromDistance(final PlanetModel planetModel, final double latitude, final double longitude, final double radiusMeters) {
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);
-    double radiusRadians = radiusMeters / (EARTH_MEAN_RADIUS_METER * planetModel.xyScaling);
-    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), fromMeters(planetModel, radiusMeters));
-  }
-
-  private static double fromMeters(final PlanetModel planetModel, final double radiusMeters) {
-    return radiusMeters / (EARTH_MEAN_RADIUS_METER * planetModel.xyScaling);
+    double radiusRadians = radiusMeters / (planetModel.getScale());
+    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), radiusRadians);
   }
   
   /**
