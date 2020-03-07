@@ -611,7 +611,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
       case 1: {
         // Circles
-        final double widthMeters = random().nextDouble() * Math.PI * planetModel.getScale();
+        final double widthMeters = random().nextDouble() * Math.PI * planetModel.getMeanRadius();
         try {
           return Geo3DPoint.newDistanceQuery(field, planetModel, GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude(), widthMeters);
         } catch (IllegalArgumentException e) {
@@ -633,7 +633,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // Paths
         // TBD: Need to rework generation to be realistic
         final int pointCount = random().nextInt(5) + 1;
-        final double width = random().nextDouble() * Math.PI * 0.5 * planetModel.getScale();
+        final double width = random().nextDouble() * Math.PI * 0.5 * planetModel.getMeanRadius();
         final double[] latitudes = new double[pointCount];
         final double[] longitudes = new double[pointCount];
         for (int i = 0; i < pointCount; i++) {
@@ -1333,7 +1333,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    PlanetModel planetModel = randomPlanetModel();
+    PlanetModel planetModel = PlanetModel.WGS84;
 
     // index two points:
     Document doc = new Document();

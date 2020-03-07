@@ -115,7 +115,7 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
   @Override
   public Double value(int slot) {
     // Return the arc distance
-    return Double.valueOf(values[slot] * planetModel.getScale());
+    return Double.valueOf(values[slot] * planetModel.getMeanRadius());
   }
   
   @Override

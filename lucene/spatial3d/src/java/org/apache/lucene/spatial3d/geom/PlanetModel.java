@@ -63,6 +63,8 @@ public class PlanetModel implements SerializableObject {
   /** The scale of the planet */
   // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
   // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
+  public final double meanRadius;
+  /** The scale of the planet */
   public final double scale;
   /** The inverse of scale */
   public final double inverseScale;
@@ -110,9 +112,10 @@ public class PlanetModel implements SerializableObject {
    * @param semiMinorAxis is the semi minor axis (in meters) defined as 'b' in projection formulae.
    */
   public PlanetModel(final double semiMajorAxis, final double semiMinorAxis) {
-    this.scale = (2.0 * semiMajorAxis + semiMinorAxis) / 3.0;
-    this.xyScaling = semiMajorAxis / scale;
-    this.zScaling = semiMinorAxis / scale;
+    this.meanRadius = (2.0 * semiMajorAxis + semiMinorAxis) / 3.0;
+    this.xyScaling = semiMajorAxis / meanRadius;
+    this.zScaling = semiMinorAxis / meanRadius;
+    this.scale = (2.0 * xyScaling + zScaling) / 3.0;
     this.a = semiMajorAxis;
     this.b = semiMinorAxis;
     this.inverseXYScaling = 1.0 / xyScaling;
@@ -216,11 +219,9 @@ public class PlanetModel implements SerializableObject {
     return this.zScaling;
   }
 
-  /** return the scale of the planet computed as (2a + b) / 3
-   * from: "Geodetic Reference System 1980" by H. Moritz
-   * ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf */
-  public double getScale() {
-    return this.scale;
+  /** return the calculated mean radius (in uit provided by ab and c) */
+  public double getMeanRadius() {
+    return this.meanRadius;
   }
 
   /** encode the provided value from double to integer space */
