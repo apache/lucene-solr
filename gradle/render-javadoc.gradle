@@ -178,7 +178,7 @@ configure(project(':lucene:classification')) {
         dependsOn "${path}:renderJavadoc"
       }
 
-      linkHref + ['../queries', '../analyzers-common', '../grouping']
+      linkHref += ['../queries', '../analyzers-common', '../grouping']
     }
   }
 }
@@ -193,7 +193,7 @@ configure(project(':lucene:demo')) {
        ':lucene:expressions'].collect { path ->
         dependsOn "${path}:renderJavadoc"
       }
-      linkHref + ['../analyzers-common', '../queryparser', '../queries', '../facet', '../expressions']
+      linkHref += ['../analyzers-common', '../queryparser', '../queries', '../facet', '../expressions']
 
       // we link the example source in the javadocs, as it's ref'ed elsewhere
       linksource = "yes"
@@ -205,7 +205,7 @@ configure(project(':lucene:grouping')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:queries:renderJavadoc'
-      linkHref + [ '../queries' ]
+      linkHref += [ '../queries' ]
     }
   }
 }
@@ -214,7 +214,7 @@ configure(project(':lucene:highlighter')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:memory:renderJavadoc'
-      linkHref + [ '../memory' ]
+      linkHref += [ '../memory' ]
     }
   }
 }
@@ -225,7 +225,7 @@ configure(project(':lucene:monitor')) {
       [':lucene:memory', ':lucene:analysis:common', ':lucene:queryparser'].collect { path ->
         dependsOn "${path}:renderJavadoc"
       }
-      linkHref + [ '../memory', '../analyzers-common', '../queryparser' ]
+      linkHref += [ '../memory', '../analyzers-common', '../queryparser' ]
     }
   }
 }
@@ -236,7 +236,7 @@ configure(project(':lucene:queryparser')) {
       [':lucene:queries', ':lucene:sandbox'].collect { path ->
         dependsOn "${path}:renderJavadoc"
       }
-      linkHref + [ '../queries', '../sandbox' ]
+      linkHref += [ '../queries', '../sandbox' ]
     }
   }
 }
@@ -245,7 +245,7 @@ configure(project(':lucene:replicator')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:facet:renderJavadoc'
-      linkHref + [ '../facet' ]
+      linkHref += [ '../facet' ]
     }
   }
 }
@@ -254,7 +254,7 @@ configure(project(':lucene:spatial-extras')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:spatial3d:renderJavadoc'
-      linkHref + [ '../spatial3d' ]
+      linkHref += [ '../spatial3d' ]
     }
   }
 }
@@ -263,7 +263,7 @@ configure(project(':lucene:suggest')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:analysis:common:renderJavadoc'
-      linkHref + [ '../analyzers-common' ]
+      linkHref += [ '../analyzers-common' ]
     }
   }
 }
@@ -273,7 +273,7 @@ configure(project(':lucene:test-framework')) {
     renderJavadoc {
       dependsOn ':lucene:codecs:renderJavadoc'
       linkJUnit = true
-      linkHref + [ '../codecs' ]
+      linkHref += [ '../codecs' ]
     }
   }
 }
@@ -298,7 +298,7 @@ configure(project(':solr:core')) {
     // specialized to ONLY depend on solrj
     renderJavadoc {
       dependsOn ':solr:solrj:renderJavadoc'
-      linkHref + [ '../solr-solrj' ]
+      linkHref += [ '../solr-solrj' ]
     }
   }
 }
@@ -308,7 +308,7 @@ configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
     renderJavadoc {
       dependsOn ':solr:solrj:renderJavadoc'
       dependsOn ':solr:core:renderJavadoc'
-      linkHref + [ '../solr-solrj', '../solr-core' ]
+      linkHref += [ '../solr-solrj', '../solr-core' ]
     }
   }
 }
@@ -317,7 +317,7 @@ configure(project(':solr:contrib:dataimporthandler-extras')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':solr:contrib:dataimporthandler:renderJavadoc'
-      linkHref + [ '../solr-dataimporthandler' ]
+      linkHref += [ '../solr-dataimporthandler' ]
     }
   }
 }
