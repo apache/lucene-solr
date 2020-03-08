@@ -16,8 +16,6 @@ New Features
 
 * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
 
-* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
-
 * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
 
 * SOLR-14241: New delete() Stream Decorator (hossman)
