@@ -304,6 +304,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   static final class EventQueue implements Closeable {
     private volatile boolean closed;
+    // we use a semaphore here instead of simply synced methods to allow
+    // events to be processed concurrently by multiple threads such that all events
+    // for a certain thread are processed once the thread returns from IW
     private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
     private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
     private final IndexWriter writer;
