@@ -21,33 +21,30 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * MaxScoreTerminator is used by TopFieldCollector when the query sort is a prefix of the index sort
- * (in which case we can apply early termination), and multiple threads are used for collection. It
- * is notified periodically by leaf collectors calling {@link #updateLeafState} with their worst (ie
- * maximum) score and how many hits they have collected.  When enough hits are collected,
- * MaxScoreTerminator notifies noncompetitive leaf collectors when they can stop (early terminate)
- * by returning true from {@link #updateLeafState}.
+ * <p>MaxScoreTerminator is used by TopFieldCollector when the query sort is a prefix of the index sort (in which case
+ * we can apply early termination), multiple threads are used for collection, and <code>numHits</code> is relatively
+ * high. It is notified periodically by leaf collectors calling {@link #updateLeafState} with their worst (ie maximum)
+ * score and how many hits they have collected.  When enough hits are collected, MaxScoreTerminator notifies
+ * noncompetitive leaf collectors when they can stop (early terminate) by returning true from {@link
+ * #updateLeafState}.</p>
  *
- * <p>At any moment, N leaves have reported their counts of documents collected; documents are
- * collected in score order, so these counts represent the best for each leaf. And we also track
- * the scores of the lowest-scoring (most recently collected) document in each leaf.</p>
+ * <p>Used by TopFieldCollector to orchestrate early termination (when query sort matches index sort) based on the worst
+ * competitive score across all leaf collectors. Once we have globally collected the number of hits required to satisfy
+ * the query (<code>collectionThreshold</code>, below, typically <code>max(numHits, 1000)</code>) then the worst
+ * collected score across threads is a global lower bound on the score that must be met by any hit (we already have
+ * sufficient hits to satisfy the query with score better than that, so any later hit with a worse score will be
+ * discarded, and any Collector retrieving such a hit can be terminated). Further, once a collector terminates, the same
+ * logic applies to the remaining collectors, which can result in raising the bound further. The termination bound used
+ * is the minimum minimum score among the top collectors (ranked by their minimum scores) that together have at least
+ * <code>collectionThreshold</code> hits.</p>
  *
- * <p>Once the total number of documents collected reaches the requested total (totalToCollect), the
- * worst-scoring leaf can no longer contribute any documents to the results, so it can be
- * terminated, and any leaves whose scores rise above that worst score are also no longer
- * competitive and can be terminated too. If we kept a global priority queue we could update the
- * global maximum competitive score, and use that as a termination threshold, but assuming this to
- * be too costly due to thread contention, we seek to more cheaply update an upper bound on the
- * worst score.  Specifically, when a leaf is terminated, if the remaining leaves together have
- * collected >= totalToCollect, we know that there are enough hits with scores at least as good as
- * their worst score, so we can update the current upper bound to the max of *their* max scores.</p>
- *
- * <p> In practice this leads to a good bound on the number of documents collected, which tend to
- * exceed totalToCollect by a small factor.  When the documents are evenly distributed among N
- * segments, we expect to collect approximately (N+1/N) * totalToCollect documents. In a worst case,
- * where *all* the best documents are in a single segment, we expect to collect something like O(log
- * N) ie (1/N + 1/N-1 + ... + 1) * totalToCollect documents, which is still much better than the N *
- * totalToCollect we would collect with a naive strategy, but does leave room for improvement.</p>
+ * <p>MaxScoreTerminator implements this termination strategy by tracking the worst score, and number of hits collected,
+ * of each LeafCollector in {@link LeafState} objects that are shared with the leaf collectors, and updated by the
+ * collectors asynchronously. The leaf collectors check in periodically (every {@link interval}th hit collected), at
+ * which time the leaf states are sorted, the termination bound is updated, and the collector is notified whether it can
+ * terminate. The interval must be a power of 2 (since a mask is used to check the period), and should be set as low as
+ * possible while avoiding thread contention on this synchronized method. A good heuristic seems to be the least power
+ * of 2 greater than than the number of threads in use.</p>
  */
 class MaxScoreTerminator {
 
@@ -125,19 +122,20 @@ class MaxScoreTerminator {
     System.out.println(" scoreboard totalCollected = " + totalCollected + "/" + totalToCollect + " "
         + newLeafState + " ? " + thresholdState + ":" + newLeafState.compareTo(thresholdState));
     */
-    // (1) Until we collect totalToCollect we can't terminate anything
-    // (2) after that, than any single leaf that has collected numHits can be terminated
-    // (3) and we may be able to remove the worst leaf(s) even if they have not yet collected numHits
+    // (1) Until we collect totalToCollect we can't terminate anything.
+    // (2) after that, any single leaf that has collected numHits can be terminated,
+    // (3) and we may be able to remove the worst leaves even if they have not yet collected numHits, as long as the
+    // remaining leaves have collected totalToCollect.
     if (totalCollected >= totalToCollect) {
       if (newLeafState.resultCount >= numHits) {
         // This leaf has collected enough hits all on its own
         return true;
       }
       if (totalCollected >= numHits + numExcludedBound) {
-        // If this is the case then we are prepared to terminate some leaves (although they may not
-        // include the one that just called updateLeafState()). We add the count of those leaves to
-        // numExcludedBound, and recompute the upper bound for competitive scores. We continue to
-        // track the terminated leaves until totalCollected crosses the new threshold.
+        // If this is the case then we are prepared to terminate some leaves (although they may not include the one that
+        // just called updateLeafState(), such leaves will eventually be terminated here). We add the count of those
+        // leaves to numExcludedBound, and recompute the upper bound for competitive scores. We continue to track the
+        // terminated leaves until totalCollected crosses the new threshold.
         excludeSuperfluousLeaves();
       }
       if (newLeafState.compareTo(thresholdState) >= 0) {
