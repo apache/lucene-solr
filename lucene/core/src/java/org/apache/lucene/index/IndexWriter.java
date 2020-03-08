@@ -303,7 +303,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final EventQueue eventQueue = new EventQueue(this);
 
   static final class EventQueue implements Closeable {
-    private volatile boolean closed = false;
+    private volatile boolean closed;
     private final Semaphore permits = new Semaphore(Integer.MAX_VALUE);
     private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
     private final IndexWriter writer;
@@ -312,17 +312,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       this.writer = writer;
     }
 
-    private void tryAcquire() {
+    private void acquire() {
       if (permits.tryAcquire() == false) {
         throw new AlreadyClosedException("queue is closed");
       }
       if (closed) {
+        permits.release();
         throw new AlreadyClosedException("queue is closed");
       }
     }
 
     boolean add(Event event) {
-      tryAcquire();
+      acquire();
       try {
         return queue.add(event);
       } finally {
@@ -331,7 +332,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     void processEvents() throws IOException {
-      tryAcquire();
+      acquire();
       try {
         processEventsInternal();
       } finally {
@@ -348,7 +349,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public synchronized void close() throws IOException { // synced to prevent double closing
       assert closed == false : "we should never close this twice";
       closed = true;
       // it's possible that we close this queue while we are in a processEvents call
@@ -368,6 +369,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           permits.release(Integer.MAX_VALUE);
         }
       }
+    }
+
+    int availablePermits() {
+      return permits.availablePermits();
     }
   }
 

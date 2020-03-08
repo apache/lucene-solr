@@ -3807,21 +3807,32 @@ public class TestIndexWriter extends LuceneTestCase {
       });
 
 
-      Thread t = new Thread(() -> {
-        try {
-          queue.processEvents();
-        } catch (IOException e) {
-          throw new AssertionError();
-        } catch (AlreadyClosedException ex) {
-          // possible
-        }
-      });
-      t.start();
+      Thread[] threads = new Thread[2 + random().nextInt(3)];
+      for (int i = 0; i < threads.length; i++) {
+        threads[i] = new Thread(() -> {
+          while (true) {
+            try {
+              queue.add(w -> {
+              });
+              queue.processEvents();
+            } catch (IOException e) {
+              throw new AssertionError();
+            } catch (AlreadyClosedException ex) {
+              break;
+            }
+          }
+        });
+        threads[i].start();
+      }
+
       queue.close();
-      t.join();
+      for (int i = 0; i < threads.length; i++) {
+        threads[i].join();
+      }
       assertEquals(4, executed.get());
       expectThrows(AlreadyClosedException.class, () -> queue.processEvents());
       expectThrows(AlreadyClosedException.class, () -> queue.add(w -> {}));
+      assertEquals(Integer.MAX_VALUE, queue.availablePermits());
     }
   }
 }
