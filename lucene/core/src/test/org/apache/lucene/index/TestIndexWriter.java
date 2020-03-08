@@ -3791,7 +3791,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = newDirectory();
          IndexWriter writer = new IndexWriter(dir, iwc);
          SearcherManager sm = new SearcherManager(writer, new SearcherFactory())) {
-      Semaphore permits = new Semaphore(10 + random().nextInt(1000));
+      Semaphore numOperations = new Semaphore(10 + random().nextInt(1000));
       boolean singleDoc = random().nextBoolean();
       Thread[] threads = new Thread[1 + random().nextInt(4)];
       CountDownLatch latch = new CountDownLatch(threads.length);
@@ -3800,7 +3800,7 @@ public class TestIndexWriter extends LuceneTestCase {
           latch.countDown();
           try {
             latch.await();
-            while (permits.tryAcquire()) {
+            while (numOperations.tryAcquire()) {
               String id = singleDoc ? "1" : Integer.toString(random().nextInt(10));
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
@@ -3843,7 +3843,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = newDirectory();
          IndexWriter writer = new IndexWriter(dir, iwc);
          SearcherManager sm = new SearcherManager(writer, new SearcherFactory())) {
-      Semaphore permits = new Semaphore(10 + random().nextInt(1000));
+      Semaphore numOperations = new Semaphore(10 + random().nextInt(1000));
       boolean singleDoc = random().nextBoolean();
       Thread[] threads = new Thread[1 + random().nextInt(4)];
       CountDownLatch latch = new CountDownLatch(threads.length);
@@ -3852,7 +3852,7 @@ public class TestIndexWriter extends LuceneTestCase {
           latch.countDown();
           try {
             latch.await();
-            while (permits.tryAcquire()) {
+            while (numOperations.tryAcquire()) {
               String id = singleDoc ? "1" : Integer.toString(random().nextInt(10));
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
