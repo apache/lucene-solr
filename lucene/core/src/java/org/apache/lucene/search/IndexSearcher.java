@@ -601,27 +601,26 @@ public class IndexSearcher {
     final HitsThresholdChecker hitsThresholdChecker;
     final MaxScoreAccumulator minScoreAcc;
     final MaxScoreTerminator maxScoreTerminator;
-    final boolean canEarlyTerminate = TopFieldCollector.canEarlyTerminateAllSegments(rewrittenSort, leafContexts);
 
     if (executor == null || leafSlices.length <= 1) {
       hitsThresholdChecker = HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD);
-      minScoreAcc = null;
       maxScoreTerminator = null;
-    } else if (canEarlyTerminate) {
-      hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
       minScoreAcc = null;
-      maxScoreTerminator = new MaxScoreTerminator(cappedNumHits, hitsThresholdChecker.getHitsThreshold());
-      if (executor instanceof ThreadPoolExecutor) {
+    } else if (TopFieldCollector.canEarlyTerminateAllSegments(rewrittenSort, leafContexts)) {
+      hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+      maxScoreTerminator = MaxScoreTerminator.createIfApplicable(rewrittenSort, cappedNumHits, hitsThresholdChecker.getHitsThreshold());
+      if (maxScoreTerminator != null && executor instanceof ThreadPoolExecutor) {
         // Scale the update period used with MaxScoreTerminator. We want it as low (frequent) as
         // possible while avoiding thread contention.
         int numThreads = Math.min(((ThreadPoolExecutor) executor).getMaximumPoolSize(), leafSlices.length);
         int numThreadsLog2 = 31 - Integer.numberOfLeadingZeros(numThreads);
         maxScoreTerminator.setIntervalBits(numThreadsLog2 + 1);
       }
+      minScoreAcc = null;
     } else {
       hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-      minScoreAcc = new MaxScoreAccumulator();
       maxScoreTerminator = null;
+      minScoreAcc = new MaxScoreAccumulator();
     }
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<>() {

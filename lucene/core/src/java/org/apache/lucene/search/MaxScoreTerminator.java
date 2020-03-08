@@ -40,13 +40,17 @@ import java.util.List;
  *
  * <p>MaxScoreTerminator implements this termination strategy by tracking the worst score, and number of hits collected,
  * of each LeafCollector in {@link LeafState} objects that are shared with the leaf collectors, and updated by the
- * collectors asynchronously. The leaf collectors check in periodically (every {@link interval}th hit collected), at
+ * collectors asynchronously. The leaf collectors check in periodically (every {@link #interval}th hit collected), at
  * which time the leaf states are sorted, the termination bound is updated, and the collector is notified whether it can
  * terminate. The interval must be a power of 2 (since a mask is used to check the period), and should be set as low as
  * possible while avoiding thread contention on this synchronized method. A good heuristic seems to be the least power
  * of 2 greater than than the number of threads in use.</p>
  */
 class MaxScoreTerminator {
+
+  // This strategy performs best for higher N. The threshold below was determined empirically. The best tradeoff is
+  // probably related to number of threads used by the searcher and the overall counting threshold.
+  private static final int TERMINATION_STRATEGY_HIT_THRESHOLD = 50;
 
   // By default we use 2^5-1 to check the remainder with a bitwise operation, but for best performance
   // the actual value should always be set by calling setIntervalBits()
@@ -86,6 +90,35 @@ class MaxScoreTerminator {
     thresholdState = new LeafState();
     thresholdState.set(Double.MAX_VALUE, -1);
     scratchState = new LeafState();
+  }
+
+  /**
+   * @param sort the query sort
+   * @param numHits the number of hits requested
+   * @return whether the Sort is compatible with early termination using {@link MaxScoreTerminator}, which requires
+   * extracting a numeric score for each hit. Currently we only handle numeric fields, but in principle this could be
+   * extended to handle some other field types, so long as their comparator-status can ultimately be encoded as a
+   * numeric value.
+   */
+  static MaxScoreTerminator createIfApplicable(Sort sort, int numHits, int collectionThreshold) {
+    if (numHits > TERMINATION_STRATEGY_HIT_THRESHOLD && sortIsNumeric(sort)) {
+      return new MaxScoreTerminator(numHits, collectionThreshold);
+    } else {
+      return null;
+    }
+  }
+
+  private static boolean sortIsNumeric(Sort sort) {
+    switch (sort.getSort()[0].getType()) {
+      case DOC:
+      case INT:
+      case FLOAT:
+      case LONG:
+      case DOUBLE:
+        return true;
+      default:
+        return false;
+    }
   }
 
   // for testing

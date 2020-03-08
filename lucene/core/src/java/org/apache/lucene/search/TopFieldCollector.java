@@ -132,19 +132,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     void collectHitIfCompetitive(int doc) throws IOException {
       if (reverseMul * comparator.compareBottom(doc) > 0) {
         comparator.copy(bottom.slot, doc);
-        if (firstComparator != null) {
-          score = getComparatorValue(bottom.slot);
-          //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
-        }
+        score = getComparatorValue(bottom.slot);
+        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
         updateBottom(doc);
         comparator.setBottom(bottom.slot);
         updateMinCompetitiveScore(scorer);
-      } else if (firstComparator != null) {
+      } else {
         // We do not have the score from this document, but this is
         // a noncompetitive value that results in the right termination behavior
         score = getComparatorValue(bottom.slot) + 1;
-      } else if (totalHitsRelation == Relation.EQUAL_TO) {
-        updateMinCompetitiveScore(scorer);
       }
     }
 
@@ -165,6 +161,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       int slot = hitsCollected - 1;
       // Copy hit into queue
       comparator.copy(slot, doc);
+      // compute the doc's score before it gets moved by updating the priority queue
       score = getComparatorValue(slot);
       add(slot, doc);
       if (queueFull) {
@@ -377,8 +374,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
-  // Determined empirically; max-min threshold checking is faster for low N, and min-min for high N
-  private static final int TERMINATION_STRATEGY_HIT_THRESHOLD = 50;
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
   final int numHits;
@@ -427,43 +422,23 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       firstComparator = null;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
-      this.maxScoreTerminator = null;
     } else {
       relevanceComparator = null;
-      if (canTerminateUsingMaxScores(sort) && numHits > TERMINATION_STRATEGY_HIT_THRESHOLD) {
+      if (maxScoreTerminator != null) {
         firstComparator = fieldComparator;
-        this.maxScoreTerminator = maxScoreTerminator;
       } else {
         firstComparator = null;
-        this.maxScoreTerminator = null;
       }
       scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
     }
+    this.maxScoreTerminator = maxScoreTerminator;
     this.minScoreAcc = minScoreAcc;
   }
 
   @Override
   public ScoreMode scoreMode() {
     return scoreMode;
-  }
-
-  /**
-   * @return whether the Sort is compatible with early termination using {@link MaxScoreTerminator}.
-   * Currently we only handle numeric fields, but in principle this could be extended to handle some other field types, 
-   * so long as their comparator-status can ultimately be encoded as a numeric value.
-   */
-  private boolean canTerminateUsingMaxScores(Sort sort) {
-    switch (sort.getSort()[0].getType()) {
-      case DOC:
-      case INT:
-      case FLOAT:
-      case LONG:
-      case DOUBLE:
-        return true;
-      default:
-        return false;
-    }
   }
 
   void updateGlobalMinCompetitiveScore(Scorable scorer) throws IOException {
@@ -593,9 +568,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   /**
-   * Create a CollectorManager which uses a shared hit counter to maintain number of hits
-   * and a shared {@link MaxScoreAccumulator} to propagate the minimum score accross segments if
-   * the primary sort is by relevancy.
+   * Create a CollectorManager which uses a shared hit counter to maintain number of hits, a shared {@link
+   * MaxScoreAccumulator} to propagate the minimum score across segments if the primary sort is by relevancy, and a
+   * shared {@link MaxScoreTerminator} that maintains per-collector statistics to facilitate early termination when
+   * primary sort matches the index sort.
    */
   public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after,
                                                                                       int totalHitsThreshold) {
@@ -603,7 +579,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
       private final MaxScoreAccumulator minScoreAcc = new MaxScoreAccumulator();
-      private final MaxScoreTerminator maxScoreTerminator = new MaxScoreTerminator(numHits, totalHitsThreshold);
+      private final MaxScoreTerminator maxScoreTerminator = MaxScoreTerminator.createIfApplicable(sort, numHits, totalHitsThreshold);
 
       @Override
       public TopFieldCollector newCollector() {
