@@ -332,7 +332,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final ReaderPool readerPool;
   final BufferedUpdatesStream bufferedUpdatesStream;
 
-  /** Counts how many merges have completed; this is used by {@link FrozenBufferedUpdates#apply}
+  /** Counts how many merges have completed; this is used by {@link FrozenBufferedUpdates#forceApply(IndexWriter)}
    *  to handle concurrently apply deletes/updates with merges completing. */
   final AtomicLong mergeFinishedGen = new AtomicLong();
 
@@ -1281,11 +1281,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     boolean success = false;
     try {
-      long seqNo = docWriter.updateDocuments(docs, analyzer, delNode);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
+      final long seqNo = maybeProcessEvents(docWriter.updateDocuments(docs, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1518,12 +1514,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   public long deleteDocuments(Term... terms) throws IOException {
     ensureOpen();
     try {
-      long seqNo = docWriter.deleteTerms(terms);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+      return maybeProcessEvents(docWriter.deleteTerms(terms));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Term..)");
       throw tragedy;
@@ -1553,13 +1544,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     try {
-      long seqNo = docWriter.deleteQueries(queries);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-
-      return seqNo;
+      return maybeProcessEvents(docWriter.deleteQueries(queries));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Query..)");
       throw tragedy;
@@ -1591,11 +1576,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     boolean success = false;
     try {
-      long seqNo = docWriter.updateDocument(doc, analyzer, delNode);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
+      final long seqNo = maybeProcessEvents(docWriter.updateDocument(doc, analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {
@@ -1684,12 +1665,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
     }
     try {
-      long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+      return maybeProcessEvents(docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateNumericDocValue");
       throw tragedy;
@@ -1729,12 +1705,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }
     try {
-      long seqNo = docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value));
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+      return maybeProcessEvents(docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value)));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateBinaryDocValue");
       throw tragedy;
@@ -1764,12 +1735,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(term, updates);
     try {
-      long seqNo = docWriter.updateDocValues(dvUpdates);
-      if (seqNo < 0) {
-        seqNo = -seqNo;
-        processEvents(true);
-      }
-      return seqNo;
+      return maybeProcessEvents(docWriter.updateDocValues(dvUpdates));
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocValues");
       throw tragedy;
@@ -5090,6 +5056,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "decRefDeleter for NRT reader version=" + segmentInfos.getVersion() + " segments=" + segString(segmentInfos));
     }
+  }
+
+  /**
+   * Processes all events and might trigger a merge if the given seqNo is negative
+   * @param seqNo if the seqNo is less than 0 this method will process events otherwise it's a no-op.
+   * @return the given seqId inverted if negative.
+   */
+  private long maybeProcessEvents(long seqNo) throws IOException {
+    if (seqNo < 0) {
+      seqNo = -seqNo;
+      processEvents(true);
+    }
+    return seqNo;
   }
   
   private void processEvents(boolean triggerMerge) throws IOException {
