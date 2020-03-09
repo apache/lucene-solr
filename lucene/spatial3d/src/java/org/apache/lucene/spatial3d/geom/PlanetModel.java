@@ -703,12 +703,12 @@ public class PlanetModel implements SerializableObject {
     if (!(o instanceof PlanetModel))
       return false;
     final PlanetModel other = (PlanetModel)o;
-    return xyScaling == other.xyScaling && zScaling == other.zScaling;
+    return a == other.a && b == other.b;
   }
   
   @Override
   public int hashCode() {
-    return Double.hashCode(xyScaling) + Double.hashCode(zScaling);
+    return Double.hashCode(a) + Double.hashCode(b);
   }
   
   @Override
@@ -720,7 +720,7 @@ public class PlanetModel implements SerializableObject {
     } else if (this.equals(CLARKE_1866)) {
       return "PlanetModel.CLARKE_1866";
     } else {
-      return "PlanetModel(xyScaling="+ xyScaling +" zScaling="+ zScaling +")";
+      return "PlanetModel(xyScaling="+ a +" zScaling="+ b +")";
     }
   }
 }
