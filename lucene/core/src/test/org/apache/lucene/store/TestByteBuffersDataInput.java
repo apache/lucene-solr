@@ -67,7 +67,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
 
     long seed = randomLong();
-    int max = 1_000_000;
+    int max = LuceneTestCase.TEST_NIGHTLY ? 1_000_000 : 100_000;
     List<IOConsumer<DataInput>> reply = 
         TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 

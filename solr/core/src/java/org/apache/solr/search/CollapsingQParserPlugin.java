@@ -526,9 +526,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int segments,
                              DocValuesProducer collapseValuesProducer,
                              int nullPolicy,
-                             IntIntHashMap boostDocsMap) throws IOException {
+                             IntIntHashMap boostDocsMap,
+                             IndexSearcher searcher) throws IOException {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
+      for(int i=0; i<con.size(); i++) {
+        contexts[i] = con.get(i);
+      }
+
       this.collapsedSet = new FixedBitSet(maxDoc);
       this.collapseValuesProducer = collapseValuesProducer;
       this.collapseValues = collapseValuesProducer.getSorted(null);
@@ -756,9 +762,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int nullPolicy,
                              int size,
                              String field,
-                             IntIntHashMap boostDocsMap) {
+                             IntIntHashMap boostDocsMap,
+                             IndexSearcher searcher) {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
+      for(int i=0; i<con.size(); i++) {
+        contexts[i] = con.get(i);
+      }
+
       this.collapsedSet = new FixedBitSet(maxDoc);
       this.nullValue = nullValue;
       this.nullPolicy = nullPolicy;
@@ -928,6 +940,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   private static class OrdFieldValueCollector extends DelegatingCollector {
     private LeafReaderContext[] contexts;
+
     private DocValuesProducer collapseValuesProducer;
     private SortedDocValues collapseValues;
     protected OrdinalMap ordinalMap;
@@ -958,6 +971,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
+      for(int i=0; i<con.size(); i++) {
+        contexts[i] = con.get(i);
+      }
       this.collapseValuesProducer = collapseValuesProducer;
       this.collapseValues = collapseValuesProducer.getSorted(null);
       if(collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
@@ -1151,6 +1168,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
+      for(int i=0; i<con.size(); i++) {
+        contexts[i] = con.get(i);
+      }
       this.collapseField = collapseField;
       this.nullValue = nullValue;
       this.nullPolicy = nullPolicy;
@@ -1346,7 +1367,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         
         if (collapseFieldType instanceof StrField) {
 
-          return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs);
+          return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
 
@@ -1365,7 +1386,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             }
           }
 
-          return new IntScoreCollector(maxDoc, leafCount, nullValue, nullPolicy, size, collapseField, boostDocs);
+          return new IntScoreCollector(maxDoc, leafCount, nullValue, nullPolicy, size, collapseField, boostDocs, searcher);
 
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

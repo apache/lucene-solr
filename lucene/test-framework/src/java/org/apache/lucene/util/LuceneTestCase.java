@@ -483,10 +483,9 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
-    "SimpleFSDirectory",
     "NIOFSDirectory",
-    // SimpleFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
-    hasWorkingMMapOnWindows() ? "MMapDirectory" : "SimpleFSDirectory"
+    // NIOFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
+    hasWorkingMMapOnWindows() ? "MMapDirectory" : "NIOFSDirectory"
   );
 
   /** All {@link Directory} implementations. */
@@ -1004,7 +1003,6 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       c.setCheckPendingFlushUpdate(false);
     }
-    c.setMaxCommitMergeWaitSeconds(atLeast(r, 1));
     return c;
   }
 

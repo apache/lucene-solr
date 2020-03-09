@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,39 +75,6 @@ import org.apache.lucene.util.fst.Outputs;
 
 public final class BlockTreeTermsReader extends FieldsProducer {
 
-  /**
-   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
-   */
-  public enum FSTLoadMode {
-    /**
-     * Always read FSTs from disk.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     */
-    OFF_HEAP,
-    /**
-     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
-     */
-    ON_HEAP,
-    /**
-     * Always read FSTs from disk.
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     * See {@link FSTLoadMode#AUTO}
-     */
-    OPTIMIZE_UPDATES_OFF_HEAP,
-    /**
-     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     */
-    AUTO
-  }
-
-  /** Attribute key for fst mode. */
-  public static final String FST_MODE_KEY = "blocktree.terms.fst";
-
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
   static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
@@ -160,7 +126,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, FSTLoadMode defaultLoadMode) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
@@ -197,7 +163,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
-      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY, defaultLoadMode);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
@@ -235,11 +200,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
-        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY + "." + fieldInfo.name, fstLoadMode);
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fieldMap.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
+                                                          indexStartFP, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
@@ -253,19 +217,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         // this.close() will close in:
         IOUtils.closeWhileHandlingException(this);
       }
-    }
-  }
-
-  private static FSTLoadMode getLoadMode(Map<String, String> attributes, String key, FSTLoadMode defaultValue) {
-    String value = attributes.get(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    try {
-      return FSTLoadMode.valueOf(value);
-    } catch (IllegalArgumentException ex) {
-      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: "
-          + Arrays.toString(FSTLoadMode.values()) + " but was: " + value, ex);
     }
   }
 
