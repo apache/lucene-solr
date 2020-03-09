@@ -234,6 +234,21 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
     );
 
+    //Test expand.rows = 0 - no docs only expand count
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field="+group+hint+"}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    params.add("expand", "true");
+    params.add("expand.rows", "0");
+    assertQ(req(params), "*[count(/response/result/doc)=2]",
+            "*[count(/response/lst[@name='expanded']/result)=2]",
+            "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "/response/result/doc[1]/str[@name='id'][.='2']",
+            "/response/result/doc[2]/str[@name='id'][.='6']"
+    );
 
     //Test no group results
     params = new ModifiableSolrParams();
