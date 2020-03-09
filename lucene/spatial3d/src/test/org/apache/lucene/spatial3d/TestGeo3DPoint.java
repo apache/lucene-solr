@@ -1349,7 +1349,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
    // simple query, in any planet model one point should be inside and the other outside
-    Query q = Geo3DPoint.newDistanceQuery("field", planetModel, 0, 0, 100000);
+    Query q = Geo3DPoint.newDistanceQuery("field", planetModel, 0, 0, planetModel.getMeanRadius() * 0.01);
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
