@@ -50,6 +50,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -611,7 +612,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
       case 1: {
         // Circles
-        final double widthMeters = random().nextDouble() * Math.PI * planetModel.getMeanRadiusMeters() /*MEAN_EARTH_RADIUS_METERS*/;
+        final double widthMeters = random().nextDouble() * Math.PI * planetModel.getMeanRadius();
         try {
           return Geo3DPoint.newDistanceQuery(field, planetModel, GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude(), widthMeters);
         } catch (IllegalArgumentException e) {
@@ -633,7 +634,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // Paths
         // TBD: Need to rework generation to be realistic
         final int pointCount = random().nextInt(5) + 1;
-        final double width = random().nextDouble() * Math.PI * 0.5 * planetModel.getMeanRadiusMeters(); /* MEAN_EARTH_RADIUS_METERS;*/
+        final double width = random().nextDouble() * Math.PI * 0.5 * planetModel.getMeanRadius();
         final double[] latitudes = new double[pointCount];
         final double[] longitudes = new double[pointCount];
         for (int i = 0; i < pointCount; i++) {
@@ -1327,6 +1328,32 @@ public class TestGeo3DPoint extends LuceneTestCase {
       assertEquals(pointEnc.y, pointEnc2.y, 0.0);
       assertEquals(pointEnc.z, pointEnc2.z, 0.0);
     }
+  }
+
+  public void testDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    PlanetModel planetModel = randomPlanetModel();
+
+    // index two points:
+    Document doc = new Document();
+    doc.add(new Geo3DPoint("field", planetModel, 0.1 , 0.1));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new Geo3DPoint("field", planetModel, 90 , 1));
+    w.addDocument(doc);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+   // simple query, in any planet model one point should be inside and the other outside
+    Query q = Geo3DPoint.newDistanceQuery("field", planetModel, 0, 0, planetModel.getMeanRadius() * 0.01);
+    assertEquals(1, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
   }
 
   /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
