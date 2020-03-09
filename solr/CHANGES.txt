@@ -182,7 +182,9 @@ Bug Fixes
 
 * SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
 
-* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+* SOLR-14299: IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+
+* SOLR-14073: Fix segment look ahead NPE in CollapsingQParserPlugin (Joel Bernstein)
 
 Other Changes
 ---------------------
