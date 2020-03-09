@@ -1333,7 +1333,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    PlanetModel planetModel = PlanetModel.WGS84;
+    PlanetModel planetModel = randomPlanetModel();
 
     // index two points:
     Document doc = new Document();
