@@ -26,6 +26,8 @@ Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
 
+* LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
+
 Other
 ---------------------
 
