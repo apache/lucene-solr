@@ -98,8 +98,8 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
     assumeFalse("windows is not supported", Constants.WINDOWS);
     Path path = createTempDir();
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
-    Directory dir1 = new SimpleFSDirectory(new FilterPath(path, fs));
-    Directory dir2 = new SimpleFSDirectory(new FilterPath(path.resolve("link"), fs));
+    Directory dir1 = new NIOFSDirectory(new FilterPath(path, fs));
+    Directory dir2 = new NIOFSDirectory(new FilterPath(path.resolve("link"), fs));
 
     IndexOutput target = dir1.createOutput("target.txt", IOContext.DEFAULT);
     target.writeInt(1);

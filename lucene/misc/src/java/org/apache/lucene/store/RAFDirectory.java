@@ -51,7 +51,7 @@ public class RAFDirectory extends FSDirectory {
     path.toFile(); // throw exception if we can't get a File
   }
   
-  /** Create a new SimpleFSDirectory for the named location and {@link FSLockFactory#getDefault()}.
+  /** Create a new RAFDirectory for the named location and {@link FSLockFactory#getDefault()}.
    *  The directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
