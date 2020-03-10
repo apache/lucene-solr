@@ -52,15 +52,6 @@ public class UniformSplitTerms extends Terms implements Accountable {
   /**
    * @param blockDecoder Optional block decoder, may be null if none. It can be used for decompression or decryption.
    */
-  protected UniformSplitTerms(IndexInput dictionaryInput, IndexInput blockInput, FieldMetadata fieldMetadata,
-                    PostingsReaderBase postingsReader, BlockDecoder blockDecoder) throws IOException {
-    this(blockInput, fieldMetadata, postingsReader, blockDecoder,
-        new FSTDictionary.BrowserSupplier(dictionaryInput, fieldMetadata.getDictionaryStartFP(), blockDecoder));
-  }
-
-  /**
-   * @param blockDecoder Optional block decoder, may be null if none. It can be used for decompression or decryption.
-   */
   protected UniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
                               PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
                               IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {

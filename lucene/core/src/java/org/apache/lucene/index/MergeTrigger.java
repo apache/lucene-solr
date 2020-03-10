@@ -47,10 +47,5 @@ public enum MergeTrigger {
   /**
    * Merge was triggered by a closing IndexWriter.
    */
-  CLOSING,
-
-  /**
-   * Merge was triggered on commit.
-   */
-  COMMIT,
+  CLOSING
 }

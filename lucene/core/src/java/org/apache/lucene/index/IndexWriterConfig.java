@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -112,9 +110,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
-
-  /** Default value for time to wait for merges on commit (when using a {@link MergePolicy} that implements findFullFlushMerges). */
-  public static final double DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS = 30.0;
   
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
@@ -487,24 +482,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
-  /**
-   * Expert: sets the amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...).
-   * If this time is reached, we proceed with the commit based on segments merged up to that point.
-   * The merges are not cancelled, and may still run to completion independent of the commit.
-   */
-  public IndexWriterConfig setMaxCommitMergeWaitSeconds(double maxCommitMergeWaitSeconds) {
-    this.maxCommitMergeWaitSeconds = maxCommitMergeWaitSeconds;
-    return this;
-  }
-
-  /**
-   * Set the callback that gets invoked when IndexWriter performs various actions.
-   */
-  public IndexWriterConfig setIndexWriterEvents(IndexWriterEvents indexWriterEvents) {
-    this.indexWriterEvents = indexWriterEvents;
-    return this;
-  }
-
   /** We only allow sorting on these types */
   private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
                                                                                      SortField.Type.LONG,
@@ -564,16 +541,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setSoftDeletesField(String softDeletesField) {
     this.softDeletesField = softDeletesField;
-    return this;
-  }
-
-  /**
-   * Sets the reader attributes used for all readers pulled from the IndexWriter. Reader attributes allow configuration
-   * of low-level aspects like ram utilization on a per-reader basis.
-   * Note: This method make a shallow copy of the provided map.
-   */
-  public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
-    this.readerAttributes = Map.copyOf(Objects.requireNonNull(readerAttributes));
     return this;
   }
 }

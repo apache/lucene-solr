@@ -18,6 +18,7 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.After;
@@ -28,9 +29,20 @@ import org.junit.Before;
  */
 public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new UniformSplitRot13PostingsFormat());
-
+  protected final boolean checkEncoding;
+  protected final Codec codec;
   private boolean shouldCheckDecoderWasCalled = true;
+
+  public TestUniformSplitPostingFormat() {
+    checkEncoding = random().nextBoolean();
+    codec = TestUtil.alwaysPostingsFormat(getPostingsFormat());
+  }
+
+  protected PostingsFormat getPostingsFormat() {
+    return checkEncoding ? new UniformSplitRot13PostingsFormat()
+    : new UniformSplitPostingsFormat(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, random().nextBoolean());
+  }
 
   @Override
   protected Codec getCodec() {
@@ -44,10 +56,12 @@ public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
   @After
   public void checkEncodingCalled() {
-    assertTrue(UniformSplitRot13PostingsFormat.blocksEncoded);
-    assertTrue(UniformSplitRot13PostingsFormat.dictionaryEncoded);
-    if (shouldCheckDecoderWasCalled) {
-      assertTrue(UniformSplitRot13PostingsFormat.decoderCalled);
+    if (checkEncoding) {
+      assertTrue(UniformSplitRot13PostingsFormat.blocksEncoded);
+      assertTrue(UniformSplitRot13PostingsFormat.dictionaryEncoded);
+      if (shouldCheckDecoderWasCalled) {
+        assertTrue(UniformSplitRot13PostingsFormat.decoderCalled);
+      }
     }
   }
 
