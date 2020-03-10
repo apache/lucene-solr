@@ -74,7 +74,7 @@
         <revision>8.4.1</revision>
       </Version>
    </release>
-     <release>
+    <release>
       <Version>
         <name>solr-8.4.0</name>
         <created>2019-12-29</created>
