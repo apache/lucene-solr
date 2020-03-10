@@ -37,6 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -436,86 +437,99 @@ final class DocumentsWriter implements Closeable, Accountable {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
-    final DocumentsWriterPerThread flushingDWPT;
-    long seqNo;
-
+    DocumentsWriterPerThread flushingDWPT = null;
+    long seqNo = -1;
     try {
-      // This must happen after we've pulled the ThreadState because IW.close
-      // waits for all ThreadStates to be released:
-      ensureOpen();
-      ensureInitialized(perThread);
-      assert perThread.isInitialized();
-      final DocumentsWriterPerThread dwpt = perThread.dwpt;
-      final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
-      } finally {
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
+        // This must happen after we've pulled the ThreadState because IW.close
+        // waits for all ThreadStates to be released:
+        ensureOpen();
+        ensureInitialized(perThread);
+        assert perThread.isInitialized();
+        assert perThread.isFlushPending() == false : "we should never index into a flush pending threadstate";
+        final DocumentsWriterPerThread dwpt = perThread.dwpt;
+        final int dwptNumDocs = dwpt.getNumDocsInRAM();
+        try {
+          seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
+        } finally {
+          numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+          if (dwpt.isAborted()) {
+            flushControl.doOnAbort(perThread);
+          } else {
+            // We don't know how many documents were actually
+            // counted as indexed, so we must subtract here to
+            // accumulate our separate counter:
+            final boolean isUpdate = delNode != null && delNode.isDelete();
+            flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+            if (seqNo != -1) {
+              assert seqNo > perThread.lastSeqNo : "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+              perThread.lastSeqNo = seqNo;
+            }
+          }
         }
-        // We don't know how many documents were actually
-        // counted as indexed, so we must subtract here to
-        // accumulate our separate counter:
-        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+      } finally {
+        perThreadPool.release(perThread);
       }
-      final boolean isUpdate = delNode != null && delNode.isDelete();
-      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
-
-      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
-      perThread.lastSeqNo = seqNo;
-
     } finally {
-      perThreadPool.release(perThread);
+      if (postUpdate(flushingDWPT, hasEvents)) {
+        seqNo = -seqNo;
+      }
     }
 
-    if (postUpdate(flushingDWPT, hasEvents)) {
-      seqNo = -seqNo;
-    }
+
     return seqNo;
+  }
+
+  @FunctionalInterface
+  interface UpdateRunner {
+    long run() throws IOException;
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
 
     boolean hasEvents = preUpdate();
-
     final ThreadState perThread = flushControl.obtainAndLock();
-
-    final DocumentsWriterPerThread flushingDWPT;
-    long seqNo;
+    DocumentsWriterPerThread flushingDWPT = null;
+    long seqNo = -1;
     try {
-      // This must happen after we've pulled the ThreadState because IW.close
-      // waits for all ThreadStates to be released:
-      ensureOpen();
-      ensureInitialized(perThread);
-      assert perThread.isInitialized();
-      final DocumentsWriterPerThread dwpt = perThread.dwpt;
-      final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocument(doc, analyzer, delNode, flushNotifications);
-      } finally {
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
+        // This must happen after we've pulled the ThreadState because IW.close
+        // waits for all ThreadStates to be released:
+        ensureOpen();
+        ensureInitialized(perThread);
+        assert perThread.isInitialized();
+        assert perThread.isFlushPending() == false : "we should never index into a flush pending threadstate";
+        final DocumentsWriterPerThread dwpt = perThread.dwpt;
+        final int dwptNumDocs = dwpt.getNumDocsInRAM();
+        try {
+          seqNo = dwpt.updateDocument(doc, analyzer, delNode, flushNotifications);
+        } finally {
+          // We don't know whether the document actually
+          // counted as being indexed, so we must subtract here to
+          // accumulate our separate counter:
+          numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+          if (dwpt.isAborted()) {
+            flushControl.doOnAbort(perThread);
+          } else {
+            // if we hit an non-abortig exception we should do the afterDocument procedures anyway.
+            final boolean isUpdate = delNode != null && delNode.isDelete();
+            flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+            if (seqNo != -1) {
+              assert seqNo > perThread.lastSeqNo : "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+              perThread.lastSeqNo = seqNo;
+            }
+          }
         }
-        // We don't know whether the document actually
-        // counted as being indexed, so we must subtract here to
-        // accumulate our separate counter:
-        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+      } finally {
+        perThreadPool.release(perThread);
       }
-      final boolean isUpdate = delNode != null && delNode.isDelete();
-      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
-
-      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
-      perThread.lastSeqNo = seqNo;
-
     } finally {
-      perThreadPool.release(perThread);
+      if (postUpdate(flushingDWPT, hasEvents)) {
+        seqNo = -seqNo;
+      }
     }
-
-    if (postUpdate(flushingDWPT, hasEvents)) {
-      seqNo = -seqNo;
-    }
-    
     return seqNo;
   }
 

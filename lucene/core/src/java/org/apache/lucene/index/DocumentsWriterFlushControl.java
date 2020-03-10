@@ -45,7 +45,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 final class DocumentsWriterFlushControl implements Accountable {
 
-  private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
   private volatile long flushBytes = 0;
   private volatile int numPending = 0;
@@ -78,7 +77,6 @@ final class DocumentsWriterFlushControl implements Accountable {
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
     this.config = config;
-    this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
   }
 
@@ -174,7 +172,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         } else {
           flushPolicy.onInsert(this, perThread);
         }
-        if (!perThread.flushPending && perThread.bytesUsed > hardMaxBytesPerDWPT) {
+        if (!perThread.flushPending && perThread.bytesUsed > perThread.dwpt.getHardMaxBytesPerDWPT()) {
           // Safety check to prevent a single DWPT exceeding its RAM limit. This
           // is super important since we can not address more than 2048 MB per DWPT
           setFlushPending(perThread);

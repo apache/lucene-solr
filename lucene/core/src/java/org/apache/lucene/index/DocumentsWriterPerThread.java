@@ -169,6 +169,8 @@ final class DocumentsWriterPerThread {
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
+  private final long hardMaxBytesPerDWPT;
+
 
   public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
@@ -199,6 +201,7 @@ final class DocumentsWriterPerThread {
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
     this.enableTestPoints = enableTestPoints;
     this.indexVersionCreated = indexVersionCreated;
+    this.hardMaxBytesPerDWPT = indexWriterConfig.getRAMPerThreadHardLimitMB() * 1024 * 1024;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -219,6 +222,9 @@ final class DocumentsWriterPerThread {
   /** Anything that will add N docs to the index should reserve first to
    *  make sure it's allowed. */
   private void reserveOneDoc() {
+    if (numDocsInRAM != 0 && hardMaxBytesPerDWPT < bytesUsed()) {
+      throw new IllegalArgumentException("RAM used by a single DocumentsWriterPerThread can not exceed: " + hardMaxBytesPerDWPT / 1024 / 1024 + "MB");
+    }
     if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
       // Reserve failed: put the one doc back and throw exc:
       pendingNumDocs.decrementAndGet();
@@ -278,7 +284,6 @@ final class DocumentsWriterPerThread {
       int docCount = 0;
       boolean allDocsIndexed = false;
       try {
-
         for (Iterable<? extends IndexableField> doc : docs) {
           // Even on exception, the document is still added (but marked
           // deleted), so we don't need to un-reserve at that point.
@@ -674,6 +679,10 @@ final class DocumentsWriterPerThread {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
         + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
+  }
+
+  long getHardMaxBytesPerDWPT() {
+    return hardMaxBytesPerDWPT;
   }
   
 }

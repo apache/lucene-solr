@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
@@ -104,6 +106,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
@@ -3892,5 +3895,68 @@ public class TestIndexWriter extends LuceneTestCase {
         thread.join();
       }
     }
+  }
+
+  public void testAbortDocWhenHardLimitExceeds() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = new IndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, indexWriterConfig);
+    indexWriterConfig.setRAMPerThreadHardLimitMB(1);
+    w.addDocument(new Document()); // no problem
+    w.flush();
+    assertEquals(1, w.getFlushCount());
+    final long seed = random().nextLong();
+    int numDocs = 1;
+    try (LineFileDocs docs = new LineFileDocs(new Random(seed))) {
+      while (w.getFlushCount() == 1) {
+        w.addDocument(docs.nextDoc());
+        numDocs++;
+      }
+    }
+    try (LineFileDocs docs = new LineFileDocs(new Random(seed))) {
+      if (random().nextBoolean()) {
+        w.addDocument(new Document());
+        numDocs++;
+      }
+      w.addDocuments(() -> new Iterator<>() {
+        @Override
+        public boolean hasNext() {
+          return true;
+        }
+
+        @Override
+        public Iterable<? extends IndexableField> next() {
+          try {
+            return docs.nextDoc();
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }
+      });
+    } catch (IllegalArgumentException e) {
+      assertEquals("RAM used by a single DocumentsWriterPerThread can not exceed: 1MB", e.getMessage());
+      assertNull(w.getTragicException());
+    }
+    w.addDocument(new Document());
+    numDocs++;
+    try (LineFileDocs docs = new LineFileDocs(new Random(seed))) {
+      final int currentNumDocs = numDocs;
+      for (int i = 0; i < currentNumDocs; i++) {
+        w.addDocument(docs.nextDoc());
+        numDocs++;
+      }
+    }
+    w.addDocument(new Document());
+    numDocs++;
+    w.forceMergeDeletes(true);
+    w.commit();
+
+    try (IndexReader reader = DirectoryReader.open(dir)) {
+      assertEquals(numDocs, reader.numDocs());
+    }
+
+
+    w.close();
+    dir.close();
   }
 }
