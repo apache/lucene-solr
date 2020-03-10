@@ -16,100 +16,98 @@
  */
 package org.apache.lucene.store;
 
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.ClosedChannelException; // javadoc @link
-import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.Future; // javadoc
+import java.util.concurrent.Future;
 
-/**
- * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
- * positional read, which allows multiple threads to read from the same file
- * without synchronizing.
- * <p>
- * This class only uses FileChannel when reading; writing is achieved with
- * {@link FSDirectory.FSIndexOutput}.
- * <p>
- * <b>NOTE</b>: NIOFSDirectory is not recommended on Windows because of a bug in
- * how FileChannel.read is implemented in Sun's JRE. Inside of the
- * implementation the position is apparently synchronized. See <a
- * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6265734">here</a>
- * for details.
- * </p>
+/** A straightforward implementation of {@link FSDirectory}
+ *  using {@link Files#newByteChannel(Path, java.nio.file.OpenOption...)}.  
+ *  However, this class has
+ *  poor concurrent performance (multiple threads will
+ *  bottleneck) as it synchronizes when multiple threads
+ *  read from the same file.  It's usually better to use
+ *  {@link NIOFSDirectory} or {@link MMapDirectory} instead.
  * <p>
  * <b>NOTE:</b> Accessing this class either directly or
  * indirectly from a thread while it's interrupted can close the
  * underlying file descriptor immediately if at the same time the thread is
  * blocked on IO. The file descriptor will remain closed and subsequent access
- * to {@link NIOFSDirectory} will throw a {@link ClosedChannelException}. If
+ * to {@link SimpleFSDirectory} will throw a {@link ClosedChannelException}. If
  * your application uses either {@link Thread#interrupt()} or
  * {@link Future#cancel(boolean)} you should use the legacy {@code RAFDirectory}
- * from the Lucene {@code misc} module in favor of {@link NIOFSDirectory}.
+ * from the Lucene {@code misc} module in favor of {@link SimpleFSDirectory}.
  * </p>
  */
-public class NIOFSDirectory extends FSDirectory {
-
-  /** Create a new NIOFSDirectory for the named location.
+public class SimpleFSDirectory extends FSDirectory {
+    
+  /** Create a new SimpleFSDirectory for the named location.
    *  The directory is created at the named location if it does not yet exist.
-   * 
+   *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use
    * @throws IOException if there is a low-level I/O error
    */
-  public NIOFSDirectory(Path path, LockFactory lockFactory) throws IOException {
+  public SimpleFSDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
-
-  /** Create a new NIOFSDirectory for the named location and {@link FSLockFactory#getDefault()}.
+  
+  /** Create a new SimpleFSDirectory for the named location and {@link FSLockFactory#getDefault()}.
    *  The directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
    * @throws IOException if there is a low-level I/O error
    */
-  public NIOFSDirectory(Path path) throws IOException {
+  public SimpleFSDirectory(Path path) throws IOException {
     this(path, FSLockFactory.getDefault());
   }
 
+  /** Creates an IndexInput for the file with the given name. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     ensureCanRead(name);
-    Path path = getDirectory().resolve(name);
-    FileChannel fc = FileChannel.open(path, StandardOpenOption.READ);
-    return new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);
+    Path path = directory.resolve(name);
+    SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ);
+    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path + "\")", channel, context);
   }
-  
+
   /**
-   * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
+   * Reads bytes with {@link SeekableByteChannel#read(ByteBuffer)}
    */
-  static final class NIOFSIndexInput extends BufferedIndexInput {
+  static final class SimpleFSIndexInput extends BufferedIndexInput {
     /**
      * The maximum chunk size for reads of 16384 bytes.
      */
     private static final int CHUNK_SIZE = 16384;
     
-    /** the file channel we will read from */
-    protected final FileChannel channel;
+    /** the channel we will read from */
+    protected final SeekableByteChannel channel;
     /** is this instance a clone and hence does not own the file to close it */
     boolean isClone = false;
     /** start offset: non-zero in the slice case */
     protected final long off;
     /** end offset (start+length) */
     protected final long end;
+    
+    private ByteBuffer byteBuf; // wraps the buffer for NIO
 
-    public NIOFSIndexInput(String resourceDesc, FileChannel fc, IOContext context) throws IOException {
+    public SimpleFSIndexInput(String resourceDesc, SeekableByteChannel channel, IOContext context) throws IOException {
       super(resourceDesc, context);
-      this.channel = fc; 
+      this.channel = channel; 
       this.off = 0L;
-      this.end = fc.size();
+      this.end = channel.size();
     }
     
-    public NIOFSIndexInput(String resourceDesc, FileChannel fc, long off, long length, int bufferSize) {
+    public SimpleFSIndexInput(String resourceDesc, SeekableByteChannel channel, long off, long length, int bufferSize) {
       super(resourceDesc, bufferSize);
-      this.channel = fc;
+      this.channel = channel;
       this.off = off;
       this.end = off + length;
       this.isClone = true;
@@ -123,8 +121,8 @@ public class NIOFSDirectory extends FSDirectory {
     }
     
     @Override
-    public NIOFSIndexInput clone() {
-      NIOFSIndexInput clone = (NIOFSIndexInput)super.clone();
+    public SimpleFSIndexInput clone() {
+      SimpleFSIndexInput clone = (SimpleFSIndexInput)super.clone();
       clone.isClone = true;
       return clone;
     }
@@ -134,7 +132,7 @@ public class NIOFSDirectory extends FSDirectory {
       if (offset < 0 || length < 0 || offset + length > this.length()) {
         throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: offset=" + offset + ",length=" + length + ",fileLength="  + this.length() + ": "  + this);
       }
-      return new NIOFSIndexInput(getFullSliceDescription(sliceDescription), channel, off + offset, length, getBufferSize());
+      return new SimpleFSIndexInput(getFullSliceDescription(sliceDescription), channel, off + offset, length, getBufferSize());
     }
 
     @Override
@@ -144,29 +142,34 @@ public class NIOFSDirectory extends FSDirectory {
 
     @Override
     protected void readInternal(ByteBuffer b) throws IOException {
-      long pos = getFilePointer() + off;
-      
-      if (pos + b.remaining() > end) {
-        throw new EOFException("read past EOF: " + this);
-      }
 
-      try {
-        int readLength = b.remaining();
-        while (readLength > 0) {
-          final int toRead = Math.min(CHUNK_SIZE, readLength);
-          b.limit(b.position() + toRead);
-          assert b.remaining() == toRead;
-          final int i = channel.read(b, pos);
-          if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
-            throw new EOFException("read past EOF: " + this + " buffer: " + b + " chunkLen: " + toRead + " end: " + end);
-          }
-          assert i > 0 : "FileChannel.read with non zero-length bb.remaining() must always read at least one byte (FileChannel is in blocking mode, see spec of ReadableByteChannel)";
-          pos += i;
-          readLength -= i;
+      synchronized(channel) {
+        long pos = getFilePointer() + off;
+        
+        if (pos + b.remaining() > end) {
+          throw new EOFException("read past EOF: " + this);
         }
-        assert readLength == 0;
-      } catch (IOException ioe) {
-        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+               
+        try {
+          channel.position(pos);
+
+          int readLength = b.remaining();
+          while (readLength > 0) {
+            final int toRead = Math.min(CHUNK_SIZE, readLength);
+            b.limit(b.position() + toRead);
+            assert b.remaining() == toRead;
+            final int i = channel.read(b);
+            if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
+              throw new EOFException("read past EOF: " + this + " buffer: " + b + " chunkLen: " + toRead + " end: " + end);
+            }
+            assert i > 0 : "SeekableByteChannel.read with non zero-length bb.remaining() must always read at least one byte (Channel is in blocking mode, see spec of ReadableByteChannel)";
+            pos += i;
+            readLength -= i;
+          }
+          assert readLength == 0;
+        } catch (IOException ioe) {
+          throw new IOException(ioe.getMessage() + ": " + this, ioe);
+        }
       }
     }
 
