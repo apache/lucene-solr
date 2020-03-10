@@ -253,6 +253,9 @@ Bug Fixes
 * LUCENE-9251: Fix bug in the polygon tessellator where edges with different value on #isEdgeFromPolygon
   were bot filtered out properly. (Ignacio Vera)
 
+* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
+  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
+
 Other
 ---------------------
 
