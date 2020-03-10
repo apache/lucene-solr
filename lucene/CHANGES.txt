@@ -155,6 +155,9 @@ Bug Fixes
 
 * LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
 
+* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
+  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
+
 Other
 ---------------------
 

@@ -3775,7 +3775,55 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
+      assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
       IOUtils.close(sm, dir);
+    }
+  }
+
+  public void testCloseableQueue() throws IOException, InterruptedException {
+    try(Directory dir = newDirectory();
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      IndexWriter.EventQueue queue = new IndexWriter.EventQueue(writer);
+      AtomicInteger executed = new AtomicInteger(0);
+
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.processEvents();
+      assertEquals(2, executed.get());
+      queue.processEvents();
+      assertEquals(2, executed.get());
+
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+      queue.add(w -> {
+        assertNotNull(w);
+        executed.incrementAndGet();
+      });
+
+
+      Thread t = new Thread(() -> {
+        try {
+          queue.processEvents();
+        } catch (IOException e) {
+          throw new AssertionError();
+        } catch (AlreadyClosedException ex) {
+          // possible
+        }
+      });
+      t.start();
+      queue.close();
+      t.join();
+      assertEquals(4, executed.get());
+      expectThrows(AlreadyClosedException.class, () -> queue.processEvents());
+      expectThrows(AlreadyClosedException.class, () -> queue.add(w -> {}));
     }
   }
 
