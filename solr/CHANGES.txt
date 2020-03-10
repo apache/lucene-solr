@@ -153,6 +153,8 @@ Improvements
 * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
    (Eric Pugh via Christine Poerschke)
 
+* SOLR-8306: Enhance ExpandComponent to allow expand.hits=0 (Marshall Sanders, Amelia Henderson)
+
 Optimizations
 ---------------------
 
