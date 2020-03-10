@@ -46,24 +46,17 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
- * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named
+* SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named
    Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names
    (Anatolii Siuniaev via Mikhail Khludnev)
 
- * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+* SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
 
- * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
- * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+* SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
 
- * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
-
- * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
-
- * SOLR-14241: New delete() Stream Decorator (hossman)
-
- * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
-   (Eric Pugh via Christine Poerschke)
+* SOLR-14241: New delete() Stream Decorator (hossman)
 
 Improvements
 ---------------------
@@ -88,8 +81,6 @@ Improvements
 * SOLR-13984: Java's SecurityManager sandbox can be enabled via environment variable,
   SOLR_SECURITY_MANAGER_ENABLED=true. (rmuir)
 
-* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
-
 * SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
 
 * LUCENE-9093: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio and
@@ -111,12 +102,17 @@ Improvements
 
 * SOLR-14270: export command to have an option to write to a zip file (noble)
 
-* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
-
 * SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
 
 * SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
   See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
+
+* SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
+* SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
+
+* SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
+   (Eric Pugh via Christine Poerschke)
 
 Optimizations
 ---------------------
@@ -125,6 +121,8 @@ Optimizations
   queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
   terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
   docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
+
+* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
 
 * SOLR-14040: The shareSchema solr.xml option now supports SolrCloud.  shareSchema is useful when you have many
   cores per node and large schemas.  (David Smiley)
@@ -194,7 +192,9 @@ Bug Fixes
 
 * SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
 
-* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+* SOLR-14299: IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+
+* SOLR-14073: Fix segment look ahead NPE in CollapsingQParserPlugin (Joel Bernstein)
 
 Other Changes
 ---------------------
@@ -232,6 +232,8 @@ Other Changes
 
 * SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
 execute `uname -a` and "`uptime`" on non-Windows platforms is no longer made. (rmuir)
+
+* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
 
 ==================  8.4.1 ==================
 

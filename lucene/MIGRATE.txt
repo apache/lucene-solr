@@ -1,5 +1,9 @@
 # Apache Lucene Migration Guide
 
+## NGramFilterFactory "keepShortTerm" option was fixed to "preserveOriginal" (LUCENE-9259) ##
+
+The factory option name to output the original term was corrected in accordance with its Javadoc.
+
 ## o.a.l.misc.IndexMergeTool defaults changes (LUCENE-9206) ##
 
 This command-line tool no longer forceMerges to a single segment. Instead, by

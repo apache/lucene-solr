@@ -41,13 +41,15 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
   public static volatile boolean decoderCalled;
   public static volatile boolean blocksEncoded;
   public static volatile boolean dictionaryEncoded;
+  protected final boolean dictionaryOnHeap;
 
   public UniformSplitRot13PostingsFormat() {
-    this("UniformSplitRot13");
+    this("UniformSplitRot13", false);
   }
 
-  protected UniformSplitRot13PostingsFormat(String name) {
+  protected UniformSplitRot13PostingsFormat(String name, boolean dictionaryOnHeap) {
     super(name);
+    this.dictionaryOnHeap = dictionaryOnHeap;
   }
 
   public static void resetEncodingFlags() {
@@ -135,7 +137,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
   }
 
   protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder());
+    return new UniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
   }
 
   protected BlockDecoder getBlockDecoder() {
