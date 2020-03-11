@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput implements RandomAccessInput {
@@ -83,6 +84,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
         // many bytes as possible starting from the current
         // bufferPosition
         ByteBuffer newBuffer = ByteBuffer.allocate(newSize);
+        assert newBuffer.order() == ByteOrder.BIG_ENDIAN;
         if (buffer.remaining() > newBuffer.capacity()) {
           buffer.limit(buffer.position() + newBuffer.capacity());
         }
@@ -316,6 +318,10 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     buffer.limit(newLength);
     bufferStart = start;
     readInternal(buffer);
+    // Make sure sub classes don't mess up with the buffer.
+    assert buffer.order() == ByteOrder.BIG_ENDIAN : buffer.order();
+    assert buffer.remaining() == 0 : "should have thrown EOFException";
+    assert buffer.position() == newLength;
     buffer.flip();
   }
 
