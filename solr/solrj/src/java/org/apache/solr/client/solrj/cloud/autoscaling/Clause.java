@@ -64,11 +64,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
   final boolean hasComputedValue;
   final Map<String, Object> original;
   final Clause derivedFrom;
-  boolean nodeSetPresent = false;
-  Condition collection, shard, replica, tag, globalTag;
+  final boolean nodeSetPresent;
+  final Condition collection, shard, replica, globalTag;
+  Condition tag;
   final Replica.Type type;
-  Put put;
-  boolean strict;
+  final Put put;
+  final boolean strict;
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
@@ -99,6 +100,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     derivedFrom = null;
     this.put = put;
     this.nodeSetPresent = nodeSetPresent;
+    this.collection = null;
+    this.shard = null;
+    this.replica = null;
   }
 
   private Clause(Map<String, Object> m) {
@@ -111,6 +115,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (put != null) {
       this.put = Put.get(put);
       if (this.put == null) throwExp(m, "invalid value for put : {0}", put);
+    } else {
+      this.put = null;
     }
 
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
@@ -123,6 +129,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       tag = parse(m.keySet().stream()
           .filter(s -> (!globalTagName.get().equals(s) && !IGNORE_TAGS.contains(s)))
           .findFirst().get(), m);
+      this.nodeSetPresent = false;
+      this.collection = null;
+      this.shard = null;
+      this.replica = null;
     } else {
       collection = parse(COLLECTION, m);
       shard = parse(SHARD, m);
@@ -134,6 +144,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
       this.nodeSetPresent = parseNodeset(m);
       m.forEach((s, o) -> parseCondition(s, o, m));
+      this.globalTag = null;
     }
     if (tag == null)
       throw new RuntimeException("Invalid op, must have one and only one tag other than collection, shard,replica " + toJSONString(m));
@@ -276,7 +287,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return globalTag == null;
   }
 
-  void parseCondition(String s, Object o, Map m) {
+  private void parseCondition(String s, Object o, Map m) {
     if (IGNORE_TAGS.contains(s)) return;
     if (tag != null) {
       throwExp(m, "Only one tag other than collection, shard, replica is possible");
@@ -460,10 +471,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  List<Violation> testGroupNodes(Policy.Session session, double[] deviations) {
-    return testGroupNodes(session, null, deviations);
-  }
-
   List<Violation> testGroupNodes(Policy.Session session, Row changedRow, double[] deviations) {
     //e.g:  {replica:'#EQUAL', shard:'#EACH',  sysprop.zone:'#EACH'}
     // nocommit - when this is non-null some TestPolicy tests are failing
@@ -477,8 +484,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
     Set<String> shards = getShardNames(session, changedRow, eval);
 
+    final ReplicaCount replicaCount = new ReplicaCount();
     for (String s : shards) {
-      final ReplicaCount replicaCount = new ReplicaCount();
       eval.shardName = s;
 
       for (Object tag : tags) {
@@ -587,23 +594,20 @@ public class Clause implements MapWriter, Comparable<Clause> {
   private void addReplicaCountsForNode(ComputedValueEvaluator computedValueEvaluator, ReplicaCount replicaCount, Row node) {
     addReplicaCountsForNode++;
 
-    ReplicaCount rc = node.computeCacheIfAbsent(computedValueEvaluator.collName, computedValueEvaluator.shardName, PERSHARD_REPLICAS,
-        this, o -> {
-          addReplicaCountsForNodeCacheMiss++;
-          ReplicaCount result = new ReplicaCount();
-          node.forEachReplica((String) collection.getValue(), ri -> {
-            if (Policy.ANY.equals(computedValueEvaluator.shardName)
-                || computedValueEvaluator.shardName.equals(ri.getShard()))
-              result.increment(ri);
-          });
-          return result;
-        });
+//    ReplicaCount rc = node.computeCacheIfAbsent(computedValueEvaluator.collName, computedValueEvaluator.shardName, PERSHARD_REPLICAS,
+//        this, o -> {
+//          addReplicaCountsForNodeCacheMiss++;
+//          ReplicaCount result = new ReplicaCount();
+//          node.forEachReplica((String) collection.getValue(), ri -> {
+//            if (Policy.ANY.equals(computedValueEvaluator.shardName)
+//                || computedValueEvaluator.shardName.equals(ri.getShard()))
+//              result.increment(ri);
+//          });
+//          return result;
+//        });
+    ReplicaCount rc = node.getReplicaCount(computedValueEvaluator.collName, computedValueEvaluator.shardName);
     if (rc != null)
       replicaCount.increment(rc);
-  }
-
-  List<Violation> testPerNode(Policy.Session session, double[] deviations) {
-    return testPerNode(session, null, deviations);
   }
 
   List<Violation> testPerNode(Policy.Session session, Row changedRow, double[] deviations) {
@@ -611,8 +615,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     eval.collName = (String) collection.getValue();
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
     Set<String> shards = getShardNames(session, changedRow, eval);
+    final ReplicaCount replicaCount = new ReplicaCount();
     for (String s : shards) {
-      final ReplicaCount replicaCount = new ReplicaCount();
       eval.shardName = s;
       List<Row> rows = changedRow != null ? Collections.singletonList(changedRow) : session.matrix;
       for (Row row : rows) {
@@ -742,7 +746,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     NOT_APPLICABLE, FAIL, PASS
   }
 
-  public static class ComputedValueEvaluator implements Function<Condition, Object> {
+  public static final class ComputedValueEvaluator implements Function<Condition, Object> {
     final Policy.Session session;
     String collName = null;
     String shardName = null;

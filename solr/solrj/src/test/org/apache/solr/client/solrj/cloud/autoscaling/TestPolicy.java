@@ -1471,10 +1471,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Row row = session.getNode("nodex");
     Row r1 = row.addReplica("c1", "s1", Replica.Type.NRT);
     Row r2 = r1.addReplica("c1", "s1", Replica.Type.NRT);
-    assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
-    assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof ReplicaInfo);
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof ReplicaInfo);
+    assertEquals(1, r1.getCollectionVsShardVsReplicas().get("c1").get("s1").size());
+    assertEquals(2, r2.getCollectionVsShardVsReplicas().get("c1").get("s1").size());
+    assertTrue(r2.getCollectionVsShardVsReplicas().get("c1").get("s1").get(0) instanceof ReplicaInfo);
+    assertTrue(r2.getCollectionVsShardVsReplicas().get("c1").get("s1").get(1) instanceof ReplicaInfo);
   }
 
   public void testMerge() {
@@ -2750,7 +2750,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
       rows.add(new Row((String) m.get("node"), c, false,
           new HashMap<>(),
-          (Boolean) m.get("isLive"), null, null, null));
+          (Boolean) m.get("isLive"), null, null, null, null));
     }
     int deadNodes = 0;
     for (Row row : rows) {

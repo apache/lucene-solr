@@ -100,7 +100,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
     AtomicInteger count = new AtomicInteger(0);
     for (Row row : session.getSortedNodes()) {
-      row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
+      row.getCollectionVsShardVsReplicas().forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
           if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
         }

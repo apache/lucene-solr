@@ -308,7 +308,7 @@ public abstract class Suggester implements MapWriter {
 
   void addReplicaToList(Row r, boolean isSource, List<Pair<ReplicaInfo, Row>> replicaList) {
     if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
+    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.getCollectionVsShardVsReplicas().entrySet()) {
       if (!isAllowed(e.getKey(), Hint.COLL)) continue;
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix

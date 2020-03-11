@@ -505,16 +505,16 @@ public class Policy implements MapWriter {
    *
    */
   public class Session implements MapWriter {
-    final List<String> nodes;
+    private final List<String> nodes;
     final SolrCloudManager cloudManager;
     final List<Row> matrix;
     final NodeStateProvider nodeStateProvider;
-    final int znodeVersion;
-    Set<String> collections = new HashSet<>();
+    private final int znodeVersion;
+    private final Set<String> collections = new HashSet<>();
+    private final Map<String, Row> nodeToRow = new HashMap<>();
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
     Transaction transaction;
-    Map<String, Row> nodeToRow = new HashMap<>();
 
     private Session(List<String> nodes, SolrCloudManager cloudManager,
                     List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
@@ -620,9 +620,11 @@ public class Policy implements MapWriter {
     }
 
     private List<Row> getMatrixCopy() {
-      return matrix.stream()
-          .map(row -> row.copy(this))
-          .collect(Collectors.toList());
+      List<Row> matrixCopy = new ArrayList<>(matrix.size());
+      for (int i = 0; i < matrix.size(); i++) {
+        matrixCopy.add(matrix.get(i).copy(this));
+      }
+      return matrixCopy;
     }
 
     public Policy getPolicy() {

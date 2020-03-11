@@ -230,7 +230,7 @@ public class PolicyHelper {
               put("isLive", row.isLive, p);
           for (Cell cell : row.getCells())
             ew1.put(cell.name, cell.val, p);
-          ew1.put("replicas", row.collectionVsShardVsReplicas);
+          ew1.put("replicas", row.getCollectionVsShardVsReplicas());
         });
       }
     });

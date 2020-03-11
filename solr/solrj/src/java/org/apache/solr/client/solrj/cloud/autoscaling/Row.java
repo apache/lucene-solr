@@ -48,16 +48,18 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
 public class Row implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Random random = new Random(0);
   public final String node;
   final Cell[] cells;
   //this holds the details of each replica in the node
-  public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
+  private Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
 
   boolean anyValueMissing = false;
   boolean isLive = true;
   Policy.Session session;
   Object[] globalCache;
   Map<String, Map> perCollCache;
+  Map<String, Map<String, ReplicaCount>> replicaCounts;
 
   public enum GlobalCacheEntryKey {
     TOTALCORES,
@@ -82,22 +84,74 @@ public class Row implements MapWriter {
     this.globalCache = new Object[GlobalCacheEntryKey.values().length];
     this.perCollCache = new HashMap<>();
 
-    // pre-compute and cache common variables
-    computeCacheIfAbsent(GlobalCacheEntryKey.TOTALCORES, o -> {
-      int[] result = new int[1];
-      Row.this.forEachReplica(replicaInfo -> result[0]++);
-      return result[0];
-    });
-    collectionVsShardVsReplicas.forEach((collection, shardVsReplicas) -> {
-      shardVsReplicas.forEach((shard, replicas) -> {
-        FreeDiskVariable.IndexSizeGetter getter = new FreeDiskVariable.IndexSizeGetter(collection, shard);
-        computeCacheIfAbsent(collection, shard, FreeDiskVariable.FREEDISK_CACHE, Variable.Type.CORE_IDX.tagName,
-            o -> getter.getIndexSize(Row.this));
-      });
-    });
+    _initReplicaCounts();
+
     isAlreadyCopied = true;
   }
 
+  private void _initReplicaCounts() {
+    replicaCounts = new HashMap<>();
+    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> perCollEntry : collectionVsShardVsReplicas.entrySet()) {
+      Map<String, ReplicaCount> perShard = new HashMap<>();
+      replicaCounts.put(perCollEntry.getKey(), perShard);
+      ReplicaCount anyShard = new ReplicaCount();
+      perShard.put(Policy.ANY, anyShard);
+      for (Map.Entry<String, List<ReplicaInfo>> perShardEntry : perCollEntry.getValue().entrySet()) {
+        ReplicaCount rc = new ReplicaCount();
+        perShard.put(perShardEntry.getKey(), rc);
+        for (int i = 0; i < perShardEntry.getValue().size(); i++) {
+          ReplicaInfo info = perShardEntry.getValue().get(i);
+          rc.increment(info);
+          anyShard.increment(info);
+        }
+      }
+    }
+  }
+
+  private void _addReplicaCount(String collection, String shard, ReplicaInfo ri) {
+    Map<String, ReplicaCount> perShard = replicaCounts.get(collection);
+    if (perShard == null) {
+      perShard = new HashMap<>();
+      replicaCounts.put(collection, perShard);
+    }
+    ReplicaCount rc = perShard.get(shard);
+    if (rc == null) {
+      rc = new ReplicaCount();
+      perShard.put(shard, rc);
+    }
+    ReplicaCount anyShard = perShard.get(Policy.ANY);
+    if (anyShard == null) {
+      anyShard = new ReplicaCount();
+      perShard.put(Policy.ANY, anyShard);
+    }
+    rc.increment(ri);
+    anyShard.increment(ri);
+  }
+
+  private void _removeReplicaCount(String collection, String shard, ReplicaInfo ri) {
+    Map<String, ReplicaCount> perShard = replicaCounts.get(collection);
+    if (perShard == null) {
+      throw new RuntimeException("missing ReplicaCount for " + collection + "/" + shard + ": " + ri);
+    }
+    ReplicaCount rc = perShard.get(shard);
+    if (rc == null) {
+      throw new RuntimeException("missing ReplicaCount for " + collection + "/" + shard + ": " + ri);
+    }
+    ReplicaCount anyShard = perShard.get(Policy.ANY);
+    if (anyShard == null) {
+      throw new RuntimeException("missing ANY ReplicaCount for " + collection + "/" + shard + ": " + ri);
+    }
+    rc.decrement(ri);
+    anyShard.decrement(ri);
+  }
+
+  public ReplicaCount getReplicaCount(String collection, String shard) {
+    return replicaCounts.getOrDefault(collection, Collections.emptyMap()).get(shard);
+  }
+
+  public Map<String, Map<String, List<ReplicaInfo>>> getCollectionVsShardVsReplicas() {
+    return Collections.unmodifiableMap(collectionVsShardVsReplicas);
+  }
 
   public static final Map<String, CacheEntry> cacheStats = new HashMap<>();
 
@@ -167,10 +221,10 @@ public class Row implements MapWriter {
     }
   }
 
-
-
-  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
-      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session, Map perRowCache, Object[] globalCache) {
+  // copy constructor
+  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
+      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
+      Map<String, Map> perRowCache, Object[] globalCache, Map<String, Map<String, ReplicaCount>> replicaCounts) {
     this.session = session;
     this.node = node;
     this.isLive = isLive;
@@ -183,6 +237,18 @@ public class Row implements MapWriter {
     this.collectionVsShardVsReplicas = collectionVsShardVsReplicas;
     this.perCollCache = perRowCache != null ? perRowCache : new HashMap<>();
     this.globalCache = globalCache != null ? globalCache : new Object[GlobalCacheEntryKey.values().length];
+    if (replicaCounts != null) { // deep copy
+      this.replicaCounts = new HashMap<>();
+      for (Map.Entry<String, Map<String, ReplicaCount>> perCollEntry : replicaCounts.entrySet()) {
+        Map<String, ReplicaCount> perShard = new HashMap<>();
+        this.replicaCounts.put(perCollEntry.getKey(), perShard);
+        for (Map.Entry<String, ReplicaCount> perShardEntry : perCollEntry.getValue().entrySet()) {
+          perShard.put(perShardEntry.getKey(), perShardEntry.getValue().copy());
+        }
+      }
+    } else {
+      _initReplicaCounts();
+    }
   }
 
   @Override
@@ -194,7 +260,8 @@ public class Row implements MapWriter {
   }
 
   Row copy(Policy.Session session) {
-    return new Row(node, cells, anyValueMissing, collectionVsShardVsReplicas, isLive, session, this.perCollCache, this.globalCache);
+    return new Row(node, cells, anyValueMissing, collectionVsShardVsReplicas, isLive, session,
+        this.perCollCache, this.globalCache, this.replicaCounts);
   }
 
   Object getVal(String name) {
@@ -243,16 +310,16 @@ public class Row implements MapWriter {
     lazyCopyReplicas(coll, shard);
     List<OperationInfo> furtherOps = new ArrayList<>(3);
     Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
-    Row row = null;
-    row = session.copy().getNode(this.node);
+    Row row = session.copy().getNode(this.node);
     if (row == null) throw new RuntimeException("couldn't get a row");
     row.lazyCopyReplicas(coll, shard);
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, Utils.NEW_HASHMAP_FUN);
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, Utils.NEW_ARRAYLIST_FUN);
-    String replicaname = "SYNTHETIC." + new Random().nextInt(1000) + 1000;
-    ReplicaInfo ri = new ReplicaInfo(replicaname, replicaname, coll, shard, type, this.node,
-        Utils.makeMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString()));
+    String replicaname = "SYNTHETIC." + (random.nextInt(1000) + 1000);
+    ReplicaInfo ri = new ReplicaInfo(replicaname, replicaname, coll, shard, type, this.node, null);
     replicas.add(ri);
+    row._addReplicaCount(coll, shard, ri);
+
     for (Cell cell : row.cells) {
       cell.type.projectAddReplica(cell, ri, opCollector, strictMode);
     }
@@ -271,7 +338,8 @@ public class Row implements MapWriter {
 
   private void lazyCopyReplicas(String coll, String shard) {
     //log.info("--- drop globalCache " + node);
-    globalCache = new Object[GlobalCacheEntryKey.values().length];
+    // nocommit: not needed?
+    //globalCache = new Object[GlobalCacheEntryKey.values().length];
     Map<String, Map> cacheCopy = new HashMap<>(perCollCache);
     // nocommit: per-shard removal has unexpected side-effects, TestPolicy.testFreeDiskSuggestions fails
     cacheCopy.remove(coll);
@@ -361,6 +429,7 @@ public class Row implements MapWriter {
     }
     if (idx == -1) return null;
     ReplicaInfo removed = r.remove(idx);
+    row._removeReplicaCount(coll, shard, removed);
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
@@ -382,8 +451,8 @@ public class Row implements MapWriter {
 
   public void forEachReplica(String coll, Consumer<ReplicaInfo> consumer) {
     for (Map.Entry<String, List<ReplicaInfo>> entry : collectionVsShardVsReplicas.getOrDefault(coll, Collections.emptyMap()).entrySet()) {
-      for (ReplicaInfo replicaInfo : entry.getValue()) {
-        consumer.accept(replicaInfo);
+      for (int i = 0; i < entry.getValue().size(); i++) {
+        consumer.accept(entry.getValue().get(i));
       }
     }
   }
@@ -391,8 +460,8 @@ public class Row implements MapWriter {
   public static void forEachReplica(Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, Consumer<ReplicaInfo> consumer) {
     for (Map.Entry<String, Map<String, List<ReplicaInfo>>> perColl : collectionVsShardVsReplicas.entrySet()) {
       for (Map.Entry<String, List<ReplicaInfo>> perShard : perColl.getValue().entrySet()) {
-        for (ReplicaInfo ri : perShard.getValue()) {
-          consumer.accept(ri);
+        for (int i = 0; i < perShard.getValue().size(); i++) {
+          consumer.accept(perShard.getValue().get(i));
         }
       }
     }

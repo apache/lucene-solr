@@ -73,6 +73,10 @@ class ReplicaCount  implements MapWriter {
     increment(info.getType());
   }
 
+  void decrement(ReplicaInfo info) {
+    decrement(info.getType());
+  }
+
   void increment(ReplicaCount count) {
     nrt += count.nrt;
     pull += count.pull;
@@ -81,18 +85,26 @@ class ReplicaCount  implements MapWriter {
 
 
   public void increment(Replica.Type type) {
+    _change(type, 1);
+  }
+
+  public void decrement(Replica.Type type) {
+    _change(type, -1);
+  }
+
+  private void _change(Replica.Type type, int change) {
     switch (type) {
       case NRT:
-        nrt++;
+        nrt += change;
         break;
       case PULL:
-        pull++;
+        pull += change;
         break;
       case TLOG:
-        tlog++;
+        tlog += change;
         break;
       default:
-        nrt++;
+        nrt += change;
     }
   }
 

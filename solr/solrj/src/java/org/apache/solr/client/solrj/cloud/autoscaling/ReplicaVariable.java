@@ -52,7 +52,7 @@ class ReplicaVariable extends VariableBase {
       }
     }
 
-    int calculate(Row row) {
+    Integer calculate(Row row) {
       result[0] = 0;
       row.forEachReplica(collection, this);
       return result[0];
@@ -63,10 +63,8 @@ class ReplicaVariable extends VariableBase {
     int totalReplicasOfInterest = 0;
     Clause clause = cv.getClause();
     ReplicaCounter counter = new ReplicaCounter(collection, shard, clause);
-    for (Row row : session.matrix) {
-      if (row.isEmpty() || !row.isLive() || !row.hasColl(collection)) {
-        continue;
-      }
+    for (int i = 0; i < session.matrix.size(); i++) {
+      Row row = session.matrix.get(i);
       Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> counter.calculate(row));
       if (perShardCount != null)
         totalReplicasOfInterest += perShardCount;
