@@ -130,6 +130,8 @@ Other
 
 * LUCENE-9257: Always keep FST off-heap. FSTLoadMode, Reader attributes and openedFromWriter removed. (Bruno Roustant)
 
+* LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
