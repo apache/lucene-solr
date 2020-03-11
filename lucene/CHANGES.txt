@@ -29,6 +29,9 @@ Bug Fixes
 
 * LUCENE-8849: DocValuesRewriteMethod.visit wasn't visiting its embedded query (Michele Palmia, David Smiley)
 
+* LUCENE-9258: DocTermsIndexDocValues assumed it was operating on a SortedDocValues (single valued) field when
+  it could be multi-valued used with a SortedSetSelector (Michele Palmia)
+
 Other
 ---------------------
 
