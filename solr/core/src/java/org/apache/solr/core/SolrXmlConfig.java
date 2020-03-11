@@ -55,20 +55,21 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 /**
- *
+ * Loads {@code solr.xml}.
  */
 public class SolrXmlConfig {
+
+  // TODO should these from* methods return a NodeConfigBuilder so that the caller (a test) can make further
+  //  manipulations like add properties and set the CorePropertiesLocator and "async" mode?
 
   public final static String SOLR_XML_FILE = "solr.xml";
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static NodeConfig fromConfig(XmlConfigFile config) {
+  public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config) {
 
     checkForIllegalConfig(config);
-
-    config.substituteProperties();
 
     CloudConfig cloudConfig = null;
     UpdateShardHandlerConfig deprecatedUpdateConfig = null;
@@ -96,7 +97,8 @@ public class SolrXmlConfig {
       updateConfig = deprecatedUpdateConfig;
     }
 
-    NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, config.getResourceLoader());
+    NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, solrHome);
+    configBuilder.setSolrResourceLoader(config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getShardHandlerFactoryPluginInfo(config));
     configBuilder.setSolrCoreCacheFactoryConfig(getTransientCoreCacheFactoryPluginInfo(config));
@@ -110,7 +112,7 @@ public class SolrXmlConfig {
     return fillSolrSection(configBuilder, entries);
   }
 
-  public static NodeConfig fromFile(SolrResourceLoader loader, Path configFile) {
+  public static NodeConfig fromFile(Path solrHome, Path configFile, Properties substituteProps) {
 
     log.info("Loading container configuration from {}", configFile);
 
@@ -120,7 +122,7 @@ public class SolrXmlConfig {
     }
 
     try (InputStream inputStream = Files.newInputStream(configFile)) {
-      return fromInputStream(loader, inputStream);
+      return fromInputStream(solrHome, inputStream, substituteProps);
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception exc) {
@@ -129,16 +131,24 @@ public class SolrXmlConfig {
     }
   }
 
-  public static NodeConfig fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+  /** TEST-ONLY */
+  public static NodeConfig fromString(Path solrHome, String xml) {
+    return fromInputStream(
+        solrHome,
+        new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),
+        new Properties());
   }
 
-  public static NodeConfig fromInputStream(SolrResourceLoader loader, InputStream is) {
+  public static NodeConfig fromInputStream(Path solrHome, InputStream is, Properties substituteProps) {
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    if (substituteProps == null) {
+      substituteProps = new Properties();
+    }
     try {
       byte[] buf = IOUtils.toByteArray(is);
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
-        XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, false);
-        return fromConfig(config);
+        XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
+        return fromConfig(solrHome, config);
       }
     } catch (SolrException exc) {
       throw exc;
@@ -147,13 +157,8 @@ public class SolrXmlConfig {
     }
   }
 
-  public static NodeConfig fromSolrHome(SolrResourceLoader loader, Path solrHome) {
-    return fromFile(loader, solrHome.resolve(SOLR_XML_FILE));
-  }
-
-  public static NodeConfig fromSolrHome(Path solrHome) {
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    return fromSolrHome(loader, solrHome);
+  public static NodeConfig fromSolrHome(Path solrHome, Properties substituteProps) {
+    return fromFile(solrHome, solrHome.resolve(SOLR_XML_FILE), substituteProps);
   }
 
   private static void checkForIllegalConfig(XmlConfigFile config) {
@@ -187,7 +192,7 @@ public class SolrXmlConfig {
       Node node = ((NodeList) config.evaluate("solr", XPathConstants.NODESET)).item(0);
       XPath xpath = config.getXPath();
       NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
-      Properties properties = new Properties();
+      Properties properties = new Properties(config.getSubstituteProperties());
       for (int i = 0; i < props.getLength(); i++) {
         Node prop = props.item(i);
         properties.setProperty(DOMUtil.getAttr(prop, NAME),
