@@ -130,6 +130,10 @@ Other
 
 * LUCENE-9257: Always keep FST off-heap. FSTLoadMode, Reader attributes and openedFromWriter removed. (Bruno Roustant)
 
+* LUCENE-9272: Checksums of the terms index are now verified when
+  LeafReader#checkIntegrity is called rather than when opening the index.
+  (Adrien Grand)
+
 * LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
 
 ======================= Lucene 8.5.0 =======================
