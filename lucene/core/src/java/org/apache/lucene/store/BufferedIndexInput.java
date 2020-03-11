@@ -150,7 +150,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
         readInternal(ByteBuffer.wrap(b, offset, len));
         bufferStart = after;
         buffer.position(0);
-        buffer.limit(0);     // trigger refill() on read
+        buffer.limit(0);  // trigger refill() on read
       }
     }
   }
@@ -249,7 +249,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     if (index < 0 || index >= buffer.limit()) {
       bufferStart = pos;
       buffer.position(0);
-      buffer.limit(0);     // trigger refill() on read
+      buffer.limit(0);  // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -263,7 +263,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     if (index < 0 || index >= buffer.limit()-1) {
       bufferStart = pos;
       buffer.position(0);
-      buffer.limit(0);     // trigger refill() on read
+      buffer.limit(0);  // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -277,7 +277,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     if (index < 0 || index >= buffer.limit()-3) {
       bufferStart = pos;
       buffer.position(0);
-      buffer.limit(0);     // trigger refill() on read
+      buffer.limit(0);  // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -291,7 +291,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     if (index < 0 || index >= buffer.limit()-7) {
       bufferStart = pos;
       buffer.position(0);
-      buffer.limit(0);     // trigger refill() on read
+      buffer.limit(0);  // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -335,7 +335,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     else {
       bufferStart = pos;
       buffer.position(0);
-      buffer.limit(0);     // trigger refill() on read
+      buffer.limit(0);  // trigger refill() on read
       seekInternal(pos);
     }
   }
