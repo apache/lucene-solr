@@ -175,7 +175,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       @Override
       protected void readInternal(ByteBuffer b) throws IOException {
         while (b.hasRemaining()) {
-          b.put(byten(b.position()));
+          b.put(byten(pos++));
         }
       }
 

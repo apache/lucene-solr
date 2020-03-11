@@ -314,8 +314,8 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     }
     buffer.position(0);
     buffer.limit(newLength);
-    readInternal(buffer);
     bufferStart = start;
+    readInternal(buffer);
     buffer.flip();
   }
 
