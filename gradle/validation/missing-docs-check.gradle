@@ -35,7 +35,6 @@ allprojects {
     ]
 
     task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
-      //dirs += [ project.javadoc.destinationDir ]
       dirs += [ project.file(project.javadocDestDir) ]
 
       // TODO: add missing docs for all classes and bump this to level=class
