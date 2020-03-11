@@ -1780,7 +1780,7 @@ This filter converts sequences of Thai characters into individual Thai words. Un
 
 === Turkish
 
-Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFactory`; support for case-insensitive search with the `solr.TurkishLowerCaseFilterFactory`; support for stripping apostrophes and following suffixes with `solr.ApostropheFilterFactory` (see http://www.ipcsit.com/vol57/015-ICNI2012-M021.pdf[Role of Apostrophes in Turkish Information Retrieval]); support for a form of stemming that truncating tokens at a configurable maximum length through the `solr.TruncateTokenFilterFactory` (see http://www.users.muohio.edu/canf/papers/JASIST2008offPrint.pdf[Information Retrieval on Turkish Texts]); and Lucene includes an example stopword list.
+Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFactory`; support for case-insensitive search with the `solr.TurkishLowerCaseFilterFactory`; support for stripping apostrophes and following suffixes with `solr.ApostropheFilterFactory` (see http://www.ipcsit.com/vol57/015-ICNI2012-M021.pdf[Role of Apostrophes in Turkish Information Retrieval]); support for a form of stemming that truncating tokens at a configurable maximum length through the `solr.TruncateTokenFilterFactory` (see https://onlinelibrary.wiley.com/doi/abs/10.1002/asi.20750[Information Retrieval on Turkish Texts]); and Lucene includes an example stopword list.
 
 *Factory class:* `solr.TurkishLowerCaseFilterFactory`
 
