@@ -16,7 +16,13 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -46,7 +52,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   private static final String SOLRJ_JAVABIN_BACKCOMPAT_BIN_CHILD_DOCS = "/solrj/javabin_backcompat_child_docs.bin";
   private static final String SOLRJ_DOCS_1 = "/solrj/docs1.xml";
   private static final String SOLRJ_DOCS_2 = "/solrj/sampleClusteringResponse.xml";
-
   private static final String BIN_FILE_LOCATION_CHILD_DOCS = "./solr/solrj/src/test-files/solrj/javabin_backcompat_child_docs.bin";
 
   public void testStrings() throws Exception {
