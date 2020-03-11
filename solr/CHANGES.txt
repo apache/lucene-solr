@@ -42,6 +42,8 @@ Other Changes
 
 * SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
 
+* SOLR-14317: HttpClusterStateProvider throws exception when only one node down.
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
