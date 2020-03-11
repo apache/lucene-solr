@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -26,10 +27,14 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 
 class AddReplicaSuggester extends Suggester {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SolrRequest init() {
     SolrRequest operation = tryEachNode(true);
@@ -71,6 +76,7 @@ class AddReplicaSuggester extends Suggester {
 
       if (bestNode != null) {// there are no rule violations
         this.session = bestNode.session;
+        //log.info("--- Row cache stats: " + Utils.toJSONString(Row.cacheStats));
         return CollectionAdminRequest
             .addReplicaToShard(shard.first(), shard.second())
             .setType(type)

@@ -281,7 +281,7 @@ public class Policy implements MapWriter {
     List<Row> matrixCopy = new ArrayList<>(matrix);
     List<Row> deadNodes = null;
     Iterator<Row> it =matrix.iterator();
-    while (it.hasNext()){
+    while (it.hasNext()) {
       Row row = it.next();
       if(!row.isLive){
         if(deadNodes == null) deadNodes = new ArrayList<>();
@@ -328,7 +328,7 @@ public class Policy implements MapWriter {
         return result;
       });
 
-      if(deadNodes != null){
+      if (deadNodes != null) {
         for (Row deadNode : deadNodes) {
           matrix.add(0, deadNode);
         }
@@ -514,6 +514,7 @@ public class Policy implements MapWriter {
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
     Transaction transaction;
+    Map<String, Row> nodeToRow = new HashMap<>();
 
     private Session(List<String> nodes, SolrCloudManager cloudManager,
                     List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
@@ -525,7 +526,10 @@ public class Policy implements MapWriter {
       this.expandedClauses = expandedClauses;
       this.znodeVersion = znodeVersion;
       this.nodeStateProvider = nodeStateProvider;
-      for (Row row : matrix) row.session = this;
+      for (Row row : matrix) {
+        row.session = this;
+        nodeToRow.put(row.node, row);
+      }
     }
 
 
@@ -573,7 +577,11 @@ public class Policy implements MapWriter {
       Collections.sort(expandedClauses);
 
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes, this));
+      for (String node : nodes) {
+        Row row = new Row(node, params, perReplicaAttributes, this);
+        matrix.add(row);
+        nodeToRow.put(node, row);
+      }
       applyRules();
     }
 
@@ -597,11 +605,21 @@ public class Policy implements MapWriter {
     }
 
     public Row getNode(String node) {
-      for (Row row : matrix) if (row.node.equals(node)) return row;
-      return null;
+      Row row = nodeToRow.get(node);
+      if (row == null) { // update lazily our cache
+        for (Row r : matrix) {
+          if (r.node.equals(node)) {
+            nodeToRow.put(node, r);
+            return r;
+          }
+        }
+        return null;
+      } else {
+        return row;
+      }
     }
 
-    List<Row> getMatrixCopy() {
+    private List<Row> getMatrixCopy() {
       return matrix.stream()
           .map(row -> row.copy(this))
           .collect(Collectors.toList());

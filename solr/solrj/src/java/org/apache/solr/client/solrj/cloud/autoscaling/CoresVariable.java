@@ -84,13 +84,12 @@ public class CoresVariable extends VariableBase {
     }
   }
 
-  static final String TOTALCORES = CoresVariable.class.getSimpleName() + ".totalcores";
   private int getTotalCores(Policy.Session session, AtomicInteger liveNodes) {
     int coresCount = 0;
     for (Row row : session.matrix) {
       if (!row.isLive) continue;
       liveNodes.incrementAndGet();
-      Integer res = row.computeCacheIfAbsent(TOTALCORES, o -> {
+      Integer res = row.computeCacheIfAbsent(Row.GlobalCacheEntryKey.TOTALCORES, o -> {
         int[] result = new int[1];
         row.forEachReplica(replicaInfo -> result[0]++);
         return result[0];

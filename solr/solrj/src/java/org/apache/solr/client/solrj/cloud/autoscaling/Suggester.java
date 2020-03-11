@@ -70,7 +70,7 @@ public abstract class Suggester implements MapWriter {
 
 
   void _init(Policy.Session session) {
-    this.session = session.copy();
+    this.session = session.shallowCopy();
   }
 
   boolean isLessDeviant() {

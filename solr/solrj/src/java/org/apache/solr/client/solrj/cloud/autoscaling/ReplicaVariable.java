@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.solr.common.util.StrUtils;
 
@@ -33,9 +34,10 @@ class ReplicaVariable extends VariableBase {
   public static final String REPLICASCOUNT = "relevantReplicas";
 
 
-  private static final class ReplicaCounter {
+  private static final class ReplicaCounter implements Consumer<ReplicaInfo> {
     final String collection, shard;
     final Clause clause;
+    final int[] result = new int[1];
 
     ReplicaCounter(String collection, String shard, Clause clause) {
       this.collection = collection;
@@ -43,12 +45,16 @@ class ReplicaVariable extends VariableBase {
       this.clause = clause;
     }
 
+    @Override
+    public void accept(ReplicaInfo replicaInfo) {
+      if (clause.isMatch(replicaInfo, collection, shard)) {
+        result[0]++;
+      }
+    }
+
     int calculate(Row row) {
-      int[] result = new int[1];
-      row.forEachReplica(collection, replicaInfo -> {
-        if (clause.isMatch(replicaInfo, collection, shard))
-          result[0]++;
-      });
+      result[0] = 0;
+      row.forEachReplica(collection, this);
       return result[0];
     }
   }

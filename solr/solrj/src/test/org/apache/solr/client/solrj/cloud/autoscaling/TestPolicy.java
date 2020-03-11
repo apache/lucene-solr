@@ -2750,7 +2750,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
       rows.add(new Row((String) m.get("node"), c, false,
           new HashMap<>(),
-          (Boolean) m.get("isLive"), null, new HashMap(), new HashMap()));
+          (Boolean) m.get("isLive"), null, null, null));
     }
     int deadNodes = 0;
     for (Row row : rows) {

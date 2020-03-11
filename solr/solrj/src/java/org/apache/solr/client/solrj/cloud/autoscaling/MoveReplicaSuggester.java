@@ -54,7 +54,13 @@ public class MoveReplicaSuggester extends Suggester {
       Row fromRow = fromReplica.second();
       ReplicaInfo ri = fromReplica.first();
       if (ri == null) continue;
-      final int i = session.indexOf(fromRow.node);
+      int i = session.indexOf(fromRow.node);
+      // nocommit
+      // possible optimization? for large clusters compare only up to
+      // that many eligible rows from the top
+      if (session.matrix.size() > 100 && i < session.matrix.size() - 10) {
+        i = session.matrix.size() - 10;
+      }
       int stopAt = force ? 0 : i;
       Row targetRow = null;
       for (int j = session.matrix.size() - 1; j >= stopAt; j--) {

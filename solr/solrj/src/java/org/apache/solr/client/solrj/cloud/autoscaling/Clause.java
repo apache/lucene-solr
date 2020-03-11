@@ -600,8 +600,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
         });
     if (rc != null)
       replicaCount.increment(rc);
-
-
   }
 
   List<Violation> testPerNode(Policy.Session session, double[] deviations) {
