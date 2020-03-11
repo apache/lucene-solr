@@ -918,6 +918,10 @@ NOTE: While it's very common to define the Background Set as `\*:*`, or some oth
 
 When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an optional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
+`relatedness()` calculates correlation of facet counts across three different DocSet domains (base, foreground, and background). The default implementation of facet count collection depends on the type of facet being calculated. Generic facet count collection is based on retrieving DocSet for a bucket-associated query, consulting the `filterCache`. For term facets (especially over high-cardinality fields) this can lead to `filterCache` thrashing; accordingly, term facet count collection defaults where possible to a specialized approach that collects facet counts over all three domains in a single sweep. It is possible to disable this "single sweep" collection by setting the extended `type:func` syntax `disable_sweep_collection` option to `true`.
+
+In the case where `relatedness()` is calculated over term facets, the `cacheDf` argument of the associated term facet uses approximate doc frequency to determine whether to consult the `filterCache` for the query associated with a given term. N.b., this affects term faceting and refinement requests; it only applies to bulk facet count collection when `disable_sweep_collection` is `true`.
+
 [source,json]
 ----
 { "type": "func",

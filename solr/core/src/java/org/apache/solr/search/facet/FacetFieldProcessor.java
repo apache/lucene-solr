@@ -39,6 +39,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.Filter;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
@@ -106,6 +107,120 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     assert null != this.sort;
   }
 
+  List<SweepCountAccStruct> sweepCountAccs = new ArrayList<>();
+
+  /**
+   * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
+   * Also allows caller of <code>getSweepCountAcc</code> control over whether to accept a particular cached
+   * instance of CountSlotAcc.
+   */
+  protected static interface CountSlotAccFactory {
+    SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots);
+  }
+
+  protected static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
+
+    @Override
+    public SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots) {
+      final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
+      return new SweepCountAccStruct(docs, isBase, count, new ReadOnlyCountSlotAccWrapper(fcontext, count));
+    }
+  };
+
+  CountSlotAcc getSweepCountAcc(DocSet docs, int numSlots) {
+    return getSweepCountAcc(docs, numSlots, null);
+  }
+
+  CountSlotAcc getSweepCountAcc(DocSet docs, int numSlots, CountSlotAccFactory factory) {
+    return getSweepCountAcc(docs, false, numSlots, factory);
+  }
+
+  private CountSlotAcc getSweepCountAcc(DocSet docs, boolean isBase, int numSlots, CountSlotAccFactory factory) {
+    final SweepCountAccStruct ret = DEFAULT_COUNT_ACC_FACTORY.newInstance(docs, isBase, fcontext, numSlots);
+    sweepCountAccs.add(ret);
+    return isBase ? ret.countAccEntry.countAcc : ret.countAccEntry.roCountAcc;
+  }
+
+  static final class SweepCountAccStruct {
+    final DocSet docSet;
+    final boolean isBase;
+    final CountAccEntry countAccEntry;
+
+    public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
+      this.docSet = docSet;
+      this.isBase = isBase;
+      this.countAccEntry = new CountAccEntry(countAcc, roCountAcc);
+    }
+    public SweepCountAccStruct(SweepCountAccStruct t, DocSet replaceDocSet) {
+      this.docSet = replaceDocSet;
+      this.isBase = t.isBase;
+      this.countAccEntry = t.countAccEntry;
+    }
+  }
+  static final class CountAccEntry {
+    final CountSlotAcc countAcc;
+    final ReadOnlyCountSlotAcc roCountAcc;
+    public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
+      this.countAcc = countAcc;
+      this.roCountAcc = roCountAcc;
+    }
+  }
+  static final class FilterCtStruct {
+    final boolean isBase;
+    final Filter filter;
+    final CountSlotAcc countAcc;
+
+    public FilterCtStruct(Filter filter, CountSlotAcc countAcc, boolean isBase) {
+      this.isBase = isBase;
+      this.filter = filter;
+      this.countAcc = countAcc;
+    }
+  }
+  protected FilterCtStruct[] getSweepFilters() {
+    final FilterCtStruct[] filters = new FilterCtStruct[sweepCountAccs.size()];
+    int i = 0;
+    SweepCountAccStruct base = null;
+    for (SweepCountAccStruct sweep : sweepCountAccs) {
+      if (sweep.isBase) {
+        base = sweep;
+      } else {
+        filters[i++] = new FilterCtStruct(sweep.docSet.getTopFilter(), sweep.countAccEntry.countAcc, sweep.isBase);
+      }
+    }
+    filters[i++] = new FilterCtStruct(base.docSet.getTopFilter(), base.countAccEntry.countAcc, base.isBase);
+    if (i == 0) {
+      return null;
+    } else if (i == filters.length) {
+      return filters;
+    } else {
+      return Arrays.copyOf(filters, i);
+    }
+  }
+  protected SweepCountAccStruct[] getSweepDocSets() {
+    final SweepCountAccStruct[] ret = new SweepCountAccStruct[sweepCountAccs.size()];
+    int i = 0;
+    SweepCountAccStruct base = null;
+    for (SweepCountAccStruct sweep : sweepCountAccs) {
+      if (sweep.isBase) {
+        base = sweep;
+      } else {
+        ret[i++] = sweep;
+      }
+    }
+    ret[i] = base;
+    return ret;
+  }
+
+  private CountSlotAcc createBaseCountAcc(int slotCount) {
+    return getSweepCountAcc(fcontext.base, true, slotCount, null);
+  }
+
+  /**
+   * A marker interface for SlotAcc instances that are populated as a derivative of the main CountSlotAcc, and thus do
+   * not need to be separately/independently collected.
+   */
+  interface SweepAcc {}
+
   /** This is used to create accs for second phase (or to create accs for all aggs) */
   @Override
   protected void createAccs(int docCount, int slotCount) throws IOException {
@@ -115,7 +230,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = createBaseCountAcc(slotCount);
       countAcc.key = "count";
     }
 
@@ -178,7 +293,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // we always count...
     // allow a subclass to set a custom counter.
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, numSlots);
+      countAcc = createBaseCountAcc(numSlots);
     }
 
     sortAcc = getTrivialSortingSlotAcc(this.sort);
