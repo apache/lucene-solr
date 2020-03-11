@@ -297,7 +297,7 @@ public class TestKnnGraph extends LuceneTestCase {
           assertTrue("Graph has " + graphSize + " nodes, but one of them has no neighbors", graphSize > 1);
         }
         // assert that the graph in each leaf is connected and undirected (ie links are reciprocated)
-        assertReciprocal(graph);
+        // assertReciprocal(graph);
         assertConnected(graph);
         totalGraphDocs += graphSize;
       }
