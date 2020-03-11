@@ -46,7 +46,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
 
   private int bufferSize = BUFFER_SIZE;
   
-  protected ByteBuffer buffer = EMPTY_BYTEBUFFER;
+  private ByteBuffer buffer = EMPTY_BYTEBUFFER;
 
   private long bufferStart = 0;       // position in file of buffer
 
