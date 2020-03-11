@@ -17,13 +17,8 @@
 
 package org.apache.lucene.search;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
@@ -38,7 +33,7 @@ class SliceExecutor {
     this.executor = executor;
   }
 
-  public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
+  public void invokeAll(Collection<? extends Runnable> tasks) {
 
     if (tasks == null) {
       throw new IllegalArgumentException("Tasks is null");
@@ -48,11 +43,9 @@ class SliceExecutor {
       throw new IllegalArgumentException("Executor is null");
     }
 
-    List<Future<C>> futures = new ArrayList();
-
     int i = 0;
 
-    for (FutureTask task : tasks) {
+    for (Runnable task : tasks) {
       boolean shouldExecuteOnCallerThread = false;
 
       // Execute last task on caller thread
@@ -60,15 +53,13 @@ class SliceExecutor {
         shouldExecuteOnCallerThread = true;
       }
 
-      processTask(task, futures, shouldExecuteOnCallerThread);
+      processTask(task, shouldExecuteOnCallerThread);
       ++i;
-    }
-
-    return futures;
+    };
   }
 
   // Helper method to execute a single task
-  protected <C> void processTask(final FutureTask<C> task, final List<Future<C>> futures,
+  protected void processTask(final Runnable task,
                              final boolean shouldExecuteOnCallerThread) {
     if (task == null) {
       throw new IllegalArgumentException("Input is null");
@@ -77,7 +68,6 @@ class SliceExecutor {
     if (!shouldExecuteOnCallerThread) {
       try {
         executor.execute(task);
-        futures.add(task);
 
         return;
       } catch (RejectedExecutionException e) {
@@ -86,20 +76,10 @@ class SliceExecutor {
     }
 
     runTaskOnCallerThread(task);
-
-    try {
-      futures.add(CompletableFuture.completedFuture(task.get()));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 
   // Private helper method to run a task on the caller thread
-  private void runTaskOnCallerThread(FutureTask task) {
-    try {
-      task.run();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  private void runTaskOnCallerThread(Runnable task) {
+    task.run();
   }
 }

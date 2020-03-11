@@ -40,11 +40,10 @@ class QueueSizeBasedExecutor extends SliceExecutor {
   }
 
   @Override
-  public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
-    List<Future<C>> futures = new ArrayList();
+  public void invokeAll(Collection<? extends Runnable> tasks) {
     int i = 0;
 
-    for (FutureTask task : tasks) {
+    for (Runnable task : tasks) {
       boolean shouldExecuteOnCallerThread = false;
 
       // Execute last task on caller thread
@@ -57,11 +56,9 @@ class QueueSizeBasedExecutor extends SliceExecutor {
         shouldExecuteOnCallerThread = true;
       }
 
-      processTask(task, futures, shouldExecuteOnCallerThread);
+      processTask(task, shouldExecuteOnCallerThread);
 
       ++i;
     }
-
-    return futures;
   }
 }

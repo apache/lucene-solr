@@ -436,22 +436,17 @@ public class TestIndexSearcher extends LuceneTestCase {
     }
 
     @Override
-    public <C> List<Future<C>> invokeAll(Collection<FutureTask<C>> tasks) {
-      List<Future<C>> futures = new ArrayList();
+    public void invokeAll(Collection<? extends Runnable> tasks){
 
-      for (FutureTask task : tasks) {
+      for (Runnable task : tasks) {
         boolean shouldExecuteOnCallerThread = false;
 
         if (random().nextBoolean()) {
           shouldExecuteOnCallerThread = true;
         }
 
-        processTask(task, futures, shouldExecuteOnCallerThread);
-
-        futures.add(task);
+        processTask(task, shouldExecuteOnCallerThread);
       }
-
-      return futures;
     }
   }
 }

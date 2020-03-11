@@ -210,21 +210,22 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context, Executor executor) {
-    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
-    reader = context.reader();
-    this.executor = executor;
-    this.sliceExecutor = executor == null ? null : getSliceExecutionControlPlane(executor);
-    this.readerContext = context;
-    leafContexts = context.leaves();
-    this.leafSlices = executor == null ? null : slices(leafContexts);
+    this(context, executor, getSliceExecutionControlPlane(executor));
   }
 
   // Package private for testing
   IndexSearcher(IndexReaderContext context, Executor executor, SliceExecutor sliceExecutor) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    if (executor == null) {
+      assert sliceExecutor == null;
+    }
+    if (sliceExecutor == null) {
+      assert executor == null;
+    }
+
     reader = context.reader();
     this.executor = executor;
-    this.sliceExecutor = executor == null ? null : sliceExecutor;
+    this.sliceExecutor = sliceExecutor;
     this.readerContext = context;
     leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
@@ -688,9 +689,9 @@ public class IndexSearcher {
         listTasks.add(task);
       }
 
-      final List<Future<C>> topDocsFutures = sliceExecutor.invokeAll(listTasks);
+      sliceExecutor.invokeAll(listTasks);
       final List<C> collectedCollectors = new ArrayList<>();
-      for (Future<C> future : topDocsFutures) {
+      for (Future<C> future : listTasks) {
         try {
           collectedCollectors.add(future.get());
         } catch (InterruptedException e) {
@@ -930,13 +931,6 @@ public class IndexSearcher {
    */
   public Executor getExecutor() {
     return executor;
-  }
-
-  /**
-   * Returns this searchers slice execution control plane or <code>null</code> if no executor was provided
-   */
-  public SliceExecutor getSliceExecutor() {
-    return sliceExecutor;
   }
 
   /** Thrown when an attempt is made to add more than {@link
