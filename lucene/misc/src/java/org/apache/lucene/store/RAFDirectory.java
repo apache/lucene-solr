@@ -154,6 +154,7 @@ public class RAFDirectory extends FSDirectory {
              throw new EOFException("read past EOF: " + this + " off: " + b.position() + " len: " + b.remaining() + " chunkLen: " + toRead + " end: " + end);
             }
             assert i > 0 : "RandomAccessFile.read with non zero-length toRead must always read at least one byte";
+            b.position(b.position() + i);
           }
         } catch (IOException ioe) {
           throw new IOException(ioe.getMessage() + ": " + this, ioe);
