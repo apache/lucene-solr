@@ -131,9 +131,6 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
             byline: "true",
             match: "^(\${element-list-regex})\$",
             replace: "")
-
-        //println("dest dir = ${project.javadocDestDir}")
-        //println("link href = ${linkHref}")
       }
     }
   }
