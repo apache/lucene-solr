@@ -97,6 +97,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'state': state,
+        'gpg_key' : state.get_gpg_key(),
         'epoch': unix_time_millis(datetime.utcnow()),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
@@ -300,6 +301,13 @@ class ReleaseState:
 
     def is_released(self):
         return self.get_todo_by_id('announce_lucene').is_done()
+
+    def get_gpg_key(self):
+        gpg_task = self.get_todo_by_id('gpg')
+        if gpg_task.is_done():
+            return gpg_task.get_state()['gpg_key']
+        else:
+            return None
 
     def get_release_date(self):
         publish_task = self.get_todo_by_id('publish_maven')
@@ -1074,7 +1082,7 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    all_keys = load('https://downloads.apache.org/lucene/KEYS')
+    all_keys = load('https://home.apache.org/keys/group/lucene.asc')
     lines = all_keys.splitlines()
     keyid_linenum = None
     for idx, line in enumerate(lines):
@@ -1085,7 +1093,7 @@ def configure_pgp(gpg_todo):
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
         gpg_id = keyid_line[14:].replace(" ", "")[-8:]
-        print("Found gpg key id %s on file at Apache (https://downloads.apache.org/lucene/KEYS)" % gpg_id)
+        print("Found gpg key id %s on file at Apache (https://home.apache.org/keys/group/lucene.asc)" % gpg_id)
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
