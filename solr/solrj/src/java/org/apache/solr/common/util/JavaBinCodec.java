@@ -867,11 +867,11 @@ public class JavaBinCodec implements PushWriter {
         if(this == obj) {
           return true;
         }
-        if(!(obj instanceof Entry)) {
-          return false;
+        if (obj instanceof Map.Entry<?, ?>) {
+          Entry<?, ?> entry = (Entry<?, ?>) obj;
+          return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
-        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
-        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+        return false;
       }
     };
   }
