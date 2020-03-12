@@ -26,6 +26,8 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 final class UnionDocIterator extends SweepDocIterator {
 
   private final int maxIdx;
+  private final boolean hasBase;
+  private boolean collectBase;
   private final PriorityQueue<SubIterStruct> queue;
   private SubIterStruct top;
   private int docId = -1;
@@ -43,8 +45,9 @@ final class UnionDocIterator extends SweepDocIterator {
       docId = sub.hasNext() ? sub.nextDoc() : DocIdSetIterator.NO_MORE_DOCS;
     }
   }
-  UnionDocIterator(DocIterator[] subIterators) throws IOException {
+  UnionDocIterator(DocIterator[] subIterators, boolean hasBase) throws IOException {
     super(subIterators.length);
+    this.hasBase = hasBase;
     this.maxIdx = size - 1;
     queue = new PriorityQueue<SubIterStruct>(size) {
       @Override
@@ -66,6 +69,9 @@ final class UnionDocIterator extends SweepDocIterator {
         top.nextDoc();
       } while ((top = queue.updateTop()).docId == docId);
     }
+    if (hasBase) {
+      collectBase = false;
+    }
     return docId = top.docId;
   }
 
@@ -80,9 +86,22 @@ final class UnionDocIterator extends SweepDocIterator {
   }
 
   @Override
+  public boolean collectBase() {
+    assert top.docId != docId : "must call registerCounts() before collectBase()";
+    if (!hasBase) {
+      return false;
+    } else {
+      return collectBase;
+    }
+  }
+
+  @Override
   public int registerCounts(SegCountGlobal segCounts) {
     int i = -1;
     do {
+      if (hasBase && !collectBase && top.index == maxIdx) {
+        collectBase = true;
+      }
       segCounts.map(top.index, ++i);
       top.nextDoc();
     } while ((top = queue.updateTop()).docId == docId);
@@ -93,6 +112,9 @@ final class UnionDocIterator extends SweepDocIterator {
   public int registerCounts(SegCountPerSeg segCounts) {
     int i = -1;
     do {
+      if (hasBase && !collectBase && top.index == maxIdx) {
+        collectBase = true;
+      }
       segCounts.map(top.index, ++i);
       top.nextDoc();
     } while ((top = queue.updateTop()).docId == docId);

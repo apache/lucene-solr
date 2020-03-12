@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,11 +37,15 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.TermFacetCache;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
@@ -51,19 +56,34 @@ import com.tdunning.math.stats.AVLTreeDigest;
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
 public class TestJsonFacets extends SolrTestCaseHS {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static SolrInstances servers;  // for distributed testing
+  private static boolean enableTermFacetCache;
   private static int origTableSize;
+  private static int origCacheThreshold;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // nocommit: 'false' doesn't currently work, see nocommit in solrconfig-tlog
+    // nocommit: (need a new jira for this)
+    enableTermFacetCache = /* nocommit: random().nextBoolean() */ true;
+    log.info("Setting tests.termFacetCache.enabled sysprop = {}", enableTermFacetCache);
+    System.setProperty("tests.termFacetCache.enabled", "" + enableTermFacetCache);
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
 
     origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
+    log.info("Setting FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE = {}",
+             FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE);
+
+    origCacheThreshold = TermFacetCache.DEFAULT_THRESHOLD;
+    TermFacetCache.DEFAULT_THRESHOLD = /* nocommit: 1 + random().nextInt(50) */ 1; // stress test cache
+    log.info("Setting TermFacetCache.DEFAULT_THRESHOLD = {}",
+             TermFacetCache.DEFAULT_THRESHOLD);
 
     origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
     // instead of the following, see the constructor
@@ -90,6 +110,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
+    TermFacetCache.DEFAULT_THRESHOLD=origCacheThreshold;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
     if (servers != null) {
       servers.stop();
@@ -116,6 +137,124 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
     FacetField.FacetMethod.DEFAULT_METHOD = defMethod; // note: the real default is restored in afterTests
   }
+
+  /**
+   * When termFacetCache is (randomly) enabled, this test checks expected metrics after various queries,
+   * but even if the cache is not enabled, this test sanity checks the basic behavior of some simple term
+   * facets (and that use of the 'countCacheDf' request option doesn't cause any weird failures if the
+   * cache does not exist)
+   */
+  public void testTrivialFacetWithCacheMetrics() throws Exception {
+    Client client = Client.localClient;
+    indexSimple(client);
+
+    if (enableTermFacetCache) {
+      // WHITE BOX: purge the cache of any existing (autowarmed) couts from previous tests...
+      final SolrCache cache = h.getCore().withSearcher(s -> {
+          return s.getCache(TermFacetCache.NAME);
+        });
+      assertNotNull(cache);
+      cache.clear();
+
+      // sanity check that we can see the cache metrics, and they are pristine and empty
+      assertQ(req("qt","/admin/mbeans",
+                  "key","termFacetCache",
+                  "stats","true")
+              // sanity check any 'stats' we read will be for our cache...
+              , "1=count(//lst[@name='termFacetCache']/lst[@name='stats'])"
+              , "1=count(//lst[@name='stats'])"
+              // now sanity check nothing in the cache yet...
+              , "//int[@name='CACHE.searcher.termFacetCache.size'][.=0]"
+              , "//long[@name='CACHE.searcher.termFacetCache.inserts'][.=0]"
+              , "//long[@name='CACHE.searcher.termFacetCache.lookups'][.=0]"
+              , "//long[@name='CACHE.searcher.termFacetCache.hits'][.=0]"
+              );
+    } else {
+      // shouldn't be a cache at all // nocommit: broken for now, see solrconfig-tlog.xml nocommit
+      assertQ(req("qt","/admin/mbeans",
+                  "key","termFacetCache",
+                  "stats","true")
+              // sanity check any 'stats' we read will be for our cache...
+              , "0=count(//lst[@name='termFacetCache'])"
+              );
+    }
+
+    // for all of these field types, basic behavior should be the same, and we should get cache hits when
+    // caching is enabled.  With each iteration the expected counts should increase.
+    // (NOTE: cache keys are based on facet, not individual terms)
+    int size = 0;
+    int inserts = 0;
+    int lookups = 0;
+    int hits = 0;
+    for (String f : Arrays.asList("where_s",
+                                  "where_s_multi_uninvert",
+                                  "where_s_single_uninvert",
+                                  "where_s_multi_not_uninvert_dv",
+                                  "where_s_single_not_uninvert_dv")) {
+
+      final boolean cacheShouldBeUsed = enableTermFacetCache
+        // if DVHASH is used as the processor, and the termFacetCache won't be used,
+        // so don't expect cache stats to increase in that case ... BUT: ...
+        // ... DVHASH is only used if requested *AND* the field is single valued
+        && (FacetField.FacetMethod.DEFAULT_METHOD != FacetField.FacetMethod.DVHASH
+            || ( f.contains("multi") ));
+
+      // NOTE: countCacheDf==2
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"', countCacheDf:2}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NY, count:2} , {val:NJ, count:1} ]}"
+               );
+      if (cacheShouldBeUsed) {
+        lookups += 1;
+        inserts += 1;
+        size += 1;
+      }
+      if (enableTermFacetCache) {
+        assertQ(req("qt","/admin/mbeans",
+                    "key","termFacetCache",
+                    "_trace",f + "___countCacheDf_2",
+                    "stats","true")
+                , "//int[@name='CACHE.searcher.termFacetCache.size'][.="+size+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.inserts'][.="+inserts+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.lookups'][.="+lookups+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.hits'][.="+hits+"]"
+                );
+      }
+
+      // now doing same query with a countCacheDf==1
+      // should still be a cache hit due to how our keys work
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"', countCacheDf:1}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NY, count:2} , {val:NJ, count:1} ]}"
+               );
+      if (cacheShouldBeUsed) {
+        lookups += 1;
+        hits += 1;
+      }
+      if (enableTermFacetCache) {
+        assertQ(req("qt","/admin/mbeans",
+                    "key","termFacetCache",
+                    "_trace",f + "___countCacheDf_1",
+                    "stats","true")
+                , "//int[@name='CACHE.searcher.termFacetCache.size'][.=" +size+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.inserts'][.="+inserts+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.lookups'][.="+lookups+"]"
+                , "//long[@name='CACHE.searcher.termFacetCache.hits'][.="+hits+"]"
+                );
+      }
+    }
+
+    // nocommit: add & commit some docs to force new searcher
+    // nocommit: check expected cache stats w/warming
+
+    // nocommit: repeat query, check cache stats
+
+  }
+
 
   // attempt to reproduce https://github.com/Heliosearch/heliosearch/issues/33
   @Test

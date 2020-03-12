@@ -38,6 +38,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
@@ -327,22 +328,31 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets();
+    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets(true);
+    if (sweepCountAccs == null) {
+      return;
+    }
     int baseIdx = -1;
+    boolean hasCacheUpdater = false;
     final CountSlotAcc[] countAccs = new CountSlotAcc[sweepCountAccs.length];
+    final CacheUpdater[] cacheUpdaters = new CacheUpdater[sweepCountAccs.length];
     for (int i = sweepCountAccs.length - 1; i >= 0; i--) {
       SweepCountAccStruct sweepCountAcc = sweepCountAccs[i];
       if (sweepCountAcc.isBase) {
-        assert i == sweepCountAccs.length - 1;
         baseIdx = i;
       }
       countAccs[i] = sweepCountAcc.countAccEntry.countAcc;
+      final CacheUpdater cacheUpdater = sweepCountAcc.cacheUpdater;
+      if (cacheUpdater != null) {
+        cacheUpdaters[i] = cacheUpdater;
+        hasCacheUpdater = true;
+      }
     }
 
 
     final int[] index = this.index;
 
-    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet;
+    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet && baseIdx >= 0;
 
     if (doNegative) {
       FixedBitSet bs = ((BitDocSet) docs).getBits().clone();
@@ -376,8 +386,7 @@ public class UnInvertedField extends DocTermOrds {
       final int activeCt = sweepCountAccs.length;
       if (activeCt == 1) {
         SweepCountAccStruct entry = sweepCountAccs[0];
-        assert entry.isBase;
-        iter = new SingletonDocIterator(entry.docSet.iterator());
+        iter = new SingletonDocIterator(entry.docSet.iterator(), entry.isBase);
       } else {
         DocIterator[] subIterators = new DocIterator[activeCt];
         SweepCountAccStruct entry;
@@ -386,8 +395,7 @@ public class UnInvertedField extends DocTermOrds {
           entry = sweepCountAccs[i];
           subIterators[i] = entry.docSet.iterator();
         } while (++i < activeCt);
-        assert entry.isBase;
-        iter = new UnionDocIterator(subIterators);
+        iter = new UnionDocIterator(subIterators, entry.isBase);
       }
       final SegCountGlobal counts = new SegCountGlobal(countAccs);
       while (iter.hasNext()) {
@@ -436,6 +444,14 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
+    if (hasCacheUpdater) {
+      for (CacheUpdater cacheUpdater : cacheUpdaters) {
+        if (cacheUpdater != null) {
+          cacheUpdater.updateTopLevel();
+        }
+      }
+    }
+
     /*** TODO - future optimization to handle allBuckets
     if (processor.allBucketsSlot >= 0) {
       int all = 0;  // overflow potential
@@ -470,7 +486,19 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets();
+    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets(processor.collectAcc == null && processor.allBucketsAcc == null);
+    if (sweepCountAccs == null) {
+      return;
+    }
+    boolean hasCacheUpdater = false;
+    final CacheUpdater[] cacheUpdaters = new CacheUpdater[sweepCountAccs.length];
+    for (int i = sweepCountAccs.length - 1; i >= 0; i--) {
+      final CacheUpdater cacheUpdater = sweepCountAccs[i].cacheUpdater;
+      if (cacheUpdater != null) {
+        cacheUpdaters[i] = cacheUpdater;
+        hasCacheUpdater = true;
+      }
+    }
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
@@ -483,7 +511,6 @@ public class UnInvertedField extends DocTermOrds {
         countAcc.incrementCount(termOrd, collected);
         int i = sweepCountAccs.length - 1;
         SweepCountAccStruct entry = sweepCountAccs[i];
-        assert entry.isBase : "last should always be base, until caching is incorporated";
         if (!entry.isBase) { // don't double-collect the base entry
           entry.countAccEntry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
         }
@@ -516,8 +543,7 @@ public class UnInvertedField extends DocTermOrds {
       if (activeCt == 1) {
         SweepCountAccStruct entry = sweepCountAccs[0];
         countAccs = new CountSlotAcc[] {entry.countAccEntry.countAcc};
-        assert entry.isBase;
-        iter = new SingletonDocIterator(entry.docSet.iterator());
+        iter = new SingletonDocIterator(entry.docSet.iterator(), entry.isBase);
       } else {
         DocIterator[] subIterators = new DocIterator[activeCt];
         countAccs = new CountSlotAcc[activeCt];
@@ -528,13 +554,13 @@ public class UnInvertedField extends DocTermOrds {
           subIterators[i] = entry.docSet.iterator();
           countAccs[i] = entry.countAccEntry.countAcc;
         } while (++i < activeCt);
-        assert entry.isBase;
-        iter = new UnionDocIterator(subIterators);
+        iter = new UnionDocIterator(subIterators, entry.isBase);
       }
       final SegCountGlobal counts = new SegCountGlobal(countAccs);
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
         int maxIdx = iter.registerCounts(counts);
+        boolean collectBase = iter.collectBase();
 
         if (doc >= adjustedMax) {
           do {
@@ -573,7 +599,9 @@ public class UnInvertedField extends DocTermOrds {
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
             counts.incrementCount(-1, arrIdx, 1, maxIdx);
-            processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            if (collectBase) {
+              processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            }
           }
         } else {
           int tnum = 0;
@@ -587,7 +615,9 @@ public class UnInvertedField extends DocTermOrds {
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
                 counts.incrementCount(-1, arrIdx, 1, maxIdx);
-                processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                if (collectBase) {
+                  processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                }
               }
               delta = 0;
             }
@@ -597,6 +627,13 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
+    if (hasCacheUpdater) {
+      for (CacheUpdater cacheUpdater : cacheUpdaters) {
+        if (cacheUpdater != null) {
+          cacheUpdater.updateTopLevel();
+        }
+      }
+    }
 
   }
 

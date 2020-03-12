@@ -295,6 +295,10 @@
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
+
+  <!-- Indexed and uninvertible, but NOT docValues -->
+  <field name="where_s_multi_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="true" multiValued="true" />
+  <field name="where_s_single_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="true" multiValued="false" />
   <!-- Indexed, but NOT uninvertible -->
   <field name="where_s_multi_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="true" />
   <field name="where_s_single_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="false" />
@@ -334,6 +338,8 @@
   <!-- Create a string version of author for faceting -->
   <copyField source="author" dest="author_s"/>
   
+  <copyField source="where_s" dest="where_s_multi_uninvert"/>
+  <copyField source="where_s" dest="where_s_single_uninvert"/>
   <copyField source="where_s" dest="where_s_multi_not_uninvert"/>
   <copyField source="where_s" dest="where_s_multi_not_uninvert_dv"/>
   <copyField source="where_s" dest="where_s_single_not_uninvert"/>

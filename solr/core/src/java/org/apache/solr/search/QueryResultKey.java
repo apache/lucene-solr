@@ -50,7 +50,7 @@ public final class QueryResultKey implements Accountable {
     this.filters = filters;
     this.nc_flags = nc_flags;
 
-    int h = query.hashCode();
+    int h = query == null ? 0 : query.hashCode();
 
     if (filters != null) {
       for (Query filt : filters)
@@ -94,7 +94,7 @@ public final class QueryResultKey implements Accountable {
     // check for the thing most likely to be different (and the fastest things)
     // first.
     if (this.sfields.length != other.sfields.length) return false;
-    if (!this.query.equals(other.query)) return false;
+    if (this.query == null ? other.query != null : !this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
 
     for (int i=0; i<sfields.length; i++) {

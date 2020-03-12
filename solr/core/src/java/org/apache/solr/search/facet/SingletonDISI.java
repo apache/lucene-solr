@@ -18,21 +18,29 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 final class SingletonDISI extends SweepDISI {
 
+  private final boolean isBase;
   private final DocIdSetIterator backing;
 
-  SingletonDISI(DocIdSetIterator backing, CountSlotAcc[] countAccs) {
-    super(1, countAccs);
+  SingletonDISI(DocIdSetIterator backing, CountSlotAcc[] countAccs, CacheUpdater[] cacheUpdaters, boolean isBase) {
+    super(1, countAccs, cacheUpdaters);
+    this.isBase = isBase;
     this.backing = backing;
   }
 
   @Override
   public int nextDoc() throws IOException {
     return backing.nextDoc();
+  }
+
+  @Override
+  public boolean collectBase() {
+    return isBase;
   }
 
   @Override

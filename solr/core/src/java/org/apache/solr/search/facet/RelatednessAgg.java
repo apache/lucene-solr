@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +43,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.facet.FacetFieldProcessor.SweepAcc;
 
@@ -184,8 +186,8 @@ public class RelatednessAgg extends AggValueSource {
 
       final FacetFieldProcessor ffp = (FacetFieldProcessor) fcontext.processor;
       return new SweepSKGSlotAcc(min_pop, fcontext, numSlots, fgSet.size(), bgSet.size(),
-          ffp.getSweepCountAcc(fgSet, numSlots),
-          ffp.getSweepCountAcc(bgSet, numSlots));
+          ffp.getSweepCountAcc(new QueryResultKey(null, fgFilters, null, 0), fgSet, numSlots),
+          ffp.getSweepCountAcc(new QueryResultKey(null, Collections.singletonList(bgQ), null, 0), bgSet, numSlots));
     } else {
       return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
     }

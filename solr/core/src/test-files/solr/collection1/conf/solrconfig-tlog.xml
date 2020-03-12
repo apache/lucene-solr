@@ -162,6 +162,16 @@
       autowarmCount="10"
       regenerator="solr.NoOpRegenerator" />
 
+    <!-- nocommit: Need new jira for enabled=true|false support in generic caches
+         nocommit: CacheConfig.getMultipleConfigs doesn't look at enabled
+    -->
+    <cache name="termFacetCache"
+           enabled="${tests.termFacetCache.enabled:false}"
+           class="solr.CaffeineCache"
+           size="200"
+           initialSize="200"
+           autowarmCount="200"
+           regenerator="solr.request.TermFacetCacheRegenerator" />
   </query>
 
   <initParams path="/select">

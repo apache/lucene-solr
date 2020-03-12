@@ -23,10 +23,12 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 final class SingletonDocIterator extends SweepDocIterator {
 
   private final DocIterator backing;
+  private final boolean isBase;
 
-  SingletonDocIterator(DocIterator backing) {
+  SingletonDocIterator(DocIterator backing, boolean isBase) {
     super(1);
     this.backing = backing;
+    this.isBase = isBase;
   }
 
   @Override
@@ -37,6 +39,11 @@ final class SingletonDocIterator extends SweepDocIterator {
   @Override
   public int nextDoc() {
     return backing.nextDoc();
+  }
+
+  @Override
+  public boolean collectBase() {
+    return isBase;
   }
 
   @Override

@@ -18,15 +18,18 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
 
 public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
 
   public final int size;
   final CountSlotAcc[] countAccs;
+  final CacheUpdater[] cacheUpdaters;
 
-  public SweepDISI(int size, CountSlotAcc[] countAccs) {
+  public SweepDISI(int size, CountSlotAcc[] countAccs, CacheUpdater[] cacheUpdaters) {
     this.size = size;
     this.countAccs = countAccs;
+    this.cacheUpdaters = cacheUpdaters;
   }
 
   @Override

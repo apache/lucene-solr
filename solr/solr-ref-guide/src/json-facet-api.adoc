@@ -225,6 +225,7 @@ This parameter indicates the facet algorithm to use:
 * "smart" Pick the best method for the field type (this is the default)
 
 |prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` parameter is very costly>>.
+|countCacheDf |When `termFacetCache` is enabled, this parameter sets a threshold doc frequency (domain size) below which the `termFacetCache` will _not_ be consulted for term facets over a given domain. `-1` never consults the cache; `0` is an alias for the static default (currently 5000). Setting to `1` will in effect _always_ consult the cache.
 |===
 
 === Query Facet
