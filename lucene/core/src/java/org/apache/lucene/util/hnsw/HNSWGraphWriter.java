@@ -37,7 +37,7 @@ public final class HNSWGraphWriter implements Accountable {
   // expose for testing. TODO: make a better way to initialize this
   public static long RAND_SEED = DEFAULT_RAND_SEED;
   // default max connections per node
-  public static final int DEFAULT_MAX_CONNECTIONS = 6;
+  public static final int DEFAULT_MAX_CONNECTIONS = 16;
   // default max connections per node at layer zero
   public static final int DEFAULT_MAX_CONNECTIONS_L0 = DEFAULT_MAX_CONNECTIONS * 2;
   // default candidate list size
