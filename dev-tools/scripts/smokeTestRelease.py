@@ -227,7 +227,7 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
         if project == 'solr':
           if ((normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-')))
               or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-              or (normRoot.endsWith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
+              or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:
