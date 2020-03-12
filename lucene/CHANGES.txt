@@ -29,6 +29,9 @@ API Changes
 
 * LUCENE-9150: Restore support for dynamic PlanetModel in spatial3d. (Nick Knize)
 
+* LUCENE-9171: QueryBuilder.newTermQuery() and .newSynonymQuery() now take boost parameters.
+  (Alessandro Benedetti, Alan Woodward)
+
 New Features
 ---------------------
 
@@ -65,6 +68,9 @@ Improvements
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
+* LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
+  boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)
 
 Optimizations
 ---------------------
