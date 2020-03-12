@@ -307,7 +307,7 @@ def check_key_in_keys(gpgKeyID, local_keys):
       gpgKeyID = gpgKeyID.replace(" ", "")
     if len(gpgKeyID) == 8:
       gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
-      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
+      re_to_match = r"^pub .*\n\s+(\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s|\w{32}%s)" % (gpgKeyID8Char, gpgKeyID)
     elif len(gpgKeyID) == 40:
       gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
                        (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
