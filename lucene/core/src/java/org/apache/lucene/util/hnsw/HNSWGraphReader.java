@@ -18,10 +18,8 @@
 package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.FieldInfo;
@@ -61,11 +59,12 @@ public final class HNSWGraphReader {
     }
 
     Neighbor ep = new ImmutableNeighbor(enterPoint, VectorValues.distance(query, vectorValues.vectorValue(), distFunc));
-    FurthestNeighbors neighbors = new FurthestNeighbors(ef, ep);
     for (int l = hnsw.topLevel(); l > 0; l--) {
-      visitedCount += hnsw.searchLayer(query, neighbors, 1, l, vectorValues);
+      ep = hnsw.greedyUpdateNearest(query, ep, l, vectorValues);
     }
-    visitedCount += hnsw.searchLayer(query, neighbors, ef, 0, vectorValues);
+
+    final FurthestNeighbors neighbors = new FurthestNeighbors(ef, ep);
+    visitedCount += hnsw.searchLayer(query, neighbors, ef, 0, vectorValues, true);
     return neighbors;
   }
 

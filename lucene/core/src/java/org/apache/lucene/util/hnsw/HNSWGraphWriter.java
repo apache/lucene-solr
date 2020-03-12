@@ -20,9 +20,7 @@ package org.apache.lucene.util.hnsw;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.Accountable;
@@ -39,7 +37,7 @@ public final class HNSWGraphWriter implements Accountable {
   // expose for testing. TODO: make a better way to initialize this
   public static long RAND_SEED = DEFAULT_RAND_SEED;
   // default max connections per node
-  public static final int DEFAULT_MAX_CONNECTIONS = 6;
+  public static final int DEFAULT_MAX_CONNECTIONS = 16;
   // default max connections per node at layer zero
   public static final int DEFAULT_MAX_CONNECTIONS_L0 = DEFAULT_MAX_CONNECTIONS * 2;
   // default candidate list size
@@ -112,11 +110,12 @@ public final class HNSWGraphWriter implements Accountable {
     Neighbor ep = new ImmutableNeighbor(enterPoint, distFromEp);
 
     int level = levelGenerator.randomLevel();
-    FurthestNeighbors results = new FurthestNeighbors(efConst, ep);
     // down to the level from the hnsw's top level
     for (int l = hnsw.topLevel(); l > level; l--) {
-      hnsw.searchLayer(value, results, 1, l, vectorValues);
+      ep = hnsw.greedyUpdateNearest(value, ep, l, vectorValues);
     }
+
+    final FurthestNeighbors results = new FurthestNeighbors(efConst, ep);
 
     // down to level 0 with placing the doc to each layer
     hnsw.ensureLevel(level);
@@ -126,14 +125,7 @@ public final class HNSWGraphWriter implements Accountable {
         continue;
       }
 
-      hnsw.searchLayer(value, results, efConst, l, vectorValues);
-      int maxConnections = l == 0 ? maxConn0 : maxConn;
-      while (results.size() > maxConnections) {
-        results.pop();
-      }
-      for (Neighbor n : results) {
-        hnsw.connectNodes(l, docId, n.docId(), n.distance(), maxConnections);
-      }
+      hnsw.addLinksStartingFrom(docId, value, results, efConst, ep, l, vectorValues, l == 0 ? maxConn0 : maxConn);
     }
   }
 
@@ -168,7 +160,7 @@ public final class HNSWGraphWriter implements Accountable {
     }
 
     @Override
-    public float[] vectorValue() throws IOException {
+    public float[] vectorValue() {
       return value;
     }
 
