@@ -52,7 +52,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
+ (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
 
 Optimizations
 ---------------------
