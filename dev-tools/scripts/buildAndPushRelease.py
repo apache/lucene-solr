@@ -314,7 +314,7 @@ def check_key_in_keys(gpgKeyID, local_keys):
                        gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
       re_to_match = r"^pub .*\n\s+(%s|%s)" % (gpgKeyID40Char, gpgKeyID)
     else:
-      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
+      print('Invalid gpg key id format [%s]. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.' % gpgKeyID)
       exit(2)
     if re.search(re_to_match, keysFileText, re.MULTILINE):
       print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))
