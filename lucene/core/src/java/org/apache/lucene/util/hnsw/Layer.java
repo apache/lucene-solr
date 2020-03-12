@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.VectorValues;
@@ -50,8 +50,8 @@ final class Layer implements Accountable {
     this.friendsMap = new HashMap<>();
   }
 
-  List<Integer> getNodes() {
-    return List.copyOf(friendsMap.keySet());
+  final Set<Integer> getNodes() {
+    return friendsMap.keySet();
   }
 
   void addNodeIfAbsent(int node) {

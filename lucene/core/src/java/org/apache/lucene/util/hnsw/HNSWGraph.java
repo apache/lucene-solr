@@ -214,18 +214,18 @@ public final class HNSWGraph implements Accountable {
     if (layers.isEmpty()) {
       throw new IllegalStateException("the graph has no layers!");
     }
-    List<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
+    Set<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
     if (nodesAtMaxLevel.isEmpty()) {
       throw new IllegalStateException("the max level of this graph is empty!");
     }
-    return nodesAtMaxLevel.get(0);
+    return nodesAtMaxLevel.iterator().next();
   }
 
   public List<Integer> getEnterPoints() {
     if (layers.isEmpty()) {
       throw new IllegalStateException("the graph has no layers!");
     }
-    List<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
+    Set<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
     if (nodesAtMaxLevel.isEmpty()) {
       throw new IllegalStateException("the max level of this graph is empty!");
     }
