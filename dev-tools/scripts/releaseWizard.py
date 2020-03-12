@@ -172,6 +172,8 @@ def check_prerequisites(todo=None):
         sys.exit("You will need gpg installed")
     if not check_ant().startswith('1.8'):
         print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
+    if not 'GPG_TTY' in os.environ:
+        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(TTY)'")
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
     try:
@@ -1072,7 +1074,7 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    all_keys = load('https://home.apache.org/keys/group/lucene.asc')
+    all_keys = load('https://downloads.apache.org/lucene/KEYS')
     lines = all_keys.splitlines()
     keyid_linenum = None
     for idx, line in enumerate(lines):
@@ -1083,7 +1085,7 @@ def configure_pgp(gpg_todo):
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
         gpg_id = keyid_line[14:].replace(" ", "")[-8:]
-        print("Found gpg key id %s on file at Apache (https://home.apache.org/keys/group/lucene.asc)" % gpg_id)
+        print("Found gpg key id %s on file at Apache (https://downloads.apache.org/lucene/KEYS)" % gpg_id)
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
