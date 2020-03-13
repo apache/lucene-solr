@@ -67,7 +67,7 @@ public class SolrXmlConfig {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config) {
+  public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
 
     checkForIllegalConfig(config);
 
@@ -109,6 +109,7 @@ public class SolrXmlConfig {
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
+    configBuilder.setFromZookeeper(fromZookeeper);
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -140,6 +141,10 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromInputStream(Path solrHome, InputStream is, Properties substituteProps) {
+    return fromInputStream(solrHome, is, substituteProps, false);
+  }
+
+  public static NodeConfig fromInputStream(Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();
@@ -148,7 +153,7 @@ public class SolrXmlConfig {
       byte[] buf = IOUtils.toByteArray(is);
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
-        return fromConfig(solrHome, config);
+        return fromConfig(solrHome, config, fromZookeeper);
       }
     } catch (SolrException exc) {
       throw exc;

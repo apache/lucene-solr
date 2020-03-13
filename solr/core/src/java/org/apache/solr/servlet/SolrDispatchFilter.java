@@ -283,7 +283,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties);
+          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
         }
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
