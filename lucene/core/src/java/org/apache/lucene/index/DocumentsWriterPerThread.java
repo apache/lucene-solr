@@ -226,46 +226,6 @@ final class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
-    try {
-      assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
-      testPoint("DocumentsWriterPerThread addDocument start");
-      assert deleteQueue != null;
-      reserveOneDoc();
-      docState.doc = doc;
-      docState.analyzer = analyzer;
-      docState.docID = numDocsInRAM;
-      if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-        infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
-      }
-      // Even on exception, the document is still added (but marked
-      // deleted), so we don't need to un-reserve at that point.
-      // Aborting exceptions will actually "lose" more than one
-      // document, so the counter will be "wrong" in that case, but
-      // it's very hard to fix (we can't easily distinguish aborting
-      // vs non-aborting exceptions):
-      boolean success = false;
-      try {
-        try {
-          consumer.processDocument();
-        } finally {
-          docState.clear();
-        }
-        success = true;
-      } finally {
-        if (!success) {
-          // mark document as deleted
-          deleteDocID(docState.docID);
-          numDocsInRAM++;
-        }
-      }
-
-      return finishDocument(deleteNode);
-    } finally {
-      maybeAbort("updateDocument", flushNotifications);
-    }
-  }
-
   public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
@@ -306,28 +266,7 @@ final class DocumentsWriterPerThread {
           numDocsInRAM++;
         }
         allDocsIndexed = true;
-
-        // Apply delTerm only after all indexing has
-        // succeeded, but apply it only to docs prior to when
-        // this batch started:
-        long seqNo;
-        if (deleteNode != null) {
-          seqNo = deleteQueue.add(deleteNode, deleteSlice);
-          assert deleteSlice.isTail(deleteNode) : "expected the delete term as the tail item";
-          deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
-          return seqNo;
-        } else {
-          seqNo = deleteQueue.updateSlice(deleteSlice);
-          if (seqNo < 0) {
-            seqNo = -seqNo;
-            deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
-          } else {
-            deleteSlice.reset();
-          }
-        }
-
-        return seqNo;
-
+        return finishDocuments(deleteNode, docCount);
       } finally {
         if (!allDocsIndexed && !aborted) {
           // the iterator threw an exception that is not aborting
@@ -346,7 +285,7 @@ final class DocumentsWriterPerThread {
     }
   }
   
-  private long finishDocument(DocumentsWriterDeleteQueue.Node<?> deleteNode) {
+  private long finishDocuments(DocumentsWriterDeleteQueue.Node<?> deleteNode, int docCount) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -355,27 +294,24 @@ final class DocumentsWriterPerThread {
      * the updated slice we get from 1. holds all the deletes that have occurred
      * since we updated the slice the last time.
      */
-    boolean applySlice = numDocsInRAM != 0;
+    // Apply delTerm only after all indexing has
+    // succeeded, but apply it only to docs prior to when
+    // this batch started:
     long seqNo;
     if (deleteNode != null) {
       seqNo = deleteQueue.add(deleteNode, deleteSlice);
-      assert deleteSlice.isTail(deleteNode) : "expected the delete node as the tail";
-    } else  {
+      assert deleteSlice.isTail(deleteNode) : "expected the delete term as the tail item";
+      deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
+      return seqNo;
+    } else {
       seqNo = deleteQueue.updateSlice(deleteSlice);
-      
       if (seqNo < 0) {
         seqNo = -seqNo;
+        deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
       } else {
-        applySlice = false;
+        deleteSlice.reset();
       }
     }
-    
-    if (applySlice) {
-      deleteSlice.apply(pendingUpdates, numDocsInRAM);
-    } else { // if we don't need to apply we must reset!
-      deleteSlice.reset();
-    }
-    ++numDocsInRAM;
 
     return seqNo;
   }
