@@ -333,7 +333,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           // We already created either a NRT or an TLOG replica as leader
           if (numNrtReplicas > 0) {
             createdNrtReplicas++;
-          } else if (createdTlogReplicas > 0) {
+          } else if (numTlogReplicas > 0) {
             createdTlogReplicas++;
           }
 
