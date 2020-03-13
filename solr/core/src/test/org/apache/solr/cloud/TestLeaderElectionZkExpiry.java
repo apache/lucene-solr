@@ -55,12 +55,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           .setLeaderConflictResolveWait(180000)
           .setLeaderVoteWait(180000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, new CurrentCoreDescriptorProvider() {
-        @Override
-        public List<CoreDescriptor> getCurrentDescriptors() {
-          return Collections.EMPTY_LIST;
-        }
-      });
+      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
       try {
         Thread killer = new Thread() {
           @Override

@@ -48,6 +48,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -287,7 +288,15 @@ public class ZkController implements Closeable {
     }
   }
 
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
+  /**
+   * @param cc Core container associated with this controller. cannot be null.
+   * @param zkServerAddress where to connect to the zk server
+   * @param zkClientConnectTimeout timeout in ms
+   * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
+   * @param registerOnReconnect a provider of the current core descriptors. used to know what to reregister after a reconnect
+   * @throws IOException
+   */
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
@@ -383,7 +392,7 @@ public class ZkController implements Closeable {
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
 
-              List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+              List<CoreDescriptor> descriptors = registerOnReconnect.get();
               // re register all descriptors
               ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
               if (descriptors != null) {
@@ -469,7 +478,7 @@ public class ZkController implements Closeable {
       if (cc != null) cc.securityNodeChanged();
     });
 
-    init(registerOnReconnect);
+    init();
 
     this.overseerJobQueue = overseer.getStateUpdateQueue();
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
@@ -489,9 +498,8 @@ public class ZkController implements Closeable {
   }
 
   private void registerAllCoresAsDown(
-      final CurrentCoreDescriptorProvider registerOnReconnect, boolean updateLastPublished) throws SessionExpiredException {
-    List<CoreDescriptor> descriptors = registerOnReconnect
-        .getCurrentDescriptors();
+      final Supplier<List<CoreDescriptor>> registerOnReconnect, boolean updateLastPublished) throws SessionExpiredException {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (isClosed) return;
     if (descriptors != null) {
       // before registering as live, make sure everyone is in a
@@ -546,9 +554,8 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
-  private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
-
-    List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+  private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         closeExistingElectionContext(descriptor);
@@ -572,10 +579,8 @@ public class ZkController implements Closeable {
     return contextKey;
   }
 
-  private void markAllAsNotLeader(
-      final CurrentCoreDescriptorProvider registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect
-        .getCurrentDescriptors();
+  private void markAllAsNotLeader(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         descriptor.getCloudDescriptor().setLeader(false);
@@ -895,8 +900,7 @@ public class ZkController implements Closeable {
     return configDirPath;
   }
 
-  private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
-
+  private void init() {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
