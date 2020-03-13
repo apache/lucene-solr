@@ -88,15 +88,14 @@ class QueryDocValues extends FloatDocValues {
   final Query q;
 
   Scorer scorer;
-  DocIdSetIterator it;
+  DocIdSetIterator disi;
   TwoPhaseIterator tpi;
-  int scorerDoc; // the document the scorer is on
-  boolean thisDocMatches; // whether the tpi matches on scorerDoc
+  Boolean thisDocMatches;
   boolean noMatches =false;
 
   // the last document requested... start off with high value
   // to trigger a scorer reset on first access.
-  int lastDocRequested=Integer.MAX_VALUE;
+  int lastDocRequested=-1;
 
 
   public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
@@ -137,26 +136,29 @@ class QueryDocValues extends FloatDocValues {
   public boolean exists(int doc) {
     try {
       if (noMatches) return false;
-      if (doc < lastDocRequested) {
+      if (scorer == null) {
         scorer = weight.scorer(readerContext);
-        if (scorer==null) {
+        if (scorer == null) {
           noMatches = true;
           return false;
         }
         tpi = scorer.twoPhaseIterator();
-        it = tpi==null ? scorer.iterator() : tpi.approximation();
-        scorerDoc = -1;
+        disi = tpi==null ? scorer.iterator() : tpi.approximation();
         thisDocMatches = false;
       }
+      assert doc >= lastDocRequested : "values requested out of order; last=" + lastDocRequested + ", requested=" + doc;
       lastDocRequested = doc;
 
-      if (scorerDoc < doc) {
-        scorerDoc = it.advance(doc);
-        thisDocMatches = tpi == null || tpi.matches();
+      if (disi.docID() < doc) {
+        disi.advance(doc);
+        thisDocMatches = null;
       }
-
-      // a match!
-      return scorerDoc == doc && thisDocMatches;
+      if (disi.docID() == doc) {
+        if (thisDocMatches == null) {
+          thisDocMatches = tpi == null || tpi.matches();
+        }
+        return thisDocMatches;
+      } else return false;
     } catch (IOException e) {
       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
     }
