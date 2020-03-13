@@ -80,6 +80,10 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper connection later
+  // If it becomes necessary to track multiple potential sources in the future, replace this with an Enum
+  private final boolean fromZookeeper;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
@@ -89,7 +93,8 @@ public class NodeConfig {
                      int transientCacheSize, boolean useSchemaCache, String managementPath,
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
+                     boolean fromZookeeper) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.solrDataHome = solrDataHome;
@@ -117,6 +122,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
+    this.fromZookeeper = fromZookeeper;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -248,6 +254,10 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  public boolean isFromZookeeper() {
+    return fromZookeeper;
+  }
+
   public static class NodeConfigBuilder {
 
     private SolrResourceLoader loader;
@@ -277,6 +287,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
+    private boolean fromZookeeper = false;
 
     private final Path solrHome;
     private final String nodeName;
@@ -439,6 +450,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setFromZookeeper(boolean fromZookeeper) {
+      this.fromZookeeper = fromZookeeper;
+      return this;
+    }
+
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
       if (loader == null) {
@@ -449,7 +465,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
