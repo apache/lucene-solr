@@ -91,13 +91,13 @@ class QueryDocValues extends FloatDocValues {
   DocIdSetIterator it;
   TwoPhaseIterator tpi;
   int scorerDoc; // the document the scorer is on
-  boolean scorerMatch=false; // whether the tpi matches on scorerDoc
-  boolean noMatches=false;
+  boolean thisDocMatches; // whether the tpi matches on scorerDoc
+  boolean noMatches =false;
 
   // the last document requested... start off with high value
   // to trigger a scorer reset on first access.
   int lastDocRequested=Integer.MAX_VALUE;
-  
+
 
   public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
     super(vs);
@@ -136,26 +136,27 @@ class QueryDocValues extends FloatDocValues {
   @Override
   public boolean exists(int doc) {
     try {
+      if (noMatches) return false;
       if (doc < lastDocRequested) {
-        if (noMatches) return false;
         scorer = weight.scorer(readerContext);
-        scorerDoc = -1;
         if (scorer==null) {
           noMatches = true;
           return false;
         }
         tpi = scorer.twoPhaseIterator();
         it = tpi==null ? scorer.iterator() : tpi.approximation();
+        scorerDoc = -1;
+        thisDocMatches = false;
       }
       lastDocRequested = doc;
 
       if (scorerDoc < doc) {
         scorerDoc = it.advance(doc);
-        scorerMatch = tpi == null || tpi.matches();
+        thisDocMatches = tpi == null || tpi.matches();
       }
 
       // a match!
-      return scorerDoc == doc && scorerMatch;
+      return scorerDoc == doc && thisDocMatches;
     } catch (IOException e) {
       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
     }

@@ -604,25 +604,26 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
       Scorer scorer = weight.scorer(ctx);
       if (scorer == null)
         return DoubleValues.EMPTY;
-      TwoPhaseIterator tpi = scorer.twoPhaseIterator();
-      DocIdSetIterator it = (tpi == null) ? scorer.iterator() : tpi.approximation();
 
       return new DoubleValues() {
-        int scorerDoc = it.docID();
-        boolean scorerMatch = tpi == null || (scorerDoc != -1 && tpi.matches());
+        private final TwoPhaseIterator tpi = scorer.twoPhaseIterator();
+        private final DocIdSetIterator disi = (tpi == null) ? scorer.iterator() : tpi.approximation();
+
+        private int scorerDoc = -1;
+        private boolean thisDocMatches = false;
 
         @Override
         public double doubleValue() throws IOException {
-          return scorer.score();
+          return thisDocMatches ? scorer.score() : Double.NaN;
         }
 
         @Override
         public boolean advanceExact(int doc) throws IOException {
           if (scorerDoc < doc) {
-            scorerDoc = it.advance(doc);
-            scorerMatch = tpi==null || tpi.matches();
+            scorerDoc = disi.advance(doc);
+            thisDocMatches = tpi==null || tpi.matches();
           }
-          return scorerDoc == doc && (tpi == null  || scorerMatch);
+          return scorerDoc == doc && thisDocMatches;
         }
       };
     }
