@@ -432,7 +432,7 @@ groups:
         cmd: git checkout master
         tee: true
       - !Command
-        cmd: git update
+        cmd: git pull
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ stable_branch }}
@@ -461,7 +461,7 @@ groups:
         cmd: git checkout {{ stable_branch }}
         tee: true
       - !Command
-        cmd: git update
+        cmd: git pull
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ release_branch }}
@@ -734,7 +734,7 @@ groups:
         cmd: git pull
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_id | default("<gpg_key_id>", True) }}
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}
         comment: "NOTE: Remember to type your GPG pass-phrase at the prompt!"
         logfile: build_rc.log
         tee: true
