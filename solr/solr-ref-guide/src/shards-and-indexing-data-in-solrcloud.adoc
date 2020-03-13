@@ -32,7 +32,7 @@ SolrCloud addresses those limitations. There is support for distributing both th
 
 == Leaders and Replicas
 
-In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the ZooKeeper process described at http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection[http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection.].
+In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the ZooKeeper process described at http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/recipes.html#sc_leaderElection.
 
 If a leader goes down, one of the other replicas is automatically elected as the new leader.
 

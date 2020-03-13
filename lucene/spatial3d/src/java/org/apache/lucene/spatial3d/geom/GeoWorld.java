@@ -36,7 +36,7 @@ class GeoWorld extends GeoBaseBBox {
    */
   public GeoWorld(final PlanetModel planetModel) {
     super(planetModel);
-    originPoint = new GeoPoint(planetModel.ab, 1.0, 0.0, 0.0);
+    originPoint = new GeoPoint(planetModel.xyScaling, 1.0, 0.0, 0.0);
   }
 
   /** Constructor.

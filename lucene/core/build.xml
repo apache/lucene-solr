@@ -26,8 +26,8 @@
   <property name="javac.profile.args" value="-profile compact1"/>
   <import file="../common-build.xml"/>
 
-  <property name="moman.commit-hash" value="5c5c2a1e4dea" />
-  <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman/get/${moman.commit-hash}.zip" />
+  <property name="moman.commit-hash" value="497c90e34e412b6494db6dabf0d95db8034bd325" />
+  <property name="moman.url" value="https://github.com/jpbarrette/moman/archive/${moman.commit-hash}.zip" />
 
   <path id="classpath"/>
   
@@ -69,7 +69,7 @@
       <attribute name="n"/>
       <sequential>
       <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
+            executable="${python3.exe}" failonerror="true">
         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
         <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
@@ -79,7 +79,7 @@
         <arg value="../../../../../../../../build/core/moman/finenight/python"/>
       </exec>
       <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
+            executable="${python3.exe}" failonerror="true">
         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
         <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
@@ -94,13 +94,13 @@
 
   <target name="createPackedIntSources">
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python3.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_BulkOperation.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
-          executable="${python.exe}" failonerror="true">
+          executable="${python3.exe}" failonerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="gen_Packed64SingleBlock.py"/>

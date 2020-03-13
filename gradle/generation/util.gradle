@@ -14,58 +14,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 apply plugin: "de.undercouch.download"
 
 configure(rootProject) {
-  configurations {
-    utilgen
+  ext {
+    momanDir = file("${buildDir}/moman")
   }
 
-  task utilgen {
-    description "Regenerate sources for ...lucene/util/automaton and ...lucene/util/packed."
+  task moman()  {
+    description "Regenerate Moman-based sources for ...lucene/util/automaton and ...lucene/util/packed."
     group "generation"
 
     dependsOn ":lucene:core:utilGenPacked"
     dependsOn ":lucene:core:utilGenLev"
   }
-}
 
-def momanDir = new File(buildDir, "moman").getAbsolutePath()
-task installMoman(type: Download) {
+  task installMoman(type: Download) {
+    def momanZip = file("${momanDir}/moman.zip")
 
-  def momanZip = new File(momanDir, "moman.zip").getAbsolutePath()
+    src "https://github.com/jpbarrette/moman/archive/497c90e34e412b6494db6dabf0d95db8034bd325.zip"
+    dest momanZip
+    onlyIfModified true
 
-  src "https://bitbucket.org/jpbarrette/moman/get/5c5c2a1e4dea.zip"
-  dest momanZip
-  onlyIfModified true
-
-  doLast {
-    logger.lifecycle("Downloading moman to: ${buildDir}")
-    ant.unzip(src: momanZip, dest: momanDir, overwrite: "true") {
-      ant.cutdirsmapper(dirs: "1")
+    doLast {
+      ant.unzip(src: momanZip, dest: momanDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
     }
   }
 }
 
 configure(project(":lucene:core")) {
-  task utilGenPacked(dependsOn: installMoman) {
+  task utilGenPacked(dependsOn: rootProject.installMoman) {
     description "Regenerate util/PackedBulkOperationsPacked*.java and Packed64SingleBlock.java"
     group "generation"
 
-    def workDir = "src/java/org/apache/lucene/util/packed"
-
     doLast {
+      def targetDir = file("src/java/org/apache/lucene/util/packed")
+
       ['gen_BulkOperation.py', 'gen_Packed64SingleBlock.py'].each { prog ->
-        logger.lifecycle("Executing: ${prog} in ${workDir}")
+        logger.lifecycle("Executing: ${prog} in ${targetDir}")
         project.exec {
-          workingDir workDir
-          executable "python"
+          workingDir targetDir
+          executable "python3"
           args = ['-B', "${prog}"]
         }
       }
       // Correct line endings for Windows.
       project.ant.fixcrlf(
-          srcDir: workDir,
+          srcDir: targetDir,
           includes: 'Packed64SingleBlock.java, BulkOperation*.java',
           encoding: 'UTF-8',
           eol: 'lf'
@@ -73,24 +71,24 @@ configure(project(":lucene:core")) {
     }
   }
 
-  task utilGenLev(dependsOn: installMoman) {
+  task utilGenLev(dependsOn: rootProject.installMoman) {
     description "Regenerate util/automaton Lev*ParametricDescription.java"
     group "generation"
 
     doLast {
-      def workDir = 'src/java/org/apache/lucene/util/automaton'
+      def targetDir = file("src/java/org/apache/lucene/util/automaton")
 
       ['1', '2'].each { num ->
         ['True', 'False'].each { transpose ->
           project.exec {
-            workingDir workDir
-            executable "python"
+            workingDir targetDir
+            executable "python3"
             args = ['-B', 'createLevAutomata.py', num, transpose, "${momanDir}/finenight/python"]
           }
         }
       }
       project.ant.fixcrlf(
-          srcDir: workDir,
+          srcDir: targetDir,
           includes: '*ParametricDescription.java',
           encoding: 'UTF-8',
           eol: 'lf'

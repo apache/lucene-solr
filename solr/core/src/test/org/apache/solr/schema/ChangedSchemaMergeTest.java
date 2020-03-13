@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -92,7 +93,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
     cores.load();
     return cores;
   }

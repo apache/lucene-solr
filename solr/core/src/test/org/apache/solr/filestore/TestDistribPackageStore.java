@@ -17,9 +17,10 @@
 
 package org.apache.solr.filestore;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,7 @@ import org.junit.Before;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
@@ -86,7 +88,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         );
         fail("should have failed because of wrong signature ");
       } catch (RemoteExecutionException e) {
-        assertTrue(e.getMessage().contains("Signature does not match"));
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -251,7 +253,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getResourceLoader().getInstancePath(), client);
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
       Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
       System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
     }
@@ -275,12 +277,15 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
   }
 
+  /**
+   * Read and return the contents of the file-like resource
+   * @param fname the name of the resource to read
+   * @return the bytes of the resource
+   * @throws IOException if there is an I/O error reading the contents
+   */
   public static byte[] readFile(String fname) throws IOException {
-    byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
-      buf = new byte[fis.available()];
-      fis.read(buf);
+    try (InputStream is = TestDistribPackageStore.class.getClassLoader().getResourceAsStream(fname)) {
+      return is.readAllBytes();
     }
-    return buf;
   }
 }

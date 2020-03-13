@@ -58,7 +58,7 @@ public class SortedSetFieldSource extends FieldCacheSource {
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
     SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-    return new DocTermsIndexDocValues(this.field, this, view) {
+    return new DocTermsIndexDocValues(this, view) {
       @Override
       protected String toTerm(String readableValue) {
         return readableValue;

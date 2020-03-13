@@ -43,7 +43,7 @@ public class TestPoint2D extends LuceneTestCase {
     double by = 0;
     double cx = 0;
     double cy = 1;
-    assertEquals(Relation.CELL_INSIDE_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Relation.CELL_CROSSES_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
     assertEquals(Component2D.WithinRelation.CANDIDATE,
         point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
   }

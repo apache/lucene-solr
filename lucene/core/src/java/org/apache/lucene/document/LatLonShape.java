@@ -21,11 +21,13 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.BooleanClause;
@@ -104,7 +106,8 @@ public class LatLonShape {
       builder.add(newBoxQuery(field, queryRelation, minLatitude, maxLatitude, GeoUtils.MIN_LON_INCL, maxLongitude), BooleanClause.Occur.MUST);
       return builder.build();
     }
-    return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
+    Rectangle rectangle = new Rectangle(minLatitude, maxLatitude, minLongitude, maxLongitude);
+    return new LatLonShapeBoundingBoxQuery(field, queryRelation, rectangle);
   }
 
   /** create a query to find all indexed geo shapes that intersect a provided linestring (or array of linestrings)
@@ -131,16 +134,43 @@ public class LatLonShape {
     return newGeometryQuery(field, queryRelation, pointArray);
   }
 
+  /** create a query to find all polygons that intersect a provided circle. */
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, Circle... circle) {
+    return newGeometryQuery(field, queryRelation, circle);
+  }
+
   /** create a query to find all indexed geo shapes that intersect a provided geometry (or array of geometries).
    **/
   public static Query newGeometryQuery(String field, QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
-    if (queryRelation == QueryRelation.CONTAINS && latLonGeometries.length > 1) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i = 0; i < latLonGeometries.length; i++) {
-        builder.add(newGeometryQuery(field, queryRelation, latLonGeometries[i]), BooleanClause.Occur.MUST);
+    if  (latLonGeometries.length == 1) {
+      LatLonGeometry geometry = latLonGeometries[0];
+      if (geometry instanceof Rectangle) {
+        Rectangle rect = (Rectangle) geometry;
+        return newBoxQuery(field, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      } else {
+        return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
       }
-      return builder.build();
+    } else {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return makeContainsGeometryQuery(field, latLonGeometries);
+      } else {
+        return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
+      }
     }
-    return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
   }
+
+  private static Query makeContainsGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (LatLonGeometry geometry : latLonGeometries) {
+      if (geometry instanceof Rectangle) {
+        // this handles rectangles across the dateline
+        Rectangle rect = (Rectangle) geometry;
+        builder.add(newBoxQuery(field, QueryRelation.CONTAINS, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon), BooleanClause.Occur.MUST);
+      } else {
+        builder.add(new LatLonShapeQuery(field, QueryRelation.CONTAINS, geometry), BooleanClause.Occur.MUST);
+      }
+    }
+    return builder.build();
+  }
+
 }
