@@ -928,4 +928,9 @@ public abstract class FieldComparator<T> {
     @Override
     public void setScorer(Scorable scorer) {}
   }
+
+  public static abstract class IteratorSupplierComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
+    abstract DocIdSetIterator iterator();
+    abstract void updateIterator() throws IOException;
+  }
 }

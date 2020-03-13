@@ -51,6 +51,17 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
+  },
+
+  /**
+   * ScoreMode for collectors that can provide their own iterators,
+   * to optionally allow to skip for non-competitive docs
+   */
+  TOP_DOCS {
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
   };
 
   /**

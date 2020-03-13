@@ -93,4 +93,8 @@ public interface LeafCollector {
    */
   void collect(int doc) throws IOException;
 
+  default DocIdSetIterator iterator() {
+    return null;
+  }
+
 }

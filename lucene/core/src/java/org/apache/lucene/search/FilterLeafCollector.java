@@ -53,4 +53,8 @@ public abstract class FilterLeafCollector implements LeafCollector {
     return name + "(" + in + ")";
   }
 
+  @Override
+  public DocIdSetIterator iterator() {
+    return in.iterator();
+  }
 }

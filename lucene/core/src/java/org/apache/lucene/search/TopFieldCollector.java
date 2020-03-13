@@ -30,6 +30,7 @@ import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.MaxScoreAccumulator.DocAndScore;
 import org.apache.lucene.search.TotalHits.Relation;
 
+
 /**
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
@@ -139,6 +140,33 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (minScoreAcc != null) {
         updateGlobalMinCompetitiveScore(scorer);
       }
+    }
+
+    @Override
+    public DocIdSetIterator iterator() {
+      if (itComparator.iterator() == null) return null;
+      return new DocIdSetIterator() {
+        private int doc;
+        @Override
+        public int nextDoc() throws IOException {
+          return doc = itComparator.iterator().nextDoc();
+        }
+
+        @Override
+        public int docID() {
+          return doc;
+        }
+
+        @Override
+        public long cost() {
+          return itComparator.iterator().cost();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          return doc = itComparator.iterator().advance(target);
+        }
+      };
     }
   }
 
@@ -277,6 +305,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
 
+  final FieldComparator.IteratorSupplierComparator itComparator;
+  final boolean canUpdateIterator;
+
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
   // the current local minimum competitive score already propagated to the underlying scorer
@@ -287,7 +318,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   boolean queueFull;
   int docBase;
   final boolean needsScores;
-  final ScoreMode scoreMode;
+  ScoreMode scoreMode;
 
   // Declaring the constructor private prevents extending this class by anyone
   // else. Note that the class cannot be final since it's extended by the
@@ -316,6 +347,16 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       canSetMinScore = false;
     }
     this.minScoreAcc = minScoreAcc;
+
+    if ((fieldComparator instanceof FieldComparator.IteratorSupplierComparator) &&
+            (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE)) {
+      scoreMode = ScoreMode.TOP_DOCS; // TODO: may be add another scoreMode TOP_DOCS with scores
+      itComparator = (FieldComparator.IteratorSupplierComparator) fieldComparator;
+      canUpdateIterator = true;
+    } else {
+      itComparator = null;
+      canUpdateIterator = false;
+    }
   }
 
   @Override
@@ -340,9 +381,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (canSetMinScore
-          && queueFull
-          && hitsThresholdChecker.isThresholdReached()) {
+    if (queueFull == false || hitsThresholdChecker.isThresholdReached() == false) return;
+
+    if (canSetMinScore) {
       assert bottom != null && firstComparator != null;
       float minScore = firstComparator.value(bottom.slot);
       if (minScore > minCompetitiveScore) {
@@ -353,6 +394,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           minScoreAcc.accumulate(bottom.doc, minScore);
         }
       }
+    }
+
+    if (canUpdateIterator) {
+      itComparator.updateIterator();
+      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
 

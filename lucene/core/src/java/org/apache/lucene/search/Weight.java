@@ -249,6 +249,10 @@ public abstract class Weight implements SegmentCacheable {
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
       if (twoPhase == null) {
+        if (collector.iterator() != null) {
+          scoreAllWithCollector(collector, iterator, acceptDocs);
+          return;
+        }
         for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
           if (acceptDocs == null || acceptDocs.get(doc)) {
             collector.collect(doc);
@@ -265,5 +269,30 @@ public abstract class Weight implements SegmentCacheable {
       }
     }
   }
+
+  /**
+   * Specialized method for bulk-score when collector also has its iterator.
+   * In this case, we only collect documents that that are in the intersection of scorer iterator and collector iterator.
+   * Some collectors once they collect first K documents are able to offer an iterator over only competitive docs.
+   */
+  static void scoreAllWithCollector(LeafCollector collector, DocIdSetIterator iter1, Bits acceptDocs) throws IOException {
+    DocIdSetIterator iter2 = collector.iterator();
+    int doc1 = iter1.nextDoc();
+    int doc2 = iter2.nextDoc();
+    while((doc1 != DocIdSetIterator.NO_MORE_DOCS) && (doc2 != DocIdSetIterator.NO_MORE_DOCS)) {
+      if (doc1 == doc2) {
+        if (acceptDocs == null || acceptDocs.get(doc1)) {
+          collector.collect(doc1);
+        }
+        doc1 = iter1.nextDoc();
+        doc2 = iter2.nextDoc();
+      } else if (doc1 > doc2) {
+        doc2 = iter2.advance(doc1);
+      } else {
+        doc1 = iter1.advance(doc2);
+      }
+    }
+  }
+
 
 }
