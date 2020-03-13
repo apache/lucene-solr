@@ -474,13 +474,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
-
-  long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-                      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
-
-    return updateDocuments(List.of(doc), analyzer, delNode);
-  }
-
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {

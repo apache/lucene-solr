@@ -1655,7 +1655,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     ensureOpen();
     boolean success = false;
     try {
-      final long seqNo = maybeProcessEvents(docWriter.updateDocument(doc, analyzer, delNode));
+      final long seqNo = maybeProcessEvents(docWriter.updateDocuments(List.of(doc), analyzer, delNode));
       success = true;
       return seqNo;
     } catch (VirtualMachineError tragedy) {

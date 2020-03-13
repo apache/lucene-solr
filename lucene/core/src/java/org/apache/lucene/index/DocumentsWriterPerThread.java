@@ -266,7 +266,7 @@ final class DocumentsWriterPerThread {
           numDocsInRAM++;
         }
         allDocsIndexed = true;
-        return finishDocument(deleteNode, docCount);
+        return finishDocuments(deleteNode, docCount);
       } finally {
         if (!allDocsIndexed && !aborted) {
           // the iterator threw an exception that is not aborting
@@ -285,7 +285,7 @@ final class DocumentsWriterPerThread {
     }
   }
   
-  private long finishDocument(DocumentsWriterDeleteQueue.Node<?> deleteNode, int docCount) {
+  private long finishDocuments(DocumentsWriterDeleteQueue.Node<?> deleteNode, int docCount) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
