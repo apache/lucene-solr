@@ -61,7 +61,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
+  (Christine Poerschke, ab)
 
 Other Changes
 ---------------------
