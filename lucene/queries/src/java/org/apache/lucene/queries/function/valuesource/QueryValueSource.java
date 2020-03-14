@@ -93,8 +93,7 @@ class QueryDocValues extends FloatDocValues {
   Boolean thisDocMatches;
   boolean noMatches =false;
 
-  // the last document requested... start off with high value
-  // to trigger a scorer reset on first access.
+  // the last document requested
   int lastDocRequested=-1;
 
 
@@ -134,6 +133,11 @@ class QueryDocValues extends FloatDocValues {
 
   @Override
   public boolean exists(int doc) {
+    if (doc < lastDocRequested) {
+      throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocRequested + " vs docID=" + doc);
+    }
+    lastDocRequested = doc;
+
     try {
       if (noMatches) return false;
       if (scorer == null) {
@@ -144,10 +148,8 @@ class QueryDocValues extends FloatDocValues {
         }
         tpi = scorer.twoPhaseIterator();
         disi = tpi==null ? scorer.iterator() : tpi.approximation();
-        thisDocMatches = false;
+        thisDocMatches = null;
       }
-      assert doc >= lastDocRequested : "values requested out of order; last=" + lastDocRequested + ", requested=" + doc;
-      lastDocRequested = doc;
 
       if (disi.docID() < doc) {
         disi.advance(doc);

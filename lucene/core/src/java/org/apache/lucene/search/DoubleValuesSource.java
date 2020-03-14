@@ -612,7 +612,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
         @Override
         public double doubleValue() throws IOException {
-          return (thisDocMatches != null && thisDocMatches) ? scorer.score() : Double.NaN;
+          return thisDocMatches == Boolean.TRUE ? scorer.score() : Double.NaN;
         }
 
         @Override
