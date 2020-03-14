@@ -320,7 +320,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         if (collection.getSharedIndex()) {
           propMap.put(ZkStateReader.SHARED_SHARD_NAME, Assign.buildSharedShardName(collectionName, subSlice));
           ocmh.overseer.getCoreContainer().getSharedStoreManager()
-            .getSharedShardMetadataController().initiateMetadataNode(collectionName, subSlice);
+            .getSharedShardMetadataController().createMetadataNode(collectionName, subSlice);
         }
 
         ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));

@@ -195,7 +195,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (sharedIndex) {
         for (String shardName : shardNames) {
           ocmh.overseer.getCoreContainer().getSharedStoreManager()
-            .getSharedShardMetadataController().initiateMetadataNode(collectionName, shardName);
+            .getSharedShardMetadataController().createMetadataNode(collectionName, shardName);
         }
       }
 

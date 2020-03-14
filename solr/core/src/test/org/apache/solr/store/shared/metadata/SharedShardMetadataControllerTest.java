@@ -77,8 +77,24 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testSetupMetadataNode() throws Exception {    
-    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
+  }
+  
+  /**
+   * Test if we try to create the same metadat anode twice, we faile
+   */
+  @Test
+  public void testSetupMetadataNodeFails() throws Exception {    
+    shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
+    
+    try {
+      shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+      fail("We should have failed to create the metadata node again");
+    } catch (Exception ex) {
+      // method fails
+    }
   }
   
   /**
@@ -94,7 +110,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
     
     waitForState("Timed-out wait for collection to be created", nonSharedCollectionName, clusterShape(1, 1));
     try {
-      shardMetadataController.initiateMetadataNode(nonSharedCollectionName, "notSharedShard");
+      shardMetadataController.createMetadataNode(nonSharedCollectionName, "notSharedShard");
       fail();
     } catch (SolrException ex) {
       // we should fail
@@ -108,7 +124,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testUpdateMetadataNode() throws Exception {    
-    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue";
@@ -127,7 +143,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    */
   @Test
   public void testConditionalUpdateOnMetadataNode() throws Exception {    
-    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue1";
@@ -171,7 +187,7 @@ public class SharedShardMetadataControllerTest extends SolrCloudSharedStoreTestC
    * Test reading the metadata node returns the expected value
    */
   public void testReadMetadataNode() throws Exception {
-    shardMetadataController.initiateMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    shardMetadataController.createMetadataNode(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
     
     String testMetadataValue = "testValue1";
