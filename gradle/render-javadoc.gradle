@@ -25,7 +25,7 @@ allprojects {
   plugins.withType(JavaPlugin) {
     ext {
       javadocRoot = project.path.startsWith(':lucene') ? project(':lucene').file("build/docs") : project(':solr').file("build/docs")
-      javadocDestDir = "${javadocRoot}/" + pathToDocdir(project.path)
+      javadocDestDir = "${javadocRoot}/${pathToDocdir(project.path)}"
     }
 
     task renderJavadoc {
@@ -331,15 +331,6 @@ configure(project(':solr:contrib:dataimporthandler-extras')) {
         dependsOn "${path}:renderJavadoc"
         linkHref += [ "../../" + pathToDocdir(path) ]
       }
-    }
-  }
-}
-
-
-configure(project(':solr:contrib:extraction')) {
-  plugins.withType(JavaPlugin) {
-    ext {
-      javadocDestDir = "${javadocRoot}/contrib/cell"
     }
   }
 }
