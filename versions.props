@@ -104,5 +104,5 @@ org.rrd4j:rrd4j=3.5
 org.slf4j:*=1.7.24
 org.tallison:jmatio=1.5
 org.tukaani:xz=1.8
-ua.net.nlp:morfologik-ukrainian-search=3.9.0
+ua.net.nlp:morfologik-ukrainian-search=4.9.1
 xerces:xercesImpl=2.12.0
