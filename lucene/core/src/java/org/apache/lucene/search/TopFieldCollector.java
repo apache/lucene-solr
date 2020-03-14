@@ -133,13 +133,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (reverseMul * comparator.compareBottom(doc) > 0) {
         comparator.copy(bottom.slot, doc);
         score = getComparatorValue(bottom.slot);
-        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, doc, score);
+        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, context.docBase + doc, score);
         updateBottom(doc);
         comparator.setBottom(bottom.slot);
         updateMinCompetitiveScore(scorer);
       } else {
-        // We do not have the score from this document, but this is
-        // a noncompetitive value that results in the right termination behavior
+        // The comparator has no score from this document. We can use any noncompetitive value
+        // to induce this leaf to be terminated.
+        //System.out.printf("leaf=%d doc=%d (noncompetitive) score=%f\n", context.ord, context.docBase + doc, score);
         score = getComparatorValue(bottom.slot) + 1;
       }
     }
@@ -180,11 +181,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     void updateTerminationState(int doc) {
       leafTerminationState.update(score, context.docBase + doc);
       if ((leafTerminationState.resultCount & maxScoreTerminator.intervalMask) == 0) {
-        //System.out.println("scoreboard update leaf " + context.ord + " total " + totalHits);
+        //System.out.println("scoreboard update leaf=" + context.ord + " doc=" + context.docBase + "+" + doc + " total=" + totalHits);
         if (maxScoreTerminator.updateLeafState(leafTerminationState)) {
           // Stop if across all segments we have collected enough, and our scores are no longer competitive
           totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-          //System.out.println("scoreboard terminate " + maxScoreTerminator.totalCollected + "/" + maxScoreTerminator.totalToCollect);
+          //System.out.println("scoreboard terminate leaf " + context.ord + " doc=" + context.docBase + "+" + doc + " totalHits=" + totalHits + " score=" + (long) score);
           throw new CollectionTerminatedException();
         }
       }
@@ -257,7 +258,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
 
-      if (maxScoreTerminator != null) {
+      if (canEarlyTerminate(sort, context) && maxScoreTerminator != null) {
         return new TopFieldLeafCollector(queue, sort, context) {
 
           @Override
@@ -322,7 +323,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
 
-      if (maxScoreTerminator != null) {
+      if (canEarlyTerminate(sort, context) && maxScoreTerminator != null) {
 
         return new TopFieldLeafCollector(queue, sort, context) {
 

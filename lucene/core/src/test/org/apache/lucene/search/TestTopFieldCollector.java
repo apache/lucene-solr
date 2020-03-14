@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -86,10 +88,14 @@ public class TestTopFieldCollector extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestTopDocsCollector"));
+    return doConcurrentSearchWithExecutor(numResults, threshold, q, sort, indexReader, service);
+  }
+
+  private TopDocs doConcurrentSearchWithExecutor(int numResults, int threshold, Query q, Sort sort, IndexReader indexReader, ExecutorService service) throws IOException {
     try {
       IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
-      CollectorManager<TopFieldCollector,TopFieldDocs> collectorManager = TopFieldCollector.createSharedManager(sort, numResults,
+      CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createSharedManager(sort, numResults,
           null, threshold);
 
       TopDocs tdc = searcher.search(q, collectorManager);
@@ -99,7 +105,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
       service.shutdown();
     }
   }
-  
+
   public void testSortWithoutFillFields() throws Exception {
     
     // There was previously a bug in TopFieldCollector when fillFields was set
@@ -709,6 +715,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     try (Directory dir = newDirectory();
          RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc)) {
       int numDocs = atLeast(1000);
+      int sortKeyRange = random().nextInt(numDocs); // have some duplicate sort key values, to test docid tiebreaking?
       for (int i = 0; i < numDocs; ++i) {
         Document doc = new Document();
         if (usually()) {
@@ -719,7 +726,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
         }
         if (usually()) {
           if (randomizeSortKey) {
-            doc.add(new NumericDocValuesField("N", random().nextInt()));
+            doc.add(new NumericDocValuesField("N", random().nextInt(sortKeyRange)));
           } else {
             doc.add(new NumericDocValuesField("N", i));
           }
@@ -739,7 +746,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
                 .add(new TermQuery(new Term("f", "B")), Occur.MUST)
                 .build()
         };
-        int numHits = 20;
+        int numHits = atLeast(100);
         Sort[] sorts = new Sort[]{new Sort(new SortField[]{SortField.FIELD_DOC}), indexSort,
             new Sort(new SortField[]{new SortField("N", SortField.Type.INT)})};
         for (Query query : queries) {
@@ -750,6 +757,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
           assertTrue(tdc.totalHits.value > 0);
           assertTrue(tdc2.totalHits.value > 0);
+          //System.out.println("sort=" + sort + " randomizeSortKey=" + randomizeSortKey);
           CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
         }
       }
