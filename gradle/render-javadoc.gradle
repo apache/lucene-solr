@@ -17,11 +17,15 @@
 
 // generate javadocs by using Ant javadoc task
 
+// utility function to convert project path to document output dir
+// e.g.: ':lucene:analysis:common' => 'analysis/common'
+def pathToDocdir = { path -> path.split(':').drop(2).join('/') }
+
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
       javadocRoot = project.path.startsWith(':lucene') ? project(':lucene').file("build/docs") : project(':solr').file("build/docs")
-      javadocDestDir = "${javadocRoot}/${project.name}"
+      javadocDestDir = "${javadocRoot}/" + pathToDocdir(project.path)
     }
 
     task renderJavadoc {
@@ -112,7 +116,7 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
   plugins.withType(JavaPlugin) {
     renderJavadoc {
       dependsOn ':lucene:core:renderJavadoc'
-      linkHref += [ "../core" ]
+      linkHref = [ "../core" ]
 
       doLast {
         // fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly (by removing all the packages which are part of lucene-core)
@@ -138,14 +142,14 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
 
 configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') }) {
   plugins.withType(JavaPlugin) {
-    ext {
-      javadocDestDir = "${javadocRoot}/analyzers-${project.name}"
-    }
-
     renderJavadoc {
+      linkHref = [ "../../core" ]
+
       if (project.path != ':lucene:analysis:common') {
-        dependsOn ':lucene:analysis:common:renderJavadoc'
-        linkHref += [ "../analyzers-common" ]
+        [':lucene:analysis:common'].collect { path ->
+          dependsOn "${path}:renderJavadoc"
+          linkHref += [ "../../" + pathToDocdir(path) ]
+        }
       }
     }
   }
@@ -161,9 +165,9 @@ configure(project(':lucene:benchmark')) {
        ':lucene:facet',
        ':lucene:spatial-extras'].collect { path ->
         dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
       }
 
-      linkHref += [ '../memory', '../highlighter', '../analyzers-common', '../queryparser', '../facet', '../spatial-extras' ]
     }
   }
 }
@@ -173,9 +177,8 @@ configure(project(':lucene:classification')) {
     renderJavadoc {
       [':lucene:queries', ':lucene:analysis:common', ':lucene:grouping'].collect { path ->
         dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
       }
-
-      linkHref += ['../queries', '../analyzers-common', '../grouping']
     }
   }
 }
@@ -189,8 +192,8 @@ configure(project(':lucene:demo')) {
        ':lucene:facet',
        ':lucene:expressions'].collect { path ->
         dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
       }
-      linkHref += ['../analyzers-common', '../queryparser', '../queries', '../facet', '../expressions']
 
       // we link the example source in the javadocs, as it's ref'ed elsewhere
       linksource = "yes"
@@ -201,8 +204,10 @@ configure(project(':lucene:demo')) {
 configure(project(':lucene:grouping')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:queries:renderJavadoc'
-      linkHref += [ '../queries' ]
+      [':lucene:queries'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -210,8 +215,10 @@ configure(project(':lucene:grouping')) {
 configure(project(':lucene:highlighter')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:memory:renderJavadoc'
-      linkHref += [ '../memory' ]
+      [':lucene:memory'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -221,8 +228,8 @@ configure(project(':lucene:monitor')) {
     renderJavadoc {
       [':lucene:memory', ':lucene:analysis:common', ':lucene:queryparser'].collect { path ->
         dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
       }
-      linkHref += [ '../memory', '../analyzers-common', '../queryparser' ]
     }
   }
 }
@@ -232,8 +239,8 @@ configure(project(':lucene:queryparser')) {
     renderJavadoc {
       [':lucene:queries', ':lucene:sandbox'].collect { path ->
         dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
       }
-      linkHref += [ '../queries', '../sandbox' ]
     }
   }
 }
@@ -241,8 +248,10 @@ configure(project(':lucene:queryparser')) {
 configure(project(':lucene:replicator')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:facet:renderJavadoc'
-      linkHref += [ '../facet' ]
+      [':lucene:facet'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += ["../" + pathToDocdir(path)]
+      }
     }
   }
 }
@@ -250,8 +259,10 @@ configure(project(':lucene:replicator')) {
 configure(project(':lucene:spatial-extras')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:spatial3d:renderJavadoc'
-      linkHref += [ '../spatial3d' ]
+      [':lucene:spatial3d'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -259,8 +270,10 @@ configure(project(':lucene:spatial-extras')) {
 configure(project(':lucene:suggest')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:analysis:common:renderJavadoc'
-      linkHref += [ '../analyzers-common' ]
+      [':lucene:analysis:common'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -268,19 +281,17 @@ configure(project(':lucene:suggest')) {
 configure(project(':lucene:test-framework')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':lucene:codecs:renderJavadoc'
+      [':lucene:codecs'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
       linkJUnit = true
-      linkHref += [ '../codecs' ]
     }
   }
 }
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
   plugins.withType(JavaPlugin) {
-    ext {
-      javadocDestDir = "${javadocRoot}/solr-${project.name}"
-    }
-
     def hasJavdocsTask = project.tasks.collect { it.name }.contains('renderJavadoc')
     if (hasJavdocsTask) {
       renderJavadoc {
@@ -294,8 +305,10 @@ configure(project(':solr:core')) {
   plugins.withType(JavaPlugin) {
     // specialized to ONLY depend on solrj
     renderJavadoc {
-      dependsOn ':solr:solrj:renderJavadoc'
-      linkHref += [ '../solr-solrj' ]
+      [':solr:solrj'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -303,9 +316,10 @@ configure(project(':solr:core')) {
 configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':solr:solrj:renderJavadoc'
-      dependsOn ':solr:core:renderJavadoc'
-      linkHref += [ '../solr-solrj', '../solr-core' ]
+      [':solr:solrj', ':solr:core'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../../" + pathToDocdir(path) ]
+      }
     }
   }
 }
@@ -313,16 +327,19 @@ configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
 configure(project(':solr:contrib:dataimporthandler-extras')) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      dependsOn ':solr:contrib:dataimporthandler:renderJavadoc'
-      linkHref += [ '../solr-dataimporthandler' ]
+      [':solr:contrib:dataimporthandler'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkHref += [ "../../" + pathToDocdir(path) ]
+      }
     }
   }
 }
 
+
 configure(project(':solr:contrib:extraction')) {
   plugins.withType(JavaPlugin) {
     ext {
-      javadocDestDir = "${javadocRoot}/solr-cell"
+      javadocDestDir = "${javadocRoot}/contrib/cell"
     }
   }
 }
