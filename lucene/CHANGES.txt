@@ -19,6 +19,8 @@ Improvements
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
   DocumentsWriter. (Simon Willnauer)
 
+* LUCENE-9279: Update dictionary version for Ukrainian analyzer
+
 Optimizations
 ---------------------
 
