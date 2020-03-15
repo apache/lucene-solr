@@ -91,7 +91,6 @@ class QueryDocValues extends FloatDocValues {
   DocIdSetIterator disi;
   TwoPhaseIterator tpi;
   Boolean thisDocMatches;
-  boolean noMatches =false;
 
   // the last document requested
   int lastDocRequested=-1;
@@ -139,15 +138,14 @@ class QueryDocValues extends FloatDocValues {
     lastDocRequested = doc;
 
     try {
-      if (noMatches) return false;
       if (scorer == null) {
         scorer = weight.scorer(readerContext);
         if (scorer == null) {
-          noMatches = true;
-          return false;
+          disi = DocIdSetIterator.empty();
+        } else {
+          tpi = scorer.twoPhaseIterator();
+          disi = tpi == null ? scorer.iterator() : tpi.approximation();
         }
-        tpi = scorer.twoPhaseIterator();
-        disi = tpi==null ? scorer.iterator() : tpi.approximation();
         thisDocMatches = null;
       }
 
