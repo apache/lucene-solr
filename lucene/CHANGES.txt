@@ -24,6 +24,9 @@ Optimizations
 
 * LUCENE-9254: UniformSplit keeps FST off-heap. (Bruno Roustant)
 
+* LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
+  (Michele Palmia, David Smiley)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
