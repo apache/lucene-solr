@@ -259,7 +259,7 @@ final class DocumentsWriterPerThread {
         if (!allDocsIndexed && !aborted) {
           // the iterator threw an exception that is not aborting
           // go and mark all docs from this block as deleted
-          deleteLastDocs(numDocsInRAM-docsInRamBefore);
+          deleteLastDocs(numDocsInRAM - docsInRamBefore);
         }
         docState.clear();
       }
@@ -299,8 +299,13 @@ final class DocumentsWriterPerThread {
     return seqNo;
   }
 
-  // Buffer a specific docID for deletion. Currently only
-  // used when we hit an exception when adding a document
+  // This method marks the last N docs as deleted. This is used
+  // in the case of a non-aborting exception. There are several cases
+  // where we fail a document ie. due to an exception during analysis
+  // that causes the doc to be rejected but won't cause the DWPT to be
+  // stale nor the entire IW to abort and shutdown. In such a case
+  // we only mark these docs as deleted and turn it into a livedocs
+  // during flush
   private void deleteLastDocs(int docCount) {
     for (int docId = numDocsInRAM - docCount; docId < numDocsInRAM; docId++) {
       pendingUpdates.addDocID(docId);
