@@ -138,7 +138,7 @@ class QueryDocValues extends FloatDocValues {
     lastDocRequested = doc;
 
     try {
-      if (scorer == null) {
+      if (disi == null) {
         scorer = weight.scorer(readerContext);
         if (scorer == null) {
           disi = DocIdSetIterator.empty();
