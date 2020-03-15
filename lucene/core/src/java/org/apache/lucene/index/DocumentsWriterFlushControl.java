@@ -575,9 +575,8 @@ final class DocumentsWriterFlushControl implements Accountable {
         assert dwpt == flushingDWPT : "flushControl returned different DWPT";
         fullFlushBuffer.add(flushingDWPT);
       }
-    } else {
-      perThreadPool.reset(perThread); // make this state inactive
     }
+    perThreadPool.reset(perThread); // make this state inactive even if there is no doc - the deleteQueue is stale
   }
   
   /**

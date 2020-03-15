@@ -473,7 +473,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       perThreadPool.release(perThread);
       if (success || flushingDWPT != null) {
         // we might run into an exception that but still need to flush the writer
-        assert flushingDWPT.isAborted() == false;
+        assert flushingDWPT == null || flushingDWPT.isAborted() == false;
         hasEvents = postUpdate(flushingDWPT, hasEvents);
       }
     }
