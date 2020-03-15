@@ -131,6 +131,9 @@ Bug Fixes
 * LUCENE-9258: DocTermsIndexDocValues assumed it was operating on a SortedDocValues (single valued) field when
   it could be multi-valued used with a SortedSetSelector (Michele Palmia)
 
+* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
+  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
+
 Other
 ---------------------
 
@@ -270,9 +273,6 @@ Bug Fixes
   were bot filtered out properly. (Ignacio Vera)
 
 * LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
-
-* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
-  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
 
 Other
 ---------------------
