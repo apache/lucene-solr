@@ -77,7 +77,7 @@ final class DocumentsWriterPerThread {
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
     @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException {
+    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) {
       return new DefaultIndexingChain(documentsWriterPerThread);
     }
   };
@@ -194,11 +194,11 @@ final class DocumentsWriterPerThread {
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
     }
+    this.enableTestPoints = enableTestPoints;
+    this.indexVersionCreated = indexVersionCreated;
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
-    this.enableTestPoints = enableTestPoints;
-    this.indexVersionCreated = indexVersionCreated;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -466,7 +466,7 @@ final class DocumentsWriterPerThread {
     return filesToDelete;
   }
 
-  private FixedBitSet sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
+  private FixedBitSet sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) {
     assert liveDocs != null && sortMap != null;
     FixedBitSet sortedLiveDocs = new FixedBitSet(liveDocs.length());
     sortedLiveDocs.set(0, liveDocs.length());
