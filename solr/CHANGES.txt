@@ -69,6 +69,10 @@ Other Changes
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
   them. (David Smiley)
 
+* SOLR-14312: Upgrade Zookeeper to 3.5.7 (Erick Erickson)
+
+* SOLR-14296: Update netty to 4.1.46 (Andras Solaman via Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
