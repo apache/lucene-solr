@@ -142,6 +142,8 @@ The “expand=true” parameter turns on the ExpandComponent. The ExpandComponen
 
 Inside the expanded section there is a _map_ with each group head pointing to the expanded documents that are within the group. As applications iterate the main collapsed result set, they can access the _expanded_ map to retrieve the expanded groups.
 
+If you would like to have only the number of documents found from the groups in the expanded section returned and not the actual documents, you can set "expand.rows=0". Note that when using "expand.rows=0", score won’t be computed for the expanded section even when requested so maxScore will not be available.
+
 The ExpandComponent has the following parameters:
 
 `expand.sort`::

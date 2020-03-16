@@ -250,6 +250,45 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
             "/response/result/doc[2]/str[@name='id'][.='6']"
     );
 
+    //Test expand.rows = 0 with expand.field
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "type_s:parent");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    params.add("expand", "true");
+    params.add("expand.fq", "type_s:child");
+    params.add("expand.field", group);
+    params.add("expand.rows", "0");
+    assertQ(req(params, "fl", "id"), "*[count(/response/result/doc)=2]",
+            "*[count(/response/lst[@name='expanded']/result)=2]",
+            "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "/response/result/doc[1]/str[@name='id'][.='1']",
+            "/response/result/doc[2]/str[@name='id'][.='5']"
+    );
+
+    //Test score with expand.rows = 0
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "type_s:parent");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    params.add("expand", "true");
+    params.add("expand.fq", "*:*");
+    params.add("expand.field", group);
+    params.add("expand.rows", "0");
+    assertQ(req(params, "fl", "id,score"), "*[count(/response/result/doc)=2]",
+            "*[count(/response/lst[@name='expanded']/result)=2]",
+            "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@maxScore])=0]", //maxScore should not be available
+            "/response/result/doc[1]/str[@name='id'][.='1']",
+            "/response/result/doc[2]/str[@name='id'][.='5']",
+            "count(//*[@name='score' and .='NaN'])=0"
+
+    );
+
     //Test no group results
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5");

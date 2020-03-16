@@ -545,7 +545,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        groups.put(group, getExpandCollector(limit, sort));
+        groups.put(group, getCollector(limit, sort));
       }
 
       this.collapsedSet = collapsedSet;
@@ -626,7 +626,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.nullValue = nullValue;
       groups = new LongObjectHashMap<>(numGroups);
       for (LongCursor cursor : groupSet) {
-        groups.put(cursor.value, getExpandCollector(limit, sort));
+        groups.put(cursor.value, getCollector(limit, sort));
       }
 
       this.field = field;
@@ -676,18 +676,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
-  private static Collector getExpandCollector(int limit, Sort sort) throws IOException {
-    Collector collector;
-    if (limit == 0) {
-      collector = new TotalHitCountCollector();
-    } else if (sort == null) {
-      collector = TopScoreDocCollector.create(limit, Integer.MAX_VALUE);
-    } else {
-      collector = TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
-    }
-    return collector;
-  }
-
   //TODO lets just do simple abstract base class -- a fine use of inheritance
   private interface GroupCollector extends Collector {
     public LongObjectMap<Collector> getGroups();
@@ -700,6 +688,18 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       } else {
         return groups.iterator().next().value.scoreMode(); // we assume all the collectors should have the same nature
       }
+    }
+
+    default Collector getCollector(int limit, Sort sort)  throws IOException {
+      Collector collector;
+      if (limit == 0) {
+        collector = new TotalHitCountCollector();
+      } else if (sort == null) {
+        collector = TopScoreDocCollector.create(limit, Integer.MAX_VALUE);
+      } else {
+        collector = TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
+      }
+      return collector;
     }
   }
 
