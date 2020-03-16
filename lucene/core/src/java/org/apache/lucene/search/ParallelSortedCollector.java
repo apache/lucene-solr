@@ -518,7 +518,7 @@ abstract class ParallelSortedCollector extends TopDocsCollector<Entry> {
         excludeSuperfluousLeaves();
         if (newLeafState.compareTo(thresholdState) <= 0) {
           // Tell the current leaf collector to terminate since it can no longer contribute any top hits
-          System.out.println("  terminate " + newLeafState + " b/c it is > " + thresholdState);
+          //System.out.println("  terminate " + newLeafState + " b/c it is > " + thresholdState);
           return true;
         }
       }
@@ -542,7 +542,7 @@ abstract class ParallelSortedCollector extends TopDocsCollector<Entry> {
         LeafState worstLeafState;
         do {
           worstLeafState = queue.remove();
-          System.out.println(" exclude " + worstLeafState + " because " + totalCollected + " >= " + numHits + "+" + numExcludedBound);
+          //System.out.println(" exclude " + worstLeafState + " because " + totalCollected + " >= " + numHits + "+" + numExcludedBound);
           // We don't need the worst leaf in order to get enough results, so remember how many results
           // (upper bound) it accounted for, setting a new threshold for hits collected
           numExcludedBound += worstLeafState.resultCount;
@@ -550,7 +550,7 @@ abstract class ParallelSortedCollector extends TopDocsCollector<Entry> {
         } while (queue.size() > 1 && totalCollected >= numHits + numExcludedBound);
         // And update the score threshold if the worst leaf remaining after exclusion has a lower max score
         if (worstLeafState.compareTo(thresholdState) > 0) {
-          System.out.println("  new threshold: " + worstLeafState);
+          //System.out.println("  new threshold: " + worstLeafState);
           thresholdState.updateFrom(worstLeafState);
         }
       }
