@@ -57,7 +57,7 @@ Improvements
 
 Optimizations
 ---------------------
-* SOLR-8306: Enhance ExpandComponent to allow expand.hits=0 (Marshall Sanders, Amelia Henderson)
+* SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
 
 Bug Fixes
 ---------------------
