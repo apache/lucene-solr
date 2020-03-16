@@ -191,6 +191,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (!created) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
       }
+      
+      if (sharedIndex) {
+        for (String shardName : shardNames) {
+          ocmh.overseer.getCoreContainer().getSharedStoreManager()
+            .getSharedShardMetadataController().createMetadataNode(collectionName, shardName);
+        }
+      }
 
       // refresh cluster state
       clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();

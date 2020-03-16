@@ -91,6 +91,9 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       String sharedShardName = Assign.buildSharedShardName(collectionName, sliceName);
       // this is a bit inefficient since we do a full copy of the properties
       message = message.plus(ZkStateReader.SHARED_SHARD_NAME, sharedShardName);
+      // create the shard metadata znode
+      ocmh.overseer.getCoreContainer().getSharedStoreManager()
+        .getSharedShardMetadataController().createMetadataNode(collectionName, sliceName);
     }
 
     //ZkStateReader zkStateReader = ocmh.zkStateReader;

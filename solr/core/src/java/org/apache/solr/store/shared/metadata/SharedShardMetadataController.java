@@ -1,4 +1,5 @@
 /*
+
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,12 +54,13 @@ public class SharedShardMetadataController {
   
   /**
    * Creates a new metadata node if it doesn't exist for shared shared index whose correctness metadata 
-   * is managed by ZooKeeper
+   * is managed by ZooKeeper. This node should only be created during Shard creation or Recovery events
+   * and the method will throw an exception if the node already exists.
    *  
    * @param collectionName name of the collection that needs a metadata node
    * @param shardName name of the shard that needs a metadata node
    */
-  public void ensureMetadataNodeExists(String collectionName, String shardName) throws IOException {
+  public void createMetadataNode(String collectionName, String shardName) throws IOException {
     ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
     if (!collection.getSharedIndex()) {
@@ -70,7 +72,7 @@ public class SharedShardMetadataController {
     Map<String, Object> nodeProps = new HashMap<>();
     nodeProps.put(SUFFIX_NODE_NAME, METADATA_NODE_DEFAULT_VALUE);
     
-    createPersistentNodeIfNonExistent(metadataPath, Utils.toJSON(nodeProps));
+    createPersistentNode(metadataPath, Utils.toJSON(nodeProps));
   }
 
   /**
@@ -146,20 +148,18 @@ public class SharedShardMetadataController {
     }
   }
 
-  private void createPersistentNodeIfNonExistent(String path, byte[] data) {
+  private void createPersistentNode(String path, byte[] data) {
     try {
       if (!stateManager.hasData(path)) {
-        try {
-          stateManager.makePath(path, data, CreateMode.PERSISTENT, /* failOnExists */ false);
-        } catch (AlreadyExistsException e) {
-          // it's okay if another beats us creating the node
-        }
+        stateManager.makePath(path, data, CreateMode.PERSISTENT, /* failOnExists */ true);
+      } else {
+        throw new AlreadyExistsException("Node already exists!");
       }
     } catch (InterruptedException e) {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating path " + path
           + " in Zookeeper", e);
-    } catch (IOException | KeeperException e) {
+    } catch (IOException | AlreadyExistsException | KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating path " + path
           + " in Zookeeper", e);
     }

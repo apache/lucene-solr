@@ -17,7 +17,6 @@
 
 package org.apache.solr.store.shared;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,15 +131,13 @@ public class SharedCoreConcurrencyController {
    */
   public static int MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK = 10;
 
-  private final SharedShardMetadataController metadataController;
   /**
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
    * shared store given indexing first happens locally before being propagated to shared store).
    */
   private final ConcurrentHashMap<String, SharedCoreVersionMetadata> coresVersionMetadata;
 
-  public SharedCoreConcurrencyController(SharedShardMetadataController metadataController) {
-    this.metadataController = metadataController;
+  public SharedCoreConcurrencyController() {
     coresVersionMetadata = buildMetadataCache();
   }
 
@@ -269,8 +266,6 @@ public class SharedCoreConcurrencyController {
   private SharedCoreVersionMetadata initializeCoreVersionMetadata(String collectionName, String shardName, String coreName) throws Exception {
     // computeIfAbsent to ensure we only do single initialization
     return coresVersionMetadata.computeIfAbsent(coreName, k -> {
-      // TODO: This metadata should not be created here. It should only be created on shard creation or zk recovery time.
-      ensureShardVersionMetadataNodeExists(collectionName, shardName);
       // a value not to be found as a zk node version
       int version = -1;
       String metadataSuffix = null;
@@ -297,18 +292,6 @@ public class SharedCoreConcurrencyController {
       ReentrantLock corePushLock = new ReentrantLock();
       return new SharedCoreVersionMetadata(version, metadataSuffix, blobCoreMetadata, softGuaranteeOfEquality, corePullLock, corePushLock);
     });
-  }
-
-  @VisibleForTesting
-  protected void ensureShardVersionMetadataNodeExists(String collectionName, String shardName) {
-    try {
-      // creates the metadata node if it doesn't exist
-      metadataController.ensureMetadataNodeExists(collectionName, shardName);
-    } catch (IOException ioe) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          String.format(Locale.ROOT,
-              "Unable to ensure metadata for collection=%s shard=%s", collectionName, shardName), ioe);
-    }
   }
   
   @VisibleForTesting

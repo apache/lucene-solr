@@ -590,8 +590,7 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
    */
   private void configureTestSharedConcurrencyControllerForProcess(
       JettySolrRunner solrProcess, ConcurrentHashMap<String, ConcurrentLinkedQueue<String>> coreConcurrencyStagesMap) {
-    SharedCoreConcurrencyController concurrencyController = new SharedCoreConcurrencyController
-        (solrProcess.getCoreContainer().getSharedStoreManager().getSharedShardMetadataController()) {
+    SharedCoreConcurrencyController concurrencyController = new SharedCoreConcurrencyController() {
       @Override
       public void recordState(String collectionName, String shardName, String coreName, SharedCoreStage stage) {
         super.recordState(collectionName, shardName, coreName, stage);

@@ -270,12 +270,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   private BlobCoreMetadata doPush(SolrCore core) throws Exception {
     String sharedBlobName = Assign.buildSharedShardName(collectionName, shardName);
     // initialize metadata info to match initial zk version
-    SharedCoreConcurrencyController concurrencyController =  new SharedCoreConcurrencyController(null){
-      @Override
-      protected void ensureShardVersionMetadataNodeExists(String collectionName, String shardName) {
-        
-      }
-    };
+    SharedCoreConcurrencyController concurrencyController =  new SharedCoreConcurrencyController();
     concurrencyController.updateCoreVersionMetadata(collectionName, shardName, core.getName(), 
         new SharedShardVersionMetadata(0, SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE),
         BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName));
