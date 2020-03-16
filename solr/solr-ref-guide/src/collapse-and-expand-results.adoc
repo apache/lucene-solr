@@ -149,6 +149,7 @@ Orders the documents within the expanded groups. The default is `score desc`.
 
 `expand.rows`::
 The number of rows to display in each group. The default is 5 rows.
+
 [IMPORTANT]
 ====
 When `expand.rows=0`, then only the number of documents found for each expanded value is returned. Hence, scores won't be computed even if requested. `maxScore` is set to 0
