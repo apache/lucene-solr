@@ -207,7 +207,7 @@ org.slf4j:slf4j-api:1.7.24 (18 constraints: 74f4c3f7)
 org.slf4j:slf4j-simple:1.7.24 (1 constraints: 4005473b)
 org.tallison:jmatio:1.5 (1 constraints: aa041f2c)
 org.tukaani:xz:1.8 (1 constraints: ad04222c)
-ua.net.nlp:morfologik-ukrainian-search:3.9.0 (1 constraints: 0e051536)
+ua.net.nlp:morfologik-ukrainian-search:4.9.1 (1 constraints: 10051b36)
 xerces:xercesImpl:2.12.0 (2 constraints: 1f14b675)
 
 [Test dependencies]
