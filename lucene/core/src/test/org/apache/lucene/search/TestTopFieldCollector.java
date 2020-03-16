@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -77,9 +75,9 @@ public class TestTopFieldCollector extends LuceneTestCase {
     super.tearDown();
   }
 
-  private TopFieldCollector doSearchWithThreshold(int numResults, int thresHold, Query q, Sort sort, IndexReader indexReader) throws IOException {
+  private TopFieldCollector doSearchWithThreshold(int numResults, int threshold, Query q, Sort sort, IndexReader indexReader) throws IOException {
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    TopFieldCollector tdc = TopFieldCollector.create(sort, numResults, thresHold);
+    TopFieldCollector tdc = TopFieldCollector.create(sort, numResults, threshold);
     searcher.search(q, tdc);
     return tdc;
   }
@@ -88,10 +86,6 @@ public class TestTopFieldCollector extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestTopDocsCollector"));
-    return doConcurrentSearchWithExecutor(numResults, threshold, q, sort, indexReader, service);
-  }
-
-  private TopDocs doConcurrentSearchWithExecutor(int numResults, int threshold, Query q, Sort sort, IndexReader indexReader, ExecutorService service) throws IOException {
     try {
       IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
@@ -219,9 +213,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
     for (int totalHitsThreshold = 0; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       for (FieldDoc after : new FieldDoc[] { null, new FieldDoc(4, Float.NaN, new Object[] { 2L })}) {
-        TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */,
-            new MaxScoreTerminator(2, totalHitsThreshold));
-        collector.maxScoreTerminator.setIntervalBits(0); // check on every hit to ensure maximal early termination
+        TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, totalHitsThreshold);
         ScoreAndDoc scorer = new ScoreAndDoc();
 
         LeafCollector leafCollector1 = collector.getLeafCollector(reader.leaves().get(0));
@@ -702,66 +694,6 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
     indexReader.close();
     dir.close();
-  }
-
-  public void testRandomMaxScoreTermination() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    Sort indexSort = new Sort(new SortField("N", SortField.Type.INT, random().nextBoolean()),
-        new SortField("NN", SortField.Type.INT, random().nextBoolean()));
-    iwc.setIndexSort(indexSort);
-    // Sometimes index the sort key in order since this is an adversarial case for strategies that rely on
-    // fair distribution in the index
-    boolean randomizeSortKey = random().nextBoolean();
-    try (Directory dir = newDirectory();
-         RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc)) {
-      int numDocs = atLeast(1000);
-      int sortKeyRange = random().nextInt(numDocs); // have some duplicate sort key values, to test docid tiebreaking?
-      for (int i = 0; i < numDocs; ++i) {
-        Document doc = new Document();
-        if (usually()) {
-          doc.add(new StringField("f", "A", Field.Store.NO));
-        }
-        if (rarely()) {
-          doc.add(new StringField("f", "B", Field.Store.NO));
-        }
-        if (usually()) {
-          if (randomizeSortKey) {
-            doc.add(new NumericDocValuesField("N", random().nextInt(sortKeyRange)));
-          } else {
-            doc.add(new NumericDocValuesField("N", i));
-          }
-        }
-        doc.add(new NumericDocValuesField("NN", random().nextInt()));
-        if (random().nextFloat() < 3f / numDocs) {
-          w.commit();
-        }
-        w.addDocument(doc);
-      }
-      try (IndexReader indexReader = w.getReader()) {
-        Query[] queries = new Query[]{
-            new TermQuery(new Term("f", "A")),
-            new TermQuery(new Term("f", "B")),
-            new BooleanQuery.Builder()
-                .add(new TermQuery(new Term("f", "A")), Occur.MUST)
-                .add(new TermQuery(new Term("f", "B")), Occur.MUST)
-                .build()
-        };
-        int numHits = atLeast(100);
-        Sort[] sorts = new Sort[]{new Sort(new SortField[]{SortField.FIELD_DOC}), indexSort,
-            new Sort(new SortField[]{new SortField("N", SortField.Type.INT)})};
-        for (Query query : queries) {
-          Sort sort = sorts[random().nextInt(sorts.length)];
-          TopFieldCollector fieldCollector = doSearchWithThreshold(numHits, 0, query, sort, indexReader);
-          TopDocs tdc = doConcurrentSearchWithThreshold(numHits, 0, query, sort, indexReader);
-          TopDocs tdc2 = fieldCollector.topDocs();
-
-          assertTrue(tdc.totalHits.value > 0);
-          assertTrue(tdc2.totalHits.value > 0);
-          //System.out.println("sort=" + sort + " randomizeSortKey=" + randomizeSortKey);
-          CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
-        }
-      }
-    }
   }
 
 }

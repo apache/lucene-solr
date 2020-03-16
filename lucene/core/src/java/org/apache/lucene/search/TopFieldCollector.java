@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,14 +45,20 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // always compare lower than a real hit; this would
   // save having to check queueFull on each insert
 
-  private static abstract class MultiComparatorLeafCollector implements LeafCollector {
+  private abstract class TopFieldLeafCollector implements LeafCollector {
 
     final LeafFieldComparator comparator;
     final int reverseMul;
     final int firstReverseMul;
+    final LeafReaderContext context;
+    final boolean canEarlyTerminate;
+
+    private boolean collectedAllCompetitiveHits = false;
     Scorable scorer;
 
-    MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul) {
+    TopFieldLeafCollector(FieldValueHitQueue<Entry> queue, Sort sort, LeafReaderContext context) throws IOException {
+      LeafFieldComparator[] comparators = queue.getComparators(context);
+      int[] reverseMul = queue.getReverseMul();
       firstReverseMul = reverseMul[0];
       if (comparators.length == 1) {
         this.reverseMul = firstReverseMul;
@@ -62,35 +67,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         this.reverseMul = 1;
         this.comparator = new MultiLeafFieldComparator(comparators, reverseMul);
       }
-    }
-
-    @Override
-    public void setScorer(Scorable scorer) throws IOException {
-      comparator.setScorer(scorer);
-      this.scorer = scorer;
-    }
-  }
-
-  private abstract class TopFieldLeafCollector extends MultiComparatorLeafCollector {
-
-    final LeafReaderContext context;
-    final boolean canEarlyTerminate;
-    final MaxScoreTerminator.LeafState leafTerminationState;
-    private boolean collectedAllCompetitiveHits = false;
-    private double score;
-
-    TopFieldLeafCollector(FieldValueHitQueue<Entry> queue, Sort sort, LeafReaderContext context) throws IOException {
-      super(queue.getComparators(context), queue.getReverseMul());
       this.context = context;
       canEarlyTerminate = canEarlyTerminate(sort, context);
-      if (canEarlyTerminate && maxScoreTerminator != null) {
-        leafTerminationState = maxScoreTerminator.addLeafState();
-      } else {
-        leafTerminationState = null;
-      }
     }
 
-    void countHit(int doc) throws IOException {
+    void countHit() throws IOException {
       ++totalHits;
       hitsThresholdChecker.incrementHitCount();
 
@@ -129,22 +110,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       updateMinCompetitiveScore(scorer);
     }
 
-    void collectHitIfCompetitive(int doc) throws IOException {
-      if (reverseMul * comparator.compareBottom(doc) > 0) {
-        comparator.copy(bottom.slot, doc);
-        score = getComparatorValue(bottom.slot);
-        //System.out.printf("leaf=%d doc=%d score=%f\n", context.ord, context.docBase + doc, score);
-        updateBottom(doc);
-        comparator.setBottom(bottom.slot);
-        updateMinCompetitiveScore(scorer);
-      } else {
-        // The comparator has no score from this document. We can use any noncompetitive value
-        // to induce this leaf to be terminated.
-        //System.out.printf("leaf=%d doc=%d (noncompetitive) score=%f\n", context.ord, context.docBase + doc, score);
-        score = getComparatorValue(bottom.slot) + 1;
-      }
-    }
-
     void collectAnyHit(int doc, int hitsCollected) throws IOException {
       // Startup transient: queue hasn't gathered numHits yet
       int slot = hitsCollected - 1;
@@ -157,58 +122,16 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
-    void collectAnyHitAndScore(int doc, int hitsCollected) throws IOException {
-      // Startup transient: queue hasn't gathered numHits yet
-      int slot = hitsCollected - 1;
-      // Copy hit into queue
-      comparator.copy(slot, doc);
-      // compute the doc's score before it gets moved by updating the priority queue
-      score = getComparatorValue(slot);
-      add(slot, doc);
-      if (queueFull) {
-        comparator.setBottom(bottom.slot);
-        updateMinCompetitiveScore(scorer);
-      }
-    }
-
-    double getComparatorValue(int slot) {
-      // We could avoid this cast by genericizing MaxScoreAccumulator and having its Number type
-      // co-vary with this FieldComparator; also - should DocComparator extend
-      // NumericComparator<Integer>?
-      return firstReverseMul * ((Number) firstComparator.value(slot)).doubleValue();
-    }
-
-    void updateTerminationState(int doc) {
-      leafTerminationState.update(score, context.docBase + doc);
-      if ((leafTerminationState.resultCount & maxScoreTerminator.intervalMask) == 0) {
-        //System.out.println("scoreboard update leaf=" + context.ord + " doc=" + context.docBase + "+" + doc + " total=" + totalHits);
-        if (maxScoreTerminator.updateLeafState(leafTerminationState)) {
-          // Stop if across all segments we have collected enough, and our scores are no longer competitive
-          totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-          //System.out.println("scoreboard terminate leaf " + context.ord + " doc=" + context.docBase + "+" + doc + " totalHits=" + totalHits + " score=" + (long) score);
-          throw new CollectionTerminatedException();
-        }
-      }
-    }
-
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      super.setScorer(scorer);
+      this.scorer = scorer;
+      comparator.setScorer(scorer);
       minCompetitiveScore = 0f;
       updateMinCompetitiveScore(scorer);
       if (minScoreAcc != null) {
         updateGlobalMinCompetitiveScore(scorer);
       }
     }
-  }
-
-  static boolean canEarlyTerminateAllSegments(Sort searchSort, List<LeafReaderContext> leafContexts) {
-    for (LeafReaderContext leafContext : leafContexts) {
-      if (canEarlyTerminate(searchSort, leafContext) == false) {
-        return false;
-      }
-    }
-    return true;
   }
 
   static boolean canEarlyTerminate(Sort searchSort, LeafReaderContext context) {
@@ -225,7 +148,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return SortField.FIELD_DOC.equals(fields1[0]);
   }
 
-  static boolean canEarlyTerminateOnPrefix(Sort searchSort, Sort indexSort) {
+  private static boolean canEarlyTerminateOnPrefix(Sort searchSort, Sort indexSort) {
     if (indexSort != null) {
       final SortField[] fields1 = searchSort.getSort();
       final SortField[] fields2 = indexSort.getSort();
@@ -248,9 +171,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits,
                                 HitsThresholdChecker hitsThresholdChecker,
-                                MaxScoreAccumulator minScoreAcc,
-                                MaxScoreTerminator maxScoreTerminator) {
-      super(queue, numHits, sort, hitsThresholdChecker, sort.needsScores(), minScoreAcc, maxScoreTerminator);
+                                MaxScoreAccumulator minScoreAcc) {
+      super(queue, numHits, sort, hitsThresholdChecker, sort.needsScores(), minScoreAcc);
       this.queue = queue;
     }
 
@@ -258,37 +180,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
 
-      if (canEarlyTerminate(sort, context) && maxScoreTerminator != null) {
-        return new TopFieldLeafCollector(queue, sort, context) {
+      return new TopFieldLeafCollector(queue, sort, context) {
 
-          @Override
-          public void collect(int doc) throws IOException {
-            countHit(doc);
-            if (queueFull) {
-              collectHitIfCompetitive(doc);
-            } else {
-              collectAnyHitAndScore(doc, totalHits);
+        @Override
+        public void collect(int doc) throws IOException {
+          countHit();
+          if (queueFull) {
+            if (thresholdCheck(doc)) {
+              return;
             }
-            updateTerminationState(doc);
+            collectCompetitiveHit(doc);
+          } else {
+            collectAnyHit(doc, totalHits);
           }
-        };
-      } else {
-        return new TopFieldLeafCollector(queue, sort, context) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            countHit(doc);
-            if (queueFull) {
-              if (thresholdCheck(doc)) {
-                return;
-              }
-              collectCompetitiveHit(doc);
-            } else {
-              collectAnyHit(doc, totalHits);
-            }
-          }
-        };
-      }
+        }
+      };
     }
   }
 
@@ -303,9 +209,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
                          HitsThresholdChecker hitsThresholdChecker,
-                         MaxScoreAccumulator minScoreAcc,
-                         MaxScoreTerminator maxScoreTerminator) {
-      super(queue, numHits, sort, hitsThresholdChecker, sort.needsScores(), minScoreAcc, maxScoreTerminator);
+                         MaxScoreAccumulator minScoreAcc) {
+      super(queue, numHits, sort, hitsThresholdChecker, sort.needsScores(), minScoreAcc);
       this.queue = queue;
       this.after = after;
 
@@ -323,54 +228,27 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
 
-      if (canEarlyTerminate(sort, context) && maxScoreTerminator != null) {
+      return new TopFieldLeafCollector(queue, sort, context) {
 
-        return new TopFieldLeafCollector(queue, sort, context) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            countHit(doc);
-            final int topCmp = reverseMul * comparator.compareTop(doc);
-            if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
-              // Already collected on a previous page
-              if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-                // we just reached totalHitsThreshold, we can start setting the min
-                // competitive score now
-                updateMinCompetitiveScore(scorer);
-              }
-            } else if (queueFull) {
-              collectHitIfCompetitive(doc);
-            } else {
-              collectedHits++;
-              collectAnyHitAndScore(doc, collectedHits);
+        @Override
+        public void collect(int doc) throws IOException {
+          countHit();
+          final int topCmp = reverseMul * comparator.compareTop(doc);
+          if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
+            // Already collected on a previous page
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
+              updateMinCompetitiveScore(scorer);
             }
-            updateTerminationState(doc);
+          } else if (queueFull) {
+            collectCompetitiveHit(doc);
+          } else {
+            collectedHits++;
+            collectAnyHit(doc, collectedHits);
           }
-        };
-      } else {
-
-        return new TopFieldLeafCollector(queue, sort, context) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            countHit(doc);
-            final int topCmp = reverseMul * comparator.compareTop(doc);
-            if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
-              // Already collected on a previous page
-              if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-                // we just reached totalHitsThreshold, we can start setting the min
-                // competitive score now
-                updateMinCompetitiveScore(scorer);
-              }
-            } else if (queueFull) {
-              collectCompetitiveHit(doc);
-            } else {
-              collectedHits++;
-              collectAnyHit(doc, collectedHits);
-            }
-          }
-        };
-      }
+        }
+      };
     }
 
   }
@@ -382,16 +260,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final HitsThresholdChecker hitsThresholdChecker;
   final FieldComparator.RelevanceComparator relevanceComparator;
   final boolean canSetMinScore;
-  final FieldComparator<?> firstComparator;
 
   // an accumulator that maintains the maximum of the segments' minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
   // the current local minimum competitive score already propagated to the underlying scorer
   float minCompetitiveScore;
-
-  // Enables global early termination with concurrent threads using minimum competitive scores and
-  // collected counts of all segments
-  final MaxScoreTerminator maxScoreTerminator;
 
   final int numComparators;
   FieldValueHitQueue.Entry bottom = null;
@@ -407,7 +280,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // we want.
   private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits, Sort sort,
                             HitsThresholdChecker hitsThresholdChecker, boolean needsScores,
-                            MaxScoreAccumulator minScoreAcc, MaxScoreTerminator maxScoreTerminator) {
+                            MaxScoreAccumulator minScoreAcc) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
@@ -420,20 +293,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           && reverseMul == 1 // if the natural sort is preserved (sort by descending relevance)
           && hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
       relevanceComparator = (FieldComparator.RelevanceComparator) fieldComparator;
-      firstComparator = null;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
     } else {
       relevanceComparator = null;
-      if (maxScoreTerminator != null) {
-        firstComparator = fieldComparator;
-      } else {
-        firstComparator = null;
-      }
       scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
     }
-    this.maxScoreTerminator = maxScoreTerminator;
     this.minScoreAcc = minScoreAcc;
   }
 
@@ -442,7 +308,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return scoreMode;
   }
 
-  void updateGlobalMinCompetitiveScore(Scorable scorer) throws IOException {
+  private void updateGlobalMinCompetitiveScore(Scorable scorer) throws IOException {
     assert minScoreAcc != null;
     if (canSetMinScore
           && hitsThresholdChecker.isThresholdReached()) {
@@ -530,14 +396,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */, null);
+    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */);
   }
 
   /**
    * Same as above with additional parameters to allow passing in the threshold checker and the max score accumulator.
    */
   static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-                                  HitsThresholdChecker hitsThresholdChecker, MaxScoreAccumulator minScoreAcc, MaxScoreTerminator maxScoreTerminator) {
+                                  HitsThresholdChecker hitsThresholdChecker, MaxScoreAccumulator minScoreAcc) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -554,7 +420,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc, maxScoreTerminator);
+      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -564,15 +430,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker, minScoreAcc, maxScoreTerminator);
+      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker, minScoreAcc);
     }
   }
 
   /**
-   * Create a CollectorManager which uses a shared hit counter to maintain number of hits, a shared {@link
-   * MaxScoreAccumulator} to propagate the minimum score across segments if the primary sort is by relevancy, and a
-   * shared {@link MaxScoreTerminator} that maintains per-collector statistics to facilitate early termination when
-   * primary sort matches the index sort.
+   * Create a CollectorManager which uses a shared hit counter to maintain number of hits and a shared {@link
+   * MaxScoreAccumulator} to propagate the minimum score across segments if the primary sort is by relevance.
    */
   public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after,
                                                                                       int totalHitsThreshold) {
@@ -580,23 +444,46 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
       private final MaxScoreAccumulator minScoreAcc = new MaxScoreAccumulator();
-      private final MaxScoreTerminator maxScoreTerminator = MaxScoreTerminator.createIfApplicable(sort, numHits, totalHitsThreshold);
 
       @Override
       public TopFieldCollector newCollector() {
-        return create(sort, numHits, after, hitsThresholdChecker, minScoreAcc, maxScoreTerminator);
+        return create(sort, numHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override
       public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) {
-        final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
-        int i = 0;
-        for (TopFieldCollector collector : collectors) {
-          topDocs[i++] = collector.topDocs();
-        }
-        return TopDocs.merge(sort, 0, numHits, topDocs);
+        return TopFieldCollector.reduce(collectors, sort, numHits);
       }
     };
+  }
+
+  static CollectorManager<TopFieldCollector, TopFieldDocs> createManager(Sort sort, int numHits, FieldDoc after, int numHitsThreshold) {
+
+    return new CollectorManager<>() {
+
+      private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.create(numHitsThreshold);
+
+      @Override
+      public TopFieldCollector newCollector() {
+        return TopFieldCollector.create(sort, numHits, after, hitsThresholdChecker, null);
+      }
+
+      @Override
+      public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) {
+        return TopFieldCollector.reduce(collectors, sort, numHits);
+      }
+
+    };
+
+  }
+
+  private static TopFieldDocs reduce(Collection<TopFieldCollector> collectors, Sort sort, int numHits) {
+    final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
+    int i = 0;
+    for (TopFieldCollector collector : collectors) {
+      topDocs[i++] = collector.topDocs();
+    }
+    return TopDocs.merge(sort, 0, numHits, topDocs);
   }
 
   /**
@@ -680,11 +567,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   @Override
   public TopFieldDocs topDocs() {
     return (TopFieldDocs) super.topDocs();
-  }
-
-  /** Return whether collection terminated early. */
-  public boolean isEarlyTerminated() {
-    return totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO;
   }
 
 }

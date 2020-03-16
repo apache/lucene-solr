@@ -166,4 +166,9 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     return newTopDocs(results, start);
   }
 
+  /** Return whether collection terminated early. */
+  public boolean isEarlyTerminated() {
+    return totalHitsRelation == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+  }
+
 }
