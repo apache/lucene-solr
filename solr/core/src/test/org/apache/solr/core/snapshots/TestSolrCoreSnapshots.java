@@ -29,7 +29,8 @@ import java.util.Optional;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -299,7 +300,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   private List<IndexCommit> listCommits(String directory) throws Exception {
-    SimpleFSDirectory dir = new SimpleFSDirectory(Paths.get(directory));
+    Directory dir = new NIOFSDirectory(Paths.get(directory));
     try {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {

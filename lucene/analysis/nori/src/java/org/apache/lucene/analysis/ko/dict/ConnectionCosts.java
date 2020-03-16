@@ -44,7 +44,6 @@ public final class ConnectionCosts {
    */
   public ConnectionCosts(BinaryDictionary.ResourceScheme scheme, String resourcePath) throws IOException {
     InputStream is = null;
-    ByteBuffer buffer;
     boolean success = false;
     try {
       is = BinaryDictionary.getResource(scheme, resourcePath.replace('.', '/') + FILENAME_SUFFIX);
@@ -73,7 +72,6 @@ public final class ConnectionCosts {
         IOUtils.closeWhileHandlingException(is);
       }
     }
-    this.buffer = buffer;
   }
 
   private ConnectionCosts() throws IOException {

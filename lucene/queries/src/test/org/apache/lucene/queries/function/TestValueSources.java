@@ -379,6 +379,10 @@ public class TestValueSources extends LuceneTestCase {
     ValueSource vs = new QueryValueSource(new FunctionQuery(new ConstValueSource(2f)), 0f);
     assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
     assertAllExist(vs);
+
+    vs = new QueryValueSource(new FunctionRangeQuery(new IntFieldSource("int"), Integer.MIN_VALUE, Integer.MAX_VALUE, true, true), 0f);
+    assertHits(new FunctionQuery(vs), new float[] { 35f, 54f });
+    assertAllExist(vs);
   }
 
   public void testQuery() throws Exception {

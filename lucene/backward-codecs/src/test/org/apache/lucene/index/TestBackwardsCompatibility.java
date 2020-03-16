@@ -71,7 +71,6 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -1442,8 +1441,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           //  - LuceneTestCase.FS_DIRECTORIES is private
           //  - newFSDirectory returns BaseDirectoryWrapper
           //  - BaseDirectoryWrapper doesn't expose delegate
-          Class<? extends FSDirectory> dirImpl = random().nextBoolean() ?
-              SimpleFSDirectory.class : NIOFSDirectory.class;
+          Class<? extends FSDirectory> dirImpl = NIOFSDirectory.class;
           
           args.add("-dir-impl");
           args.add(dirImpl.getName());

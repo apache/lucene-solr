@@ -44,6 +44,9 @@ API Changes
 * LUCENE-9212: Deprecated Intervals.multiterm() methods that take a bare Automaton
   have been removed (Alan Woodward)
 
+* LUCENE-9264: SimpleFSDirectory has been removed in favor of NIOFSDirectory.
+  (Yannick Welsch)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -98,6 +101,53 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+======================= Lucene 8.6.0 =======================
+
+API Changes
+---------------------
+
+* LUCENE-9265: SimpleFSDirectory is deprecated in favor of NIOFSDirectory. (Yannick Welsch)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
+  DocumentsWriter. (Simon Willnauer)
+
+Optimizations
+---------------------
+
+* LUCENE-9254: UniformSplit keeps FST off-heap. (Bruno Roustant)
+
+* LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
+  (Michele Palmia, David Smiley)
+
+Bug Fixes
+---------------------
+* LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
+
+* LUCENE-8849: DocValuesRewriteMethod.visit wasn't visiting its embedded query (Michele Palmia, David Smiley)
+
+* LUCENE-9258: DocTermsIndexDocValues assumed it was operating on a SortedDocValues (single valued) field when
+  it could be multi-valued used with a SortedSetSelector (Michele Palmia)
+
+* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
+  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
+
+Other
+---------------------
+
+* LUCENE-9257: Always keep FST off-heap. FSTLoadMode, Reader attributes and openedFromWriter removed. (Bruno Roustant)
+
+* LUCENE-9272: Checksums of the terms index are now verified when
+  LeafReader#checkIntegrity is called rather than when opening the index.
+  (Adrien Grand)
+
+* LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
@@ -124,6 +174,9 @@ API Changes
 
 * LUCENE-9150: Restore support for dynamic PlanetModel in spatial3d. (Nick Knize)
 
+* LUCENE-9171: QueryBuilder.newTermQuery() and .newSynonymQuery() now take boost parameters.
+  (Alessandro Benedetti, Alan Woodward)
+
 New Features
 ---------------------
 
@@ -137,19 +190,11 @@ New Features
 Improvements
 ---------------------
 
-* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
-
 * LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
 
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 
 * LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
-
-* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
-  TestSecurityManager (Uwe Schindler)
-
-* LUCENE-9110: Backport refactored stack analysis in tests to use generalized
-  LuceneTestCase methods (Uwe Schindler)
 
 * LUCENE-9105: UniformSplit postings format detects corrupted index and better handles IO exceptions. (Bruno Roustant)
 
@@ -162,18 +207,24 @@ Improvements
 * LUCENE-9153: Allow WhitespaceAnalyzer to set a maxTokenLength other than the default of 255
   (Alan Woodward)
 
-* LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
-
 * LUCENE-9152: Improve line intersections with polygons when they are touching from the outside. (Ignacio Vera)
-
-* LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
-  executed with input objects that extend such interface. (Ignacio Vera)
 
 * LUCENE-9123: Add new JapaneseTokenizer constructors with discardCompoundToken option that controls whether
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
-* LUCENE-9194: Simplify XYShapeXQuery API by adding a new abstract class called XYGeometry. Queries are
-  executed with input objects that extend such interface. (Ignacio Vera)
+* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
+
+* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
+
+* LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
+  boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)
+
+Optimizations
+---------------------
+
+* LUCENE-9211: Add compression for Binary doc value fields. (Mark Harwood)
+
+* LUCENE-4702: Better compression of terms dictionaries. (Adrien Grand)
 
 * LUCENE-9228: Sort dvUpdates in the term order before applying if they all update a
   single field to the same value. This optimization can reduce the flush time by around
@@ -183,12 +234,7 @@ Improvements
 
 * LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
 
-* LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
-
-* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
-
-Optimizations
----------------------
+* LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
 
 * LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
@@ -229,13 +275,25 @@ Bug Fixes
 * LUCENE-9251: Fix bug in the polygon tessellator where edges with different value on #isEdgeFromPolygon
   were bot filtered out properly. (Ignacio Vera)
 
+* LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
+
 Other
 ---------------------
 
+* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
+  TestSecurityManager (Uwe Schindler)
+
+* LUCENE-9110: Backport refactored stack analysis in tests to use generalized
+  LuceneTestCase methods (Uwe Schindler)
+
+* LUCENE-9141: Simplify LatLonShapeXQuery API by adding a new abstract class called LatLonGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
+
+* LUCENE-9194: Simplify XYShapeXQuery API by adding a new abstract class called XYGeometry. Queries are
+  executed with input objects that extend such interface. (Ignacio Vera)
+
 * LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
   (kkewwei via Adrien Grand)
-
-* LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
 
 * LUCENE-9225: Rectangle extends LatLonGeometry so it can be used in a geometry collection. (Ignacio Vera)
 

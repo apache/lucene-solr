@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
@@ -42,8 +41,7 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   public void testNodeConfigConstructor() throws Exception {
     Path path = createTempDir();
 
-    SolrResourceLoader loader = new SolrResourceLoader(path);
-    NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", loader)
+    NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", path)
         .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
         .build();
 
