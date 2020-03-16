@@ -84,6 +84,8 @@ Improvements
 
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
+* LUCENE-9279: Update dictionary version for Ukrainian analyzer
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
