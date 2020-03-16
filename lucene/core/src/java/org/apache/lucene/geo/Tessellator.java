@@ -122,9 +122,9 @@ final public class Tessellator {
 
   public static final List<Triangle> tessellate(final XYPolygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
-    // then filter instances of intersections.
-    Node outerNode = createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
-        0, WindingOrder.CW);
+    // then filter instances of intersections.0
+    Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
+        polygon.getWindingOrder(), false, 0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
       throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
@@ -193,7 +193,8 @@ final public class Tessellator {
     int nodeIndex = polygon.numPoints() ;
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
-      Node list = createDoublyLinkedList(holes[i].getPolyX(), holes[i].getPolyY(), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
+      Node list = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyX()),
+          XYEncodingUtils.floatArrayToDoubleArray(holes[i].getPolyY()), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
@@ -434,7 +435,6 @@ final public class Tessellator {
           continue;
         }
         currEar = nextNode;
-
         // If the whole polygon has been iterated over and no more ears can be found.
         if (currEar == stop) {
           switch (state) {
@@ -914,13 +914,14 @@ final public class Tessellator {
       continueIteration = false;
       nextNode = node.next;
       prevNode = node.previous;
-      //We can filter points when they are the same, if not and they are co-linear we can only
-      //remove it if both edges have the same value in .isNextEdgeFromPolygon
-      if (isVertexEquals(node, nextNode)  ||
-          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon &&
+      // we can filter points when:
+      if (isVertexEquals(node, nextNode)  ||   // 1. they are the same,
+          isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
+          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon && // 3.- they are co-linear and both edges have the same value in .isNextEdgeFromPolygon
               area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
         // Remove the node
-        removeNode(node, prevNode.isNextEdgeFromPolygon);
+        boolean nextEdgeFromPol = prevNode.isNextEdgeFromPolygon != node.isNextEdgeFromPolygon ? true : prevNode.isNextEdgeFromPolygon;
+        removeNode(node, nextEdgeFromPol);
         node = end = prevNode;
 
         if (node == nextNode) {
@@ -1059,8 +1060,9 @@ final public class Tessellator {
       this.vrtxIdx = vertexIndex;
       this.polyX = x;
       this.polyY = y;
-      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : XYEncodingUtils.encode(polyY[vrtxIdx]);
-      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : XYEncodingUtils.encode(polyX[vrtxIdx]);
+      // casting to float is safe as original values for non-geo are represented as floats
+      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : XYEncodingUtils.encode((float) polyY[vrtxIdx]);
+      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : XYEncodingUtils.encode((float) polyX[vrtxIdx]);
       this.morton = BitUtil.interleave(this.x ^ 0x80000000, this.y ^ 0x80000000);
       this.previous = null;
       this.next = null;

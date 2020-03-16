@@ -1,0 +1,108 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: "de.undercouch.download"
+
+configure(rootProject) {
+  task snowball()  {
+    description "Regenerate snowball-based sources, stopwords, and tests for ...lucene/analysis."
+    group "generation"
+
+    dependsOn ":lucene:analysis:common:snowballGen"
+  }
+}
+
+configure(project(":lucene:analysis:common")) {
+  ext {
+    // git commit hash of source code https://github.com/snowballstem/snowball/
+    snowballStemmerCommit = "53739a805cfa6c77ff8496dc711dc1c106d987c1"
+    // git commit hash of stopwords https://github.com/snowballstem/snowball-website
+    snowballWebsiteCommit = "ff891e74f08e7315523ee3c0cad55bb1b7831b9d"
+    // git commit hash of test data https://github.com/snowballstem/snowball-data
+    snowballDataCommit    = "9145f8732ec952c8a3d1066be251da198a8bc792"
+
+    snowballWorkDir    = file("${buildDir}/snowball")
+
+    snowballStemmerDir = file("${snowballWorkDir}/stemmers-${snowballStemmerCommit}")
+    snowballWebsiteDir = file("${snowballWorkDir}/website-${snowballWebsiteCommit}")
+    snowballDataDir    = file("${snowballWorkDir}/data-${snowballDataCommit}")
+
+    snowballPatchFile  = rootProject.file("gradle/generation/snowball.patch")
+    snowballScript     = rootProject.file("gradle/generation/snowball.sh")
+  }
+
+  // downloads snowball stemmers (or use cached copy)
+  task downloadSnowballStemmers(type: Download) {
+    inputs.file(snowballPatchFile)
+    src "https://github.com/snowballstem/snowball/archive/${snowballStemmerCommit}.zip"
+    def snowballStemmerZip = file("${snowballStemmerDir}.zip")
+    dest snowballStemmerZip
+    overwrite false
+    tempAndMove true
+
+    doLast {
+      ant.unzip(src: snowballStemmerZip, dest: snowballStemmerDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+      ant.patch(patchfile: snowballPatchFile, dir: snowballStemmerDir, strip: "1")
+    }
+  }
+
+  // downloads snowball website (or use cached copy)
+  task downloadSnowballWebsite(type: Download) {
+    src "https://github.com/snowballstem/snowball-website/archive/${snowballWebsiteCommit}.zip"
+    def snowballWebsiteZip = file("${snowballWebsiteDir}.zip")
+    dest snowballWebsiteZip
+    overwrite false
+    tempAndMove true
+
+    doLast {
+      ant.unzip(src: snowballWebsiteZip, dest: snowballWebsiteDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+    }
+  }
+
+  // downloads snowball test data (or use cached copy)
+  task downloadSnowballData(type: Download) {
+    src "https://github.com/snowballstem/snowball-data/archive/${snowballDataCommit}.zip"
+    def snowballDataZip = file("${snowballDataDir}.zip")
+    dest snowballDataZip
+    overwrite false
+    tempAndMove true
+
+    doLast {
+      ant.unzip(src: snowballDataZip, dest: snowballDataDir, overwrite: "true") {
+        ant.cutdirsmapper(dirs: "1")
+      }
+    }
+  }
+
+  // runs shell script to regenerate stemmers, base stemming subclasses, test data, and stopwords.
+  task snowballGen() {
+    dependsOn downloadSnowballStemmers
+    dependsOn downloadSnowballWebsite
+    dependsOn downloadSnowballData
+
+    doLast {
+      project.exec {
+        executable "bash"
+        args = [snowballScript, snowballStemmerDir, snowballWebsiteDir, snowballDataDir, projectDir]
+      }
+    }
+  }
+}

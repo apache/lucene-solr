@@ -29,10 +29,10 @@ ant jar-checksums   => gradlew updateLicenses
 ant check-licenses  => gradlew licenses     [better: gradlew check -x test]
 ant clean-jars      => (NO REPLACEMENT)
 
-ant precommit       => gradlew precommit 
+ant precommit       => gradlew precommit    [better: gradlew check -x test]
 
 ant get-maven-poms  => gradlew mavenLocal
-
+ 
 Solr-specific targets
 ---------------------
 

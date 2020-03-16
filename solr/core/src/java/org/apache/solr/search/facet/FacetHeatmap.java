@@ -38,7 +38,6 @@ import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -47,8 +46,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.RptWithGeometrySpatialField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType;
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DistanceUnits;
@@ -259,15 +256,8 @@ public class FacetHeatmap extends FacetRequest {
         return null; // means match everything (all live docs). This can speedup things a lot.
       } else if (docSet.size() == 0) {
         return new Bits.MatchNoBits(searcher.maxDoc()); // can speedup things a lot
-      } else if (docSet instanceof BitDocSet) {
-        return ((BitDocSet) docSet).getBits();
       } else {
-        // TODO DocSetBase.getBits ought to be at DocSet level?  Though it doesn't know maxDoc but it could?
-        FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
-        for (DocIterator iter = docSet.iterator(); iter.hasNext();) {
-          bits.set(iter.nextDoc());
-        }
-        return bits;
+        return docSet.getBits();
       }
     }
 

@@ -35,7 +35,7 @@ import org.apache.lucene.index.SegmentWriteState;
 public class STUniformSplitRot13PostingsFormat extends UniformSplitRot13PostingsFormat {
 
   public STUniformSplitRot13PostingsFormat() {
-    super("STUniformSplitRot13");
+    super("STUniformSplitRot13", false);
   }
 
   protected FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
@@ -54,6 +54,6 @@ public class STUniformSplitRot13PostingsFormat extends UniformSplitRot13Postings
   }
 
   protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new STUniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder());
+    return new STUniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
   }
 }

@@ -128,7 +128,7 @@ public abstract class SpatialStrategy {
   /**
    * Returns a ValueSource with values ranging from 1 to 0, depending inversely
    * on the distance from {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point,double)}.
-   * The formula is {@code c/(d + c)} where 'd' is the distance and 'c' is
+   * The formula is {@code zScaling/(d + zScaling)} where 'd' is the distance and 'zScaling' is
    * one tenth the distance to the farthest edge from the center. Thus the
    * scores will be 1 for indexed points at the center of the query shape and as
    * low as ~0.1 at its furthest edges.

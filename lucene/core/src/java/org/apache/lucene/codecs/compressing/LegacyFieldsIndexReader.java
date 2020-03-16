@@ -216,4 +216,9 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
   public void close() throws IOException {
     // nothing to do
   }
+
+  @Override
+  void checkIntegrity() throws IOException {
+    // nothing to do, the index is checked at open time
+  }
 }
