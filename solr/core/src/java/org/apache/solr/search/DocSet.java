@@ -36,6 +36,21 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
     assert this instanceof BitDocSet || this instanceof SortedIntDocSet;
   }
 
+  // we can't simply use a trivial static initializer "= new SortedIntDocSet" because it can lead to classloader deadlock
+  private static DocSet EMPTY;
+
+  /** An empty instance. */
+  public static DocSet empty() {
+    // The static field EMPTY is set with an immutable instance lazily.  SortedIntDocSet is an "effectively final" class
+    //  and so this is thread-safe, as it will not be partially-constructed.  It's no big deal to create more than
+    //  if multiple threads create this as they are relatively cheap and equivalent.
+    DocSet empty = EMPTY;
+    if (empty == null) {
+      empty = EMPTY = new SortedIntDocSet(new int[0]);
+    }
+    return empty;
+  }
+
   /**
    * Returns the number of documents in the set.
    */
@@ -114,8 +129,6 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
 
 
   public abstract DocSet clone();
-
-  public static final DocSet EMPTY = new SortedIntDocSet(new int[0], 0);
 
   /**
    * A {@link Bits} that has fast random access (as is generally required of Bits).
