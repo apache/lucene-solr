@@ -212,9 +212,12 @@ public class ServerSideMetadata {
   }
 
   /**
-   * @return Null if the directory hash was not computed for the given Core 
+   * @throw IllegalStateException is this instance was not created with a computed directoryHash 
    */
   public String getDirectoryHash() {
+    if (this.directoryHash == null) {
+      throw new IllegalStateException("Directory hash was not computed for the given core");
+    }
     return this.directoryHash;
   }
 
@@ -229,13 +232,18 @@ public class ServerSideMetadata {
   /**
    * Returns <code>true</code> if the contents of the directory passed into this method is identical to the contents of
    * the directory of the Solr core of this instance, taken at instance creation time. If the directory hash was not 
-   * computed at the instance creation time, then this returns <code>false</code>
+   * computed at the instance creation time, then we throw an IllegalStateException indicating a programming error.
    *
    * Passing in the Directory (expected to be the directory of the same core used during construction) because it seems
    * safer than trying to get it again here...
+   * 
+   * @throw IllegalStateException is this instance was not created with a computed directoryHash 
    */
   public boolean isSameDirectoryContent(Directory coreDir) throws NoSuchAlgorithmException, IOException {
-    return directoryHash != null ? directoryHash.equals(getSolrDirectoryHash(coreDir, coreDir.listAll())) : false;
+    if (directoryHash == null) {
+      throw new IllegalStateException("Directory hash was not computed for the given core");
+    }
+    return directoryHash.equals(getSolrDirectoryHash(coreDir, coreDir.listAll()));
   }
 
   /**
