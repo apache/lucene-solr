@@ -139,6 +139,9 @@ Bug Fixes
 * LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
   (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
 
+* LUCENE-8908: Return default value from objectVal when doc doesn't match the query in QueryValueSource
+  (Bill Bell, hossman, Munendra S N, Michele Palmia)
+
 Other
 ---------------------
 
