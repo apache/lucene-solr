@@ -286,7 +286,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
 
       // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
-      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), storeManager.getCoreContainer(), false);
+      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), storeManager.getCoreContainer(), false, true);
       SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
           serverMetadata, blobMetadata);
       

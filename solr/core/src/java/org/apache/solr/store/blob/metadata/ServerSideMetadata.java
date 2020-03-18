@@ -104,10 +104,11 @@ public class ServerSideMetadata {
    *
    * @param reserveCommit if <code>true</code>, latest commit is reserved for a short while ({@link #RESERVE_COMMIT_DURATION})
    *                      to (reasonably) allow the caller to save it while it pushes files to Blob.
-   *
+   * @param captureDirHash if <code>true</code>, a directory hash is computed for the contents of the specified Core's
+   *                      index directory.  
    * @throws Exception if core corresponding to <code>coreName</code> can't be found.
    */
-  public ServerSideMetadata(String coreName, CoreContainer coreContainer, boolean reserveCommit) throws Exception {
+  public ServerSideMetadata(String coreName, CoreContainer coreContainer, boolean reserveCommit, boolean captureDirHash) throws Exception {
     this.coreName = coreName;
     this.container = coreContainer;
     this.core = coreContainer.getCore(coreName);
@@ -123,38 +124,48 @@ public class ServerSideMetadata {
         ImmutableCollection.Builder<CoreFileData> latestCommitBuilder;
         IndexCommit latestCommit;
         int attempt = 1;
-        // we don't have an atomic way of capturing a commit point i.e. there is a slight chance of losing files between 
-        // getting a latest commit and reserving it. Therefore, we try to capture commit point in a loop with maximum 
-        // number of attempts. 
+        // we don't have an atomic way of capturing a commit point or taking a snapshot of the entire 
+        // index directory to compute a directory hash. In the commit point case, there is a slight chance 
+        // of losing files between getting a latest commit and reserving it. Likewise, there is a chance
+        // of losing files between the time we list all file names in the directory and computing the directory
+        // hash. Therefore, we try to capture the commit point and compute the directory hash in a loop
+        // with with maximum number of attempts.
+        String hash = null;
+        String[] fileNames;
         while (true) {
           try {
             // Work around possible bug returning same file multiple times by using a set here
             // See org.apache.solr.handler.ReplicationHandler.getFileList()
             latestCommitBuilder = new ImmutableSet.Builder<>();
             latestCommit = tryCapturingLatestCommit(coreDir, latestCommitBuilder, reserveCommit);
+            
+            // Capture now the hash and verify again after files have been pulled and before the directory is updated (or before
+            // the index is switched to use a new directory) to make sure there are no local changes at the same time that might
+            // lead to a corruption in case of interaction with the download or might be a sign of other problems (it is not
+            // expected that indexing can happen on a local directory of a SHARED replica if that replica is not up to date with
+            // the Blob store version).
+            fileNames = coreDir.listAll();
+            if (captureDirHash) {
+              hash = getSolrDirectoryHash(coreDir, fileNames);
+            }
             break;
           } catch (FileNotFoundException | NoSuchFileException ex) {
             attempt++;
             if (attempt > MAX_ATTEMPTS_TO_CAPTURE_COMMIT_POINT) {
               throw ex;
             }
-            log.info(String.format(Locale.ROOT, "Failed to capture commit point: core=%s attempt=%s reason=%s",
+            log.info(String.format(Locale.ROOT, "Failed to capture directory snapshot for either commit "
+                + "point or entire directory listing: core=%s attempt=%s reason=%s",
                 coreName, attempt, ex.getMessage()));
           }
         }
 
         generation = latestCommit.getGeneration();
         latestCommitFiles = latestCommitBuilder.build();
-
-        // Capture now the hash and verify again after files have been pulled and before the directory is updated (or before
-        // the index is switched to use a new directory) to make sure there are no local changes at the same time that might
-        // lead to a corruption in case of interaction with the download or might be a sign of other problems (it is not
-        // expected that indexing can happen on a local directory of a SHARED replica if that replica is not up to date with
-        // the Blob store version).
-        directoryHash = getSolrDirectoryHash(coreDir);
+        directoryHash = hash;
 
         // Need to inventory all local files in case files that need to be pulled from Blob conflict with them.
-        allFiles = ImmutableSet.copyOf(coreDir.listAll());
+        allFiles = ImmutableSet.copyOf(fileNames);
       } finally {
         core.getDirectoryFactory().release(coreDir);
       }
@@ -200,6 +211,9 @@ public class ServerSideMetadata {
     return this.generation;
   }
 
+  /**
+   * @return Null if the directory hash was not computed for the given Core 
+   */
   public String getDirectoryHash() {
     return this.directoryHash;
   }
@@ -214,23 +228,23 @@ public class ServerSideMetadata {
 
   /**
    * Returns <code>true</code> if the contents of the directory passed into this method is identical to the contents of
-   * the directory of the Solr core of this instance, taken at instance creation time.<p>
+   * the directory of the Solr core of this instance, taken at instance creation time. If the directory hash was not 
+   * computed at the instance creation time, then this returns <code>false</code>
    *
    * Passing in the Directory (expected to be the directory of the same core used during construction) because it seems
    * safer than trying to get it again here...
    */
   public boolean isSameDirectoryContent(Directory coreDir) throws NoSuchAlgorithmException, IOException {
-    return directoryHash.equals(getSolrDirectoryHash(coreDir));
+    return directoryHash != null ? directoryHash.equals(getSolrDirectoryHash(coreDir, coreDir.listAll())) : false;
   }
 
   /**
    * Computes a hash of a Solr Directory in order to make sure the directory doesn't change as we pull content into it (if we need to
    * pull content into it)
    */
-  private String getSolrDirectoryHash(Directory coreDir) throws NoSuchAlgorithmException, IOException {
+  private String getSolrDirectoryHash(Directory coreDir, String[] filesNames) throws NoSuchAlgorithmException, IOException {
     MessageDigest digest = MessageDigest.getInstance("sha1"); // not sure MD5 is available in Solr jars
 
-    String[] filesNames = coreDir.listAll();
     // Computing the hash requires items to be submitted in the same order...
     Arrays.sort(filesNames);
 
