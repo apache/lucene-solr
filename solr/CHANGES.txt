@@ -19,7 +19,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
 
 Bug Fixes
 ---------------------
