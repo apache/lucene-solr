@@ -76,6 +76,8 @@ Other Changes
 
 * SOLR-14296: Update netty to 4.1.46 (Andras Solaman via Erick Erickson)
 
+* SOLR-10157: Improve error messages when unknown aggregations are specified in the request (hossman, Munendra S N)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
