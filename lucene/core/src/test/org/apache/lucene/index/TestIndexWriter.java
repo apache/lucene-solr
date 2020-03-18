@@ -4006,4 +4006,45 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  @Nightly
+  public void testAddDocumentsMassive() throws Exception {
+    Directory dir = newFSDirectory(createTempDir("addDocumentsMassive"));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    StringBuilder sb = new StringBuilder();
+    // same doc with lots of duplicated terms to put pressure on FreqProxTermsWriter instead of terms dict.
+    for (int i = 0; i < 1024; i++) {
+      sb.append(i);
+      sb.append(' ');
+    }
+    final AtomicInteger count = new AtomicInteger(0);
+    Document doc = new Document();
+    try {
+      doc.add(new TextField("text", sb.toString(), Field.Store.NO));
+      w.addDocument(doc);
+      w.addDocuments((Iterable<Document>) () -> new Iterator<>() {
+
+        @Override
+        public boolean hasNext() {
+          return count.get() < 100_000_000;
+        }
+
+        @Override
+        public Document next() {
+          if (!hasNext()) {
+            throw new AssertionError();
+          }
+          count.incrementAndGet();
+          return doc;
+        }
+      });
+    } catch (IllegalArgumentException ex) {
+      assertEquals("RAM used by a single DocumentsWriterPerThread can not exceed: 1945MB", ex.getMessage());
+    }
+    w.commit();
+    assertEquals(1, w.getDocStats().numDocs);
+    assertEquals(count.get(), w.getDocStats().maxDoc); // one doc we added first and the one that failed.
+    w.close();
+    dir.close();
+  }
 }
