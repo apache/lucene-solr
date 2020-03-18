@@ -117,10 +117,15 @@ Improvements
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
   DocumentsWriter. (Simon Willnauer)
 
+* LUCENE-9279: Update dictionary version for Ukrainian analyzer to 4.9.1 (Andriy Rysin via Dawid Weiss)
+
 Optimizations
 ---------------------
 
 * LUCENE-9254: UniformSplit keeps FST off-heap. (Bruno Roustant)
+
+* LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
+  (Michele Palmia, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -130,6 +135,12 @@ Bug Fixes
 
 * LUCENE-9258: DocTermsIndexDocValues assumed it was operating on a SortedDocValues (single valued) field when
   it could be multi-valued used with a SortedSetSelector (Michele Palmia)
+
+* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
+  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
+
+* LUCENE-8908: Return default value from objectVal when doc doesn't match the query in QueryValueSource
+  (Bill Bell, hossman, Munendra S N, Michele Palmia)
 
 Other
 ---------------------
@@ -270,9 +281,6 @@ Bug Fixes
   were bot filtered out properly. (Ignacio Vera)
 
 * LUCENE-9263: Fix wrong transformation of distance in meters to radians in Geo3DPoint. (Ignacio Vera)
-
-* LUCENE-9164: Ensure IW processes all internal events before it closes itself on a rollback.
-  (Simon Willnauer, Nhat Nguyen, Dawid Weiss, Mike Mccandless)
 
 Other
 ---------------------

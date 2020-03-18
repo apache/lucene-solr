@@ -45,6 +45,8 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 // Related tests:
 //   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
 //   TestJsonFacetRefinement for refinement tests
@@ -3816,6 +3818,41 @@ public class TestJsonFacets extends SolrTestCaseHS {
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:bleh,facet:" +
             "{bleh:\"unique(cat_s)\",id:{type:terms,field:id,sort:{bleh:desc},facet:{bleh:\"unique(id)\"}}}}}")
     );
+  }
+
+  @Test
+  public void testAggErrors() {
+    ignoreException("aggregation");
+
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+
+    resetExceptionIgnores();
   }
 
 

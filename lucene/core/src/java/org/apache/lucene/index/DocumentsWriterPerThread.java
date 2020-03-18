@@ -21,6 +21,7 @@ import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -76,7 +77,7 @@ final class DocumentsWriterPerThread {
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
     @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException {
+    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) {
       return new DefaultIndexingChain(documentsWriterPerThread);
     }
   };
@@ -111,8 +112,7 @@ final class DocumentsWriterPerThread {
     final int delCount;
 
     private FlushedSegment(InfoStream infoStream, SegmentCommitInfo segmentInfo, FieldInfos fieldInfos,
-                           BufferedUpdates segmentUpdates, FixedBitSet liveDocs, int delCount, Sorter.DocMap sortMap)
-      throws IOException {
+                           BufferedUpdates segmentUpdates, FixedBitSet liveDocs, int delCount, Sorter.DocMap sortMap) {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
       this.segmentUpdates = segmentUpdates != null && segmentUpdates.any() ? new FrozenBufferedUpdates(infoStream, segmentUpdates, segmentInfo) : null;
@@ -187,7 +187,7 @@ final class DocumentsWriterPerThread {
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
     pendingUpdates = new BufferedUpdates(segmentName);
     intBlockAllocator = new IntBlockAllocator(bytesUsed);
-    this.deleteQueue = deleteQueue;
+    this.deleteQueue = Objects.requireNonNull(deleteQueue);
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
    
@@ -196,11 +196,11 @@ final class DocumentsWriterPerThread {
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
     }
+    this.enableTestPoints = enableTestPoints;
+    this.indexVersionCreated = indexVersionCreated;
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
-    this.enableTestPoints = enableTestPoints;
-    this.indexVersionCreated = indexVersionCreated;
     this.hardMaxBytesPerDWPT = indexWriterConfig.getRAMPerThreadHardLimitMB() * 1024 * 1024;
   }
   
@@ -236,12 +236,11 @@ final class DocumentsWriterPerThread {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
-      assert deleteQueue != null;
       docState.analyzer = analyzer;
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
       }
-      int docCount = 0;
+      final int docsInRamBefore = numDocsInRAM;
       boolean allDocsIndexed = false;
       try {
         for (Iterable<? extends IndexableField> doc : docs) {
@@ -254,34 +253,19 @@ final class DocumentsWriterPerThread {
           reserveOneDoc();
           docState.doc = doc;
           docState.docID = numDocsInRAM;
-          docCount++;
-
-          boolean success = false;
           try {
             consumer.processDocument();
-            success = true;
           } finally {
-            if (!success) {
-              // Incr here because finishDocument will not
-              // be called (because an exc is being thrown):
-              numDocsInRAM++;
-            }
+            numDocsInRAM++; // we count the doc anyway even in the case of an exception
           }
-
-          numDocsInRAM++;
         }
         allDocsIndexed = true;
-        return finishDocuments(deleteNode, docCount);
+        return finishDocuments(deleteNode, docsInRamBefore);
       } finally {
         if (!allDocsIndexed && !aborted) {
           // the iterator threw an exception that is not aborting
           // go and mark all docs from this block as deleted
-          int docID = numDocsInRAM - 1;
-          final int endDocID = docID - docCount;
-          while (docID > endDocID) {
-            deleteDocID(docID);
-            docID--;
-          }
+          deleteLastDocs(numDocsInRAM - docsInRamBefore);
         }
         docState.clear();
       }
@@ -290,7 +274,7 @@ final class DocumentsWriterPerThread {
     }
   }
   
-  private long finishDocuments(DocumentsWriterDeleteQueue.Node<?> deleteNode, int docCount) {
+  private long finishDocuments(DocumentsWriterDeleteQueue.Node<?> deleteNode, int docIdUpTo) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -306,13 +290,13 @@ final class DocumentsWriterPerThread {
     if (deleteNode != null) {
       seqNo = deleteQueue.add(deleteNode, deleteSlice);
       assert deleteSlice.isTail(deleteNode) : "expected the delete term as the tail item";
-      deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
+      deleteSlice.apply(pendingUpdates, docIdUpTo);
       return seqNo;
     } else {
       seqNo = deleteQueue.updateSlice(deleteSlice);
       if (seqNo < 0) {
         seqNo = -seqNo;
-        deleteSlice.apply(pendingUpdates, numDocsInRAM - docCount);
+        deleteSlice.apply(pendingUpdates, docIdUpTo);
       } else {
         deleteSlice.reset();
       }
@@ -321,10 +305,17 @@ final class DocumentsWriterPerThread {
     return seqNo;
   }
 
-  // Buffer a specific docID for deletion. Currently only
-  // used when we hit an exception when adding a document
-  void deleteDocID(int docIDUpto) {
-    pendingUpdates.addDocID(docIDUpto);
+  // This method marks the last N docs as deleted. This is used
+  // in the case of a non-aborting exception. There are several cases
+  // where we fail a document ie. due to an exception during analysis
+  // that causes the doc to be rejected but won't cause the DWPT to be
+  // stale nor the entire IW to abort and shutdown. In such a case
+  // we only mark these docs as deleted and turn it into a livedocs
+  // during flush
+  private void deleteLastDocs(int docCount) {
+    for (int docId = numDocsInRAM - docCount; docId < numDocsInRAM; docId++) {
+      pendingUpdates.addDocID(docId);
+    }
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -344,13 +335,12 @@ final class DocumentsWriterPerThread {
     return numDocsInRAM;
   }
 
-  
   /**
    * Prepares this DWPT for flushing. This method will freeze and return the
    * {@link DocumentsWriterDeleteQueue}s global buffer and apply all pending
    * deletes to this DWPT.
    */
-  FrozenBufferedUpdates prepareFlush() throws IOException {
+  FrozenBufferedUpdates prepareFlush() {
     assert numDocsInRAM > 0;
     final FrozenBufferedUpdates globalUpdates = deleteQueue.freezeGlobalBuffer(deleteSlice);
     /* deleteSlice can possibly be null if we have hit non-aborting exceptions during indexing and never succeeded 
@@ -482,7 +472,7 @@ final class DocumentsWriterPerThread {
     return filesToDelete;
   }
 
-  private FixedBitSet sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
+  private FixedBitSet sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) {
     assert liveDocs != null && sortMap != null;
     FixedBitSet sortedLiveDocs = new FixedBitSet(liveDocs.length());
     sortedLiveDocs.set(0, liveDocs.length());

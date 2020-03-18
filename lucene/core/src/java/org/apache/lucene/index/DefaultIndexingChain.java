@@ -77,7 +77,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   private final Set<String> finishedDocValues = new HashSet<>();
 
-  public DefaultIndexingChain(DocumentsWriterPerThread docWriter) throws IOException {
+  public DefaultIndexingChain(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.fieldInfos = docWriter.getFieldInfosBuilder();
     this.docState = docWriter.docState;
