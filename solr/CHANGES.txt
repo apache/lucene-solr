@@ -40,6 +40,9 @@ Other Changes
 
 * SOLR-10157: Improve error messages when unknown aggregations are specified in the request (hossman, Munendra S N)
 
+* SOLR-13944: Remove redundant checks in SpellCheckCollator and add tests for spellcheck with collapse
+  (Stefan, Munendra S N, Tomas Eduardo Fernandez Lobbe)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
