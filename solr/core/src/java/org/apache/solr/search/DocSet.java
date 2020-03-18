@@ -36,19 +36,14 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
     assert this instanceof BitDocSet || this instanceof SortedIntDocSet;
   }
 
-  // we can't simply use a trivial static initializer "= new SortedIntDocSet" because it can lead to classloader deadlock
-  private static DocSet EMPTY;
+  // can't use a trivial static initializer "EMPTY = new SortedIntDocSet" because it can lead to classloader deadlock
+  private static class EmptyLazyHolder {
+    static final DocSet INSTANCE = new SortedIntDocSet(new int[0]);
+  }
 
-  /** An empty instance. */
+  /** An empty instance (has no docs). */
   public static DocSet empty() {
-    // The static field EMPTY is set with an immutable instance lazily.  SortedIntDocSet is an "effectively final" class
-    //  and so this is thread-safe, as it will not be partially-constructed.  It's no big deal to create more than
-    //  if multiple threads create this as they are relatively cheap and equivalent.
-    DocSet empty = EMPTY;
-    if (empty == null) {
-      empty = EMPTY = new SortedIntDocSet(new int[0]);
-    }
-    return empty;
+    return EmptyLazyHolder.INSTANCE;
   }
 
   /**
