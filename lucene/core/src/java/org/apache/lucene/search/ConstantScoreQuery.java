@@ -115,7 +115,7 @@ public final class ConstantScoreQuery extends Query {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-          if (scoreMode == ScoreMode.TOP_SCORES) {
+          if (scoreMode == ScoreMode.TOP_SCORES || scoreMode == ScoreMode.TOP_DOCS) {
             return super.bulkScorer(context);
           }
           final BulkScorer innerScorer = innerWeight.bulkScorer(context);

@@ -201,20 +201,54 @@ public abstract class Weight implements SegmentCacheable {
     @Override
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
+      DocIdSetIterator scorerIterator = twoPhase == null? iterator: twoPhase.approximation();
+      DocIdSetIterator combinedIterator = collector.iterator() == null ? scorerIterator: combineScorerAndCollectorIterators(scorerIterator, collector);
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
-        scoreAll(collector, iterator, twoPhase, acceptDocs);
+        scoreAll(collector, combinedIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
-        if (doc < min) {
-          if (twoPhase == null) {
-            doc = iterator.advance(min);
-          } else {
-            doc = twoPhase.approximation().advance(min);
-          }
-        }
-        return scoreRange(collector, iterator, twoPhase, acceptDocs, doc, max);
+        if (doc < min) scorerIterator.advance(min);
+        return scoreRange(collector, combinedIterator, twoPhase, acceptDocs, doc, max);
       }
+    }
+
+    // conjunction iterator between scorer's iterator and collector's iterator
+    static private DocIdSetIterator combineScorerAndCollectorIterators(DocIdSetIterator scorerIterator, LeafCollector collector) {
+      return new DocIdSetIterator() {
+        int doc = -1;
+        @Override
+        public int docID() {
+          return doc;
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          return advance(doc + 1);
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          int doc1 = scorerIterator.advance(target);
+          int doc2 = collector.iterator().advance(target);
+          while((doc1 != DocIdSetIterator.NO_MORE_DOCS) && (doc2 != DocIdSetIterator.NO_MORE_DOCS)) {
+            if (doc1 == doc2) {
+              doc = doc1;
+              return doc1;
+            } else if (doc1 > doc2) {
+              doc2 = collector.iterator().advance(doc1);
+            } else {
+              doc1 = scorerIterator.advance(doc2);
+            }
+          }
+          return DocIdSetIterator.NO_MORE_DOCS;
+        }
+
+        @Override
+        public long cost() {
+          return scorerIterator.cost();
+        }
+      };
     }
 
     /** Specialized method to bulk-score a range of hits; we
@@ -223,24 +257,13 @@ public abstract class Weight implements SegmentCacheable {
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static int scoreRange(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase,
         Bits acceptDocs, int currentDoc, int end) throws IOException {
-      if (twoPhase == null) {
-        while (currentDoc < end) {
-          if (acceptDocs == null || acceptDocs.get(currentDoc)) {
-            collector.collect(currentDoc);
-          }
-          currentDoc = iterator.nextDoc();
+      while (currentDoc < end) {
+        if ((acceptDocs == null || acceptDocs.get(currentDoc)) && (twoPhase == null || twoPhase.matches())) {
+          collector.collect(currentDoc);
         }
-        return currentDoc;
-      } else {
-        final DocIdSetIterator approximation = twoPhase.approximation();
-        while (currentDoc < end) {
-          if ((acceptDocs == null || acceptDocs.get(currentDoc)) && twoPhase.matches()) {
-            collector.collect(currentDoc);
-          }
-          currentDoc = approximation.nextDoc();
-        }
-        return currentDoc;
+        currentDoc = iterator.nextDoc();
       }
+      return currentDoc;
     }
     
     /** Specialized method to bulk-score all hits; we
@@ -248,51 +271,12 @@ public abstract class Weight implements SegmentCacheable {
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
-      if (twoPhase == null) {
-        if (collector.iterator() != null) {
-          scoreAllWithCollector(collector, iterator, acceptDocs);
-          return;
-        }
-        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-          if (acceptDocs == null || acceptDocs.get(doc)) {
-            collector.collect(doc);
-          }
-        }
-      } else {
-        // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
-        final DocIdSetIterator approximation = twoPhase.approximation();
-        for (int doc = approximation.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = approximation.nextDoc()) {
-          if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
-            collector.collect(doc);
-          }
+      for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+        if ((acceptDocs == null || acceptDocs.get(doc)) && (twoPhase == null || twoPhase.matches())) {
+          collector.collect(doc);
         }
       }
     }
   }
-
-  /**
-   * Specialized method for bulk-score when collector also has its iterator.
-   * In this case, we only collect documents that that are in the intersection of scorer iterator and collector iterator.
-   * Some collectors once they collect first K documents are able to offer an iterator over only competitive docs.
-   */
-  static void scoreAllWithCollector(LeafCollector collector, DocIdSetIterator iter1, Bits acceptDocs) throws IOException {
-    DocIdSetIterator iter2 = collector.iterator();
-    int doc1 = iter1.nextDoc();
-    int doc2 = iter2.nextDoc();
-    while((doc1 != DocIdSetIterator.NO_MORE_DOCS) && (doc2 != DocIdSetIterator.NO_MORE_DOCS)) {
-      if (doc1 == doc2) {
-        if (acceptDocs == null || acceptDocs.get(doc1)) {
-          collector.collect(doc1);
-        }
-        doc1 = iter1.nextDoc();
-        doc2 = iter2.nextDoc();
-      } else if (doc1 > doc2) {
-        doc2 = iter2.advance(doc1);
-      } else {
-        doc1 = iter1.advance(doc2);
-      }
-    }
-  }
-
 
 }

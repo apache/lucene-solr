@@ -17,6 +17,11 @@
 
 package org.apache.lucene.search;
 
+/*
+ * Sort field for long values indexed both with doc values and points.
+ * Use this field if you want to skip collecting non-competitive documents,
+ * which in some cases can significantly speed up sort queries.
+ */
 public class LongDocValuesPointSortField extends SortField {
 
     LongDocValuesPointSortField(String field) {
@@ -30,9 +35,16 @@ public class LongDocValuesPointSortField extends SortField {
     @Override
     public FieldComparator<?> getComparator(int numHits, int sortPos) {
         if (sortPos == 0) {
-            return new LongDocValuesPointComparator(getField(), numHits, reverse);
+            return new LongDocValuesPointComparator(getField(), numHits, reverse, (Long) missingValue);
         } else {
             return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue);
         }
+    }
+
+    @Override
+    public void setMissingValue(Object missingValue) {
+        if (missingValue != null && missingValue.getClass() != Long.class)
+            throw new IllegalArgumentException("Missing values for Type.LONG can only be of type java.lang.Long, but got " + missingValue.getClass());
+        this.missingValue = missingValue;
     }
 }

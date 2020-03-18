@@ -32,18 +32,22 @@ import static org.apache.lucene.search.FieldComparator.IteratorSupplierComparato
 public class LongDocValuesPointComparator extends IteratorSupplierComparator<Long> {
     private final String field;
     private final boolean reverse;
+    private final long missingValue;
     private final long[] values;
     private long bottom;
     private long topValue;
+    boolean hasTopValue = false; // indicates that topValue for searchAfter is set
     protected NumericDocValues docValues;
     private DocIdSetIterator iterator;
     private PointValues pointValues;
     private int maxDoc;
     private int maxDocVisited;
+    private int updateCounter = 0;
 
-    public LongDocValuesPointComparator(String field, int numHits, boolean reverse) {
+    public LongDocValuesPointComparator(String field, int numHits, boolean reverse, Long missingValue) {
         this.field = field;
         this.reverse = reverse;
+        this.missingValue = missingValue != null ? missingValue : 0L;
         this.values = new long[numHits];
     }
 
@@ -51,7 +55,7 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
         if (docValues.advanceExact(doc)) {
             return docValues.longValue();
         } else {
-            return 0L; // TODO: missing value
+            return missingValue;
         }
     }
 
@@ -63,6 +67,7 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     @Override
     public void setTopValue(Long value) {
         topValue = value;
+        hasTopValue = true;
     }
 
     @Override
@@ -109,12 +114,23 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     }
 
     public void updateIterator() throws IOException {
-        final byte[] maxValueAsBytes = new byte[Long.BYTES];
-        final byte[] minValueAsBytes = new byte[Long.BYTES];
+        updateCounter++;
+        if (updateCounter > 256 && (updateCounter & 0x1f) != 0x1f) { // Start sampling if we get called too much
+            return;
+        }
+
+        final byte[] maxValueAsBytes = reverse == false ? new byte[Long.BYTES] : hasTopValue ? new byte[Long.BYTES]: null;
+        final byte[] minValueAsBytes = reverse ? new byte[Long.BYTES] : hasTopValue ? new byte[Long.BYTES]: null;
         if (reverse == false) {
             LongPoint.encodeDimension(bottom, maxValueAsBytes, 0);
+            if (hasTopValue) {
+                LongPoint.encodeDimension(topValue, minValueAsBytes, 0);
+            }
         } else {
             LongPoint.encodeDimension(bottom, minValueAsBytes, 0);
+            if (hasTopValue) {
+                LongPoint.encodeDimension(topValue, maxValueAsBytes, 0);
+            }
         };
 
         DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
@@ -138,26 +154,40 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
                 if (docID <= maxDocVisited) {
                     return;  // Already visited or skipped
                 }
-                if ((reverse == false) && (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0)) {
-                    return; // Doc's value is too high
+                if (maxValueAsBytes != null) {
+                    // doc's value is too high
+                    if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0) return;
                 }
-                if ((reverse == true) && (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0)) {
-                    return;  // Doc's value is too low,
+                if (minValueAsBytes != null) {
+                    // doc's value is too low
+                    if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0) return;
                 }
                 adder.add(docID); // doc is competitive
             }
 
             @Override
             public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                if ((reverse == false) && (Arrays.compareUnsigned(minPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0)) {
-                   return PointValues.Relation.CELL_OUTSIDE_QUERY;
-                }
-                if ((reverse == true) && (Arrays.compareUnsigned(maxPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0)) {
+                if (((maxValueAsBytes != null) &&
+                        Arrays.compareUnsigned(minPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0) ||
+                        ((minValueAsBytes != null) &&
+                        Arrays.compareUnsigned(maxPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0)) {
                     return PointValues.Relation.CELL_OUTSIDE_QUERY;
                 }
-                return PointValues.Relation.CELL_CROSSES_QUERY;
+                if (((maxValueAsBytes != null) &&
+                        Arrays.compareUnsigned(maxPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0) ||
+                        ((minValueAsBytes != null) &&
+                        Arrays.compareUnsigned(minPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0)) {
+                    return PointValues.Relation.CELL_CROSSES_QUERY;
+                }
+                return PointValues.Relation.CELL_INSIDE_QUERY;
             }
         };
+        final long threshold = iterator.cost() >>> 3;
+        long estimatedNumberOfMatches = pointValues.estimatePointCount(visitor); // runs in O(log(numPoints))
+        if (estimatedNumberOfMatches >= threshold) {
+            // the new range is not selective enough to be worth materializing, it doesn't reduce number of docs at least 8x
+            return;
+        }
         pointValues.intersect(visitor);
         this.iterator = result.build().iterator();
     }

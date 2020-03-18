@@ -929,8 +929,15 @@ public abstract class FieldComparator<T> {
     public void setScorer(Scorable scorer) {}
   }
 
+  /**
+   * A field comparator that can provide an iterator over competitive documents.
+   */
   public static abstract class IteratorSupplierComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
     abstract DocIdSetIterator iterator();
+
+    // This method is called from TopFieldCollector when already enough top hits have been collected.
+    // This method should be called every time the bottom entry is updated, and it informs the comparator
+    // to update its iterator to include possibly only docs that are "stronger" than the current bottom entry
     abstract void updateIterator() throws IOException;
   }
 }

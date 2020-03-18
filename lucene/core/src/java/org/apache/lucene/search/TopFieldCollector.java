@@ -144,29 +144,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public DocIdSetIterator iterator() {
-      if (itComparator.iterator() == null) return null;
-      return new DocIdSetIterator() {
-        private int doc;
-        @Override
-        public int nextDoc() throws IOException {
-          return doc = itComparator.iterator().nextDoc();
-        }
-
-        @Override
-        public int docID() {
-          return doc;
-        }
-
-        @Override
-        public long cost() {
-          return itComparator.iterator().cost();
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          return doc = itComparator.iterator().advance(target);
-        }
-      };
+      if (itComparator == null) return null;
+      return itComparator.iterator();
     }
   }
 
@@ -279,8 +258,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
             // Already collected on a previous page
             if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-              // we just reached totalHitsThreshold, we can start setting the min
-              // competitive score now
+              // check if totalHitsThreshold is reached and we can update competitive score
+              // necessary to account for possible update to global min competitive score
               updateMinCompetitiveScore(scorer);
             }
             return;
