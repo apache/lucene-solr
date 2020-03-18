@@ -26,6 +26,9 @@ Bug Fixes
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
   (Christine Poerschke, ab)
 
+* SOLR-13199: Return proper error when invalid parentFilter is passed in ChildDocTransformer
+  (Johannes Kloos, Munendra S N, David Smiley, Mikhail Khludnev)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
