@@ -51,7 +51,7 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
   /** looks up a SPI name for the specified token filter factory */
   public static String findSPIName(Class<? extends TokenFilterFactory> serviceClass) {
     try {
-      return lookupSPIName(serviceClass);
+      return AnalysisSPILoader.lookupSPIName(serviceClass);
     } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
       throw new IllegalStateException(e);
     }
@@ -72,6 +72,10 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
   
+  protected TokenFilterFactory() {
+    super();
+  }
+
   /**
    * Initialize this factory via a set of key-value pairs.
    */
