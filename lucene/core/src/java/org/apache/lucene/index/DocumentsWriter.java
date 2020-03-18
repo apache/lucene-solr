@@ -346,7 +346,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     int limit = perThreadPool.getMaxThreadStates();
     for(int i = 0; i < limit; i++) {
       ThreadState perThread = perThreadPool.getThreadState(i);
-      value = Math.max(value, perThread.lastSeqNo);
+      value = Math.max(value, perThread.getLastSeqNo());
     }
     return value;
   }
@@ -411,6 +411,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
     hasEvents |= applyAllDeletes();
     if (flushingDWPT != null) {
+      assert flushingDWPT.isAborted() == false;
       hasEvents |= doFlush(flushingDWPT);
     } else if (config.checkPendingFlushOnUpdate) {
       final DocumentsWriterPerThread nextPendingFlush = flushControl.nextPendingFlush();
@@ -438,46 +439,51 @@ final class DocumentsWriter implements Closeable, Accountable {
     final ThreadState perThread = flushControl.obtainAndLock();
     DocumentsWriterPerThread flushingDWPT = null;
     final long seqNo;
-    boolean success = false;
     try {
-      // This must happen after we've pulled the ThreadState because IW.close
-      // waits for all ThreadStates to be released:
-      ensureOpen();
-      ensureInitialized(perThread);
-      assert perThread.isInitialized();
-      assert perThread.isFlushPending() == false : "we should never index into a flush pending threadstate";
-      final DocumentsWriterPerThread dwpt = perThread.dwpt;
-      final int dwptNumDocs = dwpt.getNumDocsInRAM();
-
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
-        assert seqNo > perThread.lastSeqNo : "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
-        perThread.lastSeqNo = seqNo;
-        success = true;
+        // This must happen after we've pulled the ThreadState because IW.close
+        // waits for all ThreadStates to be released:
+        ensureOpen();
+        ensureInitialized(perThread);
+        assert perThread.isInitialized();
+        assert perThread.isFlushPending() == false : "we should never index into a flush pending threadstate";
+        final DocumentsWriterPerThread dwpt = perThread.dwpt;
+        final int dwptNumDocs = dwpt.getNumDocsInRAM();
+        try {
+          seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
+          perThread.updateLastSeqNo(seqNo);
+        } finally {
+          if (dwpt.isAborted()) {
+            flushControl.doOnAbort(perThread);
+          }
+          // We don't know how many documents were actually
+          // counted as indexed, so we must subtract here to
+          // accumulate our separate counter:
+          numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+          if (dwpt.getNumDocsInRAM() > 0) {
+            // we need to check if we have at least one doc in the DWPT. This can be 0 if we fail
+            // due to exceeding total number of docs etc.
+            final boolean isUpdate = delNode != null && delNode.isDelete();
+            flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+          }
+        }
       } finally {
-        // We don't know how many documents were actually
-        // counted as indexed, so we must subtract here to
-        // accumulate our separate counter:
-        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
-        } else if (dwpt.getNumDocsInRAM() > 0) {
-          // did we actually add at least one doc then we must check if this DWPT must be flushed
-          // this is also possible in the case of an non-aborting exception where we added N out of
-          // M docs and then ran into RAM limitations
-          final boolean isUpdate = delNode != null && delNode.isDelete();
-          flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+        perThreadPool.release(perThread);
+      }
+    } catch (Exception ex) {
+      if (flushingDWPT != null) {
+        try {
+          // we hit an exception but still need to flush this DWPT
+          // let's run postUpdate to make sure we flush stuff to disk
+          // in the case we exceed ram limits etc.
+          postUpdate(flushingDWPT, hasEvents);
+        } catch (Exception innerEx) {
+          ex.addSuppressed(innerEx);
         }
       }
-    } finally {
-      perThreadPool.release(perThread);
-      if (success || flushingDWPT != null) {
-        // we might run into an exception that but still need to flush the writer
-        assert flushingDWPT == null || flushingDWPT.isAborted() == false;
-        hasEvents = postUpdate(flushingDWPT, hasEvents);
-      }
+      throw ex;
     }
-    return hasEvents ? -seqNo : seqNo;
+    return postUpdate(flushingDWPT, hasEvents) ? -seqNo : seqNo;
   }
 
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
