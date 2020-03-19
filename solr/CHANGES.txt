@@ -45,6 +45,8 @@ Other Changes
 
 * SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
 
+* SOLR-14012: Return long value for unique and hll aggregations irrespective of shard count (Munendra S N, hossman)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

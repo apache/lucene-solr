@@ -93,6 +93,9 @@ _(raw; not yet edited)_
 
 * SOLR-11725: JSON aggregations uses corrected sample formula to compute standard deviation and variance.
   The computation of stdDev and variance in JSON aggregation is same as StatsComponent. (hossman, Munendra S N, yonik)
+
+* SOLR-14012: unique and hll aggregations always returns long value irrespective of standalone or solcloud
+  (Munendra S N, hossman)
   
 === Upgrade Prerequisites in Solr 9
 
