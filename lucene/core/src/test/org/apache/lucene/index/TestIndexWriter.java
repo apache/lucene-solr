@@ -3981,7 +3981,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       });
     } catch (IllegalArgumentException e) {
-      assertEquals("RAM used by a single DocumentsWriterPerThread can not exceed: 1MB", e.getMessage());
+      assertEquals("RAM used by a single DocumentsWriterPerThread can't exceed: 1MB", e.getMessage());
       assertNull(w.getTragicException());
     }
     w.addDocument(new Document());
@@ -4039,7 +4039,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       });
     } catch (IllegalArgumentException ex) {
-      assertEquals("RAM used by a single DocumentsWriterPerThread can not exceed: 1945MB", ex.getMessage());
+      assertEquals("RAM used by a single DocumentsWriterPerThread can exceed: 1945MB", ex.getMessage());
     }
     w.commit();
     assertEquals(1, w.getDocStats().numDocs);
