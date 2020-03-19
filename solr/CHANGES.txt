@@ -18,6 +18,9 @@ Improvements
 
 * SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
 
+* SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
+  (hossman, Munendra S N, yonik)
+
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)

@@ -314,7 +314,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
               , json ? "//*" : "count(//arr[@name='distinctValues']/*)=8"
               , "//double[@name='sumOfSquares'][.='53101.0']"
               , "//double[@name='mean'][.='1.125']"
-              ,json ? "//*" :  "//double[@name='stddev'][.='87.08852228787508']" // SOLR-11725
+              ,"//double[@name='stddev'][.='87.08852228787508']"
               );
 
       assertQ("test statistics values w/fq", 
@@ -329,8 +329,13 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
               , json ? "//*" : "count(//arr[@name='distinctValues']/*)=6"
               , "//double[@name='sumOfSquares'][.='43001.0']"
               , "//double[@name='mean'][.='19.833333333333332']"
-              , json ? "//*" : "//double[@name='stddev'][.='90.15634568163611']" // SOLR-11725
+              ,"//double[@name='stddev'][.='90.15634568163611']"
               );
+
+      assertQ("test stdDev",
+          req(baseParams, "q", "id:5", "rows", "0")
+          ,"//double[@name='stddev'][.='0.0']"
+      );
       
       if (!json) { // checking stats.facet makes no sense for json faceting
         assertQ("test stats.facet (using boolean facet field)",
