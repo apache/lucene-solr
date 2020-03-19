@@ -211,16 +211,6 @@ public class ServerSideMetadata {
     return this.generation;
   }
 
-  /**
-   * @throw IllegalStateException is this instance was not created with a computed directoryHash 
-   */
-  public String getDirectoryHash() {
-    if (this.directoryHash == null) {
-      throw new IllegalStateException("Directory hash was not computed for the given core");
-    }
-    return this.directoryHash;
-  }
-
   public ImmutableCollection<CoreFileData> getLatestCommitFiles(){
     return this.latestCommitFiles;
   }
@@ -237,7 +227,7 @@ public class ServerSideMetadata {
    * Passing in the Directory (expected to be the directory of the same core used during construction) because it seems
    * safer than trying to get it again here...
    * 
-   * @throw IllegalStateException is this instance was not created with a computed directoryHash 
+   * @throw IllegalStateException if this instance was not created with a computed directoryHash 
    */
   public boolean isSameDirectoryContent(Directory coreDir) throws NoSuchAlgorithmException, IOException {
     if (directoryHash == null) {
