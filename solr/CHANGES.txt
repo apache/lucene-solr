@@ -43,6 +43,8 @@ Other Changes
 * SOLR-13944: Remove redundant checks in SpellCheckCollator and add tests for spellcheck with collapse
   (Stefan, Munendra S N, Tomas Eduardo Fernandez Lobbe)
 
+* SOLR-12353: SolrDispatchFilter expensive non-conditional debug line degrades performance (Pascal Proulx via Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
