@@ -43,8 +43,8 @@ public class AggUtil {
    * Computes and returns corrected standard deviation for given values
    */
   public static double stdDev(double sumSq, double sum, long count) {
-    // todo: should we return NAN when count==0?
-    return count == 0 ? 0 : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
+    // todo: should we return NAN when count==0 or count==1?
+    return count <= 1 ? 0.0d : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
   }
 
   /**
@@ -59,7 +59,7 @@ public class AggUtil {
    * Computes and returns corrected variance for given values
    */
   public static double variance(double sumSq, double sum, long count) {
-    // todo: should we return NAN when count==0?
-    return count == 0 ? 0 : ((count * sumSq) - (sum * sum)) / (count * (count - 1.0D));
+    // todo: should we return NAN when count==0 or count==1?
+    return count <= 1 ? 0.0d : ((count * sumSq) - (sum * sum)) / (count * (count - 1.0D));
   }
 }
