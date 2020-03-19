@@ -52,6 +52,7 @@ dependencies {
   api 'org.eclipse.jetty:jetty-server'
   api 'org.eclipse.jetty:jetty-servlet'
   api 'org.eclipse.jetty:jetty-servlets'
+  api 'org.eclipse.jetty:jetty-start'
   api 'org.eclipse.jetty:jetty-util'
   api 'org.eclipse.jetty:jetty-webapp'
   api 'org.eclipse.jetty:jetty-xml'
@@ -111,7 +112,12 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
-  from { project.configurations.startJar.singleFile } {
+  from("${buildDir}/libs", {
+    include "*.jar"
+    rename { file -> 'solr.jar' }
+  })
+
+  from { configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
   }
 
