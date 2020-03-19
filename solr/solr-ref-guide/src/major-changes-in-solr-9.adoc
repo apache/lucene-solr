@@ -90,6 +90,8 @@ _(raw; not yet edited)_
   This embedded zookeeper should not be used in production. If you rely
   upon the previous behavior, then you can change the clientPortAddress
   in solr/server/solr/zoo.cfg (Robert Muir)
+
+* SOLR-13768: Deprecated 'requireSub' parameter in JWTAuthPlugin has been removed. (janhoy, Rabi Kumar K C)
   
 === Upgrade Prerequisites in Solr 9
 
