@@ -183,9 +183,9 @@ public final class BKDReader extends PointValues implements Accountable {
    * and specify {@code true} to store BKD off-heap ({@code false} otherwise)
    */
   public BKDReader(IndexInput in, boolean offHeap) throws IOException {
-    version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
+    version = CodecUtil.checkHeader(in, BKDIndexWriter.CODEC_NAME, BKDIndexWriter.VERSION_START, BKDIndexWriter.VERSION_CURRENT);
     numDataDims = in.readVInt();
-    if (version >= BKDWriter.VERSION_SELECTIVE_INDEXING) {
+    if (version >= BKDIndexWriter.VERSION_SELECTIVE_INDEXING) {
       numIndexDims = in.readVInt();
     } else {
       numIndexDims = numDataDims;
@@ -586,7 +586,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   void visitDocValues(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,
                       IndexInput in, BKDReaderDocIDSetIterator scratchIterator, int count, IntersectVisitor visitor) throws IOException {
-    if (version >= BKDWriter.VERSION_LOW_CARDINALITY_LEAVES) {
+    if (version >= BKDIndexWriter.VERSION_LOW_CARDINALITY_LEAVES) {
       visitDocValuesWithCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, scratchIterator, count, visitor);
     } else {
       visitDocValuesNoCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, scratchIterator, count, visitor);
@@ -597,7 +597,7 @@ public final class BKDReader extends PointValues implements Accountable {
                       IndexInput in, BKDReaderDocIDSetIterator scratchIterator, int count, IntersectVisitor visitor) throws IOException {
     readCommonPrefixes(commonPrefixLengths, scratchDataPackedValue, in);
 
-    if (numIndexDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
+    if (numIndexDims != 1 && version >= BKDIndexWriter.VERSION_LEAF_STORES_BOUNDS) {
       byte[] minPackedValue = scratchMinIndexPackedValue;
       System.arraycopy(scratchDataPackedValue, 0, minPackedValue, 0, packedIndexBytesLength);
       byte[] maxPackedValue = scratchMaxIndexPackedValue;
@@ -743,7 +743,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   private int readCompressedDim(IndexInput in) throws IOException {
     int compressedDim = in.readByte();
-    if (compressedDim < -2 || compressedDim >= numDataDims || (version < BKDWriter.VERSION_LOW_CARDINALITY_LEAVES && compressedDim == -2)) {
+    if (compressedDim < -2 || compressedDim >= numDataDims || (version < BKDIndexWriter.VERSION_LOW_CARDINALITY_LEAVES && compressedDim == -2)) {
       throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
     }
     return compressedDim;
