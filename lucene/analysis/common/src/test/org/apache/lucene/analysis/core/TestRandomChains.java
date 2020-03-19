@@ -62,6 +62,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
+import org.apache.lucene.analysis.boost.DelimitedBoostTokenFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -198,6 +199,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           WordDelimiterGraphFilter.class,
           // requires a special encoded token value, so it may fail with random data:
           DelimitedTermFrequencyTokenFilter.class,
+          // requires a special encoded token value, so it may fail with random data:
+          DelimitedBoostTokenFilter.class,
           // clones of core's filters:
           org.apache.lucene.analysis.core.StopFilter.class,
           org.apache.lucene.analysis.core.LowerCaseFilter.class)) {
