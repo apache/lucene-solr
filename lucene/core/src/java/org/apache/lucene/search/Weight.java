@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
+import java.util.Arrays;
 
 /**
  * Expert: Calculate query weights and build query scorers.
@@ -202,53 +203,19 @@ public abstract class Weight implements SegmentCacheable {
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null? iterator: twoPhase.approximation();
-      DocIdSetIterator combinedIterator = collector.iterator() == null ? scorerIterator: combineScorerAndCollectorIterators(scorerIterator, collector);
+      DocIdSetIterator collectorIterator = collector.iterator();
+      DocIdSetIterator combinedIterator = collectorIterator == null ? scorerIterator :
+              ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, combinedIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
-        if (doc < min) scorerIterator.advance(min);
+        if (doc < min) {
+          scorerIterator.advance(min);
+        }
         return scoreRange(collector, combinedIterator, twoPhase, acceptDocs, doc, max);
       }
-    }
-
-    // conjunction iterator between scorer's iterator and collector's iterator
-    static private DocIdSetIterator combineScorerAndCollectorIterators(DocIdSetIterator scorerIterator, LeafCollector collector) {
-      return new DocIdSetIterator() {
-        int doc = -1;
-        @Override
-        public int docID() {
-          return doc;
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return advance(doc + 1);
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          int doc1 = scorerIterator.advance(target);
-          int doc2 = collector.iterator().advance(target);
-          while((doc1 != DocIdSetIterator.NO_MORE_DOCS) && (doc2 != DocIdSetIterator.NO_MORE_DOCS)) {
-            if (doc1 == doc2) {
-              doc = doc1;
-              return doc1;
-            } else if (doc1 > doc2) {
-              doc2 = collector.iterator().advance(doc1);
-            } else {
-              doc1 = scorerIterator.advance(doc2);
-            }
-          }
-          return DocIdSetIterator.NO_MORE_DOCS;
-        }
-
-        @Override
-        public long cost() {
-          return scorerIterator.cost();
-        }
-      };
     }
 
     /** Specialized method to bulk-score a range of hits; we
@@ -257,23 +224,44 @@ public abstract class Weight implements SegmentCacheable {
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static int scoreRange(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase,
         Bits acceptDocs, int currentDoc, int end) throws IOException {
-      while (currentDoc < end) {
-        if ((acceptDocs == null || acceptDocs.get(currentDoc)) && (twoPhase == null || twoPhase.matches())) {
-          collector.collect(currentDoc);
+      if (twoPhase == null) {
+        while (currentDoc < end) {
+          if (acceptDocs == null || acceptDocs.get(currentDoc)) {
+            collector.collect(currentDoc);
+          }
+          currentDoc = iterator.nextDoc();
         }
-        currentDoc = iterator.nextDoc();
+        return currentDoc;
+      } else {
+        final DocIdSetIterator approximation = twoPhase.approximation();
+        while (currentDoc < end) {
+          if ((acceptDocs == null || acceptDocs.get(currentDoc)) && twoPhase.matches()) {
+            collector.collect(currentDoc);
+          }
+          currentDoc = approximation.nextDoc();
+        }
+        return currentDoc;
       }
-      return currentDoc;
     }
-    
+
     /** Specialized method to bulk-score all hits; we
      *  separate this from {@link #scoreRange} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
-      for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
-        if ((acceptDocs == null || acceptDocs.get(doc)) && (twoPhase == null || twoPhase.matches())) {
-          collector.collect(doc);
+      if (twoPhase == null) {
+        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+          if (acceptDocs == null || acceptDocs.get(doc)) {
+            collector.collect(doc);
+          }
+        }
+      } else {
+        // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
+        final DocIdSetIterator approximation = twoPhase.approximation();
+        for (int doc = approximation.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = approximation.nextDoc()) {
+          if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
+            collector.collect(doc);
+          }
         }
       }
     }

@@ -144,8 +144,29 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public DocIdSetIterator iterator() {
-      if (itComparator == null) return null;
-      return itComparator.iterator();
+      if ((itComparator == null) || (itComparator.iterator() == null)) return null;
+      return new DocIdSetIterator() {
+        private int doc;
+        @Override
+        public int nextDoc() throws IOException {
+          return doc = itComparator.iterator().nextDoc();
+        }
+
+        @Override
+        public int docID() {
+          return doc;
+        }
+
+        @Override
+        public long cost() {
+          return itComparator.iterator().cost();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          return doc = itComparator.iterator().advance(target);
+        }
+      };
     }
   }
 
@@ -285,7 +306,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final boolean canSetMinScore;
 
   final FieldComparator.IteratorSupplierComparator itComparator;
-  final boolean canUpdateIterator;
 
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
@@ -330,11 +350,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     if ((fieldComparator instanceof FieldComparator.IteratorSupplierComparator) &&
             (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE)) {
       scoreMode = ScoreMode.TOP_DOCS; // TODO: may be add another scoreMode TOP_DOCS with scores
-      itComparator = (FieldComparator.IteratorSupplierComparator) fieldComparator;
-      canUpdateIterator = true;
+      itComparator = ((FieldComparator.IteratorSupplierComparator) fieldComparator);
+      itComparator.setHitsThresholdChecker(hitsThresholdChecker);
     } else {
       itComparator = null;
-      canUpdateIterator = false;
     }
   }
 
@@ -373,10 +392,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           minScoreAcc.accumulate(bottom.doc, minScore);
         }
       }
-    }
-
-    if (canUpdateIterator) {
-      itComparator.updateIterator();
+    } else if (scoreMode == ScoreMode.TOP_DOCS) {
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
