@@ -24,7 +24,9 @@ configurations {
   startJar
   libExt
   webapp
-  bootstrap
+  bootstrap {
+    exclude group: "org.eclipse.jetty"
+  }
   packaging
 }
 
@@ -118,6 +120,7 @@ task assemblePackaging(type: Sync) {
 
   from { configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
+    into "lib/"
   }
 
   dependsOn configurations.webapp
