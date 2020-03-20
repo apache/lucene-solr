@@ -44,6 +44,7 @@ junit:junit=4.12
 net.arnx:jsonic=1.2.7
 net.bytebuddy:byte-buddy=1.9.3
 net.hydromatic:eigenbase-properties=1.1.5
+net.java.dev.jna:jna=5.5.0
 net.sourceforge.argparse4j:argparse4j=0.8.1
 net.sourceforge.nekohtml:nekohtml=1.9.17
 net.thisptr:jackson-jq=0.0.8
