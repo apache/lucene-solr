@@ -23,12 +23,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -54,7 +58,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
+    configureCluster(5)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
@@ -177,6 +181,8 @@ public class SplitShardTest extends SolrCloudTestCase {
       if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
+        // screen out inactive replicas
+        if (!replica.getState().equals(Replica.State.ACTIVE)) continue;
         SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
         long numFound = 0;
         try {
@@ -289,5 +295,125 @@ public class SplitShardTest extends SolrCloudTestCase {
     doLiveSplitShard("livesplit1", 1, 4);
   }
 
+
+  void doLiveSplitShardFail(String collectionName, int repFactor, int nThreads) throws Exception {
+    final boolean doSplit = true;  // test debugging aid: set to false if you want to check that the test passes if we don't do a split
+    final boolean updateFailureOK = true;  // we will get failures to client when killing a node
+    final CloudSolrClient client = createCollection(collectionName, repFactor);
+
+    final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();  // what the index should contain
+    final AtomicBoolean doIndex = new AtomicBoolean(true);
+    final AtomicInteger docsIndexed = new AtomicInteger();
+    final AtomicInteger failures = new AtomicInteger();
+    // allows waiting for a given number of update requests, regardless of if they succeed for fail
+    final AtomicReference<CountDownLatch> updateLatch = new AtomicReference<>(new CountDownLatch(random().nextInt(4)));
+    final AtomicReference<CountDownLatch> updateSuccessLatch = new AtomicReference<>(new CountDownLatch(0));
+    Thread[] indexThreads = new Thread[nThreads];
+    try {
+
+      for (int i=0; i<nThreads; i++) {
+        indexThreads[i] = new Thread(() -> {
+          while (doIndex.get()) {
+            try {
+              // Thread.sleep(10);  // cap indexing rate at 100 docs per second per thread
+              int currDoc = docsIndexed.incrementAndGet();
+              String docId = "doc_" + currDoc;
+
+              // Try all docs in the same update request
+              UpdateRequest updateReq = new UpdateRequest();
+              updateReq.add(sdoc("id", docId));
+
+              UpdateResponse ursp;
+              if (false && random().nextInt(4)==0) { // add commit 25% of the time  // nocommit... turned off for now
+                ursp = updateReq.commit(client, collectionName);
+              } else {
+                ursp = updateReq.process(client, collectionName);
+              }
+
+              updateLatch.get().countDown();
+              if (ursp.getStatus() == 0) {
+                model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
+                updateSuccessLatch.get().countDown();
+              } else {
+                failures.incrementAndGet();
+                if (!updateFailureOK) {
+                  assertEquals(0, ursp.getStatus());
+                }
+              }
+            } catch (Exception e) {
+              if (!updateFailureOK) {
+                fail(e.getMessage());
+                break;
+              }
+              updateLatch.get().countDown();  // do this on exception as well so we don't get stuck
+              failures.incrementAndGet();
+            }
+          }
+        });
+      }
+
+      for (Thread thread : indexThreads) {
+        thread.start();
+      }
+
+      updateLatch.get().await(); // wait for some documents to be indexed
+
+      if (doSplit) {
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
+            .setShardName("shard1");
+        splitShard.process(client);
+
+        Replica leader = client.getZkStateReader().getLeader(collectionName, "shard1");
+        JettySolrRunner leaderJetty = cluster.getReplicaJetty(leader);
+        log.warn("STOPPING " + leaderJetty);
+        leaderJetty.stop();
+      }
+
+      // wait for some update successes
+      updateSuccessLatch.set(new CountDownLatch(10));
+      if (!updateSuccessLatch.get().await(1, TimeUnit.MINUTES)) {
+        log.error("CLUSTER STATE AFTER WAITING:\n" + client.getZkStateReader().getClusterState().getCollection(collectionName));
+        fail("FAILED to index more documents");
+      }
+
+    } finally {
+      // shut down the indexers
+      doIndex.set(false);
+      for (Thread thread : indexThreads) {
+        thread.join();
+      }
+    }
+
+    client.commit();  // final commit is needed for visibility
+
+    log.info("END CLUSTER STATE:\n" + client.getZkStateReader().getClusterState().getCollection(collectionName));
+
+    // Index can legitimately have more documents than our model because of failed requests that actually succeeded.
+    // For this reason, don't limit rows by the model size, but by the actual number of docs.  It would be really nice if "-1" worked for "give me all"...
+    long numDocs = getNumDocs(client);
+    SolrDocumentList results = client.query(new SolrQuery("DBG","FINAL_QUERY", "q","*:*", "fl","id", "rows", Long.toString(numDocs*2))).getResults();
+    Map<String,Long> leftover = new HashMap<>(model);
+    for (SolrDocument doc : results) {
+      String id = (String) doc.get("id");
+      leftover.remove(id);
+    }
+    if (leftover.size() > 0) {
+      log.error("MISSING DOCUMENTS: " + leftover);
+    }
+
+    log.info("Number of documents attempted to be indexed : " + numDocs + " update request failures=" + failures.get());
+
+    assertTrue("Documents are missing! " + leftover, leftover.size() == 0);
+  }
+
+  public void testLiveSplitFail() throws Exception {
+    // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to 1 and looping the test
+    // until you get another failure.
+    // You may need to further instrument things like DistributedZkUpdateProcessor to display the cluster state for the collection, etc.
+    // Using more threads increases the chance to hit a concurrency bug, but too many threads can overwhelm single-threaded buffering
+    // replay after the low level index split and result in subShard leaders that can't catch up and
+    // become active (a known issue that still needs to be resolved.)
+    doLiveSplitShardFail("c99", 2, 8);
+  }
 
 }
