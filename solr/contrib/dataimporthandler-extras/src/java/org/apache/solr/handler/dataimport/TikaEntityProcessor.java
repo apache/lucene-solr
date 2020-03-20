@@ -16,6 +16,20 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
@@ -32,20 +46,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.sax.SAXTransformerFactory;
-import javax.xml.transform.sax.TransformerHandler;
-import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
@@ -82,22 +82,26 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   @Override
   protected void firstInit(Context context) {
     super.firstInit(context);
+    // See similar code in ExtractingRequestHandler.inform
     try {
-      String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
-      if (tikaConfigFile == null) {
+      String tikaConfigLoc = context.getResolvedEntityAttribute("tikaConfig");
+      if (tikaConfigLoc == null) {
         ClassLoader classLoader = context.getSolrCore().getResourceLoader().getClassLoader();
         try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
           tikaConfig = new TikaConfig(is);
         }
       } else {
-        File configFile = new File(tikaConfigFile);
-        if (!configFile.isAbsolute()) {
-          configFile = new File(context.getSolrCore().getResourceLoader().getConfigDir(), tikaConfigFile);
+        File configFile = new File(tikaConfigLoc);
+        if (configFile.isAbsolute()) {
+          tikaConfig = new TikaConfig(configFile);
+        } else { // in conf/
+          try (InputStream is = context.getSolrCore().getResourceLoader().openResource(tikaConfigLoc)) {
+            tikaConfig = new TikaConfig(is);
+          }
         }
-        tikaConfig = new TikaConfig(configFile);
       }
     } catch (Exception e) {
-      wrapAndThrow (SEVERE, e,"Unable to load Tika Config");
+      wrapAndThrow(SEVERE, e,"Unable to load Tika Config");
     }
 
     String extractEmbeddedString = context.getResolvedEntityAttribute("extractEmbedded");

@@ -134,25 +134,15 @@ public class SpellCheckCollator {
         
         // Collate testing does not support the Collapse QParser (See SOLR-8807)
         params.remove("expand");
-        String[] filters = params.getParams(CommonParams.FQ);
-        if (filters != null) {
-          List<String> filtersToApply = new ArrayList<>(filters.length);
-          for (String fq : filters) {
-            if (!fq.startsWith("{!collapse")) {
-              filtersToApply.add(fq);
-            }
-          }
-          params.set("fq", filtersToApply.toArray(new String[filtersToApply.size()]));
-        }      
 
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(
             new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
-            new SolrQueryResponse(), Arrays.<SearchComponent> asList(queryComponent)); 
+            new SolrQueryResponse(), Arrays.asList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.<SearchComponent>asList(queryComponent);
+        checkResponse.components = Arrays.asList(queryComponent);
 
         try {
           queryComponent.prepare(checkResponse);

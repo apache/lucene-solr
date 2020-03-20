@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.FileFloatSource;
@@ -95,7 +96,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
    * @return a FileFloatSource
    */
   public FileFloatSource getFileFloatSource(SchemaField field) {
-    return getFileFloatSource(field, schema.getResourceLoader().getDataDir());
+    return getFileFloatSource(field, SolrRequestInfo.getRequestInfo().getReq().getCore().getDataDir());
   }
 
   /**

@@ -72,7 +72,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
@@ -84,9 +84,9 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.SolrFileCleaningTracker;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +146,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     SSLConfigurationsFactory.current().init();
-    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    if (log.isTraceEnabled()) {
+      log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    }
     CoreContainer coresInit = null;
     try{
 
@@ -161,7 +163,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     String logLevel = System.getProperty(SOLR_LOG_LEVEL);
     if (logLevel != null) {
-      log.info("Log level override, property solr.log.level=" + logLevel);
+      log.info("Log level override, property solr.log.level={}", logLevel);
       StartupLoggingUtils.changeLogLevel(logLevel);
     }
 
@@ -179,12 +181,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      final Path solrHomePath = solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome);
+      final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
-      SolrResourceLoader.ensureUserFilesDataDir(solrHomePath);
+      SolrPaths.ensureUserFilesDataDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      log.debug("user.dir=" + System.getProperty("user.dir"));
+      if (log.isDebugEnabled()) {
+        log.debug("user.dir={}", System.getProperty("user.dir"));
+      }
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -259,7 +263,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    final CoreContainer coreContainer = new CoreContainer(nodeConfig, extraProperties, true);
+    final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
   }
@@ -270,33 +274,28 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    NodeConfig cfg = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader(), nodeProperties)) {
-      if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
-        log.warn("Solr property solr.solrxml.location is no longer supported. " +
-            "Will automatically load solr.xml from ZooKeeper if it exists");
-      }
-
-      String zkHost = System.getProperty("zkHost");
-      if (!StringUtils.isEmpty(zkHost)) {
-        int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
-        startUpZkTimeOut *= 1000;
-        try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
-          if (zkClient.exists("/solr.xml", true)) {
-            log.info("solr.xml found in ZooKeeper. Loading...");
-            byte[] data = zkClient.getData("/solr.xml", null, null, true);
-            return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
-          }
-        } catch (Exception e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
-        }
-        log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
-      }
-      cfg = SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath());
-    } catch (IOException e) {
-      // do nothing.
+    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+      log.warn("Solr property solr.solrxml.location is no longer supported. " +
+          "Will automatically load solr.xml from ZooKeeper if it exists");
     }
-    return cfg;
+
+    String zkHost = System.getProperty("zkHost");
+    if (!StringUtils.isEmpty(zkHost)) {
+      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
+      startUpZkTimeOut *= 1000;
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
+        if (zkClient.exists("/solr.xml", true)) {
+          log.info("solr.xml found in ZooKeeper. Loading...");
+          byte[] data = zkClient.getData("/solr.xml", null, null, true);
+          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+      }
+      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+    }
+
+    return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }
   
   public CoreContainer getCores() {
@@ -490,21 +489,21 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       // /admin/info/key must be always open. see SOLR-9188
       String requestPath = ServletUtils.getPathAfterContext(request);
       if (PublicKeyHandler.PATH.equals(requestPath)) {
-        if (log.isDebugEnabled())
-          log.debug("Pass through PKI authentication endpoint");
+        log.debug("Pass through PKI authentication endpoint");
         return true;
       }
       // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
       if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
-        if (log.isDebugEnabled())
-          log.debug("Pass through Admin UI entry point");
+        log.debug("Pass through Admin UI entry point");
         return true;
       }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
-        log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
+        if (log.isDebugEnabled()) {
+          log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
+        }
         // upon successful authentication, this should call the chain's next filter.
         requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);

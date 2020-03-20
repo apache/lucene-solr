@@ -88,7 +88,6 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       assertTrue(zkClient2.exists(chroot + "/clusterstate.json", true));
       assertFalse(zkClient2.exists("/clusterstate.json", true));
     } finally {
-      if (cores != null) cores.shutdown();
       if (zkClient != null) zkClient.close();
       if (zkClient2 != null) zkClient2.close();
     }
@@ -101,8 +100,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     System.setProperty("bootstrap_conf", "false");
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
 
-    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
-        AbstractZkTestCase.TIMEOUT)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       expectThrows(ZooKeeperException.class,
           "did not get a top level exception when more then 4 updates failed",
           () -> {
@@ -112,8 +110,6 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       });
       assertFalse("Path shouldn't have been created",
           zkClient.exists(chroot, true));// check the path was not created
-    } finally {
-      if (cores != null) cores.shutdown();
     }
   }
   
@@ -126,11 +122,8 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     System.setProperty("bootstrap_confdir", home + "/collection1/conf");
     System.setProperty("collection.configName", configName);
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
-    SolrZkClient zkClient = null;
-    
-    try {
-      zkClient = new SolrZkClient(zkServer.getZkHost(),
-          AbstractZkTestCase.TIMEOUT);
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       assertFalse("Path '" + chroot + "' should not exist before the test",
           zkClient.exists(chroot, true));
       cores = CoreContainer.createAndLoad(home);
@@ -138,9 +131,6 @@ public class TestZkChroot extends SolrTestCaseJ4 {
           "solrconfig.xml should have been uploaded to zk to the correct config directory",
           zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE + "/"
               + configName + "/solrconfig.xml", true));
-    } finally {
-      if (cores != null) cores.shutdown();
-      if (zkClient != null) zkClient.close();
     }
   }
   
@@ -150,20 +140,14 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     
     System.setProperty("bootstrap_conf", "true");
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
-    SolrZkClient zkClient = null;
-    
-    try {
-      zkClient = new SolrZkClient(zkServer.getZkHost(),
-          AbstractZkTestCase.TIMEOUT);
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       zkClient.makePath("/foo/bar4", true);
       assertTrue(zkClient.exists(chroot, true));
       assertFalse(zkClient.exists(chroot + "/clusterstate.json", true));
       
       cores = CoreContainer.createAndLoad(home);
       assertTrue(zkClient.exists(chroot + "/clusterstate.json", true));
-    } finally {
-      if (cores != null) cores.shutdown();
-      if (zkClient != null) zkClient.close();
     }
   }
 }

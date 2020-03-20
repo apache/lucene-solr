@@ -16,36 +16,34 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * Holds mathematical constants associated with the model of a planet.
  * @lucene.experimental
  */
 public class PlanetModel implements SerializableObject {
-  
+
   /** Planet model corresponding to sphere. */
   public static final PlanetModel SPHERE = new PlanetModel(1.0,1.0);
 
   /** Planet model corresponding to WGS84 ellipsoid*/
   // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
-  public static final PlanetModel WGS84 = new PlanetModel(6378137.0d, 6356752.314245d, 298.257223563d);
+  public static final PlanetModel WGS84 = new PlanetModel(6378137.0d, 6356752.314245d);
 
   /** Planet model corresponding to Clarke 1866 ellipsoid*/
   // see https://georepository.com/ellipsoid_7008/Clarke-1866.html
-  public static final PlanetModel CLARKE_1866 = new PlanetModel(6378206.4d, 6356583.8d, 294.9786982d);
+  public static final PlanetModel CLARKE_1866 = new PlanetModel(6378206.4d, 6356583.8d);
 
   // Surface of the planet:
   // x^2/a^2 + y^2/b^2 + z^2/zScaling^2 = 1.0
   // Scaling factors are a,b,zScaling.  geo3d can only support models where a==b, so use xyScaling instead.
   /** Semi-major axis */
-  public double a;
+  public final double a;
   /** Semi-minor axis */
-  public double b;
-  /** Flattening factor */
-  public double f;
+  public final double b;
   /** The x/y scaling factor */
   public final double xyScaling;
   /** The z scaling factor */
@@ -62,20 +60,20 @@ public class PlanetModel implements SerializableObject {
   public final double scaledFlattening;
   /** The square ratio */
   public final double squareRatio;
+  /** The mean radius of the planet */
+  // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
+  // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
+  public final double meanRadius;
   /** The scale of the planet */
   public final double scale;
   /** The inverse of scale */
   public final double inverseScale;
   /** The mean radius of the planet model */
-  // Computed as (2a + b) / 3 from: "Geodetic Reference System 1980" by H. Moritz
-  // ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf
-  public double r1;
-
 
   // We do NOT include radius, because all computations in geo3d are in radians, not meters.
-  
+
   // Compute north and south pole for planet model, since these are commonly used.
-  
+
   /** North pole */
   public final GeoPoint NORTH_POLE;
   /** South pole */
@@ -104,40 +102,22 @@ public class PlanetModel implements SerializableObject {
   public final int MAX_ENCODED_VALUE;
   /** Min encoded value */
   public final int MIN_ENCODED_VALUE;
-  /** computed radians per meter for *this* planet model */
-  public final double RADIANS_PER_METER;
   /** utility class used to encode/decode from lat/lon (decimal degrees) into doc value integers */
   public final DocValueEncoder docValueEncoder;
 
   /**
-   * Construct a Planet Model from the semi major axis, semi minor axis, and radius of curvature.
-   *
-   * NOTE: These parameters are only used to compute the scaling factors used in all computations. If
-   * scaling factors are already known, use {@code PlanetModel(final double xyScaling, final double zScaling)} instead
+   * * Construct a Planet Model from the semi major axis, semi minor axis=.
    *
    * @param semiMajorAxis is the semi major axis (in meters) defined as 'a' in projection formulae.
    * @param semiMinorAxis is the semi minor axis (in meters) defined as 'b' in projection formulae.
-   * @param flattening is the flattening factor defined as a - b / a.
    */
-  public PlanetModel(final double semiMajorAxis, final double semiMinorAxis, final double flattening) { // final double zScaling) {
-    this(semiMajorAxis, semiMinorAxis, flattening, ((2d * semiMajorAxis) + semiMinorAxis) / 3d);
-  }
-
-  private PlanetModel(final double a, final double b, final double f, final double r1) {
-    this(a / r1, b / r1);
-    this.a = a;
-    this.b = b;
-    this.f = f;
-    this.r1 = r1;
-  }
-
-  /** Constructor.
-   * @param xyScaling is the x/y scaling factor.
-   * @param zScaling is the z scaling factor.
-   */
-  public PlanetModel(final double xyScaling, final double zScaling) {
-    this.xyScaling = xyScaling;
-    this.zScaling = zScaling;
+  public PlanetModel(final double semiMajorAxis, final double semiMinorAxis) {
+    this.a = semiMajorAxis;
+    this.b = semiMinorAxis;
+    this.meanRadius = (2.0 * semiMajorAxis + semiMinorAxis) / 3.0;
+    this.xyScaling = semiMajorAxis / meanRadius;
+    this.zScaling = semiMinorAxis / meanRadius;
+    this.scale = (2.0 * xyScaling + zScaling) / 3.0;
     this.inverseXYScaling = 1.0 / xyScaling;
     this.inverseZScaling = 1.0 / zScaling;
     this.scaledFlattening = (xyScaling - zScaling) * inverseXYScaling;
@@ -150,7 +130,7 @@ public class PlanetModel implements SerializableObject {
     this.MAX_X_POLE = new GeoPoint(xyScaling, 1.0, 0.0, 0.0, 0.0, 0.0);
     this.MIN_Y_POLE = new GeoPoint(xyScaling, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
     this.MAX_Y_POLE = new GeoPoint(xyScaling, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
-    this.scale = (2.0 * xyScaling + zScaling)/3.0;
+
     this.inverseScale = 1.0 / scale;
     this.minimumPoleDistance  = Math.min(surfaceDistance(NORTH_POLE, SOUTH_POLE), surfaceDistance(MIN_X_POLE, MAX_X_POLE));
 
@@ -159,8 +139,6 @@ public class PlanetModel implements SerializableObject {
     this.DECODE = getNextSafeDouble(1/MUL);
     this.MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
     this.MAX_ENCODED_VALUE = encodeValue(MAX_VALUE);
-
-    this.RADIANS_PER_METER = 1.0 / xyScaling;
 
     this.docValueEncoder = new DocValueEncoder(this);
   }
@@ -171,20 +149,20 @@ public class PlanetModel implements SerializableObject {
   public PlanetModel(final InputStream inputStream) throws IOException {
     this(SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
   }
-  
+
   @Override
   public void write(final OutputStream outputStream) throws IOException {
-    SerializableObject.writeDouble(outputStream, xyScaling);
-    SerializableObject.writeDouble(outputStream, zScaling);
+    SerializableObject.writeDouble(outputStream, a);
+    SerializableObject.writeDouble(outputStream, b);
   }
-  
+
   /** Does this planet model describe a sphere?
    *@return true if so.
    */
   public boolean isSphere() {
     return this.xyScaling == this.zScaling;
   }
-  
+
   /** Find the minimum magnitude of all points on the ellipsoid.
    * @return the minimum magnitude for the planet.
    */
@@ -198,14 +176,14 @@ public class PlanetModel implements SerializableObject {
   public double getMaximumMagnitude() {
     return Math.max(this.xyScaling, this.zScaling);
   }
-  
+
   /** Find the minimum x value.
    *@return the minimum X value.
    */
   public double getMinimumXValue() {
     return -this.xyScaling;
   }
-  
+
   /** Find the maximum x value.
    *@return the maximum X value.
    */
@@ -219,21 +197,21 @@ public class PlanetModel implements SerializableObject {
   public double getMinimumYValue() {
     return -this.xyScaling;
   }
-  
+
   /** Find the maximum y value.
    *@return the maximum Y value.
    */
   public double getMaximumYValue() {
     return this.xyScaling;
   }
-  
+
   /** Find the minimum z value.
    *@return the minimum Z value.
    */
   public double getMinimumZValue() {
     return -this.zScaling;
   }
-  
+
   /** Find the maximum z value.
    *@return the maximum Z value.
    */
@@ -241,9 +219,9 @@ public class PlanetModel implements SerializableObject {
     return this.zScaling;
   }
 
-  /** return the calculated mean radius (in meters) */
-  public double getMeanRadiusMeters() {
-    return this.r1;
+  /** return the calculated mean radius (in units provided by ab and c) */
+  public double getMeanRadius() {
+    return this.meanRadius;
   }
 
   /** encode the provided value from double to integer space */
@@ -304,11 +282,6 @@ public class PlanetModel implements SerializableObject {
     double result = Double.longBitsToDouble(bits);
     assert result >= x;
     return result;
-  }
-
-  /** Converts earth-surface meters to radians */
-  public double fromMeters(final double meters) {
-    return meters * RADIANS_PER_METER;
   }
 
   /** Check if point is on surface.
@@ -730,12 +703,12 @@ public class PlanetModel implements SerializableObject {
     if (!(o instanceof PlanetModel))
       return false;
     final PlanetModel other = (PlanetModel)o;
-    return xyScaling == other.xyScaling && zScaling == other.zScaling;
+    return a == other.a && b == other.b;
   }
   
   @Override
   public int hashCode() {
-    return Double.hashCode(xyScaling) + Double.hashCode(zScaling);
+    return Double.hashCode(a) + Double.hashCode(b);
   }
   
   @Override
@@ -747,7 +720,7 @@ public class PlanetModel implements SerializableObject {
     } else if (this.equals(CLARKE_1866)) {
       return "PlanetModel.CLARKE_1866";
     } else {
-      return "PlanetModel(xyScaling="+ xyScaling +" zScaling="+ zScaling +")";
+      return "PlanetModel(xyScaling="+ a +" zScaling="+ b +")";
     }
   }
 }

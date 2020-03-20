@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -50,7 +49,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -58,6 +56,8 @@ import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
+
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  * SolrClient that connects directly to a CoreContainer.
@@ -92,7 +92,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
-    this(load(new CoreContainer(SolrXmlConfig.fromSolrHome(solrHome))), defaultCoreName);
+    this(load(new CoreContainer(solrHome, new Properties())), defaultCoreName);
   }
 
   /**
