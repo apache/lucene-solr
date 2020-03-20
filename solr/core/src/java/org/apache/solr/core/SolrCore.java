@@ -930,7 +930,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
-      MDCLoggingContext.setCore(this);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();

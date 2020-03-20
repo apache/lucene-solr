@@ -40,13 +40,8 @@ import org.slf4j.MDC;
 public class MDCLoggingContext {
   public static final String TRACE_ID = "trace_id";
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
-  private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(new Supplier<Integer>() {
-    @Override
-    public Integer get() {
-      return 0;
-    }
-  });
-  
+  private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(() -> 0);
+
   public static void setCollection(String collection) {
     if (collection != null) {
       MDC.put(COLLECTION_PROP, "c:" + collection);
@@ -114,26 +109,24 @@ public class MDCLoggingContext {
   }
   
   public static void setCore(SolrCore core) {
-    if (core != null) {
-      setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
-    }
+    CoreContainer coreContainer = core == null ? null : core.getCoreContainer();
+    CoreDescriptor coreDescriptor = core == null ? null : core.getCoreDescriptor();
+    setCoreDescriptor(coreContainer, coreDescriptor);
   }
   
   public static void setCoreDescriptor(CoreContainer coreContainer, CoreDescriptor cd) {
+    setNode(coreContainer);
+
+    int callDepth = CALL_DEPTH.get();
+    CALL_DEPTH.set(callDepth + 1);
+    if (callDepth > 0) {
+      return;
+    }
+
     if (cd != null) {
-      int callDepth = CALL_DEPTH.get();
-      CALL_DEPTH.set(callDepth + 1);
-      if (callDepth > 0) {
-        return;
-      }
-      
+
+      assert cd.getName() != null;
       setCoreName(cd.getName());
-      if (coreContainer != null) {
-        ZkController zkController = coreContainer.getZkController();
-        if (zkController != null) {
-          setNodeName(zkController.getNodeName());
-        }
-      }
       
       CloudDescriptor ccd = cd.getCloudDescriptor();
       if (ccd != null) {
@@ -146,12 +139,14 @@ public class MDCLoggingContext {
   
   public static void clear() {
     int used = CALL_DEPTH.get();
-    CALL_DEPTH.set(used - 1);
-    if (used == 0) {
+    if (used <= 1) {
+      CALL_DEPTH.set(0);
       MDC.remove(COLLECTION_PROP);
       MDC.remove(CORE_NAME_PROP);
       MDC.remove(REPLICA_PROP);
       MDC.remove(SHARD_ID_PROP);
+    } else {
+      CALL_DEPTH.set(used - 1);
     }
   }
   
