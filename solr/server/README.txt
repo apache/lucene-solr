@@ -82,7 +82,7 @@ Notes About Solr Examples
 
 * SolrHome *
 
-By default, start.jar starts Solr in Jetty using the default Solr Home
+By default, bin/solr starts Solr in Jetty using the default Solr Home
 directory of "./solr/" (relative to the working directory of the servlet 
 container).
 

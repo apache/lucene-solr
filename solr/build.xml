@@ -70,7 +70,7 @@
     </condition>
     <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
+    <java jar="${server.dir}/solr.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
       <arg value="--module=http"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
@@ -387,6 +387,7 @@
         <include name="**/data/**/*" />
         <include name="solr/zoo_data/" />
         <include name="start.jar" />
+        <include name="solr.jar" />
         <include name="logs/*" />
         <include name="webapps" />
         <include name="solr-webapp/**/*" />

@@ -24,6 +24,7 @@ configurations {
   startJar
   libExt
   webapp
+  bootstrap
   packaging
 }
 
@@ -52,7 +53,6 @@ dependencies {
   api 'org.eclipse.jetty:jetty-server'
   api 'org.eclipse.jetty:jetty-servlet'
   api 'org.eclipse.jetty:jetty-servlets'
-  api 'org.eclipse.jetty:jetty-start'
   api 'org.eclipse.jetty:jetty-util'
   api 'org.eclipse.jetty:jetty-webapp'
   api 'org.eclipse.jetty:jetty-xml'
@@ -75,6 +75,8 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-web'
 
   webapp project(path: ":solr:webapp", configuration: "war")
+
+  bootstrap project(path: ":solr:bootstrap")
 
   startJar('org.eclipse.jetty:jetty-start::shaded', {
     transitive false
@@ -112,10 +114,7 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
-  from("${buildDir}/libs", {
-    include "*.jar"
-    rename { file -> 'solr.jar' }
-  })
+  from (configurations.bootstrap)
 
   from { configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
