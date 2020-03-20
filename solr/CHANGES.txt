@@ -81,6 +81,8 @@ Other Changes
 
 * SOLR-14367: Upgrade Tika to 1.24 (Mibo via Erick Erickson)
 
+* SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

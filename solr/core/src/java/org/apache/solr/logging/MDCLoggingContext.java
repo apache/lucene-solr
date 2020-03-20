@@ -16,14 +16,6 @@
  */
 package org.apache.solr.logging;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-
-import java.util.function.Supplier;
-
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.StringUtils;
@@ -31,6 +23,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.MDC;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
  * Set's per thread context info for logging. Nested calls will use the top level parent for all context. The first
@@ -40,13 +38,8 @@ import org.slf4j.MDC;
 public class MDCLoggingContext {
   public static final String TRACE_ID = "trace_id";
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
-  private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(new Supplier<Integer>() {
-    @Override
-    public Integer get() {
-      return 0;
-    }
-  });
-  
+  private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(() -> 0);
+
   public static void setCollection(String collection) {
     if (collection != null) {
       MDC.put(COLLECTION_PROP, "c:" + collection);
@@ -112,28 +105,34 @@ public class MDCLoggingContext {
       MDC.remove(NODE_NAME_PROP);
     }
   }
-  
+
+  /**
+   * Sets multiple information from the params.
+   * REMEMBER TO CALL {@link #clear()} in a finally!
+   */
   public static void setCore(SolrCore core) {
-    if (core != null) {
-      setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
-    }
+    CoreContainer coreContainer = core == null ? null : core.getCoreContainer();
+    CoreDescriptor coreDescriptor = core == null ? null : core.getCoreDescriptor();
+    setCoreDescriptor(coreContainer, coreDescriptor);
   }
-  
+
+  /**
+   * Sets multiple information from the params.
+   * REMEMBER TO CALL {@link #clear()} in a finally!
+   */
   public static void setCoreDescriptor(CoreContainer coreContainer, CoreDescriptor cd) {
+    setNode(coreContainer);
+
+    int callDepth = CALL_DEPTH.get();
+    CALL_DEPTH.set(callDepth + 1);
+    if (callDepth > 0) {
+      return;
+    }
+
     if (cd != null) {
-      int callDepth = CALL_DEPTH.get();
-      CALL_DEPTH.set(callDepth + 1);
-      if (callDepth > 0) {
-        return;
-      }
-      
+
+      assert cd.getName() != null;
       setCoreName(cd.getName());
-      if (coreContainer != null) {
-        ZkController zkController = coreContainer.getZkController();
-        if (zkController != null) {
-          setNodeName(zkController.getNodeName());
-        }
-      }
       
       CloudDescriptor ccd = cd.getCloudDescriptor();
       if (ccd != null) {
@@ -143,15 +142,21 @@ public class MDCLoggingContext {
       }
     }
   }
-  
+
+  /**
+   * Call this after {@link #setCore(SolrCore)} or {@link #setCoreDescriptor(CoreContainer, CoreDescriptor)} in a
+   * finally.
+   */
   public static void clear() {
     int used = CALL_DEPTH.get();
-    CALL_DEPTH.set(used - 1);
-    if (used == 0) {
+    if (used <= 1) {
+      CALL_DEPTH.set(0);
       MDC.remove(COLLECTION_PROP);
       MDC.remove(CORE_NAME_PROP);
       MDC.remove(REPLICA_PROP);
       MDC.remove(SHARD_ID_PROP);
+    } else {
+      CALL_DEPTH.set(used - 1);
     }
   }
   
@@ -163,7 +168,8 @@ public class MDCLoggingContext {
     MDC.remove(NODE_NAME_PROP);
     MDC.remove(TRACE_ID);
   }
-  
+
+  /** Resets to a cleared state.  Used in-between requests into Solr. */
   public static void reset() {
     CALL_DEPTH.set(0);
     removeAll();

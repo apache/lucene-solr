@@ -215,18 +215,12 @@ public class ZkContainer {
       }
     };
 
-    if (zkController != null) {
-      if (background) {
-        coreZkRegister.execute(r);
-      } else {
-        MDCLoggingContext.setCore(core);
-        try {
-          r.run();
-        } finally {
-          MDCLoggingContext.clear();
-        }
-      }
+    if (background) {
+      coreZkRegister.execute(r);
+    } else {
+      r.run();
     }
+
   }
   
   public ZkController getZkController() {
