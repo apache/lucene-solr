@@ -51,10 +51,10 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 @EndPoint(path = "/cluster/zk/*",
     method = SolrRequest.METHOD.GET,
     permission = COLL_READ_PERM)
-public class ZkRead {
+public class ZookeeperRead {
   private final CoreContainer coreContainer;
 
-  public ZkRead(CoreContainer coreContainer) {
+  public ZookeeperRead(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
@@ -63,9 +63,10 @@ public class ZkRead {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isEmpty()) path = "/";
     byte[] d = null;
+    boolean isLeaf = req.getParams().getBool("leaf", false);
     try {
       List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
-      if (l != null && !l.isEmpty()) {
+      if (!isLeaf && (l != null && !l.isEmpty())) {
         String prefix = path.endsWith("/") ? path : path + "/";
 
         rsp.add(path, (MapWriter) ew -> {
@@ -86,7 +87,7 @@ public class ZkRead {
                 ew1.put("dataLength", stat.getDataLength());
               });
             } catch (Exception e) {
-              ew.put("s", Collections.singletonMap("error", e.getMessage()));
+              ew.put(s, Collections.singletonMap("error", e.getMessage()));
             }
           }
         });

@@ -83,21 +83,28 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk";
 
-    try(  HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
       Object o = Utils.executeGET(client.getHttpClient(),
           basezk + "/security.json",
-          Utils.JSONCONSUMER );
+          Utils.JSONCONSUMER);
       assertNotNull(o);
       o = Utils.executeGET(client.getHttpClient(),
           basezk + "/configs",
-          Utils.JSONCONSUMER );
-      assertEquals("0", String.valueOf(getObjectByPath(o,true, split(":/configs:_default:dataLength",':'))));
-      assertEquals("0", String.valueOf(getObjectByPath(o,true, split(":/configs:conf:dataLength",':'))));
-      byte[] bytes = new byte[1024*5];
+          Utils.JSONCONSUMER);
+      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
+      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
+
+      o = Utils.executeGET(client.getHttpClient(),
+          basezk + "/configs?leaf=true",
+          Utils.JSONCONSUMER);
+      assertTrue(((Map)o).containsKey("/configs"));
+      assertNull(((Map)o).get("/configs"));
+
+      byte[] bytes = new byte[1024 * 5];
       for (int i = 0; i < bytes.length; i++) {
         bytes[i] = (byte) random().nextInt(128);
       }
-      cluster.getZkClient().create("/configs/_default/testdata",bytes, CreateMode.PERSISTENT,true );
+      cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
       Utils.executeGET(client.getHttpClient(),
           basezk + "/configs/_default/testdata",
           is -> {

@@ -66,6 +66,9 @@ public class ApiBag {
     this.isCoreSpecific = isCoreSpecific;
   }
 
+  public synchronized void register(Api api) {
+    register(api, Collections.EMPTY_MAP);
+  }
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
     try {
       validateAndRegister(api, nameSubstitutes);
