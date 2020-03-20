@@ -34,47 +34,41 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
+import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
-  public void test() {
+  private static final List<CountsForEachShard> inputCounts = Arrays.asList(
+      //                     DOWN LIVE  MY
+      new CountsForEachShard(1, 3, 1),
+      new CountsForEachShard(0, 3, 2),
+      new CountsForEachShard(0, 3, 3),
+      new CountsForEachShard(0, 3, 4),
+      new CountsForEachShard(1, 0, 2),
+      new CountsForEachShard(1, 0, 1),
+      new CountsForEachShard(2, 5, 1),
+      new CountsForEachShard(2, 4, 2),
+      new CountsForEachShard(2, 3, 3)
+  );
 
-    List<CountsForEachShard> l = new ArrayList<>();
-    //                           DOWN LIVE  MY
-    l.add(new CountsForEachShard(1,     3,  1));
-    l.add(new CountsForEachShard(0,     3,  2));
-    l.add(new CountsForEachShard(0,     3,  3));
-    l.add(new CountsForEachShard(0,     3,  4));
-    l.add(new CountsForEachShard(1,     0,  2));
-    l.add(new CountsForEachShard(1,     0,  1));
-    l.add(new CountsForEachShard(2,     5,  1));
-    l.add(new CountsForEachShard(2,     4,  2));
-    l.add(new CountsForEachShard(2,     3,  3));
+  private static final List<CountsForEachShard> expectedCounts = Arrays.asList(
+      new CountsForEachShard(0, 3, 2),
+      new CountsForEachShard(0, 3, 3),
+      new CountsForEachShard(0, 3, 4),
+      new CountsForEachShard(1, 3, 1),
+      new CountsForEachShard(2, 5, 1),
+      new CountsForEachShard(2, 4, 2),
+      new CountsForEachShard(2, 3, 3),
+      new CountsForEachShard(1, 0, 1),
+      new CountsForEachShard(1, 0, 2)
+  );
 
-    List<CountsForEachShard> expected = Arrays.asList(
-        new CountsForEachShard(0, 3, 2),
-        new CountsForEachShard(0, 3, 3),
-        new CountsForEachShard(0, 3, 4),
-        new CountsForEachShard(1, 3, 1),
-        new CountsForEachShard(2, 5, 1),
-        new CountsForEachShard(2, 4, 2),
-        new CountsForEachShard(2, 3, 3),
-        new CountsForEachShard(1, 0, 1),
-        new CountsForEachShard(1, 0, 2)
-
-    );
-
-    testComparator(expected, l);
-
-    integrationTest(expected, l);
-  }
-
-  private void testComparator(List<CountsForEachShard> expectedCounts, List<CountsForEachShard> inputCounts) {
+  @Test
+  public void testComparator() {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
@@ -85,11 +79,12 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void integrationTest(List<CountsForEachShard> expectedCounts, List<CountsForEachShard> _inputCounts) {
+  @Test
+  public void integrationTest() {
     assumeWorkingMockito();
 
-    List<CountsForEachShard> perShardCounts = new ArrayList<>(_inputCounts);
-    Collections.shuffle(perShardCounts);
+    List<CountsForEachShard> perShardCounts = new ArrayList<>(inputCounts);
+    Collections.shuffle(perShardCounts, random());
 
     // compute nodes, some live, some down
     final int maxNodesOfAType = perShardCounts.stream() // not too important how many we have, but lets have plenty
@@ -137,7 +132,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (Map.Entry<CountsForEachShard, List<CoreDescriptor>> entry : myCountsToDescs.entrySet()) {
       for (CoreDescriptor descriptor : entry.getValue()) {
         CountsForEachShard prev = myDescsToCounts.put(descriptor, entry.getKey());
-        assert prev == null;
+        assert prev == null; // sanity check
       }
     }
 
@@ -197,13 +192,9 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
-    Replica r = newReplica(collection, slice, replica, node);
+    Replica r = new Replica(replica, map("core", replica, "node_name", node), collection, slice);
     replicaList.add(r);
     return r;
-  }
-
-  protected Replica newReplica(String collection, String slice, String replica, String node) {
-    return new Replica(replica, Utils.makeMap("core", replica, "node_name", node), collection, slice);
   }
 
 }
