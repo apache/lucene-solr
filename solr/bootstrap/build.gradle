@@ -29,6 +29,6 @@ jar {
 }
 
 dependencies {
-  compile 'org.eclipse.jetty:jetty-start'
+  implementation 'org.eclipse.jetty:jetty-start'
 }
 
