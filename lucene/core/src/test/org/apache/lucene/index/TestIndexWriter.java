@@ -4026,20 +4026,21 @@ public class TestIndexWriter extends LuceneTestCase {
 
         @Override
         public boolean hasNext() {
-          return count.get() < 100_000_000;
+          boolean next = count.get() < 100_000_000;
+          if (next == false) {
+            throw new AssertionError();
+          }
+          return next;
         }
 
         @Override
         public Document next() {
-          if (!hasNext()) {
-            throw new AssertionError();
-          }
           count.incrementAndGet();
           return doc;
         }
       });
     } catch (IllegalArgumentException ex) {
-      assertEquals("RAM used by a single DocumentsWriterPerThread can exceed: 1945MB", ex.getMessage());
+      assertEquals("RAM used by a single DocumentsWriterPerThread can't exceed: 1945MB", ex.getMessage());
     }
     w.commit();
     assertEquals(1, w.getDocStats().numDocs);
