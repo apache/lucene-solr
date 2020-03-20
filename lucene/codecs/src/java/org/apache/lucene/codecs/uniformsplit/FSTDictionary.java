@@ -30,7 +30,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
-import org.apache.lucene.util.fst.OffHeapFSTStore;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
@@ -57,24 +56,24 @@ public class FSTDictionary implements IndexDictionary {
 
   private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(FSTDictionary.class);
 
-  protected final FST<Long> fst;
+  protected final FST<Long> dictionary;
 
-  protected FSTDictionary(FST<Long> fst) {
-    this.fst = fst;
+  protected FSTDictionary(FST<Long> dictionary) {
+    this.dictionary = dictionary;
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_USAGE + fst.ramBytesUsed();
+    return BASE_RAM_USAGE + dictionary.ramBytesUsed();
   }
 
   @Override
   public void write(DataOutput output, BlockEncoder blockEncoder) throws IOException {
     if (blockEncoder == null) {
-      fst.save(output);
+      dictionary.save(output);
     } else {
       ByteBuffersDataOutput bytesDataOutput = ByteBuffersDataOutput.newResettableInstance();
-      fst.save(bytesDataOutput);
+      dictionary.save(bytesDataOutput);
       BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(bytesDataOutput.toDataInput(), bytesDataOutput.size());
       output.writeVLong(encodedBytes.size());
       encodedBytes.writeTo(output);
@@ -85,7 +84,7 @@ public class FSTDictionary implements IndexDictionary {
    * Reads a {@link FSTDictionary} from the provided input.
    * @param blockDecoder The {@link BlockDecoder} to use for specific decoding; or null if none.
    */
-  protected static FSTDictionary read(DataInput input, BlockDecoder blockDecoder, boolean isFSTOnHeap) throws IOException {
+  protected static FSTDictionary read(DataInput input, BlockDecoder blockDecoder) throws IOException {
     DataInput fstDataInput;
     if (blockDecoder == null) {
       fstDataInput = input;
@@ -93,14 +92,10 @@ public class FSTDictionary implements IndexDictionary {
       long numBytes = input.readVLong();
       BytesRef decodedBytes = blockDecoder.decode(input, numBytes);
       fstDataInput = new ByteArrayDataInput(decodedBytes.bytes, 0, decodedBytes.length);
-      // OffHeapFSTStore.init() requires a DataInput which is an instance of IndexInput.
-      // When the block is decoded we must load the FST on heap.
-      isFSTOnHeap = true;
     }
     PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-    FST<Long> fst = isFSTOnHeap ? new FST<>(fstDataInput, fstOutputs)
-        : new FST<>(fstDataInput, fstOutputs, new OffHeapFSTStore());
-    return new FSTDictionary(fst);
+    FST<Long> dictionary = new FST<>(fstDataInput, fstOutputs);
+    return new FSTDictionary(dictionary);
   }
 
   @Override
@@ -114,7 +109,7 @@ public class FSTDictionary implements IndexDictionary {
    */
   protected class Browser implements IndexDictionary.Browser {
 
-    protected final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
+    protected final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(dictionary);
 
     @Override
     public long seekBlock(BytesRef term) throws IOException {
@@ -132,19 +127,16 @@ public class FSTDictionary implements IndexDictionary {
 
     protected final IndexInput dictionaryInput;
     protected final BlockDecoder blockDecoder;
-    protected final boolean isFSTOnHeap;
 
     /**
-     * Lazy loaded immutable index dictionary FST.
-     * The FST is either kept off-heap, or hold in RAM on-heap.
+     * Lazy loaded immutable index dictionary (trie hold in RAM).
      */
     protected IndexDictionary dictionary;
 
-    public BrowserSupplier(IndexInput dictionaryInput, long dictionaryStartFP, BlockDecoder blockDecoder, boolean isFSTOnHeap) throws IOException {
+    public BrowserSupplier(IndexInput dictionaryInput, long startFilePointer, BlockDecoder blockDecoder) throws IOException {
       this.dictionaryInput = dictionaryInput.clone();
-      this.dictionaryInput.seek(dictionaryStartFP);
+      this.dictionaryInput.seek(startFilePointer);
       this.blockDecoder = blockDecoder;
-      this.isFSTOnHeap = isFSTOnHeap;
     }
 
     @Override
@@ -155,7 +147,7 @@ public class FSTDictionary implements IndexDictionary {
       if (dictionary == null) {
         synchronized (this) {
           if (dictionary == null) {
-            dictionary = read(dictionaryInput, blockDecoder, isFSTOnHeap);
+            dictionary = read(dictionaryInput, blockDecoder);
           }
         }
       }

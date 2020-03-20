@@ -40,13 +40,15 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final CharsRefBuilder spareChars = new CharsRefBuilder();
+  private final String field;
   private int lastDocID;
 
   public DocTermsIndexDocValues(ValueSource vs, LeafReaderContext context, String field) throws IOException {
-    this(vs, open(context, field));
+    this(field, vs, open(context, field));
   }
-
-  protected DocTermsIndexDocValues(ValueSource vs, SortedDocValues termsIndex) {
+  
+  protected DocTermsIndexDocValues(String field, ValueSource vs, SortedDocValues termsIndex) {
+    this.field = field;
     this.vs = vs;
     this.termsIndex = termsIndex;
   }
@@ -143,11 +145,23 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     final int uu = upper;
 
     return new ValueSourceScorer(weight, readerContext, this) {
+      final SortedDocValues values = readerContext.reader().getSortedDocValues(field);
+      private int lastDocID;
+      
       @Override
       public boolean matches(int doc) throws IOException {
-        if (!exists(doc)) return false;
-        float docVal = ordVal(doc);
-        return docVal >= ll && docVal <= uu;
+        if (doc < lastDocID) {
+          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+        }
+        if (doc > values.docID()) {
+          values.advance(doc);
+        }
+        if (doc == values.docID()) {
+          int ord = values.ordValue();
+          return ord >= ll && ord <= uu;
+        } else {
+          return false;
+        }
       }
     };
   }

@@ -59,38 +59,31 @@ public class FieldMetadata implements Accountable {
   protected BytesRef lastTerm;
 
   /**
-   * Constructs field metadata for writing.
+   * Constructs a {@link FieldMetadata} used for writing the index. This {@link FieldMetadata} is mutable.
+   *
    * @param maxDoc The total number of documents in the segment being written.
    */
   public FieldMetadata(FieldInfo fieldInfo, int maxDoc) {
     this(fieldInfo, maxDoc, true);
   }
 
-  /**
-   * Constructs immutable virtual field metadata for reading.
-   */
-  public FieldMetadata(long dictionaryStartFP, long firstBlockStartFP, long lastBlockStartFP, BytesRef lastTerm) {
-    this(null, 0, false);
-    this.dictionaryStartFP = dictionaryStartFP;
-    this.firstBlockStartFP = firstBlockStartFP;
-    this.lastBlockStartFP = lastBlockStartFP;
-    this.lastTerm = lastTerm;
+  public FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable) {
+    this(fieldInfo, maxDoc, isMutable, -1, -1, null);
   }
 
   /**
-   * Constructs field metadata for reading or writing.
-   * @param maxDoc The total number of documents in the segment being written.
    * @param isMutable Set true if this FieldMetadata is created for writing the index. Set false if it is used for reading the index.
    */
-  protected FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable) {
+  public FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable, long firstBlockStartFP, long lastBlockStartFP, BytesRef lastTerm) {
     assert isMutable || maxDoc == 0;
     this.fieldInfo = fieldInfo;
     this.isMutable = isMutable;
     // docsSeen must not be set if this FieldMetadata is immutable, that means it is used for reading the index.
     this.docsSeen = isMutable ? new FixedBitSet(maxDoc) : null;
     this.dictionaryStartFP = -1;
-    this.firstBlockStartFP = -1;
-    this.lastBlockStartFP = -1;
+    this.firstBlockStartFP = firstBlockStartFP;
+    this.lastBlockStartFP = lastBlockStartFP;
+    this.lastTerm = lastTerm;
   }
 
   /**

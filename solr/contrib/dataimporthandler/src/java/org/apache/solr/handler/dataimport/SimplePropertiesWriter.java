@@ -38,7 +38,7 @@ import java.util.Properties;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +126,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       SolrCore core = dataImporter.getCore();
       if (core == null) {
-        configDir = SolrPaths.locateSolrHome().toString();
+        configDir = SolrResourceLoader.locateSolrHome().toString();
       } else {
         configDir = core.getResourceLoader().getConfigDir();
       }

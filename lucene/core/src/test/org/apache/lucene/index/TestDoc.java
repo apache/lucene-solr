@@ -213,8 +213,8 @@ public class TestDoc extends LuceneTestCase {
   private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
     throws Exception {
     IOContext context = newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1)));
-    SegmentReader r1 = new SegmentReader(si1, Version.LATEST.major, context);
-    SegmentReader r2 = new SegmentReader(si2, Version.LATEST.major, context);
+    SegmentReader r1 = new SegmentReader(si1, Version.LATEST.major, false, context);
+    SegmentReader r2 = new SegmentReader(si2, Version.LATEST.major, false, context);
 
     final Codec codec = Codec.getDefault();
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
@@ -244,7 +244,7 @@ public class TestDoc extends LuceneTestCase {
 
   private void printSegment(PrintWriter out, SegmentCommitInfo si)
     throws Exception {
-    SegmentReader reader = new SegmentReader(si, Version.LATEST.major, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(si, Version.LATEST.major, false, newIOContext(random()));
 
     for (int i = 0; i < reader.numDocs(); i++)
       out.println(reader.document(i));

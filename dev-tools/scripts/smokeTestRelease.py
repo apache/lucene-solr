@@ -37,10 +37,10 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict
 from collections import namedtuple
+from scriptutil import download
 
 import checkJavaDocs
 import checkJavadocLinks
-from scriptutil import download
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -225,9 +225,7 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if ((normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-')))
-              or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-              or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
+          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:

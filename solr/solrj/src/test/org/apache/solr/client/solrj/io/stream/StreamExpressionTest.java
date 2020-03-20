@@ -55,7 +55,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -3296,7 +3296,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
       for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
         if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
-          return Paths.get(jetty.getSolrHome(), SolrPaths.USER_FILES_DIRECTORY).toAbsolutePath().toString();
+          return Paths.get(jetty.getSolrHome(), SolrResourceLoader.USER_FILES_DIRECTORY).toAbsolutePath().toString();
         }
       }
     }

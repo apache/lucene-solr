@@ -108,7 +108,7 @@ public abstract class ConfigSetService {
    * @return a SolrConfig object
    */
   protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
-    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
+    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted);
   }
 
   /**
@@ -126,10 +126,10 @@ public abstract class ConfigSetService {
     //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
     //  The fix is usually to name your schema managed-schema instead of schema.xml.
     IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
+    String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
 
     String configSet = cd.getConfigSet();
     if (configSet != null && schemaCache != null) {
-      String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
       Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
@@ -204,7 +204,7 @@ public abstract class ConfigSetService {
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader(), cd.getSubstitutableProperties());
     }
 
     @Override

@@ -17,11 +17,11 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,8 +60,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
  *
@@ -737,23 +735,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     } catch (TriggerValidationException e) {
       assertTrue(e.getDetails().containsKey(IndexSizeTrigger.SPLIT_METHOD_PROP));
     }
-  }
-
-  // make sure all defined properties are added to valid properties (SOLR-13264)
-  @Test
-  public void testValidProperties() throws Exception {
-
-    final Set<String> propFields = new HashSet<>();
-
-    final TriggerBase trigger = new IndexSizeTrigger("index_size_trigger");
-    for (final Field field : trigger.getClass().getFields()) {
-      if (field.getName().endsWith("_PROP")) {
-        propFields.add(field.get(trigger).toString());
-      }
-    }
-    propFields.removeAll(trigger.getValidProperties());
-
-    assertTrue("Invalid _PROP constants: "+propFields.toString(), propFields.isEmpty());
   }
 
   private Map<String, Object> createTriggerProps(long waitForSeconds) {

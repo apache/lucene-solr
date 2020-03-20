@@ -476,8 +476,6 @@ This filter generates edge n-gram tokens of sizes within the given range.
 
 `maxGramSize`:: (integer, default 1) The maximum gram size.
 
-`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
-
 *Example:*
 
 Default behavior.
@@ -549,24 +547,6 @@ A range of 4 to 6.
 *Tokenizer to Filter:* "four", "score", "and", "twenty"
 
 *Out:* "four", "scor", "score", "twen", "twent", "twenty"
-
-*Example:*
-
-Preserve original term.
-
-[source,xml]
-----
-<analyzer>
-  <tokenizer name="standard"/>
-  <filter name="edgeNGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
-</analyzer>
-----
-
-*In:* "four score"
-
-*Tokenizer to Filter:* "four", "score"
-
-*Out:* "fo", "fou", "four", "sc, "sco", "score"
 
 == English Minimal Stem Filter
 
@@ -1461,8 +1441,6 @@ Generates n-gram tokens of sizes in the given range. Note that tokens are ordere
 
 `maxGramSize`:: (integer, default 2) The maximum gram size.
 
-`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
-
 *Example:*
 
 Default behavior.
@@ -1534,24 +1512,6 @@ A range of 3 to 5.
 *Tokenizer to Filter:* "four", "score"
 
 *Out:* "fou", "four", "our", "sco", "scor", "score", "cor", "core", "ore"
-
-*Example:*
-
-Preserve original term.
-
-[source,xml]
-----
-<analyzer>
-  <tokenizer name="standard"/>
-  <filter name="nGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
-</analyzer>
-----
-
-*In:* "four score"
-
-*Tokenizer to Filter:* "four", "score"
-
-*Out:* "fo", "fou", "ou", "our", "ur", "four", "sc", "sco", "co", "cor", "or", "ore", "re", "score"
 
 == Numeric Payload Token Filter
 

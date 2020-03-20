@@ -56,7 +56,7 @@ public class DocSlice implements DocList, Accountable {
     this.scores=scores;
     this.matches=matches;
     this.maxScore=maxScore;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + (docs == null ? 0 : ((long)docs.length << 2)) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+    this.ramBytesUsed = BASE_RAM_BYTES_USED + ((long)docs.length << 2) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
   }
 
   @Override

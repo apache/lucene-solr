@@ -49,8 +49,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -416,7 +416,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT);
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 

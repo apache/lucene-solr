@@ -65,24 +65,21 @@ public class UniformSplitTermsReader extends FieldsProducer {
   protected final Collection<String> sortedFieldNames;
 
   /**
-   * @param blockDecoder     Optional block decoder, may be null if none.
-   *                         It can be used for decompression or decryption.
-   * @param dictionaryOnHeap Whether to force loading the terms dictionary on-heap. By default it is kept off-heap without
-   *                         impact on performance. If block encoding/decoding is used, then the dictionary is always
-   *                         loaded on-heap whatever this parameter value is.
+   * @param blockDecoder Optional block decoder, may be null if none.
+   *                     It can be used for decompression or decryption.
    */
-  public UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                 boolean dictionaryOnHeap) throws IOException {
-    this(postingsReader, state, blockDecoder, dictionaryOnHeap, FieldMetadata.Serializer.INSTANCE, NAME, VERSION_START, VERSION_CURRENT,
+  public UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE, NAME, VERSION_START, VERSION_CURRENT,
         TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
    }
    
   /**
-   * @see #UniformSplitTermsReader(PostingsReaderBase, SegmentReadState, BlockDecoder, boolean)
+   * @param blockDecoder Optional block decoder, may be null if none.
+   *                     It can be used for decompression or decryption.
    */
-  protected UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                    boolean dictionaryOnHeap, FieldMetadata.Serializer fieldMetadataReader,
-                                    String codecName, int versionStart, int versionCurrent,
+  protected UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
+                                    BlockDecoder blockDecoder, FieldMetadata.Serializer fieldMetadataReader,
+                                     String codecName, int versionStart, int versionCurrent,
                                     String termsBlocksExtension, String dictionaryExtension) throws IOException {
      IndexInput dictionaryInput = null;
      IndexInput blockInput = null;
@@ -111,7 +108,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
        this.blockInput = blockInput;
        this.dictionaryInput = dictionaryInput;
 
-       fillFieldMap(postingsReader, state, blockDecoder, dictionaryOnHeap, dictionaryInput, blockInput, fieldMetadataCollection, state.fieldInfos);
+       fillFieldMap(postingsReader, blockDecoder, dictionaryInput, blockInput, fieldMetadataCollection, state.fieldInfos);
 
        List<String> fieldNames = new ArrayList<>(fieldToTermsMap.keySet());
        Collections.sort(fieldNames);
@@ -125,19 +122,13 @@ public class UniformSplitTermsReader extends FieldsProducer {
      }
    }
 
-  protected void fillFieldMap(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                              boolean dictionaryOnHeap, IndexInput dictionaryInput, IndexInput blockInput,
-                              Collection<FieldMetadata> fieldMetadataCollection, FieldInfos fieldInfos) throws IOException {
+  protected void fillFieldMap(PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
+                    IndexInput dictionaryInput, IndexInput blockInput,
+                    Collection<FieldMetadata> fieldMetadataCollection, FieldInfos fieldInfos) throws IOException {
     for (FieldMetadata fieldMetadata : fieldMetadataCollection) {
-      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier = createDictionaryBrowserSupplier(state, dictionaryInput, fieldMetadata, blockDecoder, dictionaryOnHeap);
       fieldToTermsMap.put(fieldMetadata.getFieldInfo().name,
-          new UniformSplitTerms(blockInput, fieldMetadata, postingsReader, blockDecoder, dictionaryBrowserSupplier));
+          new UniformSplitTerms(dictionaryInput, blockInput, fieldMetadata, postingsReader, blockDecoder));
     }
-  }
-
-  protected IndexDictionary.BrowserSupplier createDictionaryBrowserSupplier(SegmentReadState state, IndexInput dictionaryInput, FieldMetadata fieldMetadata,
-                                                                         BlockDecoder blockDecoder, boolean dictionaryOnHeap) throws IOException {
-    return new FSTDictionary.BrowserSupplier(dictionaryInput, fieldMetadata.getDictionaryStartFP(), blockDecoder, dictionaryOnHeap);
   }
 
   /**

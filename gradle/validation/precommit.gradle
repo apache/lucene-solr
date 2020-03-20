@@ -40,7 +40,8 @@ configure(rootProject) {
           "javadoc",
           "rat",
           "ecjLint",
-          "checkMissingDocs"
+          // FIXME: enable this line once Javadocs are correctly generated
+          // "checkMissingDocs"
       ]}
     }
   }

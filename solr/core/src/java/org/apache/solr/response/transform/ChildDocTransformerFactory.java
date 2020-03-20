@@ -104,11 +104,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       if(buildHierarchy) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Parent filter should not be sent when the schema is nested");
       }
-      Query query = parseQuery(parentFilterStr, req, "parentFilter");
-      if (query == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid Parent filter '" + parentFilterStr + "', resolves to null");
-      }
-      parentsFilter = new QueryBitSetProducer(query);
+      parentsFilter = new QueryBitSetProducer(parseQuery(parentFilterStr, req,  "parentFilter"));
     }
 
     String childFilterStr = params.get( "childFilter" );
@@ -129,8 +125,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
     String childReturnFields = params.get("fl");
     SolrReturnFields childSolrReturnFields;
-    if (childReturnFields != null) {
+    if(childReturnFields != null) {
       childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
+    } else if(req.getSchema().getDefaultLuceneMatchVersion().major < 8) {
+      // ensure backwards for versions prior to SOLR 8
+      childSolrReturnFields = new SolrReturnFields();
     } else {
       childSolrReturnFields = new SolrReturnFields(req);
     }

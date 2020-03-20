@@ -89,7 +89,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final static String TERMS_CODEC_NAME = "BlockTreeTermsDict";
 
   /** Initial terms format. */
-  public static final int VERSION_START = 3;
+  public static final int VERSION_START = 2;
+
+  /** Auto-prefix terms have been superseded by points. */
+  public static final int VERSION_AUTO_PREFIX_TERMS_REMOVED = 3;
 
   /** The long[] + byte[] metadata has been replaced with a single byte[]. */
   public static final int VERSION_META_LONGS_REMOVED = 4;
@@ -134,17 +137,26 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       termsIn = state.directory.openInput(termsName, state.context);
       version = CodecUtil.checkIndexHeader(termsIn, TERMS_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
+      if (version < VERSION_AUTO_PREFIX_TERMS_REMOVED) {
+        // pre-6.2 index, records whether auto-prefix terms are enabled in the header
+        byte b = termsIn.readByte();
+        if (b != 0) {
+          throw new CorruptIndexException("Index header pretends the index has auto-prefix terms: " + b, termsIn);
+        }
+      }
+
       String indexName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexName, state.context);
       CodecUtil.checkIndexHeader(indexIn, TERMS_INDEX_CODEC_NAME, version, version, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checksumEntireFile(indexIn);
 
       // Have PostingsReader init itself
       postingsReader.init(termsIn, state);
-
-      // Verifying the checksum against all bytes would be too costly, but for now we at least
-      // verify proper structure of the checksum footer. This is cheap and can detect some forms
-      // of corruption such as file truncation.
-      CodecUtil.retrieveChecksum(indexIn);
+      
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
       CodecUtil.retrieveChecksum(termsIn);
 
       // Read per-field details
@@ -191,7 +203,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fieldMap.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, indexIn, minTerm, maxTerm));
+                                                          indexStartFP, indexIn, minTerm, maxTerm, state.openedFromWriter));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
@@ -295,9 +307,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public void checkIntegrity() throws IOException { 
-    // terms index
-    CodecUtil.checksumEntireFile(indexIn);
-
     // term dictionary
     CodecUtil.checksumEntireFile(termsIn);
       

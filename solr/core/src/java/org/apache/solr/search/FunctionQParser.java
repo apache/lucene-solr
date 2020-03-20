@@ -424,33 +424,31 @@ public class FunctionQParser extends QParser {
 
   /** @lucene.experimental */
   public AggValueSource parseAgg(int flags) throws SyntaxError {
-    String origId = sp.getId();
+    String id = sp.getId();
     AggValueSource vs = null;
-    boolean hasParen;
+    boolean hasParen = false;
 
-    if ("agg".equals(origId)) {
+    if ("agg".equals(id)) {
       hasParen = sp.opt("(");
       vs = parseAgg(flags | FLAG_IS_AGG);
     } else {
       // parse as an aggregation...
-      String id = origId.startsWith("agg_")? origId: "agg_" + origId;
+      if (!id.startsWith("agg_")) {
+        id = "agg_" + id;
+      }
+
       hasParen = sp.opt("(");
 
       ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
       if (argParser == null) {
-        argParser = req.getCore().getValueSourceParser(origId);
-        if (argParser == null) {
-          throw new SyntaxError("Unknown aggregation '" + origId + "' in input (" + sp + ")");
-        } else {
-          throw new SyntaxError("Expected multi-doc aggregation from '" +  origId +
-              "' but got per-doc function in input (" + sp + ")");
-        }
+        throw new SyntaxError("Unknown aggregation " + id + " in (" + sp + ")");
       }
 
       ValueSource vv = argParser.parse(this);
       if (!(vv instanceof AggValueSource)) {
-        throw new SyntaxError("Expected multi-doc aggregation from '" + origId +
-            "' but got (" + vv + ") in (" + sp + ")");
+        if (argParser == null) { // why this??
+          throw new SyntaxError("Expected aggregation from " + id + " but got (" + vv + ") in (" + sp + ")");
+        }
       }
       vs = (AggValueSource) vv;
     }

@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -42,7 +43,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -85,7 +86,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile);
+      return new SolrConfig(solrHome.resolve(coreName), confFile, null, true);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
@@ -139,7 +140,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
+    this(buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -154,7 +155,16 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(SolrXmlConfig.fromString(solrHome, solrXml));
+    this(new SolrResourceLoader(solrHome), solrXml);
+  }
+
+  /**
+   * Create a TestHarness using a specific solr resource loader and solr xml
+   * @param loader the SolrResourceLoader to use
+   * @param solrXml the text of a solrxml
+   */
+  public TestHarness(SolrResourceLoader loader, String solrXml) {
+    this(SolrXmlConfig.fromString(loader, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -166,13 +176,13 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, coresLocator);
+    container = new CoreContainer(config, new Properties(), coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
-  public static NodeConfig buildTestNodeConfig(Path solrHome) {
+  public static NodeConfig buildTestNodeConfig(SolrResourceLoader loader) {
     CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
                                                                  Integer.getInteger("hostPort", 8983),
                                                                  System.getProperty("hostContext", ""))
@@ -194,7 +204,7 @@ public class TestHarness extends BaseTestHarness {
         .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
         .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
+    return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)

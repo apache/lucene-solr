@@ -85,7 +85,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     
     @Override
     protected double getDouble() {
-      return AggUtil.variance(sumSq, sum, count);
+      return AggUtil.uncorrectedVariance(sumSq, sum, count);
     }    
   }
 
@@ -97,7 +97,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
@@ -109,7 +109,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
@@ -121,7 +121,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 }

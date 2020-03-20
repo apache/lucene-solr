@@ -387,7 +387,7 @@ class JoinQuery extends Query {
       fromSearcher.search(q, collector);
       Query resultQ = collector.getResultQuery(toSchemaField, false);
       // don't cache the resulting docSet... the query may be very large.  Better to cache the results of the join query itself
-      DocSet result = resultQ==null ? DocSet.empty() : toSearcher.getDocSetNC(resultQ, null);
+      DocSet result = resultQ==null ? DocSet.EMPTY : toSearcher.getDocSetNC(resultQ, null);
       return result;
     }
 
@@ -421,7 +421,7 @@ class JoinQuery extends Query {
       LeafReader toReader = fromSearcher==toSearcher ? fromReader : toSearcher.getSlowAtomicReader();
       Terms terms = fromReader.terms(fromField);
       Terms toTerms = toReader.terms(toField);
-      if (terms == null || toTerms==null) return DocSet.empty();
+      if (terms == null || toTerms==null) return DocSet.EMPTY;
       String prefixStr = TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);
 
@@ -576,7 +576,7 @@ class JoinQuery extends Query {
       }
 
       if (resultList.size()==0) {
-        return DocSet.empty();
+        return DocSet.EMPTY;
       }
 
       if (resultList.size() == 1) {

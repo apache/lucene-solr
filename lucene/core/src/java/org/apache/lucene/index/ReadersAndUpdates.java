@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -168,7 +168,7 @@ final class ReadersAndUpdates {
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, indexCreatedVersionMajor, context);
+      reader = new SegmentReader(info, indexCreatedVersionMajor, true, context);
       pendingDeletes.onNewReader(reader, info);
     }
 
@@ -535,7 +535,7 @@ final class ReadersAndUpdates {
       // IndexWriter.commitMergedDeletes).
       final SegmentReader reader;
       if (this.reader == null) {
-        reader = new SegmentReader(info, indexCreatedVersionMajor, IOContext.READONCE);
+        reader = new SegmentReader(info, indexCreatedVersionMajor, true, IOContext.READONCE);
         pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;

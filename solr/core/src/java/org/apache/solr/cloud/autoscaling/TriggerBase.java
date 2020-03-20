@@ -29,11 +29,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -80,22 +81,8 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     this.eventType = eventType;
     this.name = name;
 
-    // subclasses may further modify this set to include other supported properties
+    // subclasses may modify this set to include other supported properties
     TriggerUtils.validProperties(validProperties, "name", "class", "event", "enabled", "waitFor", "actions");
-  }
-
-  /**
-   * Return a set of valid property names supported by this trigger.
-   */
-  public final Set<String> getValidProperties() {
-    return Collections.unmodifiableSet(this.validProperties);
-  }
-
-  /**
-   * Return a set of required property names supported by this trigger.
-   */
-  public final Set<String> getRequiredProperties() {
-    return Collections.unmodifiableSet(this.requiredProperties);
   }
 
   @Override

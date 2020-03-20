@@ -180,7 +180,7 @@ public class DocSetUtil {
 
     DocSet answer = null;
     if (maxCount == 0) {
-      answer = DocSet.empty();
+      answer = DocSet.EMPTY;
     } else if (maxCount <= smallSetSize) {
       answer = createSmallSet(leaves, postList, maxCount, firstReader);
     } else {

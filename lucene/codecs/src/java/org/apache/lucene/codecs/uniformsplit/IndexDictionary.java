@@ -112,6 +112,5 @@ public interface IndexDictionary extends Accountable {
    * {@link org.apache.lucene.index.TermsEnum#seekExact} are called (it is not loaded for a direct
    * all-terms enumeration).
    */
-  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {
-  }
+  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {}
 }

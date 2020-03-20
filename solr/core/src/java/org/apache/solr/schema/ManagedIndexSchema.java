@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -97,12 +96,13 @@ public final class ManagedIndexSchema extends IndexSchema {
   /**
    * Constructs a schema using the specified resource name and stream.
    *
-   * By default, this follows the normal config path directory searching rules.
+   * @see org.apache.solr.core.SolrResourceLoader#openSchema
+   *      By default, this follows the normal config path directory searching rules.
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
-  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
+  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable, 
                      String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
+    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1323,8 +1323,8 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
-    super(luceneVersion, loader, substitutableProps);
+                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
+    super(luceneVersion, loader);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1342,7 +1342,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
    ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
      ManagedIndexSchema newSchema = new ManagedIndexSchema
-         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock(), substitutableProperties);
+         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
 
     newSchema.name = name;
     newSchema.version = version;

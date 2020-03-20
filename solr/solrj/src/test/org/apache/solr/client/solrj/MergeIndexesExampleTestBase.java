@@ -16,13 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Properties;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -34,6 +27,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -50,12 +48,12 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static Path getSolrHome() {
-    return SolrTestCaseJ4.getFile("solrj/solr/multicore").toPath();
+  static String getSolrHome() {
+    return SolrTestCaseJ4.getFile("solrj/solr/multicore").getAbsolutePath();
   }
 
   protected void setupCoreContainer() {
-    cores = new CoreContainer(getSolrHome(), new Properties());
+    cores = new CoreContainer(getSolrHome());
     cores.load();
     //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }

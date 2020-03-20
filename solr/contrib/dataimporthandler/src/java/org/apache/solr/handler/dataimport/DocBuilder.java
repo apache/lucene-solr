@@ -16,24 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.lang.invoke.MethodHandles;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -41,14 +23,22 @@ import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.apache.solr.handler.dataimport.config.Entity;
 import org.apache.solr.handler.dataimport.config.EntityField;
+
+import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
+import java.lang.invoke.MethodHandles;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p> {@link DocBuilder} is responsible for creating Solr documents out of the given configuration. It also maintains
@@ -123,8 +113,8 @@ public class DocBuilder {
       VariableResolver resolver = null;
       String epoch = propWriter.convertDateToString(EPOCH);
       if(dataImporter != null && dataImporter.getCore() != null
-          && dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties() != null){
-        resolver =  new VariableResolver(dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties());
+          && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
+        resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
       } else {
         resolver = new VariableResolver();
       }

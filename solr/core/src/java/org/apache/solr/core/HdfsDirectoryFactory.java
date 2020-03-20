@@ -412,7 +412,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       path = cd.getName();
     }
     
-    return normalize(SolrPaths.normalizeDir(ZkController
+    return normalize(SolrResourceLoader.normalizeDir(ZkController
         .trimLeadingAndTrailingSlashes(hdfsDataDir)
         + "/"
         + path

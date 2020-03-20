@@ -60,7 +60,10 @@ public class ZkContainer {
     
   }
 
-  public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
+  public void initZooKeeper(final CoreContainer cc, String solrHome, CloudConfig config) {
+
+    ZkController zkController = null;
+
     String zkRun = System.getProperty("zkRun");
 
     if (zkRun != null && config == null)
@@ -76,7 +79,6 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    String solrHome = cc.getSolrHome();
     if (zkRun != null) {
       String zkDataHome = System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
@@ -105,14 +107,12 @@ public class ZkContainer {
         }
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
-
-        // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
-        boolean alreadyUsedChroot = cc.getConfig().isFromZookeeper() && zookeeperHost.equals(System.getProperty("zkHost"));
-        if(!alreadyUsedChroot && !ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
+        
+        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
-        ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config,
+        zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config,
             new CurrentCoreDescriptorProvider() {
 
               @Override
@@ -144,11 +144,12 @@ public class ZkContainer {
           configManager.uploadConfigDir(configPath, confName);
         }
 
-        if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc);
-        }
 
-        this.zkController = zkController;
+        
+        if(boostrapConf) {
+          ZkController.bootstrapConf(zkController.getZkClient(), cc, solrHome);
+        }
+        
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -164,7 +165,10 @@ public class ZkContainer {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "", e);
       }
+
+
     }
+    this.zkController = zkController;
   }
   
   private String stripChroot(String zkRun) {

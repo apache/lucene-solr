@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
+import org.apache.lucene.codecs.uniformsplit.FSTDictionary;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
 import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTerms;
@@ -45,33 +46,26 @@ import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPo
  */
 public class STUniformSplitTermsReader extends UniformSplitTermsReader {
 
-  /**
-   * @see UniformSplitTermsReader#UniformSplitTermsReader(PostingsReaderBase, SegmentReadState, BlockDecoder, boolean)
-   */
-  public STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                   boolean dictionaryOnHeap) throws IOException {
-    this(postingsReader, state, blockDecoder, dictionaryOnHeap, FieldMetadata.Serializer.INSTANCE,
+  public STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE,
         NAME, VERSION_START, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 
-  /**
-   * @see UniformSplitTermsReader#UniformSplitTermsReader(PostingsReaderBase, SegmentReadState, BlockDecoder, boolean)
-   */
-  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                      boolean dictionaryOnHeap, FieldMetadata.Serializer fieldMetadataReader,
+  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
+                                      BlockDecoder blockDecoder, FieldMetadata.Serializer fieldMetadataReader,
                                       String codecName, int versionStart, int versionCurrent,
                                       String termsBlocksExtension, String dictionaryExtension) throws IOException {
-    super(postingsReader, state, blockDecoder, dictionaryOnHeap, fieldMetadataReader, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
+    super(postingsReader, state, blockDecoder, fieldMetadataReader, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
   }
 
   @Override
-  protected void fillFieldMap(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                              boolean dictionaryOnHeap, IndexInput dictionaryInput, IndexInput blockInput,
+  protected void fillFieldMap(PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
+                              IndexInput dictionaryInput, IndexInput blockInput,
                               Collection<FieldMetadata> fieldMetadataCollection, FieldInfos fieldInfos) throws IOException {
     if (!fieldMetadataCollection.isEmpty()) {
       FieldMetadata unionFieldMetadata = createUnionFieldMetadata(fieldMetadataCollection);
       // Share the same immutable dictionary between all fields.
-      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier = createDictionaryBrowserSupplier(state, dictionaryInput, unionFieldMetadata, blockDecoder, dictionaryOnHeap);
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier = new FSTDictionary.BrowserSupplier(dictionaryInput, fieldMetadataCollection.iterator().next().getDictionaryStartFP(), blockDecoder);
       for (FieldMetadata fieldMetadata : fieldMetadataCollection) {
         fieldToTermsMap.put(fieldMetadata.getFieldInfo().name,
             new STUniformSplitTerms(blockInput, fieldMetadata, unionFieldMetadata, postingsReader, blockDecoder, fieldInfos, dictionaryBrowserSupplier));

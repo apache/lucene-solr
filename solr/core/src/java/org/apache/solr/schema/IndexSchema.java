@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -135,7 +134,6 @@ public class IndexSchema {
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
-  protected final Properties substitutableProperties;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -143,7 +141,6 @@ public class IndexSchema {
   protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
   protected Collection<SchemaField> requiredFields = new HashSet<>();
   protected DynamicField[] dynamicFields = new DynamicField[] {};
-
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
@@ -169,11 +166,12 @@ public class IndexSchema {
 
   /**
    * Constructs a schema using the specified resource name and stream.
+   * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
-    this(luceneVersion, resourceLoader, substitutableProperties);
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
+    this(luceneVersion, resourceLoader);
 
     this.resourceName = Objects.requireNonNull(name);
     try {
@@ -184,10 +182,9 @@ public class IndexSchema {
     }
   }
 
-  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
+  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
-    this.substitutableProperties = substitutableProperties;
   }
 
   /**
@@ -471,13 +468,17 @@ public class IndexSchema {
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
+      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH);
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      String coreName = getCoreName("null");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
+      sb.append("[");
+      sb.append(coreName);
+      sb.append("] ");
       if (nd==null) {
         sb.append("schema has no name!");
         log.warn(sb.toString());
@@ -617,6 +618,14 @@ public class IndexSchema {
     refreshAnalyzers();
 
     log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
+  }
+
+  private String getCoreName(String defaultVal) {
+    if (loader != null && loader.getCoreProperties() != null) {
+      return loader.getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
+    }
   }
 
   protected void postReadInform() {

@@ -19,12 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -68,7 +63,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -129,7 +124,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
 
     PostingsEnum termPositions = MultiTerms.getTermPostingsEnum(reader, "repeated", new BytesRef("repeated"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -200,7 +195,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
 
     PostingsEnum termPositions = MultiTerms.getTermPostingsEnum(reader, "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -242,7 +237,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
 
     PostingsEnum termPositions = reader.postings(new Term("preanalyzed", "term1"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

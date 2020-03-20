@@ -1179,7 +1179,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       bitsSet += upto;
       result = new BitDocSet(fbs, bitsSet);
     } else {
-      result = upto == 0 ? DocSet.empty() : new SortedIntDocSet(Arrays.copyOf(docs, upto));
+      result = upto == 0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
 
     if (useCache) {

@@ -474,6 +474,51 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
+  long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
+                      final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
+
+    boolean hasEvents = preUpdate();
+
+    final ThreadState perThread = flushControl.obtainAndLock();
+
+    final DocumentsWriterPerThread flushingDWPT;
+    long seqNo;
+    try {
+      // This must happen after we've pulled the ThreadState because IW.close
+      // waits for all ThreadStates to be released:
+      ensureOpen();
+      ensureInitialized(perThread);
+      assert perThread.isInitialized();
+      final DocumentsWriterPerThread dwpt = perThread.dwpt;
+      final int dwptNumDocs = dwpt.getNumDocsInRAM();
+      try {
+        seqNo = dwpt.updateDocument(doc, analyzer, delNode, flushNotifications);
+      } finally {
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        }
+        // We don't know whether the document actually
+        // counted as being indexed, so we must subtract here to
+        // accumulate our separate counter:
+        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+      }
+      final boolean isUpdate = delNode != null && delNode.isDelete();
+      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+      perThread.lastSeqNo = seqNo;
+
+    } finally {
+      perThreadPool.release(perThread);
+    }
+
+    if (postUpdate(flushingDWPT, hasEvents)) {
+      seqNo = -seqNo;
+    }
+    
+    return seqNo;
+  }
+
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {

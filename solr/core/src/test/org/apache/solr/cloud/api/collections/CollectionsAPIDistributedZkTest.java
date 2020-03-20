@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -38,7 +38,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableList;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -78,8 +81,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Tests the Cloud Collections API.
@@ -501,7 +503,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
       // look for core props file
-      Path instancedir = core.getInstancePath();
+      Path instancedir = core.getResourceLoader().getInstancePath();
       assertTrue("Could not find expected core.properties file", Files.exists(instancedir.resolve("core.properties")));
 
       Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());

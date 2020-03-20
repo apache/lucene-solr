@@ -62,12 +62,7 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     @Override
     public Object getValue(int slot) throws IOException {
-      return getNonShardValue(slot);
-    }
-
-    @Override
-    public long getNonShardValue(int slot) {
-      return (long)counts[slot];
+      return counts[slot];
     }
   }
 

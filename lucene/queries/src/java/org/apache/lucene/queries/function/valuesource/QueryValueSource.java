@@ -29,7 +29,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -88,13 +87,14 @@ class QueryDocValues extends FloatDocValues {
   final Query q;
 
   Scorer scorer;
-  DocIdSetIterator disi;
-  TwoPhaseIterator tpi;
-  Boolean thisDocMatches;
+  DocIdSetIterator it;
+  int scorerDoc; // the document the scorer is on
+  boolean noMatches=false;
 
-  // the last document requested
-  int lastDocRequested=-1;
-
+  // the last document requested... start off with high value
+  // to trigger a scorer reset on first access.
+  int lastDocRequested=Integer.MAX_VALUE;
+  
 
   public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
     super(vs);
@@ -124,7 +124,30 @@ class QueryDocValues extends FloatDocValues {
   @Override
   public float floatVal(int doc) {
     try {
-      return exists(doc) ? scorer.score() : defVal;
+      if (doc < lastDocRequested) {
+        if (noMatches) return defVal;
+        scorer = weight.scorer(readerContext);
+        if (scorer==null) {
+          noMatches = true;
+          return defVal;
+        }
+        it = scorer.iterator();
+        scorerDoc = -1;
+      }
+      lastDocRequested = doc;
+
+      if (scorerDoc < doc) {
+        scorerDoc = it.advance(doc);
+      }
+
+      if (scorerDoc > doc) {
+        // query doesn't match this document... either because we hit the
+        // end, or because the next doc is after this doc.
+        return defVal;
+      }
+
+      // a match!
+      return scorer.score();
     } catch (IOException e) {
       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
     }
@@ -132,42 +155,44 @@ class QueryDocValues extends FloatDocValues {
 
   @Override
   public boolean exists(int doc) {
-    if (doc < lastDocRequested) {
-      throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocRequested + " vs docID=" + doc);
-    }
-    lastDocRequested = doc;
-
     try {
-      if (disi == null) {
+      if (doc < lastDocRequested) {
+        if (noMatches) return false;
         scorer = weight.scorer(readerContext);
-        if (scorer == null) {
-          disi = DocIdSetIterator.empty();
-        } else {
-          tpi = scorer.twoPhaseIterator();
-          disi = tpi == null ? scorer.iterator() : tpi.approximation();
+        scorerDoc = -1;
+        if (scorer==null) {
+          noMatches = true;
+          return false;
         }
-        thisDocMatches = null;
+        it = scorer.iterator();
+      }
+      lastDocRequested = doc;
+
+      if (scorerDoc < doc) {
+        scorerDoc = it.advance(doc);
       }
 
-      if (disi.docID() < doc) {
-        disi.advance(doc);
-        thisDocMatches = null;
+      if (scorerDoc > doc) {
+        // query doesn't match this document... either because we hit the
+        // end, or because the next doc is after this doc.
+        return false;
       }
-      if (disi.docID() == doc) {
-        if (thisDocMatches == null) {
-          thisDocMatches = tpi == null || tpi.matches();
-        }
-        return thisDocMatches;
-      } else return false;
+
+      // a match!
+      return true;
     } catch (IOException e) {
       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
     }
   }
 
-  @Override
+   @Override
   public Object objectVal(int doc) {
-    return floatVal(doc);
-  }
+     try {
+       return exists(doc) ? scorer.score() : null;
+     } catch (IOException e) {
+       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+     }
+   }
 
   @Override
   public ValueFiller getValueFiller() {
@@ -187,13 +212,37 @@ class QueryDocValues extends FloatDocValues {
       @Override
       public void fillValue(int doc) {
         try {
-          if (exists(doc)) {
-            mval.value = scorer.score();
-            mval.exists = true;
-          } else {
+          if (noMatches) {
             mval.value = defVal;
             mval.exists = false;
+            return;
           }
+          scorer = weight.scorer(readerContext);
+          scorerDoc = -1;
+          if (scorer==null) {
+            noMatches = true;
+            mval.value = defVal;
+            mval.exists = false;
+            return;
+          }
+          it = scorer.iterator();
+          lastDocRequested = doc;
+
+          if (scorerDoc < doc) {
+            scorerDoc = it.advance(doc);
+          }
+
+          if (scorerDoc > doc) {
+            // query doesn't match this document... either because we hit the
+            // end, or because the next doc is after this doc.
+            mval.value = defVal;
+            mval.exists = false;
+            return;
+          }
+
+          // a match!
+          mval.value = scorer.score();
+          mval.exists = true;
         } catch (IOException e) {
           throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
         }

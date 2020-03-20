@@ -38,7 +38,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     SolrConfig config = new SolrConfig
-        (Paths.get(testInstanceDir), testConfHome + "solrconfig.xml");
+        (Paths.get(testInstanceDir), testConfHome + "solrconfig.xml", null, true);
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
     f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
       ? new DatePointField() : new TrieDateField();

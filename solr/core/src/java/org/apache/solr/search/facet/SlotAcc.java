@@ -484,7 +484,7 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
   }
 
   private double variance(int slot) {
-    return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -541,7 +541,7 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   }
 
   private double stdDev(int slot) {
-    return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override

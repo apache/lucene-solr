@@ -50,8 +50,7 @@ public class NGramFilterFactory extends TokenFilterFactory {
     super(args);
     minGramSize = requireInt(args, "minGramSize");
     maxGramSize = requireInt(args, "maxGramSize");
-
-    preserveOriginal = getBoolean(args, "preserveOriginal", NGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
+    preserveOriginal = getBoolean(args, "keepShortTerm", NGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

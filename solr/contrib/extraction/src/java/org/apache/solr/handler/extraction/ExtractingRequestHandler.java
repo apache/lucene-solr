@@ -17,6 +17,7 @@
 package org.apache.solr.handler.extraction;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.solr.common.SolrException;
@@ -31,6 +32,8 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.tika.config.TikaConfig;
+import org.apache.tika.exception.TikaException;
+import org.xml.sax.SAXException;
 
 /**
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need the text to be extracted
@@ -58,34 +61,40 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
 
   @Override
   public void inform(SolrCore core) {
-    try {
+    if (initArgs != null) {
+      //if relative,then relative to config dir, otherwise, absolute path
       String tikaConfigLoc = (String) initArgs.get(CONFIG_LOCATION);
-      if (tikaConfigLoc == null) { // default
-        ClassLoader classLoader = core.getResourceLoader().getClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
-          config = new TikaConfig(is);
-        }
-      } else {
+      if (tikaConfigLoc != null) {
         File configFile = new File(tikaConfigLoc);
-        if (configFile.isAbsolute()) {
+        if (configFile.isAbsolute() == false) {
+          configFile = new File(core.getResourceLoader().getConfigDir(), configFile.getPath());
+        }
+        try {
           config = new TikaConfig(configFile);
-        } else { // in conf/
-          try (InputStream is = core.getResourceLoader().openResource(tikaConfigLoc)) {
-            config = new TikaConfig(is);
-          }
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
 
       String parseContextConfigLoc = (String) initArgs.get(PARSE_CONTEXT_CONFIG);
-      if (parseContextConfigLoc == null) { // default:
-        parseContextConfig = new ParseContextConfig();
-      } else {
-        parseContextConfig = new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
+      if (parseContextConfigLoc != null) {
+        try {
+          parseContextConfig = new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
       }
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load Tika Config", e);
     }
-
+    if (config == null) {
+      try (InputStream is = core.getResourceLoader().getClassLoader().getResourceAsStream("solr-default-tika-config.xml")){
+        config = new TikaConfig(is);
+      } catch (IOException | SAXException | TikaException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+    if (parseContextConfig == null) {
+      parseContextConfig = new ParseContextConfig();
+    }
     factory = createFactory();
   }
 

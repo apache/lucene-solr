@@ -16,22 +16,23 @@
  */
 package org.apache.lucene.spatial3d;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
-import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoCircle;
-import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
-import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
-import org.apache.lucene.spatial3d.geom.GeoPath;
-import org.apache.lucene.spatial3d.geom.GeoPathFactory;
-import org.apache.lucene.spatial3d.geom.GeoPoint;
-import org.apache.lucene.spatial3d.geom.GeoPolygon;
-import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
+import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPolygon;
+import org.apache.lucene.spatial3d.geom.GeoCircle;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
+import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
+
+import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.GeoUtils;
+
+import java.util.List;
+import java.util.ArrayList;
 
 class Geo3DUtil {
 
@@ -128,8 +129,7 @@ class Geo3DUtil {
       GeoUtils.checkLongitude(longitude);
       points[i] = new GeoPoint(planetModel, fromDegrees(latitude), fromDegrees(longitude));
     }
-    double radiusRadians = pathWidthMeters / (planetModel.getMeanRadius() * planetModel.xyScaling);
-    return GeoPathFactory.makeGeoPath(planetModel, radiusRadians, points);
+    return GeoPathFactory.makeGeoPath(planetModel, planetModel.fromMeters(pathWidthMeters), points);
   }
   
   /**
@@ -142,8 +142,7 @@ class Geo3DUtil {
   static GeoCircle fromDistance(final PlanetModel planetModel, final double latitude, final double longitude, final double radiusMeters) {
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);
-    double radiusRadians = radiusMeters / (planetModel.getMeanRadius());
-    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), radiusRadians);
+    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), planetModel.fromMeters(radiusMeters));
   }
   
   /**
