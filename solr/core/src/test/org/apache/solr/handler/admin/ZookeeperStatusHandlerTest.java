@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,6 @@ import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -73,7 +73,6 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
   }
-
 
   /*
     Test the monitoring endpoint, used in the Cloud => ZkStatus Admin UI screen
@@ -104,23 +103,23 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void testEnsembleStatusMock() {
     assumeWorkingMockito();
     ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class);
-    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(asList("imok"));
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(
-        asList("zk_version\t3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT",
+        Arrays.asList("zk_version\t3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT",
         "zk_avg_latency\t1"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "conf")).thenReturn(
-        asList("clientPort=2181",
+        Arrays.asList("clientPort=2181",
         "secureClientPort=-1",
         "thisIsUnexpected",
         "membership: "));
 
-    when(zkStatusHandler.getZkRawResponse("zoo2:2181", "ruok")).thenReturn(asList(""));
+    when(zkStatusHandler.getZkRawResponse("zoo2:2181", "ruok")).thenReturn(Arrays.asList(""));
 
-    when(zkStatusHandler.getZkRawResponse("zoo3:2181", "ruok")).thenReturn(asList("imok"));
+    when(zkStatusHandler.getZkRawResponse("zoo3:2181", "ruok")).thenReturn(Arrays.asList("imok"));
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "mntr")).thenReturn(
-        asList("mntr is not executed because it is not in the whitelist.")); // Actual response from ZK if not whitelisted
+        Arrays.asList("mntr is not executed because it is not in the whitelist.")); // Actual response from ZK if not whitelisted
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "conf")).thenReturn(
-        asList("clientPort=2181"));
+        Arrays.asList("clientPort=2181"));
 
     when(zkStatusHandler.getZkStatus(anyString())).thenCallRealMethod();
     when(zkStatusHandler.monitorZookeeper(anyString())).thenCallRealMethod();
