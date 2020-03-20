@@ -31,7 +31,6 @@ import static org.apache.lucene.search.FieldComparator.IteratorSupplierComparato
 
 public class LongDocValuesPointComparator extends IteratorSupplierComparator<Long> {
     private final String field;
-    private final int numHits;
     private final boolean reverse;
     private final long missingValue;
     private final long[] values;
@@ -41,22 +40,15 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     protected NumericDocValues docValues;
     private DocIdSetIterator iterator;
     private PointValues pointValues;
-    private HitsThresholdChecker hitsThresholdChecker = null;
     private int maxDoc;
     private int maxDocVisited;
     private int updateCounter = 0;
 
     public LongDocValuesPointComparator(String field, int numHits, boolean reverse, Long missingValue) {
         this.field = field;
-        this.numHits = numHits;
         this.reverse = reverse;
         this.missingValue = missingValue != null ? missingValue : 0L;
         this.values = new long[numHits];
-    }
-
-    @Override
-    void setHitsThresholdChecker(HitsThresholdChecker hitsThresholdChecker) {
-        this.hitsThresholdChecker = hitsThresholdChecker;
     }
 
     private long getValueForDoc(int doc) throws IOException {
@@ -96,11 +88,6 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     @Override
     public void setBottom(int slot) throws IOException {
         this.bottom = values[slot];
-        // can't use hitsThresholdChecker.isThresholdReached() as it uses > numHits,
-        // while we want to update iterator as soon as threshold reaches numHits
-        if (hitsThresholdChecker != null && (hitsThresholdChecker.getHitsThreshold() >= numHits)) {
-            updateIterator();
-        }
     }
 
     @Override
@@ -127,7 +114,7 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     }
 
     // update its iterator to include possibly only docs that are "stronger" than the current bottom entry
-    private void updateIterator() throws IOException {
+    public void updateIterator() throws IOException {
         updateCounter++;
         if (updateCounter > 256 && (updateCounter & 0x1f) != 0x1f) { // Start sampling if we get called too much
             return;

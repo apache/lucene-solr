@@ -19,80 +19,66 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
 public class TestSortOptimization extends LuceneTestCase {
 
-  private Directory dir;
-  private RandomIndexWriter writer;
-  private IndexReader reader;
-  private IndexSearcher searcher;
-  private int numDocs;
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    dir = newDirectory();
-    writer = new RandomIndexWriter(random(), dir);
-    numDocs = atLeast(15);
+  public void testSortWithOptimization() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(10000);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = new Document();
       doc.add(new NumericDocValuesField("my_field", i));
       doc.add(new LongPoint("my_field", i));
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
-    searcher = newSearcher(reader);
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCachingPolicy(NEVER_CACHE);
-    writer.close();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    IOUtils.close(reader, writer, dir);
-    super.tearDown();
-  }
-
-  public void testSortOptimization() throws IOException {
     final Sort sort = new Sort(new LongDocValuesPointSortField("my_field"));
     final int numHits = 3;
     final int totalHitsThreshold = 3;
-    final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
-    searcher.search(new MatchAllDocsQuery(), collector);
-    TopDocs topDocs = collector.topDocs();
-    assertEquals(topDocs.scoreDocs.length, numHits);
-    for (int i = 0; i < numHits; i++) {
-      FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
-      assertEquals(i, ((Long) fieldDoc.fields[0]).intValue());
-    }
-    assertTrue(collector.isEarlyTerminated());
-    assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
-  }
 
-  // In this case optimization for reverse sort doesn't make sense, because
-  // as docs are processed in order of id, and docs with a smaller id have smaller values,
-  // we will have to iterater over all documents to get competitive values
-  public void testSortReverseOptimization() throws IOException {
-    final Sort sort = new Sort(new LongDocValuesPointSortField("my_field", true));
-    final int numHits = 3;
-    final int totalHitsThreshold = 3;
-    final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
-    searcher.search(new MatchAllDocsQuery(), collector);
-    TopDocs topDocs = collector.topDocs();
-    assertEquals(topDocs.scoreDocs.length, numHits);
-    for (int i = 0; i < numHits; i++) {
-      FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
-      int fieldValue = ((Long) fieldDoc.fields[0]).intValue();
-      assertEquals(numDocs - i - 1, fieldValue);
+    { // simple sort
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(i, ((Long) fieldDoc.fields[0]).intValue());
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
     }
-    assertTrue(collector.isEarlyTerminated());
-    assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+
+    { // paging sort with after
+      long afterValue = 2;
+      FieldDoc after = new FieldDoc(2, Float.NaN, new Long[] {afterValue});
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(afterValue + 1 + i, fieldDoc.fields[0]);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
   }
 
 
