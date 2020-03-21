@@ -16,16 +16,13 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrXmlConfig;
-
 /**
  * Configuration class representing the configuration of Solr Cloud using shared storage
  * to persist index files. The configuration properties come from solr.xml and are loaded
  * via {@link SolrXmlConfig} at Solr startup. The presence of sharedStore section in the solr.xml
- * file of a Solr Cloud mode cluster indicates the user's intention to enable shared storage 
- * capabilities in the cluster and starts the necessary components required to create/support
- * shared-type Solr collections.
+ * file of a Solr Cloud mode cluster with the config sharedStoreEnabled set to true indicates the 
+ * user's intention to enable shared storage capabilities in the cluster and starts the necessary 
+ * components required to create/support shared-type Solr collections.
  * 
  * TODO: This class is bare bones until we convert the many hard coded configuration values
  * into configurable fields that can be specified under this section. The current responsibility
@@ -33,12 +30,4 @@ import org.apache.solr.core.SolrXmlConfig;
  * processes associated with it.
  */
 public class SharedStoreConfig {
-  
-  public static SharedStoreConfig loadSharedStoreConfig(NamedList<Object> nl) {
-    if (nl == null) {
-      // shared store is not configured
-      return null;
-    }
-    return new SharedStoreConfig();
-  }
 }
