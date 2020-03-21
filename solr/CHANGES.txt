@@ -18,6 +18,9 @@ Improvements
 
 * SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
 
+* SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
+  (hossman, Munendra S N, yonik)
+
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -41,6 +44,8 @@ Other Changes
   It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
 
 * SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
+
+* SOLR-14012: Return long value for unique and hll aggregations irrespective of shard count (Munendra S N, hossman)
 
 ==================  8.6.0 ==================
 
@@ -80,6 +85,8 @@ Other Changes
 
 * SOLR-13944: Remove redundant checks in SpellCheckCollator and add tests for spellcheck with collapse
   (Stefan, Munendra S N, Tomas Eduardo Fernandez Lobbe)
+
+* SOLR-12353: SolrDispatchFilter expensive non-conditional debug line degrades performance (Pascal Proulx via Erick Erickson)
 
 ==================  8.5.0 ==================
 
