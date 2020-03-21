@@ -446,21 +446,19 @@ final class DocumentsWriter implements Closeable, Accountable {
         ensureOpen();
         ensureInitialized(perThread);
         assert perThread.isInitialized();
-        assert perThread.isFlushPending() == false : "we should never index into a flush pending threadstate";
         final DocumentsWriterPerThread dwpt = perThread.dwpt;
         final int dwptNumDocs = dwpt.getNumDocsInRAM();
         try {
           seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
           perThread.updateLastSeqNo(seqNo);
         } finally {
-          if (dwpt.isAborted()) {
-            flushControl.doOnAbort(perThread);
-          }
           // We don't know how many documents were actually
           // counted as indexed, so we must subtract here to
           // accumulate our separate counter:
           numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
-          if (dwpt.getNumDocsInRAM() > 0) {
+          if (dwpt.isAborted()) {
+            flushControl.doOnAbort(perThread);
+          } else if (dwpt.getNumDocsInRAM() > 0) {
             // we need to check if we have at least one doc in the DWPT. This can be 0 if we fail
             // due to exceeding total number of docs etc.
             final boolean isUpdate = delNode != null && delNode.isDelete();
