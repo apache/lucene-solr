@@ -188,6 +188,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return 17 * (31 + selectorText.hashCode()) * (31 + type.hashCode());
     }
 
+    @Override
+    public String toString(){
+      return "groupHeadSelectorText=" +this.selectorText + ", groupHeadSelectorType=" +this.type;
+    }
+
     /**
      * returns a new GroupHeadSelector based on the specified local params
      */
@@ -279,7 +284,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public String toString(String s) {
-      return s;
+      return "{!collapse field=" + this.collapseField +
+          ", nullPolicy=" + getNullPolicyString(this.nullPolicy) + ", " +
+          this.groupHeadSelector.toString() +
+          (hint == null ? "": ", hint=" + this.hint) +
+          ", size=" + this.size
+          + "}";
+    }
+
+    private String getNullPolicyString(int nullPolicy) {
+      switch (nullPolicy) {
+        case NULL_POLICY_COLLAPSE: return NULL_COLLAPSE;
+        case NULL_POLICY_EXPAND: return NULL_EXPAND;
+        default: return NULL_IGNORE;
+      }
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {
