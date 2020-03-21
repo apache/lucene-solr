@@ -297,6 +297,9 @@ Other Changes
 
 * SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
 
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
