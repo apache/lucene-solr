@@ -26,6 +26,7 @@ configurations {
   webapp
   bootstrap {
     exclude group: "org.eclipse.jetty"
+    exclude group: "org.slf4j"
   }
   packaging
 }
@@ -116,7 +117,9 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
-  from (configurations.bootstrap)
+  from (configurations.bootstrap, {
+    rename('jna.*?\\.jar', 'jna.jar')
+  })
 
   from { configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }

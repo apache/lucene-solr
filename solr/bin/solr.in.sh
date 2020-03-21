@@ -236,3 +236,5 @@
 # This is experimental! It may not work at all with Hadoop/HDFS features.
 #SOLR_SECURITY_MANAGER_ENABLED=true
 
+# Set to true to lock Solr's memory to prevent it from being swapped out, resulting in bad performance
+#SOLR_MEMORY_LOCK=false

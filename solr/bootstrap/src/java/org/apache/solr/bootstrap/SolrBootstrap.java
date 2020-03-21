@@ -17,13 +17,19 @@
 
 package org.apache.solr.bootstrap;
 
+import org.eclipse.jetty.start.StartLog;
+
 /**
  * Main class that will delegate to Jetty's Main class after doing some bootstrap actions.
  * Everything that needs to be done before the Jetty application starts can go here.
  */
 public class SolrBootstrap {
+  static {
+    System.setProperty("jna.tmpdir", System.getProperty("solr.solr.home"));
+  }
+
   public SolrBootstrap() {
-    out("Starting Solr...");
+    StartLog.info("Starting Solr...");
   }
 
   public static void main(String[] args) {
@@ -33,10 +39,13 @@ public class SolrBootstrap {
   }
 
   private void memLockMaybe() {
-    out("Perhaps going to lock memory - not yet implemented");
-  }
-
-  private void out(String s) {
-    System.out.println(s);
+    if (Boolean.getBoolean("solr.memory.lock")) {
+      if (NativeLibrary.isAvailable()) {
+        StartLog.info("Attempting to lock Solr's memory to prevent swapping...");
+        NativeLibrary.tryMlockall();
+      } else {
+        StartLog.debug("JNA not available, cannot lock memory");
+      }
+    }
   }
 }

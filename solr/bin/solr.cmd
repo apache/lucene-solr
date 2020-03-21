@@ -1205,6 +1205,11 @@ IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
 set SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
+REM Lock memory
+IF "%SOLR_MEMORY_LOCK%"=="true" (
+  set SOLR_JAVA_MEM=%SOLR_JAVA_MEM% -Dsolr.memory.lock=true
+)
+
 IF "%GC_TUNE%"=="" (
   set GC_TUNE=-XX:+UseG1GC ^
     -XX:+PerfDisableSharedMem ^

@@ -2105,6 +2105,11 @@ else
   JAVA_MEM_OPTS=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
 fi
 
+# Lock memory
+if [ "${SOLR_MEMORY_LOCK:-false}" == "true" ]; then
+  JAVA_MEM_OPTS+=('-Dsolr.memory.lock=true')
+fi
+
 # Pick default for Java thread stack size, and then add to SOLR_OPTS
 if [ -z ${SOLR_JAVA_STACK_SIZE+x} ]; then
   SOLR_JAVA_STACK_SIZE='-Xss256k'

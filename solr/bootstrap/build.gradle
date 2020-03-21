@@ -22,7 +22,7 @@ jar {
   manifest {
     attributes(
             'Main-Class': 'org.apache.solr.bootstrap.SolrBootstrap',
-            'Class-Path': '. lib/start.jar'
+            'Class-Path': '. lib/start.jar jna.jar'
     )
   }
   archiveName 'solr.jar'
@@ -30,5 +30,6 @@ jar {
 
 dependencies {
   implementation 'org.eclipse.jetty:jetty-start'
+  implementation 'net.java.dev.jna:jna'
 }
 
