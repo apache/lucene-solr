@@ -74,7 +74,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       Polygon shape = (Polygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinPolygon(query, shape);
+        return testWithinPolygon(query, shape) == Component2D.WithinRelation.CANDIDATE;
       }
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
@@ -93,7 +93,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
 
-    private boolean testWithinPolygon(Component2D component2D, Polygon shape) {
+
+    protected Component2D.WithinRelation testWithinPolygon(Component2D component2D, Polygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       for (Tessellator.Triangle t : tessellation) {
@@ -104,12 +105,12 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
             encoder.decodeX(qTriangle.bX), encoder.decodeY(qTriangle.bY), qTriangle.bc,
             encoder.decodeX(qTriangle.cX), encoder.decodeY(qTriangle.cY), qTriangle.ca);
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
-          return false;
+          return relation;
         } else if (relation == Component2D.WithinRelation.CANDIDATE) {
           answer = Component2D.WithinRelation.CANDIDATE;
         }
       }
-      return answer == Component2D.WithinRelation.CANDIDATE;
+      return answer;
     }
   }
 
