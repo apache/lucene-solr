@@ -314,7 +314,7 @@ public class SimCloudManager implements SolrCloudManager {
       config = cloudManager.getDistribStateManager().getAutoScalingConfig();
     }
     Set<String> nodeTags = new HashSet<>(SimUtils.COMMON_NODE_TAGS);
-    nodeTags.addAll(config.getPolicy().getParams());
+    nodeTags.addAll(config.getPolicy().getParamNames());
     Set<String> replicaTags = new HashSet<>(SimUtils.COMMON_REPLICA_TAGS);
     replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     cloudManager.getSimClusterStateProvider().copyFrom(other.getClusterStateProvider());

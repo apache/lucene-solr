@@ -29,6 +29,8 @@ Bug Fixes
 * SOLR-13199: Return proper error when invalid parentFilter is passed in ChildDocTransformer
   (Johannes Kloos, Munendra S N, David Smiley, Mikhail Khludnev)
 
+* SOLR-14347: Autoscaling placement wrong when concurrent replica placements are calculated. (ab)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
