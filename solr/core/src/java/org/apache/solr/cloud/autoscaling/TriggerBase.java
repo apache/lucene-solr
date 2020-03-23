@@ -81,8 +81,22 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     this.eventType = eventType;
     this.name = name;
 
-    // subclasses may modify this set to include other supported properties
+    // subclasses may further modify this set to include other supported properties
     TriggerUtils.validProperties(validProperties, "name", "class", "event", "enabled", "waitFor", "actions");
+  }
+
+  /**
+   * Return a set of valid property names supported by this trigger.
+   */
+  public final Set<String> getValidProperties() {
+    return Collections.unmodifiableSet(this.validProperties);
+  }
+
+  /**
+   * Return a set of required property names supported by this trigger.
+   */
+  public final Set<String> getRequiredProperties() {
+    return Collections.unmodifiableSet(this.requiredProperties);
   }
 
   @Override

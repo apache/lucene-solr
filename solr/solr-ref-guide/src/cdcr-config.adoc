@@ -146,6 +146,7 @@ Here is a sample of a Cluster 1 configuration file, a section in `solrconfig.xml
 
   <lst name="updateLogSynchronizer">
     <str name="schedule">1000</str>
+  </lst>
 
 </requestHandler>
 

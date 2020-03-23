@@ -38,7 +38,7 @@
 
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
-          pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].[ext]" />
+          pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision](-[classifier]).[ext]" />
       <ivy
           pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].pom" />
     </filesystem>
