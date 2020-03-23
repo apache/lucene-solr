@@ -104,11 +104,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
-<<<<<<< HEAD
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
-=======
     StreamHandler.addExpressiblePlugins(streamFactory, core);
->>>>>>> 7f460faffb58c9f4139d2f0265dc547fa4777d6d
 
     // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
