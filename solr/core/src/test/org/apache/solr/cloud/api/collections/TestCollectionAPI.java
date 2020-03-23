@@ -269,7 +269,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull("Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
-      assertNull("Should have failed to find: " + collection + " because the configset was delted. ", collections.get(collection));
     }
   }
 
