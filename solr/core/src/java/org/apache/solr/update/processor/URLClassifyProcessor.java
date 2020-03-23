@@ -46,11 +46,11 @@ import org.slf4j.LoggerFactory;
  * and helping to produce values which may be used for boosting or filtering later.
  * </p>
  *
- *<p>
- * In the example configuration below, we construct a custom 
- * <code>updateRequestProcessorChain</code> and then instruct the 
- * <code>/update</code> requesthandler to use it for every incoming document. 
- * <p/>
+ * <p>
+ * In the example configuration below, we construct a custom
+ * <code>updateRequestProcessorChain</code> and then instruct the
+ * <code>/update</code> requesthandler to use it for every incoming document.
+ * </p>
  * <pre class="prettyprint">
  * &lt;updateRequestProcessorChain name="urlProcessor"&gt;
  *   &lt;processor class="org.apache.solr.update.processor.URLClassifyProcessorFactory"&gt;
@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  *   &lt;/processor&gt;
  *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
  * &lt;/updateRequestProcessorChain&gt;
- * <br/>
+ *
  * &lt;requestHandler name="/update" class="solr.UpdateRequestHandler"&gt;
  * &lt;lst name="defaults"&gt;
  * &lt;str name="update.chain"&gt;urlProcessor&lt;/str&gt;
@@ -68,25 +68,27 @@ import org.slf4j.LoggerFactory;
  * &lt;/requestHandler&gt;
  * </pre>
  * <p>
- * Then, at index time, Solr will look at the <code>id</code> field value and extract 
- * it's domain portion into a new <code>hostname</code> field. By default, the 
- * following fields will also be added
+ * Then, at index time, Solr will look at the <code>id</code> field value and extract
+ * it's domain portion into a new <code>hostname</code> field. By default, the
+ * following fields will also be added:
+ * </p>
  * <ul>
  *  <li>url_length</li>
  *  <li>url_levels</li>
  *  <li>url_toplevel</li>
  *  <li>url_landingpage</li>
  * </ul>
- * <p/>
  * <p>
  * For example, adding the following document
  * <pre class="prettyprint">
  * { "id":"http://wwww.mydomain.com/subpath/document.html" }
  * </pre>
- * will result in this resultant document in Solr
- * <pre class="prettyprint"
+ * <p>
+ * will result in this document in Solr:
+ * </p>
+ * <pre class="prettyprint">
  * {
- *  "SolrId":"http://wwww.mydomain.com/subpath/document.html",
+ *  "id":"http://wwww.mydomain.com/subpath/document.html",
  *  "url_length":["46"],
  *  "url_levels":["2"],
  *  "url_toplevel":["0"],
