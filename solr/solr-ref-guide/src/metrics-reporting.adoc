@@ -519,7 +519,7 @@ Example configuration:
            </lst>
            <lst name="report">
              <str name="group">aggregated_shard_leaders</str>
-             <str name="registry">solr\.core\.(.*)\.leader</str>
+             <str name="registry">solr\.collection\.(.*)\.leader</str>
              <str name="label">leader.$1</str>
              <str name="filter">UPDATE\./update/.*</str>
            </lst>

@@ -67,7 +67,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
 
     long seed = randomLong();
-    int max = 1_000_000;
+    int max = LuceneTestCase.TEST_NIGHTLY ? 1_000_000 : 100_000;
     List<IOConsumer<DataInput>> reply = 
         TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 
@@ -83,7 +83,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
 
   @Test
   public void testRandomReadsOnSlices() throws Exception {
-    for (int reps = randomIntBetween(1, 200); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 20); --reps > 0;) {
       ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
   
       byte [] prefix = new byte [randomIntBetween(0, 1024 * 8)];

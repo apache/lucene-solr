@@ -198,7 +198,21 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, true, mode);
+  }
+
+  /**
+   * Create a new JapaneseTokenizer.
+   * <p>
+   * Uses the default AttributeFactory.
+   *
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
+   * @param mode tokenization mode.
+   */
+  public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, boolean discardCompoundToken, Mode mode) {
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, discardCompoundToken, mode);
   }
 
   /**
@@ -215,7 +229,25 @@ public final class JapaneseTokenizer extends Tokenizer {
          TokenInfoDictionary.getInstance(),
          UnknownDictionary.getInstance(),
          ConnectionCosts.getInstance(),
-         userDictionary, discardPunctuation, mode);
+         userDictionary, discardPunctuation, true, mode);
+  }
+
+  /**
+   * Create a new JapaneseTokenizer using the system and unknown dictionaries shipped with Lucene.
+   *
+   * @param factory the AttributeFactory to use
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
+   * @param mode tokenization mode.
+   */
+  public JapaneseTokenizer
+  (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, boolean discardCompoundToken, Mode mode) {
+    this(factory,
+        TokenInfoDictionary.getInstance(),
+        UnknownDictionary.getInstance(),
+        ConnectionCosts.getInstance(),
+        userDictionary, discardPunctuation, discardCompoundToken, mode);
   }
 
   /**
@@ -229,6 +261,7 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param connectionCosts custom token transition costs
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
    * @param mode tokenization mode.
    * @lucene.experimental
    */
@@ -238,6 +271,7 @@ public final class JapaneseTokenizer extends Tokenizer {
                            ConnectionCosts connectionCosts,
                            UserDictionary userDictionary,
                            boolean discardPunctuation,
+                           boolean discardCompoundToken,
                            Mode mode) {
     super(factory);
     this.dictionary = systemDictionary;
@@ -259,12 +293,12 @@ public final class JapaneseTokenizer extends Tokenizer {
       case SEARCH:
         searchMode = true;
         extendedMode = false;
-        outputCompounds = true;
+        outputCompounds = !discardCompoundToken;
         break;
       case EXTENDED:
         searchMode = true;
         extendedMode = true;
-        outputCompounds = false;
+        outputCompounds = !discardCompoundToken;
         break;
       default:
         searchMode = false;

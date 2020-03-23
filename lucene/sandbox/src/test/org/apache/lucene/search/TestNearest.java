@@ -146,7 +146,7 @@ public class TestNearest extends LuceneTestCase {
 
   public void testNearestNeighborRandom() throws Exception {
     
-    int numPoints = atLeast(5000);
+    int numPoints = atLeast(1000);
     Directory dir;
     if (numPoints > 100000) {
       dir = newFSDirectory(createTempDir(getClass().getSimpleName()));

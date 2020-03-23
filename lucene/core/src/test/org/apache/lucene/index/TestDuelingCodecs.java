@@ -147,7 +147,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
    */
   // we use a small amount of docs here, so it works with any codec 
   public void testEquals() throws IOException {
-    int numdocs = atLeast(100);
+    int numdocs = atLeast(20);
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
@@ -158,7 +158,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   }
 
   public void testCrazyReaderEquals() throws IOException {
-    int numdocs = atLeast(100);
+    int numdocs = atLeast(20);
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 

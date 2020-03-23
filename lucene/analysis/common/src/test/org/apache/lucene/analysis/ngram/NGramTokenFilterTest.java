@@ -196,7 +196,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
               new NGramTokenFilter(tokenizer, min, max, preserveOriginal));
         }    
       };
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 20);
       a.close();
     }
   }

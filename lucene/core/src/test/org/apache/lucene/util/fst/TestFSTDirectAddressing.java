@@ -67,6 +67,7 @@ public class TestFSTDirectAddressing extends LuceneTestCase {
     assertTrue("FST size = " + size + " B", size <= 1648 * 1.01d);
   }
 
+  @Nightly
   public void testWorstCaseForDirectAddressing() throws Exception {
     // This test will fail if there is more than 1% memory increase with direct addressing in this worst case.
     final double MEMORY_INCREASE_LIMIT_PERCENT = 1d;

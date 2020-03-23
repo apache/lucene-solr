@@ -130,6 +130,8 @@ public class TestMonitor extends MonitorTestBase {
 
   }
 
+  // takes huge amounts of ram. TODO: what is this test doing?
+  @Nightly
   public void testUpdateReporting() throws IOException {
 
     List<MonitorQuery> queries = new ArrayList<>(10400);

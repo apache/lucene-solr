@@ -153,7 +153,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
  * 
- * <h3>Class and instance setup.</h3>
+ * <h2>Class and instance setup.</h2>
  * 
  * <p>
  * The preferred way to specify class (suite-level) setup/cleanup is to use
@@ -170,13 +170,13 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * your subclass, make sure you call <code>super.setUp()</code> and
  * <code>super.tearDown()</code>. This is detected and enforced.
  * 
- * <h3>Specifying test cases</h3>
+ * <h2>Specifying test cases</h2>
  * 
  * <p>
  * Any test method with a <code>testXXX</code> prefix is considered a test case.
  * Any test method annotated with {@link Test} is considered a test case.
  * 
- * <h3>Randomized execution and test facilities</h3>
+ * <h2>Randomized execution and test facilities</h2>
  * 
  * <p>
  * {@link LuceneTestCase} uses {@link RandomizedRunner} to execute test cases.
@@ -483,10 +483,9 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
-    "SimpleFSDirectory",
     "NIOFSDirectory",
-    // SimpleFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
-    hasWorkingMMapOnWindows() ? "MMapDirectory" : "SimpleFSDirectory"
+    // NIOFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
+    hasWorkingMMapOnWindows() ? "MMapDirectory" : "NIOFSDirectory"
   );
 
   /** All {@link Directory} implementations. */
@@ -947,7 +946,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setInfoStream(new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out));
     }
 
-    if (r.nextBoolean()) {
+    if (rarely(r)) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
       ConcurrentMergeScheduler cms;
@@ -1063,7 +1062,7 @@ public abstract class LuceneTestCase extends Assert {
       return new MockRandomMergePolicy(r);
     } else if (r.nextBoolean()) {
       return newTieredMergePolicy(r);
-    } else if (r.nextInt(5) == 0) { 
+    } else if (rarely(r) ) { 
       return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
     }
     return newLogMergePolicy(r);
@@ -1127,7 +1126,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     } else {
-      tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+      tmp.setMaxMergedSegmentMB(10 + r.nextDouble() * 100);
     }
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
@@ -1332,7 +1331,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r), false);
   }
 
   /**
@@ -1340,7 +1339,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r, LockFactory lf) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r), false);
   }
 
   public static MockDirectoryWrapper newMockDirectory() {
@@ -1348,11 +1347,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false, false);
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r, LockFactory lf) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false, false);
   }
 
   public static MockDirectoryWrapper newMockFSDirectory(Path f) {
@@ -1416,10 +1415,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
-      if (rarely()) {
-
-      }
-      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare, true);
       return wrapped;
     } catch (Exception e) {
       Rethrow.rethrow(e);
@@ -1447,11 +1443,13 @@ public abstract class LuceneTestCase extends Assert {
         impl.copyFrom(d, file, file, newIOContext(r));
       }
     }
-    return wrapDirectory(r, impl, rarely(r));
+    return wrapDirectory(r, impl, rarely(r), false);
   }
   
-  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
-    if (rarely(random) && !bare) {
+  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare, boolean filesystem) {
+    // IOContext randomization might make NRTCachingDirectory make bad decisions, so avoid
+    // using it if the user requested a filesystem directory.
+    if (rarely(random) && !bare && filesystem == false) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
 
@@ -2678,10 +2676,10 @@ public abstract class LuceneTestCase extends Assert {
     FieldInfos fieldInfos1 = FieldInfos.getMergedFieldInfos(leftReader);
     FieldInfos fieldInfos2 = FieldInfos.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
-      if (fieldInfo1.getPointDataDimensionCount() != 0) {
+      if (fieldInfo1.getPointDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
         // same data dimension count?
-        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo2.getPointDataDimensionCount());
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
         // same index dimension count?
         assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo2.getPointIndexDimensionCount());
         // same bytes per dimension?
@@ -2695,10 +2693,10 @@ public abstract class LuceneTestCase extends Assert {
 
     // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
     for(FieldInfo fieldInfo2 : fieldInfos2) {
-      if (fieldInfo2.getPointDataDimensionCount() != 0) {
+      if (fieldInfo2.getPointDimensionCount() != 0) {
         FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
         // same data dimension count?
-        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo1.getPointDataDimensionCount());
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
         // same index dimension count?
         assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo1.getPointIndexDimensionCount());
         // same bytes per dimension?

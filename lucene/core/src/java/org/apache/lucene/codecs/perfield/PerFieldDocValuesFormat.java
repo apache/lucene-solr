@@ -54,8 +54,8 @@ import org.apache.lucene.util.IOUtils;
  * {@link ServiceLoader Service Provider Interface} to resolve format names.
  * <p>
  * Files written by each docvalues format have an additional suffix containing the 
- * format name. For example, in a per-field configuration instead of <tt>_1.dat</tt> 
- * filenames would look like <tt>_1_Lucene40_0.dat</tt>.
+ * format name. For example, in a per-field configuration instead of <code>_1.dat</code> 
+ * filenames would look like <code>_1_Lucene40_0.dat</code>.
  * @see ServiceLoader
  * @lucene.experimental
  */

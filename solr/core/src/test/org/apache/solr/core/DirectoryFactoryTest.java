@@ -114,13 +114,13 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc, properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
 
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(loader, is);
+    return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }
 }

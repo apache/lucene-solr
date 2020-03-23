@@ -194,7 +194,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
             new EdgeNGramTokenFilter(tokenizer, min, max, preserveOriginal));
         }    
       };
-      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER);
       a.close();
     }
   }

@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.SnowballStemmer;
 
 /**
  * Factory for {@link SnowballFilter}, with configurable language
@@ -54,7 +54,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
 
   private final String language;
   private final String wordFiles;
-  private Class<? extends SnowballProgram> stemClass;
+  private Class<? extends SnowballStemmer> stemClass;
   private CharArraySet protectedWords = null;
   
   /** Creates a new SnowballPorterFilterFactory */
@@ -70,7 +70,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     String className = "org.tartarus.snowball.ext." + language + "Stemmer";
-    stemClass = loader.newInstance(className, SnowballProgram.class).getClass();
+    stemClass = loader.newInstance(className, SnowballStemmer.class).getClass();
 
     if (wordFiles != null) {
       protectedWords = getWordSet(loader, wordFiles, false);
@@ -79,7 +79,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
 
   @Override
   public TokenFilter create(TokenStream input) {
-    SnowballProgram program;
+    SnowballStemmer program;
     try {
       program = stemClass.getConstructor().newInstance();
     } catch (Exception e) {

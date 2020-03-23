@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * }
  * </p>
  * <p>
- * The @deprecated configuration method as of Solr 8.4 is
+ * The @deprecated configuration method as of Solr 8.5 is
   * {@code
  *  &lt;lst name="streamFunctions"&gt;
  *    &lt;str name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt;
@@ -104,7 +104,11 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
+<<<<<<< HEAD
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+=======
+    StreamHandler.addExpressiblePlugins(streamFactory, core);
+>>>>>>> 7f460faffb58c9f4139d2f0265dc547fa4777d6d
 
     // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");

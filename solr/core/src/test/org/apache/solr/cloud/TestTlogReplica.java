@@ -62,7 +62,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -433,7 +432,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         if (respone.isSuccess()) {
           break;
         }
-        log.error("Unsuccessful atempt to add replica. Attempt: %d/%d", i, maxAttempts);
+        log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
       } catch (SolrException e) {
         log.error("Exception while adding replica. Attempt: " + i + "/" +  maxAttempts, e);
       }
@@ -568,10 +567,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
       log.info("Min RF not achieved yet. retrying");
     }
     checkRTG(3,7, cluster.getJettySolrRunners());
-    DirectUpdateHandler2.commitOnClose = false;
-    solrRunner.stop();
-    waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
-    DirectUpdateHandler2.commitOnClose = true;
+    try {
+      TestInjection.skipIndexWriterCommitOnClose = true;
+      solrRunner.stop();
+      waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
+    } finally {
+      TestInjection.skipIndexWriterCommitOnClose = false;
+    }
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10); //timeout for stale collection state

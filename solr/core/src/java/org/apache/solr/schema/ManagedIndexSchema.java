@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -96,13 +97,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   /**
    * Constructs a schema using the specified resource name and stream.
    *
-   * @see org.apache.solr.core.SolrResourceLoader#openSchema
-   *      By default, this follows the normal config path directory searching rules.
+   * By default, this follows the normal config path directory searching rules.
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
-  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable, 
+  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
                      String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader());
+    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -860,7 +860,11 @@ public final class ManagedIndexSchema extends IndexSchema {
           break;
         }
       }
-    } else { // non-dynamic copy field directive
+    }
+
+    if (!found) {
+      // non-dynamic copy field directive.
+      // Here, source field could either exists in schema or match a dynamic rule
       List<CopyField> copyFieldList = copyFieldsMap.get(source);
       if (copyFieldList != null) {
         for (Iterator<CopyField> iter = copyFieldList.iterator() ; iter.hasNext() ; ) {
@@ -1319,8 +1323,8 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(luceneVersion, loader);
+                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
+    super(luceneVersion, loader, substitutableProps);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1338,7 +1342,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
    ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
      ManagedIndexSchema newSchema = new ManagedIndexSchema
-         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock(), substitutableProperties);
 
     newSchema.name = name;
     newSchema.version = version;

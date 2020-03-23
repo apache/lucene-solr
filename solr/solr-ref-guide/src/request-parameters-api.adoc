@@ -196,7 +196,7 @@ The parameter sets can be used directly in a request handler definition as follo
 To summarize, parameters are applied in this order:
 
 * parameters defined in `<invariants>` in `solrconfig.xml`.
-* parameters applied in `invariants` in `params.json` and that is specified in the requesthandler definition or even in request
+* parameters applied in `invariants` in `params.json` and are specified in the request handler definition or even in a single request.
 * parameters defined in the request directly.
 * parameter sets defined in the request, in the order they have been listed with `useParams`.
 * parameter sets defined in `params.json` that have been defined in the request handler.

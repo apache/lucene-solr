@@ -371,7 +371,7 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
@@ -451,8 +451,8 @@ Contributions for further models, features and normalizers are welcome. Related 
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
-* http://wiki.apache.org/solr/HowToContribute
-* http://wiki.apache.org/lucene-java/HowToContribute
+* https://cwiki.apache.org/confluence/display/solr/HowToContribute
+* https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 
 == LTR Lifecycle
 

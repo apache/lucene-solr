@@ -53,7 +53,7 @@ public abstract class IntervalsSource {
    * @param ctx   the document's context
    * @param doc   the document to return matches for
    */
-  public abstract MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException;
+  public abstract IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException;
 
   /**
    * Expert: visit the tree of sources

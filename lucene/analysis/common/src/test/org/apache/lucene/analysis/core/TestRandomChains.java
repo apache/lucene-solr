@@ -62,6 +62,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
+import org.apache.lucene.analysis.boost.DelimitedBoostTokenFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -108,7 +109,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.SnowballStemmer;
 import org.xml.sax.InputSource;
 
 /** tests random analysis chains */
@@ -198,6 +199,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           WordDelimiterGraphFilter.class,
           // requires a special encoded token value, so it may fail with random data:
           DelimitedTermFrequencyTokenFilter.class,
+          // requires a special encoded token value, so it may fail with random data:
+          DelimitedBoostTokenFilter.class,
           // clones of core's filters:
           org.apache.lucene.analysis.core.StopFilter.class,
           org.apache.lucene.analysis.core.LowerCaseFilter.class)) {
@@ -404,10 +407,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           return null; // unreachable code
         }
     });
-    put(SnowballProgram.class, random ->  {
+    put(SnowballStemmer.class, random ->  {
         try {
-          String lang = TestSnowball.SNOWBALL_LANGS[random.nextInt(TestSnowball.SNOWBALL_LANGS.length)];
-          Class<? extends SnowballProgram> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballProgram.class);
+          String lang = TestSnowball.SNOWBALL_LANGS.get(random.nextInt(TestSnowball.SNOWBALL_LANGS.size()));
+          Class<? extends SnowballStemmer> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballStemmer.class);
           return clazz.getConstructor().newInstance();
         } catch (Exception ex) {
           Rethrow.rethrow(ex);
