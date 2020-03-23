@@ -55,6 +55,8 @@ Other
 
 * LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
 
+* LUCENE-9275: Make TestLatLonMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
