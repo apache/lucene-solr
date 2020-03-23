@@ -44,7 +44,7 @@ public class SolrBootstrap {
         StartLog.info("Attempting to lock Solr's memory to prevent swapping...");
         NativeLibrary.tryMlockall();
       } else {
-        StartLog.debug("JNA not available, cannot lock memory");
+        StartLog.warn("JNA not available, cannot lock memory");
       }
     }
   }
