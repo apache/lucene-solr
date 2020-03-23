@@ -48,7 +48,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-* SOLR-14335: Now possible to lock Solr's memory to prevent swapping (janhoy, uschindler)
+* SOLR-14335: Now possible to lock Solr's memory with SOLR_MEMORY_LOCK=true, to prevent swapping (janhoy, uschindler)
 
 Improvements
 ---------------------
