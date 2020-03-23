@@ -305,7 +305,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
 
-  final FieldComparator.IteratorSupplierComparator<?> itComparator;
+  final FieldComparator.IterableComparator<?> itComparator;
 
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
@@ -347,10 +347,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     this.minScoreAcc = minScoreAcc;
 
-    if ((fieldComparator instanceof FieldComparator.IteratorSupplierComparator) &&
+    if ((fieldComparator instanceof FieldComparator.IterableComparator) &&
             (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE)) {
-      scoreMode = ScoreMode.TOP_DOCS; // TODO: may be add another scoreMode TOP_DOCS with scores
-      itComparator = ((FieldComparator.IteratorSupplierComparator<?>) fieldComparator);
+      scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
+      itComparator = ((FieldComparator.IterableComparator<?>) fieldComparator);
     } else {
       itComparator = null;
     }
@@ -391,7 +391,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           minScoreAcc.accumulate(bottom.doc, minScore);
         }
       }
-    } else if (scoreMode == ScoreMode.TOP_DOCS) {
+    } else if (scoreMode == ScoreMode.TOP_DOCS || scoreMode == ScoreMode.TOP_DOCS_WITH_SCORES) {
       itComparator.updateIterator();
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }

@@ -54,13 +54,25 @@ public enum ScoreMode {
   },
 
   /**
-   * ScoreMode for collectors that can provide their own iterators,
+   * ScoreMode for top field collectors that can provide their own iterators,
    * to optionally allow to skip for non-competitive docs
    */
   TOP_DOCS {
     @Override
     public boolean needsScores() {
       return false;
+    }
+  },
+
+  /**
+   * ScoreMode for top field collectors that can provide their own iterators,
+   * to optionally allow to skip for non-competitive docs.
+   * This mode is used when there is a secondary sort by _score.
+   */
+  TOP_DOCS_WITH_SCORES {
+    @Override
+    public boolean needsScores() {
+      return true;
     }
   };
 

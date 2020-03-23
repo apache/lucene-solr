@@ -27,28 +27,34 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static org.apache.lucene.search.FieldComparator.IteratorSupplierComparator;
+import static org.apache.lucene.search.FieldComparator.IterableComparator;
 
-public class LongDocValuesPointComparator extends IteratorSupplierComparator<Long> {
+public class LongDocValuesPointComparator extends IterableComparator<Long> {
     private final String field;
     private final boolean reverse;
     private final long missingValue;
     private final long[] values;
     private long bottom;
     private long topValue;
-    boolean hasTopValue = false; // indicates that topValue for searchAfter is set
     protected NumericDocValues docValues;
     private DocIdSetIterator iterator;
     private PointValues pointValues;
     private int maxDoc;
     private int maxDocVisited;
     private int updateCounter = 0;
+    private byte[] cmaxValueAsBytes = null;
+    private byte[] cminValueAsBytes = null;
 
     public LongDocValuesPointComparator(String field, int numHits, boolean reverse, Long missingValue) {
         this.field = field;
         this.reverse = reverse;
         this.missingValue = missingValue != null ? missingValue : 0L;
         this.values = new long[numHits];
+        if (reverse == false) {
+            cmaxValueAsBytes = new byte[Long.BYTES];
+        } else {
+            cminValueAsBytes = new byte[Long.BYTES];
+        };
     }
 
     private long getValueForDoc(int doc) throws IOException {
@@ -67,7 +73,11 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
     @Override
     public void setTopValue(Long value) {
         topValue = value;
-        hasTopValue = true;
+        if (reverse == false) {
+            cminValueAsBytes = new byte[Long.BYTES];
+        } else {
+            cmaxValueAsBytes = new byte[Long.BYTES];
+        };
     }
 
     @Override
@@ -119,17 +129,16 @@ public class LongDocValuesPointComparator extends IteratorSupplierComparator<Lon
         if (updateCounter > 256 && (updateCounter & 0x1f) != 0x1f) { // Start sampling if we get called too much
             return;
         }
-
-        final byte[] maxValueAsBytes = reverse == false ? new byte[Long.BYTES] : hasTopValue ? new byte[Long.BYTES]: null;
-        final byte[] minValueAsBytes = reverse ? new byte[Long.BYTES] : hasTopValue ? new byte[Long.BYTES]: null;
+        final byte[] maxValueAsBytes = cmaxValueAsBytes;
+        final byte[] minValueAsBytes = cminValueAsBytes;
         if (reverse == false) {
             LongPoint.encodeDimension(bottom, maxValueAsBytes, 0);
-            if (hasTopValue) {
+            if (minValueAsBytes != null) { // has top value
                 LongPoint.encodeDimension(topValue, minValueAsBytes, 0);
             }
         } else {
             LongPoint.encodeDimension(bottom, minValueAsBytes, 0);
-            if (hasTopValue) {
+            if (maxValueAsBytes != null) { // has top value
                 LongPoint.encodeDimension(topValue, maxValueAsBytes, 0);
             }
         };

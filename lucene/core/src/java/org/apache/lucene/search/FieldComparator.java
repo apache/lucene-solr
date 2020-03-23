@@ -932,7 +932,7 @@ public abstract class FieldComparator<T> {
   /**
    * A field comparator that can provide an iterator over competitive documents.
    */
-  public static abstract class IteratorSupplierComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
+  public static abstract class IterableComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
     abstract DocIdSetIterator iterator();
 
     // This method is called from TopFieldCollector when already enough top hits have been collected.
