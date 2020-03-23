@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.document;
 
-import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -83,7 +80,6 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon));
     }
   }
-
 
   @Nightly
   @Override
