@@ -94,7 +94,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point p = (Point) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", p.lat, p.lon));
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", p.lat, p.lon)) == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", p.lat, p.lon));
     }

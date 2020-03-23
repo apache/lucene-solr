@@ -225,8 +225,6 @@ public abstract class MergePolicy {
     public final int totalMaxDoc;
     Throwable error;
 
-    boolean committed; // Set by IndexWriter once the merge has been committed to disk
-
     /** Sole constructor.
      * @param segments List of {@link SegmentCommitInfo}s
      *        to be merged. */
@@ -512,7 +510,7 @@ public abstract class MergePolicy {
  *          an original segment present in the
  *          to-be-merged index; else, it was a segment
  *          produced by a cascaded merge.
-   * @param mergeContext the MergeContext to find the merges on
+   * @param mergeContext the IndexWriter to find the merges on
    */
   public abstract MergeSpecification findForcedMerges(
       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
@@ -523,32 +521,10 @@ public abstract class MergePolicy {
    * deletes from the index.
    *  @param segmentInfos
    *          the total set of segments in the index
-   * @param mergeContext the MergeContext to find the merges on
+   * @param mergeContext the IndexWriter to find the merges on
    */
   public abstract MergeSpecification findForcedDeletesMerges(
       SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException;
-
-  /**
-   * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
-   *
-   * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
-   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitSeconds()} have elapsed. This may be
-   * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
-   * the commit. If a merge does not complete in the allotted time, it will continue to execute, but will not be reflected
-   * in the commit.
-   *
-   * If a {@link OneMerge} in the returned {@link MergeSpecification} includes a segment already included in a registered
-   * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.
-   * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
-   *
-   * @param mergeTrigger the event that triggered the merge (COMMIT or FULL_FLUSH).
-   * @param segmentInfos the total set of segments in the index (while preparing the commit)
-   * @param mergeContext the MergeContext to find the merges on, which should be used to determine which segments are
- *                     already in a registered merge (see {@link MergeContext#getMergingSegments()}).
-   */
-  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
-    return null;
-  }
 
   /**
    * Returns true if a new segment (regardless of its origin) should use the

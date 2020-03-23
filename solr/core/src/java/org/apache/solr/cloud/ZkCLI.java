@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
@@ -206,14 +207,14 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(solrHome);
+          CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(zkClient, cc, solrHome);
+          ZkController.bootstrapConf(zkClient, cc);
 
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...

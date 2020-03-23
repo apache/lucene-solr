@@ -45,6 +45,8 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 // Related tests:
 //   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
 //   TestJsonFacetRefinement for refinement tests
@@ -1287,11 +1289,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f2:{  'buckets':[{ val:'B', count:3, x:11.0 }, { val:'A', count:2, x:4.0 }]} " +
             ", f3:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
             ", f4:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
-            ", f5:{  'buckets':[{ val:'B', count:3, x:74.6666666666666 },    { val:'A', count:2, x:1.0 }]} " +
+            ", f5:{  'buckets':[{ val:'B', count:3, x:112.0 },    { val:'A', count:2, x:2.0 }]} " +
             ", f6:{  buckets:[{ val:-9.0, count:1, x:1 }]} " +
             ", f7:{  buckets:[{ val:B, count:3, x:3 },{ val:A, count:2, x:0 }]} " +
             ", f8:{  buckets:[{ val:A, count:2, x:2 },{ val:B, count:3, x:0 }]} " +
             "}"
+    );
+
+    // test for stdDev and variance of size 1 and 0
+    client.testJQ(params(p, "q", "id:1", "json.facet", "{n1:'stddev(${num_d})', n2: 'variance(${num_d})'}")
+        , "facets=={ 'count':1, " +
+            "  n1:0.0, n2:0.0 }"
+    );
+    client.testJQ(params(p, "q", "id:3", "json.facet", "{n1:'stddev(${num_d})', n2: 'variance(${num_d})'}")
+        , "facets=={ 'count':1, " +
+            "  n1:0.0, n2:0.0 }"
     );
 
     // test sorting by stat with function
@@ -1806,7 +1818,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "sum1:3.0, sumsq1:247.0, avg1:0.6, avg2:0.5, mind:-9.0, maxd:11.0" +
             ", numwhere:2, unique_num_i:4, unique_num_d:5, unique_date:5" +
             ", where_hll:2, hll_num_i:4, hll_num_d:5, hll_date:5" +
-            ", med:2.0, perc:[-9.0,2.0,11.0], variance:49.04, stddev:7.002856560004639" +
+            ", med:2.0, perc:[-9.0,2.0,11.0], variance:61.3, stddev:7.829431652425353" +
             ", mini:-5, maxi:7, missing:4, vals:2" +
             "}"
     );
@@ -1822,7 +1834,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':6, " +
             "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0" +
             ", mini:-5, maxi:3, mins:'a', maxs:'b'" +
-            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.25,3.0]" +
+            ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,2.25,3.0]" +
             "}"
     );
 
@@ -2312,8 +2324,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", sumd:'sum(${num_d})', avgd:'avg(${num_d})', variance:'variance(${num_d})', stddev:'stddev(${num_d})', missing:'missing(${multi_ss})', vals:'countvals(${multi_ss})'}   }}"
         )
         , "facets=={ 'count':6, " +
-            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, mini:-5, maxi:7,  sumd:-3.0, avgd:-1.0, variance:74.66666666666667, stddev:8.640987597877148, missing:0, vals:5}," +
-            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0,  mini:2, maxi:3, sumd:6.0, avgd:3.0, variance:1.0, stddev:1.0, missing:1, vals:1}] } } "
+            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, mini:-5, maxi:7,  sumd:-3.0, avgd:-1.0, variance:112.0, stddev:10.583005244258363, missing:0, vals:5}," +
+            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0,  mini:2, maxi:3, sumd:6.0, avgd:3.0, variance:2.0, stddev:1.4142135623730951, missing:1, vals:1}] } } "
 
     );
 
@@ -3816,6 +3828,41 @@ public class TestJsonFacets extends SolrTestCaseHS {
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:bleh,facet:" +
             "{bleh:\"unique(cat_s)\",id:{type:terms,field:id,sort:{bleh:desc},facet:{bleh:\"unique(id)\"}}}}}")
     );
+  }
+
+  @Test
+  public void testAggErrors() {
+    ignoreException("aggregation");
+
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+
+    resetExceptionIgnores();
   }
 
 

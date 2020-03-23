@@ -853,7 +853,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
 
-    protected boolean testWithinQuery(Component2D query, Field[] fields) {
+    protected Component2D.WithinRelation testWithinQuery(Component2D query, Field[] fields) {
       Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       ShapeField.DecodedTriangle decodedTriangle = new ShapeField.DecodedTriangle();
       for (Field field : fields) {
@@ -888,12 +888,12 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             throw new IllegalArgumentException("Unsupported triangle type :[" + decodedTriangle.type + "]");
         }
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
-          return false;
+          return relation;
         } else if (relation == Component2D.WithinRelation.CANDIDATE) {
           answer = Component2D.WithinRelation.CANDIDATE;
         }
       }
-      return answer == Component2D.WithinRelation.CANDIDATE;
+      return answer;
     }
   }
 }

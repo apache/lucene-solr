@@ -71,7 +71,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon polygon = (XYPolygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon));
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", polygon));
     }

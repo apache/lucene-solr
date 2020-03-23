@@ -87,7 +87,7 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point point = (Point) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", point.x, point.y));
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", point.x, point.y)) == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", point.x, point.y));
     }
