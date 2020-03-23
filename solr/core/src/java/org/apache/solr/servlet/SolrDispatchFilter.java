@@ -146,7 +146,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     SSLConfigurationsFactory.current().init();
-    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    if (log.isTraceEnabled()) {
+      log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    }
     CoreContainer coresInit = null;
     try{
 
@@ -161,7 +163,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     String logLevel = System.getProperty(SOLR_LOG_LEVEL);
     if (logLevel != null) {
-      log.info("Log level override, property solr.log.level=" + logLevel);
+      log.info("Log level override, property solr.log.level={}", logLevel);
       StartupLoggingUtils.changeLogLevel(logLevel);
     }
 
@@ -184,7 +186,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       SolrPaths.ensureUserFilesDataDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      log.debug("user.dir=" + System.getProperty("user.dir"));
+      if (log.isDebugEnabled()) {
+        log.debug("user.dir={}", System.getProperty("user.dir"));
+      }
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -485,21 +489,21 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       // /admin/info/key must be always open. see SOLR-9188
       String requestPath = ServletUtils.getPathAfterContext(request);
       if (PublicKeyHandler.PATH.equals(requestPath)) {
-        if (log.isDebugEnabled())
-          log.debug("Pass through PKI authentication endpoint");
+        log.debug("Pass through PKI authentication endpoint");
         return true;
       }
       // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
       if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
-        if (log.isDebugEnabled())
-          log.debug("Pass through Admin UI entry point");
+        log.debug("Pass through Admin UI entry point");
         return true;
       }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
-        log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
+        if (log.isDebugEnabled()) {
+          log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
+        }
         // upon successful authentication, this should call the chain's next filter.
         requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
