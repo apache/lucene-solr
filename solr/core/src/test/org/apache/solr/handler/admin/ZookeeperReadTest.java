@@ -60,7 +60,8 @@ public class ZookeeperReadTest extends SolrCloudTestCase {
   @Test
   public void testZkread() throws Exception {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk";
+    String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk-data";
+    String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk-ls";
 
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
       Object o = Utils.executeGET(client.getHttpClient(),
@@ -68,13 +69,13 @@ public class ZookeeperReadTest extends SolrCloudTestCase {
           Utils.JSONCONSUMER);
       assertNotNull(o);
       o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/configs",
+          basezkls + "/configs",
           Utils.JSONCONSUMER);
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
 
       o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/configs?leaf=true",
+          basezk + "/configs",
           Utils.JSONCONSUMER);
       assertTrue(((Map)o).containsKey("/configs"));
       assertNull(((Map)o).get("/configs"));

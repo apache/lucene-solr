@@ -26,7 +26,9 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -35,6 +37,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
@@ -42,33 +45,69 @@ import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-/**Exposes the content of the Zookeeper
+/**
+ * Exposes the content of the Zookeeper
  * This is an expert feature that exposes the data inside the back end zookeeper.This API may change or
  * be removed in future versions.
  * This is not a public API. The data that is returned is not guaranteed to remain same
  * across releases, as the data stored in Zookeeper may change from time to time.
  */
-@EndPoint(path = "/cluster/zk/*",
-    method = SolrRequest.METHOD.GET,
-    permission = COLL_READ_PERM)
+
 public class ZookeeperRead {
   private final CoreContainer coreContainer;
+  public final ReadNode readNode = new ReadNode();
+  public final ListNode listNode = new ListNode();
 
   public ZookeeperRead(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
-  @Command
-  public void get(SolrQueryRequest req, SolrQueryResponse rsp) {
-    String path = req.getPathTemplateValues().get("*");
-    if (path == null || path.isEmpty()) path = "/";
-    byte[] d = null;
-    boolean isLeaf = req.getParams().getBool("leaf", false);
-    try {
-      List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
-      if (!isLeaf && (l != null && !l.isEmpty())) {
-        String prefix = path.endsWith("/") ? path : path + "/";
+  @EndPoint(path = "/cluster/zk-data/*",
+      method = SolrRequest.METHOD.GET,
+      permission = COLL_READ_PERM)
+  public class ReadNode {
+    @Command
+    public void get(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String path = req.getPathTemplateValues().get("*");
+      if (path == null || path.isEmpty()) path = "/";
+      byte[] d = null;
+      try {
+        d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
+      } catch (KeeperException.NoNodeException e) {
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: "+ path);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected error", e);
+      }
+      if (d == null || d.length == 0) {
+        rsp.add(path, null);
+        return;
+      }
 
+      Map<String, String> map = new HashMap<>(1);
+      map.put(WT, "raw");
+      map.put(OMIT_HEADER, "true");
+      req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
+
+      String mime = BinaryResponseParser.BINARY_CONTENT_TYPE;
+
+      if (d[0] == '{') mime = CommonParams.JSON_MIME;
+      if (d[0] == '<' || d[1] == '?') mime = XMLResponseParser.XML_CONTENT_TYPE;
+      rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, mime));
+
+    }
+  }
+
+  @EndPoint(path = "/cluster/zk-ls/*",
+      method = SolrRequest.METHOD.GET,
+      permission = COLL_READ_PERM)
+  public class ListNode {
+    @Command
+    public void list(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String path = req.getPathTemplateValues().get("*");
+      if (path == null || path.isEmpty()) path = "/";
+      try {
+        List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
+        String prefix = path.endsWith("/") ? path : path + "/";
         rsp.add(path, (MapWriter) ew -> {
           for (String s : l) {
             try {
@@ -91,28 +130,11 @@ public class ZookeeperRead {
             }
           }
         });
-
-      } else {
-        d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
-        if (d == null || d.length == 0) {
-          rsp.add(path, null);
-          return;
-        }
-
-        Map<String, String> map = new HashMap<>(1);
-        map.put(WT, "raw");
-        map.put(OMIT_HEADER, "true");
-        req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
-
-
-        rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null,
-            d[0] == '{' ? CommonParams.JSON_MIME : BinaryResponseParser.BINARY_CONTENT_TYPE));
-
+      } catch (KeeperException.NoNodeException e) {
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node :"+ path);
+      } catch (Exception e) {
+        rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
       }
-
-    } catch (Exception e) {
-      rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
     }
   }
-
 }

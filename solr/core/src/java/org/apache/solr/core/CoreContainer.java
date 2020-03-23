@@ -675,7 +675,9 @@ public class CoreContainer {
       packageLoader = new PackageLoader(this);
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI));
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI));
-      containerHandlers.getApiBag().register(new AnnotatedApi(new ZookeeperRead(this)));
+      ZookeeperRead zookeeperRead = new ZookeeperRead(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperRead.readNode));
+      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperRead.listNode));
     }
 
     MDCLoggingContext.setNode(this);
