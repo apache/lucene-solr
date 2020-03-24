@@ -16,24 +16,27 @@
  */
 package org.apache.solr.search;
 
-import java.util.List;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_COLLAPSE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
+import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
 
 public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
@@ -43,7 +46,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   public static List<String> ALL_COLLAPSE_FIELD_NAMES;
 
   private static String[] NULL_POLICIES
-    = new String[] {NULL_IGNORE, NULL_COLLAPSE, NULL_EXPAND};
+    = new String[] {CollapsingQParserPlugin.NullPolicy.IGNORE.getName(),
+                    CollapsingQParserPlugin.NullPolicy.COLLAPSE.getName(),
+                    CollapsingQParserPlugin.NullPolicy.EXPAND.getName()};
   
   @BeforeClass
   public static void buildIndexAndClient() throws Exception {
@@ -203,6 +208,43 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         }
       }
     }
+  }
+  
+  public void verifyParsedFilterQueryResponse() throws IOException, SolrServerException {
+    final String query = "*:*";
+    final String nullPolicy = randomNullPolicy();
+    final String groupHeadSort = "'_version_ asc'";
+    final String collapseSize = "5000";
+    final String collapseHint = "top_fc";
+    final String filterQuery = "{!collapse field=id sort=" + groupHeadSort + " nullPolicy=" + nullPolicy + " size=" +
+                                collapseSize + " hint=" + collapseHint + "}";
+    final SolrParams solrParams = params("q", query, "debug", "true", "fq", filterQuery);
+    final QueryResponse response = SOLR.query(solrParams);
+    final Object actualParsedFilterQuery = response.getDebugMap().get("parsed_filter_queries");
+    final String expectedParsedFilterString = "CollapsingPostFilter({!collapse field=id, " +
+        "nullPolicy=" + nullPolicy + ", groupHeadSelectorText=" + groupHeadSort.substring(1,
+        groupHeadSort.length() - 1) + ", groupHeadSelectorType=SORT" +
+        ", hint=" + collapseHint + ", size=" + collapseSize + "})";
+    final ArrayList<String> expectedParsedFilterQuery = new ArrayList<>();
+    expectedParsedFilterQuery.add(expectedParsedFilterString);
+
+    assertEquals(expectedParsedFilterQuery, actualParsedFilterQuery);
+  }
+
+  public void verifyParsedFilterQueryResponseWithoutDebug() throws IOException, SolrServerException {
+    final String query = "*:*";
+    final String nullPolicy = randomNullPolicy();
+    final String groupHeadSort = "'_version_ asc'";
+    final String collapseSize = "5000";
+    final String collapseHint = "top_fc";
+    final String filterQuery = "{!collapse field=id sort=" + groupHeadSort + " nullPolicy=" + nullPolicy + " size=" +
+        collapseSize + " hint=" + collapseHint + "}";
+    final SolrParams solrParams = params("q", query, "fq", filterQuery);
+    final QueryResponse response = SOLR.query(solrParams);
+    final Map<String, Object> debugMap = response.getDebugMap();
+    final Object parsedFilterQuery = (debugMap == null) ? null : debugMap.get("parsed_filter_queries");
+
+    assertNull(parsedFilterQuery);
   }
 
   private String randomNullPolicy() {
