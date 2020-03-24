@@ -73,6 +73,7 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
 
+  /** Default ctor for compatibility with SPI */
   protected CharFilterFactory() {
     super();
   }

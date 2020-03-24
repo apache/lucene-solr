@@ -54,6 +54,11 @@ public class HTMLStripCharFilterFactory extends CharFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public HTMLStripCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public HTMLStripCharFilter create(Reader input) {
     HTMLStripCharFilter charFilter;

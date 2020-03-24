@@ -159,7 +159,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     if (Modifier.isPublic(modifier) && Modifier.isStatic(modifier) &&
         Modifier.isFinal(modifier) && Objects.equals(field.getType(), String.class)) {
       return ((String) field.get(null));
-      }
+    }
     throw new IllegalStateException("No SPI name defined.");
   }
   

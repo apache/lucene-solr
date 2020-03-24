@@ -66,18 +66,20 @@ public abstract class AbstractAnalysisFactory {
   
   /**
    * This default ctor is required to be implemented by all subclasses.
-   * All subclasses should just call {@code throw defaultInitializer();}
+   * If required for field finalness reasons, subclass ctors should just call:
+   * <br>{@code throw defaultCtorException();}
    */
   protected AbstractAnalysisFactory() {
-    throw defaultInitializer();
+    throw defaultCtorException();
   }
   
   /**
-   * Helper method to be called from default constructor of all subclasses to make ServiceProvider interface happy.
+   * Helper method to be called from mandatory default constructor of all subclasses to make ServiceProvider interface happy.
    * @see #AbstractAnalysisFactory()
    */
-  protected static RuntimeException defaultInitializer() {
-    return new UnsupportedOperationException("Analysis factories cannot be instantiated without arguments. Use factory methods for Tokenizers, CharFilters and TokenFilters.");
+  protected static RuntimeException defaultCtorException() {
+    return new UnsupportedOperationException("Analysis factories cannot be instantiated without arguments. " +
+        "Use applicable factory methods for Tokenizers, CharFilters and TokenFilters.");
   }
 
   /**

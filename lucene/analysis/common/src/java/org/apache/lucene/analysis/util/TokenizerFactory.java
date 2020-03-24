@@ -74,6 +74,7 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
   
+  /** Default ctor for compatibility with SPI */
   protected TokenizerFactory() {
     super();
   }

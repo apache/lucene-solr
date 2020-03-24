@@ -72,6 +72,7 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
   
+  /** Default ctor for compatibility with SPI */
   protected TokenFilterFactory() {
     super();
   }
