@@ -223,12 +223,22 @@ final class DocumentsWriterPerThread {
    *  make sure it's allowed. */
   private void reserveOneDoc() {
     if (bytesUsed() > hardMaxBytesPerDWPT) { // TODO should we check this after each field as well to also preempt within one doc?
-      throw new IllegalArgumentException("RAM used by a single DocumentsWriterPerThread can't exceed: " + hardMaxBytesPerDWPT / 1024 / 1024 + "MB");
+      throw new MaxBufferSizeExceededException("RAM used by a single DocumentsWriterPerThread can't exceed: " + hardMaxBytesPerDWPT / 1024 / 1024 + "MB");
     }
     if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
       // Reserve failed: put the one doc back and throw exc:
       pendingNumDocs.decrementAndGet();
       throw new IllegalArgumentException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
+    }
+  }
+
+  /**
+   * Thrown if a document exceeds the maximum buffer size of a DocumentsWriterPerThread
+   */
+  @SuppressWarnings("serial")
+  public static class MaxBufferSizeExceededException extends IllegalArgumentException {
+    MaxBufferSizeExceededException(String s) {
+      super(s);
     }
   }
 
