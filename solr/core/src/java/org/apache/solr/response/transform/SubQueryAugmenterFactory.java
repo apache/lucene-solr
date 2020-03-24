@@ -64,7 +64,7 @@ import org.apache.solr.search.TermsQParserPlugin;
  * It's necessary to pass some document field value as a parameter for subquery. It's supported via 
  * implicit <code>row.<i>fieldname</i></code> parameters, and can be (but might not only) referred via
  *  Local Parameters syntax.<br>
- * <code>q=namne:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
+ * <code>q=name:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
  * Here departments are retrieved per every employee in search result. We can say that it's like SQL
  * <code> join ON emp.dept_id=dept.id </code><br>
  * Note, when document field has multiple values they are concatenated with comma by default, it can be changed by
@@ -79,11 +79,11 @@ import org.apache.solr.search.TermsQParserPlugin;
  * <h2>When used in Real Time Get</h2>
  * <p>
  * When used in the context of a Real Time Get, the <i>values</i> from each document that are used 
- * in the qubquery are the "real time" values (possibly from the transaction log), but the query 
+ * in the subquery are the "real time" values (possibly from the transaction log), but the query
  * itself is still executed against the currently open searcher.  Note that this means if a 
  * document is updated but not yet committed, an RTG request for that document that uses 
  * <code>[subquery]</code> could include the older (committed) version of that document, 
- * with differnet field values, in the subquery results.
+ * with different field values, in the subquery results.
  * </p>
  */
 public class SubQueryAugmenterFactory extends TransformerFactory{
@@ -93,7 +93,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
 
     if (field.contains("[") || field.contains("]")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-          "please give an exlicit name for [subquery] column ie fl=relation:[subquery ..]");
+          "please give an explicit name for [subquery] column ie fl=relation:[subquery ..]");
     }
     
     checkThereIsNoDupe(field, req.getContext());
@@ -313,7 +313,7 @@ class SubQueryAugmenter extends DocTransformer {
   }
   
   /**
-   * Returns false -- this transformer does use an IndexSearcher, but it does not (neccessarily) need 
+   * Returns false -- this transformer does use an IndexSearcher, but it does not (necessarily) need
    * the searcher from the ResultContext of the document being returned.  Instead we use the current 
    * "live" searcher for the specified core.
    */
