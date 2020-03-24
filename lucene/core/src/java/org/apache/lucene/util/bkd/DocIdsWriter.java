@@ -26,12 +26,13 @@ class DocIdsWriter {
 
   private DocIdsWriter() {}
 
-  static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
+  static void writeDocIds(BKDLeafBlock leafBlock, DataOutput out) throws IOException {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
+    final int count = leafBlock.count();
     boolean sorted = true;
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i - 1] > docIds[start + i]) {
+      if (leafBlock.docId(i - 1) > leafBlock.docId(i)) {
         sorted = false;
         break;
       }
@@ -40,25 +41,26 @@ class DocIdsWriter {
       out.writeByte((byte) 0);
       int previous = 0;
       for (int i = 0; i < count; ++i) {
-        int doc = docIds[start + i];
+        final int doc = leafBlock.docId(i);
         out.writeVInt(doc - previous);
         previous = doc;
       }
     } else {
       long max = 0;
       for (int i = 0; i < count; ++i) {
-        max |= Integer.toUnsignedLong(docIds[start + i]);
+        max |= Integer.toUnsignedLong(leafBlock.docId(i));
       }
       if (max <= 0xffffff) {
         out.writeByte((byte) 24);
         for (int i = 0; i < count; ++i) {
-          out.writeShort((short) (docIds[start + i] >>> 8));
-          out.writeByte((byte) docIds[start + i]);
+          final int doc = leafBlock.docId(i);
+          out.writeShort((short) (doc >>> 8));
+          out.writeByte((byte) doc);
         }
       } else {
         out.writeByte((byte) 32);
         for (int i = 0; i < count; ++i) {
-          out.writeInt(docIds[start + i]);
+          out.writeInt(leafBlock.docId(i));
         }
       }
     }

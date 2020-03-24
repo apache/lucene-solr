@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -62,7 +63,23 @@ public class TestDocIdsWriter extends LuceneTestCase {
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
-      DocIdsWriter.writeDocIds(ints, 0, ints.length, out);
+      BKDLeafBlock leafBlock = new BKDLeafBlock() {
+        @Override
+        public int count() {
+          return ints.length;
+        }
+
+        @Override
+        public BytesRef packedValue(int position) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int docId(int position) {
+          return ints[position];
+        }
+      };
+      DocIdsWriter.writeDocIds(leafBlock, out);
       len = out.getFilePointer();
       if (random().nextBoolean()) {
         out.writeLong(0); // garbage

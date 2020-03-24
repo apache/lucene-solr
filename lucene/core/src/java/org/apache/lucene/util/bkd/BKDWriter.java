@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.MutablePointValues;
@@ -388,8 +387,7 @@ public class BKDWriter implements Closeable {
     final int[] parentSplits = new int[config.numIndexDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
         minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
-        splitPackedValues, leafBlockFPs,
-        new int[config.maxPointsInLeafNode]);
+        splitPackedValues, leafBlockFPs);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
     long indexFP = out.getFilePointer();
@@ -586,20 +584,28 @@ public class BKDWriter implements Closeable {
       scratchBytesRef1.length = config.packedBytesLength;
       scratchBytesRef1.bytes = leafValues;
 
-      final IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
+      final BKDLeafBlock packedValues = new BKDLeafBlock() {
         @Override
-        public BytesRef apply(int i) {
-          scratchBytesRef1.offset = config.packedBytesLength * i;
+        public int count() {
+          return leafCount;
+        }
+
+        @Override
+        public BytesRef packedValue(int position) {
+          scratchBytesRef1.offset = config.packedBytesLength * position;
           return scratchBytesRef1;
         }
-      };
-      assert valuesInOrderAndBounds(leafCount, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
-          ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength),
-          packedValues, leafDocs, 0);
 
-      indexWriter.writeLeafBlock(out, leafDocs, 0, leafCount,
-          commonPrefixLengths, leafValues,
-          0, packedValues, leafCardinality);
+        @Override
+        public int docId(int position) {
+          return leafDocs[position];
+        }
+      };
+
+      assert valuesInOrderAndBounds(packedValues, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
+          ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength));
+
+      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths,  0, leafCardinality);
     }
   }
 
@@ -740,8 +746,7 @@ public class BKDWriter implements Closeable {
           minPackedValue.clone(), maxPackedValue.clone(),
           parentSplits,
           splitPackedValues,
-          leafBlockFPs,
-          new int[config.maxPointsInLeafNode]);
+          leafBlockFPs);
       assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
       // If no exception, we should have cleaned everything up:
@@ -878,8 +883,7 @@ public class BKDWriter implements Closeable {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs,
-                     int[] spareDocIds) throws IOException {
+                     long[] leafBlockFPs) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
       // leaf node
@@ -957,29 +961,27 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
-      // Collect doc IDs
-      int[] docIDs = spareDocIds;
-      for (int i = from; i < to; ++i) {
-        docIDs[i - from] = reader.getDocID(i);
-      }
-
-      // Collect the common prefixes:
-      reader.getValue(from, scratchBytesRef1);
-      System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, config.packedBytesLength);
-
-      // Collect the full values:
-      IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
+      BKDLeafBlock packedValues = new BKDLeafBlock() {
         @Override
-        public BytesRef apply(int i) {
-          reader.getValue(from + i, scratchBytesRef1);
+        public int count() {
+          return count;
+        }
+
+        @Override
+        public BytesRef packedValue(int position) {
+          reader.getValue(from + position, scratchBytesRef1);
           return scratchBytesRef1;
         }
+
+        @Override
+        public int docId(int position) {
+          return reader.getDocID(from + position);
+        }
       };
-      assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
-          docIDs, 0);
-      indexWriter.writeLeafBlock(out, docIDs, 0, count,
-          commonPrefixLengths, scratch1,
-          sortedDim, packedValues, leafCardinality);
+
+      assert valuesInOrderAndBounds(packedValues, sortedDim, minPackedValue, maxPackedValue);
+
+      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
     } else {
       // inner node
 
@@ -1026,10 +1028,10 @@ public class BKDWriter implements Closeable {
       parentSplits[splitDim]++;
       build(nodeID * 2, leafNodeOffset, reader, from, mid, out,
           minPackedValue, maxSplitPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs, spareDocIds);
+          splitPackedValues, leafBlockFPs);
       build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, out,
           minSplitPackedValue, maxPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs, spareDocIds);
+          splitPackedValues, leafBlockFPs);
       parentSplits[splitDim]--;
     }
   }
@@ -1067,8 +1069,7 @@ public class BKDWriter implements Closeable {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs,
-                     int[] spareDocIds) throws IOException {
+                     long[] leafBlockFPs) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
 
@@ -1123,34 +1124,29 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
-      // Collect doc IDs
-      int count = to - from;
-      assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
-      assert count <= spareDocIds.length : "count=" + count + " > length=" + spareDocIds.length;
-      int[] docIDs = spareDocIds;
-      for (int i = 0; i < count; i++) {
-        docIDs[i] = heapSource.getPackedValueSlice(from + i).docID();
-      }
+      final int count = to - from;
 
-      // collect the full values:
-      IntFunction<BytesRef> packedValues = new IntFunction<>() {
-        final BytesRef scratch = new BytesRef();
-
-        {
-          scratch.length = config.packedBytesLength;
+      BKDLeafBlock packedValues = new BKDLeafBlock() {
+        @Override
+        public int count() {
+          return count;
         }
 
         @Override
-        public BytesRef apply(int i) {
-          PointValue value = heapSource.getPackedValueSlice(from + i);
+        public BytesRef packedValue(int position) {
+          PointValue value = heapSource.getPackedValueSlice(from + position);
           return value.packedValue();
         }
+
+        @Override
+        public int docId(int position) {
+          return heapSource.getPackedValueSlice(from + position).docID();
+        }
       };
-      assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
-          docIDs, 0);
-      indexWriter.writeLeafBlock(out, docIDs, 0, count,
-          commonPrefixLengths, scratch1,
-          sortedDim, packedValues, leafCardinality);
+
+      assert valuesInOrderAndBounds(packedValues, sortedDim, minPackedValue, maxPackedValue);
+
+      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
 
     } else {
       // Inner node: partition/recurse
@@ -1202,12 +1198,12 @@ public class BKDWriter implements Closeable {
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
-          parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
+          parentSplits, splitPackedValues, leafBlockFPs);
 
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
-          , parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
+          , parentSplits, splitPackedValues, leafBlockFPs);
 
       parentSplits[splitDim]--;
     }
@@ -1235,16 +1231,14 @@ public class BKDWriter implements Closeable {
   }
 
   // only called from assert
-  private boolean valuesInOrderAndBounds(int count, int sortedDim, byte[] minPackedValue, byte[] maxPackedValue,
-                                         IntFunction<BytesRef> values, int[] docs, int docsOffset) throws IOException {
+  private boolean valuesInOrderAndBounds(BKDLeafBlock values, int sortedDim, byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
     byte[] lastPackedValue = new byte[config.packedBytesLength];
     int lastDoc = -1;
-    for (int i = 0; i < count; i++) {
-      BytesRef packedValue = values.apply(i);
+    for (int i = 0; i < values.count(); i++) {
+      BytesRef packedValue = values.packedValue(i);
       assert packedValue.length == config.packedBytesLength;
-      assert valueInOrder(i, sortedDim, lastPackedValue, packedValue.bytes, packedValue.offset,
-          docs[docsOffset + i], lastDoc);
-      lastDoc = docs[docsOffset + i];
+      assert valueInOrder(i, sortedDim, lastPackedValue, packedValue.bytes, packedValue.offset, values.docId(i), lastDoc);
+      lastDoc = values.docId(i);
 
       // Make sure this value does in fact fall within this leaf cell:
       assert valueInBounds(packedValue, minPackedValue, maxPackedValue);
