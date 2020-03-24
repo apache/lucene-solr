@@ -16,14 +16,6 @@
  */
 package org.apache.solr.logging;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-
-import java.util.function.Supplier;
-
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.StringUtils;
@@ -31,6 +23,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.MDC;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
  * Set's per thread context info for logging. Nested calls will use the top level parent for all context. The first
@@ -107,13 +105,21 @@ public class MDCLoggingContext {
       MDC.remove(NODE_NAME_PROP);
     }
   }
-  
+
+  /**
+   * Sets multiple information from the params.
+   * REMEMBER TO CALL {@link #clear()} in a finally!
+   */
   public static void setCore(SolrCore core) {
     CoreContainer coreContainer = core == null ? null : core.getCoreContainer();
     CoreDescriptor coreDescriptor = core == null ? null : core.getCoreDescriptor();
     setCoreDescriptor(coreContainer, coreDescriptor);
   }
-  
+
+  /**
+   * Sets multiple information from the params.
+   * REMEMBER TO CALL {@link #clear()} in a finally!
+   */
   public static void setCoreDescriptor(CoreContainer coreContainer, CoreDescriptor cd) {
     setNode(coreContainer);
 
@@ -136,7 +142,11 @@ public class MDCLoggingContext {
       }
     }
   }
-  
+
+  /**
+   * Call this after {@link #setCore(SolrCore)} or {@link #setCoreDescriptor(CoreContainer, CoreDescriptor)} in a
+   * finally.
+   */
   public static void clear() {
     int used = CALL_DEPTH.get();
     if (used <= 1) {
@@ -158,7 +168,8 @@ public class MDCLoggingContext {
     MDC.remove(NODE_NAME_PROP);
     MDC.remove(TRACE_ID);
   }
-  
+
+  /** Resets to a cleared state.  Used in-between requests into Solr. */
   public static void reset() {
     CALL_DEPTH.set(0);
     removeAll();

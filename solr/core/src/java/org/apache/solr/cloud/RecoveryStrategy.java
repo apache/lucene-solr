@@ -305,12 +305,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     // set request info for logging
     try (SolrCore core = cc.getCore(coreName)) {
+      MDCLoggingContext.setCore(core);
 
       if (core == null) {
         SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
         return;
       }
-      MDCLoggingContext.setCore(core);
 
       log.info("Starting recovery process. recoveringAfterStartup=" + recoveringAfterStartup);
 
