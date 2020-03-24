@@ -128,6 +128,28 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   public static final String HINT_TOP_FC = "top_fc";
   public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
 
+  public enum NullPolicy {
+    IGNORE("ignore", 0),
+    COLLAPSE("collapse", 1),
+    EXPAND("expand", 2);
+
+    private final String name;
+    private final int code;
+
+    NullPolicy(String name, int code) {
+      this.name = name;
+      this.code = code;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public int getCode() {
+      return code;
+    }
+  }
+
 
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new CollapsingQParser(qstr, localParams, params, request);
@@ -226,7 +248,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public String hint;
     private boolean needsScores = true;
     private boolean needsScores4Collapsing = false;
-    private int nullPolicy;
+    private NullPolicy nullPolicy;
     private Set<BytesRef> boosted; // ordered by "priority"
     public static final int NULL_POLICY_IGNORE = 0;
     public static final int NULL_POLICY_COLLAPSE = 1;
@@ -259,7 +281,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int hashCode = classHash();
       hashCode = 31 * hashCode + collapseField.hashCode();
       hashCode = 31 * hashCode + groupHeadSelector.hashCode();
-      hashCode = 31 * hashCode + nullPolicy;
+      hashCode = 31 * hashCode + nullPolicy.hashCode();
       return hashCode;
     }
 
@@ -285,19 +307,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public String toString(String s) {
       return "{!collapse field=" + this.collapseField +
-          ", nullPolicy=" + getNullPolicyString(this.nullPolicy) + ", " +
+          ", nullPolicy=" + this.nullPolicy.getName() + ", " +
           this.groupHeadSelector.toString() +
           (hint == null ? "": ", hint=" + this.hint) +
           ", size=" + this.size
           + "}";
-    }
-
-    private String getNullPolicyString(int nullPolicy) {
-      switch (nullPolicy) {
-        case NULL_POLICY_COLLAPSE: return NULL_COLLAPSE;
-        case NULL_POLICY_EXPAND: return NULL_EXPAND;
-        default: return NULL_IGNORE;
-      }
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {
@@ -374,11 +388,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       String nPolicy = localParams.get("nullPolicy", NULL_IGNORE);
       if(nPolicy.equals(NULL_IGNORE)) {
-        this.nullPolicy = NULL_POLICY_IGNORE;
+        this.nullPolicy = NullPolicy.IGNORE;
       } else if (nPolicy.equals(NULL_COLLAPSE)) {
-        this.nullPolicy = NULL_POLICY_COLLAPSE;
+        this.nullPolicy = NullPolicy.COLLAPSE;
       } else if(nPolicy.equals((NULL_EXPAND))) {
-        this.nullPolicy = NULL_POLICY_EXPAND;
+        this.nullPolicy = NullPolicy.EXPAND;
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy:"+nPolicy);
       }
@@ -410,7 +424,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return collectorFactory.getCollector(this.collapseField,
                                              this.groupHeadSelector,
                                              this.sortSpec,
-                                             this.nullPolicy,
+                                             this.nullPolicy.getCode(),
                                              this.hint,
                                              this.needsScores4Collapsing,
                                              this.needsScores,
