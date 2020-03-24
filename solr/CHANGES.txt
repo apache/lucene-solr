@@ -281,6 +281,8 @@ Other Changes
 
 * SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
+* SOLR-14333: Print readable version of CollapsedPostFilter query (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
