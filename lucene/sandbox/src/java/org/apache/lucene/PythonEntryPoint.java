@@ -18,6 +18,8 @@
 package org.apache.lucene;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +58,8 @@ public class PythonEntryPoint {
   }
 
   public void prepareIndex() throws IOException {
-    directory = MMapDirectory.open(Path.of(INDEX_NAME));
+    Path path = Files.createTempDirectory(INDEX_NAME);
+    directory = MMapDirectory.open(path);
 
     IndexWriterConfig iwc = new IndexWriterConfig();
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
@@ -64,14 +67,15 @@ public class PythonEntryPoint {
     indexWriter = new IndexWriter(directory, iwc);
   }
 
-  public void indexBatch(int startId, List<List<Number>> vectors) throws IOException {
+  public void indexBatch(int startId, byte[] data) throws IOException {
+    float[][] vectors = deserializeMatrix(data);
+
     int id = startId;
-    for (List<Number> vector : vectors) {
+    for (float[] vector : vectors) {
       Document doc = new Document();
       doc.add(new StoredField(ID_FIELD, id++));
 
-      float[] point = convertToArray(vector);
-      doc.add(new VectorField(VECTOR_FIELD, point));
+      doc.add(new VectorField(VECTOR_FIELD, vector));
       indexWriter.addDocument(doc);
     }
   }
@@ -85,31 +89,39 @@ public class PythonEntryPoint {
     indexReader = DirectoryReader.open(directory);
   }
 
-  public List<Integer> search(List<Number> queryVector, int k, int numCands) throws IOException {
+  public List<List<Integer>> search(byte[] data, int k, int numCands) throws IOException {
+    float[][] queryVectors = deserializeMatrix(data);
+    List<List<Integer>> results = new ArrayList<>();
+
     IndexSearcher searcher = new IndexSearcher(indexReader);
+    for (float[] queryVector : queryVectors) {
+      Query query = new VectorDistanceQuery(VECTOR_FIELD, queryVector, numCands);
 
-    float[] value = convertToArray(queryVector);
-    Query query = new VectorDistanceQuery(VECTOR_FIELD, value, numCands);
+      TopDocs topDocs = searcher.search(query, k);
 
-    TopDocs topDocs = searcher.search(query, k);
+      List<Integer> result = new ArrayList<>(k);
+      for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+        Document doc = indexReader.document(scoreDoc.doc);
+        IndexableField field = doc.getField(ID_FIELD);
 
-    List<Integer> result = new ArrayList<>(k);
-    for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      Document doc = indexReader.document(scoreDoc.doc);
-      IndexableField field = doc.getField(ID_FIELD);
-
-      assert field != null;
-      result.add(field.numericValue().intValue());
+        assert field != null;
+        result.add(field.numericValue().intValue());
+      }
+      results.add(result);
     }
-
-    return result;
+    return results;
   }
 
-  private float[] convertToArray(List<Number> vector) {
-    float[] point = new float[vector.size()];
-    for (int i = 0; i < vector.size(); i++) {
-      point[i] = vector.get(i).floatValue();
+  public float[][] deserializeMatrix(byte[] data) {
+    ByteBuffer buffer = ByteBuffer.wrap(data);
+    int n = buffer.getInt(), m = buffer.getInt();
+    float[][] matrix = new float[n][m];
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < m; ++j) {
+        matrix[i][j] = buffer.getFloat();
+      }
     }
-    return point;
+
+    return matrix;
   }
 }
