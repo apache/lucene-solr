@@ -127,6 +127,9 @@ Optimizations
 * LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
   (Michele Palmia, David Smiley)
 
+* LUCENE-9287:Add DocValuesFieldExistsQuery as a never cache query in UsageTrackingQueryCachingPolicy.
+  (Ignacio Vera)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
