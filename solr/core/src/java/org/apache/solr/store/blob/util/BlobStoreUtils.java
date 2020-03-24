@@ -136,7 +136,10 @@ public class BlobStoreUtils {
           }
 
           // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
-          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer, false);
+          // We do need to compute a directory hash to verify after pulling or before switching index dirs that no local 
+          // changes occurred concurrently
+          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer, 
+              /* reserveCommit */ false, /* captureDirHash */ true);
           SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobstoreMetadata);
           PushPullData pushPullData = new PushPullData.Builder()
               .setCollectionName(collectionName)

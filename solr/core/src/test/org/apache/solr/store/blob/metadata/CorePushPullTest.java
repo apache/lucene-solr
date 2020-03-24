@@ -276,7 +276,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
         BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName));
 
     // build the require metadata
-    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), /* takeSnapshot */ true);
+    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), /* takeSnapshot */ true, false);
     
     // empty bcm means we should push everything we have locally 
     BlobCoreMetadata bcm = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName);
@@ -304,7 +304,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   
   private SharedMetadataResolutionResult doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
     // build the require metadata
-    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), false);
+    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), false, true);
     
     PushPullData ppd = new PushPullData.Builder()
         .setCollectionName(collectionName)

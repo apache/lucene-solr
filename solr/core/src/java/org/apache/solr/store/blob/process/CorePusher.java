@@ -130,7 +130,10 @@ public class CorePusher {
           log.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
           // Resolve the differences (if any) between the local shard index data and shard index data on shared store
           // Reserving the commit point so it can be saved while pushing files to Blob store.
-          ServerSideMetadata localCoreMetadata = new ServerSideMetadata(coreName, coreContainer, true);
+          // We don't need to compute a directory hash for the push scenario as we only need it to verify local 
+          // index changes during pull
+          ServerSideMetadata localCoreMetadata = new ServerSideMetadata(coreName, coreContainer, 
+              /* reserveCommit */ true, /* captureDirHash */ false);
           SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
               localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
 

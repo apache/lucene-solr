@@ -286,7 +286,10 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
 
       // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
-      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), storeManager.getCoreContainer(), false);
+      // We do need to compute a directory hash to verify after pulling or before switching index dirs that no local 
+      // changes occurred concurrently
+      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), storeManager.getCoreContainer(), 
+          /* reserveCommit */ false, /* captureDirHash */ true);
       SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
           serverMetadata, blobMetadata);
       
