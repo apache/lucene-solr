@@ -127,8 +127,7 @@ Optimizations
 * LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
   (Michele Palmia, David Smiley)
 
-* LUCENE-9287:Add DocValuesFieldExistsQuery as a never cache query in UsageTrackingQueryCachingPolicy.
-  (Ignacio Vera)
+* LUCENE-9287: UsageTrackingQueryCachingPolicy no longer caches DocValuesFieldExistsQuery. (Ignacio Vera)
 
 Bug Fixes
 ---------------------
