@@ -46,8 +46,8 @@
 	</solrcloud> 
 	
 	<sharedStore>
-	 <!-- The presence of this config section enables shared storage capabilities for the entire cluster if it
-	 is in Solr Cloud mode -->
+	 <!-- The default value is true and will enable shared storage capabilities across the cluster -->
+    <bool name="sharedStoreEnabled">${sharedStoreEnabled:true}</bool>
 	</sharedStore>
 	
 	<metrics> 
