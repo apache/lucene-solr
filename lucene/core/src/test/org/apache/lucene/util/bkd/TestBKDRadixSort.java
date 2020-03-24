@@ -28,7 +28,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestBKDRadixSort extends LuceneTestCase {
 
   public void testRandom() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
     int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
@@ -43,7 +43,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   public void testRandomAllEquals() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
     int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
@@ -58,7 +58,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   public void testRandomLastByteTwoValues() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
     int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
@@ -77,7 +77,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   public void testRandomFewDifferentValues() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
     int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
@@ -95,7 +95,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   public void testRandomDataDimDifferent() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
     int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
@@ -116,7 +116,8 @@ public class TestBKDRadixSort extends LuceneTestCase {
   private void verifySort(HeapPointWriter points, int dataDimensions, int indexDimensions, int start, int end, int bytesPerDim) throws IOException{
     int packedBytesLength = dataDimensions * bytesPerDim;
     Directory dir = newDirectory();
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, indexDimensions, bytesPerDim, 1000, dir, "test");
+    BKDConfig config = new BKDConfig(dataDimensions, indexDimensions, bytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    BKDRadixSelector radixSelector = new BKDRadixSelector(config, 1000, dir, "test");
     // we check for each dimension
     for (int splitDim = 0; splitDim < dataDimensions; splitDim++) {
       radixSelector.heapRadixSort(points, start, end, splitDim, getRandomCommonPrefix(points, start, end, bytesPerDim, splitDim));

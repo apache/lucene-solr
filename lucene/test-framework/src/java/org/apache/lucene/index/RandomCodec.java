@@ -49,6 +49,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
@@ -105,13 +106,15 @@ public class RandomCodec extends AssertingCodec {
 
             PointValues values = reader.getValues(fieldInfo.name);
 
-            try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
+            BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+                                             fieldInfo.getPointIndexDimensionCount(),
+                                             fieldInfo.getPointNumBytes(),
+                                             maxPointsInLeafNode);
+
+            try (BKDWriter writer = new RandomlySplittingBKDWriter(config,
+                                                                   writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
-                                                                   fieldInfo.getPointDimensionCount(),
-                                                                   fieldInfo.getPointIndexDimensionCount(),
-                                                                   fieldInfo.getPointNumBytes(),
-                                                                   maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
                                                                    values.size(),
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
@@ -254,10 +257,9 @@ public class RandomCodec extends AssertingCodec {
 
     final Random random;
 
-    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims,
-                                      int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
+    public RandomlySplittingBKDWriter(BKDConfig config, int maxDoc, Directory tempDir, String tempFileNamePrefix, double maxMBSortInHeap,
                                       long totalPointCount, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
+      super(config, maxDoc, tempDir, tempFileNamePrefix, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
 
@@ -282,7 +284,7 @@ public class RandomCodec extends AssertingCodec {
     @Override
     protected int split(byte[] minPackedValue, byte[] maxPackedValue, int[] parentDims) {
       // BKD normally defaults by the widest dimension, to try to make as squarish cells as possible, but we just pick a random one ;)
-      return random.nextInt(numIndexDims);
+      return random.nextInt(config.numIndexDims);
     }
   }
 }

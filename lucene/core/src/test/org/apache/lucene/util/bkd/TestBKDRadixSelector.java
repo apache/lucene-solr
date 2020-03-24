@@ -208,7 +208,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   }
 
   private void verify(Directory dir, PointWriter points, int dataDimensions, int indexDimensions, long start, long end, long middle, int packedLength, int bytesPerDimensions, int sortedOnHeap) throws IOException{
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, indexDimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
+    BKDConfig config = new BKDConfig(dataDimensions, indexDimensions, bytesPerDimensions, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    BKDRadixSelector radixSelector = new BKDRadixSelector(config, sortedOnHeap, dir, "test");
     //we only split by indexed dimension so we check for each only those dimension
     for (int splitDim = 0; splitDim < indexDimensions; splitDim++) {
       //We need to make a copy of the data as it is deleted in the process

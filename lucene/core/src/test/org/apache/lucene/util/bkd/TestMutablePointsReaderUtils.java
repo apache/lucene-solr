@@ -39,7 +39,8 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     final int maxDoc = TestUtil.nextInt(random(), 1, 1 << random().nextInt(30));
     Point[] points = createRandomPoints(1, 1, bytesPerDim, maxDoc, new int[1]);
     DummyPointsReader reader = new DummyPointsReader(points);
-    MutablePointsReaderUtils.sort(maxDoc, bytesPerDim, reader, 0, points.length);
+    BKDConfig config = new BKDConfig(1, 1, bytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, points.length);
     Arrays.sort(points, new Comparator<Point>() {
       @Override
       public int compare(Point o1, Point o2) {
@@ -69,7 +70,8 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     Point[] points = createRandomPoints(numDataDims, numIndexDims, bytesPerDim, maxDoc, commonPrefixLengths);
     DummyPointsReader reader = new DummyPointsReader(points);
     final int sortedDim = random().nextInt(numIndexDims);
-    MutablePointsReaderUtils.sortByDim(numDataDims, numIndexDims, sortedDim, bytesPerDim, commonPrefixLengths, reader, 0, points.length,
+    BKDConfig config = new BKDConfig(numDataDims, numIndexDims, bytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    MutablePointsReaderUtils.sortByDim(config, sortedDim, commonPrefixLengths, reader, 0, points.length,
         new BytesRef(), new BytesRef());
     for (int i = 1; i < points.length; ++i) {
       final int offset = sortedDim * bytesPerDim;
@@ -105,7 +107,8 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     final int splitDim =  random().nextInt(numIndexDims);
     DummyPointsReader reader = new DummyPointsReader(points);
     final int pivot = TestUtil.nextInt(random(), 0, points.length - 1);
-    MutablePointsReaderUtils.partition(numDataDims, numIndexDims, maxDoc, splitDim, bytesPerDim, commonPrefixLengths[splitDim], reader, 0, points.length, pivot,
+    BKDConfig config = new BKDConfig(numDataDims, numIndexDims, bytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    MutablePointsReaderUtils.partition(config, maxDoc, splitDim, commonPrefixLengths[splitDim], reader, 0, points.length, pivot,
         new BytesRef(), new BytesRef());
     BytesRef pivotValue = reader.points[pivot].packedValue;
     int offset = splitDim * bytesPerDim;
