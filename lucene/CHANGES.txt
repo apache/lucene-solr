@@ -50,8 +50,8 @@ API Changes
 * LUCENE-9281: Use java.util.ServiceLoader to load codec components and analysis
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
-  descriptor. This breaks backwards compatibility as custom factories must now
-  also implement the default constructor (see MIGRATE.txt).
+  descriptor. This breaks backwards compatibility as custom analysis factories
+  must now also implement the default constructor (see MIGRATE.txt).
   (Uwe Schindler, Dawid Weiss)
 
 Improvements
