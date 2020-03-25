@@ -18,8 +18,9 @@
 package org.apache.lucene.search;
 
 /*
- * Sort field for long values indexed both with doc values and points.
- * Use this field if you want to skip collecting non-competitive documents,
+ * Sort field for long values that are indexed both with doc values and points.
+ * Use this field for optimized sort queries on long values.
+ * Optimized sort can skip collecting non-competitive documents,
  * which in some cases can significantly speed up sort queries.
  */
 public class LongDocValuesPointSortField extends SortField {
