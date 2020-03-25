@@ -34,6 +34,8 @@ Bug Fixes
 
 * SOLR-14347: Autoscaling placement wrong when concurrent replica placements are calculated. (ab)
 
+* SOLR-14128: Improve distributed locking around managed schema upgrade process. (ab)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
