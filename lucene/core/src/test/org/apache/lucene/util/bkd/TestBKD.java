@@ -62,7 +62,7 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(new BKDDefaultIndexWriter(out));
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
@@ -166,7 +166,7 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(new BKDDefaultIndexWriter(out));
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
@@ -295,7 +295,7 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(new BKDDefaultIndexWriter(out));
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
@@ -762,7 +762,7 @@ public class TestBKD extends LuceneTestCase {
                 return curDocIDBase + docID;
               }
             });
-          toMerge.add(w.finish(out));
+          toMerge.add(w.finish(new BKDDefaultIndexWriter(out)));
           valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
           segCount = 0;
 
@@ -779,7 +779,7 @@ public class TestBKD extends LuceneTestCase {
 
       if (toMerge != null) {
         if (segCount > 0) {
-          toMerge.add(w.finish(out));
+          toMerge.add(w.finish(new BKDDefaultIndexWriter(out)));
           final int curDocIDBase = lastDocIDBase;
           docMaps.add(new MergeState.DocMap() {
               @Override
@@ -799,12 +799,12 @@ public class TestBKD extends LuceneTestCase {
           readers.add(new BKDReader(in, randomBoolean()));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(out, docMaps, readers);
+        indexFP = w.merge(new BKDDefaultIndexWriter(out), docMaps, readers);
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
       } else {
-        indexFP = w.finish(out);
+        indexFP = w.finish(new BKDDefaultIndexWriter(out));
         out.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
       }
@@ -1080,7 +1080,7 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      long fp = w.finish(new BKDDefaultIndexWriter(out));
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
@@ -1135,7 +1135,7 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      indexFP = w.finish(new BKDDefaultIndexWriter(out));
       w.close();
     }
 
@@ -1194,7 +1194,7 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      long fp = w.finish(new BKDDefaultIndexWriter(out));
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
@@ -1251,7 +1251,7 @@ public class TestBKD extends LuceneTestCase {
     }
     
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-    long fp = w.finish(out);
+    long fp = w.finish(new BKDDefaultIndexWriter(out));
     out.close();
 
     IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
@@ -1310,7 +1310,7 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      indexFP = w.finish(new BKDDefaultIndexWriter(out));
       w.close();
     }
     
@@ -1462,7 +1462,7 @@ public class TestBKD extends LuceneTestCase {
     BKDWriter w = new BKDWriter(config, numValues, dir, "_temp", BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
     expectThrows(IllegalStateException.class, () -> {
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(out, "test_field_name", reader);
+        w.writeField(new BKDDefaultIndexWriter(out), "test_field_name", reader);
       } finally {
         w.close();
         dir.close();
@@ -1573,7 +1573,7 @@ public class TestBKD extends LuceneTestCase {
       }
     };
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, "", val);});
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(new BKDDefaultIndexWriter(out), "", val);});
       assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
       w.close();
     }

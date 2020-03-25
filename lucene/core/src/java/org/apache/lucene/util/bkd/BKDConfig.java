@@ -21,7 +21,8 @@ import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Basic parameters for indexing points on the BKD tree.
- */
+ *
+ *  @lucene.experimental */
 public class BKDConfig {
 
   /** Default maximum number of point in each leaf block */

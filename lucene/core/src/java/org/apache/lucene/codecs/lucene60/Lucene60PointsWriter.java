@@ -39,6 +39,8 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDConfig;
+import org.apache.lucene.util.bkd.BKDDefaultIndexWriter;
+import org.apache.lucene.util.bkd.BKDIndexWriter;
 import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -47,6 +49,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Output used to write the BKD tree data file */
   protected final IndexOutput dataOut;
+  protected final BKDIndexWriter indexWriter;
 
   /** Maps field name to file pointer in the data file where the BKD index is located. */
   protected final Map<String,Long> indexFPs = new HashMap<>();
@@ -66,6 +69,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                          writeState.segmentSuffix,
                                                          Lucene60PointsFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
+    indexWriter = new BKDDefaultIndexWriter(dataOut);
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
@@ -102,7 +106,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointValues) values);
+        final long fp = writer.writeField(indexWriter, fieldInfo.name, (MutablePointValues) values);
         if (fp != -1) {
           indexFPs.put(fieldInfo.name, fp);
         }
@@ -127,7 +131,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
       if (writer.getPointCount() > 0) {
-        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+        indexFPs.put(fieldInfo.name, writer.finish(indexWriter));
       }
     }
   }
@@ -213,7 +217,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            long fp = writer.merge(dataOut, docMaps, bkdReaders);
+            long fp = writer.merge(indexWriter, docMaps, bkdReaders);
             if (fp != -1) {
               indexFPs.put(fieldInfo.name, fp);
             }

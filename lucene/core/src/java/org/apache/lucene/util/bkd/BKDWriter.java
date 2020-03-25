@@ -113,9 +113,6 @@ public class BKDWriter implements Closeable {
 
   private final int maxDoc;
 
-  /** Contains the methods to serialize the tree into the index */
-  private final BKDIndexWriter indexWriter;
-
   public BKDWriter(BKDConfig config, int maxDoc, Directory tempDir, String tempFileNamePrefix,
                    double maxMBSortInHeap, long totalPointCount) throws IOException {
     verifyParams(maxMBSortInHeap, totalPointCount);
@@ -144,8 +141,6 @@ public class BKDWriter implements Closeable {
     }
 
     this.maxMBSortInHeap = maxMBSortInHeap;
-
-    indexWriter = new BKDIndexWriter(config);
   }
 
   public static void verifyParams(double maxMBSortInHeap, long totalPointCount) {
@@ -319,11 +314,11 @@ public class BKDWriter implements Closeable {
    *  there is opportunity for reordering points before writing them to
    *  disk. This method does not use transient disk in order to reorder points.
    */
-  public long writeField(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
+  public long writeField(BKDIndexWriter indexWriter, String fieldName, MutablePointValues reader) throws IOException {
     if (config.numDims == 1) {
-      return writeField1Dim(out, fieldName, reader);
+      return writeField1Dim(indexWriter, reader);
     } else {
-      return writeFieldNDims(out, fieldName, reader);
+      return writeFieldNDims(indexWriter, reader);
     }
   }
 
@@ -350,7 +345,7 @@ public class BKDWriter implements Closeable {
 
   /* In the 2+D case, we recursively pick the split dimension, compute the
    * median value and partition other values around it. */
-  private long writeFieldNDims(IndexOutput out, String fieldName, MutablePointValues values) throws IOException {
+  private long writeFieldNDims(BKDIndexWriter indexWriter, MutablePointValues values) throws IOException {
     if (pointCount != 0) {
       throw new IllegalStateException("cannot mix add and writeField");
     }
@@ -385,22 +380,22 @@ public class BKDWriter implements Closeable {
     }
 
     final int[] parentSplits = new int[config.numIndexDims];
-    build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
+    build(1, numLeaves, values, 0, Math.toIntExact(pointCount), indexWriter,
         minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
         splitPackedValues, leafBlockFPs);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
-    long indexFP = out.getFilePointer();
-    indexWriter.writeIndex(out, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
+    long indexFP = indexWriter.getFilePointer();
+    indexWriter.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
     return indexFP;
   }
 
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
-  private long writeField1Dim(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
+  private long writeField1Dim(BKDIndexWriter indexWriter, MutablePointValues reader) throws IOException {
     MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, Math.toIntExact(reader.size()));
 
-    final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(out);
+    final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(indexWriter);
 
     reader.intersect(new IntersectVisitor() {
 
@@ -426,7 +421,7 @@ public class BKDWriter implements Closeable {
   /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
    *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
    *  dimensional values were deleted. */
-  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
+  public long merge(BKDIndexWriter indexWriter, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
     assert docMaps == null || readers.size() == docMaps.size();
 
     BKDMergeQueue queue = new BKDMergeQueue(config.bytesPerDim, readers.size());
@@ -445,7 +440,7 @@ public class BKDWriter implements Closeable {
       }
     }
 
-    OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(out);
+    OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(indexWriter);
 
     while (queue.size() != 0) {
       MergeReader reader = queue.top();
@@ -466,7 +461,7 @@ public class BKDWriter implements Closeable {
 
   private class OneDimensionBKDWriter {
 
-    final IndexOutput out;
+    final BKDIndexWriter indexWriter;
     final List<Long> leafBlockFPs = new ArrayList<>();
     final List<byte[]> leafBlockStartValues = new ArrayList<>();
     final byte[] leafValues = new byte[config.maxPointsInLeafNode * config.packedBytesLength];
@@ -475,7 +470,7 @@ public class BKDWriter implements Closeable {
     private int leafCount;
     private int leafCardinality;
 
-    OneDimensionBKDWriter(IndexOutput out) {
+    OneDimensionBKDWriter(BKDIndexWriter indexWriter) {
       if (config.numIndexDims != 1) {
         throw new UnsupportedOperationException("numIndexDims must be 1 but got " + config.numIndexDims);
       }
@@ -491,7 +486,7 @@ public class BKDWriter implements Closeable {
       // Mark that we already finished:
       finished = true;
 
-      this.out = out;
+      this.indexWriter = indexWriter;
 
       lastPackedValue = new byte[config.packedBytesLength];
     }
@@ -540,7 +535,7 @@ public class BKDWriter implements Closeable {
 
       pointCount = valueCount;
 
-      long indexFP = out.getFilePointer();
+      long indexFP = indexWriter.getFilePointer();
 
       int numInnerNodes = leafBlockStartValues.size();
 
@@ -552,7 +547,7 @@ public class BKDWriter implements Closeable {
       for(int i = 0; i < leafBlockFPs.size(); i++) {
         arr[i] = leafBlockFPs.get(i);
       }
-      indexWriter.writeIndex(out, config.maxPointsInLeafNode, arr, index, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
+      indexWriter.writeIndex(config, config.maxPointsInLeafNode, arr, index, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
       return indexFP;
     }
 
@@ -569,7 +564,7 @@ public class BKDWriter implements Closeable {
         // Save the first (minimum) value in each leaf block except the first, to build the split value index in the end:
         leafBlockStartValues.add(ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength));
       }
-      leafBlockFPs.add(out.getFilePointer());
+      leafBlockFPs.add(indexWriter.getFilePointer());
       checkMaxLeafNodeCount(leafBlockFPs.size());
 
       // Find per-dim common prefix:
@@ -605,7 +600,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(packedValues, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
           ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength));
 
-      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths,  0, leafCardinality);
+      indexWriter.writeLeafBlock(config, packedValues, commonPrefixLengths,  0, leafCardinality);
     }
   }
 
@@ -686,7 +681,7 @@ public class BKDWriter implements Closeable {
   }
 
   /** Writes the BKD tree to the provided {@link IndexOutput} and returns the file offset where index was written. */
-  public long finish(IndexOutput out) throws IOException {
+  public long finish(BKDIndexWriter indexWriter) throws IOException {
     // System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapPointWriter);
 
     // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recurse...)
@@ -742,7 +737,7 @@ public class BKDWriter implements Closeable {
 
       final int[] parentSplits = new int[config.numIndexDims];
       build(1, numLeaves, points,
-          out, radixSelector,
+          indexWriter, radixSelector,
           minPackedValue.clone(), maxPackedValue.clone(),
           parentSplits,
           splitPackedValues,
@@ -764,8 +759,8 @@ public class BKDWriter implements Closeable {
     //System.out.println("Total nodes: " + innerNodeCount);
 
     // Write index:
-    long indexFP = out.getFilePointer();
-    indexWriter.writeIndex(out, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
+    long indexFP = indexWriter.getFilePointer();
+    indexWriter.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
     return indexFP;
   }
 
@@ -879,7 +874,7 @@ public class BKDWriter implements Closeable {
    * when we are writing a new segment directly from IndexWriter's indexing buffer (MutablePointsReader). */
   private void build(int nodeID, int leafNodeOffset,
                      MutablePointValues reader, int from, int to,
-                     IndexOutput out,
+                     BKDIndexWriter indexWriter,
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
@@ -959,7 +954,7 @@ public class BKDWriter implements Closeable {
         }
       }
       // Save the block file pointer:
-      leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
+      leafBlockFPs[nodeID - leafNodeOffset] = indexWriter.getFilePointer();
 
       BKDLeafBlock packedValues = new BKDLeafBlock() {
         @Override
@@ -981,7 +976,7 @@ public class BKDWriter implements Closeable {
 
       assert valuesInOrderAndBounds(packedValues, sortedDim, minPackedValue, maxPackedValue);
 
-      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
+      indexWriter.writeLeafBlock(config, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
     } else {
       // inner node
 
@@ -1026,10 +1021,10 @@ public class BKDWriter implements Closeable {
 
       // recurse
       parentSplits[splitDim]++;
-      build(nodeID * 2, leafNodeOffset, reader, from, mid, out,
+      build(nodeID * 2, leafNodeOffset, reader, from, mid, indexWriter,
           minPackedValue, maxSplitPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs);
-      build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, out,
+      build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, indexWriter,
           minSplitPackedValue, maxPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs);
       parentSplits[splitDim]--;
@@ -1064,7 +1059,7 @@ public class BKDWriter implements Closeable {
    /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
   private void build(int nodeID, int leafNodeOffset,
                      BKDRadixSelector.PathSlice points,
-                     IndexOutput out,
+                     BKDIndexWriter indexWriter,
                      BKDRadixSelector radixSelector,
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
@@ -1122,7 +1117,7 @@ public class BKDWriter implements Closeable {
       int leafCardinality = heapSource.computeCardinality(from ,to, config.numDims, config.bytesPerDim, commonPrefixLengths);
 
       // Save the block file pointer:
-      leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
+      leafBlockFPs[nodeID - leafNodeOffset] = indexWriter.getFilePointer();
 
       final int count = to - from;
 
@@ -1146,7 +1141,7 @@ public class BKDWriter implements Closeable {
 
       assert valuesInOrderAndBounds(packedValues, sortedDim, minPackedValue, maxPackedValue);
 
-      indexWriter.writeLeafBlock(out, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
+      indexWriter.writeLeafBlock(config, packedValues, commonPrefixLengths, sortedDim, leafCardinality);
 
     } else {
       // Inner node: partition/recurse
@@ -1197,13 +1192,13 @@ public class BKDWriter implements Closeable {
       parentSplits[splitDim]++;
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
-          out, radixSelector, minPackedValue, maxSplitPackedValue,
+          indexWriter, radixSelector, minPackedValue, maxSplitPackedValue,
           parentSplits, splitPackedValues, leafBlockFPs);
 
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
-          out, radixSelector, minSplitPackedValue, maxPackedValue
-          , parentSplits, splitPackedValues, leafBlockFPs);
+          indexWriter, radixSelector, minSplitPackedValue, maxPackedValue,
+          parentSplits, splitPackedValues, leafBlockFPs);
 
       parentSplits[splitDim]--;
     }

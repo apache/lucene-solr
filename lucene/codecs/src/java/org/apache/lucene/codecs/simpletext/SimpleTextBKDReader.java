@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -27,13 +26,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_DOC_ID;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_VALUE;
 
-/** Forked from {@link BKDReader} and simplified/specialized for SimpleText's usage */
+/** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link SimpleTextBKDIndexWriter}.
+ *
+ * @lucene.experimental */
 
 final class SimpleTextBKDReader extends PointValues implements Accountable {
   // Packed array of byte[] holding all split values in the full binary tree:
@@ -72,7 +72,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     this.maxPackedValue = maxPackedValue;
     this.pointCount = pointCount;
     this.docCount = docCount;
-    this.version = SimpleTextBKDWriter.VERSION_CURRENT;
+    this.version = SimpleTextBKDIndexWriter.VERSION_CURRENT;
     assert minPackedValue.length == packedIndexBytesLength;
     assert maxPackedValue.length == packedIndexBytesLength;
   }
@@ -124,17 +124,6 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
                               visitor);
   }
 
-  /** Visits all docIDs and packed values in a single leaf block */
-  public void visitLeafBlockValues(int nodeID, IntersectState state) throws IOException {
-    int leafID = nodeID - leafNodeOffset;
-
-    // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.in, leafBlockFPs[leafID], state.scratchDocIDs);
-
-    // Again, this time reading values and checking with the visitor
-    visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
-  }
-
   void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     in.seek(blockFP);
@@ -171,48 +160,6 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
       assert br.length == packedBytesLength;
       System.arraycopy(br.bytes, br.offset, scratchPackedValue, 0, packedBytesLength);
       visitor.visit(docIDs[i], scratchPackedValue);
-    }
-  }
-
-  private void visitCompressedDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor, int compressedDim) throws IOException {
-    // the byte at `compressedByteOffset` is compressed using run-length compression,
-    // other suffix bytes are stored verbatim
-    final int compressedByteOffset = compressedDim * bytesPerDim + commonPrefixLengths[compressedDim];
-    commonPrefixLengths[compressedDim]++;
-    int i;
-    for (i = 0; i < count; ) {
-      scratchPackedValue[compressedByteOffset] = in.readByte();
-      final int runLen = Byte.toUnsignedInt(in.readByte());
-      for (int j = 0; j < runLen; ++j) {
-        for(int dim = 0; dim< numDims; dim++) {
-          int prefix = commonPrefixLengths[dim];
-          in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
-        }
-        visitor.visit(docIDs[i+j], scratchPackedValue);
-      }
-      i += runLen;
-    }
-    if (i != count) {
-      throw new CorruptIndexException("Sub blocks do not add up to the expected count: " + count + " != " + i, in);
-    }
-  }
-
-  private int readCompressedDim(IndexInput in) throws IOException {
-    int compressedDim = in.readByte();
-    if (compressedDim < -1 || compressedDim >= numIndexDims) {
-      throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
-    }
-    return compressedDim;
-  }
-
-  private void readCommonPrefixes(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in) throws IOException {
-    for(int dim = 0; dim< numDims; dim++) {
-      int prefix = in.readVInt();
-      commonPrefixLengths[dim] = prefix;
-      if (prefix > 0) {
-        in.readBytes(scratchPackedValue, dim*bytesPerDim, prefix);
-      }
-      //System.out.println("R: " + dim + " of " + numDims + " prefix=" + prefix);
     }
   }
 
@@ -337,20 +284,6 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
                 splitPackedValue, cellMaxPacked);
       return leftCost + rightCost;
     }
-  }
-
-  /** Copies the split value for this node into the provided byte array */
-  public void copySplitValue(int nodeID, byte[] splitPackedValue) {
-    int address = nodeID * bytesPerIndexEntry;
-    int splitDim;
-    if (numIndexDims == 1) {
-      splitDim = 0;
-    } else {
-      splitDim = splitPackedValues[address++] & 0xff;
-    }
-    
-    assert splitDim < numIndexDims;
-    System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
   }
 
   @Override

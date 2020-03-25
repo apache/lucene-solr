@@ -136,7 +136,7 @@ public class RandomCodec extends AssertingCodec {
 
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
                 if (writer.getPointCount() > 0) {
-                  indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+                  indexFPs.put(fieldInfo.name, writer.finish(indexWriter));
                 }
               }
           }

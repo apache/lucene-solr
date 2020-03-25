@@ -33,6 +33,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDConfig;
+import org.apache.lucene.util.bkd.BKDIndexWriter;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 class SimpleTextPointsWriter extends PointsWriter {
 
@@ -58,6 +60,7 @@ class SimpleTextPointsWriter extends PointsWriter {
   public final static BytesRef END           = new BytesRef("END");
 
   private IndexOutput dataOut;
+  final private BKDIndexWriter indexWriter;
   final BytesRefBuilder scratch = new BytesRefBuilder();
   final SegmentWriteState writeState;
   final Map<String,Long> indexFPs = new HashMap<>();
@@ -65,6 +68,7 @@ class SimpleTextPointsWriter extends PointsWriter {
   public SimpleTextPointsWriter(SegmentWriteState writeState) throws IOException {
     String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointsFormat.POINT_EXTENSION);
     dataOut = writeState.directory.createOutput(fileName, writeState.context);
+    indexWriter = new SimpleTextBKDIndexWriter(dataOut);
     this.writeState = writeState;
   }
 
@@ -79,12 +83,12 @@ class SimpleTextPointsWriter extends PointsWriter {
                                      BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
 
     // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
-    try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(config,
-                                                              writeState.segmentInfo.maxDoc(),
-                                                              writeState.directory,
-                                                              writeState.segmentInfo.name,
-                                                              SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
-                                                              values.size())) {
+    try (BKDWriter writer = new BKDWriter(config,
+                                          writeState.segmentInfo.maxDoc(),
+                                          writeState.directory,
+                                          writeState.segmentInfo.name,
+                                          BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+                                          values.size())) {
 
       values.intersect(new IntersectVisitor() {
           @Override
@@ -104,7 +108,7 @@ class SimpleTextPointsWriter extends PointsWriter {
 
       // We could have 0 points on merge since all docs with points may be deleted:
       if (writer.getPointCount() > 0) {
-        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+        indexFPs.put(fieldInfo.name, writer.finish(indexWriter));
       }
     }
   }
