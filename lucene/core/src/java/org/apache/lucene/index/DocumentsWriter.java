@@ -437,7 +437,7 @@ final class DocumentsWriter implements Closeable, Accountable {
                        final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
     final ThreadState perThread = flushControl.obtainAndLock();
-    DocumentsWriterPerThread flushingDWPT = null;
+    DocumentsWriterPerThread flushingDWPT;
     final boolean isUpdate = delNode != null && delNode.isDelete();
     final int numDocsBefore = perThread.dwpt == null ? 0 : perThread.dwpt.getNumDocsInRAM();
     final long seqNo;
@@ -453,8 +453,9 @@ final class DocumentsWriter implements Closeable, Accountable {
         // in the case we exceed ram limits etc.
         hasEvents = doAfterDocumentRejected(perThread, isUpdate, hasEvents);
         // we retry if we the DWPT had more than one document indexed and was flushed
-        boolean shouldRetry = perThread.dwpt == null && numDocsBefore > 0;
-        if (shouldRetry) {
+        boolean retry = perThread.dwpt == null // we flushed the previous one since it was full
+            && numDocsBefore > 0; // we had at least one doc in RAM before such that is could fit in an empty DWPT
+        if (retry) {
           try {
             // we retry into a brand new DWPT, if it doesn't fit in here we can't index the document
             // note that we flush the previous DWPT while holding the lock on the DWPT this is necessary
@@ -462,7 +463,7 @@ final class DocumentsWriter implements Closeable, Accountable {
             innerUpdateDocuments(perThread, docs, analyzer, delNode);
             flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
           } catch (Exception innerEx) {
-            doAfterDocumentRejected(perThread, isUpdate, hasEvents); // ignore return value
+            doAfterDocumentRejected(perThread, isUpdate, hasEvents); // ignore return value we rethrow below
             ex.addSuppressed(innerEx);
             throw ex; // we failed to retry - lets rethrow
           }
@@ -490,6 +491,7 @@ final class DocumentsWriter implements Closeable, Accountable {
                                     final Iterable<? extends Iterable<? extends IndexableField>> docs,
                                     final Analyzer analyzer,
                                     final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
+    assert perThread.isHeldByCurrentThread();
     // This must happen after we've pulled the ThreadState because IW.close
     // waits for all ThreadStates to be released:
     ensureOpen();
