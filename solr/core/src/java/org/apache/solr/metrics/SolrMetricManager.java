@@ -523,25 +523,45 @@ public class SolrMetricManager {
   }
 
   /**
+   * Potential conflict resolution strategies when attempting to register a new metric that already exists
+   */
+  public enum ResolutionStrategy {
+    /**
+     * The existing metric will be kept and the new metric will be ignored
+     */
+    IGNORE,
+    /**
+     * The existing metric will be removed and replaced with the new metric
+     */
+    REPLACE,
+    /**
+     * An exception will be thrown. This is the default implementation behavior.
+     */
+    ERROR
+  }
+
+  /**
    * Register all metrics in the provided {@link MetricSet}, optionally skipping those that
    * already exist.
    *
    * @param registry   registry name
    * @param metrics    metric set to register
-   * @param force      if true then already existing metrics with the same name will be replaced.
-   *                   When false and a metric with the same name already exists an exception
-   *                   will be thrown.
+   * @param strategy   the conflict resolution strategy to use if the named metric already exists.
    * @param metricPath (optional) additional top-most metric name path elements
    * @throws Exception if a metric with this name already exists.
    */
-  public void registerAll(String registry, MetricSet metrics, boolean force, String... metricPath) throws Exception {
+  public void registerAll(String registry, MetricSet metrics, ResolutionStrategy strategy, String... metricPath) throws Exception {
     MetricRegistry metricRegistry = registry(registry);
     synchronized (metricRegistry) {
       Map<String, Metric> existingMetrics = metricRegistry.getMetrics();
       for (Map.Entry<String, Metric> entry : metrics.getMetrics().entrySet()) {
         String fullName = mkName(entry.getKey(), metricPath);
-        if (force && existingMetrics.containsKey(fullName)) {
-          metricRegistry.remove(fullName);
+        if (existingMetrics.containsKey(fullName)) {
+          if (strategy == ResolutionStrategy.REPLACE) {
+            metricRegistry.remove(fullName);
+          } else if (strategy == ResolutionStrategy.IGNORE) {
+            continue;
+          } // strategy == ERROR will fail when we try to register later
         }
         metricRegistry.register(fullName, entry.getValue());
       }
