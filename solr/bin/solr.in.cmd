@@ -204,3 +204,6 @@ REM Runtime properties are passed to the security policy file (server\etc\securi
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
+
+REM Set to true to lock Solr's memory to prevent it from being swapped out, resulting in bad performance
+REM SOLR_MEMORY_LOCK=false

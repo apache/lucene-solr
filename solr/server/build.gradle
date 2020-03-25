@@ -24,6 +24,10 @@ configurations {
   startJar
   libExt
   webapp
+  bootstrap {
+    exclude group: "org.eclipse.jetty"
+    exclude group: "org.slf4j"
+  }
   packaging
 }
 
@@ -75,6 +79,8 @@ dependencies {
 
   webapp project(path: ":solr:webapp", configuration: "war")
 
+  bootstrap project(path: ":solr:bootstrap")
+
   startJar('org.eclipse.jetty:jetty-start::shaded', {
     transitive false
   })
@@ -111,8 +117,13 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
-  from { project.configurations.startJar.singleFile } {
+  from (configurations.bootstrap, {
+    rename('jna.*?\\.jar', 'jna.jar')
+  })
+
+  from { configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
+    into "lib/"
   }
 
   dependsOn configurations.webapp
