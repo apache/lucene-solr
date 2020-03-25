@@ -52,7 +52,7 @@ API Changes
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom factories must now
   also implement the default constructor (see MIGRATE.txt).
-  (Uwe Schindler, Dawid Weiss, Tomoko Uchida)
+  (Uwe Schindler, Dawid Weiss)
 
 Improvements
 
