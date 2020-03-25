@@ -79,6 +79,11 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ConcatenateGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new ConcatenateGraphFilter(input, tokenSeparator, preservePositionIncrements, maxGraphExpansions);

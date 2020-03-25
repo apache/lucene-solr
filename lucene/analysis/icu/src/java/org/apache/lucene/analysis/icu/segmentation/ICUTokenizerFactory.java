@@ -108,6 +108,11 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ICUTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     assert tailored != null : "init must be called first!";

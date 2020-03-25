@@ -56,6 +56,11 @@ public class OpenNLPPOSFilterFactory extends TokenFilterFactory implements Resou
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public OpenNLPPOSFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public OpenNLPPOSFilter create(TokenStream in) {
     try {
