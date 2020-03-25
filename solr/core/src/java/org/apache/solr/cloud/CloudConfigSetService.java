@@ -68,7 +68,6 @@ public class CloudConfigSetService extends ConfigSetService {
     // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
     final String configSetName;
     try {
-      //TODO readConfigName() also validates the configSet exists but seems needless.  We'll get errors soon enough.
       configSetName = zkController.getZkStateReader().readConfigName(colName);
       cd.setConfigSet(configSetName);
     } catch (KeeperException ex) {
