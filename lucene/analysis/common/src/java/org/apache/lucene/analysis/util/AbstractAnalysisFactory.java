@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,21 +66,30 @@ public abstract class AbstractAnalysisFactory {
   private boolean isExplicitLuceneMatchVersion = false;
   
   /**
-   * This default ctor is required to be implemented by all subclasses.
-   * If required for field finalness reasons, subclass ctors should just call:
-   * <br>{@code throw defaultCtorException();}
+   * This default ctor is required to be implemented by all subclasses because of
+   * service loader (SPI) specification, but it is never called by Lucene.
+   * <p>
+   * Subclass ctors should call: {@code throw defaultCtorException();}
+   * 
+   * @throws UnsupportedOperationException if invoked
+   * @see #defaultCtorException()
+   * @see #AbstractAnalysisFactory(Map)
    */
   protected AbstractAnalysisFactory() {
     throw defaultCtorException();
   }
   
   /**
-   * Helper method to be called from mandatory default constructor of all subclasses to make ServiceProvider interface happy.
+   * Helper method to be called from mandatory default constructor of
+   * all subclasses to make {@link ServiceLoader} happy.
+   * <p>
+   * Should be used in subclass ctors like: {@code throw defaultCtorException();}
+   * 
    * @see #AbstractAnalysisFactory()
    */
   protected static RuntimeException defaultCtorException() {
     return new UnsupportedOperationException("Analysis factories cannot be instantiated without arguments. " +
-        "Use applicable factory methods for Tokenizers, CharFilters and TokenFilters.");
+        "Use applicable factory methods of TokenizerFactory, CharFilterFactory, or TokenFilterFactory.");
   }
 
   /**
