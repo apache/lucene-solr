@@ -25,11 +25,11 @@ package org.apache.lucene.search;
  */
 public class LongDocValuesPointSortField extends SortField {
 
-    LongDocValuesPointSortField(String field) {
+    public LongDocValuesPointSortField(String field) {
         super(field, SortField.Type.CUSTOM);
     }
 
-    LongDocValuesPointSortField(String field, boolean reverse) {
+    public LongDocValuesPointSortField(String field, boolean reverse) {
         super(field, SortField.Type.CUSTOM, reverse);
     }
 
