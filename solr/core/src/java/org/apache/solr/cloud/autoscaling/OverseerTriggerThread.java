@@ -366,7 +366,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       }
     }
     // need to add
-    triggerProps.computeIfPresent("waitFor", (k, v) -> (long) (cloudConfig.getAutoReplicaFailoverWaitAfterExpiration() / 1000));
     AutoScalingConfig.TriggerConfig config = new AutoScalingConfig.TriggerConfig(triggerName, triggerProps);
     autoScalingConfig = autoScalingConfig.withTriggerConfig(config);
     // need to add SystemLogListener explicitly here

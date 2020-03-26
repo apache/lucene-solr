@@ -36,8 +36,6 @@ public class CloudConfig {
 
   private final int leaderConflictResolveWait;
 
-  private final int autoReplicaFailoverWaitAfterExpiration;
-
   private final String zkCredentialsProviderClass;
 
   private final String zkACLProviderClass;
@@ -47,7 +45,7 @@ public class CloudConfig {
   private final boolean createCollectionCheckLeaderActive;
 
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
-              int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration,
+              int leaderVoteWait, int leaderConflictResolveWait,
               String zkCredentialsProviderClass, String zkACLProviderClass, int createCollectionWaitTimeTillActive,
               boolean createCollectionCheckLeaderActive) {
     this.zkHost = zkHost;
@@ -58,7 +56,6 @@ public class CloudConfig {
     this.useGenericCoreNames = useGenericCoreNames;
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
-    this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
     this.zkACLProviderClass = zkACLProviderClass;
     this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
@@ -106,10 +103,6 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public int getAutoReplicaFailoverWaitAfterExpiration() {
-    return autoReplicaFailoverWaitAfterExpiration;
-  }
-
   public boolean getGenericCoreNodeNames() {
     return useGenericCoreNames;
   }
@@ -140,7 +133,6 @@ public class CloudConfig {
     private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
-    private int autoReplicaFailoverWaitAfterExpiration = DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION;
     private String zkCredentialsProviderClass;
     private String zkACLProviderClass;
     private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
@@ -181,11 +173,6 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setAutoReplicaFailoverWaitAfterExpiration(int autoReplicaFailoverWaitAfterExpiration) {
-      this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
-      return this;
-    }
-
     public CloudConfigBuilder setZkCredentialsProviderClass(String zkCredentialsProviderClass) {
       this.zkCredentialsProviderClass = zkCredentialsProviderClass;
       return this;
@@ -208,7 +195,7 @@ public class CloudConfig {
 
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
-          leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
+          leaderConflictResolveWait, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
           createCollectionCheckLeaderActive);
     }
   }
