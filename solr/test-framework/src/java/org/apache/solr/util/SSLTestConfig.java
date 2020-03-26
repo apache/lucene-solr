@@ -136,11 +136,11 @@ public class SSLTestConfig {
   /**
    * Creates a {@link SocketFactoryRegistryProvider} for HTTP <b>clients</b> to use when communicating with servers 
    * which have been configured based on the settings of this object.  When {@link #isSSLMode} is true, this 
-   * <code>SchemaRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
+   * <code>SocketFactoryRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
    * appropriate certs.  When {@link #isSSLMode} is false, <i>only</i> HTTP (no HTTPS scheme) will be 
    * supported.
    */
-  public SocketFactoryRegistryProvider buildClientSchemaRegistryProvider() {
+  public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
     if (isSSLMode()) {
       SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
       assert null != sslConnectionFactory;
@@ -268,7 +268,7 @@ public class SSLTestConfig {
     return sslConnectionFactory;
   }
 
-  /** A SchemaRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
+  /** A SocketFactoryRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
   private static class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
     private final SSLConnectionSocketFactory sslConnectionFactory;
     public SSLSocketFactoryRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
@@ -281,7 +281,7 @@ public class SSLTestConfig {
     }
   }
 
-  /** A SchemaRegistryProvider that only knows about HTTP */
+  /** A SocketFactoryRegistryProvider that only knows about HTTP */
   private static final SocketFactoryRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER = new SocketFactoryRegistryProvider() {
     @Override
     public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {

@@ -313,8 +313,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     newRandomConfig();
 
     sslConfig = buildSSLConfig();
-    // based on randomized SSL config, set SchemaRegistryProvider appropriately
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
+    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
     Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this

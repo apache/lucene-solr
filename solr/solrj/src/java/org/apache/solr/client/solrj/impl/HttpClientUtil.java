@@ -136,7 +136,7 @@ public class HttpClientUtil {
    * A Java system property to select the {@linkplain SocketFactoryRegistryProvider} used for
    * configuring the Apache HTTP clients.
    */
-  public static final String SYS_PROP_SCHEMA_REGISTRY_PROVIDER = "solr.httpclient.socketFactory.registry.provider";
+  public static final String SYS_PROP_SOCKET_FACTORY_REGISTRY_PROVIDER = "solr.httpclient.socketFactory.registry.provider";
 
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
@@ -153,14 +153,14 @@ public class HttpClientUtil {
   static {
     resetHttpClientBuilder();
 
-    // Configure the SchemaRegistryProvider if user has specified the provider type.
-    String socketFactoryRegistryProviderClassName = System.getProperty(SYS_PROP_SCHEMA_REGISTRY_PROVIDER);
+    // Configure the SocketFactoryRegistryProvider if user has specified the provider type.
+    String socketFactoryRegistryProviderClassName = System.getProperty(SYS_PROP_SOCKET_FACTORY_REGISTRY_PROVIDER);
     if (socketFactoryRegistryProviderClassName != null) {
       log.debug("Using " + socketFactoryRegistryProviderClassName);
       try {
         socketFactoryRegistryProvider = (SocketFactoryRegistryProvider)Class.forName(socketFactoryRegistryProviderClassName).getConstructor().newInstance();
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
-        throw new RuntimeException("Unable to instantiate Solr SchemaRegistryProvider", e);
+        throw new RuntimeException("Unable to instantiate Solr SocketFactoryRegistryProvider", e);
       }
     }
 
