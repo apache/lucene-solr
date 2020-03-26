@@ -36,6 +36,9 @@ Bug Fixes
 
 * SOLR-14128: Improve distributed locking around managed schema upgrade process. (ab)
 
+* SOLR-14302: Ensure Solr always includes the stacktrace for exceptions by using '-OmitStackTraceInFastThrow'
+  (hossman)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid

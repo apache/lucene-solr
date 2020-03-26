@@ -1272,6 +1272,9 @@ IF "%verbose%"=="1" (
 )
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
+REM '-OmitStackTraceInFastThrow' ensures stack traces in errors,
+REM users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
+set "START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow"
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
