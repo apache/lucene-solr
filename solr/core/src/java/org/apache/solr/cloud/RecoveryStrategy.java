@@ -54,7 +54,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -305,7 +304,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     // set request info for logging
     try (SolrCore core = cc.getCore(coreName)) {
-      MDCLoggingContext.setCore(core);
 
       if (core == null) {
         SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
