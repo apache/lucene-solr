@@ -17,11 +17,8 @@
 package org.apache.lucene.index;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -113,8 +110,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
 
   private final List<ThreadState> threadStates = new ArrayList<>();
 
-  private final PriorityQueue<ThreadState> freeList = new PriorityQueue<>(8,
-      Collections.reverseOrder(Comparator.comparingLong(c -> c.bytesUsed))); // biggest first
+  private final List<ThreadState> freeList = new ArrayList<>();
 
   private int takenThreadStatePermits = 0;
 
@@ -184,12 +180,9 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
         // ThreadState is already locked before return by this method:
         return newThreadState();
       } else {
-        // We poll the biggest DWPT first to ensure that we fill up DWPTs in order to produces larger segments
-        // and reduce the amount of merging that needs to be done after flush. If we have many indexing
-        // threads we will distribute load across multiple DWPTs and once the number threads drops we will
-        // make sure we fill up on after another until they get flushed. We don't re-use thread-states anymore
-        // if they are released without a DWPT that way we will reduce the number of threadstates automatically.
-        threadState = freeList.poll();
+        // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
+        // limited number of thread states:
+        threadState = freeList.remove(freeList.size()-1);
       }
     }
     // This could take time, e.g. if the threadState is [briefly] checked for flushing:
