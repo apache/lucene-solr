@@ -613,8 +613,6 @@ public class HttpSolrCall {
         t = t.getCause();
       }
       return RETURN;
-    } finally {
-      MDCLoggingContext.clear(); // admittedly setCore might not have been called but that's okay.
     }
 
   }
