@@ -42,7 +42,6 @@ public class TestSortOptimization extends LuceneTestCase {
     }
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setQueryCachingPolicy(NEVER_CACHE);
     final Sort sort = new Sort(new LongDocValuesPointSortField("my_field"));
     final int numHits = 3;
     final int totalHitsThreshold = 3;
@@ -73,7 +72,6 @@ public class TestSortOptimization extends LuceneTestCase {
       }
       assertTrue(collector.isEarlyTerminated());
       assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
-
     }
 
     writer.close();
@@ -81,13 +79,4 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
-
-  private static final QueryCachingPolicy NEVER_CACHE = new QueryCachingPolicy() {
-    @Override
-    public void onUse(Query query) {}
-    @Override
-    public boolean shouldCache(Query query) {
-      return false;
-    }
-  };
 }

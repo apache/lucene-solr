@@ -17,7 +17,7 @@
 
 package org.apache.lucene.search;
 
-/*
+/**
  * Sort field for long values that are indexed both with doc values and points.
  * Use this field for optimized sort queries on long values.
  * Optimized sort can skip collecting non-competitive documents,

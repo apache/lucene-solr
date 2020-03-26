@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-/**
- * Expert: a FieldComparator class for long types corresponding to
- * {@link LongDocValuesPointSortField}.
- * This comparator provides {@code iterator} over competitive documents,
- * that are stronger than the current {@code bottom} value.
- */
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.LongPoint;
@@ -35,6 +29,12 @@ import java.util.Arrays;
 
 import static org.apache.lucene.search.FieldComparator.IterableComparator;
 
+/**
+ * Expert: a FieldComparator class for long types corresponding to
+ * {@link LongDocValuesPointSortField}.
+ * This comparator provides {@code iterator} over competitive documents,
+ * that are stronger than the current {@code bottom} value.
+ */
 public class LongDocValuesPointComparator extends IterableComparator<Long> {
     private final String field;
     private final boolean reverse;
