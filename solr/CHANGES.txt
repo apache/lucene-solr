@@ -28,6 +28,8 @@ Improvements
 * SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
   core searcher caches. (hossman)
 
+* SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
