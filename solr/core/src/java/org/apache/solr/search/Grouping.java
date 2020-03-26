@@ -33,8 +33,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
@@ -440,13 +438,7 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      Query q = query;
-      if (luceneFilter != null) {
-        q = new BooleanQuery.Builder()
-            .add(q, Occur.MUST)
-            .add(luceneFilter, Occur.FILTER)
-            .build();
-      }
+      Query q = QueryUtils.combineQueryAndFilter(query, luceneFilter);
       searcher.search(q, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       log.warn( "Query: " + query + "; " + x.getMessage() );
