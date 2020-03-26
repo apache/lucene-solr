@@ -324,8 +324,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
-    } finally {
-      MDCLoggingContext.clear();
     }
   }
 

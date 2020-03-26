@@ -151,7 +151,6 @@ public class V2HttpCall extends HttpSolrCall {
       } else {
         api = apiInfo == null ? api : apiInfo;
       }
-      MDCLoggingContext.setCore(core); // cleared at the end of HttpSolrCall.call
       parseRequest();
 
       addCollectionParamIfNeeded(getCollectionsList());

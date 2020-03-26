@@ -1520,7 +1520,6 @@ public class CoreContainer {
       Closeable oldCore = null;
       boolean success = false;
       try {
-        MDCLoggingContext.setCore(core);
         solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
@@ -1580,7 +1579,6 @@ public class CoreContainer {
           IOUtils.closeQuietly(newCore);
         }
         solrCores.removeFromPendingOps(cd.getName());
-        MDCLoggingContext.clear();
       }
     } else {
       CoreLoadFailure clf = coreInitFailures.get(name);

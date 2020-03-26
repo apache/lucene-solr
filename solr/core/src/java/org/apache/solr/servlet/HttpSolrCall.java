@@ -307,7 +307,6 @@ public class HttpSolrCall {
 
     // With a valid core...
     if (core != null) {
-      MDCLoggingContext.setCore(core); // cleared at the end of HttpSolrCall.call
       config = core.getSolrConfig();
       // get or create/cache the parser for the core
       SolrRequestParsers parser = config.getRequestParsers();

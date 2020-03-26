@@ -131,7 +131,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    MDCLoggingContext.setCore(core);
     Timer.Context timerContext = null;
     try {
       log.info(msg() + "START leader=" + leaderUrl + " nUpdates=" + nUpdates);
@@ -194,7 +193,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       } catch (IOException e) {
         log.warn("{} unable to close client to leader", msg(), e);
       }
-      MDCLoggingContext.clear();
     }
   }
 
