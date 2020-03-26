@@ -97,7 +97,7 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
-import org.apache.solr.handler.admin.ZookeeperRead;
+import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
@@ -675,9 +675,9 @@ public class CoreContainer {
       packageLoader = new PackageLoader(this);
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI));
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI));
-      ZookeeperRead zookeeperRead = new ZookeeperRead(this);
-      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperRead.readNode));
-      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperRead.listNode));
+      ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperReadAPI.readNode));
+      containerHandlers.getApiBag().register(new AnnotatedApi(zookeeperReadAPI.listNode));
     }
 
     MDCLoggingContext.setNode(this);

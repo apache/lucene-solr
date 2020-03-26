@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.util.StrUtils.split;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-public class ZookeeperReadTest extends SolrCloudTestCase {
+public class ZookeeperReadAPITest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass

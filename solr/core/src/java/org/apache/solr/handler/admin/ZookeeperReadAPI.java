@@ -53,12 +53,12 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
  * across releases, as the data stored in Zookeeper may change from time to time.
  */
 
-public class ZookeeperRead {
+public class ZookeeperReadAPI {
   private final CoreContainer coreContainer;
   public final ReadNode readNode = new ReadNode();
   public final ListNode listNode = new ListNode();
 
-  public ZookeeperRead(CoreContainer coreContainer) {
+  public ZookeeperReadAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
