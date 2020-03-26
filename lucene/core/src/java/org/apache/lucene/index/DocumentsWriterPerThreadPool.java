@@ -17,7 +17,11 @@
 package org.apache.lucene.index;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -37,8 +41,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * new {@link DocumentsWriterPerThread} instance.
  * </p>
  */
-final class DocumentsWriterPerThreadPool {
-  
+final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThreadPool.ThreadState> {
+
   /**
    * {@link ThreadState} references and guards a
    * {@link DocumentsWriterPerThread} instance that is used during indexing to
@@ -102,14 +106,15 @@ final class DocumentsWriterPerThreadPool {
      * Returns <code>true</code> iff this {@link ThreadState} is marked as flush
      * pending otherwise <code>false</code>
      */
-    public boolean isFlushPending() {
+    boolean isFlushPending() {
       return flushPending;
     }
   }
 
   private final List<ThreadState> threadStates = new ArrayList<>();
 
-  private final List<ThreadState> freeList = new ArrayList<>();
+  private final PriorityQueue<ThreadState> freeList = new PriorityQueue<>(8,
+      Collections.reverseOrder(Comparator.comparingLong(c -> c.bytesUsed))); // biggest first
 
   private int takenThreadStatePermits = 0;
 
@@ -168,76 +173,43 @@ final class DocumentsWriterPerThreadPool {
     return dwpt;
   }
   
-  void recycle(DocumentsWriterPerThread dwpt) {
-    // don't recycle DWPT by default
-  }
-
   // TODO: maybe we should try to do load leveling here: we want roughly even numbers
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
 
   /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
   ThreadState getAndLock() {
-    ThreadState threadState = null;
+    ThreadState threadState;
     synchronized (this) {
-      if (freeList.isEmpty()) {
+      if (freeList.size() == 0) {
         // ThreadState is already locked before return by this method:
         return newThreadState();
       } else {
-        // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
-        // limited number of thread states:
-        threadState = freeList.remove(freeList.size()-1);
-
-        if (threadState.dwpt == null) {
-          // This thread-state is not initialized, e.g. it
-          // was just flushed. See if we can instead find
-          // another free thread state that already has docs
-          // indexed. This way if incoming thread concurrency
-          // has decreased, we don't leave docs
-          // indefinitely buffered, tying up RAM.  This
-          // will instead get those thread states flushed,
-          // freeing up RAM for larger segment flushes:
-          for(int i=0;i<freeList.size();i++) {
-            ThreadState ts = freeList.get(i);
-            if (ts.dwpt != null) {
-              // Use this one instead, and swap it with
-              // the un-initialized one:
-              freeList.set(i, threadState);
-              threadState = ts;
-              break;
-            }
-          }
-        }
+        // We poll the biggest DWPT first to ensure that we fill up DWPTs in order to produces larger segments
+        // and reduce the amount of merging that needs to be done after flush. If we have many indexing
+        // threads we will distribute load across multiple DWPTs and once the number threads drops we will
+        // make sure we fill up on after another until they get flushed. We don't re-use thread-states anymore
+        // if they are released without a DWPT that way we will reduce the number of threadstates automatically.
+        threadState = freeList.poll();
       }
     }
-
     // This could take time, e.g. if the threadState is [briefly] checked for flushing:
     threadState.lock();
-
     return threadState;
   }
 
   void release(ThreadState state) {
     state.unlock();
     synchronized (this) {
-      freeList.add(state);
+      if (state.dwpt != null) { // we don't need to add back flushed thread-states
+        freeList.add(state);
+      } else {
+        threadStates.remove(state); // remove it from the thread states list
+      }
     }
   }
-  
-  /**
-   * Returns the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
-   * given ord.
-   * 
-   * @param ord
-   *          the ordinal of the {@link ThreadState}
-   * @return the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
-   *         given ord.
-   */
-  synchronized ThreadState getThreadState(int ord) {
-    return threadStates.get(ord);
-  }
 
-  // TODO: merge this with getActiveThreadStateCount: they are the same!
-  synchronized int getMaxThreadStates() {
-    return threadStates.size();
+  @Override
+  public synchronized Iterator<ThreadState> iterator() {
+    return List.copyOf(threadStates).iterator(); // copy on read - this is a quick op since num states is low
   }
 }

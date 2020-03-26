@@ -225,7 +225,6 @@ final class DocumentsWriterFlushControl implements Accountable {
     try {
       Long bytes = flushingWriters.remove(dwpt);
       flushBytes -= bytes.longValue();
-      perThreadPool.recycle(dwpt);
       assert assertMemory();
     } finally {
       try {
@@ -381,9 +380,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       numPending = this.numPending;
     }
     if (numPending > 0 && !fullFlush) { // don't check if we are doing a full flush
-      final int limit = perThreadPool.getActiveThreadStateCount();
-      for (int i = 0; i < limit && numPending > 0; i++) {
-        final ThreadState next = perThreadPool.getThreadState(i);
+      for (final ThreadState next : perThreadPool) {
         if (next.flushPending) {
           final DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next);
           if (dwpt != null) {
@@ -401,31 +398,10 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
 
   /**
-   * Returns an iterator that provides access to all currently active {@link ThreadState}s 
+   * Returns an iterator that provides access to all currently active {@link ThreadState}s
    */
   public Iterator<ThreadState> allActiveThreadStates() {
-    return getPerThreadsIterator(perThreadPool.getActiveThreadStateCount());
-  }
-  
-  private Iterator<ThreadState> getPerThreadsIterator(final int upto) {
-    return new Iterator<ThreadState>() {
-      int i = 0;
-
-      @Override
-      public boolean hasNext() {
-        return i < upto;
-      }
-
-      @Override
-      public ThreadState next() {
-        return perThreadPool.getThreadState(i++);
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException("remove() not supported.");
-      }
-    };
+    return perThreadPool.iterator();
   }
 
   synchronized void doOnDelete() {
@@ -502,9 +478,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         perThreadPool.unlockNewThreadStates();
       }
     }
-    final int limit = perThreadPool.getActiveThreadStateCount();
-    for (int i = 0; i < limit; i++) {
-      final ThreadState next = perThreadPool.getThreadState(i);
+    for (final ThreadState next : perThreadPool) {
       next.lock();
       try {
         if (!next.isInitialized()) {
@@ -543,9 +517,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   private boolean assertActiveDeleteQueue(DocumentsWriterDeleteQueue queue) {
-    final int limit = perThreadPool.getActiveThreadStateCount();
-    for (int i = 0; i < limit; i++) {
-      final ThreadState next = perThreadPool.getThreadState(i);
+    for (final ThreadState next : perThreadPool) {
       next.lock();
       try {
         assert !next.isInitialized() || next.dwpt.deleteQueue == queue : "isInitialized: " + next.isInitialized() + " numDocs: " + (next.isInitialized() ? next.dwpt.getNumDocsInRAM() : 0) ;
@@ -720,7 +692,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   synchronized ThreadState findLargestNonPendingWriter() {
     ThreadState maxRamUsingThreadState = null;
     long maxRamSoFar = 0;
-    Iterator<ThreadState> activePerThreadsIterator = allActiveThreadStates();
+    Iterator<ThreadState> activePerThreadsIterator = perThreadPool.iterator();
     int count = 0;
     while (activePerThreadsIterator.hasNext()) {
       ThreadState next = activePerThreadsIterator.next();

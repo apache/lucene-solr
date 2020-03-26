@@ -225,9 +225,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "abort");
       }
-      final int limit = perThreadPool.getActiveThreadStateCount();
-      for (int i = 0; i < limit; i++) {
-        final ThreadState perThread = perThreadPool.getThreadState(i);
+      for (final ThreadState perThread : perThreadPool) {
         perThread.lock();
         try {
           abortThreadState(perThread);
@@ -289,9 +287,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     try {
       deleteQueue.clear();
       perThreadPool.lockNewThreadStates();
-      final int limit = perThreadPool.getMaxThreadStates();
-      for (int i = 0; i < limit; i++) {
-        final ThreadState perThread = perThreadPool.getThreadState(i);
+      for (final ThreadState perThread : perThreadPool) {
         perThread.lock();
         threadStates.add(perThread);
         abortThreadState(perThread);
@@ -343,9 +339,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   /** returns the maximum sequence number for all previously completed operations */
   public long getMaxCompletedSequenceNumber() {
     long value = lastSeqNo;
-    int limit = perThreadPool.getMaxThreadStates();
-    for(int i = 0; i < limit; i++) {
-      ThreadState perThread = perThreadPool.getThreadState(i);
+    for(ThreadState perThread : perThreadPool) {
       value = Math.max(value, perThread.lastSeqNo);
     }
     return value;

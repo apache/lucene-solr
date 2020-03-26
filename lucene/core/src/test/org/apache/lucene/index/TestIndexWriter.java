@@ -3121,8 +3121,7 @@ public class TestIndexWriter extends LuceneTestCase {
     while(true) {
       int numStatesWithDocs = 0;
       DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
-      for (int i = 0; i < perThreadPool.getActiveThreadStateCount(); i++) {
-        DocumentsWriterPerThreadPool.ThreadState threadState = perThreadPool.getThreadState(i);
+      for (DocumentsWriterPerThreadPool.ThreadState threadState : perThreadPool) {
         threadState.lock();
         try {
           DocumentsWriterPerThread dwpt = threadState.dwpt;
