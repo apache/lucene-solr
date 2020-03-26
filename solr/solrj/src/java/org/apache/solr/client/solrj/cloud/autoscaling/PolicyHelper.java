@@ -121,7 +121,7 @@ public class PolicyHelper {
 
     policyMapping.set(optionalPolicyMapping);
     SessionWrapper sessionWrapper = null;
-    Policy.Session session = null;
+    Policy.Session origSession = null;
     try {
       try {
         SESSION_WRAPPPER_REF.set(sessionWrapper = getSession(delegatingManager));
@@ -129,7 +129,9 @@ public class PolicyHelper {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to get autoscaling policy session", e);
 
       }
-      session = sessionWrapper.session;
+      origSession = sessionWrapper.session;
+      // new session needs to be created to avoid side-effects from per-collection policies
+      Policy.Session session = new Policy.Session(delegatingManager, origSession.policy, origSession.transaction);
       Map<String, Double> diskSpaceReqd = new HashMap<>();
       try {
         DocCollection coll = cloudManager.getClusterStateProvider().getCollection(collName);
@@ -193,7 +195,7 @@ public class PolicyHelper {
     } finally {
       policyMapping.remove();
       if (sessionWrapper != null) {
-        sessionWrapper.returnSession(session);
+        sessionWrapper.returnSession(origSession);
       }
     }
     return positions;
@@ -563,7 +565,7 @@ public class PolicyHelper {
       this.ref = ref;
       this.zkVersion = session == null ?
           0 :
-          session.getPolicy().zkVersion;
+          session.getPolicy().getZkVersion();
     }
 
     public Policy.Session get() {

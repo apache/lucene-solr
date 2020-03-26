@@ -19,11 +19,11 @@ package org.apache.lucene.util;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.LinkedHashMap;
+import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.ServiceConfigurationError;
 
 /**
  * Helper class for loading named SPIs from classpath (e.g. Codec, PostingsFormat).
@@ -45,7 +45,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
     if (classloader == null) {
       classloader = clazzClassloader;
     }
-    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+    if (clazzClassloader != null && !ClassLoaderUtils.isParentClassLoader(clazzClassloader, classloader)) {
       reload(clazzClassloader);
     }
     reload(classloader);
@@ -65,21 +65,14 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
   public void reload(ClassLoader classloader) {
     Objects.requireNonNull(classloader, "classloader");
     final LinkedHashMap<String,S> services = new LinkedHashMap<>(this.services);
-    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
-    while (loader.hasNext()) {
-      final Class<? extends S> c = loader.next();
-      try {
-        final S service = c.getConstructor().newInstance();
-        final String name = service.getName();
-        // only add the first one for each name, later services will be ignored
-        // this allows to place services before others in classpath to make 
-        // them used instead of others
-        if (!services.containsKey(name)) {
-          checkServiceName(name);
-          services.put(name, service);
-        }
-      } catch (Exception e) {
-        throw new ServiceConfigurationError("Cannot instantiate SPI class: " + c.getName(), e);
+    for (final S service : ServiceLoader.load(clazz, classloader)) {
+      final String name = service.getName();
+      // only add the first one for each name, later services will be ignored
+      // this allows to place services before others in classpath to make 
+      // them used instead of others
+      if (!services.containsKey(name)) {
+        checkServiceName(name);
+        services.put(name, service);
       }
     }
     this.services = Collections.unmodifiableMap(services);

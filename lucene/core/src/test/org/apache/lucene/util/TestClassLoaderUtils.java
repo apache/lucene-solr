@@ -20,7 +20,7 @@ package org.apache.lucene.util;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-public class TestSPIClassIterator extends LuceneTestCase {
+public class TestClassLoaderUtils extends LuceneTestCase {
 
   public void testParentChild() throws Exception {
     final ClassLoader parent = getClass().getClassLoader();
@@ -32,7 +32,7 @@ public class TestSPIClassIterator extends LuceneTestCase {
   }
   
   private boolean checkNoPerms(ClassLoader parent, ClassLoader child) throws Exception {
-    return runWithRestrictedPermissions(() -> SPIClassIterator.isParentClassLoader(parent, child));
+    return runWithRestrictedPermissions(() -> ClassLoaderUtils.isParentClassLoader(parent, child));
   }
   
 }

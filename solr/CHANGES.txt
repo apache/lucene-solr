@@ -64,6 +64,9 @@ Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
 
+* SOLR-14340: Remove unnecessary configset verification checks when SolrCloud merely wants to know which configset a
+  collection is using.  Improves CLUSTERSTATUS times for massive clusters.  (Mathieu Marie, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -71,6 +74,13 @@ Bug Fixes
 
 * SOLR-13199: Return proper error when invalid parentFilter is passed in ChildDocTransformer
   (Johannes Kloos, Munendra S N, David Smiley, Mikhail Khludnev)
+
+* SOLR-14347: Autoscaling placement wrong when concurrent replica placements are calculated. (ab)
+
+* SOLR-14128: Improve distributed locking around managed schema upgrade process. (ab)
+
+* SOLR-14302: Ensure Solr always includes the stacktrace for exceptions by using '-OmitStackTraceInFastThrow'
+  (hossman)
 
 Other Changes
 ---------------------

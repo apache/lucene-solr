@@ -17,18 +17,21 @@
 package org.apache.lucene.analysis.util;
 
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.util.SPIClassIterator;
+import org.apache.lucene.util.ClassLoaderUtils;
 
 /**
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
@@ -53,7 +56,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     if (classloader == null) {
       classloader = clazzClassloader;
     }
-    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+    if (clazzClassloader != null && !ClassLoaderUtils.isParentClassLoader(clazzClassloader, classloader)) {
       reload(clazzClassloader);
     }
     reload(classloader);
@@ -74,14 +77,12 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     Objects.requireNonNull(classloader, "classloader");
     final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<>(this.services);
     final LinkedHashSet<String> originalNames = new LinkedHashSet<>(this.originalNames);
-    final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
-    while (loader.hasNext()) {
-      final Class<? extends S> service = loader.next();
+    ServiceLoader.load(clazz, classloader).stream().map(ServiceLoader.Provider::type).forEachOrdered(service -> {
       String name = null;
       String originalName = null;
       Throwable cause = null;
       try {
-        originalName = AbstractAnalysisFactory.lookupSPIName(service);
+        originalName = lookupSPIName(service);
         name = originalName.toLowerCase(Locale.ROOT);
         if (!isValidName(originalName)) {
           throw new ServiceConfigurationError("The name " + originalName + " for " + service.getName() +
@@ -107,7 +108,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
         // preserve (case-sensitive) original name for reference
         originalNames.add(originalName);
       }
-    }
+    });
 
     // make sure that the number of lookup keys is same to the number of original names.
     // in fact this constraint should be met in existence checks of the lookup map key,
@@ -143,6 +144,24 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   public Set<String> availableServices() {
     return originalNames;
   }  
+
+  /**
+   * Looks up SPI name (static "NAME" field) with appropriate modifiers.
+   * Also it must be a String class and declared in the concrete class.
+   * @return the SPI name
+   * @throws NoSuchFieldException - if the "NAME" field is not defined.
+   * @throws IllegalAccessException - if the "NAME" field is inaccessible.
+   * @throws IllegalStateException - if the "NAME" field does not have appropriate modifiers or isn't a String field.
+   */
+  public static String lookupSPIName(Class<? extends AbstractAnalysisFactory> service) throws NoSuchFieldException, IllegalAccessException, IllegalStateException {
+    final Field field = service.getDeclaredField("NAME");
+    int modifier = field.getModifiers();
+    if (Modifier.isPublic(modifier) && Modifier.isStatic(modifier) &&
+        Modifier.isFinal(modifier) && Objects.equals(field.getType(), String.class)) {
+      return ((String) field.get(null));
+    }
+    throw new IllegalStateException("No SPI name defined.");
+  }
   
   /** Creates a new instance of the given {@link AbstractAnalysisFactory} by invoking the constructor, passing the given argument map. */
   public static <T extends AbstractAnalysisFactory> T newFactoryClassInstance(Class<T> clazz, Map<String,String> args) {

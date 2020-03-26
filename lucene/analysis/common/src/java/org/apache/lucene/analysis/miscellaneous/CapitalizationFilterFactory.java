@@ -110,6 +110,11 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public CapitalizationFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public CapitalizationFilter create(TokenStream input) {
     return new CapitalizationFilter(input, onlyFirstWord, keep, 
