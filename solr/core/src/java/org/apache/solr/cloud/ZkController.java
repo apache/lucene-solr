@@ -294,7 +294,6 @@ public class ZkController implements Closeable {
    * @param zkClientConnectTimeout timeout in ms
    * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
    * @param registerOnReconnect a provider of the current core descriptors. used to know what to reregister after a reconnect
-   * @throws IOException
    */
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException {
@@ -777,7 +776,7 @@ public class ZkController implements Closeable {
 
   // normalize host removing any url scheme.
   // input can be null, host, or url_prefix://host
-  private String normalizeHostName(String host) throws IOException {
+  private String normalizeHostName(String host) {
 
     if (host == null || host.length() == 0) {
       String hostaddress;
