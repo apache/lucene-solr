@@ -293,9 +293,9 @@ public class ZkController implements Closeable {
    * @param zkServerAddress where to connect to the zk server
    * @param zkClientConnectTimeout timeout in ms
    * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
-   * @param registerOnReconnect a provider of the current core descriptors. used to know what to reregister after a reconnect
+   * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores to re-register on reconnect
    */
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> registerOnReconnect)
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
@@ -372,13 +372,14 @@ public class ZkController implements Closeable {
                 }
 
                 overseerElector.setup(context);
+
                 overseerElector.joinElection(context, true);
               }
 
               cc.cancelCoreRecoveries();
               
               try {
-                registerAllCoresAsDown(registerOnReconnect, false);
+                registerAllCoresAsDown(descriptorsSupplier, false);
               } catch (SessionExpiredException e) {
                 // zk has to reconnect and this will all be tried again
                 throw e;
@@ -391,7 +392,7 @@ public class ZkController implements Closeable {
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
 
-              List<CoreDescriptor> descriptors = registerOnReconnect.get();
+              List<CoreDescriptor> descriptors = descriptorsSupplier.get();
               // re register all descriptors
               ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
               if (descriptors != null) {
@@ -457,8 +458,8 @@ public class ZkController implements Closeable {
         } catch (Exception e) {
           log.error("Error trying to stop any Overseer threads", e);
         }
-        closeOutstandingElections(registerOnReconnect);
-        markAllAsNotLeader(registerOnReconnect);
+        closeOutstandingElections(descriptorsSupplier);
+        markAllAsNotLeader(descriptorsSupplier);
       }
     }, zkACLProvider, new ConnectionManager.IsClosed() {
 

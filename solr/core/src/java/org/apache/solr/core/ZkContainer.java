@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
@@ -111,15 +112,17 @@ public class ZkContainer {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
-        ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, () -> {
+
+        Supplier<List<CoreDescriptor>> descriptorsSupplier = () -> {
           List<CoreDescriptor> descriptors = new ArrayList<>(cc.getLoadedCoreNames().size());
           Collection<SolrCore> cores = cc.getCores();
           for (SolrCore core : cores) {
             descriptors.add(core.getCoreDescriptor());
           }
           return descriptors;
-        });
+        };
 
+        ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
         if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
           // we are part of an ensemble and we are not uploading the config - pause to give the config time
