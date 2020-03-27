@@ -214,15 +214,25 @@ public class SolrFeature extends Feature {
         solrScorer = solrQueryWeight.scorer(context);
       }
 
+      if (solrScorer != null && hasNoFilterQueries()) {
+        // If there are no filter queries, then the iterator
+        // from the solrScorer can be used on its own
+        return new SolrFeatureScorer(
+            this, solrScorer, solrScorer.iterator());
+      }
+
       final DocIdSetIterator idItr = getDocIdSetIteratorFromQueries(
           queryAndFilters, context);
-      if (idItr != null) {
-        return solrScorer == null ? new ValueFeatureScorer(this, 1f, idItr)
-            : new SolrFeatureScorer(this, solrScorer,
-                new SolrFeatureScorerIterator(idItr, solrScorer.iterator()));
-      } else {
+      if (idItr == null) {
         return null;
       }
+      return solrScorer == null ? new ValueFeatureScorer(this, 1f, idItr)
+          : new SolrFeatureScorer(this, solrScorer,
+              new SolrFeatureScorerIterator(idItr, solrScorer.iterator()));
+    }
+
+    private boolean hasNoFilterQueries() {
+      return fq == null || fq.isEmpty();
     }
 
     /**
@@ -261,7 +271,7 @@ public class SolrFeature extends Feature {
       final private Scorer solrScorer;
 
       public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer,
-          SolrFeatureScorerIterator itr) {
+          DocIdSetIterator itr) {
         super(weight, itr);
         this.solrScorer = solrScorer;
       }
