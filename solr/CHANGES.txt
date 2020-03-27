@@ -20,6 +20,9 @@ Improvements
 * SOLR-14260: Make SolrJ ConnectionSocketFactory pluggable via SocketFactoryRegistryProvider setting on HttpClientUtil
   (Andy Throgmorton via David Smiley)
 
+* SOLR-14342: Load cores in an order that makes collections available sooner and reduces leaderVoteWait timeouts in
+  large SolrCloud clusters. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)

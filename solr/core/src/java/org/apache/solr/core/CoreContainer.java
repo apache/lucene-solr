@@ -752,12 +752,7 @@ public class CoreContainer {
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
-      if (isZooKeeperAware()) {
-        //sort the cores if it is in SolrCloud. In standalone node the order does not matter
-        CoreSorter coreComparator = new CoreSorter().init(this);
-        cds = new ArrayList<>(cds);//make a copy
-        Collections.sort(cds, coreComparator::compare);
-      }
+      cds = CoreSorter.sortCores(this, cds);
       checkForDuplicateCoreNames(cds);
       status |= CORE_DISCOVERY_COMPLETE;
 
