@@ -15,7 +15,10 @@ New Features
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
- (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
+  (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
+
+* SOLR-14260: Make SolrJ ConnectionSocketFactory pluggable via SocketFactoryRegistryProvider setting on HttpClientUtil
+  (Andy Throgmorton via David Smiley)
 
 Optimizations
 ---------------------
