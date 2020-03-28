@@ -50,6 +50,9 @@ Other Changes
 * SOLR-14322: AbstractFullDistribZkTestBase.waitForRecoveriesToFinish now takes a timeout and time unit instead of
   assuming that we are passed value in seconds. (Mike Drob)
 
+* SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

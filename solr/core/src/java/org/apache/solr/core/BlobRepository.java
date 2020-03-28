@@ -61,12 +61,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
  */
 public class BlobRepository {
 
-  @Deprecated
-  private static final long OLD_MAX_JAR_SIZE = Long.parseLong(
-      System.getProperty("runtme.lib.size", String.valueOf(5 * 1024 * 1024)));
-
   private static final long MAX_JAR_SIZE = Long.parseLong(
-      System.getProperty("runtime.lib.size", String.valueOf(OLD_MAX_JAR_SIZE)));
+      System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
