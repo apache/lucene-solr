@@ -36,12 +36,15 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.junit.Ignore;
 import org.slf4j.Logger;
@@ -501,5 +504,69 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       throw new RuntimeException(e);
     }
   }
+
+  public void test1000Nodes() throws Exception {
+    String collName = "go";
+    int shards = 300;
+    int repFactor = 4;
+    int numNodes = 1000;
+    long start = System.currentTimeMillis();
+
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("emptydiagnostics.json");
+    List<Map> nodes = (List<Map>) Utils.getObjectByPath(m, false, "diagnostics/sortedNodes");
+    List<String> liveNodes = (List<String>) Utils.getObjectByPath(m, false, "diagnostics/cluster/live_nodes");
+    Map aNode = nodes.remove(0);
+    String nodeName = (String) aNode.get("node");
+    for (int i = 0; i < numNodes; i++) {
+      Map copy = Utils.getDeepCopy(aNode, 2);
+      String nodeNameTmp = nodeName + "_" + i;
+      copy.put("node", nodeNameTmp);
+      nodes.add(copy);
+      liveNodes.add(nodeNameTmp);
+
+    }
+
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString("{\n" +
+        "  'cluster-preferences': [\n" +
+        "    {\n" +
+        "      'minimize': 'cores',\n" +
+        "      'precision': 5\n" +
+        "    },\n" +
+        "    {\n" +
+        "      'maximize': 'freedisk',\n" +
+        "      'precision': 10\n" +
+        "    },\n" +
+        "    \n" +
+        "  ],\n" +
+        "  'cluster-policy': [\n" +
+        "    {\n" +
+        "      'replica': '<2',\n" +
+        "      'shard': '#EACH',\n" +
+        "      'node': '#ANY',\n" +
+        "    },\n" +
+        "    {\n" +
+        "      'replica': '#EQUAL',\n" +
+        "      'node': '#ANY',\n" +
+        "    }\n" +
+        "  ]\n" +
+        "}"
+    ));
+
+
+    Policy.Session session = autoScalingConfig.getPolicy().createSession(cloudManagerFromDiagnostics);
+
+    for (int i = 0; i < shards; i++) {
+      for (int j = 0; j < repFactor; j++) {
+        Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
+        suggester.hint(Suggester.Hint.COLL_SHARD, new Pair<>(collName, "shards_" + i));
+        SolrRequest op = suggester.getSuggestion();
+        assertNotNull(op);
+      }
+    }
+
+    System.out.println("Time taken : "+ (System.currentTimeMillis() -start));
+  }
+
 
 }

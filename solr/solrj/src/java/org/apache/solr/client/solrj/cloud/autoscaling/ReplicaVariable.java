@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.util.StrUtils;
 
@@ -33,11 +34,26 @@ class ReplicaVariable extends VariableBase {
   public static final String REPLICASCOUNT = "relevantReplicas";
 
 
-
-
   static int getRelevantReplicasCount(Policy.Session session, Condition cv, String collection, String shard) {
-    int totalReplicasOfInterest = 0;
-    Clause clause = cv.getClause();
+    PerClauseData.CollectionDetails cd = session.perClauseData.collections.get(collection);
+    if (cd != null) {
+      if (shard != null) {
+        PerClauseData.ShardDetails sd = cd.shards.get(shard);
+        if (sd != null) return sd.replicas.getVal(cv.clause.type).intValue();
+
+      } else {
+        int totalReplicasOfInterest = 0;
+
+        for (PerClauseData.ShardDetails sd : cd.shards.values()) {
+          totalReplicasOfInterest += sd.replicas.getVal(cv.clause.type).intValue();
+        }
+        return totalReplicasOfInterest;
+      }
+
+    }
+    return 0;
+
+   /* Clause clause = cv.getClause();
     for (Row row : session.matrix) {
       Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> {
         int[] result = new int[1];
@@ -50,7 +66,7 @@ class ReplicaVariable extends VariableBase {
       if (perShardCount != null)
         totalReplicasOfInterest += perShardCount;
     }
-    return totalReplicasOfInterest;
+    return totalReplicasOfInterest;*/
   }
 
   @Override

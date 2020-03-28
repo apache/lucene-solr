@@ -521,6 +521,7 @@ public class Policy implements MapWriter {
     final Policy policy;
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
+    PerClauseData perClauseData = new PerClauseData();
     Transaction transaction;
 
 
@@ -554,7 +555,7 @@ public class Policy implements MapWriter {
           if (!withCollMap.isEmpty()) {
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false
+                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false, Clause.DataGrouping.NODE
             );
             expandedClauses.add(withCollClause);
           }
@@ -575,7 +576,7 @@ public class Policy implements MapWriter {
 
     private Session(List<String> nodes, SolrCloudManager cloudManager,
                    List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
-                   NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction) {
+                   NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction,  PerClauseData perClauseData) {
       this.transaction = transaction;
       this.policy = policy;
       this.nodes = nodes;
@@ -584,6 +585,7 @@ public class Policy implements MapWriter {
       this.expandedClauses = expandedClauses;
       this.znodeVersion = znodeVersion;
       this.nodeStateProvider = nodeStateProvider;
+      this.perClauseData = perClauseData;
       for (Row row : matrix) row.session = this;
     }
 
@@ -604,7 +606,7 @@ public class Policy implements MapWriter {
     }
 
     Session copy() {
-      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, policy, transaction);
+      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, policy, transaction, perClauseData.copy());
     }
 
     public Row getNode(String node) {

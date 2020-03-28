@@ -1,0 +1,20 @@
+{
+  "diagnostics": {
+    "sortedNodes": [
+      {
+        "node": "10.0.0.80:8983_solr",
+        "isLive": true,
+        "cores" : 0,
+        "freedisk": 680,
+        "totaldisk": 1037,
+        "replicas": {}
+      }
+    ],
+    "cluster": {
+      "collections": {},
+      "live_nodes": [
+
+      ]
+    }
+  }
+}

@@ -78,6 +78,7 @@ public class Row implements MapWriter {
     this.globalCache = new HashMap();
     this.perCollCache = new HashMap();
     isAlreadyCopied = true;
+    initPerClauseData();
   }
 
 
@@ -246,6 +247,8 @@ public class Row implements MapWriter {
       }
     }
 
+    modifyPerClauseCount(ri, 1);
+
     return row;
   }
 
@@ -343,6 +346,7 @@ public class Row implements MapWriter {
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
+    modifyPerClauseCount(removed, -1);
     return row;
 
   }
@@ -375,5 +379,40 @@ public class Row implements MapWriter {
             consumer.accept(r);
           }
         }));
+  }
+
+  void modifyPerClauseCount(ReplicaInfo ri, int delta) {
+    if (session == null || session.perClauseData == null || ri == null) return;
+    session.perClauseData.getShardDetails(ri.getCollection(),ri.getShard()).replicas.incr(ri, delta);
+    for (Clause clause : session.expandedClauses) {
+      if (clause.put == Clause.Put.ON_EACH) continue;
+      if (clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
+        if (clause.tag.isPass(this)) {
+          session.perClauseData.getClauseValue(
+              ri.getCollection(),
+              ri.getShard(),
+              clause,
+              String.valueOf(this.getVal(clause.tag.name))).incr(ri, delta);
+        }
+      }
+    }
+  }
+
+  void initPerClauseData() {
+    if(session== null || session.perClauseData == null) return;
+    forEachReplica(it -> session.perClauseData.getShardDetails(it.getCollection(), it.getShard()).replicas.increment(it.getType()));
+    for (Clause clause : session.expandedClauses) {
+      if(clause.put == Clause.Put.ON_EACH) continue;
+      if(clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
+        if(clause.tag.isPass(this)) {
+          forEachReplica(it -> session.perClauseData.getClauseValue(
+              it.getCollection(),
+              it.getShard(),
+              clause, String.valueOf(this.getVal(clause.tag.name))
+
+          ).incr(it, 1));
+        }
+      }
+    }
   }
 }
