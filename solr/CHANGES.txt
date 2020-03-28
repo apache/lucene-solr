@@ -69,6 +69,8 @@ Improvements
 * SOLR-14342: Load cores in an order that makes collections available sooner and reduces leaderVoteWait timeouts in
   large SolrCloud clusters. (David Smiley)
 
+* SOLR-14329: Add support to choose collapse group to expand in ExpandComponent based on cost (Munendra S N)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
