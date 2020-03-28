@@ -31,6 +31,7 @@ import com.carrotsearch.hppc.cursors.IntObjectCursor;
 import com.carrotsearch.hppc.cursors.LongCursor;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -92,6 +93,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * The CollapsingPostFilter collapses a result set on a field.
  * <p>
  * The ExpandComponent expands the collapsed groups for a single page.
+ * When multiple collapse groups are specified then, the field is chosen from collapse group with min cost.
+ * If the cost are equal then, the field is chosen from first collapse group.
  * <p>
  * http parameters:
  * <p>
@@ -100,7 +103,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * expand.sort=field asc|desc<br>
  * expand.q=*:* (optional, overrides the main query)<br>
  * expand.fq=type:child (optional, overrides the main filter queries)<br>
- * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br>
+ * expand.field=field (mandatory, if the not used with the CollapsingQParserPlugin. This is given higher priority when both are present)<br>
  */
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";
@@ -143,11 +146,17 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if (field == null) {
       List<Query> filters = rb.getFilters();
       if (filters != null) {
+        int cost = Integer.MAX_VALUE;
         for (Query q : filters) {
           if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
             CollapsingQParserPlugin.CollapsingPostFilter cp = (CollapsingQParserPlugin.CollapsingPostFilter) q;
-            field = cp.getField();
-            hint = cp.hint;
+            // if there are multiple collapse pick the low cost one
+            // if cost are equal then first one is picked
+            if (cp.getCost() < cost) {
+              cost = cp.getCost();
+              field = cp.getField();
+              hint = cp.hint;
+            }
           }
         }
       }
@@ -189,7 +198,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         }
       } else {
         for (String fq : fqs) {
-          if (fq != null && fq.trim().length() != 0 && !fq.equals("*:*")) {
+          if (StringUtils.isNotBlank(fq) && !fq.equals("*:*")) {
             QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
