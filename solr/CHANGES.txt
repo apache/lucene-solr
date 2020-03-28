@@ -111,6 +111,9 @@ Other Changes
 
 * SOLR-13842: Remove redundant defaults from ImplicitPlugins.json (Munendra S N)
 
+* SOLR-13893: BlobRepository reads max jar size from `runtime.lib.size` system property. Old `runtme.lib.size` is Deprecated
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
