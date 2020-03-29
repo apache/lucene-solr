@@ -17,15 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.Slice.State;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -35,10 +30,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.apache.solr.common.params.CommonParams.FAILURE;
-import static org.apache.solr.common.params.CommonParams.OK;
-import static org.apache.solr.common.params.CommonParams.STATUS;
+import static org.apache.solr.common.params.CommonParams.*;
 
 /*
  * Health Check Handler for reporting the health of a specific node.
@@ -53,7 +50,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_FAIL_WHEN_RECOVERING = "failWhenRecovering";
-  private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.CONSTRUCTION, State.RECOVERY);
+  private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
 
   CoreContainer coreContainer;
 
@@ -107,11 +104,12 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'failWhenRecovering=true'
     if (req.getParams().getBool(PARAM_FAIL_WHEN_RECOVERING, false)) {
-      List<String> unhealthyCores = cores.getCores().stream()
-              .map(c -> c.getCoreDescriptor().getCloudDescriptor())
-              .map(c -> clusterState.getCollection(c.getCollectionName()).getSlice(c.getShardId()))
-              .filter(s -> UNHEALTHY_STATES.contains(s.getState()))
-              .map(Slice::getName) // Convert to slice/replica name
+      String nodeName = cores.getNodeConfig().getNodeName();
+      List<String> unhealthyCores = clusterState.getCollectionsMap().values().stream()
+              .flatMap(c -> c.getSlices().stream())
+              .flatMap(s -> s.getReplicas(r -> nodeName.equals(r.getNodeName())).stream())
+              .filter(r -> UNHEALTHY_STATES.contains(r.getState()))
+              .map(Replica::getName)
               .collect(Collectors.toList());
       if (unhealthyCores.size() > 0) {
           rsp.add(STATUS, FAILURE);
