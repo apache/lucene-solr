@@ -18,8 +18,14 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -37,14 +43,17 @@ import static org.apache.solr.common.params.CommonParams.STATUS;
 /*
  * Health Check Handler for reporting the health of a specific node.
  *
- * This checks if the node is:
+ * This checks if:
  * 1. Cores container is active.
- * 1. Connected to zookeeper.
- * 2. Listed in 'live_nodes' in zookeeper.
+ * 2. Node connected to zookeeper.
+ * 3. Node listed in 'live_nodes' in zookeeper.
+ * 4. No cores in RECOVERING state (if request param failWhenRecovering=true)
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String PARAM_FAIL_WHEN_RECOVERING = "failWhenRecovering";
+  private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.CONSTRUCTION, State.RECOVERY);
 
   CoreContainer coreContainer;
 
@@ -88,14 +97,31 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
 
-    // Set status to true if this node is in live_nodes
-    if (clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
-      rsp.add(STATUS, OK);
-    } else {
+    // Fail if not in live_nodes
+    if (!clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
+      return;
     }
 
+    // Optionally require that all cores on this node are active if param 'failWhenRecovering=true'
+    if (req.getParams().getBool(PARAM_FAIL_WHEN_RECOVERING, false)) {
+      List<String> unhealthyCores = cores.getCores().stream()
+              .map(c -> c.getCoreDescriptor().getCloudDescriptor())
+              .map(c -> clusterState.getCollection(c.getCollectionName()).getSlice(c.getShardId()))
+              .filter(s -> UNHEALTHY_STATES.contains(s.getState()))
+              .map(Slice::getName) // Convert to slice/replica name
+              .collect(Collectors.toList());
+      if (unhealthyCores.size() > 0) {
+          rsp.add(STATUS, FAILURE);
+          rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                  "Replica(s) " + unhealthyCores + " are currently initializing or recovering"));
+          return;
+      }
+    }
+
+    // All lights green, report healthy
+    rsp.add(STATUS, OK);
     rsp.setHttpCaching(false);
   }
 
