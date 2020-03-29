@@ -44,12 +44,12 @@ import static org.apache.solr.common.params.CommonParams.*;
  * 1. Cores container is active.
  * 2. Node connected to zookeeper.
  * 3. Node listed in 'live_nodes' in zookeeper.
- * 4. No cores in RECOVERING state (if request param failWhenRecovering=true)
+ * 4. No RECOVERING or DOWN cores (if request param requireHealthyCores=true)
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String PARAM_FAIL_WHEN_RECOVERING = "failWhenRecovering";
+  private static final String PARAM_REQUIRE_HEALTHY_CORES = "requireHealthyCores";
   private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
 
   CoreContainer coreContainer;
@@ -103,14 +103,8 @@ public class HealthCheckHandler extends RequestHandlerBase {
     }
 
     // Optionally require that all cores on this node are active if param 'failWhenRecovering=true'
-    if (req.getParams().getBool(PARAM_FAIL_WHEN_RECOVERING, false)) {
-      String nodeName = cores.getNodeConfig().getNodeName();
-      List<String> unhealthyCores = clusterState.getCollectionsMap().values().stream()
-              .flatMap(c -> c.getSlices().stream())
-              .flatMap(s -> s.getReplicas(r -> nodeName.equals(r.getNodeName())).stream())
-              .filter(r -> UNHEALTHY_STATES.contains(r.getState()))
-              .map(Replica::getName)
-              .collect(Collectors.toList());
+    if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
+      List<String> unhealthyCores = findUnhealthyCores(clusterState, cores.getNodeConfig().getNodeName());
       if (unhealthyCores.size() > 0) {
           rsp.add(STATUS, FAILURE);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
@@ -121,6 +115,21 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // All lights green, report healthy
     rsp.add(STATUS, OK);
+  }
+
+  /**
+   * Find replicas DOWN or RECOVERING
+   * @param clusterState clusterstate from ZK
+   * @param nodeName this node name
+   * @return list of core names that are either DOWN ore RECOVERING on 'nodeName'
+   */
+  static List<String> findUnhealthyCores(ClusterState clusterState, String nodeName) {
+    return clusterState.getCollectionsMap().values().stream()
+            .flatMap(c -> c.getActiveSlices().stream())
+            .flatMap(s -> s.getReplicas(r -> nodeName.equals(r.getNodeName())).stream())
+            .filter(r -> UNHEALTHY_STATES.contains(r.getState()))
+            .map(Replica::getCoreName)
+            .collect(Collectors.toList());
   }
 
   @Override

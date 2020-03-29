@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
-
-import java.io.IOException;
+package org.apache.solr.handler.admin;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -32,11 +30,19 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.ClusterStateMockUtil;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
@@ -177,4 +183,13 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testFindUnhealthyCores() throws Exception {
+    ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2rR", 1, 1, "node1", "node2");
+    ClusterState clusterState = reader.getClusterState();
+    List<String> unhealthy = HealthCheckHandler.findUnhealthyCores(clusterState, "baseUrl1_");
+    assertEquals(2, unhealthy.size());
+    assertTrue("Unexpected list " + unhealthy, unhealthy.equals(Arrays.asList("slice1_replica5", "slice1_replica3")));
+    reader.close();
+  }
 }
