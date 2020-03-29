@@ -150,14 +150,12 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
   }
 }
 
-configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') }) {
+configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') && it.path != ':lucene:analysis:common'}) {
   plugins.withType(JavaPlugin) {
     renderJavadoc {
-      if (project.path != ':lucene:analysis:common') {
-        [':lucene:analysis:common'].collect { path ->
-          dependsOn "${path}:renderJavadoc"
-          linkLuceneProjects += [ path ]
-        }
+      [':lucene:analysis:common'].collect { path ->
+        dependsOn "${path}:renderJavadoc"
+        linkLuceneProjects += [ path ]
       }
     }
   }
