@@ -63,7 +63,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         this.liveNodes = fetchLiveNodes(initialClient);
         liveNodesTimestamp = System.nanoTime();
         break;
-      } catch (IOException e) {
+      } catch (SolrServerException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", solrUrl, e);
       }
     }
