@@ -76,6 +76,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     CoreContainer cores = getCoreContainer();
+    rsp.setHttpCaching(false);
 
     // Core container should not be null and active (redundant check)
     if(cores == null || cores.isShutDown()) {
@@ -122,7 +123,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // All lights green, report healthy
     rsp.add(STATUS, OK);
-    rsp.setHttpCaching(false);
   }
 
   @Override
