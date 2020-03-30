@@ -79,4 +79,39 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
+  
+  /*
+   * test that even if a field is not indexed with points, optimized sort still works as expected,
+   * although no optimization will be run
+   */
+  public void testSortWithOptimizationOnFieldNotIndexWithPoints() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(100);
+    // my_field is not indexed with points
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      doc.add(new NumericDocValuesField("my_field", i));
+      writer.addDocument(doc);
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final Sort sort = new Sort(new LongDocValuesPointSortField("my_field"));
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+
+    final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+    searcher.search(new MatchAllDocsQuery(), collector);
+    TopDocs topDocs = collector.topDocs();
+    assertEquals(topDocs.scoreDocs.length, numHits);  // sort still works and returns expected number of docs
+    for (int i = 0; i < numHits; i++) {
+      FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+      assertEquals(i, ((Long) fieldDoc.fields[0]).intValue()); // returns expected values
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
 }

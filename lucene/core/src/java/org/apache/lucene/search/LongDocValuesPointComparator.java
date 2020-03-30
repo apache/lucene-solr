@@ -43,7 +43,7 @@ public class LongDocValuesPointComparator extends IterableComparator<Long> {
     private long bottom;
     private long topValue;
     protected NumericDocValues docValues;
-    private DocIdSetIterator iterator;
+    private DocIdSetIterator iterator = null;
     private PointValues pointValues;
     private int maxDoc;
     private int maxDocVisited;
@@ -94,8 +94,8 @@ public class LongDocValuesPointComparator extends IterableComparator<Long> {
     @Override
     public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
         docValues = DocValues.getNumeric(context.reader(), field);
-        iterator = docValues;
         pointValues = context.reader().getPointValues(field);
+        iterator = pointValues == null ? null : docValues; // if a field is not indexed with points, its iterator is null
         maxDoc = context.reader().maxDoc();
         maxDocVisited = 0;
         return this;
@@ -131,6 +131,7 @@ public class LongDocValuesPointComparator extends IterableComparator<Long> {
 
     // update its iterator to include possibly only docs that are "stronger" than the current bottom entry
     public void updateIterator() throws IOException {
+        if (pointValues == null) return;
         updateCounter++;
         if (updateCounter > 256 && (updateCounter & 0x1f) != 0x1f) { // Start sampling if we get called too much
             return;
