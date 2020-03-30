@@ -75,7 +75,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
-      values.add("zkStatus", getZkStatus(cores.getZkController().getZkServerAddress()));
+      values.add("zkStatus", getZkStatus());
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Zookeeper status API is only available in Cloud mode");
     }
@@ -84,9 +84,14 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   /*
    Gets all info from ZK API and returns as a map
    */
-  protected Map<String, Object> getZkStatus(String zkHost) {
+  protected Map<String, Object> getZkStatus() {
+    String zkHost = cores.getZkController().getZkServerAddress();
+    List<String> zookeepers = cores.getZkController().getZkClient().getZkServerListDynamic();
+    if (zookeepers.size() == 0) {
+      // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
+      zookeepers = Arrays.asList(zkHost.split("/")[0].split(","));
+    }
     Map<String, Object> zkStatus = new HashMap<>();
-    List<String> zookeepers = Arrays.asList(zkHost.split("/")[0].split(","));
     List<Object> details = new ArrayList<>();
     int numOk = 0;
     String status = STATUS_NA;
