@@ -199,3 +199,9 @@ REM Runtime properties are passed to the security policy file (server\etc\securi
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=false
+
+
+REM Runs solr with the admin UI enabled but you can change the default value to false below if you do not need it.
+REM The property is configured as a system property as defined in SOLR_START_OPTS in the start scripts.
+REM You can also define this value when you start solr.
+REM SOLR_ADMIN_UI_ENABLED=true

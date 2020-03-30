@@ -227,3 +227,8 @@
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
 #SOLR_SECURITY_MANAGER_ENABLED=false
+
+# Runs solr with the admin UI enabled but you can change the default value to false below if you do not need it.
+# The property is configured as a system property as defined in SOLR_START_OPTS in the start scripts.
+# You can also define this value when you start solr.
+#SOLR_ADMIN_UI_ENABLED=true

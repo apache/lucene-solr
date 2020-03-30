@@ -2089,6 +2089,14 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
+# Enable ADMIN UI by default, and give the option for users to disable it when.
+if [ "$SOLR_ADMIN_UI_ENABLED" == "true" ]; then
+  SOLR_ADMIN_UI="-DenableAdminUI=true"
+else
+  SOLR_ADMIN_UI="-DenableAdminUI=false"
+  echo -e "ADMIN UI Disabled"
+fi
+
 JAVA_MEM_OPTS=()
 if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
@@ -2196,7 +2204,7 @@ function start_solr() {
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
-    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
+    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "${SOLR_ADMIN_UI}" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}")
 

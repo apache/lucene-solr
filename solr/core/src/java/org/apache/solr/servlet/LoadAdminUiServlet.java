@@ -24,6 +24,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,12 +34,21 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
+
+
 /**
  * A simple servlet to load the Solr Admin UI
- * 
+ *
  * @since solr 4.0
  */
 public final class LoadAdminUiServlet extends BaseSolrServlet {
+
+  // check system properties for whether or not admin UI is enabled, default is true
+  private static final boolean enabled = Boolean.parseBoolean(System.getProperty("enableAdminUI", "true"));
+
+  public void init() throws ServletException {
+    super.init();
+  }
 
   @Override
   public void doGet(HttpServletRequest _request,
@@ -46,7 +56,12 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
       throws IOException {
     HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
     HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
-    
+      if(!enabled){
+      response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
+          "ENABLED in bin/solr.in.sh or solr.in.cmd or pass the value of -DenableAdminUI=true");
+      return;
+    }
+
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter
@@ -65,17 +80,17 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
         String html = IOUtils.toString(in, "UTF-8");
         Package pack = SolrCore.class.getPackage();
 
-        String[] search = new String[] { 
-            "${contextPath}", 
+        String[] search = new String[] {
+            "${contextPath}",
             "${adminPath}",
-            "${version}" 
+            "${version}"
         };
         String[] replace = new String[] {
             StringEscapeUtils.escapeEcmaScript(request.getContextPath()),
             StringEscapeUtils.escapeEcmaScript(CommonParams.CORES_HANDLER_PATH),
             StringEscapeUtils.escapeEcmaScript(pack.getSpecificationVersion())
         };
-        
+
         out.write( StringUtils.replaceEach(html, search, replace) );
       } finally {
         IOUtils.closeQuietly(in);

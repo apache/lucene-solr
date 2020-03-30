@@ -8,6 +8,13 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+Improvements
+---------------------
+
+* SOLR-14014: Introducing a system property that allows users to disabled the Admin UI, which is enabled by default.
+If you have security concerns or other reasons to disable the Admin UI, you can modify
+`solr.in.sh`/`solr.in.cmd` or define the variable at start. (marcussorealheis)
+
 Bug Fixes
 ---------------------
 (No changes)
