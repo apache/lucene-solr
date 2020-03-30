@@ -201,7 +201,7 @@ class BufferedUpdates implements Accountable {
   }
 
   void clearDeletedDocIds() {
-    deleteDocIDs.clear();
     bytesUsed.addAndGet(-deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
+    deleteDocIDs.clear();
   }
 }
