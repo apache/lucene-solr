@@ -91,6 +91,7 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
   public static class ShardDetails implements ReflectMapWriter, Cloneable {
     final String coll;
     final String shard;
+    Double indexSize;
     ReplicaCount replicas = new ReplicaCount();
 
     public Map<Clause, Map<String, ReplicaCount>> values = new HashMap<>();

@@ -41,6 +41,7 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 /**
@@ -400,7 +401,14 @@ public class Row implements MapWriter {
 
   void initPerClauseData() {
     if(session== null || session.perClauseData == null) return;
-    forEachReplica(it -> session.perClauseData.getShardDetails(it.getCollection(), it.getShard()).replicas.increment(it.getType()));
+    forEachReplica(it -> {
+      PerClauseData.ShardDetails shardDetails = session.perClauseData.getShardDetails(it.getCollection(), it.getShard());
+      shardDetails.replicas.increment(it.getType());
+      Number idxSize = (Number) it.getVariable(CORE_IDX.tagName);
+      if(idxSize != null){
+        shardDetails.indexSize = idxSize.doubleValue();
+      }
+    });
     for (Clause clause : session.expandedClauses) {
       if(clause.put == Clause.Put.ON_EACH) continue;
       if(clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
