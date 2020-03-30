@@ -176,8 +176,11 @@ class BufferedUpdates implements Accountable {
   }
 
   void clearDeleteTerms() {
-    deleteTerms.clear();
     numTermDeletes.set(0);
+    deleteTerms.forEach((term, docIDUpto) -> {
+      bytesUsed.addAndGet(-(BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length())));
+    });
+    deleteTerms.clear();
   }
   
   void clear() {
@@ -201,7 +204,7 @@ class BufferedUpdates implements Accountable {
   }
 
   void clearDeletedDocIds() {
-    deleteDocIDs.clear();
     bytesUsed.addAndGet(-deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
+    deleteDocIDs.clear();
   }
 }
