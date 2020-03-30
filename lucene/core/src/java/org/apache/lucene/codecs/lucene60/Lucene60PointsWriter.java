@@ -49,6 +49,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Output used to write the BKD tree data file */
   protected final IndexOutput dataOut;
+  /** Tree writer */
   protected final BKDIndexWriter indexWriter;
 
   /** Maps field name to file pointer in the data file where the BKD index is located. */

@@ -25,7 +25,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDIndexWriter;
 import org.apache.lucene.util.bkd.BKDLeafBlock;
-import org.apache.lucene.util.bkd.BKDWriter;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_DOC_ID;
@@ -140,7 +139,7 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     return out.getFilePointer();
   }
 
-  protected void writeLeafBlockDocs(IndexOutput out, BKDLeafBlock leafBlock) throws IOException {
+  private void writeLeafBlockDocs(IndexOutput out, BKDLeafBlock leafBlock) throws IOException {
     write(out, BLOCK_COUNT);
     writeInt(out, leafBlock.count());
     newline(out);
@@ -151,7 +150,7 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     }
   }
 
-  protected void writeLeafBlockPackedValues(IndexOutput out, BKDLeafBlock leafBlock) throws IOException {
+  private void writeLeafBlockPackedValues(IndexOutput out, BKDLeafBlock leafBlock) throws IOException {
     for (int i = 0; i < leafBlock.count(); ++i) {
       BytesRef packedValue = leafBlock.packedValue(i);
       // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
