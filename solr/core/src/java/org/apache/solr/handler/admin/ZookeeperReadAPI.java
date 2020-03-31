@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +45,7 @@ import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 /**
  * Exposes the content of the Zookeeper
@@ -99,7 +101,7 @@ public class ZookeeperReadAPI {
 
   @EndPoint(path = "/cluster/zk-ls/*",
       method = SolrRequest.METHOD.GET,
-      permission = COLL_READ_PERM)
+      permission = ZK_READ_PERM)
   public class ListNode {
     @Command
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -110,24 +112,13 @@ public class ZookeeperReadAPI {
         String prefix = path.endsWith("/") ? path : path + "/";
         rsp.add(path, (MapWriter) ew -> {
           for (String s : l) {
+            Stat stat = null;
             try {
-              Stat stat = coreContainer.getZkController().getZkClient().exists(prefix + s, null, false);
-              ew.put(s, (MapWriter) ew1 -> {
-                ew1.put("version", stat.getVersion());
-                ew1.put("aversion", stat.getAversion());
-                ew1.put("children", stat.getNumChildren());
-                ew1.put("ctime", stat.getCtime());
-                ew1.put("cversion", stat.getCversion());
-                ew1.put("czxid", stat.getCzxid());
-                ew1.put("ephemeralOwner", stat.getEphemeralOwner());
-                ew1.put("mtime", stat.getMtime());
-                ew1.put("mzxid", stat.getMzxid());
-                ew1.put("pzxid", stat.getPzxid());
-                ew1.put("dataLength", stat.getDataLength());
-              });
+              stat = coreContainer.getZkController().getZkClient().exists(prefix + s, null, false);
             } catch (Exception e) {
-              ew.put(s, Collections.singletonMap("error", e.getMessage()));
+              throw new RuntimeException(e);
             }
+            printStat(ew, s, stat);
           }
         });
       } catch (KeeperException.NoNodeException e) {
@@ -135,6 +126,22 @@ public class ZookeeperReadAPI {
       } catch (Exception e) {
         rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
       }
+    }
+
+    private void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
+      ew.put(s, (MapWriter) ew1 -> {
+        ew1.put("version", stat.getVersion());
+        ew1.put("aversion", stat.getAversion());
+        ew1.put("children", stat.getNumChildren());
+        ew1.put("ctime", stat.getCtime());
+        ew1.put("cversion", stat.getCversion());
+        ew1.put("czxid", stat.getCzxid());
+        ew1.put("ephemeralOwner", stat.getEphemeralOwner());
+        ew1.put("mtime", stat.getMtime());
+        ew1.put("mzxid", stat.getMzxid());
+        ew1.put("pzxid", stat.getPzxid());
+        ew1.put("dataLength", stat.getDataLength());
+      });
     }
   }
 }
