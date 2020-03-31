@@ -46,10 +46,6 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
   // check system properties for whether or not admin UI is enabled, default is true
   private static final boolean disabled = Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
 
-  public void init() throws ServletException {
-    super.init();
-  }
-
   @Override
   public void doGet(HttpServletRequest _request,
                     HttpServletResponse _response)
