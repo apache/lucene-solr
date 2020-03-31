@@ -301,7 +301,7 @@ public class SolrLogPostTool {
       } else if(path != null && params.contains("/replication")) {
         doc.addField("type_s", "replication");
       } else if (path != null && path.contains("/get")) {
-        doc.addField("type_s", "rtg");
+        doc.addField("type_s", "get");
       } else {
         doc.addField("type_s", "query");
       }

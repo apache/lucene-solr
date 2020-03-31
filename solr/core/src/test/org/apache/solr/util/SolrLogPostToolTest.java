@@ -79,7 +79,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
 
-    assertEquals(doc.getField("type_s").getValue(), "rtg");
+    assertEquals(doc.getField("type_s").getValue(), "get");
     assertEquals(doc.getField("date_dt").getValue(), "2020-03-19T20:00:30.845");
     assertEquals(doc.getField("collection_s").getValue(), "logs4");
     assertEquals(doc.getField("path_s").getValue(), "/get");
