@@ -43,7 +43,7 @@ import java.nio.charset.StandardCharsets;
  */
 public final class LoadAdminUiServlet extends BaseSolrServlet {
 
-  // check system properties for whether or not admin UI is enabled, default is true
+  // check system properties for whether or not admin UI is disabled, default is false
   private static final boolean disabled = Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
 
   @Override
