@@ -91,21 +91,21 @@ public class Policy implements MapWriter {
    */
   private static final List<String> DEFAULT_PARAMS_OF_INTEREST = Arrays.asList(ImplicitSnitch.DISK, ImplicitSnitch.CORES);
 
-  final Map<String, List<Clause>> policies;
-  final List<Clause> clusterPolicy;
-  final List<Preference> clusterPreferences;
-  final List<Pair<String, Type>> params;
-  final List<String> perReplicaAttributes;
-  final int zkVersion;
+  private final Map<String, List<Clause>> policies;
+  private final List<Clause> clusterPolicy;
+  private final List<Preference> clusterPreferences;
+  private final List<Pair<String, Type>> params;
+  private final List<String> perReplicaAttributes;
+  private final int zkVersion;
   /**
    * True if cluster policy, preferences and custom policies are all non-existent
    */
-  final boolean empty;
+  private final boolean empty;
   /**
    * True if cluster preferences was originally empty, false otherwise. It is used to figure out if
    * the current preferences were implicitly added or not.
    */
-  final boolean emptyPreferences;
+  private final boolean emptyPreferences;
 
   public Policy() {
     this(Collections.emptyMap());
@@ -356,7 +356,7 @@ public class Policy implements MapWriter {
   }
 
   public Session createSession(SolrCloudManager cloudManager) {
-    return createSession(cloudManager, null);
+    return new Session(cloudManager, this, null);
   }
 
   public enum SortParam {
@@ -394,7 +394,7 @@ public class Policy implements MapWriter {
   }
 
   private Session createSession(SolrCloudManager cloudManager, Transaction tx) {
-    return new Session(this, cloudManager, tx);
+    return new Session(cloudManager, this, tx);
   }
 
   public static List<Clause> mergePolicies(String coll,
@@ -463,16 +463,20 @@ public class Policy implements MapWriter {
     return policies;
   }
 
+  public List<Pair<String, Type>> getParams() {
+    return Collections.unmodifiableList(params);
+  }
+
   public List<String> getParamNames() {
     return params.stream().map(Pair::first).collect(toList());
   }
 
-  public List<Pair<String, Variable.Type>> getParams() {
-    return Collections.unmodifiableList(params);
-  }
-
   public List<String> getPerReplicaAttributes() {
     return Collections.unmodifiableList(perReplicaAttributes);
+  }
+
+  public int getZkVersion() {
+    return zkVersion;
   }
 
   /**
@@ -539,7 +543,7 @@ public class Policy implements MapWriter {
     }
 
 
-    Session(Policy policy, SolrCloudManager cloudManager, Transaction transaction) {
+    Session(SolrCloudManager cloudManager, Policy policy, Transaction transaction) {
       this.policy = policy;
       this.transaction = transaction;
       ClusterState state = null;
@@ -578,7 +582,7 @@ public class Policy implements MapWriter {
 
       ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
       for (String c : collections) {
-        addClausesForCollection(stateProvider, c);
+        addClausesForCollection(policy, expandedClauses, stateProvider, c);
       }
 
       Collections.sort(expandedClauses);
@@ -592,7 +596,26 @@ public class Policy implements MapWriter {
       applyRules();
     }
 
-    void addClausesForCollection(ClusterStateProvider stateProvider, String c) {
+    private Session(List<String> nodes, SolrCloudManager cloudManager,
+                   List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
+                   NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction) {
+      this.transaction = transaction;
+      this.policy = policy;
+      this.nodes = nodes;
+      this.cloudManager = cloudManager;
+      this.matrix = matrix;
+      this.expandedClauses = expandedClauses;
+      this.znodeVersion = znodeVersion;
+      this.nodeStateProvider = nodeStateProvider;
+      for (Row row : matrix) row.session = this;
+    }
+
+
+    void addClausesForCollection(ClusterStateProvider stateProvider, String collection) {
+      addClausesForCollection(policy, expandedClauses, stateProvider, collection);
+    }
+
+    public static void addClausesForCollection(Policy policy, List<Clause> clauses, ClusterStateProvider stateProvider, String c) {
       String p = stateProvider.getPolicyNameByCollection(c);
       if (p != null) {
         List<Clause> perCollPolicy = policy.getPolicies().get(p);
@@ -600,7 +623,7 @@ public class Policy implements MapWriter {
           return;
         }
       }
-      expandedClauses.addAll(mergePolicies(c, policy.getPolicies().getOrDefault(p, emptyList()), policy.getClusterPolicy()));
+      clauses.addAll(mergePolicies(c, policy.getPolicies().getOrDefault(p, emptyList()), policy.getClusterPolicy()));
     }
 
     Session copy() {

@@ -197,15 +197,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-      ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig,
-          new CurrentCoreDescriptorProvider() {
-            
-            @Override
-            public List<CoreDescriptor> getCurrentDescriptors() {
-              // do nothing
-              return null;
-            }
-          });
+      ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
       try {
         String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
@@ -234,14 +226,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, new CurrentCoreDescriptorProvider() {
-
-          @Override
-          public List<CoreDescriptor> getCurrentDescriptors() {
-            // do nothing
-            return null;
-          }
-        });
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
       } catch (IllegalArgumentException e) {
         fail("ZkController did not normalize host name correctly");
       } finally {
@@ -295,14 +280,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, new CurrentCoreDescriptorProvider() {
-
-          @Override
-          public List<CoreDescriptor> getCurrentDescriptors() {
-            // do nothing
-            return null;
-          }
-        });
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
         zkControllerRef.set(zkController);
 
         zkController.getZkClient().makePath(ZkStateReader.getCollectionPathRoot(collectionName), new byte[0], CreateMode.PERSISTENT, true);

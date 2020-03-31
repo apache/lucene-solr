@@ -65,6 +65,11 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public DictionaryCompoundWordTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     dictionary = super.getWordSet(loader, dictFile, false);

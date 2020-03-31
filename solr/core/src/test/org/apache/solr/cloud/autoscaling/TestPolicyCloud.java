@@ -40,8 +40,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -91,7 +91,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
     cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     String collectionName = "testCreateCollection";
-    HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class,
+    BaseHttpSolrClient.RemoteSolrException exp = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
         () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
 
     assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
@@ -345,7 +345,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("expected exception");
-    } catch (HttpSolrClient.RemoteExecutionException e) {
+    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("Invalid metrics: param in"));

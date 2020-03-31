@@ -48,6 +48,11 @@ public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public EnglishPossessiveFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new EnglishPossessiveFilter(input);

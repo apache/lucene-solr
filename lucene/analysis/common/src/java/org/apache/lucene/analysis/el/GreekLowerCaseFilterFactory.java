@@ -48,6 +48,11 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public GreekLowerCaseFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream in) {
     return new GreekLowerCaseFilter(in);

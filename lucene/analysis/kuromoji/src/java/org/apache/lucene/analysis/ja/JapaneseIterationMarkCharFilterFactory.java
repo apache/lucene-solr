@@ -56,6 +56,11 @@ public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public JapaneseIterationMarkCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Reader create(Reader input) {
     return new JapaneseIterationMarkCharFilter(input, normalizeKanji, normalizeKana);

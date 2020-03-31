@@ -14,15 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.lucene.util;
 
-import java.util.List;
 
-import org.apache.solr.core.CoreDescriptor;
+import java.net.URL;
+import java.net.URLClassLoader;
 
-/**
- * Provide the current list of registered {@link CoreDescriptor}s.
- */
-public abstract class CurrentCoreDescriptorProvider {
-  public abstract List<CoreDescriptor> getCurrentDescriptors();
+public class TestClassLoaderUtils extends LuceneTestCase {
+
+  public void testParentChild() throws Exception {
+    final ClassLoader parent = getClass().getClassLoader();
+    final ClassLoader child = URLClassLoader.newInstance(new URL[0], parent);
+    assertTrue(checkNoPerms(parent, parent));
+    assertTrue(checkNoPerms(child, child));
+    assertTrue(checkNoPerms(parent, child));
+    assertFalse(checkNoPerms(child, parent));
+  }
+  
+  private boolean checkNoPerms(ClassLoader parent, ClassLoader child) throws Exception {
+    return runWithRestrictedPermissions(() -> ClassLoaderUtils.isParentClassLoader(parent, child));
+  }
+  
 }

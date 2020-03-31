@@ -48,6 +48,11 @@ public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public JapaneseBaseFormFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new JapaneseBaseFormFilter(input);

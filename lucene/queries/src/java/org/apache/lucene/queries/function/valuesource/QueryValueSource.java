@@ -166,11 +166,7 @@ class QueryDocValues extends FloatDocValues {
 
   @Override
   public Object objectVal(int doc) {
-    try {
-      return exists(doc) ? scorer.score() : null;
-    } catch (IOException e) {
-      throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
-    }
+    return floatVal(doc);
   }
 
   @Override

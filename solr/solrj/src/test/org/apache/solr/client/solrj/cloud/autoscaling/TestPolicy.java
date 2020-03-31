@@ -2757,7 +2757,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       if (!row.isLive) deadNodes++;
     }
 
-    Policy.setApproxValuesAndSortNodes(policy.clusterPreferences, rows);
+    Policy.setApproxValuesAndSortNodes(policy.getClusterPreferences(), rows);
 
     for (int i = 0; i < deadNodes; i++) {
       assertFalse(rows.get(i).isLive);
