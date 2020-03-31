@@ -1188,10 +1188,10 @@ IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
 )
 
 REM Enable/Disable the Admin UI based on requirements.
-IF "%SOLR_ADMIN_UI_ENABLED%"=="true" (
-  set SOLR_ADMIN_UI="true"
+IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+  set DISABLE_ADMIN_UI="true"
 ) else (
-  set SOLR_ADMIN_UI="false"
+  set DISABLE_ADMIN_UI="false"
 )
 
 
@@ -1281,7 +1281,7 @@ IF "%verbose%"=="1" (
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
-set START_OPTS=-DenableAdminUI=%SOLR_ADMIN_UI%
+set START_OPTS=-DdisableAdminUI=%DISABLE_ADMIN_UI%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"

@@ -11,9 +11,9 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Improvements
 ---------------------
 
-* SOLR-14014: Introducing a system property that allows users to disabled the Admin UI, which is enabled by default.
-If you have security concerns or other reasons to disable the Admin UI, you can modify
-`solr.in.sh`/`solr.in.cmd` or define the variable at start. (marcussorealheis)
+* SOLR-14014: Introducing a system property that allows users to disable the Admin UI, which is enabled by default.
+If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
+`solr.in.sh`/`solr.in.cmd` or set "-DdisableAdminUI=true" at start. (marcussorealheis)
 
 Bug Fixes
 ---------------------

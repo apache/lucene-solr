@@ -228,7 +228,7 @@
 # This is experimental! It may not work at all with Hadoop/HDFS features.
 #SOLR_SECURITY_MANAGER_ENABLED=false
 
-# Runs solr with the admin UI enabled but you can change the default value to false below if you do not need it.
-# The property is configured as a system property as defined in SOLR_START_OPTS in the start scripts.
-# You can also define this value when you start solr.
-#SOLR_ADMIN_UI_ENABLED=true
+# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+# scripts. You can also disable the UI when you start solr with "-DdisableAdminUI=true".
+#SOLR_ADMIN_UI_DISABLED=false

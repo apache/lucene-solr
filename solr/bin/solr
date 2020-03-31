@@ -2090,11 +2090,11 @@ else
 fi
 
 # Enable ADMIN UI by default, and give the option for users to disable it when.
-if [ "$SOLR_ADMIN_UI_ENABLED" == "true" ]; then
-  SOLR_ADMIN_UI="-DenableAdminUI=true"
-else
-  SOLR_ADMIN_UI="-DenableAdminUI=false"
+if [ "$SOLR_ADMIN_UI_DISABLED" == "true" ]; then
+  SOLR_ADMIN_UI="-DdisableAdminUI=true"
   echo -e "ADMIN UI Disabled"
+else
+  SOLR_ADMIN_UI="-DdisableAdminUI=false"
 fi
 
 JAVA_MEM_OPTS=()

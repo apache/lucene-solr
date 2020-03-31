@@ -44,7 +44,7 @@ import java.nio.charset.StandardCharsets;
 public final class LoadAdminUiServlet extends BaseSolrServlet {
 
   // check system properties for whether or not admin UI is enabled, default is true
-  private static final boolean enabled = Boolean.parseBoolean(System.getProperty("enableAdminUI", "true"));
+  private static final boolean disabled = Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
 
   public void init() throws ServletException {
     super.init();
@@ -56,9 +56,9 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
       throws IOException {
     HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
     HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
-      if(!enabled){
+      if(disabled){
       response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
-          "ENABLED in bin/solr.in.sh or solr.in.cmd or pass the value of -DenableAdminUI=true");
+          "ENABLED in bin/solr.in.sh or solr.in.cmd or pass the value of -DdisableAdminUI=false");
       return;
     }
 
