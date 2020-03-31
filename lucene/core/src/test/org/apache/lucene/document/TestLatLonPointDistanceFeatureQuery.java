@@ -338,7 +338,7 @@ public class TestLatLonPointDistanceFeatureQuery extends LuceneTestCase {
     LatLonDocValuesField docValue = new LatLonDocValuesField("foo", 0., 0.);
     doc.add(docValue);
 
-    int numDocs = atLeast(10000);
+    int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; ++i) {
       double lat = random().nextDouble() * 180 - 90;
       double lon = random().nextDouble() * 360 - 180;
@@ -350,7 +350,8 @@ public class TestLatLonPointDistanceFeatureQuery extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(w);
     IndexSearcher searcher = newSearcher(reader);
 
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       double lat = random().nextDouble() * 180 - 90;
       double lon = random().nextDouble() * 360 - 180;
       double  pivotDistance = random().nextDouble() * random().nextDouble() * Math.PI * GeoUtils.EARTH_MEAN_RADIUS_METERS;

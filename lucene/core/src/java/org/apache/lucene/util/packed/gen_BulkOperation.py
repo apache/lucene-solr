@@ -122,10 +122,10 @@ def get_type(bits):
 
 def block_value_count(bpv, bits=64):
   blocks = bpv
-  values = blocks * bits / bpv
+  values = blocks * bits // bpv
   while blocks % 2 == 0 and values % 2 == 0:
-    blocks /= 2
-    values /= 2
+    blocks //= 2
+    values //= 2
   assert values * bpv == bits * blocks, "%d values, %d blocks, %d bits per value" % (values, blocks, bpv)
   return (blocks, values)
 
@@ -181,8 +181,8 @@ def p64_decode(bpv, f, bits):
       f.write("        values[valuesOffset++] = %s(block >>> shift) & %d%s;\n" % (cast_start, mask, cast_end))
       f.write("      }\n")
     else:
-      for i in xrange(0, values):
-        block_offset = i * bpv / 64
+      for i in range(0, values):
+        block_offset = i * bpv // 64
         bit_offset = (i * bpv) % 64
         if bit_offset == 0:
           # start of block
@@ -214,7 +214,7 @@ def p64_decode(bpv, f, bits):
     if is_power_of_two(bpv) and bpv < 8:
       f.write("    for (int j = 0; j < iterations; ++j) {\n")
       f.write("      final byte block = blocks[blocksOffset++];\n")
-      for shift in xrange(8 - bpv, 0, -bpv):
+      for shift in range(8 - bpv, 0, -bpv):
         f.write("      values[valuesOffset++] = (block >>> %d) & %d;\n" % (shift, mask))
       f.write("      values[valuesOffset++] = block & %d;\n" % mask)
       f.write("    }\n")
@@ -226,21 +226,21 @@ def p64_decode(bpv, f, bits):
       f.write("    for (int j = 0; j < iterations; ++j) {\n")
       m = bits <= 32 and "0xFF" or "0xFFL"
       f.write("      values[valuesOffset++] =")
-      for i in xrange(bpv / 8 - 1):
+      for i in range(bpv // 8 - 1):
         f.write(" ((blocks[blocksOffset++] & %s) << %d) |" % (m, bpv - 8))
       f.write(" (blocks[blocksOffset++] & %s);\n" % m)
       f.write("    }\n")
     else:
       f.write("    for (int i = 0; i < iterations; ++i) {\n")
-      for i in xrange(0, byte_values):
-        byte_start = i * bpv / 8
+      for i in range(0, byte_values):
+        byte_start = i * bpv // 8
         bit_start = (i * bpv) % 8
-        byte_end = ((i + 1) * bpv - 1) / 8
+        byte_end = ((i + 1) * bpv - 1) // 8
         bit_end = ((i + 1) * bpv - 1) % 8
         shift = lambda b: 8 * (byte_end - b - 1) + 1 + bit_end
         if bit_start == 0:
           f.write("      final %s byte%d = blocks[blocksOffset++] & 0xFF;\n" % (typ, byte_start))
-        for b in xrange(byte_start + 1, byte_end + 1):
+        for b in range(byte_start + 1, byte_end + 1):
           f.write("      final %s byte%d = blocks[blocksOffset++] & 0xFF;\n" % (typ, b))
         f.write("      values[valuesOffset++] =")
         if byte_start == byte_end:
@@ -259,7 +259,7 @@ def p64_decode(bpv, f, bits):
             f.write(" (byte%d << %d)" % (byte_start, shift(byte_start)))
           else:
             f.write(" ((byte%d & %d) << %d)" % (byte_start, 2 ** (8 - bit_start) - 1, shift(byte_start)))
-          for b in xrange(byte_start + 1, byte_end):
+          for b in range(byte_start + 1, byte_end):
             f.write(" | (byte%d << %d)" % (b, shift(b)))
           if bit_end == 7:
             f.write(" | byte%d" % byte_end)
@@ -280,7 +280,7 @@ if __name__ == '__main__':
   f.write('abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {\n')
   f.write('  private static final BulkOperation[] packedBulkOps = new BulkOperation[] {\n')
 
-  for bpv in xrange(1, 65):
+  for bpv in range(1, 65):
     if bpv > MAX_SPECIALIZED_BITS_PER_VALUE:
       f.write('    new BulkOperationPacked(%d),\n' % bpv)
       continue
@@ -304,7 +304,7 @@ if __name__ == '__main__':
 
   f.write('  // NOTE: this is sparse (some entries are null):\n')
   f.write('  private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {\n')
-  for bpv in xrange(1, max(PACKED_64_SINGLE_BLOCK_BPV) + 1):
+  for bpv in range(1, max(PACKED_64_SINGLE_BLOCK_BPV) + 1):
     if bpv in PACKED_64_SINGLE_BLOCK_BPV:
       f.write('    new BulkOperationPackedSingleBlock(%d),\n' % bpv)
     else:

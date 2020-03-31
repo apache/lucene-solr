@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
+  <component name="NewModuleRootManager">
     <output url="file://$MODULE_DIR$/../../../idea-build/solr/contrib/solr-clustering/classes/java" />
     <output-test url="file://$MODULE_DIR$/../../../idea-build/solr/contrib/solr-clustering/classes/test" />
     <exclude-output />
@@ -24,15 +24,14 @@
     <orderEntry type="library" name="Solr core library" level="project" />
     <orderEntry type="library" name="Solrj library" level="project" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
-    <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
+    <orderEntry type="module" module-name="lucene-test-framework" scope="TEST" />
+    <orderEntry type="module" module-name="solr-test-framework" scope="TEST" />
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="memory" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="phonetic" />
     <orderEntry type="module" module-name="solr-core" />
     <orderEntry type="module" module-name="solrj" />
-    <orderEntry type="module" module-name="spatial" />
     <orderEntry type="module" module-name="suggest" />
     <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="analysis-common" />

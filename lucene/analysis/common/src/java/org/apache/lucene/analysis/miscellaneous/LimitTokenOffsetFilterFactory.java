@@ -56,6 +56,11 @@ public class LimitTokenOffsetFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public LimitTokenOffsetFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new LimitTokenOffsetFilter(input, maxStartOffset, consumeAllTokens);

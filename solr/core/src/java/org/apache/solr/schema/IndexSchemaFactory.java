@@ -74,7 +74,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
 
     try {
-      schemaInputStream = loader.openSchema(resourceName);
+      schemaInputStream = loader.openResource(resourceName);
     } catch (Exception e) {
       final String msg = "Error loading schema resource " + resourceName;
       log.error(msg, e);
@@ -82,7 +82,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader);
+    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
     return schema;
   }
 

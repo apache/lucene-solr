@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Configure javadoc defaults.
 
 allprojects {
@@ -5,6 +22,7 @@ allprojects {
     tasks.matching { it.name == "javadoc" }.all {
       StandardJavadocDocletOptions opts = (options as StandardJavadocDocletOptions)
       opts.locale("en_US")
+      opts.setJFlags(["-Duser.language=en", "-Duser.country=US"])
       opts.charSet = "UTF-8"
       opts.encoding = "UTF-8"
       opts.docEncoding = "UTF-8"
@@ -26,10 +44,10 @@ allprojects {
       )
 
       opts.addStringOption("-release", "11")
-      opts.addBooleanOption('Xdoclint:all,-missing,-accessibility,-html', true)
+      opts.addBooleanOption('Xdoclint:all,-missing', true)
 
       def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
-      opts.overview = file("src/main/java/overview.html").toString()
+      opts.overview = file("src/java/overview.html").toString()
       opts.docTitle = "${libName} ${project.version} ${project.name} API"
       opts.windowTitle = "${libName} ${project.version} ${project.name} API"
       opts.bottom = "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>"

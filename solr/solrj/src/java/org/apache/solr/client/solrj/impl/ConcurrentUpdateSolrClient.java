@@ -125,6 +125,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     this.client = new HttpSolrClient.Builder(builder.baseSolrUrl)
         .withHttpClient(builder.httpClient)
+        .withConnectionTimeout(builder.connectionTimeoutMillis)
+        .withSocketTimeout(builder.socketTimeoutMillis)
         .build();
     this.client.setFollowRedirects(false);
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
@@ -387,7 +389,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
             } finally {
-              solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
+              solrExc = new BaseHttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);
               }

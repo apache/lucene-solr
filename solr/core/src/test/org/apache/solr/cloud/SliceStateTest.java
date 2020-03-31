@@ -41,6 +41,8 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     Map<String, Replica> sliceToProps = new HashMap<>();
     Map<String, Object> props = new HashMap<>();
+    props.put("node_name", "127.0.0.1:10000_solr");
+    props.put("core", "core1");
 
     Replica replica = new Replica("node1", props, "collection1", "shard1");
     sliceToProps.put("node1", replica);

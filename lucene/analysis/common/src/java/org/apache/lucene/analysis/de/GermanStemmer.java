@@ -37,17 +37,17 @@ public class GermanStemmer
     private StringBuilder sb = new StringBuilder();
 
     /**
-     * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
+     * Amount of characters that are removed with <code>substitute()</code> while stemming.
      */
     private int substCount = 0;
     
     private static final Locale locale = new Locale("de", "DE");
 
     /**
-     * Stemms the given term to an unique <tt>discriminator</tt>.
+     * Stemms the given term to an unique <code>discriminator</code>.
      *
      * @param term  The term that should be stemmed.
-     * @return      Discriminator for <tt>term</tt>
+     * @return      Discriminator for <code>term</code>
      */
     protected String stem( String term )
     {

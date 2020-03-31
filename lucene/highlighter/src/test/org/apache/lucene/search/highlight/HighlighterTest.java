@@ -336,7 +336,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   /**
-   * This method intended for use with <tt>testHighlightingWithDefaultField()</tt>
+   * This method intended for use with <code>testHighlightingWithDefaultField()</code>
    */
   private String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {

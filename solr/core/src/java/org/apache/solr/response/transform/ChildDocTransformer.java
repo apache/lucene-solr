@@ -34,6 +34,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -88,6 +89,11 @@ class ChildDocTransformer extends DocTransformer {
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
+
+      if (segParentsBitSet == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Parent filter '" + parentsFilter + "' doesn't match any parent documents");
+      }
 
       final int segPrevRootId = segRootId==0? -1: segParentsBitSet.prevSetBit(segRootId - 1); // can return -1 and that's okay
 

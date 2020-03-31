@@ -114,6 +114,11 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public PhoneticFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     clazz = registry.get(name.toUpperCase(Locale.ROOT));

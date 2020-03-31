@@ -1,51 +1,60 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 // This script tries to guess sensible defaults for gradle parallelism
 // and local machine's resources and save them under 'gradle.properties'.
 
 def hasDefaults = rootProject.file("gradle.properties").exists()
 
-// If we don't have the defaults yet, create them and re-run the build
-// recursively with the same parameters as originally passed.
-//
-// Sadly, the recursive build doesn't seem to pick up the parallelism
-// tweaks from gradle.properties file.
+// If we don't have the defaults yet, create them.
 
 if (!hasDefaults) {
   configure(rootProject) {
-    task setupLocalDefaultsOnce(type: GradleBuild) {
-      // Approximate a common-sense default for running gradle with parallel
-      // workers: half the count of available cpus but not more than 12.
-      def cpus = Runtime.runtime.availableProcessors()
-      def maxWorkers = (int) Math.max(1d, Math.min(cpus * 0.5d, 12))
-      def testsJvms = (int) Math.max(1d, Math.min(cpus * 0.5d, 4))
-
-      // Reuse the same set of parameters for the recursive invocation and apply
-      // some of these eagerly.
-      def startParams = gradle.startParameter.newInstance()
-      startParams.setParallelProjectExecutionEnabled(true)
-      startParams.setMaxWorkerCount(maxWorkers)
-      startParameter(startParams)
-
-      // Write the defaults for this machine.
-      rootProject.file("gradle.properties").write(
-          [
-              "# These settings have been generated automatically on the first run.",
-              "# See gradlew :helpLocalSettings for more information.",
-              "systemProp.file.encoding=UTF-8",
-              "org.gradle.daemon=true",
-              "org.gradle.jvmargs=-Xmx1g",
-              "org.gradle.parallel=true",
-              "org.gradle.priority=normal",
-              "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.
-              "",
-              "# Maximum number of parallel gradle workers.",
-              "org.gradle.workers.max=${maxWorkers}",
-              "",
-              "# Maximum number of test JVMs forked per test task.",
-              "tests.jvms=${testsJvms}"
-          ].join("\n"), "UTF-8")
-
+    task localSettings() {
       doFirst {
+        // Approximate a common-sense default for running gradle/tests with parallel
+        // workers: half the count of available cpus but not more than 12.
+        def cpus = Runtime.runtime.availableProcessors()
+        def maxWorkers = (int) Math.max(1d, Math.min(cpus * 0.5d, 12))
+        def testsJvms = (int) Math.max(1d, Math.min(cpus * 0.5d, 12))
+
+        // Write the defaults for this machine.
+        rootProject.file("gradle.properties").write(
+            [
+                "# These settings have been generated automatically on the first run.",
+                "# See gradlew :helpLocalSettings for more information.",
+                "systemProp.file.encoding=UTF-8",
+                "org.gradle.jvmargs=-Xmx2g",
+                "org.gradle.parallel=true",
+                "org.gradle.priority=normal",
+                "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.
+                "",
+                "# You may disable the background daemon if it consumes too much memory.",
+                "org.gradle.daemon=true",
+                "org.gradle.daemon.idletimeout=900000", // timeout after 15 mins.
+                "",
+                "# Maximum number of parallel gradle workers.",
+                "org.gradle.workers.max=${maxWorkers}",
+                "",
+                "# Maximum number of test JVMs forked per test task.",
+                "tests.jvms=${testsJvms}"
+            ].join("\n"), "UTF-8")
+
         logger.log(LogLevel.WARN, "\nIMPORTANT. This is the first time you ran the build. " +
             "I wrote some sane defaults (for this machine) to 'gradle.properties', " +
             "they will be picked up on consecutive gradle invocations (not this one).\n\n" +
@@ -54,20 +63,11 @@ if (!hasDefaults) {
     }
   }
 
-  // Disable any tasks in this build, they were forked recursively.
-  gradle.taskGraph.whenReady { graph ->
-    graph.allTasks.each { task ->
-      if (task != rootProject.setupLocalDefaultsOnce) {
-        task.enabled = false
-      }
-    }
-  }
-
   // Make all tasks depend on local setup to make sure it'll run.
   allprojects {
     tasks.all { task ->
-      if (task != rootProject.setupLocalDefaultsOnce) {
-        task.dependsOn rootProject.setupLocalDefaultsOnce
+      if (task != rootProject.localSettings) {
+        task.dependsOn rootProject.localSettings
       }
     }
   }

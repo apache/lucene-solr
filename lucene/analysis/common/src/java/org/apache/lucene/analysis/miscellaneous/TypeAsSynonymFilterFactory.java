@@ -55,6 +55,11 @@ public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public TypeAsSynonymFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new TypeAsSynonymFilter(input, prefix);

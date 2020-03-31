@@ -39,7 +39,7 @@ public class ClassicFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /** Returns the next token in the stream, or null at EOS.
-   * <p>Removes <tt>'s</tt> from the end of words.
+   * <p>Removes <code>'s</code> from the end of words.
    * <p>Removes dots from acronyms.
    */
   @Override

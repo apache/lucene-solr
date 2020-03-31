@@ -81,6 +81,12 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
   }
 }

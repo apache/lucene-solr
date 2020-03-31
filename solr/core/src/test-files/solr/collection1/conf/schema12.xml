@@ -227,6 +227,41 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="text_pick_best_boosted" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  
+  <fieldType name="text_as_distinct_boosted" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="text_as_same_term_boosted" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.DelimitedBoostTokenFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
   <fieldType name="nametext" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
@@ -656,6 +691,9 @@
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
   <dynamicField name="t_pick_best_*" type="text_pick_best" indexed="true" stored="true"/>
+  <dynamicField name="t_pick_best_boosted_*" type="text_pick_best_boosted" indexed="true" stored="true"/>
+  <dynamicField name="t_as_distinct_boosted_*" type="text_as_distinct_boosted" indexed="true" stored="true"/>
+  <dynamicField name="t_as_same_term_boosted_*" type="text_as_same_term_boosted" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
 
@@ -686,23 +724,35 @@
   <dynamicField name="*_l_dv" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_ls_dv" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_l_dvo" type="long" indexed="false" stored="true" docValues="true"/>
-  
+
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_ds" type="double" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_d_dv" type="double" indexed="true" stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_ds_dv" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_d_dvo" type="double" indexed="false" stored="true" docValues="true"/>
+
+  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dts_dv" type="date" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_dt_dvo" type="date" indexed="false" stored="true" docValues="true"/>
   
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
   <!-- :TODO: why are these identical?!?!?! -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_s_dv" type="string" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_sdv" type="string" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
-  <dynamicField name="*_bdv" type="boolean" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <!-- 'indexed' prefix necessary to distinguish it from _sdv above, which is indexed in many schemas but not here. -->
+  <dynamicField name="*_indexed_sdv" type="string" indexed="true" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <dynamicField name="*_ss_dv" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_tt" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_bdv" type="boolean" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <dynamicField name="*_b_dv" type="boolean" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_bs_dv" type="boolean" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
   <dynamicField name="*_pi" type="pint" indexed="true" multiValued="false"/>
   <dynamicField name="*_pl" type="plong" indexed="true" multiValued="false"/>
@@ -720,6 +770,17 @@
   <dynamicField name="*_ii" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
   <dynamicField name="*_iis" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
   <dynamicField name="*_ff" type="pfloat" indexed="false" stored="false" useDocValuesAsStored="false"/>
+
+  <!-- testing fields with & without norms
+       TODO: Remove numeric norms for SOLR-14199 -->
+  <dynamicField name="*_t_on" type="text" indexed="true" stored="true" omitNorms="true" docValues="false"/>
+  <dynamicField name="*_b_norms" type="boolean" indexed="true" stored="true" omitNorms="false" docValues="false"/>
+  <dynamicField name="*_s_norms" type="string" indexed="true" stored="true" omitNorms="false" docValues="false"/>
+  <dynamicField name="*_dt_norms" type="date" indexed="true" stored="true" omitNorms="true" docValues="false"/>
+  <dynamicField name="*_i_norms" type="int" indexed="true" stored="true" omitNorms="false" docValues="false"/>
+  <dynamicField name="*_l_norms" type="long" indexed="true" stored="true" omitNorms="false" docValues="false"/>
+  <dynamicField name="*_f_norms" type="float" indexed="true" stored="true" omitNorms="false" docValues="false"/>
+  <dynamicField name="*_d_norms" type="double" indexed="true" stored="true" omitNorms="false" docValues="false"/>
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>

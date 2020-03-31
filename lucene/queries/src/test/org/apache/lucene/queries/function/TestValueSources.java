@@ -41,6 +41,7 @@ import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -379,6 +380,10 @@ public class TestValueSources extends LuceneTestCase {
     ValueSource vs = new QueryValueSource(new FunctionQuery(new ConstValueSource(2f)), 0f);
     assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
     assertAllExist(vs);
+
+    vs = new QueryValueSource(new FunctionRangeQuery(new IntFieldSource("int"), Integer.MIN_VALUE, Integer.MAX_VALUE, true, true), 0f);
+    assertHits(new FunctionQuery(vs), new float[] { 35f, 54f });
+    assertAllExist(vs);
   }
 
   public void testQuery() throws Exception {
@@ -420,6 +425,16 @@ public class TestValueSources extends LuceneTestCase {
       vs = new QueryValueSource(new TermQuery(new Term("bogus","does not exist")), 0F);
       assertNoneExist(vs);
 
+      // doc doesn't match the query, so default value should be returned
+      vs = new QueryValueSource(new MatchNoDocsQuery(), 5.0f);
+      final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
+      FunctionValues fv = vs.getValues(ValueSource.newContext(searcher), leaf);
+      assertEquals(5.0f, fv.objectVal(1));
+
+      // test with def value but doc matches the query, so def value shouldn't be returned
+      vs = new QueryValueSource(new TermQuery(new Term("text","test")), 2F);
+      fv = vs.getValues(ValueSource.newContext(searcher), leaf);
+      assertNotEquals(2f, fv.objectVal(1));
     } finally {
       searcher.setSimilarity(saved);
     }
@@ -512,7 +527,7 @@ public class TestValueSources extends LuceneTestCase {
     assertEquals("test(const(4.1),const(1.2),double(some_double)=0.0)", fv.toString(1));
 
   }
-  
+
   public void testTF() throws Exception {
     Similarity saved = searcher.getSimilarity();
     try {

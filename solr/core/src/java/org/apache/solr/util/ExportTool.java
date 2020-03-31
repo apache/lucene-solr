@@ -27,7 +27,11 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,11 +45,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.zip.GZIPOutputStream;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -185,13 +191,24 @@ public class ExportTool extends SolrCLI.ToolBase {
     info.exportDocs();
   }
 
-  interface DocsSink {
-    default void start() throws IOException {
+  static abstract class DocsSink {
+    Info info;
+    OutputStream fos;
+
+    abstract void start() throws IOException ;
+
+    @SuppressForbidden(reason = "Command line tool prints out to console")
+    void accept(SolrDocument document) throws IOException {
+      long count = info.docsWritten.incrementAndGet();
+
+      if (count % 100000 == 0) {
+        System.out.println("\nDOCS: " + count);
+      }
+
+
     }
 
-    void accept(SolrDocument document) throws IOException, InterruptedException;
-
-    default void end() throws IOException {
+    void end() throws IOException {
     }
   }
 
@@ -228,13 +245,10 @@ public class ExportTool extends SolrCLI.ToolBase {
           .create("fields")
   };
 
-  static class JsonSink implements DocsSink {
-    private final Info info;
+  static class JsonSink extends DocsSink {
     private CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
     private Writer writer;
-    private OutputStream fos;
-    public AtomicLong docs = new AtomicLong();
 
     public JsonSink(Info info) {
       this.info = info;
@@ -243,6 +257,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
+      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -259,7 +274,6 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
-      docs.incrementAndGet();
       charArr.reset();
       Map m = new LinkedHashMap(doc.size());
       doc.forEach((s, field) -> {
@@ -269,18 +283,44 @@ public class ExportTool extends SolrCLI.ToolBase {
             field = ((List) field).get(0);
           }
         }
+        field = constructDateStr(field);
+        if (field instanceof List) {
+          List list = (List) field;
+          if (hasdate(list)) {
+            ArrayList<Object> listCopy = new ArrayList<>(list.size());
+            for (Object o : list) listCopy.add(constructDateStr(o));
+            field = listCopy;
+          }
+        }
         m.put(s, field);
       });
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
+      super.accept(doc);
+    }
+
+    private boolean hasdate(List list) {
+      boolean hasDate = false;
+      for (Object o : list) {
+        if(o instanceof Date){
+          hasDate = true;
+          break;
+        }
+      }
+      return hasDate;
+    }
+
+    private Object constructDateStr(Object field) {
+      if (field instanceof Date) {
+        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+      }
+      return field;
     }
   }
 
-  private static class JavabinSink implements DocsSink {
-    private final Info info;
+  static class JavabinSink extends DocsSink {
     JavaBinCodec codec;
-    OutputStream fos;
 
     public JavabinSink(Info info) {
       this.info = info;
@@ -289,6 +329,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
+      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -330,6 +371,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       codec.writeTag(SOLRINPUTDOC, sz);
       codec.writeFloat(1f); // document boost
       doc.forEach(bic);
+      super.accept(doc);
     }
   }
 
@@ -339,13 +381,17 @@ public class ExportTool extends SolrCLI.ToolBase {
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
     Map<String, CoreHandler> corehandlers = new HashMap();
+    private long startTime ;
 
+    @SuppressForbidden(reason = "Need to print out time")
     public MultiThreadedRunner(String url) {
       super(url);
+      startTime= System.currentTimeMillis();
     }
 
 
     @Override
+    @SuppressForbidden(reason = "Need to print out time")
     void exportDocs() throws Exception {
       sink = getSink();
       fetchUniqueKey();
@@ -362,7 +408,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         addConsumer(consumerlatch);
         addProducers(m);
         if (output != null) {
-          output.println("NO of shards : " + corehandlers.size());
+          output.println("NO: of shards : " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
@@ -390,6 +436,8 @@ public class ExportTool extends SolrCLI.ToolBase {
             //ignore
           }
         }
+        System.out.println("\nTotal Docs exported: "+ (docsWritten.get() -1)+
+            ". Time taken: "+( (System.currentTimeMillis() - startTime)/1000) + "secs");
       }
     }
 
@@ -418,7 +466,6 @@ public class ExportTool extends SolrCLI.ToolBase {
           try {
             if (docsWritten.get() > limit) continue;
             sink.accept(doc);
-            docsWritten.incrementAndGet();
           } catch (Exception e) {
             if (output != null) output.println("Failed to write to file " + e.getMessage());
             failed = true;

@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Test that creates way, way, way too many fields */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestManyFields extends LuceneTestCase {
   private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
   

@@ -17,12 +17,15 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+
+import java.util.Random;
+
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random cartesian bounding box, line, and polygon query tests for random generated cartesian {@link XYLine} types */
@@ -35,23 +38,24 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected XYLine randomQueryLine(Object... shapes) {
-    if (random().nextInt(100) == 42) {
+    Random random = random();
+    if (random.nextInt(100) == 42) {
       // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
       int maxBound = (int)Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
-      float[] x = new float[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      float[] x = new float[RandomNumbers.randomIntBetween(random, 2, maxBound)];
       float[] y = new float[x.length];
       for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
         XYLine l = (XYLine) (shapes[i]);
-        if (random().nextBoolean() && l != null) {
-          int v = random().nextInt(l.numPoints() - 1);
-          x[j] = (float)l.getX(v);
-          y[j] = (float)l.getY(v);
+        if (random.nextBoolean() && l != null) {
+          int v = random.nextInt(l.numPoints() - 1);
+          x[j] = l.getX(v);
+          y[j] = l.getY(v);
         } else {
-          x[j] = (float)ShapeTestUtil.nextDouble();
-          y[j] = (float)ShapeTestUtil.nextDouble();
+          x[j] = ShapeTestUtil.nextFloat(random);
+          y[j] = ShapeTestUtil.nextFloat(random);
         }
       }
       return new XYLine(x, y);
@@ -76,7 +80,7 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 

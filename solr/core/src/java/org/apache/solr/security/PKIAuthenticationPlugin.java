@@ -231,7 +231,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
       @Override
       public void onQueued(Request request) {
+        log.trace("onQueued: {}", request);
         if (cores.getAuthenticationPlugin() == null) {
+          log.trace("no authentication plugin, skipping");
           return;
         }
         if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
@@ -282,7 +284,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (reqInfo != null) {
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
-        log.debug("principal is null");
+        log.debug("generateToken: principal is null");
         //this had a request but not authenticated
         //so we don't not need to set a principal
         return Optional.empty();
@@ -293,6 +295,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       if (!isSolrThread()) {
         //if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
+        log.debug("generateToken: not a solr (server) thread");
         return Optional.empty();
       }
       //this request seems to be originated from Solr itself
@@ -304,6 +307,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
+    log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(base64Cipher);
   }
 

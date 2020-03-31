@@ -199,12 +199,12 @@ public class SimCloudManager implements SolrCloudManager {
     // register common metrics
     metricTag = Integer.toHexString(hashCode());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
-    metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
-    metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
-    metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
-    metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
-    metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
-    metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+    metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "buffers");
+    metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "classes");
+    metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "os");
+    metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "gc");
+    metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "memory");
+    metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
     MetricsMap sysprops = new MetricsMap((detailed, map) -> {
       System.getProperties().forEach((k, v) -> {
         map.put(String.valueOf(k), v);
@@ -315,7 +315,7 @@ public class SimCloudManager implements SolrCloudManager {
       config = cloudManager.getDistribStateManager().getAutoScalingConfig();
     }
     Set<String> nodeTags = new HashSet<>(SimUtils.COMMON_NODE_TAGS);
-    nodeTags.addAll(config.getPolicy().getParams());
+    nodeTags.addAll(config.getPolicy().getParamNames());
     Set<String> replicaTags = new HashSet<>(SimUtils.COMMON_REPLICA_TAGS);
     replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     cloudManager.getSimClusterStateProvider().copyFrom(other.getClusterStateProvider());

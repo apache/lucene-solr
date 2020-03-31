@@ -94,7 +94,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     
   }
   
-  public void testAccquireReleaseRace() throws InterruptedException {
+  public void testAcquireReleaseRace() throws InterruptedException {
     final DocumentsWriterStallControl ctrl = new DocumentsWriterStallControl();
     ctrl.updateStalled(false);
     final AtomicBoolean stop = new AtomicBoolean(false);
@@ -120,7 +120,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     }
     
     start(threads);
-    int iters = atLeast(10000);
+    int iters = TEST_NIGHTLY ? atLeast(10000) : atLeast(1000);
     final float checkPointProbability = TEST_NIGHTLY ? 0.5f : 0.1f;
     for (int i = 0; i < iters; i++) {
       if (checkPoint.get()) {

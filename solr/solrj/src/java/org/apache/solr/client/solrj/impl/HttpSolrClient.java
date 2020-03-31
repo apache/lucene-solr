@@ -813,29 +813,6 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     this.useMultiPartPost = useMultiPartPost;
   }
 
-
-  /**
-   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteSolrException} instead
-   */
-  @Deprecated
-  public static class RemoteSolrException extends BaseHttpSolrClient.RemoteSolrException {
-
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(remoteHost, code, msg, th);
-    }
-  }
-
-  /**
-   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteExecutionException} instead
-   */
-  @Deprecated
-  public static class RemoteExecutionException extends BaseHttpSolrClient.RemoteExecutionException {
-
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, meta);
-    }
-  }
-
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */

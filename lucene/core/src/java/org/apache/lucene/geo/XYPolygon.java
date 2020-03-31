@@ -18,23 +18,25 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
+
 /**
- * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code double[]}, {@code double[]} x, y arrays
+ * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code float[]}, {@code float[]} x, y arrays
  * coordinates.
  */
-public class XYPolygon {
-  private final double[] x;
-  private final double[] y;
+public final class XYPolygon extends XYGeometry {
+  private final float[] x;
+  private final float[] y;
   private final XYPolygon[] holes;
 
   /** minimum x of this polygon's bounding box area */
-  public final double minX;
+  public final float minX;
   /** maximum x of this polygon's bounding box area */
-  public final double maxX;
+  public final float maxX;
   /** minimum y of this polygon's bounding box area */
-  public final double minY;
+  public final float minY;
   /** maximum y of this polygon's bounding box area */
-  public final double maxY;
+  public final float maxY;
   /** winding order of the vertices */
   private final GeoUtils.WindingOrder windingOrder;
 
@@ -69,26 +71,22 @@ public class XYPolygon {
         throw new IllegalArgumentException("holes may not contain holes: polygons may not nest.");
       }
     }
-    this.x = new double[x.length];
-    this.y = new double[y.length];
-    for (int i = 0; i < x.length; ++i) {
-      this.x[i] = (double)x[i];
-      this.y[i] = (double)y[i];
-    }
+    this.x = x.clone();
+    this.y = y.clone();
     this.holes = holes.clone();
 
     // compute bounding box
-    double minX = x[0];
-    double maxX = x[0];
-    double minY = y[0];
-    double maxY = y[0];
+    float minX = checkVal(x[0]);
+    float maxX = x[0];
+    float minY = checkVal(y[0]);
+    float maxY = y[0];
 
     double windingSum = 0d;
     final int numPts = x.length - 1;
     for (int i = 1, j = 0; i < numPts; j = i++) {
-      minX = Math.min(x[i], minX);
+      minX = Math.min(checkVal(x[i]), minX);
       maxX = Math.max(x[i], maxX);
-      minY = Math.min(y[i], minY);
+      minY = Math.min(checkVal(y[i]), minY);
       maxY = Math.max(y[i], maxY);
       // compute signed area
       windingSum += (x[j] - x[numPts])*(y[i] - y[numPts])
@@ -107,22 +105,22 @@ public class XYPolygon {
   }
 
   /** Returns a copy of the internal x array */
-  public double[] getPolyX() {
+  public float[] getPolyX() {
     return x.clone();
   }
 
   /** Returns x value at given index */
-  public double getPolyX(int vertex) {
+  public float getPolyX(int vertex) {
     return x[vertex];
   }
 
   /** Returns a copy of the internal y array */
-  public double[] getPolyY() {
+  public float[] getPolyY() {
     return y.clone();
   }
 
   /** Returns y value at given index */
-  public double getPolyY(int vertex) {
+  public float getPolyY(int vertex) {
     return y[vertex];
   }
 
@@ -143,6 +141,11 @@ public class XYPolygon {
   /** returns the number of holes for the polygon */
   public int numHoles() {
     return holes.length;
+  }
+
+  @Override
+  protected Component2D toComponent2D() {
+    return Polygon2D.create(this);
   }
 
   @Override
@@ -181,19 +184,6 @@ public class XYPolygon {
       sb.append(", holes=");
       sb.append(Arrays.toString(holes));
     }
-    return sb.toString();
-  }
-
-  /** prints polygons as geojson */
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(Polygon.verticesToGeoJSON(y, x));
-    for (XYPolygon hole : holes) {
-      sb.append(",");
-      sb.append(Polygon.verticesToGeoJSON(hole.y, hole.x));
-    }
-    sb.append("]");
     return sb.toString();
   }
 }

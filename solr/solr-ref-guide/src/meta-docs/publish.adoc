@@ -52,33 +52,7 @@ This will produce pages with a DRAFT watermark across them. While these are fine
 
 == Upload to the Website
 
-// A lot of this was copied from https://wiki.apache.org/lucene-java/ReleaseTodo#Website_.2B-.3D_javadocs. See that section for explanations for why some steps are required.
-
-*Step 1: Update extpaths.txt in CMS Staging*
-
-. Checkout CMS trunk:
-+
-[source,bash]
-$ svn co --depth=immediates https://svn.apache.org/repos/asf/lucene/cms/trunk/content website-source
-+
-* If you already have this repo checked out, you can simply `svn up website-source` to update to the latest revision.
-. `$ cd website-source` (where you just checked out the repo)
-. Add the path for the new Guide version:
-+
-[source,bash]
-$ echo solr/guide/X_Y >> extpaths.txt
-+
-where `X_Y` is the new version (i.e, `7_7`)
-. Commit changes:
-+
-[source,bash]
-$ svn commit -m "Update CMS production sync exceptions for X_Y_Z Guide" extpaths.txt
-
-*Step 2: Push Guide to Website Production*
-
 Push the Guide directly to production via Subversion `import` from where you built it.
-
-You must push it to the path you just added to `extpaths.txt`, so if the path you added was `solr/guide/7_7`, you'll use the path as shown in the below example:
 
 [source,bash]
 svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-guide/html-site https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/7_7
@@ -86,22 +60,13 @@ svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-gu
 Confirm you can browse to Guide manually by going to the new URL. For example:
 https://lucene.apache.org/solr/guide/7_7
 
-*Step 3: Push Staging extpaths.txt to Production*
-
-The `extpaths.txt` works by listing paths that should be ignored when the CMS syncs the staging and production repositories. Publishing staging to production will only succeed if the paths listed in `extpaths.txt` exist in production. At the same time, if a path exists in production but not in staging it will be deleted unless it is defined in `extpaths.txt`.
-
-After pushing the content to production, check that the `extpaths.txt` in production includes the proper path to ensure that the Guide is not deleted incorrectly. If it does not exist in production, try to publish the site again to make sure it is updated.
-
-Production URL: https://lucene.apache.org/extpaths.txt
-
 == Publish the Guide
 
 There are two steps to publishing the Guide: first, uploading the DRAFT pages with the production-ready version; and second, updating links to point to the new Guide.
 
 === Update DRAFT for Release
 
-Since the Guide has already been published, you need to update the production
-website repository and overwrite the existing files:
+Since the Guide has already been uploaded to SVN, you need to overwrite the existing files in svn with a version of the production version of the guide:
 
 *Build Production Guide*
 
@@ -116,7 +81,7 @@ IMPORTANT: The `-Dsolr-guide-version` system property is optional if you build d
 
 *Pull Production Repo and Upload New Files*
 
-. Checkout the directory you need to update from the production repo:
+. Checkout the directory you need to update from the svn production repo:
 +
 [source,bash]
 $ svn co https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/<dir>
@@ -133,16 +98,22 @@ Spot-check a few pages to verify that the DRAFT watermark is gone, and also
  that Solr Javadocs link back to Lucene's correctly (the UpdateRequestProcessor
  page has a lot of Javadoc links).
 
-=== Make New HTML Version the Default
+=== Make a link to the new Version from website
 
-There are a few steps to take to make the new HTML version the default.
+The only edit we need to do in the website itself is adding a link to the latest guide to /solr/guide.
 
-TIP: You can use the CMS system for these changes, or you can edit the file locally and commit it to the staging repo.
+*Edit guide.md in staging*
 
-. Update the landing page at https://lucene.apache.org/solr/guide (the file is at `content/solr/guide/index.mdtext` in SVN) to link to the newest version.
-. Update the Guide redirect rule that looks like the below in `content/.htaccess` so URLs without a version in the path are redirected to the latest available version.
-+
-[source,text]
-RedirectMatch temp /solr/guide/(?!index.html)([a-z].*) /solr/guide/7_7/$1
-+
-In the above example, you would change the `7_7` part of the path to the right version (`8_0`, etc.).
+. Look at https://lucene.staged.apache.org/solr/guide and see if the RM already has updated it. If not, continue
+. You can check out and push changes or edit the file directly in GitHub: https://github.com/apache/lucene-site/blob/master/content/pages/solr/guide.md by clicking the edit button and then adding a commit message.
+. Verify that the staged version looks good (the link will not work in staging though)
+
+*Publish the changes to production*
+
+You can use your favourite git client to merge master into branch `production`. Or you can use GitHub website:
+
+. Make a new pull request from https://github.com/apache/lucene-site/compare/production%2E%2E%2Emaster
+. Note: If there are other changes staged, you will see those as well if you merge `master` into `production`
+. Click the "Merge" button on the PR
+
+The ordinary Solr release process will update the `LUCENE_LATEST_RELEASE` property of the website, which will ensure that Ref Guide URLs without a version in the path (e.g. `/solr/guide/mypage.adoc`) will automatically redirect to the latest Guide.

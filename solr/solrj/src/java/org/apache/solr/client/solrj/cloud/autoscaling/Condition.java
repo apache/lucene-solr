@@ -77,6 +77,11 @@ public class Condition implements MapWriter {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(name, val, op);
+  }
+
+  @Override
   public boolean equals(Object that) {
     if (that instanceof Condition) {
       Condition c = (Condition) that;

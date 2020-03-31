@@ -37,6 +37,17 @@ public class TestTessellator extends LuceneTestCase {
   }
 
   public void testSimpleTessellation() throws Exception {
+    Polygon poly = GeoTestUtil.createRegularPolygon(0.0, 0.0, 100000, 100000);
+    Polygon inner = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
+        new double[]{1.0, -1.0, -0.5, -1.0, 1.0, 0.5, 1.0});
+    Polygon inner2 = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
+        new double[]{-2.0, -4.0, -3.5, -4.0, -2.0, -2.5, -2.0});
+    poly = new Polygon(poly.getPolyLats(), poly.getPolyLons(), inner, inner2);
+    assertTrue(Tessellator.tessellate(poly).size() > 0);
+  }
+  
+  @Nightly
+  public void testSimpleTessellationAtNight() throws Exception {
     Polygon poly = GeoTestUtil.createRegularPolygon(0.0, 0.0, 1000000, 1000000);
     Polygon inner = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
         new double[]{1.0, -1.0, -0.5, -1.0, 1.0, 0.5, 1.0});
@@ -548,6 +559,18 @@ public class TestTessellator extends LuceneTestCase {
         "(71.8823607 52.3490659, 71.8823285 52.3490467, 71.8823581 52.3490282, 71.8823902 52.3490474, 71.8823607 52.3490659), " +
         "(71.8823581 52.3490282, 71.8823215 52.3490064, 71.8823576 52.3489838, 71.8823942 52.3490057, 71.8823581 52.3490282))";
     checkPolygon(wkt);
+  }
+
+  @Nightly
+  public void testComplexPolygon40() throws Exception {
+    String wkt = GeoTestUtil.readShape("lucene-9251.wkt.gz");
+    Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    // calculate the area of big polygons have numerical error
+    assertEquals(area(polygon), area(tessellation), 1e-12);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
   }
 
   private void checkPolygon(String wkt) throws Exception {

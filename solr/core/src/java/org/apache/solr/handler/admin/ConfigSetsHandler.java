@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -212,7 +213,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         .getOverseerConfigSetQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      SolrResponse response = OverseerSolrResponse.deserialize(event.getBytes());
+      SolrResponse response = OverseerSolrResponseSerializer.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
       SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
       if (exp != null) {

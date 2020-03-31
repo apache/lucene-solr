@@ -50,7 +50,6 @@ import org.apache.solr.SolrTestCase;
  */
 public class TestDocSet extends SolrTestCase {
   Random rand;
-  float loadfactor;
 
   @Override
   public void setUp() throws Exception {
@@ -89,15 +88,6 @@ public class TestDocSet extends SolrTestCase {
     return bs;
   }
 
-  public DocSet getHashDocSet(FixedBitSet bs) {
-    int[] docs = new int[bs.cardinality()];
-    BitSetIterator iter = new BitSetIterator(bs, 0);
-    for (int i=0; i<docs.length; i++) {
-      docs[i] = iter.nextDoc();
-    }
-    return new HashDocSet(docs,0,docs.length);
-  }
-
   public DocSet getIntDocSet(FixedBitSet bs) {
     int[] docs = new int[bs.cardinality()];
     BitSetIterator iter = new BitSetIterator(bs, 0);
@@ -111,7 +101,7 @@ public class TestDocSet extends SolrTestCase {
     return new BitDocSet(bs);
   }
 
-  public DocSet getDocSlice(FixedBitSet bs) {
+  public DocSlice getDocSlice(FixedBitSet bs) {
     int len = bs.cardinality();
     int[] arr = new int[len+5];
     arr[0]=10; arr[1]=20; arr[2]=30; arr[arr.length-1]=1; arr[arr.length-2]=2;
@@ -129,20 +119,14 @@ public class TestDocSet extends SolrTestCase {
 
 
   public DocSet getDocSet(FixedBitSet bs) {
-    switch(rand.nextInt(10)) {
-      case 0: return getHashDocSet(bs);
-
-      case 1: return getBitDocSet(bs);
-      case 2: return getBitDocSet(bs);
-      case 3: return getBitDocSet(bs);
+    switch(rand.nextInt(9)) {
+      case 0: case 1: case 2: case 3: return getBitDocSet(bs);
 
       case 4: return getIntDocSet(bs);
       case 5: return getIntDocSet(bs);
       case 6: return getIntDocSet(bs);
       case 7: return getIntDocSet(bs);
       case 8: return getIntDocSet(bs);
-
-      case 9: return getDocSlice(bs);
     }
     return null;
   }
@@ -155,8 +139,6 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public void iter(DocSet d1, DocSet d2) {
-    // HashDocSet and DocList doesn't iterate in order.
-    if (d1 instanceof HashDocSet || d2 instanceof HashDocSet || d1 instanceof DocList || d2 instanceof DocList) return;
 
     DocIterator i1 = d1.iterator();
     DocIterator i2 = d2.iterator();
@@ -237,9 +219,6 @@ public class TestDocSet extends SolrTestCase {
       if (smallSetType ==0) {
         Arrays.sort(a);
         return new SortedIntDocSet(a);
-      } else if (smallSetType ==1) {
-        Arrays.sort(a);
-        return loadfactor!=0 ? new HashDocSet(a,0,n,1/loadfactor) : new HashDocSet(a,0,n);
       }
     }
 
@@ -260,41 +239,11 @@ public class TestDocSet extends SolrTestCase {
     return sets;
   }
 
-  /* needs code insertion into HashDocSet
-  public void testCollisions() {
-    loadfactor=.75f;
-    rand=new Random(12345);  // make deterministic
-    int maxSetsize=4000;
-    int nSets=256;
-    int iter=1;
-    int[] maxDocs=new int[] {100000,500000,1000000,5000000,10000000};
-    int ret=0;
-    long start=System.currentTimeMillis();
-    for (int maxDoc : maxDocs) {
-      int cstart = HashDocSet.collisions;
-      DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
-      for (DocSet s1 : sets) {
-        for (DocSet s2 : sets) {
-          if (s1!=s2) ret += s1.intersectionSize(s2);
-        }
-      }
-      int cend = HashDocSet.collisions;
-      System.out.println("maxDoc="+maxDoc+"\tcollisions="+(cend-cstart));      
-    }
-    long end=System.currentTimeMillis();
-    System.out.println("testIntersectionSizePerformance="+(end-start)+" ms");
-    if (ret==-1)System.out.println("wow!");
-    System.out.println("collisions="+HashDocSet.collisions);
-
-  }
-  ***/
-
-  public static int smallSetType = 0;  // 0==sortedint, 1==hash, 2==FixedBitSet
+  public static int smallSetType = 0;  // 0==sortedint, 2==FixedBitSet
   public static int smallSetCuttoff=3000;
 
   /*
   public void testIntersectionSizePerformance() {
-    loadfactor=.75f; // for HashDocSet    
     rand=new Random(1);  // make deterministic
 
     int minBigSetSize=1,maxBigSetSize=30000;
@@ -325,56 +274,6 @@ public class TestDocSet extends SolrTestCase {
   }
    ***/
 
-  /*
-  public void testExistsPerformance() {
-    loadfactor=.75f;
-    rand=new Random(12345);  // make deterministic
-    int maxSetsize=4000;
-    int nSets=512;
-    int iter=1;
-    int maxDoc=1000000;
-    DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
-    int ret=0;
-    long start=System.currentTimeMillis();
-    for (int i=0; i<iter; i++) {
-      for (DocSet s1 : sets) {
-        for (int j=0; j<maxDoc; j++) {
-          ret += s1.exists(j) ? 1 :0;
-        }
-      }
-    }
-    long end=System.currentTimeMillis();
-    System.out.println("testExistsSizePerformance="+(end-start)+" ms");
-    if (ret==-1)System.out.println("wow!");
-  }
-   ***/
-
-   /* needs code insertion into HashDocSet
-   public void testExistsCollisions() {
-    loadfactor=.75f;
-    rand=new Random(12345);  // make deterministic
-    int maxSetsize=4000;
-    int nSets=512;
-    int[] maxDocs=new int[] {100000,500000,1000000,5000000,10000000};
-    int ret=0;
-
-    for (int maxDoc : maxDocs) {
-      int mask = (BitUtil.nextHighestPowerOfTwo(maxDoc)>>1)-1;
-      DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
-      int cstart = HashDocSet.collisions;      
-      for (DocSet s1 : sets) {
-        for (int j=0; j<maxDocs[0]; j++) {
-          int idx = rand.nextInt()&mask;
-          ret += s1.exists(idx) ? 1 :0;
-        }
-      }
-      int cend = HashDocSet.collisions;
-      System.out.println("maxDoc="+maxDoc+"\tcollisions="+(cend-cstart));
-    }
-    if (ret==-1)System.out.println("wow!");
-    System.out.println("collisions="+HashDocSet.collisions);
-  }
-  ***/
 
   public LeafReader dummyIndexReader(final int maxDoc) {
     return new LeafReader() {

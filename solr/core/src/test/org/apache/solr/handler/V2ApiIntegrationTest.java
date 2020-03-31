@@ -26,9 +26,9 @@ import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -71,7 +71,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .withPayload(payload)
         .build();
     v2Request.setResponseParser(responseParser);
-    HttpSolrClient.RemoteSolrException ex =  expectThrows(HttpSolrClient.RemoteSolrException.class,
+    BaseHttpSolrClient.RemoteSolrException ex =  expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
         () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }

@@ -59,7 +59,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    int numDocs = TestUtil.nextInt(random(), 2049, 4000);
+    int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
@@ -83,7 +83,7 @@ public class TestExpressionSorts extends LuceneTestCase {
   }
   
   public void testQueries() throws Exception {
-    int n = atLeast(4);
+    int n = atLeast(1);
     for (int i = 0; i < n; i++) {
       assertQuery(new MatchAllDocsQuery());
       assertQuery(new TermQuery(new Term("english", "one")));

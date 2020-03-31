@@ -23,8 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +48,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -289,7 +288,14 @@ public class ZkController implements Closeable {
     }
   }
 
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
+  /**
+   * @param cc Core container associated with this controller. cannot be null.
+   * @param zkServerAddress where to connect to the zk server
+   * @param zkClientConnectTimeout timeout in ms
+   * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
+   * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores to re-register on reconnect
+   */
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
@@ -366,13 +372,14 @@ public class ZkController implements Closeable {
                 }
 
                 overseerElector.setup(context);
+
                 overseerElector.joinElection(context, true);
               }
 
               cc.cancelCoreRecoveries();
               
               try {
-                registerAllCoresAsDown(registerOnReconnect, false);
+                registerAllCoresAsDown(descriptorsSupplier, false);
               } catch (SessionExpiredException e) {
                 // zk has to reconnect and this will all be tried again
                 throw e;
@@ -385,7 +392,7 @@ public class ZkController implements Closeable {
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
 
-              List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+              List<CoreDescriptor> descriptors = descriptorsSupplier.get();
               // re register all descriptors
               ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
               if (descriptors != null) {
@@ -451,8 +458,8 @@ public class ZkController implements Closeable {
         } catch (Exception e) {
           log.error("Error trying to stop any Overseer threads", e);
         }
-        closeOutstandingElections(registerOnReconnect);
-        markAllAsNotLeader(registerOnReconnect);
+        closeOutstandingElections(descriptorsSupplier);
+        markAllAsNotLeader(descriptorsSupplier);
       }
     }, zkACLProvider, new ConnectionManager.IsClosed() {
 
@@ -471,7 +478,7 @@ public class ZkController implements Closeable {
       if (cc != null) cc.securityNodeChanged();
     });
 
-    init(registerOnReconnect);
+    init();
 
     this.overseerJobQueue = overseer.getStateUpdateQueue();
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
@@ -491,9 +498,8 @@ public class ZkController implements Closeable {
   }
 
   private void registerAllCoresAsDown(
-      final CurrentCoreDescriptorProvider registerOnReconnect, boolean updateLastPublished) throws SessionExpiredException {
-    List<CoreDescriptor> descriptors = registerOnReconnect
-        .getCurrentDescriptors();
+      final Supplier<List<CoreDescriptor>> registerOnReconnect, boolean updateLastPublished) throws SessionExpiredException {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (isClosed) return;
     if (descriptors != null) {
       // before registering as live, make sure everyone is in a
@@ -548,9 +554,8 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
-  private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
-
-    List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+  private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         closeExistingElectionContext(descriptor);
@@ -574,10 +579,8 @@ public class ZkController implements Closeable {
     return contextKey;
   }
 
-  private void markAllAsNotLeader(
-      final CurrentCoreDescriptorProvider registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect
-        .getCurrentDescriptors();
+  private void markAllAsNotLeader(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+    List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         descriptor.getCloudDescriptor().setLeader(false);
@@ -774,7 +777,7 @@ public class ZkController implements Closeable {
 
   // normalize host removing any url scheme.
   // input can be null, host, or url_prefix://host
-  private String normalizeHostName(String host) throws IOException {
+  private String normalizeHostName(String host) {
 
     if (host == null || host.length() == 0) {
       String hostaddress;
@@ -877,10 +880,12 @@ public class ZkController implements Closeable {
    * Gets the absolute filesystem path of the _default configset to bootstrap from.
    * First tries the sysprop "solr.default.confdir". If not found, tries to find
    * the _default dir relative to the sysprop "solr.install.dir".
-   * If that fails as well (usually for unit tests), tries to get the _default from the
-   * classpath. Returns null if not found anywhere.
+   * Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
-  private static String getDefaultConfigDirPath() {
+  public static String getDefaultConfigDirPath() {
     String configDirPath = null;
     String serverSubPath = "solr" + File.separator +
         "configsets" + File.separator + "_default" +
@@ -891,24 +896,11 @@ public class ZkController implements Closeable {
     } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
         new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
       configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
-    } else { // find "_default" in the classpath. This one is used for tests
-      configDirPath = getDefaultConfigDirFromClasspath(serverSubPath);
     }
     return configDirPath;
   }
 
-  private static String getDefaultConfigDirFromClasspath(String serverSubPath) {
-    URL classpathUrl = ZkController.class.getClassLoader().getResource(serverSubPath);
-    try {
-      if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
-        return new File(classpathUrl.toURI()).getAbsolutePath();
-      }
-    } catch (URISyntaxException ex) {}
-    return null;
-  }
-
-  private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
-
+  private void init() {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
@@ -1204,11 +1196,12 @@ public class ZkController implements Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       if (replica.getType() != Type.PULL) {
-        shardTerms.registerTerm(coreZkNodeName);
+        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
       }
+
+      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       log.debug("Register replica - core:{} address:{} collection:{} shard:{}",
           coreName, baseUrl, collection, shardId);
@@ -2028,14 +2021,14 @@ public class ZkController implements Closeable {
   /**
    * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
    */
-  public static void bootstrapConf(SolrZkClient zkClient, CoreContainer cc, String solrHome) throws IOException {
+  public static void bootstrapConf(SolrZkClient zkClient, CoreContainer cc) throws IOException {
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient);
 
     //List<String> allCoreNames = cfg.getAllCoreNames();
     List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
 
-    log.info("bootstrapping config for " + cds.size() + " cores into ZooKeeper using solr.xml from " + solrHome);
+    log.info("bootstrapping config for " + cds.size() + " cores into ZooKeeper using solr.xml from " + cc.getSolrHome());
 
     for (CoreDescriptor cd : cds) {
       String coreName = cd.getName();

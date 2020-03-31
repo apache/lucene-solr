@@ -19,8 +19,10 @@ package org.apache.solr.core;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,11 +30,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -189,7 +193,7 @@ public class CoreContainer {
   protected final NodeConfig cfg;
   protected final SolrResourceLoader loader;
 
-  protected final String solrHome;
+  protected final Path solrHome;
 
   protected final CoresLocator coresLocator;
 
@@ -275,35 +279,15 @@ public class CoreContainer {
   }
 
   /**
-   * Create a new CoreContainer using system properties to detect the solr home
-   * directory.  The container's cores are not loaded.
-   *
-   * @see #load()
-   */
-  public CoreContainer() {
-    this(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
-  }
-
-  /**
-   * Create a new CoreContainer using the given SolrResourceLoader.  The container's
-   * cores are not loaded.
-   *
-   * @param loader the SolrResourceLoader
-   * @see #load()
-   */
-  public CoreContainer(SolrResourceLoader loader) {
-    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath()));
-  }
-
-  /**
    * Create a new CoreContainer using the given solr home directory.  The container's
    * cores are not loaded.
    *
    * @param solrHome a String containing the path to the solr home directory
+   * @param properties substitutable properties (alternative to Sys props)
    * @see #load()
    */
-  public CoreContainer(String solrHome) {
-    this(new SolrResourceLoader(Paths.get(solrHome)));
+  public CoreContainer(Path solrHome, Properties properties) {
+    this(SolrXmlConfig.fromSolrHome(solrHome, properties));
   }
 
   /**
@@ -315,31 +299,31 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new Properties());
+    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
 
-  public CoreContainer(NodeConfig config, Properties properties) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
+  public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
+    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
 
-  public CoreContainer(NodeConfig config, Properties properties, boolean asyncSolrCoreLoad) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+  public CoreContainer(NodeConfig config, CoresLocator locator) {
+    this(config, locator, false);
   }
 
-  public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {
-    this(config, properties, locator, false);
-  }
-
-  public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator, boolean asyncSolrCoreLoad) {
+  public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
-    this.solrHome = loader.getInstancePath().toString();
-    containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler());
+    this.solrHome = config.getSolrHome();
     this.cfg = requireNonNull(config);
+    try {
+      containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
+    } catch (IOException | InvalidKeySpecException e) {
+      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
+    }
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
     this.coresLocator = locator;
-    this.containerProperties = new Properties(properties);
+    this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
     this.replayUpdatesExecutor = new OrderedExecutor(
         cfg.getReplayUpdatesThreads(),
@@ -550,8 +534,7 @@ public class CoreContainer {
    * @return a loaded CoreContainer
    */
   public static CoreContainer createAndLoad(Path solrHome, Path configFile) {
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(loader, configFile));
+    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(solrHome, configFile, new Properties()));
     try {
       cc.load();
     } catch (Exception e) {
@@ -600,20 +583,32 @@ public class CoreContainer {
    * Load the cores defined for this CoreContainer
    */
   public void load() {
-    log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
+    log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
 
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    boolean modified = false;
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    String libDir = cfg.getSharedLibDirectory();
-    if (libDir != null) {
-      Path libPath = loader.getInstancePath().resolve(libDir);
-      try {
-        loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-        loader.reloadLuceneSPI();
-      } catch (IOException e) {
-        if (!libDir.equals("lib")) { // Don't complain if default "lib" dir does not exist
-          log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+    for (String libDir : libDirs) {
+      Path libPath = Paths.get(getSolrHome()).resolve(libDir);
+      if (Files.exists(libPath)) {
+        try {
+          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
         }
       }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
@@ -645,7 +640,7 @@ public class CoreContainer {
 
     hostName = cfg.getNodeName();
 
-    zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
+    zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
@@ -760,12 +755,7 @@ public class CoreContainer {
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
-      if (isZooKeeperAware()) {
-        //sort the cores if it is in SolrCloud. In standalone node the order does not matter
-        CoreSorter coreComparator = new CoreSorter().init(this);
-        cds = new ArrayList<>(cds);//make a copy
-        Collections.sort(cds, coreComparator::compare);
-      }
+      cds = CoreSorter.sortCores(this, cds);
       checkForDuplicateCoreNames(cds);
       status |= CORE_DISCOVERY_COMPLETE;
 
@@ -1888,8 +1878,9 @@ public class CoreContainer {
     return solrCores.getUnloadedCoreDescriptor(cname);
   }
 
+  //TODO return Path
   public String getSolrHome() {
-    return solrHome;
+    return solrHome.toString();
   }
 
   public boolean isZooKeeperAware() {
