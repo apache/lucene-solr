@@ -200,7 +200,6 @@ REM You can also tweak via standard JDK files such as ~\.java.policy, see https:
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=false
 
-
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 REM scripts. You can also disable the UI when you start solr with "-DdisableAdminUI=true".
