@@ -75,7 +75,9 @@ allprojects {
           args += [ "-locale", "en_US" ]
           args += [ "-windowtitle", title ]
           args += [ "-doctitle", title ]
-          args += [ "-classpath", sourceSets.main.compileClasspath.asPath ]
+          if (!sourceSets.main.compileClasspath.isEmpty()) {
+            args += ["-classpath", sourceSets.main.compileClasspath.asPath]
+          }
           args += [ "-bottom", "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
 
           args += [ "-tag", "lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release." ]
