@@ -215,11 +215,11 @@ public class Policy implements MapWriter {
   }
 
   public List<Clause> getClusterPolicy() {
-    return clusterPolicy;
+    return Collections.unmodifiableList(clusterPolicy);
   }
 
   public List<Preference> getClusterPreferences() {
-    return clusterPreferences;
+    return Collections.unmodifiableList(clusterPreferences);
   }
 
   @Override
@@ -394,7 +394,7 @@ public class Policy implements MapWriter {
   }
 
   private Session createSession(SolrCloudManager cloudManager, Transaction tx) {
-    return new Session(cloudManager, tx);
+    return new Session(this, cloudManager, tx);
   }
 
   public static List<Clause> mergePolicies(String coll,
@@ -463,8 +463,12 @@ public class Policy implements MapWriter {
     return policies;
   }
 
-  public List<String> getParams() {
+  public List<String> getParamNames() {
     return params.stream().map(Pair::first).collect(toList());
+  }
+
+  public List<Pair<String, Variable.Type>> getParams() {
+    return Collections.unmodifiableList(params);
   }
 
   public List<String> getPerReplicaAttributes() {
@@ -504,7 +508,7 @@ public class Policy implements MapWriter {
    * a cluster state.
    *
    */
-  public class Session implements MapWriter {
+  public static class Session implements MapWriter {
     private final List<String> nodes;
     final SolrCloudManager cloudManager;
     final List<Row> matrix;
@@ -512,13 +516,15 @@ public class Policy implements MapWriter {
     private final int znodeVersion;
     private final Set<String> collections = new HashSet<>();
     private final Map<String, Row> nodeToRow = new HashMap<>();
+    private final Policy policy;
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
     Transaction transaction;
 
-    private Session(List<String> nodes, SolrCloudManager cloudManager,
+    private Session(Policy policy, List<String> nodes, SolrCloudManager cloudManager,
                     List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
                     NodeStateProvider nodeStateProvider, Transaction transaction) {
+      this.policy = policy;
       this.transaction = transaction;
       this.nodes = nodes;
       this.cloudManager = cloudManager;
@@ -533,7 +539,8 @@ public class Policy implements MapWriter {
     }
 
 
-    Session(SolrCloudManager cloudManager, Transaction transaction) {
+    Session(Policy policy, SolrCloudManager cloudManager, Transaction transaction) {
+      this.policy = policy;
       this.transaction = transaction;
       ClusterState state = null;
       this.nodeStateProvider = cloudManager.getNodeStateProvider();
@@ -550,7 +557,7 @@ public class Policy implements MapWriter {
         collections.addAll(nodeStateProvider.getReplicaInfo(node, Collections.emptyList()).keySet());
       }
 
-      expandedClauses = clusterPolicy.stream()
+      expandedClauses = policy.getClusterPolicy().stream()
           .filter(clause -> !clause.isPerCollectiontag())
           .collect(Collectors.toList());
 
@@ -578,7 +585,7 @@ public class Policy implements MapWriter {
 
       matrix = new ArrayList<>(nodes.size());
       for (String node : nodes) {
-        Row row = new Row(node, params, perReplicaAttributes, this);
+        Row row = new Row(node, policy.getParams(), policy.getPerReplicaAttributes(), this);
         matrix.add(row);
         nodeToRow.put(node, row);
       }
@@ -588,20 +595,20 @@ public class Policy implements MapWriter {
     void addClausesForCollection(ClusterStateProvider stateProvider, String c) {
       String p = stateProvider.getPolicyNameByCollection(c);
       if (p != null) {
-        List<Clause> perCollPolicy = policies.get(p);
+        List<Clause> perCollPolicy = policy.getPolicies().get(p);
         if (perCollPolicy == null) {
           return;
         }
       }
-      expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
+      expandedClauses.addAll(mergePolicies(c, policy.getPolicies().getOrDefault(p, emptyList()), policy.getClusterPolicy()));
     }
 
     Session copy() {
-      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, transaction);
+      return new Session(policy, nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, transaction);
     }
 
     Session shallowCopy() {
-      return new Session(nodes, cloudManager, new ArrayList<>(matrix), expandedClauses, znodeVersion, nodeStateProvider, transaction);
+      return new Session(policy, nodes, cloudManager, new ArrayList<>(matrix), expandedClauses, znodeVersion, nodeStateProvider, transaction);
     }
 
     public Row getNode(String node) {
@@ -628,7 +635,7 @@ public class Policy implements MapWriter {
     }
 
     public Policy getPolicy() {
-      return Policy.this;
+      return policy;
 
     }
 
@@ -645,7 +652,7 @@ public class Policy implements MapWriter {
     }
 
     void sortNodes() {
-      setApproxValuesAndSortNodes(clusterPreferences, matrix);
+      setApproxValuesAndSortNodes(policy.getClusterPreferences(), matrix);
     }
 
 
