@@ -24,15 +24,12 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -71,40 +68,58 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     return Category.ADMIN;
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
-      values.add("zkStatus", getZkStatus());
+      String zkHost = cores.getZkController().getZkServerAddress();
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      String zkDynamicConfig = zkClient.getConfig();
+      List<SolrZkClient.ZkConfigDyn> dynConfig = SolrZkClient.ZkConfigDyn.parseLines(zkDynamicConfig);
+      values.add("zkStatus", getZkStatus(zkHost, dynConfig));
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Zookeeper status API is only available in Cloud mode");
     }
   }
 
-  /*
-   Gets all info from ZK API and returns as a map
+  /**
+   * For each zk host, resolved either from zk connection string or from zk dynamic reconfiguration config,
+   * fetch all config and status info from ZK API and returns as a map, where key is hostname
+   * @param zkHost zookeeper connection string
+   * @param zkDynamicConfig list of zk dynamic config objects
+   * @return map of zookeeper config and status per zk host
    */
-  protected Map<String, Object> getZkStatus() {
-    String zkHost = cores.getZkController().getZkServerAddress();
-    List<String> zookeepers = cores.getZkController().getZkClient().getZkServerListDynamic();
-    if (zookeepers.size() == 0) {
+  protected Map<String, Object> getZkStatus(String zkHost, List<SolrZkClient.ZkConfigDyn> zkDynamicConfig) {
+    final List<SolrZkClient.ZkConfigDyn> zookeepers;
+    if (zkDynamicConfig == null || zkDynamicConfig.size() == 0) {
       // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
-      zookeepers = Arrays.asList(zkHost.split("/")[0].split(","));
+      zookeepers = Arrays.stream(zkHost.split("/")[0].split(","))
+              .map(h -> {
+                SolrZkClient.ZkConfigDyn dyn = new SolrZkClient.ZkConfigDyn();
+                dyn.clientPortAddress = h.split(":")[0];
+                dyn.clientPort = h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181;
+                return dyn;
+              }).collect(Collectors.toList());
+    } else {
+      zookeepers = new ArrayList<>(zkDynamicConfig);
     }
-    Map<String, Object> zkStatus = new HashMap<>();
-    List<Object> details = new ArrayList<>();
+    final Map<String, Object> zkStatus = new HashMap<>();
+    final List<Object> details = new ArrayList<>();
     int numOk = 0;
     String status = STATUS_NA;
     int standalone = 0;
     int followers = 0;
     int reportedFollowers = 0;
     int leaders = 0;
-    List<String> errors = new ArrayList<>();
+    int participants = 0;
+    final List<String> errors = new ArrayList<>();
     zkStatus.put("ensembleSize", zookeepers.size());
     zkStatus.put("zkHost", zkHost);
-    for (String zk : zookeepers) {
+    for (SolrZkClient.ZkConfigDyn zk : zookeepers) {
+      final String zkClientHostPort = zk.resolveClientPortAddress() + ":" + zk.clientPort;
       try {
-        Map<String, Object> stat = monitorZookeeper(zk);
+        Map<String, Object> stat = monitorZookeeper(zkClientHostPort);
         if (stat.containsKey("errors")) {
           errors.addAll((List<String>)stat.get("errors"));
           stat.remove("errors");
@@ -113,7 +128,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         if ("true".equals(String.valueOf(stat.get("ok")))) {
           numOk++;
         }
-        String state = String.valueOf(stat.get("zk_server_state"));
+        String state = zk.role != null ? zk.role : String.valueOf(stat.get("zk_server_state"));
         if ("follower".equals(state)) {
           followers++;
         } else if ("leader".equals(state)) {
@@ -121,19 +136,22 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           reportedFollowers = Integer.parseInt(String.valueOf(stat.get("zk_followers")));
         } else if ("standalone".equals(state)) {
           standalone++;
+        } else if ("participant".equals(state)) {
+          // NOCOMMIT: What does participant mean vs leader or follower?
+          participants++;
         }
       } catch (SolrException se) {
-        log.warn("Failed talking to zookeeper " + zk, se);
+        log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
         errors.add(se.getMessage());
         Map<String, Object> stat = new HashMap<>();
-        stat.put("host", zk);
+        stat.put("host", zkClientHostPort);
         stat.put("ok", false);
         status = STATUS_YELLOW;
         details.add(stat);
       }
     }
     zkStatus.put("details", details);
-    if (followers+leaders > 0 && standalone > 0) {
+    if (followers+leaders+participants > 0 && standalone > 0) {
       status = STATUS_RED;
       errors.add("The zk nodes do not agree on their mode, check details");
     }
@@ -166,7 +184,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
       errors.add("We have an even number of zookeepers which is not recommended");
     }
-    if (followers+leaders > 0 && standalone == 0) {
+    if (followers+leaders+participants > 0 && standalone == 0) {
       zkStatus.put("mode", "ensemble");
     }
     if (status.equals(STATUS_NA)) {
@@ -238,10 +256,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     }
 
     try (
-        Socket socket = new Socket(host, port);
-        Writer writer = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
-        PrintWriter out = new PrintWriter(writer, true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));) {
+            Socket socket = new Socket(host, port);
+            Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+            PrintWriter out = new PrintWriter(writer, true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
       out.println(fourLetterWordCommand);
       List<String> response = in.lines().collect(Collectors.toList());
       log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);

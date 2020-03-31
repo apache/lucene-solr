@@ -209,6 +209,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void getConfig() {
+    // NOCOMMIT: Think this is empty due to zk running single-node? Find another way to test
+    assertEquals("", defaultClient.getConfig());
+  }
+
+  @Test
   public void testCheckInterrupted() {
     assertFalse(Thread.currentThread().isInterrupted());
     SolrZkClient.checkInterrupted(new RuntimeException());

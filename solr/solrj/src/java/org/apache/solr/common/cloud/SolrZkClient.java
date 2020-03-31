@@ -50,6 +50,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -736,23 +737,6 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
-   * Gets the list of server:port addresses by querying dynamic config from server.
-   * This list may be different from the initial {@link #getZkServerAddress()} string.
-   * If the server is pre-3.5 this may return an empty list.
-   * @return list of strings for zk servers, including client port, or empty list if none
-   */
-  public List<String> getZkServerListDynamic() {
-    String config = getConfig();
-    if (config == null) {
-      return Collections.emptyList();
-    }
-    return config.lines().filter(l -> l.startsWith("server."))
-            .filter(l -> l.contains(";"))
-            .map(l -> l.split(";")[1])
-            .collect(Collectors.toList());
-  }
-
-  /**
    * Gets the raw config node /zookeeper/config as returned by server. Response may look like
    * <pre>
    * server.1=localhost:2780:2783:participant;localhost:2791
@@ -848,6 +832,49 @@ public class SolrZkClient implements Closeable {
   }
   public void downloadFromZK(String zkPath, Path dir) throws IOException {
     ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
+  }
+
+  /**
+   * Represents one line in dynamic ZK config
+   */
+  public static class ZkConfigDyn {
+    // server.<positive id> = <address1>:<port1>:<port2>[:role];[<client port address>:]<client port>
+    public static Pattern linePattern = Pattern.compile("server\\.(?<serverId>\\d+) ?= ?(?<address>[^:]+):(?<leaderPort>\\d+):(?<leaderElectionPort>\\d+)(:(?<role>.*?))?(;((?<clientPortAddress>.*?):)?(?<clientPort>\\d+))?");
+    public int serverId;
+    public String address;
+    public int leaderPort;
+    public int leaderElectionPort;
+    public String role;
+    public String clientPortAddress;
+    public int clientPort;
+
+    /**
+     * Return the most likely address, first trying 'clientPortAddress', falling back to 'address'
+     * @return
+     */
+    public String resolveClientPortAddress() {
+      return ("0.0.0.0".equals(clientPortAddress) || clientPortAddress == null ? address : clientPortAddress);
+    }
+
+    public static List<ZkConfigDyn> parseLines(String lines) {
+      return lines.lines().filter(l -> l.startsWith("server")).map(ZkConfigDyn::parseLine).collect(Collectors.toList());
+    }
+
+    public static ZkConfigDyn parseLine(String line) {
+      ZkConfigDyn cfg = new ZkConfigDyn();
+      Matcher m = linePattern.matcher(line);
+      if (!m.matches()) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse bad dynamic zk config " + line);
+      }
+      cfg.serverId = Integer.parseInt(m.group("serverId"));
+      cfg.address = m.group("address");
+      cfg.leaderPort = Integer.parseInt(m.group("leaderPort"));
+      cfg.leaderElectionPort = Integer.parseInt(m.group("leaderElectionPort"));
+      cfg.role = m.group("role");
+      cfg.clientPortAddress = m.group("clientPortAddress");
+      cfg.clientPort = Integer.parseInt(m.group("clientPort"));
+      return cfg;
+    }
   }
 
   /**
