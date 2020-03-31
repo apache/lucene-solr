@@ -561,10 +561,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
         suggester.hint(Suggester.Hint.COLL_SHARD, new Pair<>(collName, "shards_" + i));
         SolrRequest op = suggester.getSuggestion();
+        session = suggester.getSession();
         assertNotNull(op);
       }
     }
-
     System.out.println("Time taken : "+ (System.currentTimeMillis() -start));
   }
 
