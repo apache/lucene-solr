@@ -80,7 +80,7 @@ public class TestSortOptimization extends LuceneTestCase {
   }
 
   
-  /*
+  /**
    * test that even if a field is not indexed with points, optimized sort still works as expected,
    * although no optimization will be run
    */

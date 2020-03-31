@@ -29,6 +29,10 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
+    @Override
+    public boolean isExhaustive() {
+      return true;
+    }
   },
 
   /**
@@ -39,6 +43,10 @@ public enum ScoreMode {
     @Override
     public boolean needsScores() {
       return false;
+    }
+    @Override
+    public boolean isExhaustive() {
+      return true;
     }
   },
 
@@ -51,6 +59,10 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
+    @Override
+    public boolean isExhaustive() {
+      return false;
+    }
   },
 
   /**
@@ -60,6 +72,10 @@ public enum ScoreMode {
   TOP_DOCS {
     @Override
     public boolean needsScores() {
+      return false;
+    }
+    @Override
+    public boolean isExhaustive() {
       return false;
     }
   },
@@ -74,10 +90,20 @@ public enum ScoreMode {
     public boolean needsScores() {
       return true;
     }
+    @Override
+    public boolean isExhaustive() {
+      return false;
+    }
   };
 
   /**
    * Whether this {@link ScoreMode} needs to compute scores.
    */
   public abstract boolean needsScores();
+
+  /**
+   * Returns {@code true} if for this {@link ScoreMode} it is necessary to process all documents,
+   * or {@code false} if is enough to go through top documents only.
+   */
+  public abstract boolean isExhaustive();
 }

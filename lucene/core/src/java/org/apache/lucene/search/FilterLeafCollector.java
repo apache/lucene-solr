@@ -54,7 +54,7 @@ public abstract class FilterLeafCollector implements LeafCollector {
   }
 
   @Override
-  public DocIdSetIterator iterator() {
-    return in.iterator();
+  public DocIdSetIterator competitiveIterator() {
+    return in.competitiveIterator();
   }
 }

@@ -143,7 +143,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public DocIdSetIterator iterator() {
+    public DocIdSetIterator competitiveIterator() {
       if (itComparator == null || itComparator.iterator() == null) return null;
       return new DocIdSetIterator() {
         private int doc;

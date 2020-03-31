@@ -51,8 +51,8 @@ class AssertingLeafCollector extends FilterLeafCollector {
   }
 
   @Override
-  public DocIdSetIterator iterator() {
-    return super.iterator();
+  public DocIdSetIterator competitiveIterator() {
+    return super.competitiveIterator();
   }
 }
 

@@ -93,10 +93,11 @@ public interface LeafCollector {
    */
   void collect(int doc) throws IOException;
 
-  /*
-   * optionally returns an iterator over competitive documents
+  /**
+   * Optionally returns an iterator over competitive documents.
+   * The default is to return null which is interpreted as the collector doesn't filter any documents.
    */
-  default DocIdSetIterator iterator() {
+  default DocIdSetIterator competitiveIterator() {
     return null;
   }
 
