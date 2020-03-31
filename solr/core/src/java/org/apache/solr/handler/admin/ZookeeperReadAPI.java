@@ -66,7 +66,7 @@ public class ZookeeperReadAPI {
     this.coreContainer = coreContainer;
   }
 
-  @EndPoint(path = "/cluster/zk-data/*",
+  @EndPoint(path = "/cluster/zk/data/*",
       method = SolrRequest.METHOD.GET,
       permission = COLL_READ_PERM)
   public class ReadNode {
@@ -101,7 +101,7 @@ public class ZookeeperReadAPI {
     }
   }
 
-  @EndPoint(path = "/cluster/zk-ls/*",
+  @EndPoint(path = "/cluster/zk/ls/*",
       method = SolrRequest.METHOD.GET,
       permission = ZK_READ_PERM)
   public class ListNode {

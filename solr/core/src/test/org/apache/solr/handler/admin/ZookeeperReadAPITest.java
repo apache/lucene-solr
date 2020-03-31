@@ -60,8 +60,8 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
   @Test
   public void testZkread() throws Exception {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk-data";
-    String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk-ls";
+    String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/data";
+    String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/ls";
 
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
       Object o = Utils.executeGET(client.getHttpClient(),
