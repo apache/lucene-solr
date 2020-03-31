@@ -36,6 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
@@ -53,6 +54,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
  * be removed in future versions.
  * This is not a public API. The data that is returned is not guaranteed to remain same
  * across releases, as the data stored in Zookeeper may change from time to time.
+ * @lucene.experimental
  */
 
 public class ZookeeperReadAPI {
@@ -125,6 +127,8 @@ public class ZookeeperReadAPI {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node :"+ path);
       } catch (Exception e) {
         rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
+      } finally {
+        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
       }
     }
 
