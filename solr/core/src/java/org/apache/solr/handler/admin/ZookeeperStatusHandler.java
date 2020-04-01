@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
@@ -76,7 +77,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       String zkHost = cores.getZkController().getZkServerAddress();
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       String zkDynamicConfig = zkClient.getConfig();
-      List<SolrZkClient.ZkConfigDyn> dynConfig = SolrZkClient.ZkConfigDyn.parseLines(zkDynamicConfig);
+      final List<SolrZkClient.ZkConfigDyn> dynConfig = SolrZkClient.ZkConfigDyn.parseLines(zkDynamicConfig);
       values.add("zkStatus", getZkStatus(zkHost, dynConfig));
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Zookeeper status API is only available in Cloud mode");
@@ -92,17 +93,20 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    */
   protected Map<String, Object> getZkStatus(String zkHost, List<SolrZkClient.ZkConfigDyn> zkDynamicConfig) {
     final List<SolrZkClient.ZkConfigDyn> zookeepers;
-    if (zkDynamicConfig == null || zkDynamicConfig.size() == 0) {
+    if (CollectionUtils.isEmpty(zkDynamicConfig)) {
       // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
       zookeepers = Arrays.stream(zkHost.split("/")[0].split(","))
-              .map(h -> {
-                SolrZkClient.ZkConfigDyn dyn = new SolrZkClient.ZkConfigDyn();
-                dyn.clientPortAddress = h.split(":")[0];
-                dyn.clientPort = h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181;
-                return dyn;
-              }).collect(Collectors.toList());
+              .map(h -> new SolrZkClient.ZkConfigDyn(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        h.split(":")[0],
+                        h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181)
+              ).collect(Collectors.toList());
     } else {
-      zookeepers = new ArrayList<>(zkDynamicConfig);
+      zookeepers = new ArrayList<>(zkDynamicConfig); // Clone input
     }
     final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
@@ -112,7 +116,6 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     int followers = 0;
     int reportedFollowers = 0;
     int leaders = 0;
-    int participants = 0;
     final List<String> errors = new ArrayList<>();
     zkStatus.put("ensembleSize", zookeepers.size());
     zkStatus.put("zkHost", zkHost);
@@ -128,17 +131,17 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         if ("true".equals(String.valueOf(stat.get("ok")))) {
           numOk++;
         }
-        String state = zk.role != null ? zk.role : String.valueOf(stat.get("zk_server_state"));
-        if ("follower".equals(state)) {
+        String state = String.valueOf(stat.get("zk_server_state"));
+        if ("follower".equals(state) || "observer".equals(state)) {
           followers++;
         } else if ("leader".equals(state)) {
           leaders++;
           reportedFollowers = Integer.parseInt(String.valueOf(stat.get("zk_followers")));
         } else if ("standalone".equals(state)) {
           standalone++;
-        } else if ("participant".equals(state)) {
-          // NOCOMMIT: What does participant mean vs leader or follower?
-          participants++;
+        }
+        if (zk.role != null) {
+          stat.put("role", zk.role);
         }
       } catch (SolrException se) {
         log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
@@ -151,7 +154,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
     }
     zkStatus.put("details", details);
-    if (followers+leaders+participants > 0 && standalone > 0) {
+    if (followers+leaders > 0 && standalone > 0) {
       status = STATUS_RED;
       errors.add("The zk nodes do not agree on their mode, check details");
     }
@@ -184,7 +187,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
       errors.add("We have an even number of zookeepers which is not recommended");
     }
-    if (followers+leaders+participants > 0 && standalone == 0) {
+    if (followers+leaders > 0 && standalone == 0) {
       zkStatus.put("mode", "ensemble");
     }
     if (status.equals(STATUS_NA)) {
