@@ -2469,7 +2469,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               globalFieldNumberMap.clear();
               success = true;
               long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
-              docWriter.setLastSeqNo(seqNo);
               return seqNo;
             } finally {
               if (success == false) {

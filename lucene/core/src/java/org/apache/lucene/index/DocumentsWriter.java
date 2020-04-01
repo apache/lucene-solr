@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import javax.sql.rowset.Predicate;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +33,6 @@ import java.util.function.ToLongFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
-import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -130,8 +130,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   final DocumentsWriterPerThreadPool perThreadPool;
   final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
-  private long lastSeqNo;
-  
+
   DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, AtomicLong pendingNumDocs, boolean enableTestPoints,
                   Supplier<String> segmentNameSupplier, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory,
                   FieldInfos.FieldNumbers globalFieldNumberMap) {
@@ -141,7 +140,13 @@ final class DocumentsWriter implements Closeable, Accountable {
     this.config = config;
     this.infoStream = config.getInfoStream();
     this.deleteQueue = new DocumentsWriterDeleteQueue(infoStream);
-    this.perThreadPool = config.getIndexerThreadPool();
+    this.perThreadPool = new DocumentsWriterPerThreadPool(() -> {
+      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldNumberMap);
+      return new DocumentsWriterPerThread(indexCreatedVersionMajor,
+          segmentNameSupplier.get(), directoryOrig,
+          directory, config, infoStream, deleteQueue, infos,
+          pendingNumDocs, enableTestPoints);
+    });
     flushPolicy = config.getFlushPolicy();
     this.globalFieldNumberMap = globalFieldNumberMap;
     this.pendingNumDocs = pendingNumDocs;
@@ -155,9 +160,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     return applyDeleteOrUpdate(q -> q.addDelete(queries));
   }
 
-  void setLastSeqNo(long seqNo) {
-    lastSeqNo = seqNo;
-  }
 
   long deleteTerms(final Term... terms) throws IOException {
     return applyDeleteOrUpdate(q -> q.addDelete(terms));
@@ -173,13 +175,12 @@ final class DocumentsWriter implements Closeable, Accountable {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     long seqNo = function.applyAsLong(deleteQueue);
     flushControl.doOnDelete();
-    lastSeqNo = Math.max(lastSeqNo, seqNo);
     if (applyAllDeletes()) {
       seqNo = -seqNo;
     }
     return seqNo;
   }
-  
+
   /** If buffered deletes are using too much heap, resolve them and write disk and return true. */
   private boolean applyAllDeletes() throws IOException {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
@@ -225,8 +226,8 @@ final class DocumentsWriter implements Closeable, Accountable {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "abort");
       }
-      for (final ThreadState perThread : perThreadPool) {
-        perThread.lock();
+      for (final DocumentsWriterPerThread perThread : perThreadPool.drain(x -> true)) {
+        assert perThread.isHeldByCurrentThread();
         try {
           abortThreadState(perThread);
         } finally {
@@ -271,25 +272,25 @@ final class DocumentsWriter implements Closeable, Accountable {
         pendingNumDocs.addAndGet(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
       }
     });
-    List<ThreadState> threadStates = new ArrayList<>();
+    List<DocumentsWriterPerThread> threadStates = new ArrayList<>();
     AtomicBoolean released = new AtomicBoolean(false);
     final Closeable release = () -> {
       if (released.compareAndSet(false, true)) { // only once
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", "unlockAllAbortedThread");
         }
-        perThreadPool.unlockNewThreadStates();
-        for (ThreadState state : threadStates) {
+        perThreadPool.unlockNewWriters();
+        for (DocumentsWriterPerThread state : threadStates) {
           state.unlock();
         }
       }
     };
     try {
       deleteQueue.clear();
-      perThreadPool.lockNewThreadStates();
-      for (final ThreadState perThread : perThreadPool) {
-        perThread.lock();
-        threadStates.add(perThread);
+      perThreadPool.lockNewWriters();
+      threadStates.addAll(perThreadPool.drain(x -> true));
+      for (final DocumentsWriterPerThread perThread : threadStates) {
+        assert perThread.isHeldByCurrentThread();
         abortThreadState(perThread);
       }
       deleteQueue.clear();
@@ -318,31 +319,21 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
   
   /** Returns how many documents were aborted. */
-  private int abortThreadState(final ThreadState perThread) throws IOException {
+  private int abortThreadState(final DocumentsWriterPerThread perThread) throws IOException {
     assert perThread.isHeldByCurrentThread();
-    if (perThread.isInitialized()) { 
-      try {
-        int abortedDocCount = perThread.dwpt.getNumDocsInRAM();
-        subtractFlushedNumDocs(abortedDocCount);
-        perThread.dwpt.abort();
-        return abortedDocCount;
-      } finally {
-        flushControl.doOnAbort(perThread);
-      }
-    } else {
+    try {
+      int abortedDocCount = perThread.getNumDocsInRAM();
+      subtractFlushedNumDocs(abortedDocCount);
+      perThread.abort();
+      return abortedDocCount;
+    } finally {
       flushControl.doOnAbort(perThread);
-      // This DWPT was never initialized so it has no indexed documents:
-      return 0;
     }
   }
 
   /** returns the maximum sequence number for all previously completed operations */
   public long getMaxCompletedSequenceNumber() {
-    long value = lastSeqNo;
-    for(ThreadState perThread : perThreadPool) {
-      value = Math.max(value, perThread.lastSeqNo);
-    }
-    return value;
+   return deleteQueue.getLastSequenceNumber();
   }
 
   boolean anyChanges() {
@@ -415,21 +406,12 @@ final class DocumentsWriter implements Closeable, Accountable {
 
     return hasEvents;
   }
-  
-  private void ensureInitialized(ThreadState state) throws IOException {
-    if (state.dwpt == null) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldNumberMap);
-      state.dwpt = new DocumentsWriterPerThread(indexCreatedVersionMajor, segmentNameSupplier.get(), directoryOrig,
-                                                directory, config, infoStream, deleteQueue, infos,
-                                                pendingNumDocs, enableTestPoints);
-    }
-  }
 
   long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
                        final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
 
-    final ThreadState perThread = flushControl.obtainAndLock();
+    final DocumentsWriterPerThread dwpt = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
     long seqNo;
 
@@ -437,15 +419,12 @@ final class DocumentsWriter implements Closeable, Accountable {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
       ensureOpen();
-      ensureInitialized(perThread);
-      assert perThread.isInitialized();
-      final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
         seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
       } finally {
         if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
+          flushControl.doOnAbort(dwpt);
         }
         // We don't know how many documents were actually
         // counted as indexed, so we must subtract here to
@@ -453,13 +432,9 @@ final class DocumentsWriter implements Closeable, Accountable {
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
       }
       final boolean isUpdate = delNode != null && delNode.isDelete();
-      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
-
-      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
-      perThread.lastSeqNo = seqNo;
-
+      flushingDWPT = flushControl.doAfterDocument(dwpt, isUpdate);
     } finally {
-      perThreadPool.release(perThread);
+      perThreadPool.release(dwpt);
     }
 
     if (postUpdate(flushingDWPT, hasEvents)) {
@@ -471,6 +446,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {
+      assert flushingDWPT.hasFlushed() == false;
       hasEvents = true;
       boolean success = false;
       DocumentsWriterFlushQueue.FlushTicket ticket = null;

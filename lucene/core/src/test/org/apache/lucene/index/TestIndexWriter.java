@@ -2919,15 +2919,14 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     int numDocs = indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
+    assertFalse(largestNonPendingWriter.isFlushPending());
 
     int numRamDocs = w.numRamDocs();
-    int numDocsInDWPT = largestNonPendingWriter.dwpt.getNumDocsInRAM();
+    int numDocsInDWPT = largestNonPendingWriter.getNumDocsInRAM();
     assertTrue(w.flushNextBuffer());
-    assertNull(largestNonPendingWriter.dwpt);
+    assertTrue(largestNonPendingWriter.hasFlushed());
     assertEquals(numRamDocs-numDocsInDWPT, w.numRamDocs());
 
     // make sure it's not locked
@@ -2974,10 +2973,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
+    assertFalse(largestNonPendingWriter.isFlushPending());
+    assertFalse(largestNonPendingWriter.hasFlushed());
     int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
     w.docWriter.flushControl.markForFullFlush();
     DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
@@ -2994,10 +2993,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     int numDocs = indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
+    assertFalse(largestNonPendingWriter.isFlushPending());
+    assertFalse(largestNonPendingWriter.hasFlushed());
 
     CountDownLatch wait = new CountDownLatch(1);
     CountDownLatch locked = new CountDownLatch(1);
@@ -3030,7 +3029,7 @@ public class TestIndexWriter extends LuceneTestCase {
     lockThread.join();
     flushThread.join();
 
-    assertNull("largest DWPT should be flushed", largestNonPendingWriter.dwpt);
+    assertTrue("largest DWPT should be flushed", largestNonPendingWriter.hasFlushed());
     // make sure it's not locked
     largestNonPendingWriter.lock();
     largestNonPendingWriter.unlock();
@@ -3121,15 +3120,14 @@ public class TestIndexWriter extends LuceneTestCase {
     while(true) {
       int numStatesWithDocs = 0;
       DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
-      for (DocumentsWriterPerThreadPool.ThreadState threadState : perThreadPool) {
-        threadState.lock();
+      for (DocumentsWriterPerThread dwpt : perThreadPool) {
+        dwpt.lock();
         try {
-          DocumentsWriterPerThread dwpt = threadState.dwpt;
-          if (dwpt != null && dwpt.getNumDocsInRAM() > 1) {
+          if (dwpt.getNumDocsInRAM() > 1) {
             numStatesWithDocs++;
           }
         } finally {
-          threadState.unlock();
+          dwpt.unlock();
         }
       }
       if (numStatesWithDocs >= buffersWithDocs) {
@@ -3709,14 +3707,12 @@ public class TestIndexWriter extends LuceneTestCase {
       List<Closeable> states = new ArrayList<>();
       try {
         for (int i = 0; i < 100; i++) {
-          DocumentsWriterPerThreadPool.ThreadState state = w.docWriter.perThreadPool.getAndLock();
+          DocumentsWriterPerThread state = w.docWriter.perThreadPool.getAndLock();
           states.add(state::unlock);
-          if (state.isInitialized()) {
-            state.dwpt.deleteQueue.getNextSequenceNumber();
-          } else {
-            w.docWriter.deleteQueue.getNextSequenceNumber();
-          }
+          state.deleteQueue.getNextSequenceNumber();
         }
+      } catch (IOException e) {
+        throw new AssertionError(e);
       } finally {
         IOUtils.closeWhileHandlingException(states);
       }

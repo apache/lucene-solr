@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -41,6 +42,7 @@ import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
@@ -156,6 +158,9 @@ final class DocumentsWriterPerThread {
   final BufferedUpdates pendingUpdates;
   final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
+  private SetOnce<Boolean> flushPending = new SetOnce<>();
+  private volatile long lastCommittedBytesUsed = 0;
+  private SetOnce<Boolean> hasFlushed = new SetOnce<>();
 
   private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
@@ -169,6 +174,7 @@ final class DocumentsWriterPerThread {
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
+  private final ReentrantLock lock = new ReentrantLock();
 
   public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
@@ -350,6 +356,7 @@ final class DocumentsWriterPerThread {
 
   /** Flush all pending docs to a new segment */
   FlushedSegment flush(DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
+    assert flushPending.get() == Boolean.TRUE;
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -445,6 +452,7 @@ final class DocumentsWriterPerThread {
       throw t;
     } finally {
       maybeAbort("flush", flushNotifications);
+      hasFlushed.set(Boolean.TRUE);
     }
   }
 
@@ -600,5 +608,81 @@ final class DocumentsWriterPerThread {
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
         + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
   }
-  
+
+
+  /**
+   * Returns true iff this DWPT is marked as flush pending
+   */
+  boolean isFlushPending() {
+    return flushPending.get() == Boolean.TRUE;
+  }
+
+  /**
+   * Sets this DWPT as flush pending. This can only be set once.
+   */
+  void setFlushPending() {
+    flushPending.set(Boolean.TRUE);
+  }
+
+
+  /**
+   * Returns the last committed bytes for this DWPT. This method can be called
+   * without acquiring the DWPTs lock.
+   */
+  long getLastCommittedBytesUsed() {
+    return lastCommittedBytesUsed;
+  }
+
+  /**
+   * Commits the current {@link #bytesUsed()} and stores it's value for later reuse.
+   * The last committed bytes used can be retrieved via {@link #getLastCommittedBytesUsed()}
+   * @return the delta between the current {@link #bytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
+   */
+  long commitLastBytesUsed() {
+    assert isHeldByCurrentThread();
+    long delta = bytesUsed() - lastCommittedBytesUsed;
+    lastCommittedBytesUsed += delta;
+    return delta;
+  }
+
+  /**
+   * Locks this DWPT for exclusive access.
+   * @see ReentrantLock#lock()
+   */
+  void lock() {
+    lock.lock();
+  }
+
+  /**
+   * Acquires the DWPTs lock only if it is not held by another thread at the time
+   * of invocation.
+   * @return true if the lock was acquired.
+   * @see ReentrantLock#tryLock()
+   */
+  boolean tryLock() {
+    return lock.tryLock();
+  }
+
+  /**
+   * Returns true if the DWPTs lock is held by the current thread
+   * @see ReentrantLock#isHeldByCurrentThread()
+   */
+  boolean isHeldByCurrentThread() {
+    return lock.isHeldByCurrentThread();
+  }
+
+  /**
+   * Unlocks the DWPTs lock
+   * @see ReentrantLock#unlock()
+   */
+  void unlock() {
+    lock.unlock();
+  }
+
+  /**
+   * Returns <code>true</code> iff this DWPT has been flushed
+   */
+  boolean hasFlushed() {
+    return hasFlushed.get() == Boolean.TRUE;
+  }
 }

@@ -16,11 +16,17 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Set;
+import java.util.function.Predicate;
 
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -38,117 +44,55 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * new {@link DocumentsWriterPerThread} instance.
  * </p>
  */
-final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThreadPool.ThreadState> {
+final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread> {
 
-  /**
-   * {@link ThreadState} references and guards a
-   * {@link DocumentsWriterPerThread} instance that is used during indexing to
-   * build a in-memory index segment. {@link ThreadState} also holds all flush
-   * related per-thread data controlled by {@link DocumentsWriterFlushControl}.
-   * <p>
-   * A {@link ThreadState}, its methods and members should only accessed by one
-   * thread a time. Users must acquire the lock via {@link ThreadState#lock()}
-   * and release the lock in a finally block via {@link ThreadState#unlock()}
-   * before accessing the state.
-   */
-  @SuppressWarnings("serial")
-  final static class ThreadState extends ReentrantLock {
-    DocumentsWriterPerThread dwpt;
-    // TODO this should really be part of DocumentsWriterFlushControl
-    // write access guarded by DocumentsWriterFlushControl
-    volatile boolean flushPending = false;
-    // TODO this should really be part of DocumentsWriterFlushControl
-    // write access guarded by DocumentsWriterFlushControl
-    long bytesUsed = 0;
+  private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
 
-    // set by DocumentsWriter after each indexing op finishes
-    volatile long lastSeqNo;
+  private final List<DocumentsWriterPerThread> freeList = new ArrayList<>();
+  private final IOSupplier<DocumentsWriterPerThread> factory;
 
-    ThreadState(DocumentsWriterPerThread dpwt) {
-      this.dwpt = dpwt;
-    }
-    
-    private void reset() {
-      assert this.isHeldByCurrentThread();
-      this.dwpt = null;
-      this.bytesUsed = 0;
-      this.flushPending = false;
-    }
-    
-    boolean isInitialized() {
-      assert this.isHeldByCurrentThread();
-      return dwpt != null;
-    }
-    
-    /**
-     * Returns the number of currently active bytes in this ThreadState's
-     * {@link DocumentsWriterPerThread}
-     */
-    public long getBytesUsedPerThread() {
-      assert this.isHeldByCurrentThread();
-      // public for FlushPolicy
-      return bytesUsed;
-    }
-    
-    /**
-     * Returns this {@link ThreadState}s {@link DocumentsWriterPerThread}
-     */
-    public DocumentsWriterPerThread getDocumentsWriterPerThread() {
-      assert this.isHeldByCurrentThread();
-      // public for FlushPolicy
-      return dwpt;
-    }
-    
-    /**
-     * Returns <code>true</code> iff this {@link ThreadState} is marked as flush
-     * pending otherwise <code>false</code>
-     */
-    boolean isFlushPending() {
-      return flushPending;
-    }
+  private int takenWriterPermits = 0;
+
+
+  public DocumentsWriterPerThreadPool(IOSupplier<DocumentsWriterPerThread> factory) {
+    this.factory = factory;
   }
 
-  private final List<ThreadState> threadStates = new ArrayList<>();
-
-  private final List<ThreadState> freeList = new ArrayList<>();
-
-  private int takenThreadStatePermits = 0;
-
   /**
-   * Returns the active number of {@link ThreadState} instances.
+   * Returns the active number of {@link DocumentsWriterPerThread} instances.
    */
   synchronized int getActiveThreadStateCount() {
-    return threadStates.size();
+    return dwpts.size();
   }
 
-  synchronized void lockNewThreadStates() {
-    // this is similar to a semaphore - we need to acquire all permits ie. takenThreadStatePermits must be == 0
+  synchronized void lockNewWriters() {
+    // this is similar to a semaphore - we need to acquire all permits ie. takenWriterPermits must be == 0
     // any call to lockNewThreadStates() must be followed by unlockNewThreadStates() otherwise we will deadlock at some
     // point
-    assert takenThreadStatePermits >= 0;
-    takenThreadStatePermits++;
+    assert takenWriterPermits >= 0;
+    takenWriterPermits++;
   }
 
-  synchronized void unlockNewThreadStates() {
-    assert takenThreadStatePermits > 0;
-    takenThreadStatePermits--;
-    if (takenThreadStatePermits == 0) {
+  synchronized void unlockNewWriters() {
+    assert takenWriterPermits > 0;
+    takenWriterPermits--;
+    if (takenWriterPermits == 0) {
       notifyAll();
     }
   }
   /**
-   * Returns a new {@link ThreadState} iff any new state is available otherwise
+   * Returns a new {@link DocumentsWriterPerThread} iff any new state is available otherwise
    * <code>null</code>.
    * <p>
-   * NOTE: the returned {@link ThreadState} is already locked iff non-
+   * NOTE: the returned {@link DocumentsWriterPerThread} is already locked iff non-
    * <code>null</code>.
    * 
-   * @return a new {@link ThreadState} iff any new state is available otherwise
+   * @return a new {@link DocumentsWriterPerThread} iff any new state is available otherwise
    *         <code>null</code>
    */
-  private synchronized ThreadState newThreadState() {
-    assert takenThreadStatePermits >= 0;
-    while (takenThreadStatePermits > 0) {
+  private synchronized DocumentsWriterPerThread newThreadState() throws IOException {
+    assert takenWriterPermits >= 0;
+    while (takenWriterPermits > 0) {
       // we can't create new thread-states while not all permits are available
       try {
         wait();
@@ -156,53 +100,76 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
         throw new ThreadInterruptedException(ie);
       }
     }
-    ThreadState threadState = new ThreadState(null);
+    DocumentsWriterPerThread threadState = factory.get();
     threadState.lock(); // lock so nobody else will get this ThreadState
-    threadStates.add(threadState);
+    dwpts.add(threadState);
     return threadState;
 }
 
-  DocumentsWriterPerThread reset(ThreadState threadState) {
-    assert threadState.isHeldByCurrentThread();
-    final DocumentsWriterPerThread dwpt = threadState.dwpt;
-    threadState.reset();
-    return dwpt;
-  }
-  
   // TODO: maybe we should try to do load leveling here: we want roughly even numbers
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
 
   /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
-  ThreadState getAndLock() {
-    ThreadState threadState;
+  DocumentsWriterPerThread getAndLock() throws IOException {
     synchronized (this) {
-      if (freeList.size() == 0) {
-        // ThreadState is already locked before return by this method:
-        return newThreadState();
-      } else {
-        // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
-        // limited number of thread states:
-        threadState = freeList.remove(freeList.size()-1);
+      // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
+      // limited number of thread states:
+      for (int i = freeList.size()-1; i >= 0; i--) {
+        DocumentsWriterPerThread perThread = freeList.get(i);
+        if (perThread.tryLock()) {
+          freeList.remove(i);
+          return perThread;
+        }
       }
+      // ThreadState is already locked before return by this method:
+      return newThreadState();
     }
-    // This could take time, e.g. if the threadState is [briefly] checked for flushing:
-    threadState.lock();
-    return threadState;
   }
 
-  void release(ThreadState state) {
-    state.unlock();
+  void release(DocumentsWriterPerThread state) {
     synchronized (this) {
-      if (state.dwpt != null) { // we don't need to add back flushed thread-states
+      if (dwpts.contains(state)) {
         freeList.add(state);
-      } else {
-        threadStates.remove(state); // remove it from the thread states list
       }
     }
+    state.unlock();
+
   }
 
   @Override
-  public synchronized Iterator<ThreadState> iterator() {
-    return List.copyOf(threadStates).iterator(); // copy on read - this is a quick op since num states is low
+  public synchronized Iterator<DocumentsWriterPerThread> iterator() {
+    return List.copyOf(dwpts).iterator(); // copy on read - this is a quick op since num states is low
+  }
+
+  public List<DocumentsWriterPerThread> drain(Predicate<DocumentsWriterPerThread> predicate) {
+    List<DocumentsWriterPerThread> list = new ArrayList<>();
+    for (DocumentsWriterPerThread perThread : this) {
+      if (predicate.test(perThread)) {
+        perThread.lock();
+        if (checkout(perThread)) {
+          list.add(perThread);
+        } else {
+          perThread.unlock();
+        }
+      }
+    }
+    return Collections.unmodifiableList(list);
+  }
+
+  synchronized boolean checkout(DocumentsWriterPerThread perThread) {
+   assert perThread.isHeldByCurrentThread();
+    synchronized (this) {
+      if (dwpts.remove(perThread)) {
+        freeList.remove(perThread);
+      } else {
+        assert freeList.contains(perThread) == false;
+        return false;
+      }
+    }
+    return true;
+  }
+
+  synchronized boolean isRegistered(DocumentsWriterPerThread perThread) {
+    return dwpts.contains(perThread);
   }
 }
