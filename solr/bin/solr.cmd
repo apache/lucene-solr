@@ -1187,7 +1187,7 @@ IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
 -Dsolr.internal.network.permission=*
 )
 
-REM Enable/Disable the Admin UI based on requirements.
+REM Enable ADMIN UI by default, and give the option for users to disable it
 IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
   set DISABLE_ADMIN_UI="true"
 ) else (
