@@ -56,7 +56,17 @@
       initialSize="512"
       autowarmCount="0"/>
 
+    <cache
+      name="user_definied_cache_XXX"
+      enabled="${user_definied_cache_XXX.enabled:false}"  
+      />
+    <cache
+      name="user_definied_cache_ZZZ"
+      enabled="${user_definied_cache_ZZZ.enabled:false}"  
+      />
 
+
+    
     <!-- If true, stored fields that are not requested will be loaded lazily.
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
