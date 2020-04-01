@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -543,27 +544,30 @@ final class ReadersAndUpdates {
       
       try {
         // clone FieldInfos so that we can update their dvGen separately from
-        // the reader's infos and write them to a new fieldInfos_gen file
-        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
-        // cannot use builder.add(reader.getFieldInfos()) because it does not
-        // clone FI.attributes as well FI.dvGen
+        // the reader's infos and write them to a new fieldInfos_gen file.
+        Map<String, FieldInfo> newFields = new HashMap<>();
         for (FieldInfo fi : reader.getFieldInfos()) {
-          FieldInfo clone = builder.add(fi);
-          // copy the stuff FieldInfos.Builder doesn't copy
-          for (Entry<String,String> e : fi.attributes().entrySet()) {
-            clone.putAttribute(e.getKey(), e.getValue());
-          }
-          clone.setDocValuesGen(fi.getDocValuesGen());
+          // cannot use builder.add(fi) because it does not preserve
+          // the local field number. Field numbers can be different from the global ones
+          // if the segment was created externally (with IndexWriter#addIndexes(Directory)).
+          FieldInfo clone = new FieldInfo(fi);
+          newFields.put(clone.name, clone);
         }
 
         // create new fields with the right DV type
+        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
         for (List<DocValuesFieldUpdates> updates : pendingDVUpdates.values()) {
           DocValuesFieldUpdates update = updates.get(0);
-          FieldInfo fieldInfo = builder.getOrAdd(update.field);
-          fieldInfo.setDocValuesType(update.type);
+          FieldInfo fi = newFields.get(update.field);
+          if (fi == null) {
+            // the field is not present in this segment so we can fallback to the global fields.
+            fi = builder.getOrAdd(update.field);
+            newFields.put(update.field, fi);
+          }
+          fi.setDocValuesType(update.type);
         }
         
-        fieldInfos = builder.finish();
+        fieldInfos = new FieldInfos(newFields.values().toArray(new FieldInfo[0]));
         final DocValuesFormat docValuesFormat = codec.docValuesFormat();
         
         handleDVUpdates(fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);

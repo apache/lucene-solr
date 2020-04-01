@@ -36,6 +36,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -1481,6 +1482,81 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     reader.close();
     
     IOUtils.close(dir1, dir2);
+  }
+
+  public void testUpdatesAterAddIndexes() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    final int numDocs = atLeast(50);
+    try (IndexWriter writer = new IndexWriter(dir1, conf)) {
+      // create first index
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("ndv", 4L));
+        doc.add(new NumericDocValuesField("control", 8L));
+        doc.add(new LongPoint("i1", 4L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(dir2, conf)) {
+      // create second index
+      for (int i = numDocs; i < numDocs * 2; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("ndv", 2L));
+        doc.add(new NumericDocValuesField("control", 4L));
+        doc.add(new LongPoint("i2", 16L));
+        doc.add(new LongPoint("i2", 24L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory mainDir = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(mainDir, conf)) {
+      writer.addIndexes(dir1, dir2);
+
+      List<FieldInfos> originalFieldInfos = new ArrayList<>();
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (LeafReaderContext leaf : reader.leaves()) {
+          originalFieldInfos.add(leaf.reader().getFieldInfos());
+        }
+      }
+      assertTrue(originalFieldInfos.size() > 0);
+
+      // update some docs to a random value
+      long value = random().nextInt();
+      Term term = new Term("id", new BytesRef(Integer.toString(random().nextInt(numDocs) * 2)));
+      writer.updateDocValues(term, new NumericDocValuesField("ndv", value), new NumericDocValuesField("control", value*2));
+
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (int i = 0; i < reader.leaves().size(); i++) {
+          LeafReader leafReader = reader.leaves().get(i).reader();
+          FieldInfos origFieldInfos = originalFieldInfos.get(i);
+          FieldInfos newFieldInfos = leafReader.getFieldInfos();
+          // ensure that field numbers are preserved when updating doc values
+          for (FieldInfo fieldInfo : origFieldInfos) {
+            assertEquals(fieldInfo.number, newFieldInfos.fieldInfo(fieldInfo.name).number);
+          }
+          NumericDocValues ndv = leafReader.getNumericDocValues("ndv");
+          NumericDocValues control = leafReader.getNumericDocValues("control");
+          for (int docId = 0; docId < leafReader.maxDoc(); docId++) {
+            assertEquals(docId, ndv.nextDoc());
+            assertEquals(docId, control.nextDoc());
+            assertEquals(ndv.longValue()*2, control.longValue());
+          }
+        }
+        IndexSearcher searcher = new IndexSearcher(reader);
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i1", 4L)));
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i2", 16L)));
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i2", 24L)));
+      }
+    }
+    IOUtils.close(dir1, dir2, mainDir);
   }
 
   public void testDeleteUnusedUpdatesFiles() throws Exception {

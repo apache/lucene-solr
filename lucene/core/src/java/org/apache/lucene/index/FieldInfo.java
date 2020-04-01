@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -85,6 +86,28 @@ public final class FieldInfo {
     this.pointNumBytes = pointNumBytes;
     this.softDeletesField = softDeletesField;
     assert checkConsistency();
+  }
+
+  /**
+   * Creates a clone of the provided {@link FieldInfo}.
+   */
+  FieldInfo(FieldInfo clone) {
+    this.name = clone.name;
+    this.number = clone.number;
+    this.docValuesType = clone.docValuesType;
+    this.indexOptions = clone.indexOptions;
+    this.storeTermVector = clone.storeTermVector;
+    this.storePayloads = clone.storePayloads;
+    this.omitNorms = clone.omitNorms;
+    this.storeTermVector = clone.storeTermVector;
+    this.storePayloads = clone.storePayloads;
+    this.omitNorms = clone.omitNorms;
+    this.dvGen = clone.dvGen;
+    this.attributes = new HashMap<>(clone.attributes);
+    this.pointDimensionCount = clone.pointDimensionCount;
+    this.pointIndexDimensionCount = clone.pointIndexDimensionCount;
+    this.pointNumBytes = clone.pointNumBytes;
+    this.softDeletesField = clone.softDeletesField;
   }
 
   /** 
