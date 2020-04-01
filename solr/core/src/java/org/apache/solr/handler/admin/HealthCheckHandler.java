@@ -114,7 +114,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
                   "Replica(s) " + unhealthyCores + " are currently initializing or recovering"));
           return;
       }
-      rsp.add("MESSAGE", "All cores are healthy");
+      rsp.add("message", "All cores are healthy");
     }
 
     // All lights green, report healthy
