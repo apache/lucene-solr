@@ -122,10 +122,10 @@ public class HealthCheckHandler extends RequestHandlerBase {
   }
 
   /**
-   * Find replicas DOWN or RECOVERING
+   * Find replicas DOWN or RECOVERING, or replicas in clusterstate that do not exist on local node
    * @param clusterState clusterstate from ZK
    * @param nodeName this node name
-   * @param allCoreNames list of all core names on localhost to check that it exists
+   * @param allCoreNames list of all core names on current node
    * @return list of core names that are either DOWN ore RECOVERING on 'nodeName'
    */
   static List<String> findUnhealthyCores(ClusterState clusterState, String nodeName, Collection<String> allCoreNames) {
