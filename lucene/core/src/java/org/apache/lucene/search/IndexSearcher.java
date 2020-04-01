@@ -219,9 +219,8 @@ public class IndexSearcher {
     if (executor == null) {
       assert sliceExecutor == null;
     }
-    if (sliceExecutor == null) {
-      assert executor == null;
-    }
+
+    assert (sliceExecutor == null) == (executor==null);
 
     reader = context.reader();
     this.executor = executor;

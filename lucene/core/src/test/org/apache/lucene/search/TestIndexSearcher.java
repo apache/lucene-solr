@@ -57,40 +57,26 @@ import org.junit.Test;
 public class TestIndexSearcher extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
-  Directory dir2;
-  IndexReader reader2;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    dir2 = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Random random = random();
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
       doc.add(newStringField("field2", Boolean.toString(i % 2 == 0), Field.Store.NO));
       doc.add(new SortedDocValuesField("field2", new BytesRef(Boolean.toString(i % 2 == 0))));
       iw.addDocument(doc);
+
+      if (random.nextBoolean()) {
+        iw.commit();
+      }
     }
     reader = iw.getReader();
     iw.close();
-
-    Random random = random();
-    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
-    for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
-      doc.add(newStringField("field2", Boolean.toString(i % 2 == 0), Field.Store.NO));
-      doc.add(new SortedDocValuesField("field2", new BytesRef(Boolean.toString(i % 2 == 0))));
-      iw2.addDocument(doc);
-
-      if (random.nextBoolean()) {
-        iw2.commit();
-      }
-    }
-    reader2 = iw2.getReader();
-    iw2.close();
   }
 
   @Override
@@ -98,8 +84,6 @@ public class TestIndexSearcher extends LuceneTestCase {
     super.tearDown();
     reader.close();
     dir.close();
-    reader2.close();
-    dir2.close();
   }
 
   // should not throw exception
@@ -371,31 +355,31 @@ public class TestIndexSearcher extends LuceneTestCase {
     }
   }
 
-  public void testQueueSizeBasedCP() throws Exception {
+  public void testQueueSizeBasedSliceExecutor() throws Exception {
     ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestIndexSearcher"));
 
-    runCPTest(service, false);
+    runSliceExecutorTest(service, false);
 
     TestUtil.shutdownExecutorService(service);
   }
 
-  public void testRandomBlockingCP() throws Exception {
+  public void testRandomBlockingSliceExecutor() throws Exception {
     ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestIndexSearcher"));
 
-    runCPTest(service, true);
+    runSliceExecutorTest(service, true);
 
     TestUtil.shutdownExecutorService(service);
   }
 
-  private void runCPTest(ThreadPoolExecutor service, boolean useRandomCP) throws Exception {
-    SliceExecutor sliceExecutor = useRandomCP == true ? new RandomBlockingSliceExecutor(service) :
+  private void runSliceExecutorTest(ThreadPoolExecutor service, boolean useRandomSliceExecutor) throws Exception {
+    SliceExecutor sliceExecutor = useRandomSliceExecutor == true ? new RandomBlockingSliceExecutor(service) :
                                                               new QueueSizeBasedExecutor(service);
 
-    IndexSearcher searcher = new IndexSearcher(reader2.getContext(), service, sliceExecutor);
+    IndexSearcher searcher = new IndexSearcher(reader.getContext(), service, sliceExecutor);
 
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -416,12 +400,23 @@ public class TestIndexSearcher extends LuceneTestCase {
           searcher.search(query, Integer.MAX_VALUE);
           searcher.searchAfter(after, query, Integer.MAX_VALUE);
           if (sort != null) {
-            searcher.search(query, Integer.MAX_VALUE, sort);
-            searcher.search(query, Integer.MAX_VALUE, sort, true);
-            searcher.search(query, Integer.MAX_VALUE, sort, false);
-            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
-            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
-            searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
+            TopDocs topDocs = searcher.search(query, Integer.MAX_VALUE, sort);
+            assert topDocs.totalHits.value > 0;
+
+            topDocs = searcher.search(query, Integer.MAX_VALUE, sort, true);
+            assert topDocs.totalHits.value > 0;
+
+            topDocs = searcher.search(query, Integer.MAX_VALUE, sort, false);
+            assert topDocs.totalHits.value > 0;
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
+            assert topDocs.totalHits.value > 0;
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
+            assert topDocs.totalHits.value > 0;
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
+            assert topDocs.totalHits.value > 0;
           }
         }
       }
@@ -438,11 +433,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     public void invokeAll(Collection<? extends Runnable> tasks){
 
       for (Runnable task : tasks) {
-        boolean shouldExecuteOnCallerThread = false;
-
-        if (random().nextBoolean()) {
-          shouldExecuteOnCallerThread = true;
-        }
+        boolean shouldExecuteOnCallerThread = random().nextBoolean();
 
         processTask(task, shouldExecuteOnCallerThread);
       }

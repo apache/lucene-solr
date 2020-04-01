@@ -75,11 +75,6 @@ class SliceExecutor {
       }
     }
 
-    runTaskOnCallerThread(task);
-  }
-
-  // Private helper method to run a task on the caller thread
-  private void runTaskOnCallerThread(Runnable task) {
     task.run();
   }
 }

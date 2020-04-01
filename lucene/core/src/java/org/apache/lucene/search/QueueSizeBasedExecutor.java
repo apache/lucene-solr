@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Derivative of SliceExecutor that controls the number of active threads
  * that are used for a single query. At any point, no more than (maximum pool size of the executor * LIMITING_FACTOR)
- * threads should be active. If the limit is exceeded, further segments are searched on the caller thread
+ * tasks should be active. If the limit is exceeded, further segments are searched on the caller thread
  */
 class QueueSizeBasedExecutor extends SliceExecutor {
   private static final double LIMITING_FACTOR = 1.5;
