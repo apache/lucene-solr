@@ -75,6 +75,9 @@ Improvements
 
 * SOLR-14329: Add support to choose collapse group to expand in ExpandComponent based on cost (Munendra S N)
 
+* SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
+  core searcher caches. (hossman)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
