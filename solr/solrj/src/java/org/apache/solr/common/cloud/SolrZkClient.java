@@ -839,18 +839,28 @@ public class SolrZkClient implements Closeable {
    */
   public static class ZkConfigDyn {
     // server.<positive id> = <address1>:<port1>:<port2>[:role];[<client port address>:]<client port>
-    public static Pattern linePattern = Pattern.compile("server\\.(?<serverId>\\d+) ?= ?(?<address>[^:]+):(?<leaderPort>\\d+):(?<leaderElectionPort>\\d+)(:(?<role>.*?))?(;((?<clientPortAddress>.*?):)?(?<clientPort>\\d+))?");
-    public int serverId;
-    public String address;
-    public int leaderPort;
-    public int leaderElectionPort;
-    public String role;
-    public String clientPortAddress;
-    public int clientPort;
+    public static final Pattern linePattern = Pattern.compile("server\\.(?<serverId>\\d+) ?= ?(?<address>[^:]+):(?<leaderPort>\\d+):(?<leaderElectionPort>\\d+)(:(?<role>.*?))?(;((?<clientPortAddress>.*?):)?(?<clientPort>\\d+))?");
+    public final Integer serverId;
+    public final String address;
+    public final Integer leaderPort;
+    public final Integer leaderElectionPort;
+    public final String role;
+    public final String clientPortAddress;
+    public final Integer clientPort;
+
+    public ZkConfigDyn(Integer serverId, String address, Integer leaderPort, Integer leaderElectionPort, String role, String clientPortAddress, Integer clientPort) {
+      this.serverId = serverId;
+      this.address = address;
+      this.leaderPort = leaderPort;
+      this.leaderElectionPort = leaderElectionPort;
+      this.role = role;
+      this.clientPortAddress = clientPortAddress;
+      this.clientPort = clientPort;
+    }
 
     /**
-     * Return the most likely address, first trying 'clientPortAddress', falling back to 'address'
-     * @return
+     * Resolve the most likely address, first trying 'clientPortAddress', falling back to 'address'
+     * @return a string with client address, without port
      */
     public String resolveClientPortAddress() {
       return ("0.0.0.0".equals(clientPortAddress) || clientPortAddress == null ? address : clientPortAddress);
@@ -860,20 +870,20 @@ public class SolrZkClient implements Closeable {
       return lines.lines().filter(l -> l.startsWith("server")).map(ZkConfigDyn::parseLine).collect(Collectors.toList());
     }
 
-    public static ZkConfigDyn parseLine(String line) {
-      ZkConfigDyn cfg = new ZkConfigDyn();
+    private static ZkConfigDyn parseLine(String line) {
       Matcher m = linePattern.matcher(line);
       if (!m.matches()) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse bad dynamic zk config " + line);
       }
-      cfg.serverId = Integer.parseInt(m.group("serverId"));
-      cfg.address = m.group("address");
-      cfg.leaderPort = Integer.parseInt(m.group("leaderPort"));
-      cfg.leaderElectionPort = Integer.parseInt(m.group("leaderElectionPort"));
-      cfg.role = m.group("role");
-      cfg.clientPortAddress = m.group("clientPortAddress");
-      cfg.clientPort = Integer.parseInt(m.group("clientPort"));
-      return cfg;
+      return new ZkConfigDyn(
+              Integer.parseInt(m.group("serverId")),
+              m.group("address"),
+              Integer.parseInt(m.group("leaderPort")),
+              Integer.parseInt(m.group("leaderElectionPort")),
+              m.group("role"),
+              m.group("clientPortAddress"),
+              Integer.parseInt(m.group("clientPort"))
+      );
     }
   }
 
