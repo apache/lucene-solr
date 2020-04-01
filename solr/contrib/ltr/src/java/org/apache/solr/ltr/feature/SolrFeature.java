@@ -143,7 +143,7 @@ public class SolrFeature extends Feature {
         Query scoreQuery;
         String qStr = q;
         if (qStr == null || qStr.isEmpty()) {
-          scoreQuery = null; // ultimately behaves like MatchAllDocs
+          scoreQuery = null; // ultimately behaves like MatchAllDocsQuery
         } else {
           qStr = macroExpander.expand(qStr);
           if (qStr == null) {
@@ -173,9 +173,11 @@ public class SolrFeature extends Feature {
             }
           }
 
-          DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
-          if (filtersDocSet != searcher.getLiveDocSet()) {
-            filterDocSetQuery = filtersDocSet.getTopFilter();
+          if (filterQueries.isEmpty() == false) { // TODO optimize getDocSet to make this check unnecessary SOLR-14376
+            DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+            if (filtersDocSet != searcher.getLiveDocSet()) {
+              filterDocSetQuery = filtersDocSet.getTopFilter();
+            }
           }
         }
 
