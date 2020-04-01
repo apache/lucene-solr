@@ -132,9 +132,11 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
             "version=400000003");
     Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo4:2181,zoo5:2181,zoo6:2181", zkDynamicConfig);
     String expected = "{\n" +
+        "  \"dynamicReconfig\":true,\n" +
         "  \"ensembleSize\":3,\n" +
         "  \"details\":[\n" +
         "    {\n" +
+        "      \"role\":\"participant\",\n" +
         "      \"zk_version\":\"3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT\",\n" +
         "      \"zk_avg_latency\":\"1\",\n" +
         "      \"host\":\"zoo1:2181\",\n" +

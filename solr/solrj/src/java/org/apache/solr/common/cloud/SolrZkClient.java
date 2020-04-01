@@ -744,15 +744,15 @@ public class SolrZkClient implements Closeable {
    * server.3=localhost:2782:2785:participant;localhost:2793
    * version=400000003
    * </pre>
-   * @return Multi line string representing the config or null if no data (pre 3.5 zk server)
+   * @return Multi line string representing the config. For standalone ZK this will return empty string
    */
   public String getConfig() {
     try {
       Stat stat = new Stat();
       keeper.sync(ZooDefs.CONFIG_NODE, null, null);
       byte[] data = keeper.getConfig(false, stat);
-      if (data == null) {
-        return null;
+      if (data == null || data.length == 0) {
+        return "";
       }
       return new String(data, StandardCharsets.UTF_8);
     } catch (KeeperException|InterruptedException ex) {
@@ -866,7 +866,15 @@ public class SolrZkClient implements Closeable {
       return ("0.0.0.0".equals(clientPortAddress) || clientPortAddress == null ? address : clientPortAddress);
     }
 
+    /**
+     * Parse a raw multi line config string with the full content of znode /zookeeper/config.
+     * @param lines the multi line config string. If empty or null, this will return an empty list
+     * @return List of {@link ZkConfigDyn} objects, one per server.x line
+     */
     public static List<ZkConfigDyn> parseLines(String lines) {
+      if (StringUtils.isEmpty(lines)) {
+        return Collections.emptyList();
+      }
       return lines.lines().filter(l -> l.startsWith("server")).map(ZkConfigDyn::parseLine).collect(Collectors.toList());
     }
 

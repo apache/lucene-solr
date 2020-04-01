@@ -210,7 +210,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
   @Test
   public void getConfig() {
-    // NOCOMMIT: Think this is empty due to zk running single-node? Find another way to test
+    // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data here
     assertEquals("", defaultClient.getConfig());
   }
 
