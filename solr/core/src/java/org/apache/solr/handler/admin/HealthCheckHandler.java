@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -104,7 +105,9 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'failWhenRecovering=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
-      List<String> unhealthyCores = findUnhealthyCores(clusterState, cores.getNodeConfig().getNodeName());
+      List<String> unhealthyCores = findUnhealthyCores(clusterState,
+              cores.getNodeConfig().getNodeName(),
+              cores.getAllCoreNames());
       if (unhealthyCores.size() > 0) {
           rsp.add(STATUS, FAILURE);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
@@ -122,13 +125,15 @@ public class HealthCheckHandler extends RequestHandlerBase {
    * Find replicas DOWN or RECOVERING
    * @param clusterState clusterstate from ZK
    * @param nodeName this node name
+   * @param allCoreNames list of all core names on localhost to check that it exists
    * @return list of core names that are either DOWN ore RECOVERING on 'nodeName'
    */
-  static List<String> findUnhealthyCores(ClusterState clusterState, String nodeName) {
+  static List<String> findUnhealthyCores(ClusterState clusterState, String nodeName, Collection<String> allCoreNames) {
     return clusterState.getCollectionsMap().values().stream()
             .flatMap(c -> c.getActiveSlices().stream())
             .flatMap(s -> s.getReplicas(r -> nodeName.equals(r.getNodeName())).stream())
-            .filter(r -> UNHEALTHY_STATES.contains(r.getState()))
+            .filter(r -> UNHEALTHY_STATES.contains(r.getState())
+                    || !allCoreNames.contains(r.getCoreName()))
             .map(Replica::getCoreName)
             .collect(Collectors.toList());
   }

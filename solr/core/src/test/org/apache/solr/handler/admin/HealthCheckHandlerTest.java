@@ -185,11 +185,14 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testFindUnhealthyCores() throws Exception {
-    ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2rR", 1, 1, "node1", "node2");
-    ClusterState clusterState = reader.getClusterState();
-    List<String> unhealthy = HealthCheckHandler.findUnhealthyCores(clusterState, "baseUrl1_");
-    assertEquals(2, unhealthy.size());
-    assertTrue("Unexpected list " + unhealthy, unhealthy.equals(Arrays.asList("slice1_replica5", "slice1_replica3")));
-    reader.close();
+    List<String> allCoreNames = Arrays.asList("slice1_replica1", "slice1_replica2", "slice1_replica3",
+            "slice2_replica4", "slice2_replica5");
+    try (ZkStateReader reader = ClusterStateMockUtil.buildClusterState(
+            "csrr2rDcsr2rR", 1, 1, "node1", "node2")) {
+      ClusterState clusterState = reader.getClusterState();
+      List<String> unhealthy = HealthCheckHandler.findUnhealthyCores(clusterState, "baseUrl1_", allCoreNames);
+      assertEquals(2, unhealthy.size());
+      assertTrue("Unexpected list " + unhealthy, unhealthy.equals(Arrays.asList("slice1_replica5", "slice1_replica3")));
+    }
   }
 }
