@@ -103,7 +103,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
 
-    // Optionally require that all cores on this node are active if param 'failWhenRecovering=true'
+    // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
       List<String> unhealthyCores = findUnhealthyCores(clusterState,
               cores.getNodeConfig().getNodeName(),
