@@ -1484,7 +1484,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IOUtils.close(dir1, dir2);
   }
 
-  public void testUpdatesAterAddIndexes() throws Exception {
+  public void testUpdatesAfterAddIndexes() throws Exception {
     Directory dir1 = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
     final int numDocs = atLeast(50);
@@ -1495,6 +1495,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         doc.add(new StringField("id", Integer.toString(i), Store.NO));
         doc.add(new NumericDocValuesField("ndv", 4L));
         doc.add(new NumericDocValuesField("control", 8L));
+        doc.add(new NumericDocValuesField("ndv2", 12L));
         doc.add(new LongPoint("i1", 4L));
         writer.addDocument(doc);
       }
@@ -1531,7 +1532,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       // update some docs to a random value
       long value = random().nextInt();
       Term term = new Term("id", new BytesRef(Integer.toString(random().nextInt(numDocs) * 2)));
-      writer.updateDocValues(term, new NumericDocValuesField("ndv", value), new NumericDocValuesField("control", value*2));
+      writer.updateDocValues(term, new NumericDocValuesField("ndv", value),
+          new NumericDocValuesField("control", value*2), new NumericDocValuesField("ndv2", value*3));
 
       try (DirectoryReader reader = DirectoryReader.open(writer)) {
         for (int i = 0; i < reader.leaves().size(); i++) {

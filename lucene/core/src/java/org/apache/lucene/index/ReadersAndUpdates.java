@@ -544,13 +544,15 @@ final class ReadersAndUpdates {
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file.
+        int maxFieldNumber = -1;
         Map<String, FieldInfo> newFields = new HashMap<>();
         for (FieldInfo fi : reader.getFieldInfos()) {
           // cannot use builder.add(fi) because it does not preserve
           // the local field number. Field numbers can be different from the global ones
           // if the segment was created externally (with IndexWriter#addIndexes(Directory)).
-          FieldInfo clone = new FieldInfo(fi);
+          FieldInfo clone = cloneFieldInfo(fi, fi.number);
           newFields.put(clone.name, clone);
+          maxFieldNumber = Math.max(clone.number, maxFieldNumber);
         }
 
         // create new fields with the right DV type
@@ -561,6 +563,10 @@ final class ReadersAndUpdates {
           if (fi == null) {
             // the field is not present in this segment so we can fallback to the global fields.
             fi = builder.getOrAdd(update.field);
+            if (fi.number <= maxFieldNumber) {
+              // the global field number is already used in this segment for a different field so we force a new one locally.
+              fi = cloneFieldInfo(fi, ++maxFieldNumber);
+            }
             newFields.put(update.field, fi);
           }
           fi.setDocValuesType(update.type);
@@ -645,6 +651,13 @@ final class ReadersAndUpdates {
                                              info, (System.nanoTime() - startTimeNS)/1000000000.0, newDVFiles));
     }
     return true;
+  }
+
+  private FieldInfo cloneFieldInfo(FieldInfo fi, int fieldNumber) {
+    return new FieldInfo(fi.name, fieldNumber, fi.hasVectors(), fi.omitsNorms(), fi.hasPayloads(),
+        fi.getIndexOptions(), fi.getDocValuesType(), fi.getDocValuesGen(), new HashMap<>(fi.attributes()),
+        fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+
   }
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {

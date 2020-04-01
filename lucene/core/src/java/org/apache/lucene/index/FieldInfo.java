@@ -88,28 +88,6 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  /**
-   * Creates a clone of the provided {@link FieldInfo}.
-   */
-  FieldInfo(FieldInfo clone) {
-    this.name = clone.name;
-    this.number = clone.number;
-    this.docValuesType = clone.docValuesType;
-    this.indexOptions = clone.indexOptions;
-    this.storeTermVector = clone.storeTermVector;
-    this.storePayloads = clone.storePayloads;
-    this.omitNorms = clone.omitNorms;
-    this.storeTermVector = clone.storeTermVector;
-    this.storePayloads = clone.storePayloads;
-    this.omitNorms = clone.omitNorms;
-    this.dvGen = clone.dvGen;
-    this.attributes = new HashMap<>(clone.attributes);
-    this.pointDimensionCount = clone.pointDimensionCount;
-    this.pointIndexDimensionCount = clone.pointIndexDimensionCount;
-    this.pointNumBytes = clone.pointNumBytes;
-    this.softDeletesField = clone.softDeletesField;
-  }
-
   /** 
    * Performs internal consistency checks.
    * Always returns true (or throws IllegalStateException) 
