@@ -881,7 +881,7 @@ public class SolrZkClient implements Closeable {
     private static ZkConfigDyn parseLine(String line) {
       Matcher m = linePattern.matcher(line);
       if (!m.matches()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse bad dynamic zk config " + line);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not parse dynamic zk config line: " + line);
       }
       return new ZkConfigDyn(
               Integer.parseInt(m.group("serverId")),
