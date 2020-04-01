@@ -216,10 +216,6 @@ public class IndexSearcher {
   // Package private for testing
   IndexSearcher(IndexReaderContext context, Executor executor, SliceExecutor sliceExecutor) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
-    if (executor == null) {
-      assert sliceExecutor == null;
-    }
-
     assert (sliceExecutor == null) == (executor==null);
 
     reader = context.reader();

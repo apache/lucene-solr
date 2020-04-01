@@ -401,22 +401,22 @@ public class TestIndexSearcher extends LuceneTestCase {
           searcher.searchAfter(after, query, Integer.MAX_VALUE);
           if (sort != null) {
             TopDocs topDocs = searcher.search(query, Integer.MAX_VALUE, sort);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
 
             topDocs = searcher.search(query, Integer.MAX_VALUE, sort, true);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
 
             topDocs = searcher.search(query, Integer.MAX_VALUE, sort, false);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
 
             topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
 
             topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
 
             topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
-            assert topDocs.totalHits.value > 0;
+            assertTrue(topDocs.totalHits.value > 0);
           }
         }
       }
