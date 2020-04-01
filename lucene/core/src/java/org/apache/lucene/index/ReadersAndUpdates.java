@@ -563,13 +563,15 @@ final class ReadersAndUpdates {
           if (fi == null) {
             // the field is not present in this segment so we can fallback to the global fields.
             fi = builder.getOrAdd(update.field);
+            fi.setDocValuesType(update.type);
             if (fi.number <= maxFieldNumber) {
               // the global field number is already used in this segment for a different field so we force a new one locally.
               fi = cloneFieldInfo(fi, ++maxFieldNumber);
             }
             newFields.put(update.field, fi);
+          } else {
+            fi.setDocValuesType(update.type);
           }
-          fi.setDocValuesType(update.type);
         }
         
         fieldInfos = new FieldInfos(newFields.values().toArray(new FieldInfo[0]));
