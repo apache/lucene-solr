@@ -116,6 +116,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     int followers = 0;
     int reportedFollowers = 0;
     int leaders = 0;
+    boolean dynamicReconfig = false;
     final List<String> errors = new ArrayList<>();
     zkStatus.put("ensembleSize", zookeepers.size());
     zkStatus.put("zkHost", zkHost);
@@ -142,6 +143,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         }
         if (zk.role != null) {
           stat.put("role", zk.role);
+          dynamicReconfig = true;
         }
       } catch (SolrException se) {
         log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
@@ -154,6 +156,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
     }
     zkStatus.put("details", details);
+    zkStatus.put("dynamicReconfig", dynamicReconfig);
     if (followers+leaders > 0 && standalone > 0) {
       status = STATUS_RED;
       errors.add("The zk nodes do not agree on their mode, check details");
