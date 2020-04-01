@@ -93,6 +93,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    */
   protected Map<String, Object> getZkStatus(String zkHost, List<SolrZkClient.ZkConfigDyn> zkDynamicConfig) {
     final List<SolrZkClient.ZkConfigDyn> zookeepers;
+    boolean dynamicReconfig = false;
     if (CollectionUtils.isEmpty(zkDynamicConfig)) {
       // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
       zookeepers = Arrays.stream(zkHost.split("/")[0].split(","))
@@ -106,6 +107,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
                         h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181)
               ).collect(Collectors.toList());
     } else {
+      dynamicReconfig = true;
       zookeepers = new ArrayList<>(zkDynamicConfig); // Clone input
     }
     final Map<String, Object> zkStatus = new HashMap<>();
@@ -116,7 +118,6 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     int followers = 0;
     int reportedFollowers = 0;
     int leaders = 0;
-    boolean dynamicReconfig = false;
     final List<String> errors = new ArrayList<>();
     zkStatus.put("ensembleSize", zookeepers.size());
     zkStatus.put("zkHost", zkHost);
@@ -143,7 +144,6 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         }
         if (zk.role != null) {
           stat.put("role", zk.role);
-          dynamicReconfig = true;
         }
       } catch (SolrException se) {
         log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
