@@ -547,6 +547,10 @@ final class ReadersAndUpdates {
         int maxFieldNumber = -1;
         Map<String, FieldInfo> perName = new HashMap<>();
         for (FieldInfo fi : reader.getFieldInfos()) {
+          // cannot use builder.add(fi) because it does not preserve
+          // the local field number. Field numbers can be different from
+          // the global ones if the segment was created externally (and added to
+          // this index with IndexWriter#addIndexes(Directory)).
           perName.put(fi.name, cloneFieldInfo(fi, fi.number));
           maxFieldNumber = Math.max(fi.number, maxFieldNumber);
         }
