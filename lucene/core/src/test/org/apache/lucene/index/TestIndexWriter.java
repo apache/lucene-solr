@@ -2918,7 +2918,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testFlushLargestWriter() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    int numDocs = indexDocsForMultipleThreadStates(w);
+    int numDocs = indexDocsForMultipleDWPTs(w);
     DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
     assertFalse(largestNonPendingWriter.isFlushPending());
@@ -2942,7 +2942,7 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  private int indexDocsForMultipleThreadStates(IndexWriter w) throws InterruptedException {
+  private int indexDocsForMultipleDWPTs(IndexWriter w) throws InterruptedException {
     Thread[] threads = new Thread[3];
     CountDownLatch latch = new CountDownLatch(threads.length);
     int numDocsPerThread = 10 + random().nextInt(30);
@@ -2972,16 +2972,16 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNeverCheckOutOnFullFlush() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    indexDocsForMultipleThreadStates(w);
+    indexDocsForMultipleDWPTs(w);
     DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
     assertFalse(largestNonPendingWriter.isFlushPending());
     assertFalse(largestNonPendingWriter.hasFlushed());
-    int activeThreadStateCount = w.docWriter.perThreadPool.size();
+    int threadPoolSize = w.docWriter.perThreadPool.size();
     w.docWriter.flushControl.markForFullFlush();
     DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
     assertNull(documentsWriterPerThread);
-    assertEquals(activeThreadStateCount, w.docWriter.flushControl.numQueuedFlushes());
+    assertEquals(threadPoolSize, w.docWriter.flushControl.numQueuedFlushes());
     w.docWriter.flushControl.abortFullFlushes();
     assertNull("was aborted", w.docWriter.flushControl.checkoutLargestNonPendingWriter());
     assertEquals(0, w.docWriter.flushControl.numQueuedFlushes());
@@ -2992,7 +2992,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testHoldLockOnLargestWriter() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    int numDocs = indexDocsForMultipleThreadStates(w);
+    int numDocs = indexDocsForMultipleDWPTs(w);
     DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
     assertFalse(largestNonPendingWriter.isFlushPending());
@@ -3115,7 +3115,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   private static void waitForDocsInBuffers(IndexWriter w, int buffersWithDocs) {
-    // wait until at least N threadstates have a doc in order to observe
+    // wait until at least N DWPTs have a doc in order to observe
     // who flushes the segments.
     while(true) {
       int numStatesWithDocs = 0;
@@ -3699,8 +3699,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     w.addDocument(new Document());
-    int activeThreadStateCount = w.docWriter.perThreadPool.size();
-    assertEquals(1, activeThreadStateCount);
+    assertEquals(1, w.docWriter.perThreadPool.size());
     CountDownLatch latch = new CountDownLatch(1);
     Thread thread = new Thread(() -> {
       latch.countDown();

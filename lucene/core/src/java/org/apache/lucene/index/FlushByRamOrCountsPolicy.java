@@ -89,8 +89,8 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
    * pending
    */
   protected void markLargestWriterPending(DocumentsWriterFlushControl control,
-      DocumentsWriterPerThread perThreadState) {
-    DocumentsWriterPerThread largestNonPendingWriter = findLargestNonPendingWriter(control, perThreadState);
+      DocumentsWriterPerThread perThread) {
+    DocumentsWriterPerThread largestNonPendingWriter = findLargestNonPendingWriter(control, perThread);
     if (largestNonPendingWriter != null) {
       control.setFlushPending(largestNonPendingWriter);
     }

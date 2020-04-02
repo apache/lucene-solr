@@ -187,6 +187,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   }
 
   private DocumentsWriterPerThread checkout(DocumentsWriterPerThread perThread, boolean markPending) {
+    assert Thread.holdsLock(this);
     if (fullFlush) {
       if (perThread.isFlushPending()) {
         checkoutAndBlock(perThread);
@@ -225,7 +226,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     assert flushingWriters.contains(dwpt);
     try {
       flushingWriters.remove(dwpt);
-      flushBytes -= dwpt.bytesUsed();
+      flushBytes -= dwpt.getLastCommittedBytesUsed();
       assert assertMemory();
     } finally {
       try {
@@ -303,9 +304,9 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
       assert perThreadPool.isRegistered(perThread);
       assert perThread.isHeldByCurrentThread();
       if (perThread.isFlushPending()) {
-        flushBytes -= perThread.bytesUsed();
+        flushBytes -= perThread.getLastCommittedBytesUsed();
       } else {
-        activeBytes -= perThread.bytesUsed();
+        activeBytes -= perThread.getLastCommittedBytesUsed();
       }
       assert assertMemory();
       // Take it out of the loop this DWPT is stale
@@ -394,7 +395,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   /**
    * Returns an iterator that provides access to all currently active {@link DocumentsWriterPerThread}s
    */
-  public Iterator<DocumentsWriterPerThread> allActiveThreadStates() {
+  public Iterator<DocumentsWriterPerThread> allActiveWriters() {
     return perThreadPool.iterator();
   }
 
@@ -664,7 +665,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   }
 
   synchronized DocumentsWriterPerThread findLargestNonPendingWriter() {
-    DocumentsWriterPerThread maxRamUsingThreadState = null;
+    DocumentsWriterPerThread maxRamUsingWriter = null;
     long maxRamSoFar = 0;
     Iterator<DocumentsWriterPerThread> activePerThreadsIterator = perThreadPool.iterator();
     int count = 0;
@@ -679,7 +680,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
           count++;
           if (nextRam > maxRamSoFar) {
             maxRamSoFar = nextRam;
-            maxRamUsingThreadState = next;
+            maxRamUsingWriter = next;
           }
         }
       }
@@ -687,7 +688,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     if (infoStream.isEnabled("FP")) {
       infoStream.message("FP", count + " in-use non-flushing threads states");
     }
-    return maxRamUsingThreadState;
+    return maxRamUsingWriter;
   }
 
   /**
@@ -699,11 +700,13 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
       // we only lock this very briefly to swap it's DWPT out - we don't go through the DWPTPool and it's free queue
       largestNonPendingWriter.lock();
       try {
-        synchronized (this) {
-          try {
+        if (perThreadPool.isRegistered(largestNonPendingWriter)) {
+          synchronized (this) {
+            try {
               return checkout(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
-          } finally {
-            updateStallState();
+            } finally {
+              updateStallState();
+            }
           }
         }
       } finally {

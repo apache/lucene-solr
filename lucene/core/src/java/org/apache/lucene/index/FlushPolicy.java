@@ -98,12 +98,12 @@ abstract class FlushPolicy {
    * This method will never return <code>null</code>
    */
   protected DocumentsWriterPerThread findLargestNonPendingWriter(
-      DocumentsWriterFlushControl control, DocumentsWriterPerThread perThreadState) {
-    assert perThreadState.getNumDocsInRAM() > 0;
+      DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
+    assert perThread.getNumDocsInRAM() > 0;
     // the dwpt which needs to be flushed eventually
-    DocumentsWriterPerThread maxRamUsingThreadState = control.findLargestNonPendingWriter();
+    DocumentsWriterPerThread maxRamUsingWriter = control.findLargestNonPendingWriter();
     assert assertMessage("set largest ram consuming thread pending on lower watermark");
-    return maxRamUsingThreadState;
+    return maxRamUsingWriter;
   }
   
   private boolean assertMessage(String s) {

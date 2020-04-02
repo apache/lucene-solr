@@ -58,21 +58,25 @@ import org.apache.lucene.util.InfoStream;
  * Threads:
  *
  * Multiple threads are allowed into addDocument at once.
- * There is an initial synchronized call to getThreadState
- * which allocates a ThreadState for this thread.  The same
- * thread will get the same ThreadState over time (thread
- * affinity) so that if there are consistent patterns (for
- * example each thread is indexing a different content
- * source) then we make better use of RAM.  Then
- * processDocument is called on that ThreadState without
+ * There is an initial synchronized call to
+ * {@link DocumentsWriterFlushControl#obtainAndLock()}
+ * which allocates a DWPT for this indexing thread. The same
+ * thread will not necessarily get the same DWPT over time.
+ * Then updateDocuments is called on that DWPT without
  * synchronization (most of the "heavy lifting" is in this
- * call).  Finally the synchronized "finishDocument" is
- * called to flush changes to the directory.
+ * call). Once a DWPT fills up enough RAM or hold enough
+ * documents in memory the DWPT is checked out for flush
+ * and all changes are written to the directory. Each DWPT
+ * corresponds to one segment being written.
  *
- * When flush is called by IndexWriter we forcefully idle
- * all threads and flush only once they are all idle.  This
- * means you can call flush with a given thread even while
- * other threads are actively adding/deleting documents.
+ * When flush is called by IndexWriter we check out all DWPTs
+ * that are associated with the current {@link DocumentsWriterDeleteQueue}
+ * out of the {@link DocumentsWriterPerThreadPool} and write
+ * them to disk. The flush process can piggy-back on incoming
+ * indexing threads or event block them from adding documents
+ * if flushing can't keep up with new documents being added.
+ * Unless the stall control kicks in to block indexing threads
+ * flushes are happening concurrently to actual index requests.
  *
  *
  * Exceptions:
@@ -98,13 +102,8 @@ import org.apache.lucene.util.InfoStream;
  */
 
 final class DocumentsWriter implements Closeable, Accountable {
-  private final Directory directoryOrig; // no wrapping, for infos
-  private final Directory directory;
-  private final FieldInfos.FieldNumbers globalFieldNumberMap;
-  private final int indexCreatedVersionMajor;
   private final AtomicLong pendingNumDocs;
-  private final boolean enableTestPoints;
-  private final Supplier<String> segmentNameSupplier;
+
   private final FlushNotifications flushNotifications;
 
   private volatile boolean closed;
@@ -133,9 +132,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, AtomicLong pendingNumDocs, boolean enableTestPoints,
                   Supplier<String> segmentNameSupplier, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory,
                   FieldInfos.FieldNumbers globalFieldNumberMap) {
-    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
-    this.directoryOrig = directoryOrig;
-    this.directory = directory;
     this.config = config;
     this.infoStream = config.getInfoStream();
     this.deleteQueue = new DocumentsWriterDeleteQueue(infoStream);
@@ -147,11 +143,8 @@ final class DocumentsWriter implements Closeable, Accountable {
           pendingNumDocs, enableTestPoints);
     });
     flushPolicy = config.getFlushPolicy();
-    this.globalFieldNumberMap = globalFieldNumberMap;
     this.pendingNumDocs = pendingNumDocs;
     flushControl = new DocumentsWriterFlushControl(this, config);
-    this.segmentNameSupplier = segmentNameSupplier;
-    this.enableTestPoints = enableTestPoints;
     this.flushNotifications = flushNotifications;
   }
   
@@ -238,6 +231,10 @@ final class DocumentsWriter implements Closeable, Accountable {
           : "There are still active DWPT in the pool: " + perThreadPool.size();
       success = true;
     } finally {
+      if (success) {
+        assert flushControl.getFlushingBytes() == 0 : "flushingBytes has unexpected value 0 != " + flushControl.getFlushingBytes();
+        assert flushControl.netBytes() == 0 : "netBytes has unexpected value 0 != " + flushControl.netBytes();
+      }
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "done abort success=" + success);
       }
@@ -272,7 +269,7 @@ final class DocumentsWriter implements Closeable, Accountable {
         pendingNumDocs.addAndGet(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
       }
     });
-    List<DocumentsWriterPerThread> threadStates = new ArrayList<>();
+    List<DocumentsWriterPerThread> writer = new ArrayList<>();
     AtomicBoolean released = new AtomicBoolean(false);
     final Closeable release = () -> {
       if (released.compareAndSet(false, true)) { // only once
@@ -280,7 +277,7 @@ final class DocumentsWriter implements Closeable, Accountable {
           infoStream.message("DW", "unlockAllAbortedThread");
         }
         perThreadPool.unlockNewWriters();
-        for (DocumentsWriterPerThread state : threadStates) {
+        for (DocumentsWriterPerThread state : writer) {
           state.unlock();
         }
       }
@@ -288,8 +285,8 @@ final class DocumentsWriter implements Closeable, Accountable {
     try {
       deleteQueue.clear();
       perThreadPool.lockNewWriters();
-      threadStates.addAll(perThreadPool.filterAndLock(x -> true));
-      for (final DocumentsWriterPerThread perThread : threadStates) {
+      writer.addAll(perThreadPool.filterAndLock(x -> true));
+      for (final DocumentsWriterPerThread perThread : writer) {
         assert perThread.isHeldByCurrentThread();
         abortDocumentsWriterPerThread(perThread);
       }
@@ -416,11 +413,10 @@ final class DocumentsWriter implements Closeable, Accountable {
     long seqNo;
 
     try {
-      // This must happen after we've pulled the ThreadState because IW.close
-      // waits for all ThreadStates to be released:
+      // This must happen after we've pulled the DWPT because IW.close
+      // waits for all DWPT to be released:
       ensureOpen();
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
-      boolean returnDWPTToPool = false;
       try {
         seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
       } finally {

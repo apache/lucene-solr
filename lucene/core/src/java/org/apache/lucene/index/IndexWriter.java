@@ -4940,7 +4940,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   //   finishStartCommit
   //   startCommitMergeDeletes
   //   startMergeInit
-  //   DocumentsWriter.ThreadState.init start
+  //   DocumentsWriterPerThread addDocuments start
   private final void testPoint(String message) {
     if (enableTestPoints) {
       assert infoStream.isEnabled("TP"); // don't enable unless you need them.

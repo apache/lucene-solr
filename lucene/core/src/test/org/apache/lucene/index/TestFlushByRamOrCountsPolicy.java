@@ -263,10 +263,10 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   }
 
   protected void assertActiveBytesAfter(DocumentsWriterFlushControl flushControl) {
-    Iterator<DocumentsWriterPerThread> allActiveThreads = flushControl.allActiveThreadStates();
+    Iterator<DocumentsWriterPerThread> allActiveWriter = flushControl.allActiveWriters();
     long bytesUsed = 0;
-    while (allActiveThreads.hasNext()) {
-      DocumentsWriterPerThread next = allActiveThreads.next();
+    while (allActiveWriter.hasNext()) {
+      DocumentsWriterPerThread next = allActiveWriter.next();
       bytesUsed += next.bytesUsed();
     }
     assertEquals(bytesUsed, flushControl.activeBytes());
@@ -391,7 +391,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   static void findPending(DocumentsWriterFlushControl flushControl,
       ArrayList<DocumentsWriterPerThread> pending, ArrayList<DocumentsWriterPerThread> notPending) {
-    Iterator<DocumentsWriterPerThread> allActiveThreads = flushControl.allActiveThreadStates();
+    Iterator<DocumentsWriterPerThread> allActiveThreads = flushControl.allActiveWriters();
     while (allActiveThreads.hasNext()) {
       DocumentsWriterPerThread next = allActiveThreads.next();
       if (next.isFlushPending()) {

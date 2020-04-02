@@ -65,7 +65,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
 
   synchronized void lockNewWriters() {
     // this is similar to a semaphore - we need to acquire all permits ie. takenWriterPermits must be == 0
-    // any call to lockNewThreadStates() must be followed by unlockNewThreadStates() otherwise we will deadlock at some
+    // any call to lockNewWriters() must be followed by unlockNewWriters() otherwise we will deadlock at some
     // point
     assert takenWriterPermits >= 0;
     takenWriterPermits++;
@@ -103,7 +103,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   // TODO: maybe we should try to do load leveling here: we want roughly even numbers
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
 
-  /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
+  /** This method is used by DocumentsWriter/FlushControl to obtain a DWPT to do an indexing operation (add/updateDocument). */
   DocumentsWriterPerThread getAndLock() throws IOException {
     synchronized (this) {
       if (closed) {

@@ -136,7 +136,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   }
 
   // LUCENE-1130: make sure immediate disk full on creating
-  // an IndexWriter (hit during DW.ThreadState.init()), with
+  // an IndexWriter (hit during DWPT#updateDocuments()), with
   // multiple threads, is OK:
   public void testImmediateDiskFullWithThreads() throws Exception {
 
