@@ -310,7 +310,6 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
             pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName()));
         syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
       }
-
       // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
       // pull was successful
       // if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
@@ -354,10 +353,10 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
             }
           }
         }
+        concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BLOB_PULL_FINISHED);
       }
     }
     this.callback.finishedPull(this, blobMetadata, syncStatus, message);
-    concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BLOB_PULL_FINISHED);
   }
 
   void finishedPull(BlobCoreMetadata blobCoreMetadata, CoreSyncStatus syncStatus, String message) throws InterruptedException {
