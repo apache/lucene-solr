@@ -566,10 +566,9 @@ final class ReadersAndUpdates {
             fi.setDocValuesType(update.type);
           } else {
             // the field is not present in this segment so we clone the global field
-            // and remaps its field number locally.
-            FieldInfo global = builder.getOrAdd(update.field);
-            assert global.getDocValuesType() == update.type;
-            FieldInfo fi = cloneFieldInfo(global, ++maxFieldNumber);
+            // (which is guaranteed to exist) and remaps its field number locally.
+            assert fieldNumbers.contains(update.field, update.type);
+            FieldInfo fi = cloneFieldInfo(builder.getOrAdd(update.field), ++maxFieldNumber);
             fi.setDocValuesType(update.type);
             perName.put(fi.name, fi);
           }
