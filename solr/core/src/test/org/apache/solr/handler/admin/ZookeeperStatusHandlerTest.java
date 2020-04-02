@@ -151,6 +151,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
         "      \"ok\":false}],\n" +
         "  \"zkHost\":\"zoo4:2181,zoo5:2181,zoo6:2181\",\n" +
         "  \"errors\":[\n" +
+        "    \"Your ZK connection string (3 hosts) is different from the dynamic ensemble config (3 hosts). Solr does not currently support dynamic reconfiguration and will only be able to connect to the zk hosts in your connection string.\",\n" +
         "    \"Unexpected line in 'conf' response from Zookeeper zoo1:2181: thisIsUnexpected\",\n" +
         "    \"Empty response from Zookeeper zoo2:2181\",\n" +
         "    \"Could not execute mntr towards ZK host zoo3:2181. Add this line to the 'zoo.cfg' configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter 'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.\"],\n" +
