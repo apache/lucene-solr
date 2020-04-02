@@ -92,33 +92,49 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * @return map of zookeeper config and status per zk host
    */
   protected Map<String, Object> getZkStatus(String zkHost, List<SolrZkClient.ZkConfigDyn> zkDynamicConfig) {
+    List<SolrZkClient.ZkConfigDyn> hostsFromConnectionString = Arrays.stream(zkHost.split("/")[0].split(","))
+        .map(h -> new SolrZkClient.ZkConfigDyn(
+            null,
+            null,
+            null,
+            null,
+            null,
+            h.split(":")[0],
+            h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181)
+        ).collect(Collectors.toList());
+
     final List<SolrZkClient.ZkConfigDyn> zookeepers;
-    boolean dynamicReconfig = false;
+    boolean dynamicReconfig;
+    final List<String> errors = new ArrayList<>();
+    String status = STATUS_NA;
+
     if (CollectionUtils.isEmpty(zkDynamicConfig)) {
       // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
-      zookeepers = Arrays.stream(zkHost.split("/")[0].split(","))
-              .map(h -> new SolrZkClient.ZkConfigDyn(
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        h.split(":")[0],
-                        h.contains(":") ? Integer.parseInt(h.split(":")[1]) : 2181)
-              ).collect(Collectors.toList());
+      zookeepers = hostsFromConnectionString;
+      dynamicReconfig = false;
     } else {
       dynamicReconfig = true;
+      List<String> connStringHosts = hostsFromConnectionString.stream()
+          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .sorted().collect(Collectors.toList());
+      List<String> dynamicHosts = zkDynamicConfig.stream()
+          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .sorted().collect(Collectors.toList());
+      if (!connStringHosts.containsAll(dynamicHosts)) {
+        errors.add("Your ZK connection string (" + connStringHosts.size() + " hosts) is different from the " +
+                "dynamic ensemble config (" + dynamicHosts.size() + " hosts). Solr does not currently support " +
+                "dynamic reconfiguration and will only be able to connect to the zk hosts in your connection string.");
+        status = STATUS_YELLOW;
+      }
       zookeepers = new ArrayList<>(zkDynamicConfig); // Clone input
     }
     final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
     int numOk = 0;
-    String status = STATUS_NA;
     int standalone = 0;
     int followers = 0;
     int reportedFollowers = 0;
     int leaders = 0;
-    final List<String> errors = new ArrayList<>();
     zkStatus.put("ensembleSize", zookeepers.size());
     zkStatus.put("zkHost", zkHost);
     for (SolrZkClient.ZkConfigDyn zk : zookeepers) {
