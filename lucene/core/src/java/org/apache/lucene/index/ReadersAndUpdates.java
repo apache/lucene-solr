@@ -655,7 +655,6 @@ final class ReadersAndUpdates {
     return new FieldInfo(fi.name, fieldNumber, fi.hasVectors(), fi.omitsNorms(), fi.hasPayloads(),
         fi.getIndexOptions(), fi.getDocValuesType(), fi.getDocValuesGen(), new HashMap<>(fi.attributes()),
         fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
-
   }
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
