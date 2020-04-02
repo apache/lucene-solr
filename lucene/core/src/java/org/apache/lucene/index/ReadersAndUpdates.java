@@ -559,19 +559,18 @@ final class ReadersAndUpdates {
         FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
         for (List<DocValuesFieldUpdates> updates : pendingDVUpdates.values()) {
           DocValuesFieldUpdates update = updates.get(0);
-          FieldInfo globalFieldInfo =  builder.getOrAdd(update.field);
-          globalFieldInfo.setDocValuesType(update.type);
-          FieldInfo segmentFieldInfo = newFields.get(update.field);
-          if (segmentFieldInfo == null) {
+          FieldInfo fi = newFields.get(update.field);
+          if (fi == null) {
             // the field is not present in this segment so we can fallback to the global fields.
-            if (globalFieldInfo.number <= maxFieldNumber) {
+            fi = builder.getOrAdd(update.field);
+            fi.setDocValuesType(update.type);
+            if (fi.number <= maxFieldNumber) {
               // the global field number is already used in this segment for a different field so we force a new one locally.
-              globalFieldInfo = cloneFieldInfo(globalFieldInfo, ++maxFieldNumber);
+              fi = cloneFieldInfo(fi, ++maxFieldNumber);
             }
-            newFields.put(update.field, globalFieldInfo);
+            newFields.put(update.field, fi);
           } else {
-            segmentFieldInfo.setDocValuesType(update.type);
-            newFields.put(update.field, segmentFieldInfo);
+            fi.setDocValuesType(update.type);
           }
         }
         
