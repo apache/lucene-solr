@@ -99,6 +99,11 @@ public class SuggestStopFilterFactory extends TokenFilterFactory implements Reso
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public SuggestStopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (stopWordFiles != null) {

@@ -383,6 +383,11 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     super(args);    
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ManagedSynonymFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public String getResourceId() {
     return "/schema/analysis/synonyms/"+handle;

@@ -47,6 +47,12 @@ Other Changes
 
 * SOLR-14012: Return long value for unique and hll aggregations irrespective of shard count (Munendra S N, hossman)
 
+* SOLR-14322: AbstractFullDistribZkTestBase.waitForRecoveriesToFinish now takes a timeout and time unit instead of
+  assuming that we are passed value in seconds. (Mike Drob)
+
+* SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -58,7 +64,18 @@ New Features
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
- (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
+  (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
+
+* SOLR-14260: Make SolrJ ConnectionSocketFactory pluggable via SocketFactoryRegistryProvider setting on HttpClientUtil
+  (Andy Throgmorton via David Smiley)
+
+* SOLR-14342: Load cores in an order that makes collections available sooner and reduces leaderVoteWait timeouts in
+  large SolrCloud clusters. (David Smiley)
+
+* SOLR-14329: Add support to choose collapse group to expand in ExpandComponent based on cost (Munendra S N)
+
+* SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
+  core searcher caches. (hossman)
 
 Optimizations
 ---------------------
@@ -77,6 +94,13 @@ Bug Fixes
 
 * SOLR-14347: Autoscaling placement wrong when concurrent replica placements are calculated. (ab)
 
+* SOLR-14128: Improve distributed locking around managed schema upgrade process. (ab)
+
+* SOLR-14302: Ensure Solr always includes the stacktrace for exceptions by using '-OmitStackTraceInFastThrow'
+  (hossman)
+
+* SOLR-14317: HttpClusterStateProvider throws exception when only one node down. (Lyle Wang via Ishan Chattopadhyaya)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -92,6 +116,13 @@ Other Changes
   (Stefan, Munendra S N, Tomas Eduardo Fernandez Lobbe)
 
 * SOLR-12353: SolrDispatchFilter expensive non-conditional debug line degrades performance (Pascal Proulx via Erick Erickson)
+
+* SOLR-13842: Remove redundant defaults from ImplicitPlugins.json (Munendra S N)
+
+* SOLR-13893: BlobRepository reads max jar size from `runtime.lib.size` system property. Old `runtme.lib.size` is Deprecated
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
+* SOLR-14367: Upgrade Tika to 1.24 (Mibo via Erick Erickson)
 
 ==================  8.5.0 ==================
 

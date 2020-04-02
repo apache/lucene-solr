@@ -61,6 +61,11 @@ public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public DoubleMetaphoneFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public DoubleMetaphoneFilter create(TokenStream input) {
     return new DoubleMetaphoneFilter(input, maxCodeLength, inject);

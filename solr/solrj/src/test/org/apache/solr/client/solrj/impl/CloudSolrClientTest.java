@@ -680,7 +680,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    HttpSolrClient.RemoteSolrException sse = null;
+    BaseHttpSolrClient.RemoteSolrException sse = null;
 
     final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
     try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
@@ -727,7 +727,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (HttpSolrClient.RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
