@@ -17,32 +17,15 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.function.IntFunction;
 
-abstract class ReadOnlyCountSlotAcc extends CountSlotAcc {
+/**
+ * To be implemented by CountSlotAccs that wish to expose a read-only interface
+ */
+interface ReadOnlyCountSlotAcc {
 
-  ReadOnlyCountSlotAcc(FacetContext fcontext) {
-    super(fcontext);
-  }
+  public int getCount(int slot);
 
-  @Override
-  public final void incrementCount(int slot, int increment) {
-    throw new UnsupportedOperationException("Not supported.");
-  }
+  public int compare(int slotA, int slotB);
 
-  @Override
-  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    throw new UnsupportedOperationException("Not supported.");
-  }
-
-  @Override
-  public final void reset() throws IOException {
-    throw new UnsupportedOperationException("Not supported.");
-  }
-
-  @Override
-  public final void resize(Resizer resizer) {
-    throw new UnsupportedOperationException("Not supported.");
-  }
-
+  public Object getValue(int slotNum) throws IOException;
 }

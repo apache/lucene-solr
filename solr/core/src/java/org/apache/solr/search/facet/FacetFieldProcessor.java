@@ -123,22 +123,22 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     @Override
     public SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots) {
       final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
-      return new SweepCountAccStruct(docs, isBase, count, new ReadOnlyCountSlotAccWrapper(fcontext, count));
+      return new SweepCountAccStruct(docs, isBase, count, count);
     }
   };
 
-  CountSlotAcc getSweepCountAcc(DocSet docs, int numSlots) {
+  ReadOnlyCountSlotAcc getSweepCountAcc(DocSet docs, int numSlots) {
     return getSweepCountAcc(docs, numSlots, null);
   }
 
-  CountSlotAcc getSweepCountAcc(DocSet docs, int numSlots, CountSlotAccFactory factory) {
-    return getSweepCountAcc(docs, false, numSlots, factory);
+  ReadOnlyCountSlotAcc getSweepCountAcc(DocSet docs, int numSlots, CountSlotAccFactory factory) {
+    return getSweepCountAcc(docs, false, numSlots, factory).roCountAcc;
   }
 
-  private CountSlotAcc getSweepCountAcc(DocSet docs, boolean isBase, int numSlots, CountSlotAccFactory factory) {
+  private CountAccEntry getSweepCountAcc(DocSet docs, boolean isBase, int numSlots, CountSlotAccFactory factory) {
     final SweepCountAccStruct ret = DEFAULT_COUNT_ACC_FACTORY.newInstance(docs, isBase, fcontext, numSlots);
     sweepCountAccs.add(ret);
-    return isBase ? ret.countAccEntry.countAcc : ret.countAccEntry.roCountAcc;
+    return ret.countAccEntry;
   }
 
   static final class SweepCountAccStruct {
@@ -212,7 +212,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   private CountSlotAcc createBaseCountAcc(int slotCount) {
-    return getSweepCountAcc(fcontext.base, true, slotCount, null);
+    return getSweepCountAcc(fcontext.base, true, slotCount, null).countAcc;
   }
 
   /**

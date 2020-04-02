@@ -573,7 +573,7 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   }
 }
 
-abstract class CountSlotAcc extends SlotAcc {
+abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc {
   public CountSlotAcc(FacetContext fcontext) {
     super(fcontext);
   }

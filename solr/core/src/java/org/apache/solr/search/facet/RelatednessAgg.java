@@ -201,11 +201,11 @@ public class RelatednessAgg extends AggValueSource {
     private final int minCount; // pre-calculate for a given min_popularity
     private final int fgSize;
     private final int bgSize;
-    private final CountSlotAcc fgCount;
-    private final CountSlotAcc bgCount;
+    private final ReadOnlyCountSlotAcc fgCount;
+    private final ReadOnlyCountSlotAcc bgCount;
     private double[] relatedness;
 
-    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, int fgSize, int bgSize, CountSlotAcc fgCount, CountSlotAcc bgCount) {
+    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, int fgSize, int bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
       this.fgSize = fgSize;
