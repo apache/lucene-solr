@@ -17,7 +17,9 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -107,6 +109,43 @@ public class TestSortOptimization extends LuceneTestCase {
     for (int i = 0; i < numHits; i++) {
       FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
       assertEquals(i, ((Long) fieldDoc.fields[0]).intValue()); // returns expected values
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testFloatSortWithOptimization() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(10000);
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      float f = 1f * i;
+      doc.add(new FloatDocValuesField("my_field", f));
+      doc.add(new FloatPoint("my_field", i));
+      writer.addDocument(doc);
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final SortField sortField = new SortField("my_field", SortField.Type.FLOAT);
+    sortField.allowSkipNonCompetitveDocs();
+    final Sort sort = new Sort(sortField);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+
+    { // simple sort
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(1f * i, fieldDoc.fields[0]);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
     }
 
     writer.close();

@@ -144,12 +144,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public DocIdSetIterator competitiveIterator() {
-      if (itComparator == null || itComparator.iterator() == null) return null;
+      if (iterableComparator == null || iterableComparator.competitiveIterator() == null) return null;
       return new DocIdSetIterator() {
         private int doc;
         @Override
         public int nextDoc() throws IOException {
-          return doc = itComparator.iterator().nextDoc();
+          return doc = iterableComparator.competitiveIterator().nextDoc();
         }
 
         @Override
@@ -159,12 +159,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
         @Override
         public long cost() {
-          return itComparator.iterator().cost();
+          return iterableComparator.competitiveIterator().cost();
         }
 
         @Override
         public int advance(int target) throws IOException {
-          return doc = itComparator.iterator().advance(target);
+          return doc = iterableComparator.competitiveIterator().advance(target);
         }
       };
     }
@@ -305,7 +305,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
 
-  final FieldComparator.IterableComparator<?> itComparator;
+  final IterableFieldComparator<?> iterableComparator;
 
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
@@ -347,12 +347,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     this.minScoreAcc = minScoreAcc;
 
-    if ((fieldComparator instanceof FieldComparator.IterableComparator) &&
+    if ((fieldComparator instanceof IterableFieldComparator) &&
             (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE)) {
       scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
-      itComparator = ((FieldComparator.IterableComparator<?>) fieldComparator);
+      iterableComparator = (IterableFieldComparator<?>) fieldComparator;
     } else {
-      itComparator = null;
+      iterableComparator = null;
     }
   }
 
@@ -392,7 +392,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         }
       }
     } else if (scoreMode == ScoreMode.TOP_DOCS || scoreMode == ScoreMode.TOP_DOCS_WITH_SCORES) {
-      itComparator.updateIterator();
+      iterableComparator.updateCompetitiveIterator();
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
