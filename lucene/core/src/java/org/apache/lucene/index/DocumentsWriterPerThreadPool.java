@@ -109,8 +109,9 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
       if (closed) {
         throw new AlreadyClosedException("DWPTPool is already closed");
       }
-      // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
-      // limited number of thread states:
+      // Important that we are LIFO here! This way if number of concurrent indexing threads was once high,
+      // but has now reduced, we only use a limited number of DWPTs. This also guarantees that if we have suddenly
+      // a single thread indexing
       for (int i = freeList.size()-1; i >= 0; i--) {
         DocumentsWriterPerThread perThread = freeList.get(i);
         if (perThread.tryLock()) {

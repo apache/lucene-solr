@@ -330,8 +330,12 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   /** returns the maximum sequence number for all previously completed operations */
   public long getMaxCompletedSequenceNumber() {
-   return deleteQueue.getLastSequenceNumber();
+    // NOCOMMIT: speak to mikemccandless about this change https://github.com/apache/lucene-solr/commit/5a03216/
+    // Returning the last seqNum is as good as the way we had before IMO. I tried to figure out why this is better but
+    // failed.
+    return deleteQueue.getLastSequenceNumber();
   }
+
 
   boolean anyChanges() {
     /*
