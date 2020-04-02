@@ -16,52 +16,50 @@
  */
 package org.apache.lucene.index;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
- * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
- * and their thread assignments during indexing. Each {@link ThreadState} holds
- * a reference to a {@link DocumentsWriterPerThread} that is once a
- * {@link ThreadState} is obtained from the pool exclusively used for indexing a
- * single document by the obtaining thread. Each indexing thread must obtain
- * such a {@link ThreadState} to make progress. Depending on the
- * {@link DocumentsWriterPerThreadPool} implementation {@link ThreadState}
+ * {@link DocumentsWriterPerThreadPool} controls {@link DocumentsWriterPerThread} instances
+ * and their thread assignments during indexing. Each {@link DocumentsWriterPerThread} is once a
+ * obtained from the pool exclusively used for indexing a
+ * single document or list of documents by the obtaining thread. Each indexing thread must obtain
+ * such a {@link DocumentsWriterPerThread} to make progress. Depending on the
+ * {@link DocumentsWriterPerThreadPool} implementation {@link DocumentsWriterPerThread}
  * assignments might differ from document to document.
  * <p>
- * Once a {@link DocumentsWriterPerThread} is selected for flush the thread pool
- * is reusing the flushing {@link DocumentsWriterPerThread}s ThreadState with a
- * new {@link DocumentsWriterPerThread} instance.
+ * Once a {@link DocumentsWriterPerThread} is selected for flush the {@link DocumentsWriterPerThread} will
+ * be checked out of the thread pool and won't be reused for indexing. See {@link #checkout(DocumentsWriterPerThread)}.
  * </p>
  */
-final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread> {
+final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread>, Closeable {
 
   private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
-
   private final List<DocumentsWriterPerThread> freeList = new ArrayList<>();
-  private final IOSupplier<DocumentsWriterPerThread> factory;
-
+  private final IOSupplier<DocumentsWriterPerThread> dwptFactory;
   private int takenWriterPermits = 0;
+  private boolean closed;
 
 
-  public DocumentsWriterPerThreadPool(IOSupplier<DocumentsWriterPerThread> factory) {
-    this.factory = factory;
+  DocumentsWriterPerThreadPool(IOSupplier<DocumentsWriterPerThread> dwptFactory) {
+    this.dwptFactory = dwptFactory;
   }
 
   /**
    * Returns the active number of {@link DocumentsWriterPerThread} instances.
    */
-  synchronized int getActiveThreadStateCount() {
+  synchronized int size() {
     return dwpts.size();
   }
 
@@ -80,31 +78,27 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
       notifyAll();
     }
   }
+
   /**
-   * Returns a new {@link DocumentsWriterPerThread} iff any new state is available otherwise
-   * <code>null</code>.
-   * <p>
-   * NOTE: the returned {@link DocumentsWriterPerThread} is already locked iff non-
-   * <code>null</code>.
-   * 
-   * @return a new {@link DocumentsWriterPerThread} iff any new state is available otherwise
-   *         <code>null</code>
+   * Returns a new already locked {@link DocumentsWriterPerThread}
+   *
+   * @return a new {@link DocumentsWriterPerThread}
    */
-  private synchronized DocumentsWriterPerThread newThreadState() throws IOException {
+  private synchronized DocumentsWriterPerThread newWriter() throws IOException {
     assert takenWriterPermits >= 0;
     while (takenWriterPermits > 0) {
-      // we can't create new thread-states while not all permits are available
+      // we can't create new DWPTs while not all permits are available
       try {
         wait();
       } catch (InterruptedException ie) {
         throw new ThreadInterruptedException(ie);
       }
     }
-    DocumentsWriterPerThread threadState = factory.get();
-    threadState.lock(); // lock so nobody else will get this ThreadState
-    dwpts.add(threadState);
-    return threadState;
-}
+    DocumentsWriterPerThread dwpt = dwptFactory.get();
+    dwpt.lock(); // lock so nobody else will get this DWPT
+    dwpts.add(dwpt);
+    return dwpt;
+  }
 
   // TODO: maybe we should try to do load leveling here: we want roughly even numbers
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
@@ -112,6 +106,9 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
   DocumentsWriterPerThread getAndLock() throws IOException {
     synchronized (this) {
+      if (closed) {
+        throw new AlreadyClosedException("DWPTPool is already closed");
+      }
       // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
       // limited number of thread states:
       for (int i = freeList.size()-1; i >= 0; i--) {
@@ -121,19 +118,17 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
           return perThread;
         }
       }
-      // ThreadState is already locked before return by this method:
-      return newThreadState();
+      // DWPT is already locked before return by this method:
+      return newWriter();
     }
   }
 
-  void release(DocumentsWriterPerThread state) {
+  void marksAsFreeAndUnlock(DocumentsWriterPerThread state) {
     synchronized (this) {
-      if (dwpts.contains(state)) {
-        freeList.add(state);
-      }
+      assert dwpts.contains(state) : "we tried to add a DWPT back to the pool but the pool doesn't know aobut this DWPT";
+      freeList.add(state);
     }
     state.unlock();
-
   }
 
   @Override
@@ -141,14 +136,21 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
     return List.copyOf(dwpts).iterator(); // copy on read - this is a quick op since num states is low
   }
 
-  public List<DocumentsWriterPerThread> drain(Predicate<DocumentsWriterPerThread> predicate) {
+  /**
+   * Filters all DWPTs the given predicate applies to and that can be checked out of the pool via
+   * {@link #checkout(DocumentsWriterPerThread)}. All DWPTs returned from this method are already locked
+   * and {@link #isRegistered(DocumentsWriterPerThread)} will return <code>true</code> for all returned DWPTs
+   */
+  List<DocumentsWriterPerThread> filterAndLock(Predicate<DocumentsWriterPerThread> predicate) {
     List<DocumentsWriterPerThread> list = new ArrayList<>();
     for (DocumentsWriterPerThread perThread : this) {
       if (predicate.test(perThread)) {
         perThread.lock();
-        if (checkout(perThread)) {
+        if (isRegistered(perThread)) {
           list.add(perThread);
         } else {
+          // somebody else has taken this DWPT out of the pool.
+          // unlock and let it go
           perThread.unlock();
         }
       }
@@ -156,20 +158,30 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
     return Collections.unmodifiableList(list);
   }
 
+  /**
+   * Removes the given DWPT from the pool unless it's already been removed before.
+   * @return <code>true</code> iff the given DWPT has been removed. Otherwise <code>false</code>
+   */
   synchronized boolean checkout(DocumentsWriterPerThread perThread) {
    assert perThread.isHeldByCurrentThread();
-    synchronized (this) {
-      if (dwpts.remove(perThread)) {
-        freeList.remove(perThread);
-      } else {
-        assert freeList.contains(perThread) == false;
-        return false;
-      }
+    if (dwpts.remove(perThread)) {
+      freeList.remove(perThread);
+    } else {
+      assert freeList.contains(perThread) == false;
+      return false;
     }
     return true;
   }
 
+  /**
+   * Returns <code>true</code> if this DWPT is still part of the pool
+   */
   synchronized boolean isRegistered(DocumentsWriterPerThread perThread) {
     return dwpts.contains(perThread);
+  }
+
+  @Override
+  public synchronized void close() {
+    this.closed = true;
   }
 }

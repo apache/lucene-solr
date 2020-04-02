@@ -320,18 +320,18 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     boolean hasMarkedPending = false;
 
     @Override
-    public void onDelete(DocumentsWriterFlushControl control, DocumentsWriterPerThread state) {
+    public void onDelete(DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
       final ArrayList<DocumentsWriterPerThread> pending = new ArrayList<>();
       final ArrayList<DocumentsWriterPerThread> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
-      final boolean flushCurrent = state.isFlushPending();
+      final boolean flushCurrent = perThread.isFlushPending();
       final DocumentsWriterPerThread toFlush;
-      if (state.isFlushPending()) {
-        toFlush = state;
+      if (perThread.isFlushPending()) {
+        toFlush = perThread;
       } else {
         toFlush = null;
       }
-      super.onDelete(control, state);
+      super.onDelete(control, perThread);
       if (toFlush != null) {
         if (flushCurrent) {
           assertTrue(pending.remove(toFlush));

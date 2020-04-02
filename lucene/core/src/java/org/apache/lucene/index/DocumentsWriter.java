@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 
-import javax.sql.rowset.Predicate;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -226,16 +225,17 @@ final class DocumentsWriter implements Closeable, Accountable {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "abort");
       }
-      for (final DocumentsWriterPerThread perThread : perThreadPool.drain(x -> true)) {
-        assert perThread.isHeldByCurrentThread();
+      for (final DocumentsWriterPerThread perThread : perThreadPool.filterAndLock(x -> true)) {
         try {
-          abortThreadState(perThread);
+          abortDocumentsWriterPerThread(perThread);
         } finally {
           perThread.unlock();
         }
       }
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
+      assert perThreadPool.size() == 0
+          : "There are still active DWPT in the pool: " + perThreadPool.size();
       success = true;
     } finally {
       if (infoStream.isEnabled("DW")) {
@@ -288,15 +288,15 @@ final class DocumentsWriter implements Closeable, Accountable {
     try {
       deleteQueue.clear();
       perThreadPool.lockNewWriters();
-      threadStates.addAll(perThreadPool.drain(x -> true));
+      threadStates.addAll(perThreadPool.filterAndLock(x -> true));
       for (final DocumentsWriterPerThread perThread : threadStates) {
         assert perThread.isHeldByCurrentThread();
-        abortThreadState(perThread);
+        abortDocumentsWriterPerThread(perThread);
       }
       deleteQueue.clear();
 
       // jump over any possible in flight ops:
-      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount() + 1);
+      deleteQueue.skipSequenceNumbers(perThreadPool.size() + 1);
 
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
@@ -319,7 +319,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
   
   /** Returns how many documents were aborted. */
-  private int abortThreadState(final DocumentsWriterPerThread perThread) throws IOException {
+  private int abortDocumentsWriterPerThread(final DocumentsWriterPerThread perThread) throws IOException {
     assert perThread.isHeldByCurrentThread();
     try {
       int abortedDocCount = perThread.getNumDocsInRAM();
@@ -368,9 +368,9 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     closed = true;
-    flushControl.setClosed();
+    IOUtils.close(flushControl, perThreadPool);
   }
 
   private boolean preUpdate() throws IOException {
@@ -420,6 +420,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       // waits for all ThreadStates to be released:
       ensureOpen();
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
+      boolean returnDWPTToPool = false;
       try {
         seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
       } finally {
@@ -434,7 +435,12 @@ final class DocumentsWriter implements Closeable, Accountable {
       final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(dwpt, isUpdate);
     } finally {
-      perThreadPool.release(dwpt);
+      if (dwpt.isFlushPending() || dwpt.isAborted()) {
+        dwpt.unlock();
+      } else {
+        perThreadPool.marksAsFreeAndUnlock(dwpt);
+      }
+      assert dwpt.isHeldByCurrentThread() == false : "we didn't release the dwpt even on abort";
     }
 
     if (postUpdate(flushingDWPT, hasEvents)) {
@@ -506,7 +512,7 @@ final class DocumentsWriter implements Closeable, Accountable {
          * Now we are done and try to flush the ticket queue if the head of the
          * queue has already finished the flush.
          */
-        if (ticketQueue.getTicketCount() >= perThreadPool.getActiveThreadStateCount()) {
+        if (ticketQueue.getTicketCount() >= perThreadPool.size()) {
           // This means there is a backlog: the one
           // thread in innerPurge can't keep up with all
           // other threads flushing segments.  In this case

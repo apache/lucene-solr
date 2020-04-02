@@ -2977,7 +2977,7 @@ public class TestIndexWriter extends LuceneTestCase {
         = w.docWriter.flushControl.findLargestNonPendingWriter();
     assertFalse(largestNonPendingWriter.isFlushPending());
     assertFalse(largestNonPendingWriter.hasFlushed());
-    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    int activeThreadStateCount = w.docWriter.perThreadPool.size();
     w.docWriter.flushControl.markForFullFlush();
     DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
     assertNull(documentsWriterPerThread);
@@ -3699,7 +3699,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     w.addDocument(new Document());
-    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    int activeThreadStateCount = w.docWriter.perThreadPool.size();
     assertEquals(1, activeThreadStateCount);
     CountDownLatch latch = new CountDownLatch(1);
     Thread thread = new Thread(() -> {
@@ -3769,6 +3769,9 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
+      if (w.getTragicException() != null) {
+        w.getTragicException().printStackTrace();
+      }
       assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
       IOUtils.close(sm, dir);
     }

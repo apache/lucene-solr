@@ -17,9 +17,9 @@
 package org.apache.lucene.index;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +43,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link IndexWriterConfig#getRAMPerThreadHardLimitMB()} to prevent address
  * space exhaustion.
  */
-final class DocumentsWriterFlushControl implements Accountable {
+final class DocumentsWriterFlushControl implements Accountable, Closeable {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
@@ -54,8 +54,8 @@ final class DocumentsWriterFlushControl implements Accountable {
   private boolean fullFlush = false;
   private final Queue<DocumentsWriterPerThread> flushQueue = new LinkedList<>();
   // only for safety reasons if a DWPT is close to the RAM limit
-  private final Queue<BlockedFlush> blockedFlushes = new LinkedList<>();
-  private final IdentityHashMap<DocumentsWriterPerThread, Long> flushingWriters = new IdentityHashMap<>();
+  private final Queue<DocumentsWriterPerThread> blockedFlushes = new LinkedList<>();
+  private final List<DocumentsWriterPerThread> flushingWriters = new ArrayList<>();
 
 
   double maxConfiguredRamBuffer = 0;
@@ -86,11 +86,11 @@ final class DocumentsWriterFlushControl implements Accountable {
     return activeBytes;
   }
 
-  public long getFlushingBytes() {
+  long getFlushingBytes() {
     return flushBytes;
   }
 
-  public synchronized long netBytes() {
+  synchronized long netBytes() {
     return flushBytes + activeBytes;
   }
   
@@ -139,7 +139,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     return true;
   }
 
-  private void commitPerThreadBytes(DocumentsWriterPerThread perThread) {
+  private synchronized void commitPerThreadBytes(DocumentsWriterPerThread perThread) {
     final long delta = perThread.commitLastBytesUsed();
     /*
      * We need to differentiate here if we are pending since setFlushPending
@@ -188,7 +188,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   private DocumentsWriterPerThread checkout(DocumentsWriterPerThread perThread, boolean markPending) {
     if (fullFlush) {
-      if (perThread.isFlushPending() && perThreadPool.checkout(perThread)) {
+      if (perThread.isFlushPending()) {
         checkoutAndBlock(perThread);
         return nextPendingFlush();
       }
@@ -198,7 +198,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         setFlushPending(perThread);
       }
 
-      if (perThread.isFlushPending() && perThreadPool.checkout(perThread)) {
+      if (perThread.isFlushPending()) {
         return checkOutForFlush(perThread);
       }
     }
@@ -222,10 +222,10 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
 
   synchronized void doAfterFlush(DocumentsWriterPerThread dwpt) {
-    assert flushingWriters.containsKey(dwpt);
+    assert flushingWriters.contains(dwpt);
     try {
-      Long bytes = flushingWriters.remove(dwpt);
-      flushBytes -= bytes.longValue();
+      flushingWriters.remove(dwpt);
+      flushBytes -= dwpt.bytesUsed();
       assert assertMemory();
     } finally {
       try {
@@ -300,6 +300,8 @@ final class DocumentsWriterFlushControl implements Accountable {
   
   synchronized void doOnAbort(DocumentsWriterPerThread perThread) {
     try {
+      assert perThreadPool.isRegistered(perThread);
+      assert perThread.isHeldByCurrentThread();
       if (perThread.isFlushPending()) {
         flushBytes -= perThread.bytesUsed();
       } else {
@@ -309,34 +311,42 @@ final class DocumentsWriterFlushControl implements Accountable {
       // Take it out of the loop this DWPT is stale
     } finally {
       updateStallState();
+      boolean checkedOut = perThreadPool.checkout(perThread);
+      assert checkedOut;
     }
   }
 
   private void checkoutAndBlock(DocumentsWriterPerThread perThread) {
-    assert perThreadPool.isRegistered(perThread) == false;
+    assert perThreadPool.isRegistered(perThread);
     assert perThread.isHeldByCurrentThread();
     assert perThread.isFlushPending() : "can not block non-pending threadstate";
     assert fullFlush : "can not block if fullFlush == false";
-    final long bytes = perThread.bytesUsed();
     numPending--;
-    blockedFlushes.add(new BlockedFlush(perThread, bytes));
+    blockedFlushes.add(perThread);
+    boolean checkedOut = perThreadPool.checkout(perThread);
+    assert checkedOut;
   }
 
   private synchronized DocumentsWriterPerThread checkOutForFlush(DocumentsWriterPerThread perThread) {
     assert Thread.holdsLock(this);
     assert perThread.isFlushPending();
     assert perThread.isHeldByCurrentThread();
-    assert perThreadPool.isRegistered(perThread) == false;
+    assert perThreadPool.isRegistered(perThread);
     try {
-        final long bytes = perThread.bytesUsed();
-        assert !flushingWriters.containsKey(perThread) : "DWPT is already flushing";
-        // Record the flushing DWPT to reduce flushBytes in doAfterFlush
-        flushingWriters.put(perThread, Long.valueOf(bytes));
+        addFlushingDWPT(perThread);
         numPending--; // write access synced
+        boolean checkedOut = perThreadPool.checkout(perThread);
+        assert checkedOut;
         return perThread;
     } finally {
       updateStallState();
     }
+  }
+
+  private void addFlushingDWPT(DocumentsWriterPerThread perThread) {
+    assert !flushingWriters.contains(perThread) : "DWPT is already flushing";
+    // Record the flushing DWPT to reduce flushBytes in doAfterFlush
+    flushingWriters.add(perThread);
   }
 
   @Override
@@ -357,12 +367,12 @@ final class DocumentsWriterFlushControl implements Accountable {
       fullFlush = this.fullFlush;
       numPending = this.numPending;
     }
-    if (numPending > 0 && !fullFlush) { // don't check if we are doing a full flush
+    if (numPending > 0 && fullFlush == false) { // don't check if we are doing a full flush
       for (final DocumentsWriterPerThread next : perThreadPool) {
         if (next.isFlushPending()) {
           if (next.tryLock()) {
             try {
-              if (perThreadPool.checkout(next)) { // make sure we check it out of the pool before we flush it
+              if (perThreadPool.isRegistered(next)) {
                 return checkOutForFlush(next);
               }
             } finally {
@@ -375,9 +385,10 @@ final class DocumentsWriterFlushControl implements Accountable {
     return null;
   }
 
-  synchronized void setClosed() {
-    // set by DW to signal that we should not release new DWPT after close
-    this.closed = true;
+  @Override
+  public synchronized void close() {
+    // set by DW to signal that we are closing. in this case we try to not stall any threads anymore etc.
+    closed = true;
   }
 
   /**
@@ -420,23 +431,21 @@ final class DocumentsWriterFlushControl implements Accountable {
   DocumentsWriterPerThread obtainAndLock() throws IOException {
     do {
       final DocumentsWriterPerThread perThread = perThreadPool.getAndLock();
-      boolean success = false;
+      boolean unlock = true;
       try {
         if (perThread.deleteQueue != documentsWriter.deleteQueue) {
           // There is a flush-all in process and this DWPT is
           // now stale -- enroll it for flush and try for
           // another DWPT:
-          if (perThreadPool.checkout(perThread)) {
-            addFlushableState(perThread);
-          }
+          addFlushableDWPT(perThread);
         } else {
-          success = true;
-          // simply return the ThreadState even in a flush all case sine we already hold the lock
+          unlock = false;
+          // simply return the DWPT even in a flush all case sine we already hold the lock
           return perThread;
         }
       } finally {
-        if (!success) { // make sure we unlock if this fails
-          perThreadPool.release(perThread);
+        if (unlock) { // make sure we unlock if this fails
+          perThread.unlock();
         }
       }
     } while (true);
@@ -457,7 +466,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       try {
         // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
         // if we have some sequence numbers that were never assigned:
-        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
+        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.size() + 2;
         flushingQueue.maxSeqNo = seqNo + 1;
         DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation + 1, seqNo + 1);
         documentsWriter.deleteQueue = newQueue;
@@ -465,21 +474,20 @@ final class DocumentsWriterFlushControl implements Accountable {
         perThreadPool.unlockNewWriters();
       }
     }
-    for (final DocumentsWriterPerThread next : perThreadPool.drain(dwpt -> dwpt.deleteQueue == flushingQueue)) {
-      assert next.isHeldByCurrentThread();
-      try {
-        assert next.deleteQueue == flushingQueue
-            || next.deleteQueue == documentsWriter.deleteQueue : " flushingQueue: "
-            + flushingQueue
-            + " currentqueue: "
-            + documentsWriter.deleteQueue
-            + " perThread queue: "
-            + next.deleteQueue
-            + " numDocsInRam: " + next.getNumDocsInRAM();
-        addFlushableState(next);
-      } finally {
-        next.unlock();
-      }
+    for (final DocumentsWriterPerThread next : perThreadPool.filterAndLock(dwpt -> dwpt.deleteQueue == flushingQueue)) {
+        try {
+          assert next.deleteQueue == flushingQueue
+              || next.deleteQueue == documentsWriter.deleteQueue : " flushingQueue: "
+              + flushingQueue
+              + " currentqueue: "
+              + documentsWriter.deleteQueue
+              + " perThread queue: "
+              + next.deleteQueue
+              + " numDocsInRam: " + next.getNumDocsInRAM();
+          addFlushableDWPT(next);
+        } finally {
+          next.unlock();
+        }
     }
     synchronized (this) {
       /* make sure we move all DWPT that are where concurrently marked as
@@ -498,21 +506,21 @@ final class DocumentsWriterFlushControl implements Accountable {
   
   private boolean assertActiveDeleteQueue(DocumentsWriterDeleteQueue queue) {
     for (final DocumentsWriterPerThread next : perThreadPool) {
-        assert next.deleteQueue == queue :"numDocs: " + next.getNumDocsInRAM();
+        assert next.deleteQueue == queue : "numDocs: " + next.getNumDocsInRAM();
     }
     return true;
   }
 
   private final List<DocumentsWriterPerThread> fullFlushBuffer = new ArrayList<>();
 
-  void addFlushableState(DocumentsWriterPerThread dwpt) {
+  void addFlushableDWPT(DocumentsWriterPerThread dwpt) {
     if (infoStream.isEnabled("DWFC")) {
-      infoStream.message("DWFC", "addFlushableState " + dwpt);
+      infoStream.message("DWFC", "addFlushableDWPT " + dwpt);
     }
     assert dwpt.isHeldByCurrentThread();
     assert fullFlush;
     assert dwpt.deleteQueue != documentsWriter.deleteQueue;
-    assert perThreadPool.isRegistered(dwpt) == false;
+    assert perThreadPool.isRegistered(dwpt);
     if (dwpt.getNumDocsInRAM() > 0) {
       synchronized(this) {
         if (dwpt.isFlushPending() == false) {
@@ -523,6 +531,12 @@ final class DocumentsWriterFlushControl implements Accountable {
         assert dwpt == flushingDWPT : "flushControl returned different DWPT";
         fullFlushBuffer.add(flushingDWPT);
       }
+    } else {
+      // it's possible that we get a DWPT with 0 docs if we flush concurrently to
+      // threads getting DWPTs from the pool. In this case we simply remove it from
+      // the pool and drop it on the floor.
+      boolean checkout = perThreadPool.checkout(dwpt);
+      assert checkout;
     }
   }
   
@@ -530,16 +544,14 @@ final class DocumentsWriterFlushControl implements Accountable {
    * Prunes the blockedQueue by removing all DWPT that are associated with the given flush queue. 
    */
   private void pruneBlockedQueue(final DocumentsWriterDeleteQueue flushingQueue) {
-    Iterator<BlockedFlush> iterator = blockedFlushes.iterator();
+    Iterator<DocumentsWriterPerThread> iterator = blockedFlushes.iterator();
     while (iterator.hasNext()) {
-      BlockedFlush blockedFlush = iterator.next();
-      if (blockedFlush.dwpt.deleteQueue == flushingQueue) {
+      DocumentsWriterPerThread blockedFlush = iterator.next();
+      if (blockedFlush.deleteQueue == flushingQueue) {
         iterator.remove();
-        assert !flushingWriters.containsKey(blockedFlush.dwpt) : "DWPT is already flushing";
-        // Record the flushing DWPT to reduce flushBytes in doAfterFlush
-        flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
+        addFlushingDWPT(blockedFlush);
         // don't decr pending here - it's already done when DWPT is blocked
-        flushQueue.add(blockedFlush.dwpt);
+        flushQueue.add(blockedFlush);
       }
     }
   }
@@ -561,8 +573,8 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   boolean assertBlockedFlushes(DocumentsWriterDeleteQueue flushingQueue) {
-    for (BlockedFlush blockedFlush : blockedFlushes) {
-      assert blockedFlush.dwpt.deleteQueue == flushingQueue;
+    for (DocumentsWriterPerThread blockedFlush : blockedFlushes) {
+      assert blockedFlush.deleteQueue == flushingQueue;
     }
     return true;
   }
@@ -587,15 +599,15 @@ final class DocumentsWriterFlushControl implements Accountable {
           doAfterFlush(dwpt);
         }
       }
-      for (BlockedFlush blockedFlush : blockedFlushes) {
+      for (DocumentsWriterPerThread blockedFlush : blockedFlushes) {
         try {
-          flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
-          documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
-          blockedFlush.dwpt.abort();
+          addFlushingDWPT(blockedFlush); // add the blockedFlushes for correct accounting in doAfterFlush
+          documentsWriter.subtractFlushedNumDocs(blockedFlush.getNumDocsInRAM());
+          blockedFlush.abort();
         } catch (Exception ex) {
           // that's fine we just abort everything here this is best effort
         } finally {
-          doAfterFlush(blockedFlush.dwpt);
+          doAfterFlush(blockedFlush);
         }
       }
     } finally {
@@ -629,16 +641,6 @@ final class DocumentsWriterFlushControl implements Accountable {
     return blockedFlushes.size();
   }
   
-  private static class BlockedFlush {
-    final DocumentsWriterPerThread dwpt;
-    final long bytes;
-    BlockedFlush(DocumentsWriterPerThread dwpt, long bytes) {
-      super();
-      this.dwpt = dwpt;
-      this.bytes = bytes;
-    }
-  }
-
   /**
    * This method will block if too many DWPT are currently flushing and no
    * checked out DWPT are available
