@@ -104,7 +104,7 @@ fi
 
 # LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
 GRADLE_WRAPPER_JAR=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-if ! $JAVACMD --source 11 buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java $GRADLE_WRAPPER_JAR ; then
+if ! $JAVACMD --source 11 $APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java $GRADLE_WRAPPER_JAR ; then
     exit $?
 fi
 
