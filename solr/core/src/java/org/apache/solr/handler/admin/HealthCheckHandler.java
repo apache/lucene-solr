@@ -136,7 +136,8 @@ public class HealthCheckHandler extends RequestHandlerBase {
       .filter(c -> !c.hasRegistered() || UNHEALTHY_STATES.contains(c.getLastPublished())) // Find candidates locally
       .filter(c -> clusterState.hasCollection(c.getCollectionName())) // Only care about cores for actual collections
       .filter(c -> clusterState.getCollection(c.getCollectionName()).getActiveSlicesMap().containsKey(c.getShardId()))
-      .map(CloudDescriptor::getCoreNodeName).collect(Collectors.toList());
+      .map(c -> c.getCoreNodeName() != null ? c.getCoreNodeName() : c.getCollectionName() + "_" + c.getShardId())
+      .collect(Collectors.toList());
   }
 
   @Override
