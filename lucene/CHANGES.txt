@@ -91,6 +91,8 @@ Improvements
 
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
+* LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 

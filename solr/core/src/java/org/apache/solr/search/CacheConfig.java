@@ -80,8 +80,12 @@ public class CacheConfig implements MapSerializable{
     if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
     for (int i = 0; i < nodes.getLength(); i++) {
-      CacheConfig config = getConfig(solrConfig, nodes.item(i).getNodeName(), DOMUtil.toMap(nodes.item(i).getAttributes()), configPath);
-      result.put(config.args.get(NAME), config);
+      Node node = nodes.item(i);
+      if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
+                                       DOMUtil.toMap(node.getAttributes()), configPath);
+        result.put(config.args.get(NAME), config);
+      }
     }
     return result;
   }

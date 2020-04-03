@@ -17,31 +17,32 @@
 package org.apache.solr.ltr.feature;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class TestOriginalScoreScorer extends SolrTestCase {
+public class TestFeature extends SolrTestCase {
 
   @Test
-  public void testOverridesAbstractScorerMethods() {
-    final Class<?> ossClass = OriginalScoreFeature.OriginalScoreWeight.OriginalScoreScorer.class;
+  public void testFilterFeatureScorerOverridesScorerMethods() {
+    final Class<?> ffsClass = Feature.FeatureWeight.FilterFeatureScorer.class;
     for (final Method scorerClassMethod : Scorer.class.getDeclaredMethods()) {
-      final int modifiers = scorerClassMethod.getModifiers();
-      if (!Modifier.isAbstract(modifiers)) continue;
-
       try {
-        final Method ossClassMethod = ossClass.getDeclaredMethod(
+
+        // the FilterFeatureScorer's implementation does not influence its parent Weight
+        if (scorerClassMethod.getName().equals("getWeight")) continue;
+
+        final Method ffsClassMethod = ffsClass.getDeclaredMethod(
             scorerClassMethod.getName(),
             scorerClassMethod.getParameterTypes());
         assertEquals("getReturnType() difference",
             scorerClassMethod.getReturnType(),
-            ossClassMethod.getReturnType());
+            ffsClassMethod.getReturnType());
       } catch (NoSuchMethodException e) {
-        fail(ossClass + " needs to override '" + scorerClassMethod + "'");
+        fail(ffsClass + " needs to override '" + scorerClassMethod + "'");
       }
     }
   }
+
 }

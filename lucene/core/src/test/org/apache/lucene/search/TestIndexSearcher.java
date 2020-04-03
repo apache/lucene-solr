@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,8 +36,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
@@ -61,12 +63,17 @@ public class TestIndexSearcher extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Random random = random();
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
       doc.add(newStringField("field2", Boolean.toString(i % 2 == 0), Field.Store.NO));
       doc.add(new SortedDocValuesField("field2", new BytesRef(Boolean.toString(i % 2 == 0))));
       iw.addDocument(doc);
+
+      if (random.nextBoolean()) {
+        iw.commit();
+      }
     }
     reader = iw.getReader();
     iw.close();
@@ -345,6 +352,91 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     public void execute(final Runnable runnable) {
       throw new RejectedExecutionException();
+    }
+  }
+
+  public void testQueueSizeBasedSliceExecutor() throws Exception {
+    ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    runSliceExecutorTest(service, false);
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  public void testRandomBlockingSliceExecutor() throws Exception {
+    ThreadPoolExecutor service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    runSliceExecutorTest(service, true);
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  private void runSliceExecutorTest(ThreadPoolExecutor service, boolean useRandomSliceExecutor) throws Exception {
+    SliceExecutor sliceExecutor = useRandomSliceExecutor == true ? new RandomBlockingSliceExecutor(service) :
+                                                              new QueueSizeBasedExecutor(service);
+
+    IndexSearcher searcher = new IndexSearcher(reader.getContext(), service, sliceExecutor);
+
+    Query queries[] = new Query[] {
+        new MatchAllDocsQuery(),
+        new TermQuery(new Term("field", "1"))
+    };
+    Sort sorts[] = new Sort[] {
+        null,
+        new Sort(new SortField("field2", SortField.Type.STRING))
+    };
+    ScoreDoc afters[] = new ScoreDoc[] {
+        null,
+        new FieldDoc(0, 0f, new Object[] { new BytesRef("boo!") })
+    };
+
+    for (ScoreDoc after : afters) {
+      for (Query query : queries) {
+        for (Sort sort : sorts) {
+          searcher.search(query, Integer.MAX_VALUE);
+          searcher.searchAfter(after, query, Integer.MAX_VALUE);
+          if (sort != null) {
+            TopDocs topDocs = searcher.search(query, Integer.MAX_VALUE, sort);
+            assertTrue(topDocs.totalHits.value > 0);
+
+            topDocs = searcher.search(query, Integer.MAX_VALUE, sort, true);
+            assertTrue(topDocs.totalHits.value > 0);
+
+            topDocs = searcher.search(query, Integer.MAX_VALUE, sort, false);
+            assertTrue(topDocs.totalHits.value > 0);
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
+            assertTrue(topDocs.totalHits.value > 0);
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
+            assertTrue(topDocs.totalHits.value > 0);
+
+            topDocs = searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
+            assertTrue(topDocs.totalHits.value > 0);
+          }
+        }
+      }
+    }
+  }
+
+  private class RandomBlockingSliceExecutor extends SliceExecutor {
+
+    public RandomBlockingSliceExecutor(Executor executor) {
+      super(executor);
+    }
+
+    @Override
+    public void invokeAll(Collection<? extends Runnable> tasks){
+
+      for (Runnable task : tasks) {
+        boolean shouldExecuteOnCallerThread = random().nextBoolean();
+
+        processTask(task, shouldExecuteOnCallerThread);
+      }
     }
   }
 }
