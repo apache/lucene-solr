@@ -129,7 +129,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
    * the clusterstate, and return a list of unhealthy replicas that are part of an active shard for an existing collection
    * @param cores list of core descriptors to iterate
    * @param clusterState clusterstate from ZK
-   * @return list of core names that are either DOWN ore RECOVERING on 'nodeName'
+   * @return list of core names that are either DOWN or RECOVERING on 'nodeName'
    */
   static List<String> findUnhealthyCores(Collection<CloudDescriptor> cores, ClusterState clusterState) {
     return cores.stream()
