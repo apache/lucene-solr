@@ -4,7 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.7.3 =======================
-(No Changes)
+
+Bug fixes
+
+* LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
+  externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
 
 ======================= Lucene 7.7.2 =======================
 
