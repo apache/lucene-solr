@@ -63,7 +63,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", rb.totalHitCount);
-        Integer totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
+        Long totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
         if (totalGroupCount != null) {
           command.add("ngroups", totalGroupCount);
         }
