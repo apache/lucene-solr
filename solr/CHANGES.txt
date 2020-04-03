@@ -82,6 +82,8 @@ Improvements
 
 * SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
 
+* SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
