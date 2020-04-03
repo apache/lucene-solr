@@ -17,9 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -30,13 +36,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
+import static org.apache.solr.common.params.CommonParams.OK;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 
 /*
  * Health Check Handler for reporting the health of a specific node.
@@ -105,9 +107,9 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
-      List<String> unhealthyCores = findUnhealthyCores(clusterState,
-              cores.getNodeConfig().getNodeName(),
-              cores.getAllCoreNames());
+      Collection<CloudDescriptor> coreDescriptors = cores.getCores().stream()
+          .map(c -> c.getCoreDescriptor().getCloudDescriptor()).collect(Collectors.toList());
+      List<String> unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores.size() > 0) {
           rsp.add(STATUS, FAILURE);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
@@ -122,20 +124,19 @@ public class HealthCheckHandler extends RequestHandlerBase {
   }
 
   /**
-   * Find replicas DOWN or RECOVERING, or replicas in clusterstate that do not exist on local node
+   * Find replicas DOWN or RECOVERING, or replicas in clusterstate that do not exist on local node.
+   * We first find local cores which are either not registered or unhealthy, and check each of these against
+   * the clusterstate, and return a list of unhealthy replicas that are part of an active shard for an existing collection
+   * @param cores list of core descriptors to iterate
    * @param clusterState clusterstate from ZK
-   * @param nodeName this node name
-   * @param allCoreNames list of all core names on current node
    * @return list of core names that are either DOWN ore RECOVERING on 'nodeName'
    */
-  static List<String> findUnhealthyCores(ClusterState clusterState, String nodeName, Collection<String> allCoreNames) {
-    return clusterState.getCollectionsMap().values().stream()
-            .flatMap(c -> c.getActiveSlices().stream())
-            .flatMap(s -> s.getReplicas(r -> nodeName.equals(r.getNodeName())).stream())
-            .filter(r -> UNHEALTHY_STATES.contains(r.getState())
-                    || !allCoreNames.contains(r.getCoreName()))
-            .map(Replica::getCoreName)
-            .collect(Collectors.toList());
+  static List<String> findUnhealthyCores(Collection<CloudDescriptor> cores, ClusterState clusterState) {
+    return cores.stream()
+      .filter(c -> !c.hasRegistered() || UNHEALTHY_STATES.contains(c.getLastPublished())) // Find candidates locally
+      .filter(c -> clusterState.hasCollection(c.getCollectionName())) // Only care about cores for actual collections
+      .filter(c -> clusterState.getCollection(c.getCollectionName()).getActiveSlicesMap().containsKey(c.getShardId()))
+      .map(CloudDescriptor::getCoreNodeName).collect(Collectors.toList());
   }
 
   @Override
