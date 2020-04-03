@@ -117,7 +117,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final FilterCtStruct[] filters = getSweepFilters();
+    final SweepCountAccStruct[] filters = getSweepDocSets();
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[filters.length];
     final CountSlotAcc[] activeCountAccs = new CountSlotAcc[filters.length];
@@ -131,10 +131,10 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       int activeCt = 0;
       LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
       for (int i = 0; i < filters.length; i++) {
-        FilterCtStruct filterEntry = filters[i];
-        DocIdSet docIdSet = filterEntry.filter.getDocIdSet(subCtx, null);
+        SweepCountAccStruct filterEntry = filters[i];
+        DocIdSet docIdSet = filterEntry.docSet.getTopFilter().getDocIdSet(subCtx, null);
         subIterators[activeCt] = docIdSet.iterator();
-        activeCountAccs[activeCt++] = filterEntry.countAcc;
+        activeCountAccs[activeCt++] = filterEntry.countAccEntry.countAcc;
       }
       switch (activeCt) {
         case 0:

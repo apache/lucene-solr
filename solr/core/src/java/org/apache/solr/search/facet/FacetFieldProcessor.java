@@ -39,7 +39,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
@@ -163,37 +162,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
       this.countAcc = countAcc;
       this.roCountAcc = roCountAcc;
-    }
-  }
-  static final class FilterCtStruct {
-    final boolean isBase;
-    final Filter filter;
-    final CountSlotAcc countAcc;
-
-    public FilterCtStruct(Filter filter, CountSlotAcc countAcc, boolean isBase) {
-      this.isBase = isBase;
-      this.filter = filter;
-      this.countAcc = countAcc;
-    }
-  }
-  protected FilterCtStruct[] getSweepFilters() {
-    final FilterCtStruct[] filters = new FilterCtStruct[sweepCountAccs.size()];
-    int i = 0;
-    SweepCountAccStruct base = null;
-    for (SweepCountAccStruct sweep : sweepCountAccs) {
-      if (sweep.isBase) {
-        base = sweep;
-      } else {
-        filters[i++] = new FilterCtStruct(sweep.docSet.getTopFilter(), sweep.countAccEntry.countAcc, sweep.isBase);
-      }
-    }
-    filters[i++] = new FilterCtStruct(base.docSet.getTopFilter(), base.countAccEntry.countAcc, base.isBase);
-    if (i == 0) {
-      return null;
-    } else if (i == filters.length) {
-      return filters;
-    } else {
-      return Arrays.copyOf(filters, i);
     }
   }
   protected SweepCountAccStruct[] getSweepDocSets() {
