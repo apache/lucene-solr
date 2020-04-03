@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.boost.DelimitedBoostTokenFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilterFactory;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -58,8 +57,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
   
   /** Factories that are excluded from testing it with random data */
   private static final Set<Class<? extends AbstractAnalysisFactory>> EXCLUDE_FACTORIES_RANDOM_DATA = new HashSet<>(Arrays.asList(
-      DelimitedTermFrequencyTokenFilterFactory.class,
-      DelimitedBoostTokenFilterFactory.class
+      DelimitedTermFrequencyTokenFilterFactory.class
   ));
   
   public void test() throws IOException {
