@@ -95,10 +95,10 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     for (Map.Entry<String, NamedList> entry : shardResponse) {
       String key = entry.getKey();
       NamedList commandResult = entry.getValue();
-      Integer totalGroupedHitCount = (Integer) commandResult.get("totalGroupedHitCount");
+      Long totalGroupedHitCount = (Long) commandResult.get("totalGroupedHitCount");
       Number totalHits = (Number) commandResult.get("totalHits"); // previously Integer now Long
       if (totalHits != null) {
-        Integer matches = (Integer) commandResult.get("matches");
+        Long matches = (Long) commandResult.get("matches");
         Float maxScore = (Float) commandResult.get("maxScore");
         if (maxScore == null) {
           maxScore = Float.NaN;
@@ -117,7 +117,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         continue;
       }
 
-      Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
+      Long totalHitCount = ((Number) commandResult.get("totalHitCount")).longValue();
 
       List<GroupDocs<BytesRef>> groupDocs = new ArrayList<>();
       for (int i = 2; i < commandResult.size(); i++) {

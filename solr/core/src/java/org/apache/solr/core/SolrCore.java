@@ -2546,6 +2546,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     preDecorateResponse(req, rsp);
 
+    if (req.getOriginalParams().get("group") != null) {
+      System.out.println("hello: "+req);
+    }
     /*
      * Keeping this usage of isDebugEnabled because the extraction of the log data as a string might be slow. TODO:
      * Determine how likely it is that something is going to go wrong that will prevent the logging at INFO further

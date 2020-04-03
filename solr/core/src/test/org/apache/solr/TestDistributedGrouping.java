@@ -311,8 +311,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     QueryResponse rsp = client.query(params);
     NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
-    int matches = (Integer) nl.getVal(0);
-    int groupCount = (Integer) nl.get("ngroups");
+    long matches = (Long) nl.getVal(0);
+    long groupCount = (Long) nl.get("ngroups");
     assertEquals(100 * shardsArr.length, matches);
     assertEquals(shardsArr.length, groupCount);
 

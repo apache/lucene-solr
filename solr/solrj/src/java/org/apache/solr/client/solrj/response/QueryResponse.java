@@ -266,11 +266,11 @@ public class QueryResponse extends SolrResponseBase
         }
 
         if (oGroups != null) {
-          Integer iMatches = (Integer) oMatches;
+          Long iMatches = (Long) oMatches;
           ArrayList<Object> groupsArr = (ArrayList<Object>) oGroups;
           GroupCommand groupedCommand;
           if (oNGroups != null) {
-            Integer iNGroups = (Integer) oNGroups;
+            Long iNGroups = (Long) oNGroups;
             groupedCommand = new GroupCommand(fieldName, iMatches, iNGroups);
           } else {
             groupedCommand = new GroupCommand(fieldName, iMatches);
@@ -289,7 +289,7 @@ public class QueryResponse extends SolrResponseBase
           Integer iMatches = (Integer) oMatches;
           GroupCommand groupCommand;
           if (oNGroups != null) {
-            Integer iNGroups = (Integer) oNGroups;
+            Long iNGroups = (Long) oNGroups;
             groupCommand = new GroupCommand(fieldName, iMatches, iNGroups);
           } else {
             groupCommand = new GroupCommand(fieldName, iMatches);

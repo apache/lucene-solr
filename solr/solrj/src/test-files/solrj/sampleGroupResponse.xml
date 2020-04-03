@@ -13,8 +13,8 @@
   </lst>
   <lst name="grouped">
     <lst name="acco_id">
-      <int name="matches">30000000</int>
-      <int name="ngroups">5687</int>
+      <long name="matches">30000000</long>
+      <long name="ngroups">5687</long>
       <arr name="groups">
         <lst>
           <str name="groupValue">116_ar</str>
