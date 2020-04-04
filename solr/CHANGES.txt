@@ -83,6 +83,8 @@ Other Changes
 
 * SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
 
+* SOLR-14386: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5 (Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
