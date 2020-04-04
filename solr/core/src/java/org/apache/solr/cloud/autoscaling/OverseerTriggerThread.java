@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -85,7 +86,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager cloudManager) {
+  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager cloudManager, CloudConfig build) {
     this.cloudManager = cloudManager;
     scheduledTriggers = new ScheduledTriggers(loader, cloudManager);
     triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);

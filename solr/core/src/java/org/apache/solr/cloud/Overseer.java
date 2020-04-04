@@ -578,7 +578,7 @@ public class Overseer implements SolrCloseable {
 
     ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
     OverseerTriggerThread trigger = new OverseerTriggerThread(zkController.getCoreContainer().getResourceLoader(),
-        zkController.getSolrCloudManager());
+        zkController.getSolrCloudManager(), new CloudConfig.CloudConfigBuilder("nonexistent", 0, "sim").build());
     triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
 
     updaterThread.start();
