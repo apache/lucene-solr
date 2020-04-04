@@ -162,9 +162,6 @@ public class CloudConfig {
     private String pkiHandlerPrivateKeyPath;
     private String pkiHandlerPublicKeyPath;
 
-    public CloudConfigBuilder(String hostName, int hostPort) {
-      this(hostName, hostPort, null);
-    }
 
     public CloudConfigBuilder(String hostName, int hostPort, String hostContext) {
       this.hostName = hostName;
@@ -194,11 +191,6 @@ public class CloudConfig {
 
     public CloudConfigBuilder setLeaderConflictResolveWait(int leaderConflictResolveWait) {
       this.leaderConflictResolveWait = leaderConflictResolveWait;
-      return this;
-    }
-
-    public CloudConfigBuilder setAutoReplicaFailoverWaitAfterExpiration(int autoReplicaFailoverWaitAfterExpiration) {
-      this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
       return this;
     }
 
@@ -235,7 +227,7 @@ public class CloudConfig {
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
           leaderConflictResolveWait, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
-          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
+          createCollectionCheckLeaderActive, autoReplicaFailoverWaitAfterExpiration, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
     }
   }
 }
