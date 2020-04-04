@@ -211,7 +211,7 @@ If you would like to change the value of `.autoAddReplicas` trigger, you need to
 ----
 {
   "set-trigger": {
-    "name": "auto_add_replicas",
+    "name": ".auto_add_replicas",
     "event": "nodeLost,
     "waitFor": "5s",
     "enabled": true,
