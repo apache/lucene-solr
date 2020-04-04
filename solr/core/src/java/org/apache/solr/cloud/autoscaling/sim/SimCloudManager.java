@@ -89,7 +89,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CloudConfig.CloudConfigBuilder;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
@@ -269,8 +268,7 @@ public class SimCloudManager implements SolrCloudManager {
 
 
     triggerThreadGroup = new ThreadGroup("Simulated Overseer autoscaling triggers");
-    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this,
-        new CloudConfigBuilder("nonexistent", 0, "sim").build());
+    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
   }
@@ -614,8 +612,7 @@ public class SimCloudManager implements SolrCloudManager {
     }
     simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new DefaultSolrThreadFactory("simCloudManagerPool"));
 
-    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this,
-        new CloudConfigBuilder("nonexistent", 0, "sim").build());
+    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
 

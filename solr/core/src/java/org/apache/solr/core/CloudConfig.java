@@ -47,7 +47,7 @@ public class CloudConfig {
   private final String pkiHandlerPrivateKeyPath;
 
   private final String pkiHandlerPublicKeyPath;
-  
+
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
               int leaderVoteWait, int leaderConflictResolveWait, String zkCredentialsProviderClass, String zkACLProviderClass,
               int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath,
