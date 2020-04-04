@@ -50,6 +50,8 @@ public class CloudConfig {
 
   private final String pkiHandlerPublicKeyPath;
 
+  public static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 120000;
+
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
               int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration,
               String zkCredentialsProviderClass, String zkACLProviderClass, int createCollectionWaitTimeTillActive,
@@ -112,10 +114,6 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public int getAutoReplicaFailoverWaitAfterExpiration() {
-    return autoReplicaFailoverWaitAfterExpiration;
-  }
-
   public boolean getGenericCoreNodeNames() {
     return useGenericCoreNames;
   }
@@ -143,7 +141,6 @@ public class CloudConfig {
     private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45;  // 45 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
-
     private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 120000;
 
     private String zkHost = System.getProperty("zkHost");
@@ -194,11 +191,6 @@ public class CloudConfig {
 
     public CloudConfigBuilder setLeaderConflictResolveWait(int leaderConflictResolveWait) {
       this.leaderConflictResolveWait = leaderConflictResolveWait;
-      return this;
-    }
-
-    public CloudConfigBuilder setAutoReplicaFailoverWaitAfterExpiration(int autoReplicaFailoverWaitAfterExpiration) {
-      this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
       return this;
     }
     
