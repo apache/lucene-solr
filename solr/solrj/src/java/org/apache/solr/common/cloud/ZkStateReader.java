@@ -537,7 +537,7 @@ public class ZkStateReader implements SolrCloseable {
 
                 // remake watch
                 final Stat stat = new Stat();
-                byte[] data = "{}".getBytes();
+                byte[] data = "{}".getBytes(StandardCharsets.UTF_8);
                 if (EventType.NodeDeleted.equals(event.getType())) {
                   // Node deleted, just recreate watch without attempting a read - SOLR-9679
                   getZkClient().exists(SOLR_SECURITY_CONF_PATH, this, true);
