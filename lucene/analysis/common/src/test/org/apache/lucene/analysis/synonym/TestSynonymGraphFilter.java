@@ -1293,6 +1293,28 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
       };
   }
 
+  // get analyzer which filters stop words after FlattenGraphFilter
+  private Analyzer getFlattenAnalyzer2(SynonymMap.Builder b, boolean ignoreCase, List<String> stopWords) throws IOException {
+    final SynonymMap map = b.build();
+    return new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+        TokenStream stream = tokenizer;
+
+        SynonymGraphFilter synFilter = new SynonymGraphFilter(stream, map, ignoreCase);
+        FlattenGraphFilter flattenFilter = new FlattenGraphFilter(synFilter);
+        TestSynonymGraphFilter.this.synFilter = synFilter;
+        TestSynonymGraphFilter.this.flattenFilter = flattenFilter;
+        stream = flattenFilter;
+        if (stopWords != null){
+          stream = new StopFilter(stream, new CharArraySet(stopWords, true));
+        }
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+  }
+
   private void add(SynonymMap.Builder b, String input, String output, boolean keepOrig) {
     if (VERBOSE) {
       //System.out.println("  add input=" + input + " output=" + output + " keepOrig=" + keepOrig);
@@ -1900,8 +1922,125 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
         new String[]{"SYNONYM", "word", "SYNONYM", "word", "SYNONYM"},
         new int[]{2, 0, 2, 0, 1},
         new int[]{1, 1, 1, 1, 1});
-
+    analyzerWithoutStopFilter.close();
     analyzerWithStopFilter.close();
+  }
+
+  public void testWithStopwordGaps2() throws Exception {
+    String testFile = "usa,united states,united states of america";
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    analyzer.close();
+
+    Analyzer analyzerWithStopFilter = getFlattenAnalyzer(parser, true, Arrays.asList("the"));
+    assertAnalyzesToPositions(analyzerWithStopFilter, "the the usa is the usa",
+        new String[]{"united", "united", "usa", "states", "states", "of", "america", "is", "united", "united", "usa", "states", "states", "of", "america"},
+        new String[]{"SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM"},
+        new int[]{2, 0, 0, 1, 0, 1, 1, 1, 2, 0, 0, 1, 0, 1, 1},
+        new int[]{1, 1, 4, 3, 1, 1, 1, 1, 1, 1, 4, 3, 1, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "is the the usa",
+        new String[]{"is", "united", "united", "usa", "states", "states", "of", "america"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM"},
+        new int[]{ 1, 2, 0, 0, 1, 0, 1, 1},
+        new int[]{ 1, 1, 1, 4, 3, 1, 1, 1});
+    analyzerWithStopFilter.close();
+  }
+
+  /**
+   * verify that gaps from stopword removal gets preserved if the synonym contains multiple words
+   * */
+  public void testWithStopwordGapsMultipleWords() throws Exception {
+    String testFile = "rtfm,read the fine manual,review the manual";
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    analyzer.close();
+
+    Analyzer analyzerWithoutStopFilter = getFlattenAnalyzer2(parser, true, null);
+    Analyzer analyzerWithStopFilter = getFlattenAnalyzer2(parser, true, Arrays.asList("the"));
+    Analyzer analyzerWithMultiHolesStopFilter = getFlattenAnalyzer2(parser, true, Arrays.asList("the", "fine"));
+    Analyzer analyzerWithMultiHolesStopFilter2 = getFlattenAnalyzer2(parser, true, Arrays.asList("the", "manual"));
+    Analyzer analyzerWithMultiHolesStopFilter3 = getFlattenAnalyzer2(parser, true, Arrays.asList("the", "review", "rtfm"));
+
+    assertAnalyzesToPositions(analyzerWithoutStopFilter, "I RTFM today",
+        new String[]{"i", "read", "review", "rtfm", "the", "the", "fine", "manual", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 0, 0, 1, 0, 1, 0, 1, 1},
+        new int[]{1, 1, 1, 4, 1, 1, 1, 2, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "I RTFM today",
+        new String[]{"i", "read", "review", "rtfm", "fine", "manual", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 0, 0, 2, 0, 1, 1},
+        new int[]{1, 1, 1, 4, 1, 2, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithMultiHolesStopFilter, "I RTFM today",
+        new String[]{"i", "read", "review", "rtfm", "manual", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 0, 0, 2, 1, 1},
+        new int[]{1, 1, 1, 4, 2, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithMultiHolesStopFilter2, "I RTFM today",
+        new String[]{"i", "read", "review", "rtfm", "fine", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word", "SYNONYM", "word"},
+        new int[]{1, 1, 0, 0, 2, 2},
+        new int[]{1, 1, 1, 4, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithMultiHolesStopFilter3, "I RTFM today",
+        new String[]{"i", "read", "fine", "manual", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 2, 0, 1, 1},
+        new int[]{1, 1, 1, 2, 1, 1});
+
+    analyzerWithoutStopFilter.close();
+    analyzerWithStopFilter.close();
+    analyzerWithMultiHolesStopFilter.close();
+    analyzerWithMultiHolesStopFilter2.close();
+    analyzerWithMultiHolesStopFilter3.close();
+  }
+
+  public void testWithStopwordGapsMultipleWords2() throws Exception {
+    String testFile = "rtfm => read the fine manual";
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    analyzer.close();
+
+    Analyzer analyzerWithoutStopFilter = getFlattenAnalyzer2(parser, true, null);
+    Analyzer analyzerWithStopFilter = getFlattenAnalyzer2(parser, true, Arrays.asList("the"));
+    Analyzer analyzerWithMultiHolesStopFilter = getFlattenAnalyzer2(parser, true, Arrays.asList("the", "fine"));
+    Analyzer analyzerWithMultiHolesStopFilter2 = getFlattenAnalyzer2(parser, true, Arrays.asList("the", "manual"));
+
+    assertAnalyzesToPositions(analyzerWithoutStopFilter, "I RTFM today",
+        new String[]{"i", "read", "the", "fine", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 1, 1, 1, 1},
+        new int[]{1, 1, 1, 1, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "I RTFM today",
+        new String[]{"i", "read", "fine", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 2, 1, 1},
+        new int[]{1, 1, 1, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithMultiHolesStopFilter, "I RTFM today",
+        new String[]{"i", "read", "manual", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 3, 1},
+        new int[]{1, 1, 1, 1});
+
+    assertAnalyzesToPositions(analyzerWithMultiHolesStopFilter2, "I RTFM today",
+        new String[]{"i", "read", "fine", "today"},
+        new String[]{"word", "SYNONYM", "SYNONYM", "word"},
+        new int[]{1, 1, 2, 2},
+        new int[]{1, 1, 1, 1});
+
+    analyzerWithoutStopFilter.close();
+    analyzerWithStopFilter.close();
+    analyzerWithMultiHolesStopFilter.close();
+    analyzerWithMultiHolesStopFilter2.close();
   }
 
   public void testMultiwordOffsets() throws Exception {
