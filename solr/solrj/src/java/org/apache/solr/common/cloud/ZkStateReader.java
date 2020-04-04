@@ -533,31 +533,21 @@ public class ZkStateReader implements SolrCloseable {
             }
             try {
               synchronized (ZkStateReader.this.getUpdateLock()) {
+                log.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
-                switch (event.getType()) {
-                  case NodeDeleted:
-                    log.debug("Detected removal of security.json, disabling security");
-                    try {
-                      callback.call(new Pair<>("{}".getBytes(StandardCharsets.UTF_8), new Stat()));
-                      // remake watch
-                      getZkClient().exists(SOLR_SECURITY_CONF_PATH, this, true);
-                    } catch (Exception e) {
-                      log.error("Error running collections node listener, trying to disable security", e);
-                    }
-                    break;
-
-                  default:
-                    log.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
-
-                    // remake watch
-                    final Watcher thisWatch = this;
-                    final Stat stat = new Stat();
-                    final byte[] data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, thisWatch, stat, true);
-                    try {
-                      callback.call(new Pair<>(data, stat));
-                    } catch (Exception e) {
-                      log.error("Error running collections node listener", e);
-                    }
+                // remake watch
+                final Stat stat = new Stat();
+                byte[] data = "{}".getBytes();
+                if (EventType.NodeDeleted.equals(event.getType())) {
+                  // Node deleted, just recreate watch without attempting a read - SOLR-9679
+                  getZkClient().exists(SOLR_SECURITY_CONF_PATH, this, true);
+                } else {
+                  data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat, true);
+                }
+                try {
+                  callback.call(new Pair<>(data, stat));
+                } catch (Exception e) {
+                  log.error("Error running collections node listener", e);
                 }
               }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
