@@ -50,7 +50,7 @@ allprojects {
       def solrDocUrl = "https://lucene.apache.org/solr/${project.version.replace(".", "_")}".toString()
 
       def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
-      def optionsFilePath = "${it.getTemporaryDir()}/javadoc-options.txt".toString()
+      def optionsFilePath = file("${it.getTemporaryDir()}/javadoc-options.txt").toString()
 
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
