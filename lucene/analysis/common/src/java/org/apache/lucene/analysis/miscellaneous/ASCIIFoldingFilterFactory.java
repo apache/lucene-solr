@@ -53,6 +53,11 @@ public class ASCIIFoldingFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public ASCIIFoldingFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new ASCIIFoldingFilter(input, preserveOriginal);

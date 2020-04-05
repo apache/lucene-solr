@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import java.io.BufferedOutputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -205,7 +205,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     try {
       client.add(manyDocs(threadNum*1000000, 1000));
     }
-    catch (HttpSolrClient.RemoteSolrException e) {
+    catch (BaseHttpSolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     }

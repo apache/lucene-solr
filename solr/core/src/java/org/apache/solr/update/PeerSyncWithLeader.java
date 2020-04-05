@@ -37,7 +37,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -131,7 +130,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    MDCLoggingContext.setCore(core);
     Timer.Context timerContext = null;
     try {
       log.info(msg() + "START leader=" + leaderUrl + " nUpdates=" + nUpdates);
@@ -194,7 +192,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       } catch (IOException e) {
         log.warn("{} unable to close client to leader", msg(), e);
       }
-      MDCLoggingContext.clear();
     }
   }
 

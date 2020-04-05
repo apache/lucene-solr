@@ -54,6 +54,15 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     assertFalse(policy.shouldCache(q));
   }
 
+  public void testNeverCacheDocValuesFieldExistsFilter() throws IOException {
+    Query q = new DocValuesFieldExistsQuery("foo");
+    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
+    for (int i = 0; i < 1000; ++i) {
+      policy.onUse(q);
+    }
+    assertFalse(policy.shouldCache(q));
+  }
+
   public void testBooleanQueries() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);

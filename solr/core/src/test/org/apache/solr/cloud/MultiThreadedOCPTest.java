@@ -60,9 +60,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-// commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-//commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     testParallelCollectionAPICalls();
     testTaskExclusivity();
