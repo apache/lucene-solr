@@ -1555,9 +1555,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    query = QueryUtils.combineQueryAndFilter(query, pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {

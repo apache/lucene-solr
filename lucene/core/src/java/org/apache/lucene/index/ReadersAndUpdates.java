@@ -543,27 +543,37 @@ final class ReadersAndUpdates {
       
       try {
         // clone FieldInfos so that we can update their dvGen separately from
-        // the reader's infos and write them to a new fieldInfos_gen file
-        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
-        // cannot use builder.add(reader.getFieldInfos()) because it does not
-        // clone FI.attributes as well FI.dvGen
+        // the reader's infos and write them to a new fieldInfos_gen file.
+        int maxFieldNumber = -1;
+        Map<String, FieldInfo> byName = new HashMap<>();
         for (FieldInfo fi : reader.getFieldInfos()) {
-          FieldInfo clone = builder.add(fi);
-          // copy the stuff FieldInfos.Builder doesn't copy
-          for (Entry<String,String> e : fi.attributes().entrySet()) {
-            clone.putAttribute(e.getKey(), e.getValue());
-          }
-          clone.setDocValuesGen(fi.getDocValuesGen());
+          // cannot use builder.add(fi) because it does not preserve
+          // the local field number. Field numbers can be different from
+          // the global ones if the segment was created externally (and added to
+          // this index with IndexWriter#addIndexes(Directory)).
+          byName.put(fi.name, cloneFieldInfo(fi, fi.number));
+          maxFieldNumber = Math.max(fi.number, maxFieldNumber);
         }
 
         // create new fields with the right DV type
+        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
         for (List<DocValuesFieldUpdates> updates : pendingDVUpdates.values()) {
           DocValuesFieldUpdates update = updates.get(0);
-          FieldInfo fieldInfo = builder.getOrAdd(update.field);
-          fieldInfo.setDocValuesType(update.type);
+
+          if (byName.containsKey(update.field)) {
+            // the field already exists in this segment
+            FieldInfo fi = byName.get(update.field);
+            fi.setDocValuesType(update.type);
+          } else {
+            // the field is not present in this segment so we clone the global field
+            // (which is guaranteed to exist) and remaps its field number locally.
+            assert fieldNumbers.contains(update.field, update.type);
+            FieldInfo fi = cloneFieldInfo(builder.getOrAdd(update.field), ++maxFieldNumber);
+            fi.setDocValuesType(update.type);
+            byName.put(fi.name, fi);
+          }
         }
-        
-        fieldInfos = builder.finish();
+        fieldInfos = new FieldInfos(byName.values().toArray(new FieldInfo[0]));
         final DocValuesFormat docValuesFormat = codec.docValuesFormat();
         
         handleDVUpdates(fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);
@@ -642,6 +652,12 @@ final class ReadersAndUpdates {
                                              info, (System.nanoTime() - startTimeNS)/1000000000.0, newDVFiles));
     }
     return true;
+  }
+
+  private FieldInfo cloneFieldInfo(FieldInfo fi, int fieldNumber) {
+    return new FieldInfo(fi.name, fieldNumber, fi.hasVectors(), fi.omitsNorms(), fi.hasPayloads(),
+        fi.getIndexOptions(), fi.getDocValuesType(), fi.getDocValuesGen(), new HashMap<>(fi.attributes()),
+        fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
   }
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
