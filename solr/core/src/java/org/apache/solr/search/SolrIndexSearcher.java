@@ -50,7 +50,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -905,12 +904,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    if (pf.filter != null) {
-      Query query = new BooleanQuery.Builder().add(main, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-      search(query, collector);
-    } else {
-      search(main, collector);
-    }
+    main = QueryUtils.combineQueryAndFilter(main, pf.filter);
+
+    search(main, collector);
 
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -1660,9 +1656,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    query = QueryUtils.combineQueryAndFilter(query, pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {

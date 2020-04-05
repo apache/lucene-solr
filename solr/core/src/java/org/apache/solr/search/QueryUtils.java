@@ -151,7 +151,7 @@ public class QueryUtils {
    * If neither are null then we combine with a BooleanQuery.
    */
   public static Query combineQueryAndFilter(Query scoreQuery, Query filterQuery) {
-    if (scoreQuery == null) {
+    if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
       } else {

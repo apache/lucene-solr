@@ -47,8 +47,6 @@ import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilterCollector;
@@ -87,6 +85,7 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.Insanity;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -337,10 +336,7 @@ public class SimpleFacets {
 
     AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     Filter mainQueryFilter = docSet.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
-    Query filteredFacetQuery = new BooleanQuery.Builder()
-        .add(facetQuery, Occur.MUST)
-        .add(mainQueryFilter, Occur.FILTER)
-        .build();
+    Query filteredFacetQuery = QueryUtils.combineQueryAndFilter(facetQuery, mainQueryFilter);
     searcher.search(filteredFacetQuery, collector);
     return collector.getGroupCount();
   }
