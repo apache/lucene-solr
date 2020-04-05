@@ -20,9 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -210,8 +208,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
           // A core for a slice that is not an active slice will not fail the check
           mockCD("collection1", "invalid_replica1", "invalid", true, Replica.State.DOWN)
       );
-      List<String> unhealthy1 = HealthCheckHandler.findUnhealthyCores(node1Cores, clusterState).stream().sorted().collect(Collectors.toList());
-      assertEquals("Unexpected list " + unhealthy1, Arrays.asList("slice1_replica3", "slice1_replica5"), unhealthy1);
+      long unhealthy1 = HealthCheckHandler.findUnhealthyCores(node1Cores, clusterState);
+      assertEquals(2, unhealthy1);
 
       // Node 2
       Collection<CloudDescriptor> node2Cores = Arrays.asList(
@@ -219,8 +217,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
           mockCD("collection1", "slice1_replica4", "slice1", true, Replica.State.DOWN),
           mockCD("collection2", "slice1_replica1", "slice1", true, Replica.State.RECOVERY_FAILED)
       );
-      List<String> unhealthy2 = HealthCheckHandler.findUnhealthyCores(node2Cores, clusterState).stream().sorted().collect(Collectors.toList());
-      assertEquals("Unexpected list " + unhealthy2, Arrays.asList("slice1_replica4"), unhealthy2);
+      long unhealthy2 = HealthCheckHandler.findUnhealthyCores(node2Cores, clusterState);
+      assertEquals(1, unhealthy2);
     }
   }
 

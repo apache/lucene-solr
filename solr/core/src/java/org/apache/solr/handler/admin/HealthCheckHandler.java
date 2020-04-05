@@ -109,11 +109,12 @@ public class HealthCheckHandler extends RequestHandlerBase {
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
       Collection<CloudDescriptor> coreDescriptors = cores.getCores().stream()
           .map(c -> c.getCoreDescriptor().getCloudDescriptor()).collect(Collectors.toList());
-      List<String> unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
-      if (unhealthyCores.size() > 0) {
+      long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
+      if (unhealthyCores > 0) {
           rsp.add(STATUS, FAILURE);
-          rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                  "Replica(s) " + unhealthyCores + " are currently initializing or recovering"));
+          rsp.add("num_unhealthy", unhealthyCores);
+          rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, unhealthyCores + " out of "
+              + cores.getAllCoreNames().size() + " replicas are currently initializing or recovering"));
           return;
       }
       rsp.add("message", "All cores are healthy");
@@ -126,18 +127,17 @@ public class HealthCheckHandler extends RequestHandlerBase {
   /**
    * Find replicas DOWN or RECOVERING, or replicas in clusterstate that do not exist on local node.
    * We first find local cores which are either not registered or unhealthy, and check each of these against
-   * the clusterstate, and return a list of unhealthy replicas that are part of an active shard for an existing collection
-   * @param cores list of core descriptors to iterate
+   * the clusterstate, and return a count of unhealthy replicas
+   * @param cores list of core cloud descriptors to iterate
    * @param clusterState clusterstate from ZK
-   * @return list of core names that are either DOWN or RECOVERING on 'nodeName'
+   * @return number of unhealthy cores, either in DOWN or RECOVERING state
    */
-  static List<String> findUnhealthyCores(Collection<CloudDescriptor> cores, ClusterState clusterState) {
+  static long findUnhealthyCores(Collection<CloudDescriptor> cores, ClusterState clusterState) {
     return cores.stream()
       .filter(c -> !c.hasRegistered() || UNHEALTHY_STATES.contains(c.getLastPublished())) // Find candidates locally
       .filter(c -> clusterState.hasCollection(c.getCollectionName())) // Only care about cores for actual collections
       .filter(c -> clusterState.getCollection(c.getCollectionName()).getActiveSlicesMap().containsKey(c.getShardId()))
-      .map(c -> c.getCoreNodeName() != null ? c.getCoreNodeName() : c.getCollectionName() + "_" + c.getShardId())
-      .collect(Collectors.toList());
+      .count();
   }
 
   @Override
