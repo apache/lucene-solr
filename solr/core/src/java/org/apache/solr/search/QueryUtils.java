@@ -150,14 +150,15 @@ public class QueryUtils {
    * If neither are null then we combine with a BooleanQuery.
    */
   public static Query combineQueryAndFilter(Query scoreQuery, Query filterQuery) {
-    if (scoreQuery == null) {
+    // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite optimizes this away
+    if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
       } else {
         return new ConstantScoreQuery(filterQuery);
       }
     } else {
-      if (filterQuery == null) {
+      if (filterQuery == null || filterQuery instanceof MatchAllDocsQuery) {
         return scoreQuery;
       } else {
         return new BooleanQuery.Builder()
