@@ -112,7 +112,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
       long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
           rsp.add(STATUS, FAILURE);
-          rsp.add("num_unhealthy", unhealthyCores);
+          rsp.add("num_cores_unhealthy", unhealthyCores);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, unhealthyCores + " out of "
               + cores.getAllCoreNames().size() + " replicas are currently initializing or recovering"));
           return;
