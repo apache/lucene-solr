@@ -61,7 +61,7 @@ allprojects {
         opts += [ "-subpackages ${project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr'}"]
         opts += [ "-d ${project.javadoc.destinationDir.toString()}" ]
         opts += [ "-protected" ]
-        opts += [ "-encodingUTF-8" ]
+        opts += [ "-encoding UTF-8" ]
         opts += [ "-charset UTF-8" ]
         opts += [ "-docencoding UTF-8" ]
         opts += [ "-noindex" ]
