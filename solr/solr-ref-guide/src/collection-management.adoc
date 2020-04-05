@@ -103,11 +103,6 @@ While this parameter is provided as part of Solr's set of features to provide au
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-`rule`::
-Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
-
-`snitch`::
-Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
 
 `policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
 
@@ -246,8 +241,6 @@ The attributes that can be modified are:
 * replicationFactor
 * autoAddReplicas
 * collection.configName
-* rule
-* snitch
 * policy
 * withCollection
 * readOnly

@@ -65,8 +65,8 @@ the specified configset. All collection creation parameters other than `name` ar
 by `create-collection.`
 
 This means that one could, for example, partition their collections by day, and within each daily collection route
-the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
-placement strategies may also be used.
+the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and autoscaling policy
+strategies may also be used.
 
 The values supplied in this command for collection creation will be retained
 in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
