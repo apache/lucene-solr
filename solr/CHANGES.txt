@@ -78,6 +78,8 @@ Improvements
 * SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
   core searcher caches. (hossman)
 
+* SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -102,6 +104,10 @@ Bug Fixes
 
 * SOLR-14317: HttpClusterStateProvider throws exception when only one node down. (Lyle Wang via Ishan Chattopadhyaya)
 
+* SOLR-14356: PeerSync should not fail with SocketTimeoutException from hanging nodes (Cao Manh Dat)
+
+* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -124,6 +130,10 @@ Other Changes
   (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
 
 * SOLR-14367: Upgrade Tika to 1.24 (Mibo via Erick Erickson)
+
+* SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
+
+* SOLR-14386: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5 (Erick Erickson)
 
 ==================  8.5.0 ==================
 

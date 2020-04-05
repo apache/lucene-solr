@@ -80,8 +80,6 @@ case "`uname`" in
     ;;
 esac
 
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
@@ -103,6 +101,14 @@ else
 Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
 fi
+
+# LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
+GRADLE_WRAPPER_JAR=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+if ! $JAVACMD --source 11 $APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java $GRADLE_WRAPPER_JAR ; then
+    exit $?
+fi
+
+CLASSPATH=$GRADLE_WRAPPER_JAR
 
 # Don't fork a daemon mode on initial run that generates local defaults.
 GRADLE_DAEMON_CTRL=
