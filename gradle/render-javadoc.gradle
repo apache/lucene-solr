@@ -54,51 +54,66 @@ allprojects {
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
 
+        def opts = []
+        opts += [ "-overview ${file("src/java/overview.html").toString()}" ]
+        opts += [ "-sourcepath ${srcDirs.join(' ')}" ]
+        opts += [ "-subpackages ${project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr'}"]
+        opts += [ "-d ${project.javadoc.destinationDir.toString()}" ]
+        opts += [ "-protected" ]
+        opts += [ "-encoding UTF-8" ]
+        opts += [ "-charset UTF-8" ]
+        opts += [ "-docencoding UTF-8" ]
+        opts += [ "-noindex" ]
+        opts += [ "-author" ]
+        opts += [ "-version" ]
+        if (linksource) {
+          opts += [ "-linksource" ]
+        }
+        opts += [ "-use" ]
+        opts += [ "-locale en_US" ]
+        opts += [ "-windowtitle '${title}'" ]
+        opts += [ "-doctitle '${title}'" ]
+        if (!sourceSets.main.compileClasspath.isEmpty()) {
+          opts += ["-classpath ${sourceSets.main.compileClasspath.asPath}" ]
+        }
+        opts += [ "-bottom '<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>'" ]
+
+        opts += [ "-tag 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.'" ]
+        opts += [ "-tag 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.'" ]
+        opts += [ "-tag 'lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service).'" ]
+
+        // resolve links to JavaSE and JUnit API
+        opts += [ "-linkoffline ${javaSEDocUrl} ${project(':lucene').file('tools/javadoc/java11/').toString()}" ]
+        if (linkJUnit) {
+          opts += [ "-linkoffline ${junitDocUrl} ${project(':lucene').file('tools/javadoc/junit').toURL()}" ]
+        }
+        // resolve inter-project links
+        linkLuceneProjects.collect { path ->
+          opts += [ "-linkoffline ${luceneDocUrl}/${pathToDocdir(path)} ${file(project(path).javadoc.destinationDir).toString()}" ]
+        }
+        linkSorlProjects.collect { path ->
+          opts += [ "-linkoffline ${solrDocUrl}/${pathToDocdir(path)} ${file(project(path).javadoc.destinationDir).toString()}" ]
+        }
+
+        opts += [ "--release 11" ]
+        opts += [ "-Xdoclint:all,-missing" ]
+
+        // temporary file that holds all javadoc options for the current run (for debugging).
+        def optionsFile = new File("${it.getTemporaryDir()}/javadoc-options.txt")
+        // delete previous options if it exists
+        optionsFile.delete()
+        if (!optionsFile.createNewFile()) {
+          // ensure write privilege
+          throw new GradleException("Javadoc generation failed: Cannot create options file: ${optionsFile}")
+        }
+        optionsFile.write(opts.join("\n"), "UTF-8")
+
         project.exec {
           executable javadocCmd
 
-          args += [ "-overview", file("src/java/overview.html").toString() ]
-          args += [ "-sourcepath", srcDirs.join(" ") ]
-          args += [ "-subpackages", project.path.startsWith(":lucene") ? "org.apache.lucene" : "org.apache.solr"]
-          args += [ "-d", project.javadoc.destinationDir.toString() ]
-          args += [ "-protected" ]
-          args += [ "-encoding", "UTF-8" ]
-          args += [ "-charset", "UTF-8" ]
-          args += [ "-docencoding", "UTF-8" ]
-          args += [ "-noindex" ]
-          args += [ "-author" ]
-          args += [ "-version" ]
-          if (linksource) {
-            args += [ "-linksource" ]
-          }
-          args += [ "-use" ]
-          args += [ "-locale", "en_US" ]
-          args += [ "-windowtitle", title ]
-          args += [ "-doctitle", title ]
-          if (!sourceSets.main.compileClasspath.isEmpty()) {
-            args += ["-classpath", sourceSets.main.compileClasspath.asPath]
-          }
-          args += [ "-bottom", "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
+          args += [ "@${optionsFile.toString()}"]
 
-          args += [ "-tag", "lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release." ]
-          args += [ "-tag", "lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release." ]
-          args += [ "-tag", "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
-
-          // resolve links to JavaSE and JUnit API
-          args += [ "-linkoffline", javaSEDocUrl, project(":lucene").file("tools/javadoc/java11/").toString() ]
-          if (linkJUnit) {
-            args += [ "-linkoffline", junitDocUrl, project(":lucene").file("tools/javadoc/junit").toURL() ]
-          }
-          // resolve inter-project links
-          linkLuceneProjects.collect { path ->
-            args += [ "-linkoffline", "${luceneDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir).toString() ]
-          }
-          linkSorlProjects.collect { path ->
-            args += [ "-linkoffline", "${solrDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir).toString() ]
-          }
-
-          args += [ "--release", "11" ]
-          args += [ "-Xdoclint:all,-missing" ]
+          // -J flags can't be passed via options file... (an "javadoc: error - invalid flag: -J-Xmx512m" error occurs)
           args += [ "-J-Xmx512m" ]
           // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
           args += [ "-J-Duser.language=en -J-Duser.country=US" ]
