@@ -58,7 +58,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         if (searchGroups != null) {
           commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand));
         }
-        final Integer groupedCount = fieldCommandResult.getGroupCount();
+        final Long groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
           commandResult.add(GROUP_COUNT, groupedCount);
         }
@@ -111,7 +111,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         }
       }
 
-      final Integer groupCount = (Integer) topGroupsAndGroupCount.get(GROUP_COUNT);
+      final Long groupCount = (Long) topGroupsAndGroupCount.get(GROUP_COUNT);
       result.put(command.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
     }
     return result;

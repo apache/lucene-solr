@@ -45,8 +45,8 @@ public class GroupCommand implements Serializable {
 
   private final String _name;
   private final List<Group> _values = new ArrayList<>();
-  private final int _matches;
-  private final Integer _ngroups;
+  private final long _matches;
+  private final Long _ngroups;
 
   /**
    * Creates a GroupCommand instance
@@ -54,7 +54,7 @@ public class GroupCommand implements Serializable {
    * @param name    The name of this command
    * @param matches The total number of documents found for this command
    */
-  public GroupCommand(String name, int matches) {
+  public GroupCommand(String name, long matches) {
     _name = name;
     _matches = matches;
     _ngroups = null;
@@ -67,7 +67,7 @@ public class GroupCommand implements Serializable {
    * @param matches The total number of documents found for this command
    * @param nGroups The total number of groups found for this command.
    */
-  public GroupCommand(String name, int matches, int nGroups) {
+  public GroupCommand(String name, long matches, long nGroups) {
     _name = name;
     _matches = matches;
     _ngroups = nGroups;
@@ -106,7 +106,7 @@ public class GroupCommand implements Serializable {
    *
    * @return the total number of documents found for this command.
    */
-  public int getMatches() {
+  public long getMatches() {
     return _matches;
   }
 
@@ -117,7 +117,7 @@ public class GroupCommand implements Serializable {
    *
    * @return the total number of groups found for this command.
    */
-  public Integer getNGroups() {
+  public Long getNGroups() {
     return _ngroups;
   }
 
