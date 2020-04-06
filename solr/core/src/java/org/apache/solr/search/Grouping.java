@@ -61,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -598,10 +599,10 @@ public class Grouping {
       grouped.add(key, groupResult);  // grouped={ key={
 
       long matches = getMatches();
-      groupResult.add("matches", matches);
+      groupResult.add("matches", Utils.intIfNotOverflown(matches));
       if (totalCount == TotalCount.grouped) {
         Long totalNrOfGroups = getNumberOfGroups();
-        groupResult.add("ngroups", totalNrOfGroups == null ? Long.valueOf(0) : totalNrOfGroups);
+        groupResult.add("ngroups", Utils.intIfNotOverflown(totalNrOfGroups == null ? Long.valueOf(0) : totalNrOfGroups));
       }
       maxMatches = Math.max(maxMatches, matches);
       return groupResult;

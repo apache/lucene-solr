@@ -99,7 +99,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       Long totalGroupedHitCount = commandResult.get("totalGroupedHitCount")==null? null: ((Number) commandResult.get("totalGroupedHitCount")).longValue();
       Number totalHits = (Number) commandResult.get("totalHits"); // previously Integer now Long
       if (totalHits != null) {
-        Long matches = (Long) commandResult.get("matches");
+        long matches = ((Number) commandResult.get("matches")).longValue();
         Float maxScore = (Float) commandResult.get("maxScore");
         if (maxScore == null) {
           maxScore = Float.NaN;
