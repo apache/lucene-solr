@@ -36,6 +36,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
@@ -95,7 +96,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     for (Map.Entry<String, NamedList> entry : shardResponse) {
       String key = entry.getKey();
       NamedList commandResult = entry.getValue();
-      Long totalGroupedHitCount = (Long) commandResult.get("totalGroupedHitCount");
+      Long totalGroupedHitCount = commandResult.get("totalGroupedHitCount")==null? null: ((Number) commandResult.get("totalGroupedHitCount")).longValue();
       Number totalHits = (Number) commandResult.get("totalHits"); // previously Integer now Long
       if (totalHits != null) {
         Long matches = (Long) commandResult.get("matches");
@@ -184,10 +185,10 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
   protected NamedList serializeTopGroups(TopGroups<BytesRef> data, SchemaField groupField) throws IOException {
     NamedList<Object> result = new NamedList<>();
-    result.add("totalGroupedHitCount", data.totalGroupedHitCount);
-    result.add("totalHitCount", data.totalHitCount);
+    result.add("totalGroupedHitCount", Utils.intIfNotOverflown(data.totalGroupedHitCount));
+    result.add("totalHitCount", Utils.intIfNotOverflown(data.totalHitCount));
     if (data.totalGroupCount != null) {
-      result.add("totalGroupCount", data.totalGroupCount);
+      result.add("totalGroupCount", Utils.intIfNotOverflown(data.totalGroupCount));
     }
 
     final IndexSchema schema = rb.req.getSearcher().getSchema();
@@ -239,9 +240,10 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     return result;
   }
 
+
   protected NamedList serializeTopDocs(QueryCommandResult result) throws IOException {
     NamedList<Object> queryResult = new NamedList<>();
-    queryResult.add("matches", result.getMatches());
+    queryResult.add("matches", Utils.intIfNotOverflown(result.getMatches()));
     TopDocs topDocs = result.getTopDocs();
     assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     queryResult.add("totalHits", topDocs.totalHits.value);
