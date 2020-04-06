@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -437,29 +438,23 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   }
   
   DocumentsWriterPerThread obtainAndLock() throws IOException {
-    do {
+    while (closed == false) {
       final DocumentsWriterPerThread perThread = perThreadPool.getAndLock();
-      boolean unlock = true;
-      try {
-        if (perThread.deleteQueue == documentsWriter.deleteQueue) {
-          unlock = false;
-          // simply return the DWPT even in a flush all case since we already hold the lock and the DWPT is not stale
-          // since it has the current delete queue associated with it. This means we have established a happens-before
-          // relationship and all docs indexed into this DWPT are guaranteed to not be flushed with the currently
-          // progress full flush.
-          return perThread;
-        } else {
-          // There is a flush-all in process and this DWPT is
-          // now stale - try another one
-          assert fullFlush;
-          assert fullFlushMarkDone == false : "found a stale DWPT but full flush mark phase is already done";
-        }
-      } finally {
-        if (unlock) { // make sure we unlock if this fails
-          perThread.unlock();
-        }
+      if (perThread.deleteQueue == documentsWriter.deleteQueue) {
+        // simply return the DWPT even in a flush all case since we already hold the lock and the DWPT is not stale
+        // since it has the current delete queue associated with it. This means we have established a happens-before
+        // relationship and all docs indexed into this DWPT are guaranteed to not be flushed with the currently
+        // progress full flush.
+        return perThread;
+      } else {
+        perThread.unlock();
+        // There is a flush-all in process and this DWPT is
+        // now stale - try another one
+        assert fullFlush;
+        assert fullFlushMarkDone == false : "found a stale DWPT but full flush mark phase is already done";
       }
-    } while (true);
+    }
+    throw new AlreadyClosedException("flush control is closed");
   }
   
   long markForFullFlush() {
