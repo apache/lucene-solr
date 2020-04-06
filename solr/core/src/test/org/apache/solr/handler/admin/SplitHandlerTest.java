@@ -22,24 +22,50 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.log4j.MDC;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.api.collections.SplitByPrefixTest;
 import org.apache.solr.cloud.api.collections.SplitByPrefixTest.Prefix;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+
 // test low level splitByPrefix range recommendations.
 // This is here to access package private methods.
 // See SplitByPrefixTest for cloud level tests of SPLITSHARD that use this by passing getRanges with the SPLIT command
-public class SplitHandlerTest extends SolrTestCaseJ4 {
-
+public class SplitHandlerTest extends SolrCloudTestCase {
+   
+  private static CloudSolrClient solrClient;
+  private static String systemCollNode;
+  private static String COLL_NAME = "collection1";
+  private static String SHARD_NAME = "shard1";
+  
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty("managed.schema.mutable", "true");  // needed by cloud-managed config set
     initCore("solrconfig.xml","schema_latest.xml");
+    
+    configureCluster(2)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
+    solrClient = cluster.getSolrClient();
+    systemCollNode = cluster.getJettySolrRunner(0).getNodeName();
+    CollectionAdminRequest.createCollection(COLL_NAME, null, 1, 3)
+        .setCreateNodeSet(systemCollNode)
+        .setMaxShardsPerNode(3)
+        .process(solrClient);
+    cluster.waitForActiveCollection(COLL_NAME, 1, 3);
+    
+    MDC.put(SHARD_ID_PROP, SHARD_NAME);
   }
 
   void verifyContiguous(Collection<DocRouter.Range> results, DocRouter.Range currentRange) {
@@ -240,9 +266,12 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     for (int i=0; i<100; i++) {
       SolrQueryRequest req = req("myquery");
       try {
+        ClusterState state = solrClient.getZkStateReader().getClusterState();
+        DocCollection coll = state.getCollection(COLL_NAME);
+        
         // the first time through the loop we do this before adding docs to test an empty index
-        Collection<SplitOp.RangeCount> counts1 = SplitOp.getHashHistogram(req.getSearcher(), prefixField, router, null);
-        Collection<SplitOp.RangeCount> counts2 = SplitOp.getHashHistogramFromId(req.getSearcher(), idField, router, null);
+        Collection<SplitOp.RangeCount> counts1 = SplitOp.getHashHistogram(req.getSearcher(), prefixField, router, coll);
+        Collection<SplitOp.RangeCount> counts2 = SplitOp.getHashHistogramFromId(req.getSearcher(), idField, router, coll);
         assertTrue(eqCount(counts1, counts2));
 
         if (i>0) {

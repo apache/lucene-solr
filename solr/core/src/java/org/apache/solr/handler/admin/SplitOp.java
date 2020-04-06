@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.log4j.MDC;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.GET_RANGES;
 
@@ -350,7 +352,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions);
+    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={} collection={} shard={}", 
+        timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions, collection.getName(), MDC.get(SHARD_ID_PROP));
 
     return counts.values();
   }
@@ -434,7 +437,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions);
+    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={} collection={} shard={}",
+        idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions, collection.getName(), MDC.get(SHARD_ID_PROP));
 
     return counts.values();
   }
