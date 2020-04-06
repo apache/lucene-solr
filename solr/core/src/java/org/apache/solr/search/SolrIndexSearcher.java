@@ -882,25 +882,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
 
-  private DocSet getDocSetScore(List<Query> queries) throws IOException {
-    Query main = queries.remove(0);
-    ProcessedFilter pf = getProcessedFilter(null, queries);
-    DocSetCollector setCollector = new DocSetCollector(maxDoc());
-    Collector collector = setCollector;
-    if (pf.postFilter != null) {
-      pf.postFilter.setLastDelegate(collector);
-      collector = pf.postFilter;
-    }
-
-    search(QueryUtils.combineQueryAndFilter(main, pf.filter), collector);
-
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
-    }
-
-    return DocSetUtil.getDocSet(setCollector, this);
-  }
-
   /**
    * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
    * answer from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a
@@ -910,14 +891,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(List<Query> queries) throws IOException {
-
-    if (queries != null) {
-      for (Query q : queries) {
-        if (q instanceof ScoreFilter) {
-          return getDocSetScore(queries);
-        }
-      }
-    }
 
     ProcessedFilter pf = getProcessedFilter(null, queries);
 
@@ -936,43 +909,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    for (final LeafReaderContext leaf : leafContexts) {
-      final LeafReader reader = leaf.reader();
-      Bits liveDocs = reader.getLiveDocs();
-      DocIdSet idSet = null;
-      if (pf.filter != null) {
-        idSet = pf.filter.getDocIdSet(leaf, liveDocs);
-        if (idSet == null) continue;
-      }
-      DocIdSetIterator idIter = null;
-      if (idSet != null) {
-        idIter = idSet.iterator();
-        if (idIter == null) continue;
-        if (!pf.hasDeletedDocs) liveDocs = null; // no need to check liveDocs
-      }
+    Query query = pf.filter != null ? pf.filter : matchAllDocsQuery;
 
-      final LeafCollector leafCollector = collector.getLeafCollector(leaf);
-      int max = reader.maxDoc();
-
-      if (idIter == null) {
-        for (int docid = 0; docid < max; docid++) {
-          if (liveDocs != null && !liveDocs.get(docid)) continue;
-          leafCollector.collect(docid);
-        }
-      } else {
-        if (liveDocs != null) {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max; ) {
-            if (liveDocs.get(docid))
-              leafCollector.collect(docid);
-          }
-        } else {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max;) {
-            leafCollector.collect(docid);
-          }
-        }
-      }
-
-    }
+    search(query, collector);
 
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -991,7 +930,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     public DocSet answer; // maybe null. Sometimes we have a docSet answer that represents the complete answer / result.
     public Filter filter; // maybe null
     public DelegatingCollector postFilter; // maybe null
-    public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
   }
 
   /**
@@ -1117,7 +1055,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         weights.add(createWeight(rewrite(qq), ScoreMode.COMPLETE_NO_SCORES, 1));
       }
       pf.filter = new FilterImpl(answer, weights);
-      pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
     }
 
     // Set pf.postFilter
