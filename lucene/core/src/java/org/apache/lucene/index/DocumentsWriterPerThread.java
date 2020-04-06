@@ -159,7 +159,7 @@ final class DocumentsWriterPerThread {
   final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
   private SetOnce<Boolean> flushPending = new SetOnce<>();
-  private volatile long lastCommittedBytesUsed = 0;
+  private volatile long lastCommittedBytesUsed;
   private SetOnce<Boolean> hasFlushed = new SetOnce<>();
 
   private final FieldInfos.Builder fieldInfos;
@@ -654,7 +654,7 @@ final class DocumentsWriterPerThread {
   }
 
   /**
-   * Acquires the DWPTs lock only if it is not held by another thread at the time
+   * Acquires the DWPT's lock only if it is not held by another thread at the time
    * of invocation.
    * @return true if the lock was acquired.
    * @see ReentrantLock#tryLock()
@@ -664,7 +664,7 @@ final class DocumentsWriterPerThread {
   }
 
   /**
-   * Returns true if the DWPTs lock is held by the current thread
+   * Returns true if the DWPT's lock is held by the current thread
    * @see ReentrantLock#isHeldByCurrentThread()
    */
   boolean isHeldByCurrentThread() {
@@ -672,7 +672,7 @@ final class DocumentsWriterPerThread {
   }
 
   /**
-   * Unlocks the DWPTs lock
+   * Unlocks the DWPT's lock
    * @see ReentrantLock#unlock()
    */
   void unlock() {

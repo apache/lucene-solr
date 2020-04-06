@@ -57,7 +57,7 @@ abstract class FlushPolicy {
    * thread holds the lock on the given {@link DocumentsWriterPerThread}
    */
   public abstract void onDelete(DocumentsWriterFlushControl control,
-                                DocumentsWriterPerThread state);
+                                DocumentsWriterPerThread perThread);
 
   /**
    * Called for each document update on the given {@link DocumentsWriterPerThread}'s
@@ -67,9 +67,9 @@ abstract class FlushPolicy {
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling
    * thread holds the lock on the given {@link DocumentsWriterPerThread}
    */
-  public void onUpdate(DocumentsWriterFlushControl control, DocumentsWriterPerThread state) {
-    onInsert(control, state);
-    onDelete(control, state);
+  public void onUpdate(DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
+    onInsert(control, perThread);
+    onDelete(control, perThread);
   }
 
   /**
@@ -81,7 +81,7 @@ abstract class FlushPolicy {
    * thread holds the lock on the given {@link DocumentsWriterPerThread}
    */
   public abstract void onInsert(DocumentsWriterFlushControl control,
-                                DocumentsWriterPerThread state);
+                                DocumentsWriterPerThread perThread);
 
   /**
    * Called by DocumentsWriter to initialize the FlushPolicy

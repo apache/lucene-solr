@@ -441,7 +441,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
           addFlushableDWPT(perThread);
         } else {
           unlock = false;
-          // simply return the DWPT even in a flush all case sine we already hold the lock
+          // simply return the DWPT even in a flush all case sicne we already hold the lock
           return perThread;
         }
       } finally {

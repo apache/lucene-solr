@@ -73,7 +73,7 @@ import org.apache.lucene.util.InfoStream;
  * that are associated with the current {@link DocumentsWriterDeleteQueue}
  * out of the {@link DocumentsWriterPerThreadPool} and write
  * them to disk. The flush process can piggy-back on incoming
- * indexing threads or event block them from adding documents
+ * indexing threads or even block them from adding documents
  * if flushing can't keep up with new documents being added.
  * Unless the stall control kicks in to block indexing threads
  * flushes are happening concurrently to actual index requests.
@@ -269,24 +269,27 @@ final class DocumentsWriter implements Closeable, Accountable {
         pendingNumDocs.addAndGet(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
       }
     });
-    List<DocumentsWriterPerThread> writer = new ArrayList<>();
+    List<DocumentsWriterPerThread> writers = new ArrayList<>();
     AtomicBoolean released = new AtomicBoolean(false);
     final Closeable release = () -> {
+      // we return this closure to unlock all writers once done
+      // or if hit an exception below in the try block.
+      // we can't assign this later otherwise the ref can't be final
       if (released.compareAndSet(false, true)) { // only once
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", "unlockAllAbortedThread");
         }
         perThreadPool.unlockNewWriters();
-        for (DocumentsWriterPerThread state : writer) {
-          state.unlock();
+        for (DocumentsWriterPerThread writer : writers) {
+          writer.unlock();
         }
       }
     };
     try {
       deleteQueue.clear();
       perThreadPool.lockNewWriters();
-      writer.addAll(perThreadPool.filterAndLock(x -> true));
-      for (final DocumentsWriterPerThread perThread : writer) {
+      writers.addAll(perThreadPool.filterAndLock(x -> true));
+      for (final DocumentsWriterPerThread perThread : writers) {
         assert perThread.isHeldByCurrentThread();
         abortDocumentsWriterPerThread(perThread);
       }

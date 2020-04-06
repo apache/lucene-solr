@@ -22,7 +22,9 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -3768,10 +3770,19 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
-      if (w.getTragicException() != null) {
-        w.getTragicException().printStackTrace();
-      }
-      assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
+      Throwable e = w.getTragicException();
+      IOSupplier<String> supplier = () -> {
+        if (e != null) {
+          StringWriter writer = new StringWriter();
+          try (PrintWriter printWriter = new PrintWriter(writer)) {
+            e.printStackTrace(printWriter);
+          }
+          return writer.toString();
+        } else {
+          return "";
+        }
+      };
+      assertNull("should not consider ACE a tragedy on a closed IW: " + supplier.get(), w.getTragicException());
       IOUtils.close(sm, dir);
     }
   }
