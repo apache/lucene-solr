@@ -169,7 +169,7 @@ public class GroupingSearch {
     }
 
     if (allGroups) {
-      return new TopGroups(secondPassCollector.getTopGroups(groupDocsOffset), matchingGroups.size());
+      return new TopGroups(secondPassCollector.getTopGroups(groupDocsOffset), (long) matchingGroups.size());
     } else {
       return secondPassCollector.getTopGroups(groupDocsOffset);
     }

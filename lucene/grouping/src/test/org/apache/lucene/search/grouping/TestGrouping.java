@@ -452,7 +452,7 @@ public class TestGrouping extends LuceneTestCase {
     final List<BytesRef> sortedGroups = new ArrayList<>();
     final List<Comparable<?>[]> sortedGroupFields = new ArrayList<>();
 
-    int totalHitCount = 0;
+    long totalHitCount = 0;
     Set<BytesRef> knownGroups = new HashSet<>();
 
     //System.out.println("TEST: slowGrouping");
@@ -492,7 +492,7 @@ public class TestGrouping extends LuceneTestCase {
     final Comparator<GroupDoc> docSortComp = getComparator(docSort);
     @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<BytesRef>[] result = new GroupDocs[limit-groupOffset];
-    int totalGroupedHitCount = 0;
+    long totalGroupedHitCount = 0;
     for(int idx=groupOffset;idx < limit;idx++) {
       final BytesRef group = sortedGroups.get(idx);
       final List<GroupDoc> docs = groups.get(group);
@@ -523,7 +523,7 @@ public class TestGrouping extends LuceneTestCase {
     if (doAllGroups) {
       return new TopGroups<>(
         new TopGroups<>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result, Float.NaN),
-          knownGroups.size()
+          (long) knownGroups.size()
       );
     } else {
       return new TopGroups<>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result, Float.NaN);
@@ -960,7 +960,7 @@ public class TestGrouping extends LuceneTestCase {
           
           if (doAllGroups) {
             TopGroups<BytesRef> tempTopGroups = getTopGroups(c2, docOffset);
-            groupsResult = new TopGroups<>(tempTopGroups, allGroupsCollector.getGroupCount());
+            groupsResult = new TopGroups<>(tempTopGroups, (long) allGroupsCollector.getGroupCount());
           } else {
             groupsResult = getTopGroups(c2, docOffset);
           }
@@ -1046,8 +1046,8 @@ public class TestGrouping extends LuceneTestCase {
         final TopGroups<BytesRef> tempTopGroupsBlocks = (TopGroups<BytesRef>) c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup);
         final TopGroups<BytesRef> groupsResultBlocks;
         if (doAllGroups && tempTopGroupsBlocks != null) {
-          assertEquals((int) tempTopGroupsBlocks.totalGroupCount, allGroupsCollector2.getGroupCount());
-          groupsResultBlocks = new TopGroups<>(tempTopGroupsBlocks, allGroupsCollector2.getGroupCount());
+          assertEquals((long) tempTopGroupsBlocks.totalGroupCount, (long) allGroupsCollector2.getGroupCount());
+          groupsResultBlocks = new TopGroups<>(tempTopGroupsBlocks, (long) allGroupsCollector2.getGroupCount());
         } else {
           groupsResultBlocks = tempTopGroupsBlocks;
         }
