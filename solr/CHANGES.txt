@@ -53,7 +53,7 @@ Other Changes
 * SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
   (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
 
-* SOLR-12067: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
+* SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
 
 ==================  8.6.0 ==================
 
