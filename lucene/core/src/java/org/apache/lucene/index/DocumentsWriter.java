@@ -319,23 +319,18 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
   
   /** Returns how many documents were aborted. */
-  private int abortDocumentsWriterPerThread(final DocumentsWriterPerThread perThread) throws IOException {
+  private void abortDocumentsWriterPerThread(final DocumentsWriterPerThread perThread) throws IOException {
     assert perThread.isHeldByCurrentThread();
     try {
-      int abortedDocCount = perThread.getNumDocsInRAM();
-      subtractFlushedNumDocs(abortedDocCount);
+      subtractFlushedNumDocs(perThread.getNumDocsInRAM());
       perThread.abort();
-      return abortedDocCount;
     } finally {
       flushControl.doOnAbort(perThread);
     }
   }
 
   /** returns the maximum sequence number for all previously completed operations */
-  public long getMaxCompletedSequenceNumber() {
-    // NOCOMMIT: speak to mikemccandless about this change https://github.com/apache/lucene-solr/commit/5a03216/
-    // Returning the last seqNum is as good as the way we had before IMO. I tried to figure out why this is better but
-    // failed.
+  long getMaxCompletedSequenceNumber() {
     return deleteQueue.getLastSequenceNumber();
   }
 
@@ -358,16 +353,16 @@ final class DocumentsWriter implements Closeable, Accountable {
     return anyChanges;
   }
   
-  public int getBufferedDeleteTermsSize() {
+  int getBufferedDeleteTermsSize() {
     return deleteQueue.getBufferedUpdatesTermsSize();
   }
 
   //for testing
-  public int getNumBufferedDeleteTerms() {
+  int getNumBufferedDeleteTerms() {
     return deleteQueue.numGlobalTermDeletes();
   }
 
-  public boolean anyDeletions() {
+  boolean anyDeletions() {
     return deleteQueue.anyChanges();
   }
 
@@ -706,7 +701,7 @@ final class DocumentsWriter implements Closeable, Accountable {
    *
    * This is a subset of the value returned by {@link #ramBytesUsed()}
    */
-  public long getFlushingBytes() {
+  long getFlushingBytes() {
     return flushControl.getFlushingBytes();
   }
 }
