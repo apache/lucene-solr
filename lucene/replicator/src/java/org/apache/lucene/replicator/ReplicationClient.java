@@ -382,7 +382,7 @@ public class ReplicationClient implements Closeable {
   }
   
   @Override
-  public String toString() {
+  public synchronized String toString() {
     String res = "ReplicationClient";
     if (updateThread != null) {
       res += " (" + updateThread.getName() + ")";
