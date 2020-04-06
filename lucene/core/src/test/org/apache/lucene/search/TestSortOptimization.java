@@ -32,7 +32,7 @@ import java.io.IOException;
 
 public class TestSortOptimization extends LuceneTestCase {
 
-  public void testSortWithOptimization() throws IOException {
+  public void testLongSortOptimization() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
     final int numDocs = atLeast(10000);
@@ -44,7 +44,9 @@ public class TestSortOptimization extends LuceneTestCase {
     }
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
-    final Sort sort = new Sort(new LongDocValuesPointSortField("my_field"));
+    final SortField sortField = new SortField("my_field", SortField.Type.LONG);
+    sortField.allowFilterNonCompetitveDocs();
+    final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
 
@@ -86,7 +88,7 @@ public class TestSortOptimization extends LuceneTestCase {
    * test that even if a field is not indexed with points, optimized sort still works as expected,
    * although no optimization will be run
    */
-  public void testSortWithOptimizationOnFieldNotIndexWithPoints() throws IOException {
+  public void testLongSortOptimizationOnFieldNotIndexedWithPoints() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
     final int numDocs = atLeast(100);
@@ -98,7 +100,9 @@ public class TestSortOptimization extends LuceneTestCase {
     }
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
-    final Sort sort = new Sort(new LongDocValuesPointSortField("my_field"));
+    final SortField sortField = new SortField("my_field", SortField.Type.LONG);
+    sortField.allowFilterNonCompetitveDocs();
+    final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
 
@@ -116,7 +120,7 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
-  public void testFloatSortWithOptimization() throws IOException {
+  public void testFloatSortOptimization() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
     final int numDocs = atLeast(10000);
@@ -130,7 +134,7 @@ public class TestSortOptimization extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.FLOAT);
-    sortField.allowSkipNonCompetitveDocs();
+    sortField.allowFilterNonCompetitveDocs();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;

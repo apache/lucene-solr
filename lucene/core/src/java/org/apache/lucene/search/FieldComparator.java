@@ -136,6 +136,15 @@ public abstract class FieldComparator<T> {
     }
   }
 
+  /**
+   * Optionally creates a view of the scorerIterator where only competitive documents
+   * in the scorerIterator are kept and non-competitive are skipped.
+   * The default is to return the same iterator which is interpreted as the comparator doesn't filter any documents.
+   */
+  public DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
+    return scorerIterator;
+  }
+
 
   /**
    * Base FieldComparator class for numeric types
@@ -928,17 +937,5 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setScorer(Scorable scorer) {}
-  }
-
-  /**
-   * A field comparator that can provide an iterator over competitive documents.
-   */
-  public static abstract class IterableComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
-    abstract DocIdSetIterator iterator();
-
-    // This method is called from TopFieldCollector when already enough top hits have been collected.
-    // This method should be called every time the bottom entry is updated, and it informs the comparator
-    // to update its iterator to include possibly only docs that are "stronger" than the current bottom entry
-    abstract void updateIterator() throws IOException;
   }
 }

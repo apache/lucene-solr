@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import java.util.Arrays;
 
 /**
  * Expert: Calculate query weights and build query scorers.
@@ -203,19 +202,17 @@ public abstract class Weight implements SegmentCacheable {
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null? iterator : twoPhase.approximation();
-      // If a collector provides an iterator over competitive docs, combine collector's and scorer's iterators
-      DocIdSetIterator collectorIterator = collector.competitiveIterator();
-      DocIdSetIterator combinedIterator = collectorIterator == null ? scorerIterator :
-              ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+      // if possible filter scorerIterator to keep only competitive docs
+      DocIdSetIterator filteredIterator = collector.filterIterator(scorerIterator);
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
-        scoreAll(collector, combinedIterator, twoPhase, acceptDocs);
+        scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
         if (doc < min) {
           doc = scorerIterator.advance(min);
         }
-        return scoreRange(collector, combinedIterator, twoPhase, acceptDocs, doc, max);
+        return scoreRange(collector, filteredIterator, twoPhase, acceptDocs, doc, max);
       }
     }
 

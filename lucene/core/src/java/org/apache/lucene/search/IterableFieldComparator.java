@@ -36,14 +36,19 @@ import java.util.Arrays;
  */
 public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
     final FieldComparator<T> in;
+    protected DocIdSetIterator iterator = null;
 
     public IterableFieldComparator(FieldComparator<T> in) {
         this.in = in;
     }
 
-    public abstract DocIdSetIterator competitiveIterator();
-
     public abstract void updateCompetitiveIterator() throws IOException;
+
+    @Override
+    public DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
+        if (iterator == null) return scorerIterator;
+        return ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, competitiveIterator()));
+    }
 
     @Override
     public int compare(int slot1, int slot2) {
@@ -65,10 +70,37 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         return in.compareValues(first, second);
     }
 
+    private DocIdSetIterator competitiveIterator() {
+        return new DocIdSetIterator() {
+            private int doc;
+            @Override
+            public int nextDoc() throws IOException {
+                return doc = iterator.nextDoc();
+            }
+
+            @Override
+            public int docID() {
+                return doc;
+            }
+
+            @Override
+            public long cost() {
+                return iterator.cost();
+            }
+
+            @Override
+            public int advance(int target) throws IOException {
+                return doc = iterator.advance(target);
+            }
+        };
+    }
+
+    /**
+     * A wrapper over {@code NumericComparator} that adds a functionality to filter non-competitive docs.
+     */
     public static abstract class IterableNumericComparator<T extends Number> extends IterableFieldComparator<T> implements LeafFieldComparator {
         private final boolean reverse;
         private boolean hasTopValue = false;
-        private DocIdSetIterator iterator = null;
         private PointValues pointValues;
         private final int bytesCount;
         private final byte[] minValueAsBytes;
@@ -92,10 +124,6 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
             } else {
                 maxValueExist = true;
             }
-        }
-
-        public DocIdSetIterator competitiveIterator() {
-            return iterator;
         }
 
         @Override
@@ -219,6 +247,9 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         public abstract void encodeTop(byte[] packedValue);
     }
 
+    /**
+     * A wrapper over {@code LongComparator} that adds a functionality to filter non-competitive docs.
+     */
     public static class IterableLongComparator extends IterableNumericComparator<Long> {
         public IterableLongComparator(LongComparator in, boolean reverse) {
             super(in, reverse, Long.BYTES);
@@ -233,6 +264,9 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         }
     }
 
+    /**
+     * A wrapper over {@code IntComparator} that adds a functionality to filter non-competitive docs.
+     */
     public static class IterableIntComparator extends IterableNumericComparator<Integer> {
         public IterableIntComparator(IntComparator in, boolean reverse) {
             super(in, reverse, Integer.BYTES);
@@ -245,6 +279,9 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         }
     }
 
+    /**
+     * A wrapper over {@code DoubleComparator} that adds a functionality to filter non-competitive docs.
+     */
     public static class IterableDoubleComparator extends IterableNumericComparator<Double> {
         public IterableDoubleComparator(DoubleComparator in, boolean reverse) {
             super(in, reverse, Double.BYTES);
@@ -257,6 +294,9 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         }
     }
 
+    /**
+     * A wrapper over {@code FloatComparator} that adds a functionality to filter non-competitive docs.
+     */
     public static class IterableFloatComparator extends IterableNumericComparator<Float> {
         public IterableFloatComparator(FloatComparator in, boolean reverse) {
             super(in, reverse, Float.BYTES);

@@ -91,7 +91,7 @@ public class SortField {
   private String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private boolean skipNonCompetitiveDocs = false; // if true, sortField will use a comparator that can skip non-competitive docs
+  private boolean filterNonCompetitiveDocs = false; // if true, sortField tries to use a comparator that can skip non-competitive docs
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
@@ -124,8 +124,8 @@ public class SortField {
   /**
    * Allows to skip non-competitive docs
    */
-  public void allowSkipNonCompetitveDocs() {
-    skipNonCompetitiveDocs = true;
+  public void allowFilterNonCompetitveDocs() {
+    filterNonCompetitiveDocs = true;
   }
 
   /** Pass this to {@link #setMissingValue} to have missing
@@ -292,8 +292,8 @@ public class SortField {
       buffer.append(" missingValue=");
       buffer.append(missingValue);
     }
-    if (skipNonCompetitiveDocs) {
-      buffer.append(" skipNonCompetitiveDocs=true");
+    if (filterNonCompetitiveDocs) {
+      buffer.append(" filterNonCompetitiveDocs=true");
     }
 
     return buffer.toString();
@@ -313,7 +313,7 @@ public class SortField {
       && other.reverse == this.reverse
       && Objects.equals(this.comparatorSource, other.comparatorSource)
       && Objects.equals(this.missingValue, other.missingValue)
-      && this.skipNonCompetitiveDocs == other.skipNonCompetitiveDocs
+      && this.filterNonCompetitiveDocs == other.filterNonCompetitiveDocs
     );
   }
 
@@ -322,7 +322,7 @@ public class SortField {
    *  implement hashCode (unless a singleton is always used). */
   @Override
   public int hashCode() {
-    return Objects.hash(field, type, reverse, comparatorSource, missingValue, skipNonCompetitiveDocs);
+    return Objects.hash(field, type, reverse, comparatorSource, missingValue, filterNonCompetitiveDocs);
   }
 
   private Comparator<BytesRef> bytesComparator = Comparator.naturalOrder();
@@ -358,7 +358,7 @@ public class SortField {
 
     case INT: {
       FieldComparator.IntComparator comparator = new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
-      if (skipNonCompetitiveDocs) {
+      if (filterNonCompetitiveDocs) {
         return new IterableFieldComparator.IterableIntComparator(comparator, reverse);
       } else {
         return comparator;
@@ -367,7 +367,7 @@ public class SortField {
 
     case FLOAT: {
       FieldComparator.FloatComparator comparator = new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
-      if (skipNonCompetitiveDocs) {
+      if (filterNonCompetitiveDocs) {
         return new IterableFieldComparator.IterableFloatComparator(comparator, reverse);
       } else {
         return comparator;
@@ -376,7 +376,7 @@ public class SortField {
 
     case LONG: {
       FieldComparator.LongComparator comparator = new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
-      if (skipNonCompetitiveDocs) {
+      if (filterNonCompetitiveDocs) {
         return new IterableFieldComparator.IterableLongComparator(comparator, reverse);
       } else {
         return comparator;
@@ -385,7 +385,7 @@ public class SortField {
 
     case DOUBLE: {
       FieldComparator.DoubleComparator comparator = new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
-      if (skipNonCompetitiveDocs) {
+      if (filterNonCompetitiveDocs) {
         return new IterableFieldComparator.IterableDoubleComparator(comparator, reverse);
       } else {
         return comparator;
