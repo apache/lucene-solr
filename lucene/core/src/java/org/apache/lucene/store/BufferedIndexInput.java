@@ -75,7 +75,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
 
   /** Change the buffer size used by this IndexInput */
   public final void setBufferSize(int newSize) {
-    assert buffer == null || bufferSize == buffer.capacity(): "buffer=" + buffer + " bufferSize=" + bufferSize + " buffer.length=" + (buffer != null ? buffer.capacity() : 0);
+    assert buffer == EMPTY_BYTEBUFFER || bufferSize == buffer.capacity(): "buffer=" + buffer + " bufferSize=" + bufferSize + " buffer.length=" + (buffer != null ? buffer.capacity() : 0);
     if (newSize != bufferSize) {
       checkBufferSize(newSize);
       bufferSize = newSize;
