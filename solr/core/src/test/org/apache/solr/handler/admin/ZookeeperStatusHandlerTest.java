@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,7 +34,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkDynamicConfig;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -45,16 +44,13 @@ import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
 import org.noggit.JSONUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -121,12 +117,12 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "conf")).thenReturn(
         Arrays.asList("clientPort=2181"));
 
-    when(zkStatusHandler.getZkStatus(anyString(), anyList())).thenCallRealMethod();
+    when(zkStatusHandler.getZkStatus(anyString(), any())).thenCallRealMethod();
     when(zkStatusHandler.monitorZookeeper(anyString())).thenCallRealMethod();
     when(zkStatusHandler.validateZkRawResponse(ArgumentMatchers.any(), any(), any())).thenAnswer(Answers.CALLS_REAL_METHODS);
 
-    List<SolrZkClient.ZkConfigDyn> zkDynamicConfig = SolrZkClient.ZkConfigDyn.parseLines(
-            "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n" +
+    ZkDynamicConfig zkDynamicConfig = ZkDynamicConfig.parseLines(
+        "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n" +
             "server.2=zoo2:2781:2784:participant;0.0.0.0:2181\n" +
             "server.3=zoo3:2782:2785:participant;0.0.0.0:2181\n" +
             "version=400000003");

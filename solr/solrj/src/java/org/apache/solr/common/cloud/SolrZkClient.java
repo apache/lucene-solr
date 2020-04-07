@@ -16,6 +16,29 @@
  */
 package org.apache.solr.common.cloud;
 
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
@@ -24,35 +47,21 @@ import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.zookeeper.*;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-import java.io.*;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -832,67 +841,6 @@ public class SolrZkClient implements Closeable {
   }
   public void downloadFromZK(String zkPath, Path dir) throws IOException {
     ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
-  }
-
-  /**
-   * Represents one line in dynamic ZK config
-   */
-  public static class ZkConfigDyn {
-    // server.<positive id> = <address1>:<port1>:<port2>[:role];[<client port address>:]<client port>
-    public static final Pattern linePattern = Pattern.compile("server\\.(?<serverId>\\d+) ?= ?(?<address>[^:]+):(?<leaderPort>\\d+):(?<leaderElectionPort>\\d+)(:(?<role>.*?))?(;((?<clientPortAddress>.*?):)?(?<clientPort>\\d+))?");
-    public final Integer serverId;
-    public final String address;
-    public final Integer leaderPort;
-    public final Integer leaderElectionPort;
-    public final String role;
-    public final String clientPortAddress;
-    public final Integer clientPort;
-
-    public ZkConfigDyn(Integer serverId, String address, Integer leaderPort, Integer leaderElectionPort, String role, String clientPortAddress, Integer clientPort) {
-      this.serverId = serverId;
-      this.address = address;
-      this.leaderPort = leaderPort;
-      this.leaderElectionPort = leaderElectionPort;
-      this.role = role;
-      this.clientPortAddress = clientPortAddress;
-      this.clientPort = clientPort;
-    }
-
-    /**
-     * Resolve the most likely address, first trying 'clientPortAddress', falling back to 'address'
-     * @return a string with client address, without port
-     */
-    public String resolveClientPortAddress() {
-      return ("0.0.0.0".equals(clientPortAddress) || clientPortAddress == null ? address : clientPortAddress);
-    }
-
-    /**
-     * Parse a raw multi line config string with the full content of znode /zookeeper/config.
-     * @param lines the multi line config string. If empty or null, this will return an empty list
-     * @return List of {@link ZkConfigDyn} objects, one per server.x line
-     */
-    public static List<ZkConfigDyn> parseLines(String lines) {
-      if (StringUtils.isEmpty(lines)) {
-        return Collections.emptyList();
-      }
-      return lines.lines().filter(l -> l.startsWith("server")).map(ZkConfigDyn::parseLine).collect(Collectors.toList());
-    }
-
-    private static ZkConfigDyn parseLine(String line) {
-      Matcher m = linePattern.matcher(line);
-      if (!m.matches()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not parse dynamic zk config line: " + line);
-      }
-      return new ZkConfigDyn(
-              Integer.parseInt(m.group("serverId")),
-              m.group("address"),
-              Integer.parseInt(m.group("leaderPort")),
-              Integer.parseInt(m.group("leaderElectionPort")),
-              m.group("role"),
-              m.group("clientPortAddress"),
-              Integer.parseInt(m.group("clientPort"))
-      );
-    }
   }
 
   /**
