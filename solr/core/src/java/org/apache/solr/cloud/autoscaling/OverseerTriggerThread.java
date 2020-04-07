@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -60,11 +59,10 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   public static final String MARKER_STATE = "state";
   public static final String MARKER_ACTIVE = "active";
   public static final String MARKER_INACTIVE = "inactive";
+  public static final int DEFAULT_AUTO_ADD_REPLICA_WAIT_FOR_SECONDS = 120;
 
 
   private final SolrCloudManager cloudManager;
-
-  private final CloudConfig cloudConfig;
 
   private final ScheduledTriggers scheduledTriggers;
 
@@ -87,9 +85,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager cloudManager, CloudConfig cloudConfig) {
+  public OverseerTriggerThread(SolrResourceLoader loader, SolrCloudManager cloudManager) {
     this.cloudManager = cloudManager;
-    this.cloudConfig = cloudConfig;
     scheduledTriggers = new ScheduledTriggers(loader, cloudManager);
     triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
   }
@@ -366,7 +363,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       }
     }
     // need to add
-    triggerProps.computeIfPresent("waitFor", (k, v) -> (long) (cloudConfig.getAutoReplicaFailoverWaitAfterExpiration() / 1000));
+    triggerProps.computeIfPresent("waitFor", (k, v) -> (long) (DEFAULT_AUTO_ADD_REPLICA_WAIT_FOR_SECONDS));
     AutoScalingConfig.TriggerConfig config = new AutoScalingConfig.TriggerConfig(triggerName, triggerProps);
     autoScalingConfig = autoScalingConfig.withTriggerConfig(config);
     // need to add SystemLogListener explicitly here

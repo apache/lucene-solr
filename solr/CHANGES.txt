@@ -53,13 +53,16 @@ Other Changes
 * SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
   (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
 
+* SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
+  To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
 Improvements
 ---------------------
