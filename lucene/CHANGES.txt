@@ -131,6 +131,9 @@ Improvements
 
 * LUCENE-9279: Update dictionary version for Ukrainian analyzer to 4.9.1 (Andriy Rysin via Dawid Weiss)
 
+* LUCENE-8050: PerFieldDocValuesFormat should not get the DocValuesFormat on a field that has no doc values.
+  (David Smiley, Juan Rodriguez)
+
 Optimizations
 ---------------------
 
