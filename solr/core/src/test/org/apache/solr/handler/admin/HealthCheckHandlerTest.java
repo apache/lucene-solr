@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -31,9 +34,16 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ClusterStateMockUtil;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreDescriptor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -176,4 +186,50 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testFindUnhealthyCores() throws Exception {
+    // Simulate two nodes, with two collections:
+    //  node1: collection1 -> shard1: [ replica1 (active), replica3 (down) ]
+    //         collection2 -> shard1: [ replica2 (recovering) ]
+    //  node2: collection1 -> shard1: [ replica2 (active), replica4 (down) ]
+    //         collection2 -> shard1: [ replica1 (active) ]
+    try (ZkStateReader reader = ClusterStateMockUtil.buildClusterState(
+        "csrr2rDr2Dcsr2FrR", 1, 1, "node1", "node2")) {
+      ClusterState clusterState = reader.getClusterState();
+
+      // Node 1
+      Collection<CloudDescriptor> node1Cores = Arrays.asList(
+          mockCD("collection1", "slice1_replica1", "slice1", true, Replica.State.ACTIVE),
+          mockCD("collection1", "slice1_replica3", "slice1", true, Replica.State.DOWN),
+          mockCD("collection2", "slice1_replica5", "slice1", true, Replica.State.RECOVERING),
+          // A dangling core for a non-existant collection will not fail the check
+          mockCD("invalid", "invalid", "slice1", false, Replica.State.RECOVERING),
+          // A core for a slice that is not an active slice will not fail the check
+          mockCD("collection1", "invalid_replica1", "invalid", true, Replica.State.DOWN)
+      );
+      long unhealthy1 = HealthCheckHandler.findUnhealthyCores(node1Cores, clusterState);
+      assertEquals(2, unhealthy1);
+
+      // Node 2
+      Collection<CloudDescriptor> node2Cores = Arrays.asList(
+          mockCD("collection1", "slice1_replica2", "slice1", true, Replica.State.ACTIVE),
+          mockCD("collection1", "slice1_replica4", "slice1", true, Replica.State.DOWN),
+          mockCD("collection2", "slice1_replica1", "slice1", true, Replica.State.RECOVERY_FAILED)
+      );
+      long unhealthy2 = HealthCheckHandler.findUnhealthyCores(node2Cores, clusterState);
+      assertEquals(1, unhealthy2);
+    }
+  }
+
+  /* Creates a minimal cloud descriptor for a core */
+  private CloudDescriptor mockCD(String collection, String name, String shardId, boolean registered, Replica.State state) {
+    Properties props = new Properties();
+    props.put(CoreDescriptor.CORE_SHARD, shardId);
+    props.put(CoreDescriptor.CORE_COLLECTION, collection);
+    props.put(CoreDescriptor.CORE_NODE_NAME, name);
+    CloudDescriptor cd = new CloudDescriptor(null, name, props);
+    cd.setHasRegistered(registered);
+    cd.setLastPublished(state);
+    return cd;
+  }
 }
