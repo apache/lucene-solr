@@ -61,7 +61,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   // only for safety reasons if a DWPT is close to the RAM limit
   private final Queue<DocumentsWriterPerThread> blockedFlushes = new LinkedList<>();
   // flushingWriters holds all currently flushing writers. There might be writers in this list that
-  // are also in the flushQueue which means that writers in teh flushingWriters list are not necessarily
+  // are also in the flushQueue which means that writers in the flushingWriters list are not necessarily
   // already actively flushing. They are only in the state of flushing and might be picked up in the future by
   // polling the flushQueue
   private final List<DocumentsWriterPerThread> flushingWriters = new ArrayList<>();
