@@ -50,7 +50,8 @@ allprojects {
       def solrDocUrl = "https://lucene.apache.org/solr/${project.version.replace(".", "_")}".toString()
 
       def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
-      def optionsFilePath = file("${it.getTemporaryDir()}/javadoc-options.txt").toString()
+
+      def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
 
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
@@ -99,31 +100,41 @@ allprojects {
         opts += [ "--release 11" ]
         opts += [ "-Xdoclint:all,-missing" ]
 
-        // temporary file that holds all javadoc options for the current run.
-        def optionsFile = new File(optionsFilePath)
-        // delete previous options if it exists
-        optionsFile.delete()
-        if (!optionsFile.createNewFile()) {
-          throw new GradleException("Javadoc generation failed: Cannot create options file ${optionsFilePath}")
-        }
+        // Temporary file that holds all javadoc options for the current task.
         optionsFile.write(opts.join("\n"), "UTF-8")
 
-        def result = project.exec {
-          executable javadocCmd
+        def outputFile = file("${getTemporaryDir()}/javadoc-output.txt")
+        def result
+        outputFile.withOutputStream { output ->
+          result = project.exec {
+            executable javadocCmd
 
-          args += [ "@${optionsFile.toString()}"]
+            standardOutput = output
+            errorOutput = output
 
-          // -J flags can't be passed via options file... (an error "javadoc: error - invalid flag: -J-Xmx512m" occurs.)
-          args += [ "-J-Xmx512m" ]
-          // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
-          args += [ "-J-Duser.language=en -J-Duser.country=US" ]
+            args += [ "@${optionsFile}" ]
 
-          ignoreExitValue true
+            // -J flags can't be passed via options file... (an error "javadoc: error - invalid flag: -J-Xmx512m" occurs.)
+            args += [ "-J-Xmx512m" ]
+            // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
+            args += [ "-J-Duser.language=en -J-Duser.country=US" ]
+
+            ignoreExitValue true
+          }
         }
 
         if (result.getExitValue() != 0) {
-          result.rethrowFailure()
-          throw new GradleException("Javadoc generation failed: Please check options file ${optionsFilePath}")
+          // Pipe the output to console. Intentionally skips any encoding conversion 
+          // and pumps raw bytes.
+          System.out.write(outputFile.bytes)
+
+          def cause
+          try {
+            result.rethrowFailure()
+          } catch (ex) {
+            cause = ex
+          }
+          throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
         }
 
         // append some special table css, prettify css
