@@ -143,43 +143,25 @@ public class SimpleFSDirectory extends FSDirectory {
     }
 
     @Override
-    protected void newBuffer(byte[] newBuffer) {
-      super.newBuffer(newBuffer);
-      byteBuf = ByteBuffer.wrap(newBuffer);
-    }
-
-    @Override
-    protected void readInternal(byte[] b, int offset, int len) throws IOException {
-      final ByteBuffer bb;
-
-      // Determine the ByteBuffer we should use
-      if (b == buffer) {
-        // Use our own pre-wrapped byteBuf:
-        assert byteBuf != null;
-        bb = byteBuf;
-        byteBuf.clear().position(offset);
-      } else {
-        bb = ByteBuffer.wrap(b, offset, len);
-      }
-
+    protected void readInternal(ByteBuffer b) throws IOException {
       synchronized(channel) {
         long pos = getFilePointer() + off;
         
-        if (pos + len > end) {
+        if (pos + b.remaining() > end) {
           throw new EOFException("read past EOF: " + this);
         }
                
         try {
           channel.position(pos);
 
-          int readLength = len;
+          int readLength = b.remaining();
           while (readLength > 0) {
             final int toRead = Math.min(CHUNK_SIZE, readLength);
-            bb.limit(bb.position() + toRead);
-            assert bb.remaining() == toRead;
-            final int i = channel.read(bb);
+            b.limit(b.position() + toRead);
+            assert b.remaining() == toRead;
+            final int i = channel.read(b);
             if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
-              throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " pos: " + pos + " chunkLen: " + toRead + " end: " + end);
+              throw new EOFException("read past EOF: " + this + " buffer: " + b + " chunkLen: " + toRead + " end: " + end);
             }
             assert i > 0 : "SeekableByteChannel.read with non zero-length bb.remaining() must always read at least one byte (Channel is in blocking mode, see spec of ReadableByteChannel)";
             pos += i;
