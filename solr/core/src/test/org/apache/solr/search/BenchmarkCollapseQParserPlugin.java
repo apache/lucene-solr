@@ -55,7 +55,8 @@ public class BenchmarkCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final List<String> TERMS = new ArrayList<>();
-  private static final List<String> GROUP_FIELDS =  Arrays.asList("group_i", "group_ti_dv", "group_f", "group_tf_dv", "group_s", "group_s_dv");
+//  private static final List<String> GROUP_FIELDS =  Arrays.asList("group_i", "group_ti_dv", "group_f", "group_tf_dv", "group_s", "group_s_dv");
+  private static final List<String> GROUP_FIELDS =  Arrays.asList("group_s", "group_s_dv");
   private static final List<String> HINTS = Arrays.asList("", CollapsingQParserPlugin.HINT_TOP_FC);
   private static final List<String> SORT_FIELDS = Arrays.asList("test_i", "test_l", "id_i", "term_s", "score");
   private static final int NUM_DOCS = 300000;
@@ -67,7 +68,7 @@ public class BenchmarkCollapseQParserPlugin extends SolrTestCaseJ4 {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-collapseqparser-benchmark.xml", "schema11.xml");
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
       TERMS.add(TestUtil.randomSimpleString(random(),1, 5));
     }
 
@@ -176,12 +177,12 @@ public class BenchmarkCollapseQParserPlugin extends SolrTestCaseJ4 {
         hint = randomFrom(HINTS);
       }
       String minMaxHead = "";
-      //TODO no commit add nullPolicies
-      if (random().nextInt(100) < 20) {
-        minMaxHead = randomFrom(minFields);
-      } else if (random().nextInt(100) < 20) {
-        minMaxHead = randomFrom(maxFields);
-      }
+//      //TODO no commit add nullPolicies
+//      if (random().nextInt(100) < 20) {
+//        minMaxHead = randomFrom(minFields);
+//      } else if (random().nextInt(100) < 20) {
+//        minMaxHead = randomFrom(maxFields);
+//      }
       params.add("fq", "{!collapse field="+groupField+" "+hint+" "+minMaxHead+"}");
 
       if (random().nextBoolean()) {

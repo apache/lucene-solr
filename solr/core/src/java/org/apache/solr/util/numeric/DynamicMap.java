@@ -17,13 +17,19 @@
 
 package org.apache.solr.util.numeric;
 
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
+import com.carrotsearch.hppc.HashContainers;
 
-public interface IntIntMap {
-  void set(int key, int value);
-  int get(int key);
-  void forEachValue(IntConsumer consumer);
-  void remove(int key);
-  int size();
+public interface DynamicMap {
+  static boolean useArrayBased(int expectedMaxSize) {
+    // for small data set, prefer using array based
+    return expectedMaxSize < (1 << 12);
+  }
+
+  static int threshold(int expectedMaxSize) {
+    return expectedMaxSize >>> 6;
+  }
+
+  static int mapExpectedElements(int expectedMaxSize) {
+    return (int) (threshold(expectedMaxSize) / HashContainers.DEFAULT_LOAD_FACTOR);
+  }
 }
