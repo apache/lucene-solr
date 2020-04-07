@@ -18,8 +18,10 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -46,7 +48,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread>, Closeable {
 
   private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
-  private final List<DocumentsWriterPerThread> freeList = new ArrayList<>();
+  private final Deque<DocumentsWriterPerThread> freeList = new ArrayDeque<>();
   private final IOSupplier<DocumentsWriterPerThread> dwptFactory;
   private int takenWriterPermits = 0;
   private boolean closed;
@@ -112,10 +114,11 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
       // Important that we are LIFO here! This way if number of concurrent indexing threads was once high,
       // but has now reduced, we only use a limited number of DWPTs. This also guarantees that if we have suddenly
       // a single thread indexing
-      for (int i = freeList.size()-1; i >= 0; i--) {
-        DocumentsWriterPerThread perThread = freeList.get(i);
+      final Iterator<DocumentsWriterPerThread> descendingIterator = freeList.descendingIterator();
+      while (descendingIterator.hasNext()) {
+        DocumentsWriterPerThread perThread = descendingIterator.next();
         if (perThread.tryLock()) {
-          freeList.remove(i);
+          freeList.remove();
           return perThread;
         }
       }
