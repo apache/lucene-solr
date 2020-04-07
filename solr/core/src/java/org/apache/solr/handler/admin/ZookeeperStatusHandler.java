@@ -278,10 +278,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     }
 
     try (
-            Socket socket = new Socket(host, port);
-            Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
-            PrintWriter out = new PrintWriter(writer, true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+        Socket socket = new Socket(host, port);
+        Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+        PrintWriter out = new PrintWriter(writer, true);
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
       out.println(fourLetterWordCommand);
       List<String> response = in.lines().collect(Collectors.toList());
       log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
