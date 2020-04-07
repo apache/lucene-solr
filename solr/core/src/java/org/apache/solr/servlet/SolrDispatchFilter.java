@@ -226,7 +226,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           }
         });
       });
-      metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
+      metricManager.registerGauge(null, registryName, sysprops, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
