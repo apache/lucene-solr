@@ -79,7 +79,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     if (newSize != bufferSize) {
       checkBufferSize(newSize);
       bufferSize = newSize;
-      if (buffer != null) {
+      if (buffer != EMPTY_BYTEBUFFER) {
         // Resize the existing buffer and carefully save as
         // many bytes as possible starting from the current
         // bufferPosition
