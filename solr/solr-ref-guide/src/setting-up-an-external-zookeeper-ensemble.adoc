@@ -269,7 +269,7 @@ When starting Solr, you must provide an address for ZooKeeper or Solr won't know
 
 When referring to the location of ZooKeeper within Solr, it's best to use the addresses of all the servers in the ensemble. If one happens to be down, Solr will automatically be able to send its request to another server in the list.
 
-Zookeeper version 3.5 and later supports dynamic reconfiguration of server addresses. Solr's Zookeeper Client will then automatically discover the list of Zookeeper servers from one of the servers provided in the _connect string_. This makes it possible to configure only a subset of addresses in the initial list.
+ZooKeeper version 3.5 and later supports dynamic reconfiguration of server addresses and roles. But note that Solr will only be able to talk to the servers listed in the static ZooKeeper connect string.
 
 === Using a chroot
 
