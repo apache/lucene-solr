@@ -232,7 +232,7 @@ public class TestFSTDirectAddressing extends LuceneTestCase {
       long endTimeMs = System.currentTimeMillis();
       System.out.println("time = " + (endTimeMs - startTimeMs) + " ms");
 
-      for (float oversizingFactor : List.of(1f)) {
+      for (float oversizingFactor : List.of(0f, 0f, 0f, 1f, 1f, 1f)) {
         System.out.println("\nFST construction (oversizingFactor=" + oversizingFactor + ")");
         startTimeMs = System.currentTimeMillis();
         FST<CharsRef> fst = recompile(originalFst, oversizingFactor);

@@ -38,7 +38,6 @@ abstract class FSTEnum<T> {
 
   protected final T NO_OUTPUT;
   protected final FST.BytesReader fstReader;
-  protected final FST.Arc<T> scratchArc = new FST.Arc<>();
 
   protected int upto;
   int targetLength;
@@ -337,7 +336,7 @@ abstract class FSTEnum<T> {
       return backtrackToFloorArc(arc, targetLabel, in);
    } else if (targetIndex >= arc.numArcs()) {
       // After last arc.
-      fst.readArcByDirectAddressing(arc, in, arc.numArcs() - 1);
+      fst.readLastArcByDirectAddressing(arc, in);
       assert arc.label() < targetLabel;
       assert arc.isLast();
       pushLast();
@@ -423,7 +422,7 @@ abstract class FSTEnum<T> {
       assert targetIndex >= 0;
       if (targetIndex >= arc.numArcs()) {
         // Beyond last arc. Take last arc.
-        fst.readArcByDirectAddressing(arc, in, arc.numArcs() - 1);
+        fst.readLastArcByDirectAddressing(arc, in);
       } else {
         // Take the preceding arc, even if the target is present.
         int floorIndex = BitTable.previousBitSet(targetIndex, arc, in);

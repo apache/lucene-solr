@@ -179,11 +179,21 @@ public final class FST<T> implements Accountable {
 
     private int numArcs;
 
-    //*** Fields for direct addressing arcs, nodeFlags == ARCS_FOR_DIRECT_ADDRESSING.
+    //*** Fields for a direct addressing node. nodeFlags == ARCS_FOR_DIRECT_ADDRESSING.
 
+    /** Start position in the {@link FST.BytesReader} of the presence bits for a direct addressing node, aka the bit-table */
     private long bitTableStart;
 
+    /** First label of a direct addressing node. */
     private int firstLabel;
+
+    /**
+     * Index of the current label of a direct addressing node. While {@link #arcIdx} is the current index in the label
+     * range, {@link #presenceIndex} is its corresponding index in the list of actually present labels. It is equal
+     * to the number of bits set before the bit at {@link #arcIdx} in the bit-table. This field is a cache to avoid
+     * to count bits set repeatedly when iterating the next arcs.
+     */
+    private int presenceIndex;
 
     /** Returns this */
     public Arc<T> copyFrom(Arc<T> other) {
@@ -201,6 +211,7 @@ public final class FST<T> implements Accountable {
         numArcs = other.numArcs();
         bitTableStart = other.bitTableStart;
         firstLabel = other.firstLabel();
+        presenceIndex = other.presenceIndex;
       }
       return this;
     }
@@ -976,7 +987,7 @@ public final class FST<T> implements Accountable {
           readPresenceBytes(arc, in);
           arc.firstLabel = readLabel(in);
           arc.posArcsStart = in.getPosition();
-          readArcByDirectAddressing(arc, in, arc.numArcs() - 1);
+          readLastArcByDirectAddressing(arc, in);
         } else {
           arc.arcIdx = arc.numArcs() - 2;
           arc.posArcsStart = in.getPosition();
@@ -1061,6 +1072,7 @@ public final class FST<T> implements Accountable {
       if (flags == ARCS_FOR_DIRECT_ADDRESSING) {
         readPresenceBytes(arc, in);
         arc.firstLabel = readLabel(in);
+        arc.presenceIndex = -1;
       }
       arc.posArcsStart = in.getPosition();
       //System.out.println("  bytesPer=" + arc.bytesPerArc + " numArcs=" + arc.numArcs + " arcsStart=" + pos);
@@ -1149,6 +1161,8 @@ public final class FST<T> implements Accountable {
   }
 
   public Arc<T> readArcByIndex(Arc<T> arc, final BytesReader in, int idx) throws IOException {
+    assert arc.bytesPerArc() > 0;
+    assert arc.nodeFlags() == ARCS_FOR_BINARY_SEARCH;
     assert idx >= 0 && idx < arc.numArcs();
     in.setPosition(arc.posArcsStart() - idx * arc.bytesPerArc());
     arc.arcIdx = idx;
@@ -1156,7 +1170,8 @@ public final class FST<T> implements Accountable {
     return readArc(arc, in);
   }
 
-  /** Reads a present direct addressing node arc, with the provided index in the label range.
+  /**
+   * Reads a present direct addressing node arc, with the provided index in the label range.
    *
    * @param rangeIndex The index of the arc in the label range. It must be present.
    *                   The real arc offset is computed based on the presence bits of
@@ -1167,8 +1182,32 @@ public final class FST<T> implements Accountable {
     assert rangeIndex >= 0 && rangeIndex < arc.numArcs();
     assert BitTable.isBitSet(rangeIndex, arc, in);
     int presenceIndex = BitTable.countBitsUpTo(rangeIndex, arc, in);
+    return readArcByDirectAddressing(arc, in, rangeIndex, presenceIndex);
+  }
+
+  /**
+   * Reads a present direct addressing node arc, with the provided index in the label range and its corresponding
+   * presence index (which is the count of presence bits before it).
+   */
+  private Arc<T> readArcByDirectAddressing(Arc<T> arc, final BytesReader in, int rangeIndex, int presenceIndex)  throws IOException {
     in.setPosition(arc.posArcsStart() - presenceIndex * arc.bytesPerArc());
     arc.arcIdx = rangeIndex;
+    arc.presenceIndex = presenceIndex;
+    arc.flags = in.readByte();
+    return readArc(arc, in);
+  }
+
+  /**
+   * Reads the last arc of a direct addressing node.
+   * This method is equivalent to call {@link #readArcByDirectAddressing(Arc, BytesReader, int)} with {@code rangeIndex}
+   * equal to {@code arc.numArcs() - 1}, but it is faster.
+   */
+  public Arc<T> readLastArcByDirectAddressing(Arc<T> arc, final BytesReader in) throws IOException {
+    assert BitTable.assertIsValid(arc, in);
+    int presenceIndex = BitTable.countBits(arc, in) - 1;
+    in.setPosition(arc.posArcsStart() - presenceIndex * arc.bytesPerArc());
+    arc.arcIdx = arc.numArcs() - 1;
+    arc.presenceIndex = presenceIndex;
     arc.flags = in.readByte();
     return readArc(arc, in);
   }
@@ -1194,7 +1233,7 @@ public final class FST<T> implements Accountable {
         assert BitTable.assertIsValid(arc, in);
         assert arc.arcIdx() == -1 || BitTable.isBitSet(arc.arcIdx(), arc, in);
         int nextIndex = BitTable.nextBitSet(arc.arcIdx(), arc, in);
-        return readArcByDirectAddressing(arc, in, nextIndex);
+        return readArcByDirectAddressing(arc, in, nextIndex, arc.presenceIndex + 1);
 
       default:
         // Variable length arcs - linear search.
