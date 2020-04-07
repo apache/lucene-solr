@@ -118,7 +118,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
       while (descendingIterator.hasNext()) {
         DocumentsWriterPerThread perThread = descendingIterator.next();
         if (perThread.tryLock()) {
-          freeList.remove();
+          descendingIterator.remove();
           return perThread;
         }
       }

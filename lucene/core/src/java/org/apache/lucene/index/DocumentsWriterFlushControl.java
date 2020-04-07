@@ -447,11 +447,16 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
         // progress full flush.
         return perThread;
       } else {
-        perThread.unlock();
-        // There is a flush-all in process and this DWPT is
-        // now stale - try another one
-        assert fullFlush;
-        assert fullFlushMarkDone == false : "found a stale DWPT but full flush mark phase is already done";
+        try {
+          // we must first assert otherwise the full flush might make progress once we unlock the dwpt
+          assert fullFlush && fullFlushMarkDone == false :
+              "found a stale DWPT but full flush mark phase is already done fullFlush: "
+                  + fullFlush  + " markDone: " + fullFlushMarkDone;
+        } finally {
+          perThread.unlock();
+          // There is a flush-all in process and this DWPT is
+          // now stale - try another one
+        }
       }
     }
     throw new AlreadyClosedException("flush control is closed");
