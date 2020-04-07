@@ -177,6 +177,9 @@ Other
 * LUCENE-9244: Adjust TestLucene60PointsFormat#testEstimatePointCount2Dims so it does not fail when a point
   is shared by multiple leaves. (Ignacio Vera)
 
+* LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
+  ByteBuffer API. (Adrien Grand)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes
