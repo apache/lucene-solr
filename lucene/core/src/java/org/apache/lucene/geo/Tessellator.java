@@ -435,7 +435,6 @@ final public class Tessellator {
           continue;
         }
         currEar = nextNode;
-
         // If the whole polygon has been iterated over and no more ears can be found.
         if (currEar == stop) {
           switch (state) {
@@ -915,13 +914,14 @@ final public class Tessellator {
       continueIteration = false;
       nextNode = node.next;
       prevNode = node.previous;
-      //We can filter points when they are the same, if not and they are co-linear we can only
-      //remove it if both edges have the same value in .isNextEdgeFromPolygon
-      if (isVertexEquals(node, nextNode)  ||
-          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon &&
+      // we can filter points when:
+      if (isVertexEquals(node, nextNode)  ||   // 1. they are the same,
+          isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
+          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon && // 3.- they are co-linear and both edges have the same value in .isNextEdgeFromPolygon
               area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
         // Remove the node
-        removeNode(node, prevNode.isNextEdgeFromPolygon);
+        boolean nextEdgeFromPol = prevNode.isNextEdgeFromPolygon != node.isNextEdgeFromPolygon ? true : prevNode.isNextEdgeFromPolygon;
+        removeNode(node, nextEdgeFromPol);
         node = end = prevNode;
 
         if (node == nextNode) {

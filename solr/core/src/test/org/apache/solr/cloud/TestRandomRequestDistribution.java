@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 
 import com.codahale.metrics.Counter;
@@ -59,7 +60,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     for (CloudJettyRunner cloudJetty : cloudJettys) {
       nodeNames.add(cloudJetty.nodeName);

@@ -73,6 +73,11 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory {
     this.normalizer = normalizer;
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ICUNormalizer2FilterFactory() {
+    throw defaultCtorException();
+  }
+
   // TODO: support custom normalization
   
   @Override

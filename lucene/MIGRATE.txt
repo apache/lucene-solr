@@ -1,5 +1,9 @@
 # Apache Lucene Migration Guide
 
+## NGramFilterFactory "keepShortTerm" option was fixed to "preserveOriginal" (LUCENE-9259) ##
+
+The factory option name to output the original term was corrected in accordance with its Javadoc.
+
 ## o.a.l.misc.IndexMergeTool defaults changes (LUCENE-9206) ##
 
 This command-line tool no longer forceMerges to a single segment. Instead, by
@@ -33,13 +37,13 @@ longer outputs the original token "株式会社" by default. To output original 
 explicitly set to false. Be aware that if this option is set to false SynonymFilter or SynonymGraphFilter does not work
 correctly (see LUCENE-9173).
 
-## Analysis factories now have customizable symbolic names (LUCENE-8778) ##
+## Analysis factories now have customizable symbolic names (LUCENE-8778) and need additional no-arg constructor (LUCENE-9281) ##
 
 The SPI names for concrete subclasses of TokenizerFactory, TokenFilterFactory, and CharfilterFactory are no longer
 derived from their class name. Instead, each factory must have a static "NAME" field like this:
 
-  /** o.a.l.a.standard.StandardTokenizerFactory's SPI name */
-  public static final String NAME = "standard";
+    /** o.a.l.a.standard.StandardTokenizerFactory's SPI name */
+    public static final String NAME = "standard";
 
 A factory can be resolved/instantiated with its NAME by using methods such as TokenizerFactory#lookupClass(String)
 or TokenizerFactory#forName(String, Map<String,String>).
@@ -47,6 +51,21 @@ or TokenizerFactory#forName(String, Map<String,String>).
 If there are any user-defined factory classes that don't have proper NAME field, an exception will be thrown
 when (re)loading factories. e.g., when calling TokenizerFactory#reloadTokenizers(ClassLoader).
 
+In addition starting all factories need to implement a public no-arg constructor, too. The reason for this
+change comes from the fact that Lucene now uses `java.util.ServiceLoader` instead its own implementation to
+load the factory classes to be compatible with Java Module System changes (e.g., load factories from modules).
+In the future, extensions to Lucene developed on the Java Module System may expose the factories from their
+`module-info.java` file instead of `META-INF/services`.
+
+This constructor is never called by Lucene, so by default it throws a UnsupportedOperationException. User-defined
+factory classes should implement it in the following way:
+
+    /** Default ctor for compatibility with SPI */
+    public StandardTokenizerFactory() {
+      throw defaultCtorException();
+    }
+
+(`defaultCtorException()` is a protected static helper method)
 
 ## TermsEnum is now fully abstract (LUCENE-8292) ##
 

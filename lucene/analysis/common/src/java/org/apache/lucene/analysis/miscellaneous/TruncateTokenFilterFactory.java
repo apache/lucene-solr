@@ -57,6 +57,11 @@ public class TruncateTokenFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public TruncateTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new TruncateTokenFilter(input, prefixLength);

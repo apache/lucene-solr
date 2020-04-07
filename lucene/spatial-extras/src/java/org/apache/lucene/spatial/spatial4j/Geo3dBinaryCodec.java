@@ -47,7 +47,6 @@ public class Geo3dBinaryCodec extends BinaryCodec {
 
   private PlanetModel planetModel;
 
-  @SuppressWarnings("unchecked")
   public Geo3dBinaryCodec(SpatialContext ctx, SpatialContextFactory factory) {
     super(ctx, factory);
     planetModel = ((Geo3dSpatialContextFactory) factory).planetModel;
@@ -66,7 +65,7 @@ public class Geo3dBinaryCodec extends BinaryCodec {
   @Override
   public void writeShape(DataOutput dataOutput, Shape s) throws IOException {
     if (s instanceof Geo3dShape) {
-      Geo3dShape geoAreaShape = (Geo3dShape) s;
+      Geo3dShape<?> geoAreaShape = (Geo3dShape<?>) s;
       SerializableObject.writeObject((OutputStream) dataOutput, geoAreaShape.shape);
     } else {
       throw new IllegalArgumentException("trying to write a not supported shape: " + s.getClass().getName());
@@ -119,11 +118,13 @@ public class Geo3dBinaryCodec extends BinaryCodec {
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public ShapeCollection readCollection(DataInput dataInput) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public void writeCollection(DataOutput dataOutput, ShapeCollection col) throws IOException {
     throw new UnsupportedOperationException();
   }

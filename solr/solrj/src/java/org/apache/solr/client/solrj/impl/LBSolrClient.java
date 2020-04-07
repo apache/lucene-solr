@@ -369,7 +369,7 @@ public abstract class LBSolrClient extends SolrClient {
       if (isZombie) {
         zombieServers.remove(baseUrl);
       }
-    } catch (HttpSolrClient.RemoteExecutionException e){
+    } catch (BaseHttpSolrClient.RemoteExecutionException e){
       throw e;
     } catch(SolrException e) {
       // we retry on 404 or 403 or 503 or 500

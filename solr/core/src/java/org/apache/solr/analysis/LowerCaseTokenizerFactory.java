@@ -65,6 +65,11 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public LowerCaseTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public LowerCaseTokenizer create(AttributeFactory factory) {
     return new LowerCaseTokenizer(factory, maxTokenLen);

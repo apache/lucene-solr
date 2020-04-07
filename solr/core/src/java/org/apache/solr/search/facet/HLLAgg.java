@@ -22,7 +22,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -30,7 +29,7 @@ import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
 public class HLLAgg extends StrAggValueSource {
-  public static Integer NO_VALUES = 0;
+  public static Long NO_VALUES = 0L;
 
   protected HLLFactory factory;
 
@@ -156,9 +155,9 @@ public class HLLAgg extends StrAggValueSource {
       return getCardinality(slot);
     }
 
-    private int getCardinality(int slot) {
+    private long getCardinality(int slot) {
       HLL set = sets[slot];
-      return set==null ? 0 : (int)set.cardinality();
+      return set == null ? 0 : set.cardinality();
     }
 
     public Object getShardValue(int slot) throws IOException {
@@ -172,7 +171,7 @@ public class HLLAgg extends StrAggValueSource {
 
     @Override
     public int compare(int slotA, int slotB) {
-      return getCardinality(slotA) - getCardinality(slotB);
+      return Long.compare(getCardinality(slotA), getCardinality(slotB));
     }
 
   }
@@ -188,10 +187,6 @@ public class HLLAgg extends StrAggValueSource {
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
       values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
-    }
-
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
     }
 
     @Override
@@ -218,10 +213,6 @@ public class HLLAgg extends StrAggValueSource {
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
       values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
-    }
-
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
     }
 
     @Override

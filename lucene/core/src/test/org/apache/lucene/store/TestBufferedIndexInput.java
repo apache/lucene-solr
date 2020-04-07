@@ -264,7 +264,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       final Random rand;
 
       public MockFSDirectory(Path path, Random rand) throws IOException {
-        super(new SimpleFSDirectory(path));
+        super(new NIOFSDirectory(path));
         this.rand = rand;
       }
 

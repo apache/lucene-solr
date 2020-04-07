@@ -172,7 +172,7 @@ public class GeoCircleTest extends LuceneTestCase {
     // Sixth BKD discovered failure
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84,-0.006450320645814321,0.004660694205115142,0.00489710732634323);
     //xyzb = new XYZBounds();
-    //c.getBounds(xyzb);
+    //zScaling.getBounds(xyzb);
     //System.err.println("xmin="+xyzb.getMinimumX()+", xmax="+xyzb.getMaximumX()+",ymin="+xyzb.getMinimumY()+", ymax="+xyzb.getMaximumY()+",zmin="+xyzb.getMinimumZ()+", zmax="+xyzb.getMaximumZ());
     //xmin=1.0010356621420726, xmax=1.0011141249179447,ymin=-2.5326643901354566E-4, ymax=0.009584741915757169,zmin=-0.011359874956269283, zmax=-0.0015549504447452225
     area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,1.0010822580620098,1.0010945779732867,0.007079167343247293,0.007541006774427837,-0.0021855011220022575,-0.001896122718181518);
@@ -183,9 +183,9 @@ public class GeoCircleTest extends LuceneTestCase {
     //p2 = new GeoPoint(PlanetModel.WGS84,-0.002164069780096702, 0.007505617500830066);
     p2 = new GeoPoint(PlanetModel.WGS84,p1.getLatitude(),p1.getLongitude());
     assertTrue(PlanetModel.WGS84.pointOnSurface(p2));
-    assertTrue(!c.isWithin(p2));
+    assertTrue(!zScaling.isWithin(p2));
     assertTrue(!area.isWithin(p2));
-    assertTrue(!c.isWithin(p1));
+    assertTrue(!zScaling.isWithin(p1));
     assertTrue(PlanetModel.WGS84.pointOnSurface(p1)); // This fails
     assertTrue(!area.isWithin(p1)); // This fails
     */

@@ -398,6 +398,72 @@ Discard original token (`inject="false"`).
 
 Note that "Kuczewski" has two encodings, which are added at the same position.
 
+== Delimited Boost Filter
+
+This filter adds a numeric floating point boost value to tokens, splitting on a delimiter character.
+
+*Factory class:* `solr.DelimitedBoostTokenFilterFactory`
+
+*Arguments:*
+
+`delimiter`:: The character used to separate the token and the boost. Defaults to '|'.
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-delimitedBoost]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-delimitedBoost]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.DelimitedBoostTokenFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "leopard|0.5 panthera uncia|0.9"
+
+*Tokenizer to Filter:* "leopard|0.5"(1), "panthera"(2), "uncia|0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+The numeric floating point in square brackets is a float token boost attribute.
+
+*Example:*
+
+Using a different delimiter (`delimiter="/"`).
+
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost" delimiter="/"/>
+</analyzer>
+----
+
+*In:* "leopard/0.5 panthera uncia/0.9"
+
+*Tokenizer to Filter:* "leopard/0.5"(1), "panthera"(2), "uncia/0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+*N.B.* make sure the delimiter is compatible with the tokenizer you use
+
 == Edge N-Gram Filter
 
 This filter generates edge n-gram tokens of sizes within the given range.
@@ -409,6 +475,8 @@ This filter generates edge n-gram tokens of sizes within the given range.
 `minGramSize`:: (integer, default 1) The minimum gram size.
 
 `maxGramSize`:: (integer, default 1) The maximum gram size.
+
+`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
 
 *Example:*
 
@@ -481,6 +549,24 @@ A range of 4 to 6.
 *Tokenizer to Filter:* "four", "score", "and", "twenty"
 
 *Out:* "four", "scor", "score", "twen", "twent", "twenty"
+
+*Example:*
+
+Preserve original term.
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="edgeNGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
+</analyzer>
+----
+
+*In:* "four score"
+
+*Tokenizer to Filter:* "four", "score"
+
+*Out:* "fo", "fou", "four", "sc, "sco", "score"
 
 == English Minimal Stem Filter
 
@@ -1375,6 +1461,8 @@ Generates n-gram tokens of sizes in the given range. Note that tokens are ordere
 
 `maxGramSize`:: (integer, default 2) The maximum gram size.
 
+`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
+
 *Example:*
 
 Default behavior.
@@ -1446,6 +1534,24 @@ A range of 3 to 5.
 *Tokenizer to Filter:* "four", "score"
 
 *Out:* "fou", "four", "our", "sco", "scor", "score", "cor", "core", "ore"
+
+*Example:*
+
+Preserve original term.
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="nGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
+</analyzer>
+----
+
+*In:* "four score"
+
+*Tokenizer to Filter:* "four", "score"
+
+*Out:* "fo", "fou", "ou", "our", "ur", "four", "sc", "sco", "co", "cor", "or", "ore", "re", "score"
 
 == Numeric Payload Token Filter
 
@@ -2291,6 +2397,39 @@ small => tiny,teeny,weeny
 *Tokenizer to Filter:* "teh"(1), "ginormous"(2), "humungous"(3), "sofa"(4)
 
 *Out:* "the"(1), "large"(2), "large"(3), "couch"(4), "sofa"(4), "divan"(4)
+
+*Weighted Synonyms:*
+
+Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
+For more information feel free to refer to:
+https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
+For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
+
+[source,text]
+----
+leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
+lion => panthera leo|0.9, simba|0.8, kimba|0.75
+----
+
+*Example:*
+
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="boostedSynonyms.txt"/>
+  <filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+
+*In:* "lion"
+
+*Tokenizer to Filter:* "lion"(1)
+
+*Out:* "panthera"(1), "leo"(2)[0.9], "simba"(1)[0.8], "kimba"(1)[0.75]
 
 == Token Offset Payload Filter
 

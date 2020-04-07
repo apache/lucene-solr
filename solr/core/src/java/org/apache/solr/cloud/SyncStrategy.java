@@ -39,7 +39,6 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
@@ -89,27 +88,22 @@ public class SyncStrategy {
     if (SKIP_AUTO_RECOVERY) {
       return PeerSync.PeerSyncResult.success();
     }
-    
-    MDCLoggingContext.setCore(core);
-    try {
-      if (isClosed) {
-        log.warn("Closed, skipping sync up.");
-        return PeerSync.PeerSyncResult.failure();
-      }
-      
-      recoveryRequests.clear();
-      
-      log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
-      
-      if (core.getUpdateHandler().getUpdateLog() == null) {
-        log.error("No UpdateLog found - cannot sync");
-        return PeerSync.PeerSyncResult.failure();
-      }
 
-      return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
-    } finally {
-      MDCLoggingContext.clear();
+    if (isClosed) {
+      log.warn("Closed, skipping sync up.");
+      return PeerSync.PeerSyncResult.failure();
     }
+
+    recoveryRequests.clear();
+
+    log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
+
+    if (core.getUpdateHandler().getUpdateLog() == null) {
+      log.error("No UpdateLog found - cannot sync");
+      return PeerSync.PeerSyncResult.failure();
+    }
+
+    return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
   }
   
   private PeerSync.PeerSyncResult syncReplicas(ZkController zkController, SolrCore core,

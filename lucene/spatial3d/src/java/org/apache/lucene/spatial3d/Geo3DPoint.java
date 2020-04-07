@@ -41,6 +41,9 @@ import org.apache.lucene.util.NumericUtils;
  *  @lucene.experimental */
 public final class Geo3DPoint extends Field {
 
+  /** Planet Model for this Geo3DPoint */
+  protected final PlanetModel planetModel;
+
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
@@ -48,24 +51,54 @@ public final class Geo3DPoint extends Field {
     TYPE.freeze();
   }
 
-  /** 
-   * Creates a new Geo3DPoint field with the specified latitude, longitude (in degrees).
+  /**
+   * Creates a new Geo3DPoint field with the specified latitude, longitude (in degrees), with default WGS84 PlanetModel.
    *
    * @throws IllegalArgumentException if the field name is null or latitude or longitude are out of bounds
    */
-  public Geo3DPoint(String name, double latitude, double longitude) {
+  public Geo3DPoint(String name, double lat, double lon) {
+    this(name, PlanetModel.WGS84, lat, lon);
+  }
+
+  /**
+   * Creates a new Geo3DPoint field with the specified x,y,z, using default WGS84 planet model.
+   *
+   * @throws IllegalArgumentException if the field name is null or latitude or longitude are out of bounds
+   */
+  public Geo3DPoint(String name, double x, double y, double z) {
+    this(name, PlanetModel.WGS84, x, y, z);
+  }
+
+  /**
+   * Creates a new Geo3DPoint field with the specified x,y,z, and given planet model.
+   *
+   * @throws IllegalArgumentException if the field name is null or latitude or longitude are out of bounds
+   */
+  public Geo3DPoint(String name, PlanetModel planetModel, double x, double y, double z) {
+    super(name, TYPE);
+    this.planetModel = planetModel;
+    fillFieldsData(planetModel, x, y, z);
+  }
+
+  /**
+   * Creates a new Geo3DPoint field with the specified latitude, longitude (in degrees), given a planet model.
+   *
+   * @throws IllegalArgumentException if the field name is null or latitude or longitude are out of bounds
+   */
+  public Geo3DPoint(String name, PlanetModel planetModel, double latitude, double longitude) {
     super(name, TYPE);
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);
+    this.planetModel = planetModel;
     // Translate latitude/longitude to x,y,z:
-    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, Geo3DUtil.fromDegrees(latitude), Geo3DUtil.fromDegrees(longitude));
-    fillFieldsData(point.x, point.y, point.z);
+    final GeoPoint point = new GeoPoint(planetModel, Geo3DUtil.fromDegrees(latitude), Geo3DUtil.fromDegrees(longitude));
+    fillFieldsData(planetModel, point.x, point.y, point.z);
   }
 
   /**
    * Create a query for matching points within the specified distance of the supplied location.
-   * @param field field name. must not be null.  Note that because
-   * {@link PlanetModel#WGS84} is used, this query is approximate and may have up
+   * @param field field name. must not be null.  Note that if
+   * {@link PlanetModel#WGS84} is used, the query is approximate and may have up
    * to 0.5% error.
    *
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
@@ -74,8 +107,8 @@ public final class Geo3DPoint extends Field {
    * @return query matching points within this distance
    * @throws IllegalArgumentException if {@code field} is null, location has invalid coordinates, or radius is invalid.
    */
-  public static Query newDistanceQuery(final String field, final double latitude, final double longitude, final double radiusMeters) {
-    final GeoShape shape = Geo3DUtil.fromDistance(latitude, longitude, radiusMeters);
+  public static Query newDistanceQuery(final String field, final PlanetModel planetModel, final double latitude, final double longitude, final double radiusMeters) {
+    final GeoShape shape = Geo3DUtil.fromDistance(planetModel, latitude, longitude, radiusMeters);
     return newShapeQuery(field, shape);
   }
 
@@ -91,8 +124,8 @@ public final class Geo3DPoint extends Field {
    * @return query matching points within this box
    * @throws IllegalArgumentException if {@code field} is null, or the box has invalid coordinates.
    */
-  public static Query newBoxQuery(final String field, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
-    final GeoShape shape = Geo3DUtil.fromBox(minLatitude, maxLatitude, minLongitude, maxLongitude);
+  public static Query newBoxQuery(final String field, final PlanetModel planetModel, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
+    final GeoShape shape = Geo3DUtil.fromBox(planetModel, minLatitude, maxLatitude, minLongitude, maxLongitude);
     return newShapeQuery(field, shape);
   }
 
@@ -105,8 +138,8 @@ public final class Geo3DPoint extends Field {
    * @param polygons is the list of polygons to use to construct the query; must be at least one.
    * @return query matching points within this polygon
    */
-  public static Query newPolygonQuery(final String field, final Polygon... polygons) {
-    final GeoShape shape = Geo3DUtil.fromPolygon(polygons);
+  public static Query newPolygonQuery(final String field, final PlanetModel planetModel, final Polygon... polygons) {
+    final GeoShape shape = Geo3DUtil.fromPolygon(planetModel, polygons);
     return newShapeQuery(field, shape);
   }
 
@@ -119,8 +152,8 @@ public final class Geo3DPoint extends Field {
    * @param polygons is the list of polygons to use to construct the query; must be at least one.
    * @return query matching points within this polygon
    */
-  public static Query newLargePolygonQuery(final String field, final Polygon... polygons) {
-    final GeoShape shape = Geo3DUtil.fromLargePolygon(polygons);
+  public static Query newLargePolygonQuery(final String field, PlanetModel planetModel, final Polygon... polygons) {
+    final GeoShape shape = Geo3DUtil.fromLargePolygon(planetModel, polygons);
     return newShapeQuery(field, shape);
   }
 
@@ -133,39 +166,29 @@ public final class Geo3DPoint extends Field {
    * @param pathWidthMeters width of the path in meters.
    * @return query matching points within this polygon
    */
-  public static Query newPathQuery(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
-    final GeoShape shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
+  public static Query newPathQuery(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters, PlanetModel planetModel) {
+    final GeoShape shape = Geo3DUtil.fromPath(planetModel, pathLatitudes, pathLongitudes, pathWidthMeters);
     return newShapeQuery(field, shape);
   }
 
-  /** 
-   * Creates a new Geo3DPoint field with the specified x,y,z.
-   *
-   * @throws IllegalArgumentException if the field name is null or latitude or longitude are out of bounds
-   */
-  public Geo3DPoint(String name, double x, double y, double z) {
-    super(name, TYPE);
-    fillFieldsData(x, y, z);
-  }
-
-  private void fillFieldsData(double x, double y, double z) {
+  private void fillFieldsData(PlanetModel planetModel, double x, double y, double z) {
     byte[] bytes = new byte[12];
-    encodeDimension(x, bytes, 0);
-    encodeDimension(y, bytes, Integer.BYTES);
-    encodeDimension(z, bytes, 2*Integer.BYTES);
+    encodeDimension(x, bytes, 0, planetModel);
+    encodeDimension(y, bytes, Integer.BYTES, planetModel);
+    encodeDimension(z, bytes, 2*Integer.BYTES, planetModel);
     fieldsData = new BytesRef(bytes);
   }
 
   // public helper methods (e.g. for queries)
   
   /** Encode single dimension */
-  public static void encodeDimension(double value, byte bytes[], int offset) {
-    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(value), bytes, offset);
+  public static void encodeDimension(double value, byte bytes[], int offset, PlanetModel planetModel) {
+    NumericUtils.intToSortableBytes(planetModel.encodeValue(value), bytes, offset);
   }
   
   /** Decode single dimension */
-  public static double decodeDimension(byte value[], int offset) {
-    return Geo3DUtil.decodeValue(NumericUtils.sortableBytesToInt(value, offset));
+  public static double decodeDimension(byte value[], int offset, PlanetModel planetModel) {
+    return planetModel.decodeValue(NumericUtils.sortableBytesToInt(value, offset));
   }
 
   /** Returns a query matching all points inside the provided shape.
@@ -186,9 +209,9 @@ public final class Geo3DPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    result.append(" x=").append(decodeDimension(bytes.bytes, bytes.offset));
-    result.append(" y=").append(decodeDimension(bytes.bytes, bytes.offset + Integer.BYTES));
-    result.append(" z=").append(decodeDimension(bytes.bytes, bytes.offset + 2 * Integer.BYTES));
+    result.append(" x=").append(decodeDimension(bytes.bytes, bytes.offset, this.planetModel));
+    result.append(" y=").append(decodeDimension(bytes.bytes, bytes.offset + Integer.BYTES, this.planetModel));
+    result.append(" z=").append(decodeDimension(bytes.bytes, bytes.offset + 2 * Integer.BYTES, this.planetModel));
     result.append('>');
     return result.toString();
   }

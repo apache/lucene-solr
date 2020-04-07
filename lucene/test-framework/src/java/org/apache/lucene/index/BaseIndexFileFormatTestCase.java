@@ -32,6 +32,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -47,19 +49,24 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -355,7 +362,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                                          segmentInfo, fieldInfos,
                                                          null, new IOContext(new FlushInfo(1, 20)));
     
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, false, IOContext.READ, Collections.emptyMap());
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, IOContext.READ);
 
     // PostingsFormat
     NormsProducer fakeNorms = new NormsProducer() {
@@ -719,5 +726,225 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       r = new MergingDirectoryReaderWrapper(r);
     }
     return r;
+  }
+
+  private static class FileTrackingDirectoryWrapper extends FilterDirectory {
+
+    private final Set<String> files = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
+    FileTrackingDirectoryWrapper(Directory in) {
+      super(in);
+    }
+
+    Set<String> getFiles() {
+      return Set.copyOf(files);
+    }
+
+    @Override
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      files.add(name);
+      return super.createOutput(name, context);
+    }
+
+    @Override
+    public void rename(String source, String dest) throws IOException {
+      files.remove(source);
+      files.add(dest);
+      super.rename(source, dest);
+    }
+
+    @Override
+    public void deleteFile(String name) throws IOException {
+      files.remove(name);
+      super.deleteFile(name);
+    }
+
+  }
+
+  private static class ReadBytesIndexInputWrapper extends IndexInput {
+
+    private final IndexInput in;
+    private final IntConsumer readByte;
+
+    ReadBytesIndexInputWrapper(IndexInput in, IntConsumer readByte) {
+      super(in.toString());
+      this.in = in;
+      this.readByte = readByte;
+    }
+
+    @Override
+    public IndexInput clone() {
+      return new ReadBytesIndexInputWrapper(in.clone(), readByte);
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public long getFilePointer() {
+      return in.getFilePointer();
+    }
+
+    @Override
+    public void seek(long pos) throws IOException {
+      in.seek(pos);
+    }
+
+    @Override
+    public long length() {
+      return in.length();
+    }
+
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      IndexInput slice = in.slice(sliceDescription, offset, length);
+      return new ReadBytesIndexInputWrapper(slice, o -> readByte.accept(Math.toIntExact(offset + o)));
+    }
+
+    @Override
+    public byte readByte() throws IOException {
+      readByte.accept(Math.toIntExact(getFilePointer()));
+      return in.readByte();
+    }
+
+    @Override
+    public void readBytes(byte[] b, int offset, int len) throws IOException {
+      final int fp = Math.toIntExact(getFilePointer());
+      for (int i = 0; i < len; ++i) {
+        readByte.accept(Math.addExact(fp, i));
+      }
+      in.readBytes(b, offset, len);
+    }
+
+  }
+
+  private static class ReadBytesDirectoryWrapper extends FilterDirectory {
+
+    ReadBytesDirectoryWrapper(Directory in) {
+      super(in);
+    }
+
+    private final Map<String, FixedBitSet> readBytes = new ConcurrentHashMap<>();
+
+    Map<String, FixedBitSet> getReadBytes() {
+      return Map.copyOf(readBytes);
+    }
+
+    @Override
+    public IndexInput openInput(String name, IOContext context) throws IOException {
+      IndexInput in = super.openInput(name, context);
+      final FixedBitSet set = readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
+      if (set.length() != in.length()) {
+        throw new IllegalStateException();
+      }
+      return new ReadBytesIndexInputWrapper(in, set::set);
+    }
+
+    @Override
+    public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
+      ChecksumIndexInput in = super.openChecksumInput(name, context);
+      final FixedBitSet set = readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
+      if (set.length() != in.length()) {
+        throw new IllegalStateException();
+      }
+      return new ChecksumIndexInput(in.toString()) {
+
+        @Override
+        public void readBytes(byte[] b, int offset, int len) throws IOException {
+          final int fp = Math.toIntExact(getFilePointer());
+          set.set(fp, Math.addExact(fp, len));
+          in.readBytes(b, offset, len);
+        }
+
+        @Override
+        public byte readByte() throws IOException {
+          set.set(Math.toIntExact(getFilePointer()));
+          return in.readByte();
+        }
+
+        @Override
+        public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long length() {
+          return in.length();
+        }
+
+        @Override
+        public long getFilePointer() {
+          return in.getFilePointer();
+        }
+
+        @Override
+        public void close() throws IOException {
+          in.close();
+        }
+
+        @Override
+        public long getChecksum() throws IOException {
+          return in.getChecksum();
+        }
+      };
+    }
+
+    @Override
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  /** This test is a best effort at verifying that checkIntegrity doesn't miss any files. It tests that the
+   *  combination of opening a reader and calling checkIntegrity on it reads all bytes of all files. */
+  public void testCheckIntegrityReadsAllBytes() throws Exception {
+    assumeFalse("SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
+    FileTrackingDirectoryWrapper dir = new FileTrackingDirectoryWrapper(newDirectory());
+    applyCreatedVersionMajor(dir);
+
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, cfg);
+    final int numDocs = atLeast(100);
+    for (int i = 0; i < numDocs; ++i) {
+      Document d = new Document();
+      addRandomFields(d);
+      w.addDocument(d);
+    }
+    w.forceMerge(1);
+    w.commit();
+    w.close();
+
+    ReadBytesDirectoryWrapper readBytesWrapperDir = new ReadBytesDirectoryWrapper(dir);
+    IndexReader reader = DirectoryReader.open(readBytesWrapperDir);
+    LeafReader leafReader = getOnlyLeafReader(reader);
+    leafReader.checkIntegrity();
+
+    Map<String, FixedBitSet> readBytesMap = readBytesWrapperDir.getReadBytes();
+
+    Set<String> unreadFiles = new HashSet<>(dir.getFiles());System.out.println(Arrays.toString(dir.listAll()));
+    unreadFiles.removeAll(readBytesMap.keySet());
+    unreadFiles.remove(IndexWriter.WRITE_LOCK_NAME);
+    assertTrue("Some files have not been open: " + unreadFiles, unreadFiles.isEmpty());
+
+    List<String> messages = new ArrayList<>();
+    for (Map.Entry<String, FixedBitSet> entry : readBytesMap.entrySet()) {
+      String name = entry.getKey();
+      FixedBitSet unreadBytes = entry.getValue().clone();
+      unreadBytes.flip(0, unreadBytes.length());
+      int unread = unreadBytes.nextSetBit(0);
+      if (unread != Integer.MAX_VALUE) {
+        messages.add("Offset " + unread + " of file " + name + "(" + unreadBytes.length() + "bytes) was not read.");
+      }
+    }
+    assertTrue(String.join("\n", messages), messages.isEmpty());
+    reader.close();
+    dir.close();
   }
 }
