@@ -21,7 +21,7 @@ import com.carrotsearch.hppc.HashContainers;
 
 public interface DynamicMap {
   static boolean useArrayBased(int expectedMaxSize) {
-    // for small data set, prefer using array based
+    // for small size, prefer using array based
     return expectedMaxSize < (1 << 12);
   }
 

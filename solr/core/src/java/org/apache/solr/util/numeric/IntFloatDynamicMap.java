@@ -40,7 +40,6 @@ public class IntFloatDynamicMap {
     this.maxSize = expectedMaxSize;
     this.emptyValue = emptyValue;
     if (useArrayBased(expectedMaxSize)) {
-      // for small array, prefer using array
       upgradeToArray();
     } else {
       this.hashMap = new IntFloatHashMap(mapExpectedElements(expectedMaxSize));
