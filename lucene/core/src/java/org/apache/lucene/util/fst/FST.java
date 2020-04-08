@@ -329,7 +329,7 @@ public final class FST<T> implements Accountable {
 
     /**
      * Helper methods to read the bit-table of a direct addressing node.
-     * Only valid for {@link Arc} with {@link Arc#nodeFlags()} == {@link Arc#ARCS_FOR_DIRECT_ADDRESSING}.
+     * Only valid for {@link Arc} with {@link Arc#nodeFlags()} == {@code ARCS_FOR_DIRECT_ADDRESSING}.
      */
     static class BitTable {
 
