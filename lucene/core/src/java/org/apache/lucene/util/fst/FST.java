@@ -1209,11 +1209,7 @@ public final class FST<T> implements Accountable {
   public Arc<T> readLastArcByDirectAddressing(Arc<T> arc, final BytesReader in) throws IOException {
     assert BitTable.assertIsValid(arc, in);
     int presenceIndex = BitTable.countBits(arc, in) - 1;
-    in.setPosition(arc.posArcsStart() - presenceIndex * arc.bytesPerArc());
-    arc.arcIdx = arc.numArcs() - 1;
-    arc.presenceIndex = presenceIndex;
-    arc.flags = in.readByte();
-    return readArc(arc, in);
+    return readArcByDirectAddressing(arc, in, arc.numArcs() - 1, presenceIndex);
   }
 
   /** Never returns null, but you should never call this if
