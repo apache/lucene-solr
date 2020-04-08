@@ -401,7 +401,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       if (singleDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
         int segOrd = singleDv.ordValue();
-        collect(doc, segOrd, toGlobal, segCounter, maxIdx);
+        collect(doc, segOrd, toGlobal, segCounter, maxIdx, disi.collectBase());
       }
     }
   }
@@ -439,10 +439,11 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
+        final boolean collectBase = disi.collectBase();
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
-          collect(doc, segOrd, toGlobal, segCounter, maxIdx);
+          collect(doc, segOrd, toGlobal, segCounter, maxIdx, collectBase);
         }
       }
     }
@@ -464,7 +465,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     }
   }
 
-  private void collect(int doc, int segOrd, LongValues toGlobal, SegCountGlobal segCounter, int maxIdx) throws IOException {
+  private void collect(int doc, int segOrd, LongValues toGlobal, SegCountGlobal segCounter, int maxIdx, boolean collectBase) throws IOException {
     int ord = (toGlobal != null && segOrd >= 0) ? (int)toGlobal.get(segOrd) : segOrd;
 
     int arrIdx = ord - startTermIndex;
@@ -472,11 +473,13 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     // It’s not an error for an ord to fall outside this range… we simply want to skip it.
     if (arrIdx >= 0 && arrIdx < nTerms) {
       segCounter.incrementCount(segOrd, arrIdx, 1, maxIdx);
-      if (collectAcc != null) {
-        collectAcc.collect(doc, arrIdx, slotContext);
-      }
-      if (allBucketsAcc != null) {
-        allBucketsAcc.collect(doc, arrIdx, slotContext);
+      if (collectBase) {
+        if (collectAcc != null) {
+          collectAcc.collect(doc, arrIdx, slotContext);
+        }
+        if (allBucketsAcc != null) {
+          allBucketsAcc.collect(doc, arrIdx, slotContext);
+        }
       }
     }
   }

@@ -40,6 +40,11 @@ final class SingletonDocIterator extends SweepDocIterator {
   }
 
   @Override
+  public boolean collectBase() {
+    return true;
+  }
+
+  @Override
   public int registerCounts(SegCountGlobal segCounts) {
     return 0;
   }

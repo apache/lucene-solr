@@ -22,6 +22,8 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 interface SweepCountAware {
 
+  boolean collectBase();
+
   int registerCounts(SegCountGlobal segCounts) throws IOException;
 
   int registerCounts(SegCountPerSeg segCounts) throws IOException;
