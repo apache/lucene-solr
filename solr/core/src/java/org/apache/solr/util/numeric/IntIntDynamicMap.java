@@ -25,25 +25,26 @@ import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.procedures.IntIntProcedure;
 import org.apache.lucene.util.ArrayUtil;
 
-import static org.apache.solr.util.numeric.DynamicMap.mapExpectedElements;
-import static org.apache.solr.util.numeric.DynamicMap.threshold;
-import static org.apache.solr.util.numeric.DynamicMap.useArrayBased;
-
-public class IntIntDynamicMap {
+public class IntIntDynamicMap implements DynamicMap {
   private int maxSize;
   private IntIntHashMap hashMap;
   private int[] keyValues;
   private int emptyValue;
   private int threshold;
 
-  public IntIntDynamicMap(int expectedMaxSize, int emptyValue) {
-    this.threshold = threshold(expectedMaxSize);
-    this.maxSize = expectedMaxSize;
+  /**
+   * Create map with expected max value of key.
+   * Although the map will automatically do resizing to be able to hold key >= {@code expectedKeyMax}.
+   * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
+   */
+  public IntIntDynamicMap(int expectedKeyMax, int emptyValue) {
+    this.threshold = threshold(expectedKeyMax);
+    this.maxSize = expectedKeyMax;
     this.emptyValue = emptyValue;
-    if (useArrayBased(expectedMaxSize)) {
+    if (useArrayBased(expectedKeyMax)) {
       upgradeToArray();
     } else {
-      this.hashMap = new IntIntHashMap(mapExpectedElements(expectedMaxSize));
+      this.hashMap = new IntIntHashMap(mapExpectedElements(expectedKeyMax));
     }
   }
 
@@ -69,9 +70,7 @@ public class IntIntDynamicMap {
     }
   }
 
-
-
-  public void set(int key, int value) {
+  public void put(int key, int value) {
     if (keyValues != null) {
       if (key >= keyValues.length) {
         growBuffer(key + 1);

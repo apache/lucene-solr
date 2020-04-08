@@ -24,25 +24,26 @@ import com.carrotsearch.hppc.cursors.FloatCursor;
 import com.carrotsearch.hppc.procedures.IntFloatProcedure;
 import org.apache.lucene.util.ArrayUtil;
 
-import static org.apache.solr.util.numeric.DynamicMap.mapExpectedElements;
-import static org.apache.solr.util.numeric.DynamicMap.threshold;
-import static org.apache.solr.util.numeric.DynamicMap.useArrayBased;
-
-public class IntFloatDynamicMap {
+public class IntFloatDynamicMap implements DynamicMap {
   private int maxSize;
   private IntFloatHashMap hashMap;
   private float[] keyValues;
   private float emptyValue;
   private int threshold;
 
-  public IntFloatDynamicMap(int expectedMaxSize, float emptyValue) {
-    this.threshold = threshold(expectedMaxSize);
-    this.maxSize = expectedMaxSize;
+  /**
+   * Create map with expected max value of key.
+   * Although the map will automatically do resizing to be able to hold key >= {@code expectedKeyMax}.
+   * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
+   */
+  public IntFloatDynamicMap(int expectedKeyMax, float emptyValue) {
+    this.threshold = threshold(expectedKeyMax);
+    this.maxSize = expectedKeyMax;
     this.emptyValue = emptyValue;
-    if (useArrayBased(expectedMaxSize)) {
+    if (useArrayBased(expectedKeyMax)) {
       upgradeToArray();
     } else {
-      this.hashMap = new IntFloatHashMap(mapExpectedElements(expectedMaxSize));
+      this.hashMap = new IntFloatHashMap(mapExpectedElements(expectedKeyMax));
     }
   }
 
@@ -68,8 +69,7 @@ public class IntFloatDynamicMap {
     }
   }
 
-
-  public void set(int key, float value) {
+  public void put(int key, float value) {
     if (keyValues != null) {
       if (key >= keyValues.length) {
         growBuffer(key + 1);

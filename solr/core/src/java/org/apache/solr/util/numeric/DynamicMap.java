@@ -19,17 +19,37 @@ package org.apache.solr.util.numeric;
 
 import com.carrotsearch.hppc.HashContainers;
 
+/**
+ * An efficient map for storing keys as integer in range from 0..n with n can be estimated up-front.
+ * By automatically switching from a hashMap (which is memory efficient) to an array (which is faster)
+ * on increasing number of keys.
+ * So it SHOULD not be used for other cases where key can be any arbitrary integer.
+ */
 public interface DynamicMap {
-  static boolean useArrayBased(int expectedMaxSize) {
+
+  default boolean useArrayBased(int expectedKeyMax) {
+    boolean assertsEnabled = false;
+    assert assertsEnabled = true; // Intentional side-effect!
+    if (assertsEnabled) {
+      // avoid using array based up-front on testing
+      return false;
+    }
+
     // for small size, prefer using array based
-    return expectedMaxSize < (1 << 12);
+    return expectedKeyMax < (1 << 12);
   }
 
-  static int threshold(int expectedMaxSize) {
-    return expectedMaxSize >>> 6;
+  /**
+   * Compute threshold for switching from hashMap based to array
+   */
+  default int threshold(int expectedKeyMax) {
+    return expectedKeyMax >>> 6;
   }
 
-  static int mapExpectedElements(int expectedMaxSize) {
-    return (int) (threshold(expectedMaxSize) / HashContainers.DEFAULT_LOAD_FACTOR);
+  /**
+   * Compute expected elements for hppc maps, so resizing won't happen if we store less elements than {@code threshold}
+   */
+  default int mapExpectedElements(int expectedKeyMax) {
+    return (int) (threshold(expectedKeyMax) / HashContainers.DEFAULT_LOAD_FACTOR);
   }
 }

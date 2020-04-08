@@ -615,8 +615,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(ord > -1) {
         float score = scorer.score();
         if(score > scores.get(ord)) {
-          ords.set(ord, globalDoc);
-          scores.set(ord, score);
+          ords.put(ord, globalDoc);
+          scores.put(ord, score);
         }
       } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         float score = scorer.score();
@@ -1639,10 +1639,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(ord > -1) {
         if(comp.test(currentVal, ordVals.get(ord))) {
-          ords.set(ord, globalDoc);
-          ordVals.set(ord, currentVal);
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
           if(needsScores) {
-            scores.set(ord, scorer.score());
+            scores.put(ord, scorer.score());
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -1720,10 +1720,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(ord > -1) {
         if(comp.test(currentVal, ordVals.get(ord))) {
-          ords.set(ord, globalDoc);
-          ordVals.set(ord, currentVal);
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
           if(needsScores) {
-            scores.set(ord, scorer.score());
+            scores.put(ord, scorer.score());
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -1798,10 +1798,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(ord > -1) {
         if(comp.test(currentVal, ordVals.get(ord))) {
-          ords.set(ord, globalDoc);
-          ordVals.set(ord, currentVal);
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
           if(needsScores) {
-            scores.set(ord, scorer.score());
+            scores.put(ord, scorer.score());
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -1886,13 +1886,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(ord > -1) {
         if(comp.test(currentVal, ordVals.get(ord))) {
-          ords.set(ord, globalDoc);
-          ordVals.set(ord, currentVal);
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
           if(needsScores) {
             if (!needsScores4Collapsing) {
               score = scorer.score();
             }
-            scores.set(ord, score);
+            scores.put(ord, score);
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -1977,22 +1977,22 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if (-1 == ords.get(ord)) {
           // we've never seen this ord (aka: collapseKey) before, treat it as group head for now
           compareState.setGroupValues(ord, contextDoc);
-          ords.set(ord, globalDoc);
+          ords.put(ord, globalDoc);
           if (needsScores) {
             if (!needsScores4Collapsing) {
               this.score = scorer.score();
             }
-            scores.set(ord, score);
+            scores.put(ord, score);
           }
         } else {
           // test this ord to see if it's a new group leader
           if (compareState.testAndSetGroupValues(ord, contextDoc)) {//TODO X
-            ords.set(ord, globalDoc);
+            ords.put(ord, globalDoc);
             if (needsScores) {
               if (!needsScores4Collapsing) {
                 this.score = scorer.score();
               }
-              scores.set(ord, score);
+              scores.put(ord, score);
             }
           }
         }
@@ -2216,19 +2216,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if((idx = cmap.indexOf(collapseKey)) >= 0) {
           int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues.get(pointer))) {
-            testValues.set(pointer, currentVal);
-            docs.set(pointer, globalDoc);
+            testValues.put(pointer, currentVal);
+            docs.put(pointer, globalDoc);
             if(needsScores) {
-              scores.set(pointer, scorer.score());
+              scores.put(pointer, scorer.score());
             }
           }
         } else {
           ++index;
           cmap.put(collapseKey, index);
-          testValues.set(index, currentVal);
-          docs.set(index, globalDoc);
+          testValues.put(index, currentVal);
+          docs.put(index, globalDoc);
           if(needsScores) {
-            scores.set(index, scorer.score());
+            scores.put(index, scorer.score());
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -2309,19 +2309,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if((idx = cmap.indexOf(collapseKey)) >= 0) {
           int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues.get(pointer))) {
-            testValues.set(pointer, currentVal);
-            docs.set(pointer, globalDoc);
+            testValues.put(pointer, currentVal);
+            docs.put(pointer, globalDoc);
             if(needsScores) {
-              scores.set(pointer, scorer.score());
+              scores.put(pointer, scorer.score());
             }
           }
         } else {
           ++index;
           cmap.put(collapseKey, index);
-          testValues.set(index, currentVal);
-          docs.set(index, globalDoc);
+          testValues.put(index, currentVal);
+          docs.put(index, globalDoc);
           if(needsScores) {
-            scores.set(index, scorer.score());
+            scores.put(index, scorer.score());
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -2417,25 +2417,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if((idx = cmap.indexOf(collapseKey)) >= 0) {
           int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues.get(pointer))) {
-            testValues.set(pointer, currentVal);
-            docs.set(pointer, globalDoc);
+            testValues.put(pointer, currentVal);
+            docs.put(pointer, globalDoc);
             if(needsScores){
               if (!needsScores4Collapsing) {
                 score = scorer.score();
               }
-              scores.set(pointer, score);
+              scores.put(pointer, score);
             }
           }
         } else {
           ++index;
           cmap.put(collapseKey, index);
-          docs.set(index, globalDoc);
-          testValues.set(index, currentVal);
+          docs.put(index, globalDoc);
+          testValues.put(index, currentVal);
           if(needsScores) {
             if (!needsScores4Collapsing) {
               score = scorer.score();
             }
-            scores.set(index, score);
+            scores.put(index, score);
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -2528,25 +2528,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           // we've seen this collapseKey before, test to see if it's a new group leader
           int pointer = cmap.indexGet(idx);
           if (compareState.testAndSetGroupValues(pointer, contextDoc)) {
-            docs.set(pointer, globalDoc);
+            docs.put(pointer, globalDoc);
             if (needsScores) {
               if (!needsScores4Collapsing) {
                 score = scorer.score();
               }
-              scores.set(pointer, score);
+              scores.put(pointer, score);
             }
           }
         } else {
           // we've never seen this collapseKey before, treat it as group head for now
           ++index;
           cmap.put(collapseKey, index);
-          docs.set(index, globalDoc);
+          docs.put(index, globalDoc);
           compareState.setGroupValues(index, contextDoc);
           if(needsScores) {
             if (!needsScores4Collapsing) {
               score = scorer.score();
             }
-            scores.set(index, score);
+            scores.put(index, score);
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
