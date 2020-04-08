@@ -47,6 +47,13 @@ API Changes
 * LUCENE-9264: SimpleFSDirectory has been removed in favor of NIOFSDirectory.
   (Yannick Welsch)
 
+* LUCENE-9281: Use java.util.ServiceLoader to load codec components and analysis
+  factories to be compatible with Java Module System. This allows to load factories
+  without META-INF/service from a Java module exposing the factory in the module
+  descriptor. This breaks backwards compatibility as custom analysis factories
+  must now also implement the default constructor (see MIGRATE.txt).
+  (Uwe Schindler, Dawid Weiss)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -84,6 +91,8 @@ Improvements
 
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
+* LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -91,6 +100,9 @@ Bug fixes
 
 * LUCENE-9117: RamUsageEstimator hangs with AOT compilation. Removed any attempt to 
   estimate Long.valueOf cache size. (Cleber Muramoto, Dawid Weiss)
+
+* LUCENE-9290: Don't assume that different XYPoint have different hash code
+  (Ignacio Vera via Mike Drob)
 
 Other
 
@@ -119,6 +131,9 @@ Improvements
 
 * LUCENE-9279: Update dictionary version for Ukrainian analyzer to 4.9.1 (Andriy Rysin via Dawid Weiss)
 
+* LUCENE-8050: PerFieldDocValuesFormat should not get the DocValuesFormat on a field that has no doc values.
+  (David Smiley, Juan Rodriguez)
+
 Optimizations
 ---------------------
 
@@ -126,6 +141,8 @@ Optimizations
 
 * LUCENE-8103: DoubleValuesSource and QueryValueSource now use a TwoPhaseIterator if one is provided by the Query.
   (Michele Palmia, David Smiley)
+
+* LUCENE-9287: UsageTrackingQueryCachingPolicy no longer caches DocValuesFieldExistsQuery. (Ignacio Vera)
 
 Bug Fixes
 ---------------------
@@ -142,6 +159,11 @@ Bug Fixes
 * LUCENE-8908: Return default value from objectVal when doc doesn't match the query in QueryValueSource
   (Bill Bell, hossman, Munendra S N, Michele Palmia)
 
+* LUCENE-9133: Fix for potential NPE in TermFilteredPresearcher for empty fields (Marvin Justice via Mike Drob)
+
+* LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
+  externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
+
 Other
 ---------------------
 
@@ -154,6 +176,12 @@ Other
 * LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
 
 * LUCENE-9275: Make TestLatLonMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
+* LUCENE-9244: Adjust TestLucene60PointsFormat#testEstimatePointCount2Dims so it does not fail when a point
+  is shared by multiple leaves. (Ignacio Vera)
+
+* LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
+  ByteBuffer API. (Adrien Grand)
 
 ======================= Lucene 8.5.0 =======================
 
@@ -220,8 +248,6 @@ Improvements
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
-
-* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)

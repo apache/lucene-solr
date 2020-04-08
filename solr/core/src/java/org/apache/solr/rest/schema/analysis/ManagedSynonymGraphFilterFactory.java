@@ -378,6 +378,11 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
     super(args);
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ManagedSynonymGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public String getResourceId() {
     return "/schema/analysis/synonyms/"+handle;

@@ -96,6 +96,13 @@ _(raw; not yet edited)_
 
 * SOLR-14012: unique and hll aggregations always returns long value irrespective of standalone or solcloud
   (Munendra S N, hossman)
+
+* SOLR-14344: Remove Deprecated HttpSolrClient.RemoteSolrException and HttpSolrClient.RemoteExcecutionException.
+  All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHttpSolrClient.RemoteExcecutionException.
+  (Munendra S N)
+
+* SOLR-12720: To change the auto add replica wait period modify the `waitFor` attribute of the `.auto_add_replicas` trigger.
+  (marcussorealheis, shalin)
   
 === Upgrade Prerequisites in Solr 9
 

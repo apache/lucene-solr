@@ -51,6 +51,11 @@ public class MinHashFilterFactory extends TokenFilterFactory {
     withRotation = getBoolean(args, "withRotation", bucketCount > 1);
   }
 
+  /** Default ctor for compatibility with SPI */
+  public MinHashFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /*
    * (non-Javadoc)
    * 

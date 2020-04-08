@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 
 
 /**
@@ -277,6 +278,9 @@ public class SolrLogPostTool {
       doc.addField("qtime_i", parseQTime(line));
       doc.addField("status_s", parseStatus(line));
 
+      String path = parsePath(line);
+      doc.addField("path_s", path);
+
       if(line.contains("hits=")) {
         doc.addField("hits_l", parseHits(line));
       }
@@ -291,12 +295,13 @@ public class SolrLogPostTool {
       doc.addField("shard_s", parseShard(line));
       doc.addField("replica_s", parseReplica(line));
 
-      String path = parsePath(line);
-      doc.addField("path_s", path);
+
       if(path != null && path.contains("/admin")) {
         doc.addField("type_s", "admin");
       } else if(path != null && params.contains("/replication")) {
         doc.addField("type_s", "replication");
+      } else if (path != null && path.contains("/get")) {
+        doc.addField("type_s", "get");
       } else {
         doc.addField("type_s", "query");
       }
@@ -487,7 +492,7 @@ public class SolrLogPostTool {
           doc.addField("shards_s", "true");
         }
 
-        if(parts[0].equals("ids")) {
+        if(parts[0].equals("ids") && ! isRTGRequest(doc)) {
           doc.addField("ids_s", "true");
         }
 
@@ -523,6 +528,14 @@ public class SolrLogPostTool {
       if(doc.getField("ids_s") == null) {
         doc.addField("ids_s", "false");
       }
+    }
+
+    private boolean isRTGRequest(SolrInputDocument doc) {
+      final SolrInputField path = doc.getField("path_s");
+      if (path == null) return false;
+
+
+      return "/get".equals(path.getValue());
     }
   }
 }

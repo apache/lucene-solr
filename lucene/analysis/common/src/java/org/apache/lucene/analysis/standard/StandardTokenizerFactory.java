@@ -50,6 +50,11 @@ public class StandardTokenizerFactory extends TokenizerFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public StandardTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public StandardTokenizer create(AttributeFactory factory) {
     StandardTokenizer tokenizer = new StandardTokenizer(factory);
