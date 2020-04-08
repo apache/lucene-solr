@@ -73,6 +73,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.UnicodeUtil;
@@ -371,10 +372,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
       }
     }
-
-    int availablePermits() {
-      return permits.availablePermits();
-    }
   }
 
   final IndexFileDeleter deleter;
@@ -397,11 +394,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   HashSet<SegmentCommitInfo> mergingSegments = new HashSet<>();
 
   private final MergeScheduler mergeScheduler;
+  private Set<SegmentMerger> runningAddIndexesMerges = new HashSet<>();
   private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<>();
   private Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
   private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
-  private boolean stopMerges;
+  private boolean stopMerges; // TODOD make sure this is only changed once and never set back to false
   private boolean didMessageState;
 
   final AtomicInteger flushCount = new AtomicInteger();
@@ -2285,6 +2283,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
     
     try {
+      stopMerges = true; // this disables merges forever
       abortMerges();
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
@@ -2447,8 +2446,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             try {
               // Abort any running merges
               abortMerges();
-              // Let merges run again
-              stopMerges = false;
               adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
               // Remove all segments
               segmentInfos.clear();
@@ -2491,9 +2488,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
   private synchronized void abortMerges() {
-
-    stopMerges = true;
-
     // Abort all pending & running merges:
     for (final MergePolicy.OneMerge merge : pendingMerges) {
       if (infoStream.isEnabled("IW")) {
@@ -2514,10 +2508,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // We wait here to make all merges stop.  It should not
     // take very long because they periodically check if
     // they are aborted.
-    while (runningMerges.size() != 0) {
+    while (runningMerges.size() + runningAddIndexesMerges.size() != 0) {
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge/s to abort");
+        infoStream.message("IW", "now wait for " + runningMerges.size()
+            + " running merge/s to abort; currently running addIndexes: " + runningAddIndexesMerges.size());
       }
 
       doWait();
@@ -2993,7 +2988,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         return docWriter.deleteQueue.getNextSequenceNumber();
       }
 
-      merger.merge();                // merge 'em
+      synchronized (this) {
+        ensureOpen();
+        assert stopMerges == false;
+        runningAddIndexesMerges.add(merger);
+      }
+      try {
+        merger.merge();  // merge 'em
+      } finally {
+        synchronized (this) {
+          runningAddIndexesMerges.remove(merger);
+          notifyAll();
+        }
+      }
       SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, numSoftDeleted, -1L, -1L, -1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
