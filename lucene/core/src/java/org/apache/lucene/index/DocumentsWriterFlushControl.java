@@ -668,21 +668,17 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   synchronized DocumentsWriterPerThread findLargestNonPendingWriter() {
     DocumentsWriterPerThread maxRamUsingWriter = null;
     long maxRamSoFar = 0;
-    Iterator<DocumentsWriterPerThread> activePerThreadsIterator = perThreadPool.iterator();
     int count = 0;
-    while (activePerThreadsIterator.hasNext()) {
-      DocumentsWriterPerThread next = activePerThreadsIterator.next();
-      if (!next.isFlushPending()) {
+    for (DocumentsWriterPerThread next : perThreadPool) {
+      if (next.isFlushPending() == false && next.getNumDocsInRAM() > 0) {
         final long nextRam = next.bytesUsed();
-        if (nextRam > 0 && next.getNumDocsInRAM() > 0) {
-          if (infoStream.isEnabled("FP")) {
-            infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.getNumDocsInRAM());
-          }
-          count++;
-          if (nextRam > maxRamSoFar) {
-            maxRamSoFar = nextRam;
-            maxRamUsingWriter = next;
-          }
+        if (infoStream.isEnabled("FP")) {
+          infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.getNumDocsInRAM());
+        }
+        count++;
+        if (nextRam > maxRamSoFar) {
+          maxRamSoFar = nextRam;
+          maxRamUsingWriter = next;
         }
       }
     }
