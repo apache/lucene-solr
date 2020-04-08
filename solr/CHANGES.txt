@@ -61,7 +61,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
+  To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
 Improvements
 ---------------------
@@ -87,6 +88,8 @@ Optimizations
 
 * SOLR-14340: Remove unnecessary configset verification checks when SolrCloud merely wants to know which configset a
   collection is using.  Improves CLUSTERSTATUS times for massive clusters.  (Mathieu Marie, David Smiley)
+
+* SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
 
 Bug Fixes
 ---------------------

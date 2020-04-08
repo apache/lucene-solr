@@ -18,6 +18,7 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,14 +61,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   public void testReadBytes() throws Exception {
     MyBufferedIndexInput input = new MyBufferedIndexInput();
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
-  }
-
-  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r) throws IOException {
-    try {
-      runReadBytes(input, bufferSize, r);
-    } finally {
-      input.close();
-    }
   }
   
   private void runReadBytes(IndexInput input, int bufferSize, Random r)
@@ -180,9 +173,10 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         this(Long.MAX_VALUE);
       }
       @Override
-      protected void readInternal(byte[] b, int offset, int length) throws IOException {
-        for(int i=offset; i<offset+length; i++)
-          b[i] = byten(pos++);
+      protected void readInternal(ByteBuffer b) throws IOException {
+        while (b.hasRemaining()) {
+          b.put(byten(pos++));
+        }
       }
 
       @Override
