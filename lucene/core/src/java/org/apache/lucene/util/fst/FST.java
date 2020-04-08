@@ -383,8 +383,6 @@ public final class FST<T> implements Accountable {
         assert isBitSet(arc.numArcs() - 1, arc, in);
         // No bit set after the last arc.
         assert nextBitSet(arc.numArcs() - 1, arc, in) == -1;
-        // Total bit set (real num arcs) must be <= label range (stored in arc.numArcs()).
-        assert countBits(arc, in) <= arc.numArcs();
         return true;
       }
     }
