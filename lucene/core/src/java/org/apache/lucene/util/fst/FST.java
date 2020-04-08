@@ -205,14 +205,18 @@ public final class FST<T> implements Accountable {
       nextArc = other.nextArc();
       nodeFlags = other.nodeFlags();
       bytesPerArc = other.bytesPerArc();
-      if (bytesPerArc() != 0) {
-        posArcsStart = other.posArcsStart();
-        arcIdx = other.arcIdx();
-        numArcs = other.numArcs();
-        bitTableStart = other.bitTableStart;
-        firstLabel = other.firstLabel();
-        presenceIndex = other.presenceIndex;
-      }
+
+      // Fields for arcs belonging to a node with fixed length arcs.
+      // We could avoid copying them if bytesPerArc() == 0 (this was the case with previous code, and the current code
+      // still supports that), but it may actually help external uses of FST to have consistent arc state, and debugging
+      // is easier.
+      posArcsStart = other.posArcsStart();
+      arcIdx = other.arcIdx();
+      numArcs = other.numArcs();
+      bitTableStart = other.bitTableStart;
+      firstLabel = other.firstLabel();
+      presenceIndex = other.presenceIndex;
+
       return this;
     }
     

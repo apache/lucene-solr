@@ -50,36 +50,15 @@ class BitTableUtil {
   static int countBits(int bitTableBytes, FST.BytesReader reader) throws IOException {
     assert bitTableBytes >= 0 : "bitTableBytes=" + bitTableBytes;
     int bitCount = 0;
-    long l = 0L;
-    while (bitTableBytes-- > 0) {
-      l = readByte(reader);
-      if (bitTableBytes-- > 0) {
-        l |= readByte(reader) << 8;
-        if (bitTableBytes-- > 0) {
-          l |= readByte(reader) << 16;
-          if (bitTableBytes-- > 0) {
-            l |= readByte(reader) << 24;
-            if (bitTableBytes-- > 0) {
-              l |= readByte(reader) << 32;
-              if (bitTableBytes-- > 0) {
-                l |= readByte(reader) << 40;
-                if (bitTableBytes-- > 0) {
-                  l |= readByte(reader) << 48;
-                  if (bitTableBytes-- > 0) {
-                    l |= readByte(reader) << 56;
-                    bitCount += Long.bitCount(l);
-                    l = 0L;
-                    continue;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      break;
+    for (int i = bitTableBytes >> 3; i > 0; i--) {
+      // Count the bits set for all plain longs.
+      bitCount += Long.bitCount(read8Bytes(reader));
     }
-    return bitCount + Long.bitCount(l);
+    int numRemainingBytes;
+    if ((numRemainingBytes = bitTableBytes & (Long.BYTES - 1)) != 0) {
+      bitCount += Long.bitCount(readUpTo8Bytes(numRemainingBytes, reader));
+    }
+    return bitCount;
   }
 
   /**
