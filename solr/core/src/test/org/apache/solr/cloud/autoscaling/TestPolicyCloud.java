@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
@@ -45,6 +47,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -60,6 +63,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -529,4 +533,65 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       assertNotNull(val.get("sysprop.java.vendor"));
     }
   }
+
+  @Test
+  public void testMaxShardsPerNodeBackCompat() throws Exception  {
+    final JettySolrRunner jetty = cluster.getRandomJetty(random());
+    final String jettyNodeName = jetty.getNodeName();
+    final int port = jetty.getLocalPort();
+
+    final String commands =  "{set-policy :{maxshards : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+
+    final String collectionName = "testMaxShardsPerNode";
+    log.info("Creating collection {}", collectionName);
+    try {
+      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+          .setPolicy("maxshards")
+          .setMaxShardsPerNode(1)
+          .process(cluster.getSolrClient());
+      fail("should fail due to a conflict between maxShardsPerNode and policy");
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("Both an existing policy=maxshards"));
+    }
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .setPolicy("maxshards")
+        .process(cluster.getSolrClient());
+
+    waitForState("Should have found exactly one replica, only on expected jetty: " +
+            jettyNodeName + "/" + port,
+        collectionName, expectAllReplicasOnSpecificNode(jettyNodeName, 1, 1),
+        120, TimeUnit.SECONDS);
+
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+
+    // test auto creation of policy for maxShardsPerNode
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .setMaxShardsPerNode(1)
+        .process(cluster.getSolrClient());
+
+    waitForState("should have create the collection", collectionName, clusterShape(2, 4),
+        120, TimeUnit.SECONDS);
+
+    // make sure the replicas are spread evenly
+    DocCollection docCollection = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collectionName);
+    Map<String, AtomicInteger> nodeCounts = new HashMap<>();
+    docCollection.getReplicas().forEach(r -> {
+      nodeCounts.computeIfAbsent(r.getNodeName(), n -> new AtomicInteger()).incrementAndGet();
+    });
+    nodeCounts.forEach((node, count) -> {
+      assertTrue("invalid number of replicas on node " + node + " > 1: " + count, count.get() < 2);
+    });
+
+    // make sure the policy has been created
+    AutoScalingConfig autoScalingConfig = cluster.getSolrClient().getZkStateReader().getAutoScalingConfig();
+    Map<String, List<Clause>> policies = autoScalingConfig.getPolicy().getPolicies();
+    String policyName = ".auto_" + collectionName;
+    assertNotNull("missing policy " + policyName, policies.get(policyName));
+    List<Clause> p = policies.get(policyName);
+    assertEquals("unexpected size of policy " + policyName + ": " + p, 1, p.size());
+    assertTrue("incorrect clause: " + p.get(0), p.get(0).toString().contains("\"replica\":\"<2\""));
+  }
+
 }

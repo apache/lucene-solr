@@ -118,12 +118,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setPath("/admin/collections");
 
       try {
-        client.request(request);
+        NamedList<Object> rsp = client.request(request);
         fail("A collection creation request with too many shards than allowed by maxShardsPerNode should not have succeeded");
       } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Cannot create collection"));
-        assertTrue(errorMessage.contains("This requires 10 shards to be created (higher than the allowed number)"));
+        assertTrue(errorMessage.contains("This requires 10 replicas to be created (higher than the allowed number)"));
         assertMissingCollection(client, "collection_too_many");
       }
     }

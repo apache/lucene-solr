@@ -36,8 +36,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.Overseer;
@@ -79,6 +82,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
@@ -148,6 +152,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     checkReplicaTypes(message);
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
+    AtomicReference<AutoScalingConfig> configToRestore = new AtomicReference<>();
+    boolean failure = false;
 
     try {
 
@@ -188,8 +194,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName),
+            message, shardNames, sessionWrapper, configToRestore);
       } catch (Assign.AssignmentException e) {
+        failure = true;
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
         // unwrap the exception
@@ -294,7 +302,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
-      boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
       if (failure) {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
@@ -342,14 +350,39 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     } finally {
       if (sessionWrapper.get() != null) sessionWrapper.get().release();
+      if (failure && configToRestore.get() != null) {
+        restoreAutoScalingConfig(ocmh.cloudManager, configToRestore.get());
+      }
     }
   }
 
+  public static void restoreAutoScalingConfig(SolrCloudManager cloudManager, AutoScalingConfig config) throws IOException, InterruptedException {
+    try {
+      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(config), -1);
+    } catch (BadVersionException | KeeperException e) {
+      log.warn("Error restoring autoscaling config", e);
+    }
+  }
+
+  /**
+   * Build positions for the new replicas of a collection.
+   * <p><b>NOTE:</b> this may modify the autoscaling policy rules as a side-effect of requested parameters, by
+   * adding collection-specific named policy rules that implement the requested parameters.</p>
+   * @param cloudManager instance of {@link SolrCloudManager}
+   * @param clusterState the latest {@link ClusterState} that already contains the collection
+   * @param docCollection collection where replicas are to be added
+   * @param message creation parameters
+   * @param shardNames list of shard names to add
+   * @param sessionWrapper currently leased policy session
+   * @param configToRestore unmodified autoscaling config to restore in case of errors
+   * @return list of replica positions
+   */
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             DocCollection docCollection,
                                                             ZkNodeProps message,
                                                             List<String> shardNames,
-                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
+                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper,
+                                                            AtomicReference<AutoScalingConfig> configToRestore) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
@@ -358,8 +391,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-    if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
+    Integer maxReplicasPerNode = message.getInt(MAX_SHARDS_PER_NODE, null);
+    if (maxReplicasPerNode != null && maxReplicasPerNode == -1) maxReplicasPerNode = Integer.MAX_VALUE;
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -380,24 +413,30 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             + collectionName
             + " is higher than the number of Solr instances currently live or live and part of your " + OverseerCollectionMessageHandler.CREATE_NODE_SET + "("
             + nodeList.size()
-            + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
+            + "). It's unusual to run two replicas of the same slice on the same Solr instance.");
       }
 
-      int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
-          Integer.MAX_VALUE :
-          maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * totalNumReplicas;
-      if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        throw new Assign.AssignmentException("Cannot create collection " + collectionName + ". Value of "
-            + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-            + ", and the number of nodes currently live or live and part of your "+OverseerCollectionMessageHandler.CREATE_NODE_SET+" is " + nodeList.size()
-            + ". This allows a maximum of " + maxShardsAllowedToCreate
-            + " to be created. Value of " + OverseerCollectionMessageHandler.NUM_SLICES + " is " + numSlices
-            + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
-            + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
-            + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
-            + ". This requires " + requestedShardsToCreate
-            + " shards to be created (higher than the allowed number)");
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
+      Assign.AssignStrategyFactory.Strategy strategy = assignStrategyFactory.getStrategy(clusterState, docCollection);
+      // back-compat assignment
+      if (strategy != Assign.AssignStrategyFactory.Strategy.POLICY) {
+        int nonPolicyMaxReplicasPerNode = maxReplicasPerNode != null ? maxReplicasPerNode : 1;
+        int maxReplicasAllowedToCreate = nonPolicyMaxReplicasPerNode == Integer.MAX_VALUE ?
+            Integer.MAX_VALUE :
+            nonPolicyMaxReplicasPerNode * nodeList.size();
+        int requestedReplicasToCreate = numSlices * totalNumReplicas;
+        if (maxReplicasAllowedToCreate < requestedReplicasToCreate) {
+          throw new Assign.AssignmentException("Cannot create collection " + collectionName + ". Value of "
+              + MAX_SHARDS_PER_NODE + " is " + nonPolicyMaxReplicasPerNode
+              + ", and the number of nodes currently live or live and part of your "+OverseerCollectionMessageHandler.CREATE_NODE_SET+" is " + nodeList.size()
+              + ". This allows a maximum of " + maxReplicasAllowedToCreate
+              + " to be created. Value of " + OverseerCollectionMessageHandler.NUM_SLICES + " is " + numSlices
+              + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
+              + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
+              + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
+              + ". This requires " + requestedReplicasToCreate
+              + " replicas to be created (higher than the allowed number)");
+        }
       }
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
           .forCollection(collectionName)
@@ -407,12 +446,65 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           .assignPullReplicas(numPullReplicas)
           .onNodes(nodeList)
           .build();
-      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
+      // if Strategy.POLICY is in use AND maxShardsPerNode was specified then for back-compat it needs to
+      // be translated into a rule (see SOLR-12847).
+      // Modify the autoscaling rules as needed BEFORE actually calling assign, setting configToRestore as
+      // a side-effect to restore the original config if the creation fails
+      if ((strategy == Assign.AssignStrategyFactory.Strategy.POLICY) &&
+          (maxReplicasPerNode != null && maxReplicasPerNode != Integer.MAX_VALUE)) {
+        maybeAddMaxReplicasRule(cloudManager, maxReplicasPerNode, docCollection, configToRestore);
+      }
       Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, docCollection);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
       sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;
+  }
+
+  public static void maybeAddMaxReplicasRule(SolrCloudManager cloudManager, int maxReplicasPerNode, DocCollection docCollection,
+                                                AtomicReference<AutoScalingConfig> configToRestore) throws IOException, InterruptedException {
+    AutoScalingConfig initialConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    Policy policy = initialConfig.getPolicy();
+    String policyName = docCollection.getPolicyName();
+    Map<String, List<Clause>> policies = policy.getPolicies();
+    List<Clause> clauses;
+    if (policyName != null) {
+      clauses = policies.get(policyName);
+      if (clauses != null) {
+        for (Clause clause : clauses) {
+          if (clause.getReplica() != null) {
+            throw new Assign.AssignmentException("Both an existing policy=" + policyName + " and " +
+                MAX_SHARDS_PER_NODE + "=" + maxReplicasPerNode +
+                " was specified, cannot determine the correct replica count in policy: " + clauses +
+                ". Edit the policy to include rules equivalent to " + MAX_SHARDS_PER_NODE);
+          }
+        }
+        clauses = new ArrayList<>(clauses);
+      } else {
+        clauses = new ArrayList<>();
+      }
+    } else {
+      policyName = ".auto_" + docCollection.getName();
+      clauses = new ArrayList<>();
+      docCollection.getProperties().put(Policy.POLICY, policyName);
+    }
+    // add a clause
+    maxReplicasPerNode++; // only < supported
+    Clause c = Clause.create("{'replica': '<" + maxReplicasPerNode +"' , 'shard': '#ANY', 'node': '#ANY'}");
+    clauses.add(c);
+    policies = new HashMap<>(policies);
+    policies.put(policyName, clauses);
+    policy = policy.withPolicies(policies);
+    AutoScalingConfig modifiedConfig = initialConfig.withPolicy(policy);
+    // verify the config
+    Policy.Session session = modifiedConfig.getPolicy().createSession(cloudManager);
+    // persist the modified config
+    try {
+      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(modifiedConfig), -1);
+      configToRestore.set(initialConfig);
+    } catch (KeeperException | BadVersionException e) {
+      throw new IOException("Error adding " + MAX_SHARDS_PER_NODE + " policy rule for collection " + docCollection.getName(), e);
+    }
   }
 
   public static void checkReplicaTypes(ZkNodeProps message) {

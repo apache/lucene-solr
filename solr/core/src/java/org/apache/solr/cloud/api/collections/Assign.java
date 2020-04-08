@@ -475,14 +475,15 @@ public class Assign {
   }
 
   public static class AssignRequest {
-    public String collectionName;
-    public List<String> shardNames;
-    public List<String> nodes;
-    public int numNrtReplicas;
-    public int numTlogReplicas;
-    public int numPullReplicas;
+    public final String collectionName;
+    public final List<String> shardNames;
+    public final List<String> nodes;
+    public final int numNrtReplicas;
+    public final int numTlogReplicas;
+    public final int numPullReplicas;
 
-    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes,
+                         int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
@@ -641,12 +642,9 @@ public class Assign {
       this.solrCloudManager = solrCloudManager;
     }
 
-    public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+    public Strategy getStrategy(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      String policyName = collection.getStr(POLICY);
-      List snitches = (List) collection.get(SNITCH);
-
-      Strategy strategy = null;
+      Strategy strategy;
       if ((ruleMaps == null || ruleMaps.isEmpty()) && !usePolicyFramework(collection, solrCloudManager)) {
         strategy = Strategy.LEGACY;
       } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
@@ -654,6 +652,15 @@ public class Assign {
       } else {
         strategy = Strategy.POLICY;
       }
+      return strategy;
+    }
+
+    public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+      List<Map> ruleMaps = (List<Map>) collection.get("rule");
+      String policyName = collection.getStr(POLICY);
+      List snitches = (List) collection.get(SNITCH);
+
+      Strategy strategy = getStrategy(clusterState, collection);
 
       switch (strategy) {
         case LEGACY:
@@ -669,7 +676,7 @@ public class Assign {
       }
     }
 
-    private enum Strategy {
+    public enum Strategy {
       LEGACY, RULES, POLICY;
     }
   }

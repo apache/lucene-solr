@@ -955,8 +955,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     opDelay(collectionName, CollectionParams.CollectionAction.CREATE.name());
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
+    AtomicReference<AutoScalingConfig> configToRestore = new AtomicReference<>();
     List<ReplicaPosition> replicaPositions = CreateCollectionCmd.buildReplicaPositions(cloudManager, getClusterState(), cmd.collection, props,
-        shardNames, sessionWrapper);
+        shardNames, sessionWrapper, configToRestore);
     if (sessionWrapper.get() != null) {
       sessionWrapper.get().release();
     }
