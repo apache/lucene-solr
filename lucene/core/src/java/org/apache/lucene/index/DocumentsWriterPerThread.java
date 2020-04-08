@@ -169,6 +169,8 @@ final class DocumentsWriterPerThread {
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
+  private final long hardMaxBytesPerDWPT;
+
 
   public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
@@ -199,6 +201,7 @@ final class DocumentsWriterPerThread {
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
+    this.hardMaxBytesPerDWPT = indexWriterConfig.getRAMPerThreadHardLimitMB() * 1024 * 1024;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -219,10 +222,23 @@ final class DocumentsWriterPerThread {
   /** Anything that will add N docs to the index should reserve first to
    *  make sure it's allowed. */
   private void reserveOneDoc() {
+    if (bytesUsed() > hardMaxBytesPerDWPT) { // TODO should we check this after each field as well to also preempt within one doc?
+      throw new MaxBufferSizeExceededException("RAM used by a single DocumentsWriterPerThread can't exceed: " + hardMaxBytesPerDWPT / 1024 / 1024 + "MB");
+    }
     if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
       // Reserve failed: put the one doc back and throw exc:
       pendingNumDocs.decrementAndGet();
       throw new IllegalArgumentException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
+    }
+  }
+
+  /**
+   * Thrown if a document exceeds the maximum buffer size of a DocumentsWriterPerThread
+   */
+  @SuppressWarnings("serial")
+  public static class MaxBufferSizeExceededException extends IllegalArgumentException {
+    MaxBufferSizeExceededException(String s) {
+      super(s);
     }
   }
 
@@ -599,6 +615,10 @@ final class DocumentsWriterPerThread {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
         + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
+  }
+
+  long getHardMaxBytesPerDWPT() {
+    return hardMaxBytesPerDWPT;
   }
   
 }

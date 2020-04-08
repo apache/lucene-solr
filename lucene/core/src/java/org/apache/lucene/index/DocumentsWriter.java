@@ -32,6 +32,7 @@ import java.util.function.ToLongFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
+import org.apache.lucene.index.DocumentsWriterPerThread.MaxBufferSizeExceededException;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -346,7 +347,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     int limit = perThreadPool.getMaxThreadStates();
     for(int i = 0; i < limit; i++) {
       ThreadState perThread = perThreadPool.getThreadState(i);
-      value = Math.max(value, perThread.lastSeqNo);
+      value = Math.max(value, perThread.getLastSeqNo());
     }
     return value;
   }
@@ -411,6 +412,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
     hasEvents |= applyAllDeletes();
     if (flushingDWPT != null) {
+      assert flushingDWPT.isAborted() == false;
       hasEvents |= doFlush(flushingDWPT);
     } else if (config.checkPendingFlushOnUpdate) {
       final DocumentsWriterPerThread nextPendingFlush = flushControl.nextPendingFlush();
@@ -434,44 +436,81 @@ final class DocumentsWriter implements Closeable, Accountable {
   long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
                        final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
-
     final ThreadState perThread = flushControl.obtainAndLock();
-    final DocumentsWriterPerThread flushingDWPT;
-    long seqNo;
-
+    DocumentsWriterPerThread flushingDWPT;
+    final boolean isUpdate = delNode != null && delNode.isDelete();
+    final int numDocsBefore = perThread.dwpt == null ? 0 : perThread.dwpt.getNumDocsInRAM();
+    final long seqNo;
     try {
-      // This must happen after we've pulled the ThreadState because IW.close
-      // waits for all ThreadStates to be released:
-      ensureOpen();
-      ensureInitialized(perThread);
-      assert perThread.isInitialized();
-      final DocumentsWriterPerThread dwpt = perThread.dwpt;
-      final int dwptNumDocs = dwpt.getNumDocsInRAM();
-      try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
-      } finally {
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
-        }
-        // We don't know how many documents were actually
-        // counted as indexed, so we must subtract here to
-        // accumulate our separate counter:
-        numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
-      }
-      final boolean isUpdate = delNode != null && delNode.isDelete();
+      innerUpdateDocuments(perThread, docs, analyzer, delNode);
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
-
-      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
-      perThread.lastSeqNo = seqNo;
-
+    } catch (MaxBufferSizeExceededException ex) {
+      if (perThread.dwpt.isAborted()) {
+        throw ex;
+      } else {
+        // we hit an exception but still need to flush this DWPT
+        // let's run postUpdate to make sure we flush stuff to disk
+        // in the case we exceed ram limits etc.
+        hasEvents = doAfterDocumentRejected(perThread, isUpdate, hasEvents);
+        // we retry if we the DWPT had more than one document indexed and was flushed
+        boolean retry = perThread.dwpt == null // we flushed the previous one since it was full
+            && numDocsBefore > 0; // we had at least one doc in RAM before such that is could fit in an empty DWPT
+        if (retry) {
+          try {
+            // we retry into a brand new DWPT, if it doesn't fit in here we can't index the document
+            // note that we flush the previous DWPT while holding the lock on the DWPT this is necessary
+            // otherwise we can't guarantee a unused DWPT
+            innerUpdateDocuments(perThread, docs, analyzer, delNode);
+            flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+          } catch (Exception innerEx) {
+            doAfterDocumentRejected(perThread, isUpdate, hasEvents); // ignore return value we rethrow below
+            ex.addSuppressed(innerEx);
+            throw ex; // we failed to retry - lets rethrow
+          }
+        } else {
+          throw ex;
+        }
+      }
     } finally {
+      seqNo = perThread.getLastSeqNo();
       perThreadPool.release(perThread);
     }
+    return postUpdate(flushingDWPT, hasEvents) ? -seqNo : seqNo;
+  }
 
-    if (postUpdate(flushingDWPT, hasEvents)) {
-      seqNo = -seqNo;
+  private boolean doAfterDocumentRejected(ThreadState perThread, boolean isUpdate, boolean hasEvents) throws IOException {
+    if (perThread.dwpt.isAborted() == false && perThread.dwpt.getNumDocsInRAM() > 0) {
+      // we need to check if we have at least one doc in the DWPT. This can be 0 if we fail
+      // due to exceeding total number of docs etc.
+      return postUpdate(flushControl.doAfterDocument(perThread, isUpdate), hasEvents);
     }
-    return seqNo;
+    return hasEvents;
+  }
+
+  private long innerUpdateDocuments(ThreadState perThread,
+                                    final Iterable<? extends Iterable<? extends IndexableField>> docs,
+                                    final Analyzer analyzer,
+                                    final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
+    assert perThread.isHeldByCurrentThread();
+    // This must happen after we've pulled the ThreadState because IW.close
+    // waits for all ThreadStates to be released:
+    ensureOpen();
+    ensureInitialized(perThread);
+    assert perThread.isInitialized();
+    final DocumentsWriterPerThread dwpt = perThread.dwpt;
+    final int dwptNumDocs = dwpt.getNumDocsInRAM();
+    try {
+      perThread.updateLastSeqNo(dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications));
+    } finally {
+      // We don't know how many documents were actually
+      // counted as indexed, so we must subtract here to
+      // accumulate our separate counter:
+      numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+      if (dwpt.isAborted()) {
+        flushControl.doOnAbort(perThread);
+      }
+    }
+    return perThread.getLastSeqNo();
   }
 
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {

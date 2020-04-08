@@ -61,7 +61,7 @@ final class DocumentsWriterPerThreadPool {
     long bytesUsed = 0;
 
     // set by DocumentsWriter after each indexing op finishes
-    volatile long lastSeqNo;
+    private volatile long lastSeqNo;
 
     ThreadState(DocumentsWriterPerThread dpwt) {
       this.dwpt = dpwt;
@@ -104,6 +104,22 @@ final class DocumentsWriterPerThreadPool {
      */
     public boolean isFlushPending() {
       return flushPending;
+    }
+
+    /**
+     * Updates the last sequence number this ThreadState has seen.
+     */
+    void updateLastSeqNo(long seqNo) {
+      assert seqNo > lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + lastSeqNo;
+      lastSeqNo = seqNo;
+    }
+
+    /**
+     *
+     * @return the last sequence number this ThreadState has seen
+     */
+    long getLastSeqNo() {
+      return lastSeqNo;
     }
   }
 

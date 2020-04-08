@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -3940,5 +3939,106 @@ public class TestIndexWriter extends LuceneTestCase {
         thread.join();
       }
     }
+  }
+
+  public void testRetryDocument() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = new IndexWriterConfig();
+    indexWriterConfig.setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter w = new IndexWriter(dir, indexWriterConfig);
+    indexWriterConfig.setRAMPerThreadHardLimitMB(1);
+    StringBuilder sb = new StringBuilder();
+    // same doc with lots of duplicated terms to put pressure on FreqProxTermsWriter instead of terms dict.
+    for (int i = 0; i < 1024; i++) {
+      sb.append(i);
+      sb.append(' ');
+    }
+    Document doc = new Document();
+    doc.add(new TextField("text", sb.toString(), Field.Store.NO));
+    List<Document> docs = new ArrayList<>();
+    int numDocs = 0;
+    while (w.getFlushCount() == 0) {
+      w.addDocument(doc);
+      docs.add(doc);
+      numDocs++;
+    }
+    docs.add(doc);
+    assertEquals(numDocs, w.getDocStats().numDocs);
+    IllegalArgumentException iae = expectThrows(DocumentsWriterPerThread.MaxBufferSizeExceededException.class,
+        () -> w.addDocuments(docs));
+    assertEquals("RAM used by a single DocumentsWriterPerThread can't exceed: 1MB", iae.getMessage());
+    assertNull(w.getTragicException());
+    assertEquals(numDocs, w.getDocStats().maxDoc);
+    assertEquals(numDocs, w.getDocStats().numDocs);
+    w.addDocument(docs.remove(0));
+    numDocs++;
+    assertEquals(numDocs, w.getDocStats().numDocs);
+    numDocs += docs.size();
+    w.addDocuments(docs);
+    assertEquals(numDocs, w.getDocStats().numDocs);
+    assertEquals("docs.size()-1 must be deleted since it didn't fit in the buffer",
+        numDocs + docs.size()-1, w.getDocStats().maxDoc);
+    w.close();
+    dir.close();
+  }
+
+  public void testAbortDocWhenHardLimitExceeds() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = new IndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, indexWriterConfig);
+    indexWriterConfig.setRAMPerThreadHardLimitMB(1);
+    w.addDocument(new Document()); // no problem
+    w.flush();
+    assertEquals(1, w.getFlushCount());
+    StringBuilder sb = new StringBuilder();
+    // same doc with lots of duplicated terms to put pressure on FreqProxTermsWriter instead of terms dict.
+    for (int i = 0; i < 1024; i++) {
+      sb.append(i);
+      sb.append(' ');
+    }
+    Document doc = new Document();
+    doc.add(new TextField("text", sb.toString(), Field.Store.NO));
+
+    int numDocs = 1;
+    while (w.getFlushCount() == 1) {
+      w.addDocument(doc);
+      numDocs++;
+    }
+
+    if (random().nextBoolean()) {
+      w.addDocument(new Document());
+      numDocs++;
+    }
+    DocumentsWriterPerThread.MaxBufferSizeExceededException ex = expectThrows(
+        DocumentsWriterPerThread.MaxBufferSizeExceededException.class, () -> w.addDocuments(() -> new Iterator<>() {
+      @Override
+      public boolean hasNext() {
+        return true;
+      }
+
+      @Override
+      public Iterable<? extends IndexableField> next() {
+        return doc;
+      }
+    }));
+    assertEquals("RAM used by a single DocumentsWriterPerThread can't exceed: 1MB", ex.getMessage());
+    assertNull(w.getTragicException());
+    w.addDocument(new Document());
+    numDocs++;
+    final int currentNumDocs = numDocs;
+    for (int i = 0; i < currentNumDocs; i++) {
+      w.addDocument(doc);
+      numDocs++;
+    }
+    w.addDocument(new Document());
+    numDocs++;
+    w.forceMergeDeletes(true);
+    w.commit();
+
+    try (IndexReader reader = DirectoryReader.open(dir)) {
+      assertEquals(numDocs, reader.numDocs());
+    }
+    w.close();
+    dir.close();
   }
 }
