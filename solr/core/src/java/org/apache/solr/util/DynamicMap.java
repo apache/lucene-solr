@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.numeric;
-
-import com.carrotsearch.hppc.HashContainers;
+package org.apache.solr.util;
 
 /**
  * An efficient map for storing keys as integer in range from 0..n with n can be estimated up-front.
@@ -50,6 +48,8 @@ public interface DynamicMap {
    * Compute expected elements for hppc maps, so resizing won't happen if we store less elements than {@code threshold}
    */
   default int mapExpectedElements(int expectedKeyMax) {
-    return (int) (threshold(expectedKeyMax) / HashContainers.DEFAULT_LOAD_FACTOR);
+    // hppc's expectedElements <= first hppc's resizeAt.
+    // +2 let's us not to worry about which comparison operator to choose
+    return threshold(expectedKeyMax) + 2;
   }
 }

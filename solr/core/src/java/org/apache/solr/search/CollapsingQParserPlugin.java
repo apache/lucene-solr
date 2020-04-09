@@ -78,9 +78,9 @@ import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.solr.util.numeric.IntFloatDynamicMap;
-import org.apache.solr.util.numeric.IntIntDynamicMap;
-import org.apache.solr.util.numeric.IntLongDynamicMap;
+import org.apache.solr.util.IntFloatDynamicMap;
+import org.apache.solr.util.IntIntDynamicMap;
+import org.apache.solr.util.IntLongDynamicMap;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 

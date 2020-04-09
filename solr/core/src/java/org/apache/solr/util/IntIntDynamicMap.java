@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.numeric;
+package org.apache.solr.util;
 
 import java.util.Arrays;
-import java.util.function.LongConsumer;
+import java.util.function.IntConsumer;
 
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.procedures.IntLongProcedure;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.cursors.IntCursor;
+import com.carrotsearch.hppc.procedures.IntIntProcedure;
 import org.apache.lucene.util.ArrayUtil;
 
-public class IntLongDynamicMap implements DynamicMap {
+public class IntIntDynamicMap implements DynamicMap {
   private int maxSize;
-  private IntLongHashMap hashMap;
-  private long[] keyValues;
-  private long emptyValue;
+  private IntIntHashMap hashMap;
+  private int[] keyValues;
+  private int emptyValue;
   private int threshold;
 
   /**
@@ -37,24 +37,24 @@ public class IntLongDynamicMap implements DynamicMap {
    * Although the map will automatically do resizing to be able to hold key >= {@code expectedKeyMax}.
    * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
    */
-  public IntLongDynamicMap(int expectedKeyMax, long emptyValue) {
+  public IntIntDynamicMap(int expectedKeyMax, int emptyValue) {
     this.threshold = threshold(expectedKeyMax);
     this.maxSize = expectedKeyMax;
     this.emptyValue = emptyValue;
     if (useArrayBased(expectedKeyMax)) {
       upgradeToArray();
     } else {
-      this.hashMap = new IntLongHashMap(mapExpectedElements(expectedKeyMax));
+      this.hashMap = new IntIntHashMap(mapExpectedElements(expectedKeyMax));
     }
   }
 
   private void upgradeToArray() {
-    keyValues = new long[maxSize];
+    keyValues = new int[maxSize];
     if (emptyValue != 0) {
       Arrays.fill(keyValues, emptyValue);
     }
     if (hashMap != null) {
-      hashMap.forEach((IntLongProcedure) (key, value) -> keyValues[key] = value);
+      hashMap.forEach((IntIntProcedure) (key, value) -> keyValues[key] = value);
       hashMap = null;
     }
   }
@@ -70,36 +70,39 @@ public class IntLongDynamicMap implements DynamicMap {
     }
   }
 
-  public void put(int key, long value) {
+  public void put(int key, int value) {
     if (keyValues != null) {
       if (key >= keyValues.length) {
         growBuffer(key + 1);
       }
       keyValues[key] = value;
     } else {
-      this.maxSize = Math.max(key, maxSize);
+      this.maxSize = Math.max(key + 1, maxSize);
       this.hashMap.put(key, value);
-      if (this.hashMap.size() > threshold) {
+      if (this.hashMap.size() >= threshold) {
         upgradeToArray();
       }
     }
   }
 
-  public long get(int key) {
+  public int get(int key) {
     if (keyValues != null) {
+      if (key >= keyValues.length) {
+        return emptyValue;
+      }
       return keyValues[key];
     } else {
       return this.hashMap.getOrDefault(key, emptyValue);
     }
   }
 
-  public void forEachValue(LongConsumer consumer) {
+  public void forEachValue(IntConsumer consumer) {
     if (keyValues != null) {
-      for (long val : keyValues) {
+      for (int val : keyValues) {
         if (val != emptyValue) consumer.accept(val);
       }
     } else {
-      for (LongCursor ord : hashMap.values()) {
+      for (IntCursor ord : hashMap.values()) {
         consumer.accept(ord.value);
       }
     }
