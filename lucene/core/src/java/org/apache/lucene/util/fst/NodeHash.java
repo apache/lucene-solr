@@ -51,7 +51,7 @@ final class NodeHash<T> {
       } else {
         assert scratchArc.nodeFlags() == FST.ARCS_FOR_DIRECT_ADDRESSING;
         if ((node.arcs[node.numArcs - 1].label - node.arcs[0].label + 1) != scratchArc.numArcs()
-            || node.numArcs != scratchArc.bitTable().countBits()) {
+            || node.numArcs != FST.Arc.BitTable.countBits(scratchArc, in)) {
           return false;
         }
       }

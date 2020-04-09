@@ -18,8 +18,10 @@ package org.apache.lucene.util.fst;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,10 +30,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -150,17 +155,23 @@ public class TestFstDirectAddressing extends LuceneTestCase {
     if (args.length < 2) {
       throw new IllegalArgumentException("Missing argument");
     }
-    if (args[0].equals("-countFSTArcs")) {
-      countFSTArcs(args[1]);
-    } else if (args[0].equals("-measureFSTOversizing")) {
-      measureFSTOversizing(args[1]);
-    } else {
-      throw new IllegalArgumentException("Invalid argument " + args[0]);
+    switch (args[0]) {
+      case "-countFSTArcs":
+        countFSTArcs(args[1]);
+        break;
+      case "-measureFSTOversizing":
+        measureFSTOversizing(args[1]);
+        break;
+      case "-recompileAndWalk":
+        recompileAndWalk(args[1]);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid argument " + args[0]);
     }
   }
 
-  private static void countFSTArcs(String FSTFilePath) throws IOException {
-    byte[] buf = Files.readAllBytes(Paths.get(FSTFilePath));
+  private static void countFSTArcs(String fstFilePath) throws IOException {
+    byte[] buf = Files.readAllBytes(Paths.get(fstFilePath));
     DataInput in = new ByteArrayDataInput(buf);
     FST<BytesRef> fst = new FST<>(in, ByteSequenceOutputs.getSingleton());
     BytesRefFSTEnum<BytesRef> fstEnum = new BytesRefFSTEnum<>(fst);
@@ -209,5 +220,62 @@ public class TestFstDirectAddressing extends LuceneTestCase {
     double directAddressingMemoryIncreasePercent = ((double) ramBytesUsed / ramBytesUsedNoDirectAddressing - 1) * 100;
 
     printStats(builder, ramBytesUsed, directAddressingMemoryIncreasePercent);
+  }
+
+  private static void recompileAndWalk(String fstFilePath) throws IOException {
+    try (InputStreamDataInput in = new InputStreamDataInput(newInputStream(Paths.get(fstFilePath)))) {
+
+      System.out.println("Reading FST");
+      long startTimeMs = System.currentTimeMillis();
+      FST<CharsRef> originalFst = new FST<>(in, CharSequenceOutputs.getSingleton());
+      long endTimeMs = System.currentTimeMillis();
+      System.out.println("time = " + (endTimeMs - startTimeMs) + " ms");
+
+      for (float oversizingFactor : Arrays.asList(0f, 1f)) {
+        System.out.println("\nFST construction (oversizingFactor=" + oversizingFactor + ")");
+        startTimeMs = System.currentTimeMillis();
+        FST<CharsRef> fst = recompile(originalFst, oversizingFactor);
+        endTimeMs = System.currentTimeMillis();
+        System.out.println("time = " + (endTimeMs - startTimeMs) + " ms");
+        System.out.println("FST RAM = " + fst.ramBytesUsed() + " B");
+
+        System.out.println("FST enum");
+        startTimeMs = System.currentTimeMillis();
+        walk(fst);
+        endTimeMs = System.currentTimeMillis();
+        System.out.println("time = " + (endTimeMs - startTimeMs) + " ms");
+      }
+    }
+  }
+
+  private static InputStream newInputStream(Path path) throws IOException {
+    InputStream in = Files.newInputStream(path);
+    String fileName = path.getFileName().toString();
+    if (fileName.endsWith("gz") || fileName.endsWith("zip")) {
+      in = new GZIPInputStream(in);
+    }
+    return in;
+  }
+
+  private static FST<CharsRef> recompile(FST<CharsRef> fst, float oversizingFactor) throws IOException {
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, CharSequenceOutputs.getSingleton())
+        .setDirectAddressingMaxOversizingFactor(oversizingFactor);
+    IntsRefFSTEnum<CharsRef> fstEnum = new IntsRefFSTEnum<>(fst);
+    IntsRefFSTEnum.InputOutput<CharsRef> inputOutput;
+    while ((inputOutput = fstEnum.next()) != null) {
+      builder.add(inputOutput.input, CharsRef.deepCopyOf(inputOutput.output));
+    }
+    return builder.finish();
+  }
+
+  private static int walk(FST<CharsRef> read) throws IOException {
+    IntsRefFSTEnum<CharsRef> fstEnum = new IntsRefFSTEnum<>(read);
+    IntsRefFSTEnum.InputOutput<CharsRef> inputOutput;
+    int terms = 0;
+    while ((inputOutput = fstEnum.next()) != null) {
+      terms += inputOutput.input.length;
+      terms += inputOutput.output.length;
+    }
+    return terms;
   }
 }
