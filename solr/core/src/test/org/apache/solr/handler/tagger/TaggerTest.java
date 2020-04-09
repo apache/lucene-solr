@@ -296,13 +296,10 @@ public class TaggerTest extends TaggerTestCase {
     return new TestTag(startOffset, endOffset, substring, lookupByName(name.getName()));
   }
 
-  /** whole matching, no sub-tags */
+
   public void testEmptyCollection() throws Exception {
     //SOLR-14396: Ensure tagger handler doesn't fail on empty collections
-
     SolrQueryRequest req = reqDoc("anything", "indent", "on", "omitHeader", "on", "matchText", "false");
-    //SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
-
     String rspStr = h.query(req);
     req.close();
 
@@ -316,6 +313,5 @@ public class TaggerTest extends TaggerTestCase {
         "</response>\n";
     assertEquals(expected, rspStr);
   }
-
 
 }
