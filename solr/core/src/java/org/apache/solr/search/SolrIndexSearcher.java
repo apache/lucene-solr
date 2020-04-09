@@ -1656,7 +1656,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
-    query = QueryUtils.combineQueryAndFilter(query, pf.filter);
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {
