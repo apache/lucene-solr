@@ -398,7 +398,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
   private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
-  private boolean stopMerges; // TODOD make sure this is only changed once and never set back to false
+  private boolean stopMerges; // TODO make sure this is only changed once and never set back to false
   private boolean didMessageState;
 
   final AtomicInteger flushCount = new AtomicInteger();
