@@ -1548,10 +1548,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    query = QueryUtils.combineQueryAndFilter(query, pf.filter);
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -1655,7 +1653,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int maxDoc = maxDoc();
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
     final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...

@@ -335,9 +335,7 @@ public class SimpleFacets {
     }
 
     AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
-    Filter mainQueryFilter = docSet.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
-    Query filteredFacetQuery = QueryUtils.combineQueryAndFilter(facetQuery, mainQueryFilter);
-    searcher.search(filteredFacetQuery, collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
     return collector.getGroupCount();
   }
 
