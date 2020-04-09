@@ -129,6 +129,8 @@ There are several default search components that work with all SearchHandlers wi
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
 
+The {solr-javadocs}/solr-core/org/apache/solr/handler/component/DelegatingSearchComponent.html[DelegatingSearchComponent] can be configured to support selective use of alternative components in the same SearchHandler.
+
 === First-Components and Last-Components
 
 It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.

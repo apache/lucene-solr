@@ -19,30 +19,67 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
- * TODO
+ * A search component that supports the configuration and selective use of custom search components.
+<p>
+ * Usage illustration:
+ * <ul>
+ * <li> for <code>/select?q=*:*</code> the default case i.e. <code>QueryComponent</code> is used
+ * <li> for <code>/select?q=*:*&amp;foo=true</code> the <code>FooQueryComponent</code> is used
+ * <li> for <code>/select?q=*:*&amp;bar=true</code> the <code>BarQueryComponent</code> is used
+ * </ul>
+<p>
+ * Configuration illustration:
+<pre class="prettyprint">
+&lt;searchComponent name="queryDefault" class="org.apache.solr.handler.component.QueryComponent"/&gt;
+&lt;searchComponent name="queryFoo" class="com.company.team.FooQueryComponent"/&gt;
+&lt;searchComponent name="queryBar" class="com.company.team.BarQueryComponent"/&gt;
+
+&lt;searchComponent name="query" class="org.apache.solr.handler.component.DelegatingSearchComponent"&gt;
+  &lt;str name="mappings.default"&gt;queryDefault&lt;/str&gt;
+  &lt;lst name="mappings"&gt;
+    &lt;str name="foo"&gt;queryFoo&lt;str&gt;
+    &lt;str name="bar"&gt;queryBar&lt;str&gt;
+  &lt;/lst&gt;
+  &lt;str name="category"&gt;QUERY&lt;/str&gt;
+&lt;/searchComponent&gt;
+</pre>
  */
 public class DelegatingSearchComponent extends SearchComponent {
 
   public static final String COMPONENT_NAME = "delegate";
 
   private NamedList mappings;
+  private String defaultMapping;
+  private Category category = Category.OTHER;
 
   @Override
   public void init( NamedList args ) {
     super.init(args);
-    this.mappings = (NamedList)args.remove("mappings");
+
+    this.mappings = (NamedList)args.get("mappings");
+    this.defaultMapping = (String)args.get("mappings.default");
+
+    final Object categoryObj = args.get("category");
+    if (categoryObj != null) {
+      this.category = Category.valueOf((String)categoryObj);
+    }
   }
 
   private SearchComponent getDelegate(ResponseBuilder rb) {
+    String component = this.defaultMapping;
     for (int ii = 0; ii < mappings.size(); ++ii) {
       if (rb.req.getParams().getBool(mappings.getName(ii), false)) {
-        return rb.req.getCore().getSearchComponent((String)mappings.getVal(ii));
+        component = (String)mappings.getVal(ii);
+        break;
       }
     }
-    return null;
+    if (component != null) {
+      return rb.req.getCore().getSearchComponent(component);
+    } else {
+      return null;
+    }
   }
 
   @Override
@@ -79,17 +116,7 @@ public class DelegatingSearchComponent extends SearchComponent {
 
   @Override
   public Category getCategory() {
-    return super.getCategory(); // TODO
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return super.getSolrMetricsContext(); // TODO
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope); // TODO
+    return this.category;
   }
 
 }

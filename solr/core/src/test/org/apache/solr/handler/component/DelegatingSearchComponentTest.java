@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.core.SolrInfoBean;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -85,6 +86,16 @@ public class DelegatingSearchComponentTest extends SolrCloudTestCase {
   public void test() throws Exception {
     // add custom components
     {
+      cluster.getSolrClient().request(
+          new ConfigRequest(
+              "{\n" +
+              "  'add-searchcomponent': {\n" +
+              "    'name': '"+QueryComponent.COMPONENT_NAME+"Default',\n" +
+              "    'class': '"+QueryComponent.class.getName()+"'\n" +
+              "  }\n" +
+              "}"),
+          COLLECTION);
+
         cluster.getSolrClient().request(
             new ConfigRequest(
                 "{\n" +
@@ -113,10 +124,12 @@ public class DelegatingSearchComponentTest extends SolrCloudTestCase {
                 "  'add-searchcomponent': {\n" +
                 "    'name': '"+QueryComponent.COMPONENT_NAME+"',\n" +
                 "    'class': '"+DelegatingSearchComponent.class.getName()+"',\n" +
+                "    'mappings.default': '"+QueryComponent.COMPONENT_NAME+"Default',\n" +
                 "    'mappings': {\n" +
                 "      'delegate.plant' : '"+FooQueryComponent.COMPONENT_NAME+"',\n" +
                 "      'delegate.animal' : '"+BarQueryComponent.COMPONENT_NAME+"'\n" +
-                "    }\n" +
+                "    },\n" +
+                "    'category': '"+SolrInfoBean.Category.QUERY+"'\n" +
                 "  }\n" +
                 "}"),
             COLLECTION);
@@ -136,18 +149,22 @@ public class DelegatingSearchComponentTest extends SolrCloudTestCase {
 
     // search for the documents
     {
-      final String[] queryParameters = new String[] { "delegate.plant", "delegate.animal" };
-      final String[] responseAnswers = new String[] { "flower", "bee" };
+      final String[] queryParameters = new String[] { null, "delegate.plant", "delegate.animal" };
+      final String[] responseAnswers = new String[] { null, "flower", "bee" };
 
       for (int ii = 0; ii < queryParameters.length; ++ii) {
 
         final SolrQuery solrQuery =  new SolrQuery("*:*");
-        solrQuery.set(queryParameters[ii], true);
+        if (queryParameters[ii] != null) {
+          solrQuery.set(queryParameters[ii], true);
+        }
 
         final QueryResponse queryResponse = new QueryRequest(solrQuery)
             .process(cluster.getSolrClient(), COLLECTION);
 
         assertEquals(responseAnswers[ii], queryResponse.getResponse().get(FOOBAR_ANSWER_KEY));
+        assertEquals(3, queryResponse.getResults().getNumFound());
+        assertEquals(3, queryResponse.getResults().size());
       }
     }
   }
@@ -163,6 +180,10 @@ public class DelegatingSearchComponentTest extends SolrCloudTestCase {
       // the component's name applies to itself and cannot be delegated
       if (superClassMethod.getName().equals("getName") ||
           superClassMethod.getName().equals("setName")) continue;
+
+      // the component's metrics belong to itself and cannot be delegated
+      if (superClassMethod.getName().equals("initializeMetrics") ||
+          superClassMethod.getName().equals("getSolrMetricsContext")) continue;
 
       try {
         final Method subClassMethod = subClass.getDeclaredMethod(
