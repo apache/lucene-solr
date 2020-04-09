@@ -72,6 +72,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -312,6 +313,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      TestInjection.injectCollectionCreateFailure();
       failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
       if (failure) {
         // Let's cleanup as we hit an exception
@@ -355,8 +357,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
     } catch (SolrException ex) {
+      failure = true;
       throw ex;
     } catch (Exception ex) {
+      failure = true;
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     } finally {
       if (sessionWrapper.get() != null) sessionWrapper.get().release();
@@ -366,9 +370,15 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  public static void restoreAutoScalingConfig(SolrCloudManager cloudManager, AutoScalingConfig config) throws IOException, InterruptedException {
+  public static void restoreAutoScalingConfig(SolrCloudManager cloudManager, AutoScalingConfig configToRestore) throws IOException, InterruptedException {
     try {
-      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(config), config.getZkVersion());
+      // check that only we updated the config
+      AutoScalingConfig currentConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+      if (currentConfig.getZkVersion() == configToRestore.getZkVersion() + 1) {
+        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(configToRestore), currentConfig.getZkVersion());
+      } else {
+        log.warn("Cannot restore previous autoscaling config, someone else already modified it.");
+      }
     } catch (BadVersionException | KeeperException e) {
       log.warn("Error restoring autoscaling config", e);
     }
@@ -524,7 +534,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     Policy.Session session = modifiedConfig.getPolicy().createSession(cloudManager);
     // persist the modified config
     try {
-      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(modifiedConfig), -1);
+      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(modifiedConfig), initialConfig.getZkVersion());
       configToRestore.set(initialConfig);
     } catch (KeeperException | BadVersionException e) {
       throw new IOException("Error adding " + MAX_SHARDS_PER_NODE + " policy rule for collection " + docCollection.getName(), e);

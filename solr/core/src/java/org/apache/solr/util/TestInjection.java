@@ -132,6 +132,8 @@ public class TestInjection {
 
   public volatile static String reindexFailure = null;
 
+  public volatile static String collectionCreateFailure = null;
+
   public volatile static String failIndexFingerprintRequests = null;
 
   public volatile static String wrongIndexFingerprint = null;
@@ -178,6 +180,7 @@ public class TestInjection {
     directUpdateLatch = null;
     reindexLatch = null;
     reindexFailure = null;
+    collectionCreateFailure = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
@@ -499,6 +502,22 @@ public class TestInjection {
         return reindexLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectCollectionCreateFailure() {
+    if (collectionCreateFailure != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(collectionCreateFailure);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.info("Test injection failure");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Test injection failure");
       }
     }
     return true;

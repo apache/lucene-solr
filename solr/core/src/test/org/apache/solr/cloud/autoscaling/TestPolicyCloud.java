@@ -60,6 +60,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -86,6 +87,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
   @After
   public void after() throws Exception {
+    TestInjection.reset();
     cluster.deleteAllCollections();
     cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
         "{}".getBytes(StandardCharsets.UTF_8), true);
@@ -598,6 +600,20 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     autoScalingConfig = cluster.getSolrClient().getZkStateReader().getAutoScalingConfig();
     policies = autoScalingConfig.getPolicy().getPolicies();
     assertNull("auto-create policy still exists after collection has been deleted: " + policies, policies.get(policyName));
+
+    // test the cleanup after failed creation
+    TestInjection.collectionCreateFailure = "true:100";
+    try {
+      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+          .setMaxShardsPerNode(1)
+          .process(cluster.getSolrClient());
+      fail("should have failed due to injection failure");
+    } catch (Exception e) {
+      assertTrue(e.toString().contains("injection failure"));
+      autoScalingConfig = cluster.getSolrClient().getZkStateReader().getAutoScalingConfig();
+      policies = autoScalingConfig.getPolicy().getPolicies();
+      assertNull("auto-create policy still exists after collection has been deleted: " + policies, policies.get(policyName));
+    }
 
   }
 
