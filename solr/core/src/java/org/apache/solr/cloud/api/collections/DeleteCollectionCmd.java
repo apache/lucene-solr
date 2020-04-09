@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -38,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -104,7 +109,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       SolrZkClient zkClient = zkStateReader.getZkClient();
       SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
 
-      if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
+      DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+      if (docCollection == null) {
         if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just
           // be removed in the finally - we cannot continue, because the below code will error if the collection
@@ -157,6 +163,36 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           }
           return a;
         });
+      }
+
+      // remove auto-created policy if this is the only collection that uses it
+      String policyName = docCollection.getStr(Policy.POLICY);
+      if (policyName != null && policyName.startsWith(CollectionAdminParams.AUTO_PREFIX)) {
+        // check that no other collection uses it
+        boolean inUse = false;
+        for (DocCollection coll : state.getCollectionsMap().values()) {
+          if (coll.getName().equals(docCollection.getName())) {
+            continue;
+          }
+          if (policyName.equals(coll.getPolicyName())) {
+            inUse = true;
+            break;
+          }
+        }
+        if (!inUse) {
+          // remove it and persist the new AutoScalingConfig
+          AutoScalingConfig autoScalingConfig = zkStateReader.getAutoScalingConfig();
+          Policy policy = autoScalingConfig.getPolicy();
+          Map<String, List<Clause>> policies = new HashMap<>(policy.getPolicies());
+          policies.remove(policyName);
+          policy = policy.withPolicies(policies);
+          autoScalingConfig = autoScalingConfig.withPolicy(policy);
+          try {
+            zkClient.setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(autoScalingConfig), autoScalingConfig.getZkVersion(), true);
+          } catch (Exception e) {
+            log.warn("Error removing auto-created policy " + policyName, e);
+          }
+        }
       }
 
 //      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);

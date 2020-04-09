@@ -592,6 +592,13 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     List<Clause> p = policies.get(policyName);
     assertEquals("unexpected size of policy " + policyName + ": " + p, 1, p.size());
     assertTrue("incorrect clause: " + p.get(0), p.get(0).toString().contains("\"replica\":\"<2\""));
+
+    // test deletion of auto-created policy
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    autoScalingConfig = cluster.getSolrClient().getZkStateReader().getAutoScalingConfig();
+    policies = autoScalingConfig.getPolicy().getPolicies();
+    assertNull("auto-create policy still exists after collection has been deleted: " + policies, policies.get(policyName));
+
   }
 
 }

@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -191,10 +192,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       // refresh cluster state
       clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
-
+      DocCollection docCollection = clusterState.getCollection(collectionName);
+      String initialPolicy = docCollection.getPolicyName();
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName),
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, docCollection,
             message, shardNames, sessionWrapper, configToRestore);
       } catch (Assign.AssignmentException e) {
         failure = true;
@@ -207,6 +209,14 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (replicaPositions.isEmpty()) {
         log.debug("Finished create command for collection: {}", collectionName);
         return;
+      }
+
+      if (docCollection.getStr(Policy.POLICY) != initialPolicy) {
+        ZkNodeProps props = new ZkNodeProps(
+            Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
+            ZkStateReader.COLLECTION_PROP, collectionName,
+            Policy.POLICY, docCollection.getStr(Policy.POLICY));
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
       }
 
       final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async);
@@ -358,7 +368,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   public static void restoreAutoScalingConfig(SolrCloudManager cloudManager, AutoScalingConfig config) throws IOException, InterruptedException {
     try {
-      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(config), -1);
+      cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(config), config.getZkVersion());
     } catch (BadVersionException | KeeperException e) {
       log.warn("Error restoring autoscaling config", e);
     }
@@ -461,36 +471,50 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     return replicaPositions;
   }
 
+  /**
+   * Optionally add a policy that implements 'maxShardsPerNode' and set the collection to use this policy.
+   * @param cloudManager SolrCloudManager
+   * @param maxReplicasPerNode max number of replicas per node
+   * @param docCollection collection (its properties may be modified as a side-effect)
+   * @param configToRestore if AutoScalingConfig has been changed as a result of this method the original
+   *                        value is set here in order to restore it in case of failures
+   */
   public static void maybeAddMaxReplicasRule(SolrCloudManager cloudManager, int maxReplicasPerNode, DocCollection docCollection,
                                                 AtomicReference<AutoScalingConfig> configToRestore) throws IOException, InterruptedException {
     AutoScalingConfig initialConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
     Policy policy = initialConfig.getPolicy();
     String policyName = docCollection.getPolicyName();
-    Map<String, List<Clause>> policies = policy.getPolicies();
-    List<Clause> clauses;
-    if (policyName != null) {
-      clauses = policies.get(policyName);
-      if (clauses != null) {
-        for (Clause clause : clauses) {
-          if (clause.getReplica() != null) {
-            throw new Assign.AssignmentException("Both an existing policy=" + policyName + " and " +
-                MAX_SHARDS_PER_NODE + "=" + maxReplicasPerNode +
-                " was specified, cannot determine the correct replica count in policy: " + clauses +
-                ". Edit the policy to include rules equivalent to " + MAX_SHARDS_PER_NODE);
-          }
-        }
-        clauses = new ArrayList<>(clauses);
-      } else {
-        clauses = new ArrayList<>();
-      }
-    } else {
-      policyName = ".auto_" + docCollection.getName();
-      clauses = new ArrayList<>();
+    if (policyName == null) {
+      policyName = CollectionAdminParams.AUTO_PREFIX + docCollection.getName();
       docCollection.getProperties().put(Policy.POLICY, policyName);
     }
-    // add a clause
+    Map<String, List<Clause>> policies = policy.getPolicies();
+    List<Clause> clauses = policies.get(policyName);
     maxReplicasPerNode++; // only < supported
     Clause c = Clause.create("{'replica': '<" + maxReplicasPerNode +"' , 'shard': '#ANY', 'node': '#ANY'}");
+    boolean alreadyExists = false;
+    if (clauses != null) {
+      for (Clause clause : clauses) {
+        if (clause.equals(c)) {
+          alreadyExists = true;
+          break;
+        }
+        if (clause.getReplica() != null) {
+          throw new Assign.AssignmentException("Both an existing policy=" + policyName + " and " +
+              MAX_SHARDS_PER_NODE + "=" + maxReplicasPerNode +
+              " was specified, cannot determine the correct replica count in policy: " + clauses +
+              ". Edit the policy to include rules equivalent to " + MAX_SHARDS_PER_NODE);
+        }
+      }
+      clauses = new ArrayList<>(clauses);
+    } else {
+      clauses = new ArrayList<>();
+    }
+    if (alreadyExists) {
+      // the same clause already exists, and we modified the collection to use the policy
+      return;
+    }
+    // add a clause
     clauses.add(c);
     policies = new HashMap<>(policies);
     policies.put(policyName, clauses);

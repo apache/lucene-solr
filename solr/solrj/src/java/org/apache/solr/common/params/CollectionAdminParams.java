@@ -127,4 +127,8 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+
+  /** Prefix for automatically created config elements. */
+  String AUTO_PREFIX = ".auto_";
+
 }
