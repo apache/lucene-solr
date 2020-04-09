@@ -80,7 +80,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.Insanity;
 import org.apache.solr.search.QParser;
