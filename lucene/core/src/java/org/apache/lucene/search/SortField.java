@@ -359,7 +359,7 @@ public class SortField {
     case INT: {
       FieldComparator.IntComparator comparator = new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
       if (filterNonCompetitiveDocs) {
-        return new IterableFieldComparator.IterableIntComparator(comparator, reverse);
+        return new FilteringFieldComparator.FilteringIntComparator(comparator, reverse);
       } else {
         return comparator;
       }
@@ -368,7 +368,7 @@ public class SortField {
     case FLOAT: {
       FieldComparator.FloatComparator comparator = new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
       if (filterNonCompetitiveDocs) {
-        return new IterableFieldComparator.IterableFloatComparator(comparator, reverse);
+        return new FilteringFieldComparator.FilteringFloatComparator(comparator, reverse);
       } else {
         return comparator;
       }
@@ -377,7 +377,7 @@ public class SortField {
     case LONG: {
       FieldComparator.LongComparator comparator = new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
       if (filterNonCompetitiveDocs) {
-        return new IterableFieldComparator.IterableLongComparator(comparator, reverse);
+        return new FilteringFieldComparator.FilteringLongComparator(comparator, reverse);
       } else {
         return comparator;
       }
@@ -386,7 +386,7 @@ public class SortField {
     case DOUBLE: {
       FieldComparator.DoubleComparator comparator = new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
       if (filterNonCompetitiveDocs) {
-        return new IterableFieldComparator.IterableDoubleComparator(comparator, reverse);
+        return new FilteringFieldComparator.FilteringDoubleComparator(comparator, reverse);
       } else {
         return comparator;
       }

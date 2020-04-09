@@ -29,26 +29,30 @@ import java.util.Arrays;
 
 /**
  * Decorates a wrapped FieldComparator to add a functionality to skip over non-competitive docs.
- * IterableFieldComparator provides two additional functions for a FieldComparator:
- * 1) {@code iterator()} that returns an iterator over competitive docs that are stronger that already collected docs.
- * 2) {@code updateIterator()} that allows to update an iterator. This method is called from a collector to inform
- *      the comparator to update its iterator.
+ * FilteringFieldComparator provides two additional functions for a FieldComparator:
+ * 1) {@code filterIterator(DocIdSetIterator scorerIterator))} that returns a view over the given scorerIterator
+ *      that includes only competitive docs that are stronger than already collected docs.
+ * 2) {@code setCanUpdateIterator()} that notifies the comparator when it is ok to start updating its internal iterator.
+ *  This method is called from a collector to inform the comparator to start updating its iterator.
  */
-public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
+public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
     final FieldComparator<T> in;
     protected DocIdSetIterator iterator = null;
 
-    public IterableFieldComparator(FieldComparator<T> in) {
+    public FilteringFieldComparator(FieldComparator<T> in) {
         this.in = in;
     }
 
-    public abstract void updateCompetitiveIterator() throws IOException;
-
-    @Override
+    /**
+     * Creates a view of the scorerIterator where only competitive documents
+     * in the scorerIterator are kept and non-competitive are skipped.
+     */
     public DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
         if (iterator == null) return scorerIterator;
         return ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, competitiveIterator()));
     }
+
+    protected abstract void setCanUpdateIterator() throws IOException;
 
     @Override
     public int compare(int slot1, int slot2) {
@@ -98,7 +102,7 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
     /**
      * A wrapper over {@code NumericComparator} that adds a functionality to filter non-competitive docs.
      */
-    public static abstract class IterableNumericComparator<T extends Number> extends IterableFieldComparator<T> implements LeafFieldComparator {
+    public static abstract class FilteringNumericComparator<T extends Number> extends FilteringFieldComparator<T> implements LeafFieldComparator {
         private final boolean reverse;
         private boolean hasTopValue = false;
         private PointValues pointValues;
@@ -111,8 +115,9 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         private int maxDocVisited;
         private int updateCounter = 0;
         private final String field;
+        protected boolean canUpdateIterator = false; // set to true when queue becomes full and hitsThreshold is reached
 
-        public IterableNumericComparator(NumericComparator<T> in, boolean reverse, int bytesCount) {
+        public FilteringNumericComparator(NumericComparator<T> in, boolean reverse, int bytesCount) {
             super(in);
             this.field = in.field;
             this.bytesCount = bytesCount;
@@ -124,6 +129,14 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
             } else {
                 maxValueExist = true;
             }
+        }
+
+        @Override
+        public void setCanUpdateIterator() throws IOException {
+            this.canUpdateIterator = true;
+            // for the 1st time queue becomes full and hitsThreshold is reached
+            // we can start updating competitive iterator
+            updateCompetitiveIterator();
         }
 
         @Override
@@ -140,6 +153,7 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
         @Override
         public void setBottom(int slot) throws IOException {
             ((NumericComparator) in).setBottom(slot);
+            updateCompetitiveIterator(); // update an iterator if we set a new bottom
         }
 
         @Override
@@ -167,11 +181,13 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
             iterator = pointValues == null ? null : ((NumericComparator)in).currentReaderValues;
             maxDoc = context.reader().maxDoc();
             maxDocVisited = 0;
+            updateCompetitiveIterator(); // update an iterator if we have a new segment
             return this;
         }
 
         // update its iterator to include possibly only docs that are "stronger" than the current bottom entry
         public void updateCompetitiveIterator() throws IOException {
+            if (canUpdateIterator == false) return;
             if (pointValues == null) return;
             updateCounter++;
             if (updateCounter > 256 && (updateCounter & 0x1f) != 0x1f) { // Start sampling if we get called too much
@@ -243,23 +259,23 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
             this.iterator = result.build().iterator();
         };
 
-        public abstract void encodeBottom(byte[] packedValue);
-        public abstract void encodeTop(byte[] packedValue);
+        protected abstract void encodeBottom(byte[] packedValue);
+        protected abstract void encodeTop(byte[] packedValue);
     }
 
     /**
      * A wrapper over {@code LongComparator} that adds a functionality to filter non-competitive docs.
      */
-    public static class IterableLongComparator extends IterableNumericComparator<Long> {
-        public IterableLongComparator(LongComparator in, boolean reverse) {
+    public static class FilteringLongComparator extends FilteringNumericComparator<Long> {
+        public FilteringLongComparator(LongComparator in, boolean reverse) {
             super(in, reverse, Long.BYTES);
         }
-
-        public void encodeBottom(byte[] packedValue) {
+        @Override
+        protected void encodeBottom(byte[] packedValue) {
             LongPoint.encodeDimension(((LongComparator)in).bottom, packedValue, 0);
         }
-
-        public void encodeTop(byte[] packedValue) {
+        @Override
+        protected void encodeTop(byte[] packedValue) {
             LongPoint.encodeDimension(((LongComparator)in).topValue, packedValue, 0);
         }
     }
@@ -267,14 +283,16 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
     /**
      * A wrapper over {@code IntComparator} that adds a functionality to filter non-competitive docs.
      */
-    public static class IterableIntComparator extends IterableNumericComparator<Integer> {
-        public IterableIntComparator(IntComparator in, boolean reverse) {
+    public static class FilteringIntComparator extends FilteringNumericComparator<Integer> {
+        public FilteringIntComparator(IntComparator in, boolean reverse) {
             super(in, reverse, Integer.BYTES);
         }
-        public void encodeBottom(byte[] packedValue) {
+        @Override
+        protected void encodeBottom(byte[] packedValue) {
             IntPoint.encodeDimension(((IntComparator)in).bottom, packedValue, 0);
         }
-        public void encodeTop(byte[] packedValue) {
+        @Override
+        protected void encodeTop(byte[] packedValue) {
             LongPoint.encodeDimension(((IntComparator)in).topValue, packedValue, 0);
         }
     }
@@ -282,14 +300,16 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
     /**
      * A wrapper over {@code DoubleComparator} that adds a functionality to filter non-competitive docs.
      */
-    public static class IterableDoubleComparator extends IterableNumericComparator<Double> {
-        public IterableDoubleComparator(DoubleComparator in, boolean reverse) {
+    public static class FilteringDoubleComparator extends FilteringNumericComparator<Double> {
+        public FilteringDoubleComparator(DoubleComparator in, boolean reverse) {
             super(in, reverse, Double.BYTES);
         }
-        public void encodeBottom(byte[] packedValue) {
+        @Override
+        protected void encodeBottom(byte[] packedValue) {
             DoublePoint.encodeDimension(((DoubleComparator)in).bottom, packedValue, 0);
         }
-        public void encodeTop(byte[] packedValue) {
+        @Override
+        protected void encodeTop(byte[] packedValue) {
             DoublePoint.encodeDimension(((DoubleComparator)in).topValue, packedValue, 0);
         }
     }
@@ -297,14 +317,16 @@ public abstract class IterableFieldComparator<T> extends FieldComparator<T> {
     /**
      * A wrapper over {@code FloatComparator} that adds a functionality to filter non-competitive docs.
      */
-    public static class IterableFloatComparator extends IterableNumericComparator<Float> {
-        public IterableFloatComparator(FloatComparator in, boolean reverse) {
+    public static class FilteringFloatComparator extends FilteringNumericComparator<Float> {
+        public FilteringFloatComparator(FloatComparator in, boolean reverse) {
             super(in, reverse, Float.BYTES);
         }
-        public void encodeBottom(byte[] packedValue) {
+        @Override
+        protected void encodeBottom(byte[] packedValue) {
             FloatPoint.encodeDimension(((FloatComparator)in).bottom, packedValue, 0);
         }
-        public void encodeTop(byte[] packedValue) {
+        @Override
+        protected void encodeTop(byte[] packedValue) {
             FloatPoint.encodeDimension(((FloatComparator)in).topValue, packedValue, 0);
         }
     }

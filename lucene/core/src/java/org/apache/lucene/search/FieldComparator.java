@@ -137,16 +137,6 @@ public abstract class FieldComparator<T> {
   }
 
   /**
-   * Optionally creates a view of the scorerIterator where only competitive documents
-   * in the scorerIterator are kept and non-competitive are skipped.
-   * The default is to return the same iterator which is interpreted as the comparator doesn't filter any documents.
-   */
-  public DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
-    return scorerIterator;
-  }
-
-
-  /**
    * Base FieldComparator class for numeric types
    */
   public static abstract class NumericComparator<T extends Number> extends SimpleFieldComparator<T> {
