@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 
+// Try to detect IntelliJ model loader ("reimport") early.
+def isIdea = System.getProperty("idea.active") != null ||
+    gradle.startParameter.taskNames.contains('idea') ||
+    gradle.startParameter.taskNames.contains('cleanIdea')
+
+if (isIdea) {
+  logger.warn("IntelliJ Idea IDE detected.")
+}
+
 allprojects {
   apply plugin: 'idea'
 
@@ -27,3 +36,18 @@ allprojects {
   }
 }
 
+// Remove tools source set entirely if we're running under IntelliJ. Otherwise
+// files that reference ant can't be compiled.
+if (isIdea) {
+  configure(project(":solr:solr-ref-guide")) {
+    afterEvaluate {
+      sourceSets {
+        main {
+          java {
+            srcDirs = []
+          }
+        }
+      }
+    }
+  }
+}
