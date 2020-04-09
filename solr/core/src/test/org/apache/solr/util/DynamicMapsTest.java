@@ -21,9 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class DynamicMapsTest extends LuceneTestCase {
+public class DynamicMapsTest extends SolrTestCase {
 
   public void testIntFloatMap() {
     IntFloatDynamicMap map = new IntFloatDynamicMap(10, -1.1f);

@@ -34,7 +34,7 @@ public class IntIntDynamicMap implements DynamicMap {
 
   /**
    * Create map with expected max value of key.
-   * Although the map will automatically do resizing to be able to hold key >= {@code expectedKeyMax}.
+   * Although the map will automatically do resizing to be able to hold key {@code >= expectedKeyMax}.
    * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
    */
   public IntIntDynamicMap(int expectedKeyMax, int emptyValue) {
