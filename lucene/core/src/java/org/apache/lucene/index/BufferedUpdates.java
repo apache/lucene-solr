@@ -80,7 +80,7 @@ class BufferedUpdates implements Accountable {
 
   private final Counter bytesUsed = Counter.newCounter(true);
   final Counter fieldUpdatesBytesUsed = Counter.newCounter(true);
-  private final Counter termsBytesUsed = Counter.newCounter();
+  private final Counter termsBytesUsed = Counter.newCounter(true);
 
   private final static boolean VERBOSE_DELETES = false;
 
