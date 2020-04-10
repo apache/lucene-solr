@@ -573,9 +573,153 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   }
 }
 
-abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc {
+/**
+ * Implemented by some SlotAccs if they are capable of being used for
+ * sweep collecting in compatible facet processors
+ */
+interface SweepableSlotAcc<T extends SlotAcc> {
+  /**
+   * Called by processors if they support sweeping. Implementations will often
+   * return self or null (the latter indicating that all necessary collection will
+   * be covered by the "sweeping" data structures registered with the specified
+   * baseSweepingAcc as a result of the call to this method).
+   *
+   * The implementing instance must notify the specified {@link CollectSlotAccMappingAware}
+   * instance of the mapping (possibly "identity") from original SlotAcc to the SlotAcc that
+   * should be used for purposes of read access. It is the responsibility of the specified
+   * {@link CollectSlotAccMappingAware} to ensure proper placement/accessibility of the
+   * SlotAcc to be used for read access.
+   *
+   * @param baseSweepingAcc - never null, where the SlotAcc should call "addChild"
+   * @param notify - to be notified of SlotAcc replacements, for purpose of read access
+   * @return SlotAcc to be used for purpose of collection. If null then collect methods will
+   * never be called on this SlotAcc.
+   */
+  public T registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify);
+}
+
+/**
+ * Provides a hook to notify components of changes to the read-access representation of
+ * SlotAccs. Implementers will generally use the provided information to make corresponding
+ * changes ensuring accessibility of the replacement instance.
+ */
+interface CollectSlotAccMappingAware {
+  void registerMapping(SlotAcc fromAcc, SlotAcc toAcc);
+}
+
+/**
+ * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
+ */
+interface CountSlotAccFactory {
+
+  SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots);
+
+  static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
+    @Override
+    public SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots) {
+      final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
+      return new SweepCountAccStruct(docs, isBase, count, count);
+    }
+  };
+}
+
+final class SweepCountAccStruct {
+  final DocSet docSet;
+  final boolean isBase;
+  final CountAccEntry countAccEntry;
+
+  public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
+    this.docSet = docSet;
+    this.isBase = isBase;
+    this.countAccEntry = new CountAccEntry(countAcc, roCountAcc);
+  }
+  public SweepCountAccStruct(SweepCountAccStruct t, DocSet replaceDocSet) {
+    this.docSet = replaceDocSet;
+    this.isBase = t.isBase;
+    this.countAccEntry = t.countAccEntry;
+  }
+}
+
+final class CountAccEntry {
+  final CountSlotAcc countAcc;
+  final ReadOnlyCountSlotAcc roCountAcc;
+  public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
+    this.countAcc = countAcc;
+    this.roCountAcc = roCountAcc;
+  }
+}
+
+/**
+ * Abstraction used by processors that support sweeping to decide what to sweep over and how to
+ * "collect" when doing the sweep.
+ *
+ * This class may be used by SweepableSlotAccs to register DocSet domains over which to sweep-collect
+ * facet counts.
+ */
+class SweepingAcc {
+
+  private final FacetContext fcontext;
+  private final List<SweepCountAccStruct> sweepCountAccs = new ArrayList<>();
+
+  SweepingAcc(CountSlotAcc baseCountAcc) {
+    this.fcontext = baseCountAcc.fcontext;
+    sweepCountAccs.add(new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc));
+  }
+
+  /**
+   * Called by SweepableSlotAccs to register new DocSet domains for sweep collection
+   * @param docs the domain over which to sweep
+   * @param numSlots the number of slots
+   * @param factory used to create the associated/underlying CountSlotAcc
+   * @return a read-only representation of the count acc which is guaranteed to be populated
+   * after sweep count collection
+   */
+  public ReadOnlyCountSlotAcc add(DocSet docs, int numSlots, CountSlotAccFactory factory) {
+    final SweepCountAccStruct ret = factory.newInstance(docs, false, fcontext, numSlots);
+    sweepCountAccs.add(ret);
+    return ret.countAccEntry.roCountAcc;
+  }
+
+  public void add(SweepCountAccStruct sweepCountAcc) {
+    sweepCountAccs.add(sweepCountAcc);
+  }
+
+  protected SweepCountAccStruct[] getSweepDocSets() {
+    final SweepCountAccStruct[] ret = new SweepCountAccStruct[sweepCountAccs.size()];
+    int i = 0;
+    SweepCountAccStruct base = null;
+    for (SweepCountAccStruct sweep : sweepCountAccs) {
+      if (sweep.isBase) {
+        base = sweep;
+      } else {
+        ret[i++] = sweep;
+      }
+    }
+    ret[i] = base;
+    return ret;
+  }
+
+}
+
+abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, SweepableSlotAcc<CountSlotAcc> {
   public CountSlotAcc(FacetContext fcontext) {
     super(fcontext);
+  }
+
+  @Override
+  public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify) {
+    baseSweepingAcc.add(new SweepCountAccStruct(fcontext.base, false, this, this));
+    notify.registerMapping(this, this);
+    return null;
+  }
+
+  private SweepingAcc baseSweepingAcc;
+  /**
+   * CountSlotAcc always supports being used for sweeping across the base set
+   * @returns never null
+   */
+  public SweepingAcc getBaseSweepingAcc() {
+    return baseSweepingAcc == null ? baseSweepingAcc = new SweepingAcc(this) : baseSweepingAcc;
   }
 
   public abstract void incrementCount(int slot, int count);

@@ -93,8 +93,16 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
+    if (collectAcc instanceof SweepableSlotAcc) {
+      fullDomainAccs.clear();
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(), slotAccMapper);
+      if (allBucketsAcc != null) {
+        allBucketsAcc.collectAcc = collectAcc;
+      }
+    }
+
     // TODO: refactor some of this logic into a base class
-    boolean countOnly = (collectAcc==null || collectAcc instanceof SweepAcc) && allBucketsAcc==null;
+    boolean countOnly = collectAcc==null && allBucketsAcc==null;
     boolean fullRange = startTermIndex == 0 && endTermIndex == si.getValueCount();
 
     // Are we expecting many hits per bucket?
@@ -117,7 +125,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final SweepCountAccStruct[] filters = getSweepDocSets();
+    final SweepCountAccStruct[] filters = countAcc.getBaseSweepingAcc().getSweepDocSets();
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[filters.length];
     final CountSlotAcc[] activeCountAccs = new CountSlotAcc[filters.length];

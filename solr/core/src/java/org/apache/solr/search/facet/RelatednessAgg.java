@@ -43,8 +43,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.WrappedQuery;
-import org.apache.solr.search.facet.FacetFieldProcessor.SweepAcc;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +62,7 @@ public class RelatednessAgg extends AggValueSource {
   private static final String RELATEDNESS = "relatedness";
   private static final String FG_POP = "foreground_popularity";
   private static final String BG_POP = "background_popularity";
-  private static final String DISABLE_SWEEP_COLLECTION = "disable_sweep_collection";
+  private static final String SWEEP_COLLECTION = "sweep_collection";
 
   // needed for distrib calculation
   private static final String FG_SIZE = "foreground_size";
@@ -75,9 +73,11 @@ public class RelatednessAgg extends AggValueSource {
   final protected Query fgQ;
   final protected Query bgQ;
   protected double min_pop = 0.0D;
-  private boolean disableSweepCollection = false;
+  private Boolean useSweep;
   
   public static final String NAME = RELATEDNESS;
+  private static final boolean DEFAULT_SWEEP_COLLECTION = true;
+
   public RelatednessAgg(Query fgQ, Query bgQ) {
     super(NAME); 
     // NOTE: ideally we don't want to assume any defaults *yet* if fgQ/bgQ are null
@@ -97,8 +97,10 @@ public class RelatednessAgg extends AggValueSource {
   public void setOpts(QParser parser) {
     final boolean isShard = parser.getReq().getParams().getBool(ShardParams.IS_SHARD, false);
     SolrParams opts = parser.getLocalParams();
-    if (null != opts) {
-      this.disableSweepCollection = opts.getBool(DISABLE_SWEEP_COLLECTION, false);
+    if (null == opts) {
+      this.useSweep = DEFAULT_SWEEP_COLLECTION;
+    } else {
+      this.useSweep = opts.getBool(SWEEP_COLLECTION, DEFAULT_SWEEP_COLLECTION);
       if (!isShard) { // ignore min_pop if this is a shard request
         this.min_pop = opts.getDouble("min_popularity", 0.0D);
       }
@@ -108,7 +110,7 @@ public class RelatednessAgg extends AggValueSource {
   @Override
   public String description() {
     // TODO: need better output processing when we start supporting null fgQ/bgQ in constructor
-    return name +"(fgQ=" + fgQ + ",bgQ=" + bgQ + ",min_pop="+min_pop+")";
+    return name +"(fgQ=" + fgQ + ",bgQ=" + bgQ + ",min_pop="+min_pop + ",useSweep="+useSweep+")";
   }
   
   @Override
@@ -166,29 +168,7 @@ public class RelatednessAgg extends AggValueSource {
     
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    if (numSlots > 1 && fcontext.processor instanceof FacetFieldProcessorByArray && !disableSweepCollection) {
-      // Sweep counts are only relevant where relatedness is required for primary sort, and thus must be calculated
-      // for *all* buckets (numSlots > 1).
-      //
-      // Of the four concrete implementations of FacetFieldProcessor (FacetFieldProcessorByArrayDV,
-      // FacetFieldProcessorByArrayUIF, FacetFieldProcessorByEnumTermsStream, and FacetFieldProcessorByHashDV)
-      // only the first two (each a subclass of FacetFieldProcessorByArray) are supported.
-      //
-      // Because FacetFieldProcessorByEnumTermsStream is sorted strictly in "index" order, numSlots here would
-      // never be >1, so combination with SweepSKGSlotAcc would be meaningless, and is not supported.
-      //
-      // FacetFieldProcessorByHashDV *is* used in high-cardinality field contexts; however, it is only beneficial
-      // when *domain* cardinality is low. Because sweep collection effectively induces a composite domain that is
-      // a union with the background set (which is normally high-cardinality), combination with SweepSKGSlotAcc
-      // would in most cases be an antipattern, and is not currently supported.
-
-      final FacetFieldProcessor ffp = (FacetFieldProcessor) fcontext.processor;
-      return new SweepSKGSlotAcc(min_pop, fcontext, numSlots, fgSet.size(), bgSet.size(),
-          ffp.getSweepCountAcc(fgSet, numSlots),
-          ffp.getSweepCountAcc(bgSet, numSlots));
-    } else {
-      return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
-    }
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
   }
 
   @Override
@@ -196,16 +176,16 @@ public class RelatednessAgg extends AggValueSource {
     return new Merger(this);
   }
   
-  private static final class SweepSKGSlotAcc extends SlotAcc implements SweepAcc {
+  private static final class SweepSKGSlotAcc extends SlotAcc {
 
     private final int minCount; // pre-calculate for a given min_popularity
-    private final int fgSize;
-    private final int bgSize;
+    private final long fgSize;
+    private final long bgSize;
     private final ReadOnlyCountSlotAcc fgCount;
     private final ReadOnlyCountSlotAcc bgCount;
     private double[] relatedness;
 
-    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, int fgSize, int bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
+    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
       this.fgSize = fgSize;
@@ -278,7 +258,7 @@ public class RelatednessAgg extends AggValueSource {
     }
   }
 
-  private static final class SKGSlotAcc extends SlotAcc {
+  private static final class SKGSlotAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
     private final DocSet fgSet;
@@ -294,14 +274,31 @@ public class RelatednessAgg extends AggValueSource {
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
-      this.slotvalues = new BucketData[numSlots];
+      this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
     }
 
-    // XXXXXX temporary!
-    // The following (LEAF_BY_MAX_DOC, shouldCache(), and initializeForMinDf are for comparison with extant
-    // implementation with SOLR-13108 patch applied (use filterCache, but respect minDf)
-    // All these methods can/should be removed if/when sweep facet count collection is adopted (recommended)
+    /**
+     * If called, may register SweepingAccs for fg and bg set based on whether
+     * user indicated sweeping should be used (default)
+     *
+     * @returns null if any SweepingAccs were registered since no other collection is needed for relatedness
+     */
+    @Override
+    public SKGSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify) {
+      if (!this.agg.useSweep) {
+        notify.registerMapping(this, this);
+        return this;
+      } else {
+        final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(fgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
+        final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(bgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
+        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
+        readOnlyReplacement.key = key;
+        notify.registerMapping(this, readOnlyReplacement);
+        return null;
+      }
+    }
+
     private int minDfFilterCache = Integer.MIN_VALUE;
     private WrappedQuery noCacheQ;
     private static final Comparator<LeafReaderContext> LEAF_BY_MAX_DOC = new Comparator<LeafReaderContext>() {

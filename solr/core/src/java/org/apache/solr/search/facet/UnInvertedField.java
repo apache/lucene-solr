@@ -45,7 +45,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.facet.FacetFieldProcessor.SweepCountAccStruct;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.uninverting.DocTermOrds;
@@ -327,7 +326,7 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets();
+    final SweepCountAccStruct[] sweepCountAccs = processor.countAcc.getBaseSweepingAcc().getSweepDocSets();
     int baseIdx = -1;
     final CountSlotAcc[] countAccs = new CountSlotAcc[sweepCountAccs.length];
     for (int i = sweepCountAccs.length - 1; i >= 0; i--) {
@@ -470,7 +469,7 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets();
+    final SweepCountAccStruct[] sweepCountAccs = processor.countAcc.getBaseSweepingAcc().getSweepDocSets();
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {

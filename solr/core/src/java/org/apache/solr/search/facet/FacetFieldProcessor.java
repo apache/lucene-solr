@@ -33,6 +33,7 @@ import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -68,6 +69,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SlotAcc[] otherAccs; // Accumulators that do not need to be calculated across all buckets.
 
   SpecialSlotAcc allBucketsAcc;  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
+
+  /**
+   * Accumulators that are referenced by full domain slot ord. This logically separates read operations
+   * so that full domain accumulators that do not require full collection (e.g., SweepableSlotAcc)
+   * can be removed from collectAcc without also being removed from output. Upon initialization of
+   * collectAcc, collectAcc is placed as the initial default (and only) value in this list.
+   */
+  final List<SlotAcc> fullDomainAccs = new ArrayList<>();
+
+  protected final CollectSlotAccMappingAware slotAccMapper = new FacetFieldProcessorSlotAccMapper(this);
 
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
@@ -106,89 +117,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     assert null != this.sort;
   }
 
-  List<SweepCountAccStruct> sweepCountAccs = new ArrayList<>();
-
-  /**
-   * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
-   * Also allows caller of <code>getSweepCountAcc</code> control over whether to accept a particular cached
-   * instance of CountSlotAcc.
-   */
-  protected static interface CountSlotAccFactory {
-    SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots);
-  }
-
-  protected static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
-
-    @Override
-    public SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots) {
-      final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
-      return new SweepCountAccStruct(docs, isBase, count, count);
-    }
-  };
-
-  ReadOnlyCountSlotAcc getSweepCountAcc(DocSet docs, int numSlots) {
-    return getSweepCountAcc(docs, numSlots, null);
-  }
-
-  ReadOnlyCountSlotAcc getSweepCountAcc(DocSet docs, int numSlots, CountSlotAccFactory factory) {
-    return getSweepCountAcc(docs, false, numSlots, factory).roCountAcc;
-  }
-
-  private CountAccEntry getSweepCountAcc(DocSet docs, boolean isBase, int numSlots, CountSlotAccFactory factory) {
-    final SweepCountAccStruct ret = DEFAULT_COUNT_ACC_FACTORY.newInstance(docs, isBase, fcontext, numSlots);
-    sweepCountAccs.add(ret);
-    return ret.countAccEntry;
-  }
-
-  static final class SweepCountAccStruct {
-    final DocSet docSet;
-    final boolean isBase;
-    final CountAccEntry countAccEntry;
-
-    public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
-      this.docSet = docSet;
-      this.isBase = isBase;
-      this.countAccEntry = new CountAccEntry(countAcc, roCountAcc);
-    }
-    public SweepCountAccStruct(SweepCountAccStruct t, DocSet replaceDocSet) {
-      this.docSet = replaceDocSet;
-      this.isBase = t.isBase;
-      this.countAccEntry = t.countAccEntry;
-    }
-  }
-  static final class CountAccEntry {
-    final CountSlotAcc countAcc;
-    final ReadOnlyCountSlotAcc roCountAcc;
-    public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
-      this.countAcc = countAcc;
-      this.roCountAcc = roCountAcc;
-    }
-  }
-  protected SweepCountAccStruct[] getSweepDocSets() {
-    final SweepCountAccStruct[] ret = new SweepCountAccStruct[sweepCountAccs.size()];
-    int i = 0;
-    SweepCountAccStruct base = null;
-    for (SweepCountAccStruct sweep : sweepCountAccs) {
-      if (sweep.isBase) {
-        base = sweep;
-      } else {
-        ret[i++] = sweep;
-      }
-    }
-    ret[i] = base;
-    return ret;
-  }
-
-  private CountSlotAcc createBaseCountAcc(int slotCount) {
-    return getSweepCountAcc(fcontext.base, true, slotCount, null).countAcc;
-  }
-
-  /**
-   * A marker interface for SlotAcc instances that are populated as a derivative of the main CountSlotAcc, and thus do
-   * not need to be separately/independently collected.
-   */
-  interface SweepAcc {}
-
   /** This is used to create accs for second phase (or to create accs for all aggs) */
   @Override
   protected void createAccs(int docCount, int slotCount) throws IOException {
@@ -198,7 +126,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = createBaseCountAcc(slotCount);
+      countAcc = new CountSlotArrAcc(fcontext, slotCount);
       countAcc.key = "count";
     }
 
@@ -261,7 +189,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // we always count...
     // allow a subclass to set a custom counter.
     if (countAcc == null) {
-      countAcc = createBaseCountAcc(numSlots);
+      countAcc = new CountSlotArrAcc(fcontext, numSlots);
     }
 
     sortAcc = getTrivialSortingSlotAcc(this.sort);
@@ -312,6 +240,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       // as sort is already validated, in what case sortAcc would be null?
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Invalid sort '" + sort + "' for field '" + sf.getName() + "'");
+    }
+
+    assert fullDomainAccs.isEmpty();
+    if (collectAcc != null) {
+      fullDomainAccs.add(collectAcc);
     }
 
     if (!needOtherAccs) {
@@ -594,8 +527,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     target.add("count", count);
     if (count <= 0 && !freq.processEmpty) return;
 
-    if (collectAcc != null && slot.slot >= 0) {
-      collectAcc.setValues(target, slot.slot);
+    if (slot.slot >= 0) {
+      for (SlotAcc acc : fullDomainAccs) {
+        acc.setValues(target, slot.slot);
+      }
     }
 
     if (otherAccs == null && freq.subFacets.isEmpty()) return;
@@ -770,7 +705,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
-  static class MultiAcc extends SlotAcc {
+  static class MultiAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     final SlotAcc[] subAccs;
 
     MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
@@ -822,8 +757,61 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         acc.setValues(bucket, slotNum);
       }
     }
+
+    @Override
+    public SlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify) {
+      final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;
+      int j = 0;
+      for (int i = 0; i < subAccs.length; i++) {
+        final SlotAcc acc = subAccs[i];
+        if (acc instanceof SweepableSlotAcc) {
+          SlotAcc replacement = ((SweepableSlotAcc<?>)acc).registerSweepingAccs(baseSweepingAcc, notify);
+          if (replacement == null) {
+            // drop acc, do not increment j
+            continue;
+          } else if (replacement != acc || j < i) {
+            subAccs[j] = replacement;
+          }
+        } else {
+          notify.registerMapping(acc, acc);
+          if (j < i) {
+            subAccs[j] = acc;
+          }
+        }
+        j++;
+      }
+      switch (j) {
+        case 0:
+          return null;
+        case 1:
+          return subAccs[0];
+        default:
+          if (j == subAccs.length) {
+            return this;
+          } else {
+            // must resize final field subAccs
+            return new MultiAcc(fcontext, ArrayUtil.growExact(subAccs, j));
+          }
+      }
+    }
   }
 
+  static class FacetFieldProcessorSlotAccMapper implements CollectSlotAccMappingAware {
+
+    private final FacetFieldProcessor p;
+
+    FacetFieldProcessorSlotAccMapper(FacetFieldProcessor p) {
+      this.p = p;
+    }
+
+    @Override
+    public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
+      if (toAcc != fromAcc && p.sortAcc == fromAcc) {
+        p.sortAcc = toAcc;
+      }
+      p.fullDomainAccs.add(toAcc);
+    }
+  }
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -831,13 +819,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int collectAccSlot;
     int otherAccsSlot;
     long count;
+    List<SlotAcc> fullDomainAccs;
 
-    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
+    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot, List<SlotAcc> fullDomainAccs) {
       super(fcontext);
       this.collectAcc = collectAcc;
       this.collectAccSlot = collectAccSlot;
       this.otherAccs = otherAccs;
       this.otherAccsSlot = otherAccsSlot;
+      this.fullDomainAccs = fullDomainAccs;
     }
 
     public int getCollectAccSlot() { return collectAccSlot; }
@@ -887,8 +877,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      if (collectAcc != null) {
-        collectAcc.setValues(bucket, collectAccSlot);
+      for (SlotAcc fullDomainAcc : fullDomainAccs) {
+        fullDomainAcc.setValues(bucket, collectAccSlot);
       }
       if (otherAccs != null) {
         for (SlotAcc otherAcc : otherAccs) {

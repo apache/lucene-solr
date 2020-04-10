@@ -65,6 +65,13 @@ class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
 
   @Override
   protected void collectDocs() throws IOException {
+    if (collectAcc instanceof SweepableSlotAcc) {
+      fullDomainAccs.clear();
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(), slotAccMapper);
+      if (allBucketsAcc != null) {
+        allBucketsAcc.collectAcc = collectAcc;
+      }
+    }
     uif.collectDocs(this);
   }
 
