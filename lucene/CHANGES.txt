@@ -91,6 +91,8 @@ Improvements
 
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
+* LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -129,6 +131,9 @@ Improvements
 
 * LUCENE-9279: Update dictionary version for Ukrainian analyzer to 4.9.1 (Andriy Rysin via Dawid Weiss)
 
+* LUCENE-8050: PerFieldDocValuesFormat should not get the DocValuesFormat on a field that has no doc values.
+  (David Smiley, Juan Rodriguez)
+
 Optimizations
 ---------------------
 
@@ -138,6 +143,9 @@ Optimizations
   (Michele Palmia, David Smiley)
 
 * LUCENE-9287: UsageTrackingQueryCachingPolicy no longer caches DocValuesFieldExistsQuery. (Ignacio Vera)
+
+* LUCENE-9286: FST.Arc.BitTable reads directly FST bytes. Arc is lightweight again and FSTEnum traversal faster.
+  (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -156,6 +164,9 @@ Bug Fixes
 
 * LUCENE-9133: Fix for potential NPE in TermFilteredPresearcher for empty fields (Marvin Justice via Mike Drob)
 
+* LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
+  externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
+
 Other
 ---------------------
 
@@ -168,6 +179,12 @@ Other
 * LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
 
 * LUCENE-9275: Make TestLatLonMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
+* LUCENE-9244: Adjust TestLucene60PointsFormat#testEstimatePointCount2Dims so it does not fail when a point
+  is shared by multiple leaves. (Ignacio Vera)
+
+* LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
+  ByteBuffer API. (Adrien Grand)
 
 ======================= Lucene 8.5.0 =======================
 

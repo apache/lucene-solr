@@ -53,13 +53,16 @@ Other Changes
 * SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
   (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
 
+* SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
+  To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
 Improvements
 ---------------------
@@ -74,6 +77,11 @@ Improvements
 
 * SOLR-14329: Add support to choose collapse group to expand in ExpandComponent based on cost (Munendra S N)
 
+* SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
+  core searcher caches. (hossman)
+
+* SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -83,6 +91,8 @@ Optimizations
 
 * SOLR-14365: CollapsingQParser - Avoiding always allocate int[] and float[] with size equals to number of unique values.
   (Cao Manh Dat)
+
+* SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -100,6 +110,10 @@ Bug Fixes
   (hossman)
 
 * SOLR-14317: HttpClusterStateProvider throws exception when only one node down. (Lyle Wang via Ishan Chattopadhyaya)
+
+* SOLR-14356: PeerSync should not fail with SocketTimeoutException from hanging nodes (Cao Manh Dat)
+
+* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
 
 Other Changes
 ---------------------
@@ -123,6 +137,10 @@ Other Changes
   (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
 
 * SOLR-14367: Upgrade Tika to 1.24 (Mibo via Erick Erickson)
+
+* SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
+
+* SOLR-14386: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5 (Erick Erickson)
 
 ==================  8.5.0 ==================
 
