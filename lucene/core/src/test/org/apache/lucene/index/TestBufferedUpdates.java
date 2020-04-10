@@ -19,37 +19,33 @@ package org.apache.lucene.index;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.stream.IntStream;
-
 /**
  * Unit test for {@link BufferedUpdates}
  */
 public class TestBufferedUpdates extends LuceneTestCase {
-  /**
-   * return a term that maybe duplicated with pre
-   */
-  private static Term mayDuplicate(int bound) {
-    boolean shouldDuplicated = bound > 3 && random().nextBoolean();
-    if (shouldDuplicated) {
-      return new Term("myField", String.valueOf(random().nextInt(bound)));
-    }
-    return new Term("myField", String.valueOf(bound));
-  }
 
   public void testRamBytesUsed() {
     BufferedUpdates bu = new BufferedUpdates("seg1");
     assertEquals(bu.ramBytesUsed(), 0L);
     assertFalse(bu.any());
-    IntStream.range(0, random().nextInt(atLeast(200))).forEach(id -> {
-      int reminder = random().nextInt(3);
-      if (reminder == 0) {
-        bu.addDocID(id);
-      } else if (reminder == 1) {
-        bu.addQuery(new TermQuery(mayDuplicate(id)), id);
-      } else if (reminder == 2) {
-        bu.addTerm((mayDuplicate(id)), id);
-      }
-    });
+    int docIds = atLeast(1);
+    for (int i = 0; i < docIds; i++) {
+      bu.addDocID(random().nextInt(100));
+    }
+
+    int queries = atLeast(1);
+    for (int i = 0; i < queries; i++) {
+      final int docIDUpto = random().nextBoolean() ? Integer.MAX_VALUE : random().nextInt();
+      final Term term = new Term("id", Integer.toString(random().nextInt(100)));
+      bu.addQuery(new TermQuery(term), docIDUpto);
+    }
+
+    int terms = atLeast(1);
+    for (int i = 0; i < terms; i++) {
+      final int docIDUpto = random().nextBoolean() ? Integer.MAX_VALUE : random().nextInt();
+      final Term term = new Term("id", Integer.toString(random().nextInt(100)));
+      bu.addTerm(term, docIDUpto);
+    }
     assertTrue("we have added tons of docIds, terms and queries", bu.any());
 
     long totalUsed = bu.ramBytesUsed();
