@@ -88,8 +88,8 @@ apply from: file('gradle/jar-manifest.gradle')
 // Maven publishing.
 apply from: file('gradle/maven/defaults-maven.gradle')
 
-// IDE settings and specials.
-apply from: file('gradle/defaults-idea.gradle')
+// IDE support, settings and specials.
+apply from: file('gradle/ide/intellij-idea.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')

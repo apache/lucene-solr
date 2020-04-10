@@ -144,6 +144,9 @@ Optimizations
 
 * LUCENE-9287: UsageTrackingQueryCachingPolicy no longer caches DocValuesFieldExistsQuery. (Ignacio Vera)
 
+* LUCENE-9286: FST.Arc.BitTable reads directly FST bytes. Arc is lightweight again and FSTEnum traversal faster.
+  (Bruno Roustant)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
@@ -163,6 +166,8 @@ Bug Fixes
 
 * LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
   externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
 
 Other
 ---------------------
@@ -251,6 +256,8 @@ Improvements
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)
+
+* LUCENE-9298: Improve RAM accounting in BufferedUpdates when deleted doc IDs and terms are cleared. (Yu Binglei, Simon Willnauer)
 
 Optimizations
 ---------------------
