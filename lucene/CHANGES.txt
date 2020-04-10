@@ -238,6 +238,8 @@ Improvements
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)
 
+* LUCENE-9298: Improve RAM accounting in BufferedUpdates when deleted doc IDs and terms are cleared. (Yu Binglei, Simon Willnauer)
+
 Optimizations
 ---------------------
 
