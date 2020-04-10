@@ -24,10 +24,12 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 final class SingletonDISI extends SweepDISI {
 
   private final DocIdSetIterator backing;
+  private final boolean isBase;
 
-  SingletonDISI(DocIdSetIterator backing, CountSlotAcc[] countAccs) {
+  SingletonDISI(DocIdSetIterator backing, CountSlotAcc[] countAccs, boolean isBase) {
     super(1, countAccs);
     this.backing = backing;
+    this.isBase = isBase;
   }
 
   @Override
@@ -37,7 +39,7 @@ final class SingletonDISI extends SweepDISI {
 
   @Override
   public boolean collectBase() {
-    return true;
+    return isBase;
   }
 
   @Override

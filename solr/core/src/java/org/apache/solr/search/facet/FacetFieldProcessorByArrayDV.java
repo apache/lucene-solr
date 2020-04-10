@@ -125,35 +125,22 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final SweepCountAccStruct[] filters = countAcc.getBaseSweepingAcc().getSweepDocSets();
+    final SweepingAcc sweep = countAcc.getBaseSweepingAcc();
+    final int maxSize = sweep.others.size() + (sweep.base == null ? 0 : 1);
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-    final DocIdSetIterator[] subIterators = new DocIdSetIterator[filters.length];
-    final CountSlotAcc[] activeCountAccs = new CountSlotAcc[filters.length];
+    final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
+    final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
 
     for (int subIdx = 0; subIdx < leaves.size(); subIdx++) {
       LeafReaderContext subCtx = leaves.get(subIdx);
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi;
-      int activeCt = 0;
+      final SweepDISI disi = SweepDISI.newInstance(sweep, subIterators, activeCountAccs, subCtx);
+      if (disi == null) {
+        continue;
+      }
       LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
-      for (int i = 0; i < filters.length; i++) {
-        SweepCountAccStruct filterEntry = filters[i];
-        DocIdSet docIdSet = filterEntry.docSet.getTopFilter().getDocIdSet(subCtx, null);
-        subIterators[activeCt] = docIdSet.iterator();
-        activeCountAccs[activeCt++] = filterEntry.countAccEntry.countAcc;
-      }
-      switch (activeCt) {
-        case 0:
-          continue;
-        case 1:
-          disi = new SingletonDISI(subIterators[0], activeCountAccs); // solr docsets already exclude any deleted docs
-          break;
-        default:
-          disi = new UnionDISI(subIterators, activeCountAccs, activeCt);
-          break;
-      }
 
       SortedDocValues singleDv = null;
       SortedSetDocValues multiDv = null;

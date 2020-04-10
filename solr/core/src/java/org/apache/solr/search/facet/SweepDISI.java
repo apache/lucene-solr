@@ -17,6 +17,9 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
@@ -27,6 +30,38 @@ public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAw
   public SweepDISI(int size, CountSlotAcc[] countAccs) {
     this.size = size;
     this.countAccs = countAccs;
+  }
+
+  private static boolean addAcc(SweepCountAccStruct entry, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx, int idx) throws IOException {
+    final DocIdSet docIdSet = entry.docSet.getTopFilter().getDocIdSet(subCtx, null);
+    if (docIdSet == null || (subIterators[idx] = docIdSet.iterator()) == null) {
+      return false;
+    }
+    activeCountAccs[idx] = entry.countAccEntry.countAcc;
+    return true;
+  }
+
+  static SweepDISI newInstance(SweepingAcc sweep, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
+    int activeCt = 0;
+    final int baseIdx;
+    if (sweep.base == null || !addAcc(sweep.base, subIterators, activeCountAccs, subCtx, activeCt)) {
+      baseIdx = -1;
+    } else {
+      baseIdx = activeCt++;
+    }
+    for (SweepCountAccStruct entry : sweep.others) {
+      if (addAcc(entry, subIterators, activeCountAccs, subCtx, activeCt)) {
+        activeCt++;
+      }
+    }
+    switch (activeCt) {
+      case 0:
+        return null;
+      case 1:
+        return new SingletonDISI(subIterators[0], activeCountAccs, baseIdx >= 0); // solr docsets already exclude any deleted docs
+      default:
+        return new UnionDISI(subIterators, activeCountAccs, activeCt, baseIdx);
+    }
   }
 
   @Override

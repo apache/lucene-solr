@@ -659,11 +659,12 @@ final class CountAccEntry {
 class SweepingAcc {
 
   private final FacetContext fcontext;
-  private final List<SweepCountAccStruct> sweepCountAccs = new ArrayList<>();
+  final SweepCountAccStruct base;
+  final List<SweepCountAccStruct> others = new ArrayList<>();
 
   SweepingAcc(CountSlotAcc baseCountAcc) {
     this.fcontext = baseCountAcc.fcontext;
-    sweepCountAccs.add(new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc));
+    this.base = new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc);
   }
 
   /**
@@ -676,29 +677,14 @@ class SweepingAcc {
    */
   public ReadOnlyCountSlotAcc add(DocSet docs, int numSlots, CountSlotAccFactory factory) {
     final SweepCountAccStruct ret = factory.newInstance(docs, false, fcontext, numSlots);
-    sweepCountAccs.add(ret);
+    others.add(ret);
     return ret.countAccEntry.roCountAcc;
   }
 
   public void add(SweepCountAccStruct sweepCountAcc) {
-    sweepCountAccs.add(sweepCountAcc);
+    assert !sweepCountAcc.isBase;
+    others.add(sweepCountAcc);
   }
-
-  protected SweepCountAccStruct[] getSweepDocSets() {
-    final SweepCountAccStruct[] ret = new SweepCountAccStruct[sweepCountAccs.size()];
-    int i = 0;
-    SweepCountAccStruct base = null;
-    for (SweepCountAccStruct sweep : sweepCountAccs) {
-      if (sweep.isBase) {
-        base = sweep;
-      } else {
-        ret[i++] = sweep;
-      }
-    }
-    ret[i] = base;
-    return ret;
-  }
-
 }
 
 abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, SweepableSlotAcc<CountSlotAcc> {

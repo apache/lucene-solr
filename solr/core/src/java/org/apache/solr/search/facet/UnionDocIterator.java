@@ -26,6 +26,7 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 final class UnionDocIterator extends SweepDocIterator {
 
   private final int maxIdx;
+  private final SubIterStruct baseSub;
   private boolean collectBase;
   private final PriorityQueue<SubIterStruct> queue;
   private SubIterStruct top;
@@ -44,7 +45,7 @@ final class UnionDocIterator extends SweepDocIterator {
       docId = sub.hasNext() ? sub.nextDoc() : DocIdSetIterator.NO_MORE_DOCS;
     }
   }
-  UnionDocIterator(DocIterator[] subIterators) throws IOException {
+  UnionDocIterator(DocIterator[] subIterators, int baseIdx) throws IOException {
     super(subIterators.length);
     this.maxIdx = size - 1;
     queue = new PriorityQueue<SubIterStruct>(size) {
@@ -53,10 +54,16 @@ final class UnionDocIterator extends SweepDocIterator {
         return a.docId < b.docId;
       }
     };
+    SubIterStruct tmpBase = null;
     int i = maxIdx;
     do {
-      queue.add(new SubIterStruct(subIterators[i], i));
+      SubIterStruct subIterStruct = new SubIterStruct(subIterators[i], i);
+      queue.add(subIterStruct);
+      if (i == baseIdx) {
+        tmpBase = subIterStruct;
+      }
     } while (i-- > 0);
+    this.baseSub = tmpBase;
     top = queue.top();
   }
 
@@ -91,7 +98,7 @@ final class UnionDocIterator extends SweepDocIterator {
   public int registerCounts(SegCountGlobal segCounts) {
     int i = -1;
     do {
-      if (!collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounts.map(top.index, ++i);
@@ -104,7 +111,7 @@ final class UnionDocIterator extends SweepDocIterator {
   public int registerCounts(SegCountPerSeg segCounts) {
     int i = -1;
     do {
-      if (!collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounts.map(top.index, ++i);

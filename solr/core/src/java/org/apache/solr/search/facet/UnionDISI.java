@@ -25,6 +25,7 @@ import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 final class UnionDISI extends SweepDISI {
 
   final int maxIdx;
+  private final SubIterStruct baseSub;
   private boolean collectBase;
   private final PriorityQueue<SubIterStruct> queue;
   private SubIterStruct top;
@@ -43,7 +44,7 @@ final class UnionDISI extends SweepDISI {
       docId = sub.nextDoc();
     }
   }
-  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, int size) throws IOException {
+  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, int size, int baseIdx) throws IOException {
     super(size, countAccs);
     this.maxIdx = size - 1;
     queue = new PriorityQueue<SubIterStruct>(size) {
@@ -53,9 +54,15 @@ final class UnionDISI extends SweepDISI {
       }
     };
     int i = maxIdx;
+    SubIterStruct tmpBaseSub = null;
     do {
-      queue.add(new SubIterStruct(subIterators[i], i));
+      final SubIterStruct subIterStruct = new SubIterStruct(subIterators[i], i);
+      queue.add(subIterStruct);
+      if (i == baseIdx) {
+        tmpBaseSub = subIterStruct;
+      }
     } while (i-- > 0);
+    baseSub = tmpBaseSub;
     top = queue.top();
   }
 
@@ -66,7 +73,9 @@ final class UnionDISI extends SweepDISI {
         top.nextDoc();
       } while ((top = queue.updateTop()).docId == docId);
     }
-    collectBase = false;
+    if (baseSub != null) {
+      collectBase = false;
+    }
     return docId = top.docId;
   }
 
@@ -80,7 +89,7 @@ final class UnionDISI extends SweepDISI {
   public int registerCounts(SegCountGlobal segCounter) throws IOException {
     int i = -1;
     do {
-      if (!collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounter.map(top.index, ++i);
@@ -93,7 +102,7 @@ final class UnionDISI extends SweepDISI {
   public int registerCounts(SegCountPerSeg segCounter) throws IOException {
     int i = -1;
     do {
-      if (!collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounter.map(top.index, ++i);

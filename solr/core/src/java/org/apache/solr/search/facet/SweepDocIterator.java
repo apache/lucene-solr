@@ -16,6 +16,10 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
@@ -26,6 +30,45 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
 
   public SweepDocIterator(int size) {
     this.size = size;
+  }
+
+  static class SweepIteratorAndCounts {
+    final SweepDocIterator iter;
+    final CountSlotAcc[] countAccs;
+    public SweepIteratorAndCounts(SweepDocIterator iter, CountSlotAcc[] countAccs) {
+      this.iter = iter;
+      this.countAccs = countAccs;
+    }
+  }
+
+  static SweepIteratorAndCounts newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others) throws IOException {
+    final int activeCt;
+    SweepCountAccStruct entry;
+    if (base == null) {
+      activeCt = others.size();
+      entry = others.get(0);
+    } else {
+      activeCt = others.size() + 1;
+      entry = base;
+    }
+    if (activeCt == 1) {
+      final CountSlotAcc[] countAccs = new CountSlotAcc[] {entry.countAccEntry.countAcc};
+      return new SweepIteratorAndCounts(new SingletonDocIterator(entry.docSet.iterator(), base != null), countAccs);
+    } else {
+      final DocIterator[] subIterators = new DocIterator[activeCt];
+      final CountSlotAcc[] countAccs = new CountSlotAcc[activeCt];
+      Iterator<SweepCountAccStruct> othersIter = others.iterator();
+      int i = 0;
+      for (;;) {
+        subIterators[i] = entry.docSet.iterator();
+        countAccs[i] = entry.countAccEntry.countAcc;
+        if (++i == activeCt) {
+          break;
+        }
+        entry = othersIter.next();
+      }
+      return new SweepIteratorAndCounts(new UnionDocIterator(subIterators, base == null ? -1 : 0), countAccs);
+    }
   }
 
   @Override
