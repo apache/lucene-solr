@@ -2699,7 +2699,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      */
     public void setGroupValues(int collapseKey, int contextDoc) throws IOException {
       assert 0 <= collapseKey : "negative collapseKey";
-      assert collapseKey < groupHeadValues.length : "collapseKey too big -- need to grow array?";
+      if (collapseKey >= groupHeadValues.length) {
+        grow(collapseKey + 1);
+      }
       setGroupValues(getOrInitGroupHeadValues(collapseKey), contextDoc);
     }
     
@@ -2733,7 +2735,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      */
     public boolean testAndSetGroupValues(int collapseKey, int contextDoc) throws IOException {
       assert 0 <= collapseKey : "negative collapseKey";
-      assert collapseKey < groupHeadValues.length : "collapseKey too big -- need to grow array?";
+      if (collapseKey >= groupHeadValues.length) {
+        grow(collapseKey + 1);
+      }
       return testAndSetGroupValues(getOrInitGroupHeadValues(collapseKey), contextDoc);
     }
     
