@@ -80,6 +80,7 @@ class BufferedUpdates implements Accountable {
 
   private final Counter bytesUsed = Counter.newCounter(true);
   final Counter fieldUpdatesBytesUsed = Counter.newCounter(true);
+  private final Counter termsBytesUsed = Counter.newCounter(true);
 
   private final static boolean VERBOSE_DELETES = false;
 
@@ -151,7 +152,7 @@ class BufferedUpdates implements Accountable {
     // is done to respect IndexWriterConfig.setMaxBufferedDeleteTerms.
     numTermDeletes.incrementAndGet();
     if (current == null) {
-      bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length()));
+      termsBytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length()));
     }
   }
  
@@ -176,8 +177,9 @@ class BufferedUpdates implements Accountable {
   }
 
   void clearDeleteTerms() {
-    deleteTerms.clear();
     numTermDeletes.set(0);
+    termsBytesUsed.addAndGet(-termsBytesUsed.get());
+    deleteTerms.clear();
   }
   
   void clear() {
@@ -189,6 +191,7 @@ class BufferedUpdates implements Accountable {
     fieldUpdates.clear();
     bytesUsed.addAndGet(-bytesUsed.get());
     fieldUpdatesBytesUsed.addAndGet(-fieldUpdatesBytesUsed.get());
+    termsBytesUsed.addAndGet(-termsBytesUsed.get());
   }
   
   boolean any() {
@@ -197,11 +200,11 @@ class BufferedUpdates implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return bytesUsed.get() + fieldUpdatesBytesUsed.get();
+    return bytesUsed.get() + fieldUpdatesBytesUsed.get() + termsBytesUsed.get();
   }
 
   void clearDeletedDocIds() {
-    deleteDocIDs.clear();
     bytesUsed.addAndGet(-deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
+    deleteDocIDs.clear();
   }
 }

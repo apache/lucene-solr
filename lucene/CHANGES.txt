@@ -120,6 +120,10 @@ API Changes
 
 * LUCENE-9265: SimpleFSDirectory is deprecated in favor of NIOFSDirectory. (Yannick Welsch)
 
+* LUCENE-9304: Removed ability to set DocumentsWriterPerThreadPool on IndexWriterConfig.
+  The DocumentsWriterPerThreadPool is a packaged protected final class which made it impossible
+  to customize. (Simon Willnauer)
+
 New Features
 ---------------------
 (No changes)
@@ -131,6 +135,12 @@ Improvements
 
 * LUCENE-9279: Update dictionary version for Ukrainian analyzer to 4.9.1 (Andriy Rysin via Dawid Weiss)
 
+* LUCENE-8050: PerFieldDocValuesFormat should not get the DocValuesFormat on a field that has no doc values.
+  (David Smiley, Juan Rodriguez)
+
+* LUCENE-9304: Removed ThreadState abstraction from DocumentsWriter which allows pooling of DWPT directly and
+  improves the approachability of the IndexWriter code. (Simon Willnauer)
+
 Optimizations
 ---------------------
 
@@ -140,6 +150,9 @@ Optimizations
   (Michele Palmia, David Smiley)
 
 * LUCENE-9287: UsageTrackingQueryCachingPolicy no longer caches DocValuesFieldExistsQuery. (Ignacio Vera)
+
+* LUCENE-9286: FST.Arc.BitTable reads directly FST bytes. Arc is lightweight again and FSTEnum traversal faster.
+  (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -161,6 +174,8 @@ Bug Fixes
 * LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
   externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
 
+* LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
+
 Other
 ---------------------
 
@@ -173,6 +188,12 @@ Other
 * LUCENE-9270: Update Javadoc about normalizeEntry in the Kuromoji DictionaryBuilder. (Namgyu Kim)
 
 * LUCENE-9275: Make TestLatLonMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
+* LUCENE-9244: Adjust TestLucene60PointsFormat#testEstimatePointCount2Dims so it does not fail when a point
+  is shared by multiple leaves. (Ignacio Vera)
+
+* LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
+  ByteBuffer API. (Adrien Grand)
 
 ======================= Lucene 8.5.0 =======================
 
@@ -242,6 +263,8 @@ Improvements
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)
+
+* LUCENE-9298: Improve RAM accounting in BufferedUpdates when deleted doc IDs and terms are cleared. (Yu Binglei, Simon Willnauer)
 
 Optimizations
 ---------------------

@@ -100,6 +100,11 @@ _(raw; not yet edited)_
 * SOLR-14344: Remove Deprecated HttpSolrClient.RemoteSolrException and HttpSolrClient.RemoteExcecutionException.
   All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHttpSolrClient.RemoteExcecutionException.
   (Munendra S N)
+
+* SOLR-12720: To change the auto add replica wait period modify the `waitFor` attribute of the `.auto_add_replicas` trigger.
+  (marcussorealheis, shalin)
+
+* SOLR-11775: Return long value for facet count in Json Facet module irrespective of number of shards (hossman, Munendra S N)
   
 === Upgrade Prerequisites in Solr 9
 

@@ -68,7 +68,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
-    assertEquals(DocumentsWriterPerThreadPool.class, conf.getIndexerThreadPool().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
     assertEquals(Codec.getDefault(), conf.getCodec());

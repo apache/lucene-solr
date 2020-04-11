@@ -397,9 +397,6 @@ public class SolrXmlConfig {
         case "zkClientTimeout":
           builder.setZkClientTimeout(parseInt(name, value));
           break;
-        case "autoReplicaFailoverWaitAfterExpiration":
-          builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
-          break;
         case "zkHost":
           builder.setZkHost(value);
           break;

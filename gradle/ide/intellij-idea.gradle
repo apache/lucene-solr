@@ -14,22 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.facet;
 
-import java.io.IOException;
+// Try to detect IntelliJ model loader ("reimport") early.
+def isIdea = System.getProperty("idea.active") != null ||
+    gradle.startParameter.taskNames.contains('idea') ||
+    gradle.startParameter.taskNames.contains('cleanIdea')
 
-public class CountAgg extends SimpleAggValueSource {
-  public CountAgg() {
-    super("count", null);
+if (isIdea) {
+  logger.warn("IntelliJ Idea IDE detected.")
+}
+
+allprojects {
+  apply plugin: 'idea'
+
+  idea {
+    module {
+      outputDir file('build/idea/classes/main')
+      testOutputDir file('build/idea/classes/test')
+      downloadSources = true
+    }
   }
+}
 
-  @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
-    return new CountSlotArrAcc(fcontext, numSlots);
-  }
-
-  @Override
-  public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+// Remove tools source set entirely if we're running under IntelliJ. Otherwise
+// files that reference ant can't be compiled.
+if (isIdea) {
+  configure(project(":solr:solr-ref-guide")) {
+    afterEvaluate {
+      sourceSets {
+        main {
+          java {
+            srcDirs = []
+          }
+        }
+      }
+    }
   }
 }
