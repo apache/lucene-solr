@@ -2282,8 +2282,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
     
     try {
-      stopMerges = true; // this disables merges forever
-      abortMerges();
+      synchronized (this) {
+        // must be synced otherwise register merge might throw and exception if stopMerges
+        // changes concurrently, abortMerges is synced as well
+        stopMerges = true; // this disables merges forever
+        abortMerges();
+      }
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
       }
