@@ -578,7 +578,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     filters[slot] = rangeQ;
     intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
-    int num = collect(intersection, slot, slotNum -> { return new SlotContext(rangeQ); });
+    long num = collect(intersection, slot, slotNum -> { return new SlotContext(rangeQ); });
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
 

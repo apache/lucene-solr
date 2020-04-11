@@ -579,11 +579,11 @@ public class SimpleFacets {
 
               List<NamedList<Object>> buckets = (List<NamedList<Object>>)res.get("buckets");
               for(NamedList<Object> b : buckets) {
-                counts.add(b.get("val").toString(), (Integer)b.get("count"));
+                counts.add(b.get("val").toString(), ((Number)b.get("count")).intValue());
               }
               if(missing) {
                 NamedList<Object> missingCounts = (NamedList<Object>) res.get("missing");
-                counts.add(null, (Integer)missingCounts.get("count"));
+                counts.add(null, ((Number)missingCounts.get("count")).intValue());
               }
             }
           break;
