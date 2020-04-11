@@ -18,11 +18,8 @@ package org.apache.solr.core;
 
 /**
  * Configuration class representing the configuration of Solr Cloud using shared storage
- * to persist index files. The configuration properties come from solr.xml and are loaded
- * via {@link SolrXmlConfig} at Solr startup. The presence of sharedStore section in the solr.xml
- * file of a Solr Cloud mode cluster with the config sharedStoreEnabled set to true indicates the 
- * user's intention to enable shared storage capabilities in the cluster and starts the necessary 
- * components required to create/support shared-type Solr collections.
+ * to persist index files. Shared storage is enabled by passing a system property to 
+ * Solr on startup.
  * 
  * TODO: This class is bare bones until we convert the many hard coded configuration values
  * into configurable fields that can be specified under this section. The current responsibility
@@ -30,4 +27,27 @@ package org.apache.solr.core;
  * processes associated with it.
  */
 public class SharedStoreConfig {
+  
+  private final boolean sharedStoreEnabled = Boolean.getBoolean(SharedSystemProperty.SharedStoreEnabled.getPropertyName());
+  
+  public boolean isSharedStoreEnabled() {
+    return sharedStoreEnabled;
+  }
+  
+  /**
+   * Enum of constants representing the system properties used by the shared storage feature
+   */
+  public static enum SharedSystemProperty {
+    SharedStoreEnabled("sharedStoreEnabled");
+    
+    private String name;
+    
+    SharedSystemProperty(String propName) {
+      name = propName;
+    }
+    
+    public String getPropertyName() {
+      return name;
+    }
+  }
 }
