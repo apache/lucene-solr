@@ -123,8 +123,9 @@ public class SortField {
 
   /**
    * Allows to skip non-competitive docs
+   * should be called only from TopFieldCollector
    */
-  public void allowFilterNonCompetitveDocs() {
+  void allowFilterNonCompetitveDocs() {
     filterNonCompetitiveDocs = true;
   }
 

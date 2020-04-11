@@ -33,6 +33,7 @@ import java.io.IOException;
 public class TestSortOptimization extends LuceneTestCase {
 
   public void testLongSortOptimization() throws IOException {
+
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
     final int numDocs = atLeast(10000);
@@ -41,11 +42,11 @@ public class TestSortOptimization extends LuceneTestCase {
       doc.add(new NumericDocValuesField("my_field", i));
       doc.add(new LongPoint("my_field", i));
       writer.addDocument(doc);
+      if (i == 7000) writer.flush(); // two segments
     }
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.LONG);
-    sortField.allowFilterNonCompetitveDocs();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
@@ -101,7 +102,6 @@ public class TestSortOptimization extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.LONG);
-    sortField.allowFilterNonCompetitveDocs();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
@@ -134,7 +134,6 @@ public class TestSortOptimization extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.FLOAT);
-    sortField.allowFilterNonCompetitveDocs();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;

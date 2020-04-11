@@ -285,19 +285,19 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final FieldComparator.RelevanceComparator relevanceComparator;
   final boolean canSetMinScore;
 
-  final FilteringFieldComparator<?> filteringComparator;
-
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
   // the current local minimum competitive score already propagated to the underlying scorer
   float minCompetitiveScore;
+
+  final FilteringFieldComparator<?> filteringComparator;
 
   final int numComparators;
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
   int docBase;
   final boolean needsScores;
-  ScoreMode scoreMode;
+  final ScoreMode scoreMode;
 
   // Declaring the constructor private prevents extending this class by anyone
   // else. Note that the class cannot be final since it's extended by the
@@ -314,25 +314,27 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     this.numComparators = pq.getComparators().length;
     FieldComparator<?> firstComparator = pq.getComparators()[0];
     int reverseMul = pq.reverseMul[0];
+
     if (firstComparator.getClass().equals(FieldComparator.RelevanceComparator.class)
-          && reverseMul == 1 // if the natural sort is preserved (sort by descending relevance)
-          && hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
+            && reverseMul == 1 // if the natural sort is preserved (sort by descending relevance)
+            && hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
       relevanceComparator = (FieldComparator.RelevanceComparator) firstComparator;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
+      filteringComparator = null;
     } else {
       relevanceComparator = null;
-      scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
+      if (firstComparator instanceof FilteringFieldComparator) {
+        assert(hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE);
+        filteringComparator = (FilteringFieldComparator<?>) firstComparator;
+        scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
+      } else {
+        filteringComparator = null;
+        scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+      }
     }
     this.minScoreAcc = minScoreAcc;
-
-    if ((firstComparator instanceof FilteringFieldComparator) && (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE)) {
-      scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
-      filteringComparator = (FilteringFieldComparator<?>) firstComparator;
-    } else {
-      filteringComparator = null;
-    }
   }
 
   @Override
@@ -426,6 +428,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          {@code totalHitsThreshold} hits then the hit count of the result will
    *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
    *          count accurate, but this will also make query processing slower.
+   *          Setting totalHitsThreshold less than {@link Integer#MAX_VALUE}
+   *          instructs Lucene to skip non-competitive documents whenever possible. For numeric
+   *          sort fields the skipping functionality works when the same field is indexed both
+   *          with doc values and points. In this case, there is an assumption that the same data is
+   *          stored in these points and doc values.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
@@ -453,6 +460,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     if (hitsThresholdChecker == null) {
       throw new IllegalArgumentException("hitsThresholdChecker should not be null");
+    }
+
+    // here we assume that if hitsThreshold was set, we let the corresponding comparator to skip non-competitive docs
+    // It is beneficial for the 1st field only to skip non-competitive docs
+    if (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
+      sort.fields[0].allowFilterNonCompetitveDocs();
     }
 
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
