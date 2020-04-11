@@ -51,10 +51,9 @@ allprojects {
 
       def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
 
-      def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
-
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
+        def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
 
         def opts = []
         opts += [ "-overview ${file("src/java/overview.html").toString()}" ]
