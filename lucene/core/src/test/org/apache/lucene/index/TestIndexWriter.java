@@ -22,7 +22,9 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -2919,16 +2921,15 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testFlushLargestWriter() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    int numDocs = indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    int numDocs = indexDocsForMultipleDWPTs(w);
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
+    assertFalse(largestNonPendingWriter.isFlushPending());
 
     int numRamDocs = w.numRamDocs();
-    int numDocsInDWPT = largestNonPendingWriter.dwpt.getNumDocsInRAM();
+    int numDocsInDWPT = largestNonPendingWriter.getNumDocsInRAM();
     assertTrue(w.flushNextBuffer());
-    assertNull(largestNonPendingWriter.dwpt);
+    assertTrue(largestNonPendingWriter.hasFlushed());
     assertEquals(numRamDocs-numDocsInDWPT, w.numRamDocs());
 
     // make sure it's not locked
@@ -2944,7 +2945,7 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  private int indexDocsForMultipleThreadStates(IndexWriter w) throws InterruptedException {
+  private int indexDocsForMultipleDWPTs(IndexWriter w) throws InterruptedException {
     Thread[] threads = new Thread[3];
     CountDownLatch latch = new CountDownLatch(threads.length);
     int numDocsPerThread = 10 + random().nextInt(30);
@@ -2974,16 +2975,16 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNeverCheckOutOnFullFlush() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    indexDocsForMultipleDWPTs(w);
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
-    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    assertFalse(largestNonPendingWriter.isFlushPending());
+    assertFalse(largestNonPendingWriter.hasFlushed());
+    int threadPoolSize = w.docWriter.perThreadPool.size();
     w.docWriter.flushControl.markForFullFlush();
     DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
     assertNull(documentsWriterPerThread);
-    assertEquals(activeThreadStateCount, w.docWriter.flushControl.numQueuedFlushes());
+    assertEquals(threadPoolSize, w.docWriter.flushControl.numQueuedFlushes());
     w.docWriter.flushControl.abortFullFlushes();
     assertNull("was aborted", w.docWriter.flushControl.checkoutLargestNonPendingWriter());
     assertEquals(0, w.docWriter.flushControl.numQueuedFlushes());
@@ -2994,11 +2995,11 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testHoldLockOnLargestWriter() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    int numDocs = indexDocsForMultipleThreadStates(w);
-    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+    int numDocs = indexDocsForMultipleDWPTs(w);
+    DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.flushPending);
-    assertNotNull(largestNonPendingWriter.dwpt);
+    assertFalse(largestNonPendingWriter.isFlushPending());
+    assertFalse(largestNonPendingWriter.hasFlushed());
 
     CountDownLatch wait = new CountDownLatch(1);
     CountDownLatch locked = new CountDownLatch(1);
@@ -3031,7 +3032,7 @@ public class TestIndexWriter extends LuceneTestCase {
     lockThread.join();
     flushThread.join();
 
-    assertNull("largest DWPT should be flushed", largestNonPendingWriter.dwpt);
+    assertTrue("largest DWPT should be flushed", largestNonPendingWriter.hasFlushed());
     // make sure it's not locked
     largestNonPendingWriter.lock();
     largestNonPendingWriter.unlock();
@@ -3117,21 +3118,19 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   private static void waitForDocsInBuffers(IndexWriter w, int buffersWithDocs) {
-    // wait until at least N threadstates have a doc in order to observe
+    // wait until at least N DWPTs have a doc in order to observe
     // who flushes the segments.
     while(true) {
       int numStatesWithDocs = 0;
       DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
-      for (int i = 0; i < perThreadPool.getActiveThreadStateCount(); i++) {
-        DocumentsWriterPerThreadPool.ThreadState threadState = perThreadPool.getThreadState(i);
-        threadState.lock();
+      for (DocumentsWriterPerThread dwpt : perThreadPool) {
+        dwpt.lock();
         try {
-          DocumentsWriterPerThread dwpt = threadState.dwpt;
-          if (dwpt != null && dwpt.getNumDocsInRAM() > 1) {
+          if (dwpt.getNumDocsInRAM() > 1) {
             numStatesWithDocs++;
           }
         } finally {
-          threadState.unlock();
+          dwpt.unlock();
         }
       }
       if (numStatesWithDocs >= buffersWithDocs) {
@@ -3703,22 +3702,19 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
     w.addDocument(new Document());
-    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
-    assertEquals(1, activeThreadStateCount);
+    assertEquals(1, w.docWriter.perThreadPool.size());
     CountDownLatch latch = new CountDownLatch(1);
     Thread thread = new Thread(() -> {
       latch.countDown();
       List<Closeable> states = new ArrayList<>();
       try {
         for (int i = 0; i < 100; i++) {
-          DocumentsWriterPerThreadPool.ThreadState state = w.docWriter.perThreadPool.getAndLock();
+          DocumentsWriterPerThread state = w.docWriter.perThreadPool.getAndLock();
           states.add(state::unlock);
-          if (state.isInitialized()) {
-            state.dwpt.deleteQueue.getNextSequenceNumber();
-          } else {
-            w.docWriter.deleteQueue.getNextSequenceNumber();
-          }
+          state.deleteQueue.getNextSequenceNumber();
         }
+      } catch (IOException e) {
+        throw new AssertionError(e);
       } finally {
         IOUtils.closeWhileHandlingException(states);
       }
@@ -3775,7 +3771,19 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
-      assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
+      Throwable e = w.getTragicException();
+      IOSupplier<String> supplier = () -> {
+        if (e != null) {
+          StringWriter writer = new StringWriter();
+          try (PrintWriter printWriter = new PrintWriter(writer)) {
+            e.printStackTrace(printWriter);
+          }
+          return writer.toString();
+        } else {
+          return "";
+        }
+      };
+      assertNull("should not consider ACE a tragedy on a closed IW: " + supplier.get(), w.getTragicException());
       IOUtils.close(sm, dir);
     }
   }

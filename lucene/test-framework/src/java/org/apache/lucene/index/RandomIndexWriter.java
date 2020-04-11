@@ -224,8 +224,8 @@ public class RandomIndexWriter implements Closeable {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW.add/updateDocument: now flushing the largest writer at docCount=" + docCount);
     }
-    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
-    int numFlushes = Math.min(1, r.nextInt(activeThreadStateCount+1));
+    int threadPoolSize = w.docWriter.perThreadPool.size();
+    int numFlushes = Math.min(1, r.nextInt(threadPoolSize+1));
     for (int i = 0; i < numFlushes; i++) {
       if (w.flushNextBuffer() == false) {
         break; // stop once we didn't flush anything
