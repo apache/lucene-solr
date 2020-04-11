@@ -74,6 +74,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -732,6 +733,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer = new Overseer((HttpShardHandler) httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
           new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
@@ -1398,6 +1400,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
     ZkController zkController = createMockZkController(address, null, reader);

@@ -61,6 +61,10 @@ Bug Fixes
 
 * SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
 
+* SOLR-14402: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed search.
+  This is a fix for incomplete optimization made by SOLR-11880 in Solr 7.4 which fixed distributed updates but not
+  distributed search. (shalin)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid

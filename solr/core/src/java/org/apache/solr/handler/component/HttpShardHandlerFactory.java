@@ -89,16 +89,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-      0,
-      Integer.MAX_VALUE,
-      5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-      new SynchronousQueue<>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("httpShardExecutor"),
-      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-      // see SOLR-11880 for more details
-      false
-  );
+  //
+  // This executor is initialized in the init method
+  private ExecutorService commExecutor;
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
@@ -304,7 +297,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         this.maximumPoolSize,
         this.keepAliveTime, TimeUnit.SECONDS,
         blockingQueue,
-        new DefaultSolrThreadFactory("httpShardExecutor")
+        new DefaultSolrThreadFactory("httpShardExecutor"),
+        // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+        // see SOLR-11880 for more details
+        false
     );
 
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
