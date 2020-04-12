@@ -24,6 +24,16 @@ def pathToDocdir = { path -> path.split(':').drop(2).join('/') }
 
 allprojects {
   plugins.withType(JavaPlugin) {
+
+    // We disable the default javadoc task and have our own
+    // javadoc rendering task below. The default javadoc task
+    // will just invoke 'renderJavadoc' (to allow people to call
+    // conventional task name).
+    tasks.matching { it.name == "javadoc" }.all {
+      enabled = false
+      dependsOn "renderJavadoc"
+    }
+
     task renderJavadoc {
       description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
       group "documentation"
