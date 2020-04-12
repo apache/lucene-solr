@@ -52,8 +52,14 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
    * @param docs Collection of documents to add
    * @return the batch containing the input documents
    */
-  public static DocumentBatch of(Analyzer analyzer, Document... docs) {
-    return new MultiDocumentBatch(analyzer, docs);
+  public static DocumentBatch of(Analyzer analyzer, Document... docs) throws IllegalArgumentException {
+    if (docs.length == 0) {
+      throw new IllegalArgumentException("A DocumentBatch must contain at least one document");
+    } else if (docs.length == 1) {
+      return new SingletonDocumentBatch(analyzer, docs[0]);
+    } else {
+      return new MultiDocumentBatch(analyzer, docs);
+    }
   }
 
   // Implementation of DocumentBatch for collections of documents
@@ -63,6 +69,7 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
     private final LeafReader reader;
 
     MultiDocumentBatch(Analyzer analyzer, Document... docs) {
+      assert(docs.length > 0);
       IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
       try (IndexWriter writer = new IndexWriter(directory, iwc)) {
         this.reader = build(writer, docs);
