@@ -65,6 +65,8 @@ Bug Fixes
   This is a fix for incomplete optimization made by SOLR-11880 in Solr 7.4 which fixed distributed updates but not
   distributed search. (shalin)
 
+* SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
