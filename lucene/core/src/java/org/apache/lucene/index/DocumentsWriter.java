@@ -331,7 +331,7 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   /** returns the maximum sequence number for all previously completed operations */
   long getMaxCompletedSequenceNumber() {
-    return deleteQueue.getLastSequenceNumber();
+    return deleteQueue.getMaxCompletedSeqNo();
   }
 
 
@@ -556,8 +556,8 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   synchronized void resetDeleteQueue(DocumentsWriterDeleteQueue newQueue) {
     assert deleteQueue.getLastSequenceNumber() <= newQueue.getLastSequenceNumber();
-    assert deleteQueue.maxSeqNo <= newQueue.getLastSequenceNumber()
-        : "maxSeqNo: " + deleteQueue.maxSeqNo + " vs. " + newQueue.getLastSequenceNumber();
+    assert deleteQueue.getMaxSeqNo() <= newQueue.getLastSequenceNumber()
+        : "maxSeqNo: " + deleteQueue.getMaxSeqNo() + " vs. " + newQueue.getLastSequenceNumber();
     deleteQueue = newQueue;
   }
 
