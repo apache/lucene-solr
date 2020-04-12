@@ -476,10 +476,10 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
       try {
         // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
         // if we have some sequence numbers that were never assigned:
-        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.size() + 2;
-        flushingQueue.maxSeqNo = seqNo + 1;
+        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.size() + 1;
+        flushingQueue.maxSeqNo = seqNo;
         DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation + 1, seqNo + 1);
-        documentsWriter.deleteQueue = newQueue;
+        documentsWriter.resetDeleteQueue(newQueue);
       } finally {
         perThreadPool.unlockNewWriters();
       }
@@ -530,6 +530,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
       fullFlushMarkDone = true; // at this point we must have collected all DWPTs that belong to the old delete queue
     }
     assert assertActiveDeleteQueue(documentsWriter.deleteQueue);
+    assert flushingQueue.getLastSequenceNumber() <= flushingQueue.maxSeqNo;
     return seqNo;
   }
   

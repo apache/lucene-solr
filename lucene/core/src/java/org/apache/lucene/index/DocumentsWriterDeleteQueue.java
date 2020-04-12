@@ -92,7 +92,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
   private final InfoStream infoStream;
 
   // for asserts
-  long maxSeqNo = Long.MAX_VALUE;
+  volatile long maxSeqNo = Long.MAX_VALUE;
   
   DocumentsWriterDeleteQueue(InfoStream infoStream) {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
@@ -538,17 +538,18 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   public long getNextSequenceNumber() {
     long seqNo = nextSeqNo.getAndIncrement();
-    assert seqNo < maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
+    assert seqNo <= maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
     return seqNo;
   }  
 
-  public long getLastSequenceNumber() {
+  long getLastSequenceNumber() {
     return nextSeqNo.get()-1;
   }  
 
   /** Inserts a gap in the sequence numbers.  This is used by IW during flush or commit to ensure any in-flight threads get sequence numbers
    *  inside the gap */
-  public void skipSequenceNumbers(long jump) {
+  void skipSequenceNumbers(long jump) {
     nextSeqNo.addAndGet(jump);
-  }  
+  }
+
 }

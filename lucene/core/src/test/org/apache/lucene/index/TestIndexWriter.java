@@ -3949,4 +3949,19 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
+
+  public void testLastSeqNo() throws IOException {
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());) {
+      assertEquals(1, writer.addDocument(new Document()));
+      assertEquals(2, writer.updateDocument(new Term("foo", "bar"), new Document()));
+      writer.flushNextBuffer();
+      assertEquals(3, writer.commit());
+      assertEquals(4, writer.addDocument(new Document()));
+      assertEquals(4, writer.getMaxCompletedSequenceNumber());
+      // commit moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(6, writer.commit());
+      assertEquals(6, writer.getMaxCompletedSequenceNumber());
+    }
+  }
 }

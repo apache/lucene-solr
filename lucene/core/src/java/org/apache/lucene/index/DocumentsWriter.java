@@ -550,6 +550,17 @@ final class DocumentsWriter implements Closeable, Accountable {
     return hasEvents;
   }
 
+  synchronized long getNextSequenceNumber() {
+    return deleteQueue.getNextSequenceNumber();
+  }
+
+  synchronized void resetDeleteQueue(DocumentsWriterDeleteQueue newQueue) {
+    assert deleteQueue.getLastSequenceNumber() <= newQueue.getLastSequenceNumber();
+    assert deleteQueue.maxSeqNo <= newQueue.getLastSequenceNumber()
+        : "maxSeqNo: " + deleteQueue.maxSeqNo + " vs. " + newQueue.getLastSequenceNumber();
+    deleteQueue = newQueue;
+  }
+
   interface FlushNotifications { // TODO maybe we find a better name for this?
 
     /**
@@ -630,7 +641,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
 
     long seqNo;
-
     synchronized (this) {
       pendingChangesInCurrentFullFlush = anyChanges();
       flushingDeleteQueue = deleteQueue;
