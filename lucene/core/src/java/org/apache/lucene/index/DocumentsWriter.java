@@ -551,10 +551,13 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   synchronized long getNextSequenceNumber() {
+    // this must be synced otherwise the delete queue might change concurrently
     return deleteQueue.getNextSequenceNumber();
   }
 
   synchronized void resetDeleteQueue(DocumentsWriterDeleteQueue newQueue) {
+    assert deleteQueue.isAdvanced();
+    assert newQueue.isAdvanced() == false;
     assert deleteQueue.getLastSequenceNumber() <= newQueue.getLastSequenceNumber();
     assert deleteQueue.getMaxSeqNo() <= newQueue.getLastSequenceNumber()
         : "maxSeqNo: " + deleteQueue.getMaxSeqNo() + " vs. " + newQueue.getLastSequenceNumber();

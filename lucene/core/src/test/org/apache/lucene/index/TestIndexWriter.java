@@ -44,6 +44,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -3950,7 +3951,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
-  public void testLastSeqNo() throws IOException {
+  public void testMaxCompletedSequenceNumber() throws IOException, InterruptedException {
     try (Directory dir = newDirectory();
          IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());) {
       assertEquals(1, writer.addDocument(new Document()));
@@ -3962,6 +3963,56 @@ public class TestIndexWriter extends LuceneTestCase {
       // commit moves seqNo by 2 since there is one DWPT that could still be in-flight
       assertEquals(6, writer.commit());
       assertEquals(6, writer.getMaxCompletedSequenceNumber());
+      assertEquals(7, writer.addDocument(new Document()));
+      writer.getReader().close();
+      // getReader moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(9, writer.getMaxCompletedSequenceNumber());
+    }
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+         SearcherManager manager = new SearcherManager(writer, new SearcherFactory())) {
+      CountDownLatch start = new CountDownLatch(1);
+      int numDocs = 100 + random().nextInt(500);
+      AtomicLong maxCompletedSeqID = new AtomicLong(-1);
+      Thread[] threads = new Thread[2 + random().nextInt(2)];
+      for (int i = 0; i < threads.length; i++) {
+        int idx = i;
+        threads[i] = new Thread(() -> {
+          try {
+            start.await();
+            for (int j = 0; j < numDocs; j++) {
+              Document doc = new Document();
+              String id = idx +"-"+j;
+              doc.add(new StringField("id", id, Field.Store.NO));
+              long seqNo = writer.addDocument(doc);
+              if (maxCompletedSeqID.get() < seqNo) {
+                long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+                manager.maybeRefreshBlocking();
+                long prevValue;
+                while ((prevValue = maxCompletedSeqID.get()) < maxCompletedSequenceNumber) {
+                  if (maxCompletedSeqID.compareAndSet(prevValue, maxCompletedSequenceNumber)) {
+                    break;
+                  }
+                }
+              }
+              IndexSearcher acquire = manager.acquire();
+              try {
+                assertEquals(1, acquire.search(new TermQuery(new Term("id", id)), 10).totalHits.value);
+              } finally {
+                manager.release(acquire);
+              }
+            }
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+        });
+        threads[i].start();
+      }
+      start.countDown();
+      for (int i = 0; i < threads.length; i++) {
+        threads[i].join();
+      }
+
     }
   }
 }
