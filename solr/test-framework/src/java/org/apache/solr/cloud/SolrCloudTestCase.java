@@ -347,7 +347,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      log.info("active slice count: {} expected {}", collectionState.getActiveSlices().size(), expectedShards); // verified OK
+      log.info("active slice count: {} expected {}", collectionState.getActiveSlices().size(), expectedShards); // verified
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);

@@ -212,7 +212,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
       throws Exception {
-    log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS)); //verified OK
+    log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS)); //verified
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
 
@@ -221,7 +221,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       DocCollection coll = clusterState.getCollection("collection1");
       Slice slice = coll.getSlice(shardName);
       if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) ); // verified OK
+        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) ); // verified
         break;
       }
 
@@ -240,7 +240,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
       Slice slice = docCollection.getSlice(shardName);
       if (slice != null && slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) ); // verified OK
+        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) ); // verified
         return true;
       }
       return false;

@@ -655,7 +655,7 @@ public class ChaosMonkey {
       builder.append(slice.getName()).append(": {");
       for (Replica replica:slice.getReplicas()) {
         if (log.isInfoEnabled()) {
-          log.info(replica.toString()); // verified OK
+          log.info(replica.toString()); // verified
         }
         java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();

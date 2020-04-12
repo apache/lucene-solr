@@ -178,7 +178,7 @@ public class ZkTestServer {
       }
 
       public void updateForFire(WatchedEvent event) {
-        log.debug("Watch fired: {}: {}", desc, event.getPath()); // verified OK
+        log.debug("Watch fired: {}: {}", desc, event.getPath()); // verified
         counters.decrementAndGet(event.getPath());
       }
 
@@ -803,7 +803,7 @@ public class ZkTestServer {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
-      log.info("skipping {} because it doesn't exist", file.getAbsolutePath()); // verified OK
+      log.info("skipping {} because it doesn't exist", file.getAbsolutePath()); // verified
       return;
     }
 
@@ -811,7 +811,7 @@ public class ZkTestServer {
     if (zkChroot != null) {
       destPath = zkChroot + destPath;
     }
-    log.info("put {} to {}", file.getAbsolutePath(), destPath); // verified OK
+    log.info("put {} to {}", file.getAbsolutePath(), destPath); // verified
     zkClient.makePath(destPath, file, false, true);
   }
 
