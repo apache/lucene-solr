@@ -717,7 +717,9 @@ public class FacetComponent extends SearchComponent {
           if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             continue;
           } else {
-            log.warn("corrupted response on "+srsp.getShardRequest()+": "+srsp.getSolrResponse());
+            if (log.isWarnEnabled()) {
+              log.warn("corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse()); //verified
+            }
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "facet_counts is absent in response from " + srsp.getNodeName() +
                 ", but "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" hasn't been responded");
@@ -869,7 +871,9 @@ public class FacetComponent extends SearchComponent {
       if (ent.getValue().count >= minCount) {
         newQueryFacets.put(ent.getKey(), ent.getValue());
       } else {
-        log.trace("Removing facetQuery/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+        if (log.isTraceEnabled()) {
+          log.trace("Removing facetQuery/key: {}/{} mincount=", ent.getKey(), ent.getValue().toString(), minCount); //verified
+        }
         replace = true;
       }
     }
@@ -1005,7 +1009,7 @@ public class FacetComponent extends SearchComponent {
             log.error("Unexpected term returned for facet refining. key=" + key
                       + " term='" + name + "'" + "\n\trequest params=" + sreq.params
                       + "\n\ttoRefine=" + dff._toRefine + "\n\tresponse="
-                      + shardCounts);
+                      + shardCounts); //verified
             continue;
           }
           sfc.count += count;
@@ -1538,7 +1542,9 @@ public class FacetComponent extends SearchComponent {
         if (ent.getValue().count >= minCount) {
           newOne.put(ent.getKey(), ent.getValue());
         } else {
-          log.trace("Removing facet/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+          if (log.isTraceEnabled()) {
+            log.trace("Removing facet/key: {}/{} mincount={}", ent.getKey(), ent.getValue().toString(), minCount); //verified
+          }
           replace = true;
         }
       }

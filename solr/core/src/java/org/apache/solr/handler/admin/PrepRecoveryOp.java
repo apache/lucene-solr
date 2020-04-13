@@ -112,8 +112,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                 state == Replica.State.ACTIVE);
 
             if (leaderDoesNotNeedRecovery) {
-              log.warn(
-                  "Leader " + cname + " ignoring request to be in the recovering state because it is live and active.");
+              log.warn("Leader {} ignoring request to be in the recovering state because it is live and active.", cname);
             }
 
             ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
@@ -128,14 +127,12 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
             boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive
                 && localState != Replica.State.ACTIVE;
-            log.info(
-                "In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
-                    ", thisCore=" + cname + ", leaderDoesNotNeedRecovery=" + leaderDoesNotNeedRecovery +
-                    ", isLeader? " + cloudDescriptor.isLeader() +
-                    ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state.toString()
-                    + ", localState=" + localState + ", nodeName=" + nodeName +
-                    ", coreNodeName=" + coreNodeName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
-                    + ", nodeProps: " + replica);
+            log.info("In WaitForState({}): collection={}, shard={}, thisCore={}, leaderDoesNotNeedRecovery={}, isLeader? {}, " +
+                "live={}, checkLive={}, currentState={}, localState={}, nodeName={}, coreNodeName={}, " +
+                "onlyIfActiveCheckResult={}, nodeProps: {}"
+                , waitForState, collectionName, slice.getName(), cname, leaderDoesNotNeedRecovery,cloudDescriptor.isLeader()
+                , live, checkLive, state, localState, nodeName, coreNodeName, onlyIfActiveCheckResult
+                , replica); //verified
 
             if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {
               if (checkLive == null) {

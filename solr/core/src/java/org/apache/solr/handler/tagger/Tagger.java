@@ -102,7 +102,7 @@ public abstract class Tagger {
       if (log.isTraceEnabled()) {
         log.trace("Token: {}, posInc: {},  offset: [{},{}]",
                 byteRefAtt, posIncAtt.getPositionIncrement(),
-                offsetAtt.startOffset(), offsetAtt.endOffset());
+                offsetAtt.startOffset(), offsetAtt.endOffset()); //verified
       }
       //check for posInc < 1 (alternate Tokens, such as expanded Synonyms)
       if (posIncAtt.getPositionIncrement() < 1) {
@@ -179,10 +179,12 @@ public abstract class Tagger {
 
     if(!loggedSkippedAltTokenWarning && skippedTokens){
       loggedSkippedAltTokenWarning = true; //only log once
-      log.warn("The Tagger skipped some alternate tokens (tokens with posInc == 0) "
-          + "while processing text. This may cause problems with some Analyzer "
-          + "configurations (e.g. query time synonym expansion). For details see "
-          + "https://github.com/OpenSextant/SolrTextTagger/pull/11#issuecomment-24936225");
+      if (log.isWarnEnabled()) {
+        log.warn("The Tagger skipped some alternate tokens (tokens with posInc == 0) "
+            + "while processing text. This may cause problems with some Analyzer "
+            + "configurations (e.g. query time synonym expansion). For details see "
+            + "https://github.com/OpenSextant/SolrTextTagger/pull/11#issuecomment-24936225"); //verified
+      }
     }
 
     tokenStream.end();

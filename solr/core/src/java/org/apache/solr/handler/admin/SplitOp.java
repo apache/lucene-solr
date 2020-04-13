@@ -99,7 +99,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either path or targetCore param must be specified");
     }
 
-    log.info("Invoked split action for core: " + cname);
+    log.info("Invoked split action for core: {}", cname);
     String methodStr = params.get(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
     SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
@@ -350,7 +350,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions);
+    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions); //verified
 
     return counts.values();
   }
@@ -434,7 +434,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions);
+    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions); // verified
 
     return counts.values();
   }

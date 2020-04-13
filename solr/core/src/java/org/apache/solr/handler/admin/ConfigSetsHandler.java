@@ -122,7 +122,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetAction action) throws Exception {
     ConfigSetOperation operation = ConfigSetOperation.get(action);
-    log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
+    log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString()); //verified
     Map<String, Object> result = operation.call(req, rsp, this);
     sendToZk(rsp, operation, result);
   }
@@ -189,7 +189,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   boolean getTrusted(SolrQueryRequest req) {
     AuthenticationPlugin authcPlugin = coreContainer.getAuthenticationPlugin();
     log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",
-        authcPlugin, req.getUserPrincipal());
+        authcPlugin, req.getUserPrincipal()); //verified
     if (authcPlugin != null && req.getUserPrincipal() != null) {
       return true;
     }

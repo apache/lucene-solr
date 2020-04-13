@@ -90,7 +90,7 @@ public class AdminHandlersProxy {
       }       
       log.debug("Nodes requested: {}", nodes);
     }
-    log.debug(PARAM_NODES + " parameter {} specified on {} request", nodeNames, pathStr);
+    log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
     
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
@@ -103,12 +103,14 @@ public class AdminHandlersProxy {
         entry.getValue().second().close();
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {
-        log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
+        log.warn("Exception when fetching result from node {}", entry.getKey(), ee); //verified
       } catch (TimeoutException te) {
-        log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
+        log.warn("Timeout when fetching result from node {}", entry.getKey(), te); //verified
       }
     }
-    log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
+    if (log.isInfoEnabled()) {
+      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet()); //verified
+    }
     return true;
   } 
 

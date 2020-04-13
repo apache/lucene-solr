@@ -57,7 +57,7 @@ public class CdcrReplicator implements Runnable {
     CdcrUpdateLog.CdcrLogReader logReader = state.getLogReader();
     CdcrUpdateLog.CdcrLogReader subReader = null;
     if (logReader == null) {
-      log.warn("Log reader for target {} is not initialised, it will be ignored.", state.getTargetCollection());
+      log.warn("Log reader for target {} is not initialised, it will be ignored.", state.getTargetCollection()); //verified
       return;
     }
 
@@ -124,7 +124,7 @@ public class CdcrReplicator implements Runnable {
       // we might have read a single commit operation and reached the end of the update logs
       logReader.forwardSeek(subReader);
 
-      log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection());
+      log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection()); //verified
     } catch (Exception e) {
       // report error and update error stats
       this.handleException(e);
@@ -179,13 +179,13 @@ public class CdcrReplicator implements Runnable {
     if (e instanceof CdcrReplicatorException) {
       UpdateRequest req = ((CdcrReplicatorException) e).req;
       UpdateResponse rsp = ((CdcrReplicatorException) e).rsp;
-      log.warn("Failed to forward update request {} to target: {}. Got response {}", req, state.getTargetCollection(), rsp);
+      log.warn("Failed to forward update request {} to target: {}. Got response {}", req, state.getTargetCollection(), rsp); //verified
       state.reportError(CdcrReplicatorState.ErrorType.BAD_REQUEST);
     } else if (e instanceof CloudSolrClient.RouteException) {
-      log.warn("Failed to forward update request to target: " + state.getTargetCollection(), e);
+      log.warn("Failed to forward update request to target: {}", state.getTargetCollection(), e); //verified
       state.reportError(CdcrReplicatorState.ErrorType.BAD_REQUEST);
     } else {
-      log.warn("Failed to forward update request to target: " + state.getTargetCollection(), e);
+      log.warn("Failed to forward update request to target: {}",  state.getTargetCollection(), e); // verified
       state.reportError(CdcrReplicatorState.ErrorType.INTERNAL);
     }
   }

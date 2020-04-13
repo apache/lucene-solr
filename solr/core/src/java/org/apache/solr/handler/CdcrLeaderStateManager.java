@@ -150,7 +150,9 @@ class CdcrLeaderStateManager extends CdcrStateManager {
           CdcrLeaderStateManager.this.checkIfIAmLeader();
         }
       } catch (KeeperException | InterruptedException e) {
-        log.warn("Failed updating leader state and setting watch @ " + collectionName + ":" + shard, e);
+        if (log.isWarnEnabled()) {
+          log.warn("Failed updating leader state and setting watch @ {}:{}", collectionName, shard, e); //verified
+        }
       }
     }
 

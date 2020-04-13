@@ -559,7 +559,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
         String shard = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
         log.warn("The log reader for target collection {} is not initialised @ {}:{}",
-            state.getTargetCollection(), collectionName, shard);
+            state.getTargetCollection(), collectionName, shard); //verified
         queueStats.add(CdcrParams.QUEUE_SIZE, -1l);
       } else {
         queueStats.add(CdcrParams.QUEUE_SIZE, logReader.getNumberOfRemainingRecords());

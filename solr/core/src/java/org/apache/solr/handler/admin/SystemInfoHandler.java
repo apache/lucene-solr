@@ -107,8 +107,8 @@ public class SystemInfoHandler extends RequestHandlerBase
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
       log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. " +
-               "Set the '"+PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP+"' sysprop to true on startup to " +
-               "prevent future lookups if DNS can not be fixed.", e);
+               "Set the '{}' sysprop to true on startup to " +
+               "prevent future lookups if DNS can not be fixed.", PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP, e); // verified
       hostname = null;
       return;
     }
@@ -118,7 +118,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
       log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. " +
                "Set the '{}' sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
-               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP); //verified
     
     }
   }

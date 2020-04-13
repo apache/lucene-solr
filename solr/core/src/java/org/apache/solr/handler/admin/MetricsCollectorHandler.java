@@ -115,7 +115,6 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       // silently drop request
       return;
     }
-    //log.info("#### " + req.toString());
     if (req.getContentStreams() == null) { // no content
       return;
     }
@@ -153,7 +152,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       }
       String metricName = (String)doc.getFieldValue(MetricUtils.METRIC_NAME);
       if (metricName == null) {
-        log.warn("Missing " + MetricUtils.METRIC_NAME + " field in document, skipping: " + doc);
+        log.warn("Missing {} field in document, skipping: {}", MetricUtils.METRIC_NAME, doc);
         return;
       }
       doc.remove(MetricUtils.METRIC_NAME);
@@ -161,13 +160,13 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       doc.remove(SolrReporter.REGISTRY_ID);
       String groupId = (String)doc.getFieldValue(SolrReporter.GROUP_ID);
       if (groupId == null) {
-        log.warn("Missing " + SolrReporter.GROUP_ID + " field in document, skipping: " + doc);
+        log.warn("Missing {} field in document, skipping: {}", SolrReporter.GROUP_ID, doc);
         return;
       }
       doc.remove(SolrReporter.GROUP_ID);
       String reporterId = (String)doc.getFieldValue(SolrReporter.REPORTER_ID);
       if (reporterId == null) {
-        log.warn("Missing " + SolrReporter.REPORTER_ID + " field in document, skipping: " + doc);
+        log.warn("Missing {} field in document, skipping: {}", SolrReporter.REPORTER_ID, doc);
         return;
       }
       doc.remove(SolrReporter.REPORTER_ID);

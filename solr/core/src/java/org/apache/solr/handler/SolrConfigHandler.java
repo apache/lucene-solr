@@ -237,7 +237,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 }
               }, SolrConfigHandler.class.getSimpleName() + "-refreshconf").start();
             } else {
-              log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
+              if (log.isInfoEnabled()) {
+                log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName()); //verified
+              }
             }
 
           } else {
@@ -365,7 +367,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
-            log.info("Race condition, the node is modified in ZK by someone else " + e.getMessage());
+            log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage()); //verified
           }
         }
       } catch (Exception e) {
@@ -456,7 +458,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
         } else {
-          log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+          if (log.isDebugEnabled()) {
+            log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>()))); //verified
+          }
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader,
               params.getZnodeVersion(), RequestParams.RESOURCE, params.toByteArray(), true);
 
@@ -510,7 +514,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        log.error("ERROR:" + Utils.toJSONString(errs));
+        log.error("ERROR: {}", Utils.toJSONString(errs)); //verified
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -774,8 +778,10 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
 
-    log.info(formatString("Waiting up to {0} secs for {1} replicas to set the property {2} to be of version {3} for collection {4}",
-        maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection));
+    if (log.isInfoEnabled()) {
+      log.info(formatString("Waiting up to {0} secs for {1} replicas to set the property {2} to be of version {3} for collection {4}",
+          maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection)); //verified
+    }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     int poolSize = Math.min(concurrentTasks.size(), 10);
@@ -801,7 +807,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         if (!success) {
           String coreUrl = concurrentTasks.get(f).coreUrl;
-          log.warn("Core " + coreUrl + " could not get the expected version " + expectedVersion);
+          log.warn("Core {} could not get the expected version {}", coreUrl, expectedVersion);
           if (failedList == null) failedList = new ArrayList<>();
           failedList.add(coreUrl);
         }
@@ -814,16 +820,18 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
 
     } catch (InterruptedException ie) {
-      log.warn(formatString(
-          "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
-          prop, expectedVersion, concurrentTasks.size(), collection));
+      if (log.isWarnEnabled()) {
+        log.warn(formatString(
+            "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
+            prop, expectedVersion, concurrentTasks.size(), collection)); //verified
+      }
       Thread.currentThread().interrupt();
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
 
     log.info("Took {}ms to set the property {} to be of version {} for collection {}",
-        timer.getTime(), prop, expectedVersion, collection);
+        timer.getTime(), prop, expectedVersion, collection); //verified
   }
 
   public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
@@ -907,12 +915,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             }
 
             attempts++;
-            log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
+            if (log.isInfoEnabled()) {
+              log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts"
+                  , expectedZkVersion, coreUrl, prop, attempts)); //verified
+            }
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
               break; // stop looping
             } else {
-              log.warn("Failed to get /schema/zkversion from " + coreUrl + " due to: " + e);
+              log.warn("Failed to get /schema/zkversion from {} due to:", coreUrl, e);
             }
           }
         }

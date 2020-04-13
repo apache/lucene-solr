@@ -146,16 +146,18 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         try {
           NamedList response = server.request(request);
           lastVersion = (Long) response.get(CdcrParams.LAST_PROCESSED_VERSION);
-          log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
-              core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+          if (log.isDebugEnabled()) {
+            log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
+                core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName()); // verified
+          }
         } catch (IOException | SolrServerException e) {
-          log.warn("Couldn't get last processed version from leader {}: {}", leaderUrl, e.getMessage());
+          log.warn("Couldn't get last processed version from leader {}: {}", leaderUrl, e.getMessage()); // verified
           return;
         } finally {
           try {
             server.close();
           } catch (IOException ioe) {
-            log.warn("Caught exception trying to close client to {}: {}", leaderUrl, ioe.getMessage());
+            log.warn("Caught exception trying to close client to {}: {}", leaderUrl, ioe.getMessage()); // verified
           }
         }
 
@@ -173,9 +175,9 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage());
+          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage()); // verified
         } catch (IOException e) {
-          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage());
+          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage()); // verified
         }
       } catch (Throwable e) {
         log.warn("Caught unexpected exception", e);

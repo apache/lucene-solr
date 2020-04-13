@@ -247,7 +247,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             elevationProvider = handleConfigLoadingException(e, true);
           } else {
             configFileExists = true;
-            log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
+            log.info("Loading QueryElevation from: {}", fC.getAbsolutePath()); // verified
             XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
             elevationProvider = loadElevationProvider(cfg);
           }
@@ -366,7 +366,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "QueryElevationComponent must specify argument: " + CONFIG_FILE);
     }
-    log.info("Loading QueryElevation from data dir: " + configFileName);
+    log.info("Loading QueryElevation from data dir: {}", configFileName);
 
     XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();

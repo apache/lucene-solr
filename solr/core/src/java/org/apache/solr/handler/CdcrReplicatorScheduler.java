@@ -80,7 +80,7 @@ class CdcrReplicatorScheduler {
               if (!state.isBootstrapInProgress()) {
                 new CdcrReplicator(state, batchSize).run();
               } else  {
-                log.debug("Replicator state is bootstrapping, skipping replication for target collection {}", state.getTargetCollection());
+                log.debug("Replicator state is bootstrapping, skipping replication for target collection {}", state.getTargetCollection()); //verified
               }
             } finally {
               statesQueue.offer(state);

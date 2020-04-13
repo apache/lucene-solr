@@ -158,7 +158,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
         // this is not fatal, users may not care about enable/disable via 
         // solr request, file might be touched/deleted by an external system
         log.warn("Directory for configured healthcheck file is not writable by solr, PingRequestHandler will not be able to control enable/disable: {}",
-                 healthcheck.getParentFile().getAbsolutePath());
+                 healthcheck.getParentFile().getAbsolutePath()); // verified
       }
 
     }

@@ -88,7 +88,9 @@ public class HealthCheckHandler extends RequestHandlerBase {
       rsp.setException(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Health check is only available when running in SolrCloud mode"));
       return;
     }
-    log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
+    if (log.isDebugEnabled()) {
+      log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName()); //verified
+    }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     // Check for isConnected and isClosed
