@@ -56,7 +56,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Ignore;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -273,7 +273,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         try {
           exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-              new DefaultSolrThreadFactory(getSaferTestName()));
+              new SolrNamedThreadFactory(getSaferTestName()));
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
           for (SolrInputDocument solrInputDocument : solrInputDocuments) {
             String col = collections.get(random().nextInt(collections.size()));

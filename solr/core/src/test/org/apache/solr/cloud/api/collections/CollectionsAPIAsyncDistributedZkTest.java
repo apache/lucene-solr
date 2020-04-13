@@ -42,7 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -239,7 +239,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final AtomicInteger numFailure = new AtomicInteger(0);
     final CountDownLatch latch = new CountDownLatch(numThreads);
     
-    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new DefaultSolrThreadFactory("testAsyncIdRaceCondition"));
+    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
         es.submit(new Runnable() {

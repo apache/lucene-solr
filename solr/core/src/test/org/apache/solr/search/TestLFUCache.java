@@ -35,10 +35,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -385,7 +385,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     /* Set up a thread pool with twice as many threads as there are CPUs. */
     final ConcurrentLFUCache<Integer,Long> cache = new ConcurrentLFUCache<>(10, 9);
     ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool(10,
-        new DefaultSolrThreadFactory("testConcurrentAccess"));
+        new SolrNamedThreadFactory("testConcurrentAccess"));
     final AtomicReference<Throwable> error = new AtomicReference<>();
     
     /*

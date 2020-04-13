@@ -50,7 +50,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,7 +259,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   private void initDeleteExpiredDocsScheduler(SolrCore core) {
     executor = new ScheduledThreadPoolExecutor
-      (1, new DefaultSolrThreadFactory("autoExpireDocs"),
+      (1, new SolrNamedThreadFactory("autoExpireDocs"),
        new RejectedExecutionHandler() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
           log.warn("Skipping execution of '{}' using '{}'", r, e);

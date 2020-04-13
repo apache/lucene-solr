@@ -43,7 +43,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -592,7 +592,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
@@ -613,7 +613,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
