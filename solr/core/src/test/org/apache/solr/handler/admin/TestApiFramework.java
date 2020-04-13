@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -197,6 +198,25 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
 
 
+  }
+
+  public void testApiWrapper() {
+    Class<ApiWithConstructor> klas = ApiWithConstructor.class;
+    for (Constructor<?> constructor : klas.getConstructors()) {
+      constructor.getParameterTypes();
+
+    }
+
+
+
+  }
+
+  public static class ApiWithConstructor{
+    private final CoreContainer cc;
+
+    public ApiWithConstructor(CoreContainer cc) {
+      this.cc = cc;
+    }
   }
 
   @EndPoint(method = POST, path = "/cluster/package", permission = PermissionNameProvider.Name.ALL)

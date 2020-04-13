@@ -63,13 +63,13 @@ public class PackageListeners {
   }
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
-    MDCLoggingContext.setCore(core);
+    if(core != null) MDCLoggingContext.setCore(core);
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
         invokeListeners(pkgInfo);
       }
     } finally {
-      MDCLoggingContext.clear();
+      if(core != null) MDCLoggingContext.clear();
     }
   }
 

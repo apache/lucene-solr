@@ -70,6 +70,10 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     this(obj, null);
   }
 
+  public EndPoint getEndPoint() {
+    return endPoint;
+  }
+
   public AnnotatedApi(Object obj, Api fallback) {
     super(readSpec(obj.getClass()));
     this.fallback = fallback;

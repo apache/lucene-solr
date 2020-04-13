@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -53,6 +54,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.CustomContainerPlugins;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -74,6 +76,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -88,6 +91,7 @@ import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
@@ -162,6 +166,12 @@ public class CoreContainer {
     }
   }
 
+  private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
+
+  public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
+
+  private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
+
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
   protected volatile CoreAdminHandler coreAdminHandler = null;
@@ -200,8 +210,6 @@ public class CoreContainer {
   private volatile String hostName;
 
   private final BlobRepository blobRepository = new BlobRepository(this);
-
-  private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile boolean asyncSolrCoreLoad;
 
@@ -819,6 +827,11 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
+//      getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
+      customContainerPlugins.refresh(null);
+      ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(containerPluginsApi.readAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(containerPluginsApi.editAPI), Collections.EMPTY_MAP);
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
@@ -1974,6 +1987,10 @@ public class CoreContainer {
     }
     log.error("Could not repair coreNodeName in core.properties file for core {}", coreName);
     return false;
+  }
+
+  public CustomContainerPlugins getCustomContainerPlugins(){
+    return customContainerPlugins;
   }
 
   /**

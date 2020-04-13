@@ -65,7 +65,7 @@ public class PluginInfo implements MapSerializable {
    * This checks if it is a package name prefixed classname.
    * the return value has first = package name & second = class name
    */
-  static Pair<String,String > parseClassName(String name) {
+  public static Pair<String,String > parseClassName(String name) {
     String pkgName = null;
     String className = name;
     if (name != null) {
