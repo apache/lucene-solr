@@ -64,8 +64,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,7 +103,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       Integer.MAX_VALUE,
       15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
       new SynchronousQueue<>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("BaseDistributedSearchTestCase"),
+      new SolrNamedThreadFactory("BaseDistributedSearchTestCase"),
       false
   );
   
@@ -413,7 +412,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void destroyServers() throws Exception {
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
     
     customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
       IOUtils.closeQuietly(c);

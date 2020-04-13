@@ -25,6 +25,7 @@ plugins {
 
 ext {
   distDir = file("$buildDir/solr-${version}")
+  devDir = file("$buildDir/dev")
 }
 
 configurations {
@@ -106,6 +107,14 @@ task toDir(type: Sync) {
   doLast {
     logger.lifecycle "Solr distribution assembled under: ${distDir}"
   }
+}
+
+task dev(type: Copy) {
+  description "Assemble Solr distribution into 'development' folder at ${devDir}"
+  group "build"
+
+  from toDir.outputs
+  into devDir
 }
 
 assemble.dependsOn toDir

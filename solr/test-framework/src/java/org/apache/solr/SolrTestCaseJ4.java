@@ -113,7 +113,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -268,7 +268,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     testExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
         15L, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new SolrjNamedThreadFactory("testExecutor"),
+        new SolrNamedThreadFactory("testExecutor"),
         true);
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)

@@ -55,6 +55,9 @@ Other Changes
 
 * SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
 
+* SOLR-9909: The deprecated SolrjNamedThreadFactory has been removed. Use SolrNamedThreadFactory instead.
+  (Andras Salamon, shalin)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -81,6 +84,8 @@ Improvements
   core searcher caches. (hossman)
 
 * SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
+* SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
 
 Optimizations
 ---------------------
@@ -145,6 +150,10 @@ Other Changes
 * SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
 
 * SOLR-14386: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5 (Erick Erickson)
+
+* SOLR-9909: SolrjNamedThreadFactory is deprecated in favor of SolrNamedThreadFactory. DefaultSolrThreadFactory is
+  removed from solr-core in favor of SolrNamedThreadFactory in solrj package and all solr-core classes now use
+  SolrNamedThreadFactory. (Andras Salamon, shalin)
 
 ==================  8.5.0 ==================
 

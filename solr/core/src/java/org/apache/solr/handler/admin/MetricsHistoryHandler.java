@@ -91,7 +91,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
@@ -229,7 +229,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     if (enable) {
       collectService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
-          new DefaultSolrThreadFactory("MetricsHistoryHandler"));
+          new SolrNamedThreadFactory("MetricsHistoryHandler"));
       collectService.setRemoveOnCancelPolicy(true);
       collectService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
       collectService.scheduleWithFixedDelay(() -> collectMetrics(),

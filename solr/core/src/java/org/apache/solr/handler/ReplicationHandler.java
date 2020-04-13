@@ -99,7 +99,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -175,7 +175,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private ReentrantLock indexFetchLock = new ReentrantLock();
 
   private ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new DefaultSolrThreadFactory("restoreExecutor"));
+      new SolrNamedThreadFactory("restoreExecutor"));
 
   private volatile Future<Boolean> restoreFuture;
 
@@ -1212,7 +1212,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
-        new DefaultSolrThreadFactory("indexFetcher"));
+        new SolrNamedThreadFactory("indexFetcher"));
     // Randomize initial delay, with a minimum of 1ms
     long initialDelayNs = new Random().nextLong() % pollIntervalNs
         + TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
