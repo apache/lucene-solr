@@ -21,8 +21,6 @@ Improvements
 * SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
   (hossman, Munendra S N, yonik)
 
-* SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
-
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -83,6 +81,8 @@ Improvements
   core searcher caches. (hossman)
 
 * SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
+* SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
 
 Optimizations
 ---------------------
