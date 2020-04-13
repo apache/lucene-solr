@@ -61,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -105,7 +106,7 @@ public class Grouping {
   private Filter luceneFilter;
   private NamedList grouped = new SimpleOrderedMap();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
-  private int maxMatches;  // max number of matches from any grouping command
+  private long maxMatches;  // max number of matches from any grouping command
   private float maxScore = Float.NaN;  // max score seen in any doclist
   private boolean signalCacheWarning = false;
   private TimeLimitingCollector timeLimitingCollector;
@@ -573,7 +574,7 @@ public class Grouping {
      *
      * @return the number of matches for this <code>Command</code>
      */
-    public abstract int getMatches();
+    public abstract long getMatches();
 
     /**
      * Returns the number of groups found for this <code>Command</code>.
@@ -581,7 +582,7 @@ public class Grouping {
      *
      * @return the number of groups found for this <code>Command</code>
      */
-    protected Integer getNumberOfGroups() {
+    protected Long getNumberOfGroups() {
       return null;
     }
 
@@ -597,11 +598,11 @@ public class Grouping {
       NamedList groupResult = new SimpleOrderedMap();
       grouped.add(key, groupResult);  // grouped={ key={
 
-      int matches = getMatches();
-      groupResult.add("matches", matches);
+      long matches = getMatches();
+      groupResult.add("matches", Utils.intIfNotOverflown(matches));
       if (totalCount == TotalCount.grouped) {
-        Integer totalNrOfGroups = getNumberOfGroups();
-        groupResult.add("ngroups", totalNrOfGroups == null ? Integer.valueOf(0) : totalNrOfGroups);
+        Long totalNrOfGroups = getNumberOfGroups();
+        groupResult.add("ngroups", Utils.intIfNotOverflown(totalNrOfGroups == null ? Long.valueOf(0) : totalNrOfGroups));
       }
       maxMatches = Math.max(maxMatches, matches);
       return groupResult;
@@ -827,7 +828,7 @@ public class Grouping {
     }
 
     @Override
-    public int getMatches() {
+    public long getMatches() {
       if (result == null && fallBackCollector == null) {
         return 0;
       }
@@ -836,8 +837,8 @@ public class Grouping {
     }
 
     @Override
-    protected Integer getNumberOfGroups() {
-      return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
+    protected Long getNumberOfGroups() {
+      return allGroupsCollector == null ? null : (long) allGroupsCollector.getGroupCount();
     }
   }
 
@@ -901,7 +902,7 @@ public class Grouping {
     }
 
     @Override
-    public int getMatches() {
+    public long getMatches() {
       return collector.getMatches();
     }
   }
@@ -1022,7 +1023,7 @@ public class Grouping {
     }
 
     @Override
-    public int getMatches() {
+    public long getMatches() {
       if (result == null && fallBackCollector == null) {
         return 0;
       }
@@ -1031,8 +1032,8 @@ public class Grouping {
     }
 
     @Override
-    protected Integer getNumberOfGroups() {
-      return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
+    protected Long getNumberOfGroups() {
+      return allGroupsCollector == null ? null : (long) allGroupsCollector.getGroupCount();
     }
 
   }

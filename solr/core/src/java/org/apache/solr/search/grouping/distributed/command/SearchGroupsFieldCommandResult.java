@@ -26,15 +26,15 @@ import org.apache.lucene.util.BytesRef;
  */
 public class SearchGroupsFieldCommandResult {
 
-  private final Integer groupCount;
+  private final Long groupCount;
   private final Collection<SearchGroup<BytesRef>> searchGroups;
 
-  public SearchGroupsFieldCommandResult(Integer groupCount, Collection<SearchGroup<BytesRef>> searchGroups) {
+  public SearchGroupsFieldCommandResult(Long groupCount, Collection<SearchGroup<BytesRef>> searchGroups) {
     this.groupCount = groupCount;
     this.searchGroups = searchGroups;
   }
 
-  public Integer getGroupCount() {
+  public Long getGroupCount() {
     return groupCount;
   }
 
