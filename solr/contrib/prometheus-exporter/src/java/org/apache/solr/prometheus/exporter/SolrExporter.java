@@ -39,7 +39,7 @@ import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import org.apache.solr.prometheus.scraper.SolrStandaloneScraper;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,11 +105,11 @@ public class SolrExporter {
 
     this.metricCollectorExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new DefaultSolrThreadFactory("solr-exporter-collectors"));
+        new SolrNamedThreadFactory("solr-exporter-collectors"));
 
     this.requestExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new DefaultSolrThreadFactory("solr-exporter-requests"));
+        new SolrNamedThreadFactory("solr-exporter-requests"));
 
     this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
     this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();

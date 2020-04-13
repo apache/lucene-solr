@@ -35,7 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -64,7 +64,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   private ExecutorService updateExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
       60L, TimeUnit.SECONDS,
       new SynchronousQueue<>(),
-      new SolrjNamedThreadFactory("updateExecutor"),
+      new SolrNamedThreadFactory("updateExecutor"),
       // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
       // see SOLR-11880 for more details
       false);
@@ -136,7 +136,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     updateOnlyClient.setQueryParams(queryParams);
 
-    ThreadFactory recoveryThreadFactory = new SolrjNamedThreadFactory("recoveryExecutor");
+    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
       log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
       recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
