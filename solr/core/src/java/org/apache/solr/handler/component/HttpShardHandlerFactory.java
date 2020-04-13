@@ -72,7 +72,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -299,7 +299,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         this.maximumPoolSize,
         this.keepAliveTime, TimeUnit.SECONDS,
         blockingQueue,
-        new DefaultSolrThreadFactory("httpShardExecutor"),
+        new SolrNamedThreadFactory("httpShardExecutor"),
         // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
         // see SOLR-11880 for more details
         false

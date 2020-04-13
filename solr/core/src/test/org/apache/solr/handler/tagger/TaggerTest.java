@@ -295,4 +295,22 @@ public class TaggerTest extends TaggerTestCase {
     return new TestTag(startOffset, endOffset, substring, lookupByName(name.getName()));
   }
 
+
+  public void testEmptyCollection() throws Exception {
+    //SOLR-14396: Ensure tagger handler doesn't fail on empty collections
+    SolrQueryRequest req = reqDoc("anything", "indent", "on", "omitHeader", "on", "matchText", "false");
+    String rspStr = h.query(req);
+    req.close();
+
+    String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<response>\n" +
+        "\n" +
+        "<int name=\"tagsCount\">0</int>\n" +
+        "<arr name=\"tags\"/>\n" +
+        "<result name=\"response\" numFound=\"0\" start=\"0\">\n" +
+        "</result>\n" +
+        "</response>\n";
+    assertEquals(expected, rspStr);
+  }
+
 }

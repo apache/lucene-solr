@@ -97,7 +97,7 @@ import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
@@ -493,7 +493,7 @@ public class IndexFetcher {
       }
 
       // Create the sync service
-      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("fsyncService"));
+      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied

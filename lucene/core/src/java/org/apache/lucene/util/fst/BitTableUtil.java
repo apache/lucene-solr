@@ -52,7 +52,7 @@ class BitTableUtil {
     int bitCount = 0;
     for (int i = bitTableBytes >> 3; i > 0; i--) {
       // Count the bits set for all plain longs.
-      bitCount += Long.bitCount(read8Bytes(reader));
+      bitCount += bitCount8Bytes(reader);
     }
     int numRemainingBytes;
     if ((numRemainingBytes = bitTableBytes & (Long.BYTES - 1)) != 0) {
@@ -75,7 +75,7 @@ class BitTableUtil {
     int bitCount = 0;
     for (int i = bitIndex >> 6; i > 0; i--) {
       // Count the bits set for all plain longs.
-      bitCount += Long.bitCount(read8Bytes(reader));
+      bitCount += bitCount8Bytes(reader);
     }
     int remainingBits;
     if ((remainingBits = bitIndex & (Long.SIZE - 1)) != 0) {
@@ -166,14 +166,7 @@ class BitTableUtil {
     return l;
   }
 
-  private static long read8Bytes(FST.BytesReader reader) throws IOException {
-    return readByte(reader)
-        | readByte(reader) << 8
-        | readByte(reader) << 16
-        | readByte(reader) << 24
-        | readByte(reader) << 32
-        | readByte(reader) << 40
-        | readByte(reader) << 48
-        | readByte(reader) << 56;
+  private static int bitCount8Bytes(FST.BytesReader reader) throws IOException {
+    return Long.bitCount(reader.readLong());
   }
 }
