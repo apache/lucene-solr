@@ -17,9 +17,11 @@
 
 package org.apache.solr.api;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +50,8 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+
 public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListener {
   private ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,7 +79,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
 
   public void refresh(Map<String, Object> pluginInfos) {
     try {
-      if(pluginInfos == null) pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
+      if (pluginInfos == null) pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
     } catch (IOException e) {
       log.error("Could not read plugins data", e);
     }
@@ -92,7 +96,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       try {
         List<String> errs = new ArrayList<>();
         apiInfo = new ApiInfo(info, errs);
-        if(!errs.isEmpty()){
+        if (!errs.isEmpty()) {
           log.error(StrUtils.join(errs, ','));
           continue;
         }
@@ -142,8 +146,12 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     for (String s : toBeRemoved) {
       String pathKey = pluginNameVsPath.remove(s);
       ApiHolder holder = plugins.remove(pathKey);
-      if(holder != null){
-        containerApiBag.unregister(holder.apiInfo.endPoint.method()[0], holder.apiInfo.endPoint.path()[0]);
+      if (holder != null) {
+        Api old = containerApiBag.unregister(holder.apiInfo.endPoint.method()[0], holder.apiInfo.endPoint.path()[0]);
+        if (old instanceof Closeable) {
+          closeWhileHandlingException((Closeable) old);
+        }
+
       }
     }
   }
@@ -169,12 +177,12 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     }
   }
 
-  public class ApiInfo implements ReflectMapWriter {
+  public class ApiInfo implements ReflectMapWriter  {
     /*This is the path at which this handler is
      *
      */
     @JsonProperty
-    public  String key;
+    public String key;
     @JsonProperty
     private final PluginMeta info;
 
@@ -183,40 +191,45 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     private PackageLoader.Package.Version pkgVersion;
     EndPoint endPoint;
 
-    private  Class klas;
+    private Class klas;
 
 
     private AnnotatedApi delegate;
 
 
-    public ApiInfo(PluginMeta info, List<String> errs)  {
+    public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
       Pair<String, String> klassInfo = org.apache.solr.core.PluginInfo.parseClassName(info.klass);
       pkg = klassInfo.second();
       if (klassInfo.first() != null) {
         PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(klassInfo.first());
-        if(p == null){
-          errs.add("Invalid package "+klassInfo.first());
+        if (p == null) {
+          errs.add("Invalid package " + klassInfo.first());
           return;
         }
         this.pkgVersion = p.getLatest();
         try {
           klas = pkgVersion.getLoader().findClass(pkg, Object.class);
         } catch (Exception e) {
-          errs.add("Error instantiating class "+ e.getMessage());
+          errs.add("Error instantiating class " + e.getMessage());
           return;
         }
       } else {
         try {
           klas = Class.forName(klassInfo.second());
         } catch (ClassNotFoundException e) {
-          errs.add("Error instantiating class "+ e.getMessage());
+          errs.add("Error instantiating class " + e.getMessage());
           return;
         }
         pkgVersion = null;
       }
+      if(!Modifier.isPublic(klas.getModifiers()) || !Modifier.isStatic(klas.getModifiers())){
+        errs.add("Class must be public and static : "+ klas.getName());
+        return;
+      }
+
       endPoint = (EndPoint) klas.getAnnotation(EndPoint.class);
-      if (endPoint == null){
+      if (endPoint == null) {
         errs.add("Invalid class, no @EndPoint annotation");
         return;
       }
@@ -235,11 +248,10 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       }
       this.key = endPoint.method()[0].toString() + " " + endPoint.path()[0];
       Object alreadyRegistered = containerApiBag.getRegistry(endPoint.method()[0].toString()).lookup(endPoint.path()[0], null);
-      if(alreadyRegistered != null && !pathSegments.contains(key)){
+      if (alreadyRegistered != null && !pathSegments.contains(key)) {
         errs.add("The path is conflicting with a Solr handler");
         return;
       }
-
 
 
       Constructor constructor = klas.getConstructors()[0];
@@ -248,14 +260,19 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
         errs.add("Must have a no-arg constructor or CoreContainer constructor ");
         return;
       }
+      if (!Modifier.isPublic(constructor.getModifiers())) {
+        errs.add("Must have a public constructor ");
+        return;
+      }
     }
 
-    void init() throws Exception {
+    public AnnotatedApi init() throws Exception {
+      if (delegate != null) return delegate;
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
-        delegate = new AnnotatedApi(constructor.newInstance(null));
+        return delegate = new AnnotatedApi(constructor.newInstance(null));
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
-        delegate = new AnnotatedApi(constructor.newInstance(coreContainer));
+        return delegate = new AnnotatedApi(constructor.newInstance(coreContainer));
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
@@ -263,7 +280,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     }
   }
 
-  public ApiInfo createInfo(PluginMeta info, List<String> errs)  {
+  public ApiInfo createInfo(PluginMeta info, List<String> errs) {
     return new ApiInfo(info, errs);
 
   }

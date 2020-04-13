@@ -71,7 +71,7 @@ public class PathTrie<T> {
   // /a/b/c will be returned as ["a","b","c"]
   public static List<String> getPathSegments(String path) {
     if (path == null || path.isEmpty()) return emptyList();
-    List<String> parts = new ArrayList<String>() {
+    List<String> parts = new ArrayList<>() {
       @Override
       public boolean add(String s) {
         if (s == null || s.isEmpty()) return false;
@@ -82,18 +82,20 @@ public class PathTrie<T> {
     return parts;
   }
 
-  public boolean unregister(List<String> path){
+  public T unregister(List<String> path) {
     Node node = root.lookupNode(path, 0, null, null);
-    if(node != null){
+    T result = null;
+    if (node != null) {
+      result = node.obj;
       node.obj = null;
-      if(node.children.isEmpty()){
-        if(node.parent != null){
+      if (node.children == null || node.children.isEmpty()) {
+        if (node.parent != null) {
           node.parent.children.remove(node.name);
         }
       }
-      return true;
+      return result;
     }
-    return false;
+    return result;
 
   }
 
@@ -196,11 +198,12 @@ public class PathTrie<T> {
      */
     public T lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
       Node node = lookupNode(pathSegments, index, templateVariables, availableSubPaths);
-      return node == null?  null: node.obj;
+      return node == null ? null : node.obj;
     }
 
     Node lookupNode(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
-      if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
+      if (templateName != null && templateVariables != null)
+        templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
         if (obj == null) {//this is not a leaf node
@@ -225,7 +228,7 @@ public class PathTrie<T> {
           for (int i = index; i < pathSegments.size(); i++) {
             sb.append("/").append(pathSegments.get(i));
           }
-          templateVariables.put("*", sb.toString());
+          if (templateVariables != null) templateVariables.put("*", sb.toString());
           return n;
 
         }

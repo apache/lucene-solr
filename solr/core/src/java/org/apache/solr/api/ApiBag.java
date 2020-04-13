@@ -135,12 +135,12 @@ public class ApiBag {
     registry.insert(copy, substitutes, introspect);
   }
 
-  public void unregister(SolrRequest.METHOD method, String path) {
+  public Api unregister(SolrRequest.METHOD method, String path) {
     List<String> l = PathTrie.getPathSegments(path);
     List<String> introspectPath = new ArrayList<>(l);
     introspectPath.add("_introspect");
     getRegistry(method.toString()).unregister(introspectPath);
-    getRegistry(method.toString()).unregister(l);
+    return getRegistry(method.toString()).unregister(l);
   }
 
   public static class IntrospectApi extends Api {

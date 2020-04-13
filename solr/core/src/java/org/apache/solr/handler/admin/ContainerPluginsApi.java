@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,10 +26,12 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Command;
+import org.apache.solr.api.CustomContainerPlugins;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -39,9 +42,15 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
 
 public class ContainerPluginsApi {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String PLUGINS = "plugins";
   private final Supplier<SolrZkClient> zkClientSupplier;
   private final CoreContainer coreContainer;
@@ -53,7 +62,7 @@ public class ContainerPluginsApi {
     this.coreContainer = coreContainer;
   }
 
-  @EndPoint(method = SolrRequest.METHOD.POST,
+  @EndPoint(method = METHOD.GET,
       path = "/cluster/plugins",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
   public class Read {
@@ -64,7 +73,7 @@ public class ContainerPluginsApi {
     }
   }
 
-  @EndPoint(method = SolrRequest.METHOD.POST,
+  @EndPoint(method = METHOD.POST,
       path = "/cluster/plugins",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
   public class Edit {
@@ -72,7 +81,8 @@ public class ContainerPluginsApi {
     @Command(name = "add")
     public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
-      if (isConfigInvalid(payload, info)) return;
+      validateConfig(payload, info);
+      if(payload.hasError()) return;
       persistPlugins(map -> {
         if (map.containsKey(info.name)) {
           payload.addError(info.name + " already exists");
@@ -97,7 +107,8 @@ public class ContainerPluginsApi {
     @Command(name = "update")
     public void update(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
-      if (isConfigInvalid(payload, info)) return;
+      validateConfig(payload, info);
+      if(payload.hasError()) return;
       persistPlugins(map -> {
         Map existing = (Map) map.get(info.name);
         if (existing == null) {
@@ -111,20 +122,29 @@ public class ContainerPluginsApi {
     }
   }
 
-  private boolean isConfigInvalid(PayloadObj<PluginMeta> payload, PluginMeta info) {
+  private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) {
     if (info.klass.indexOf(':') > 0) {
       if (info.packageVersion == null) {
         payload.addError("Using package. must provide a packageVersion");
-        return true;
+        return;
       }
     }
     List<String> errs = new ArrayList<>();
-    coreContainer.getCustomContainerPlugins().createInfo(info, errs);
+    CustomContainerPlugins.ApiInfo apiInfo = coreContainer.getCustomContainerPlugins().createInfo(info, errs);
     if (!errs.isEmpty()) {
       for (String err : errs) payload.addError(err);
-      return true;
+      return;
     }
-    return false;
+    AnnotatedApi api = null ;
+    try {
+      api =  apiInfo.init();
+    } catch (Exception e) {
+      log.error("Error instantiating plugin ", e);
+      errs.add(e.getMessage());
+      return;
+    } finally {
+      closeWhileHandlingException(api);
+    }
   }
 
   public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier) throws IOException {

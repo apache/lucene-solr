@@ -18,6 +18,8 @@
 package org.apache.solr.api;
 
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -58,11 +60,12 @@ import org.slf4j.LoggerFactory;
  * The third parameter is only valid if it is using a json command payload
  */
 
-public class AnnotatedApi extends Api implements PermissionNameProvider {
+public class AnnotatedApi extends Api implements PermissionNameProvider , Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
+  private final Object delegate;
   private Map<String, Cmd> commands = new HashMap<>();
   private final Api fallback;
 
@@ -74,8 +77,16 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     return endPoint;
   }
 
+  @Override
+  public void close() throws IOException {
+    if (delegate instanceof Closeable) {
+      ((Closeable) delegate).close();
+    }
+  }
+
   public AnnotatedApi(Object obj, Api fallback) {
     super(readSpec(obj.getClass()));
+    this.delegate = obj;
     this.fallback = fallback;
     Class<?> klas = obj.getClass();
     if (!Modifier.isPublic(klas.getModifiers())) {
