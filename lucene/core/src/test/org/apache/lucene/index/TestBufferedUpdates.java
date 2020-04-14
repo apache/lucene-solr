@@ -28,11 +28,6 @@ public class TestBufferedUpdates extends LuceneTestCase {
     BufferedUpdates bu = new BufferedUpdates("seg1");
     assertEquals(bu.ramBytesUsed(), 0L);
     assertFalse(bu.any());
-    int docIds = atLeast(1);
-    for (int i = 0; i < docIds; i++) {
-      bu.addDocID(random().nextInt(100));
-    }
-
     int queries = atLeast(1);
     for (int i = 0; i < queries; i++) {
       final int docIDUpto = random().nextBoolean() ? Integer.MAX_VALUE : random().nextInt();
@@ -50,11 +45,6 @@ public class TestBufferedUpdates extends LuceneTestCase {
 
     long totalUsed = bu.ramBytesUsed();
     assertTrue(totalUsed > 0);
-
-    bu.clearDeletedDocIds();
-    assertTrue("only docIds are cleaned, buffer shouldn't be empty", bu.any());
-    assertTrue("docIds are cleaned, ram in used should decrease", totalUsed > bu.ramBytesUsed());
-    totalUsed = bu.ramBytesUsed();
 
     bu.clearDeleteTerms();
     assertTrue("only terms and docIds are cleaned, the queries are still in memory", bu.any());
