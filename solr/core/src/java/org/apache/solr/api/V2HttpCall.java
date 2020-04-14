@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.util.PathTrie.getPathSegments;
+import static org.apache.solr.handler.admin.ContainerPluginsApi.PLUGIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
@@ -67,7 +68,7 @@ public class V2HttpCall extends HttpSolrCall {
   List<String> pieces;
   private String prefix;
   HashMap<String, String> parts = new HashMap<>();
-  static final Set<String> knownPrefixes = ImmutableSet.of("cluster", "node", "collections", "cores", "c");
+  static final Set<String> knownPrefixes = ImmutableSet.of("cluster", "node", "collections", "cores", "c", PLUGIN);
 
   public V2HttpCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cc,
                     HttpServletRequest request, HttpServletResponse response, boolean retry) {

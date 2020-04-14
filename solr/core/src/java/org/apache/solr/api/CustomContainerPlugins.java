@@ -63,7 +63,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
-    refresh(properties);
+    refresh(null);
     return false;
   }
 
@@ -79,10 +79,12 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
 
   public void refresh(Map<String, Object> pluginInfos) {
     try {
-      if (pluginInfos == null) pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
+      pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
     } catch (IOException e) {
       log.error("Could not read plugins data", e);
+      return;
     }
+    if(pluginInfos.isEmpty()) return;
 
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       PluginMeta info = null;
@@ -242,18 +244,11 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
         return;
       }
       List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
-      if (!supportedPaths.contains(pathSegments.get(0))) {
-        errs.add("path must have a /cluster or /node prefix");
+      if (pathSegments.size()<2 || !ContainerPluginsApi.PLUGIN.equals(pathSegments.get(0))) {
+        errs.add("path must have a /plugin/ prefix ");
         return;
       }
       this.key = endPoint.method()[0].toString() + " " + endPoint.path()[0];
-      Object alreadyRegistered = containerApiBag.getRegistry(endPoint.method()[0].toString()).lookup(endPoint.path()[0], null);
-      if (alreadyRegistered != null && !pathSegments.contains(key)) {
-        errs.add("The path is conflicting with a Solr handler");
-        return;
-      }
-
-
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length > 1 ||
           (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {

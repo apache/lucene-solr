@@ -18,8 +18,8 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.Collections;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -37,6 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -65,26 +67,46 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       PluginMeta plugin = new PluginMeta();
       plugin.name = "testplugin";
       plugin.klass = C2.class.getName();
-      V2Request req = new V2Request.Builder("/cluster/plugins")
+      V2Request req = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .withMethod(POST)
-          .withPayload(Collections.singletonMap("add", plugin))
+          .withPayload(singletonMap("add", plugin))
           .build();
       expectError(req, cluster.getSolrClient(), errPath, "Class must be public and static :");
 
       plugin.klass = C1.class.getName();
       expectError(req, cluster.getSolrClient(), errPath, "Invalid class, no @EndPoint annotation");
+
       plugin.klass = C3.class.getName();
       req.process(cluster.getSolrClient());
 
-      V2Response rsp = new V2Request.Builder("/cluster/plugins")
+      V2Response rsp = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .withMethod(GET)
           .build()
           .process(cluster.getSolrClient());
-      assertEquals(C3.class.getName(), rsp._getStr("/plugins/testplugin/class", ""));
-      System.out.println("");
+      assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
 
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/plugin/my/plugin")
+              .forceV2(true)
+              .withMethod(GET)
+              .build().process(cluster.getSolrClient()),
+          ImmutableMap.of("/testkey", "testval"));
+
+      new V2Request.Builder("/cluster/plugin")
+          .withMethod(POST)
+          .forceV2(true)
+          .withPayload("{remove : testplugin}")
+          .build()
+          .process(cluster.getSolrClient());
+
+      rsp = new V2Request.Builder("/cluster/plugin")
+          .forceV2(true)
+          .withMethod(GET)
+          .build()
+          .process(cluster.getSolrClient());
+      assertEquals(null, rsp._get("/plugin/testplugin/class", null));
 
     } finally {
       cluster.shutdown();
@@ -97,7 +119,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @EndPoint(
       method = GET,
-      path = "/cluster/my/plugin",
+      path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
   public class C2 {
 
@@ -106,7 +128,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @EndPoint(
       method = GET,
-      path = "/cluster/my/plugin",
+      path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
   public static class C3 {
     @Command

@@ -51,7 +51,7 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class ContainerPluginsApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PLUGINS = "plugins";
+  public static final String PLUGIN = "plugin";
   private final Supplier<SolrZkClient> zkClientSupplier;
   private final CoreContainer coreContainer;
   public final Read readAPI = new Read();
@@ -63,18 +63,18 @@ public class ContainerPluginsApi {
   }
 
   @EndPoint(method = METHOD.GET,
-      path = "/cluster/plugins",
+      path = "/cluster/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
   public class Read {
 
     @Command
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-      rsp.add(PLUGINS, plugins(zkClientSupplier));
+      rsp.add(PLUGIN, plugins(zkClientSupplier));
     }
   }
 
   @EndPoint(method = METHOD.POST,
-      path = "/cluster/plugins",
+      path = "/cluster/plugin",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
   public class Edit {
 
@@ -151,7 +151,7 @@ public class ContainerPluginsApi {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGINS, Utils.NEW_LINKED_HASHMAP_FUN);
+      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, Utils.NEW_LINKED_HASHMAP_FUN);
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();
     } catch (KeeperException | InterruptedException e) {
@@ -164,9 +164,9 @@ public class ContainerPluginsApi {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
         Map rawJson = bytes == null ? new LinkedHashMap() :
             (Map) Utils.fromJSON(bytes);
-        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGINS, Utils.NEW_LINKED_HASHMAP_FUN));
+        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, Utils.NEW_LINKED_HASHMAP_FUN));
         if (pluginsModified == null) return null;
-        rawJson.put(PLUGINS, pluginsModified);
+        rawJson.put(PLUGIN, pluginsModified);
         return Utils.toJSON(rawJson);
       });
     } catch (KeeperException | InterruptedException e) {
