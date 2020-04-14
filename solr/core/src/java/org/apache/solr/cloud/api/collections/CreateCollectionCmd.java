@@ -492,11 +492,18 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   public static void maybeAddMaxReplicasRule(SolrCloudManager cloudManager, int maxReplicasPerNode, DocCollection docCollection,
                                                 AtomicReference<AutoScalingConfig> configToRestore) throws IOException, InterruptedException {
     AutoScalingConfig initialConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+//    if (true) {
+//      return;
+//    }
     Policy policy = initialConfig.getPolicy();
     String policyName = docCollection.getPolicyName();
     if (policyName == null) {
       policyName = CollectionAdminParams.AUTO_PREFIX + docCollection.getName();
       docCollection.getProperties().put(Policy.POLICY, policyName);
+    } else if (policyName.startsWith(CollectionAdminParams.AUTO_PREFIX) && !policyName.endsWith(docCollection.getName())) {
+      // don't allow using auto-created policy belonging to a different collection
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot reuse auto-created policy " + policyName +
+          " with a different collection " + docCollection.getName());
     }
     Map<String, List<Clause>> policies = policy.getPolicies();
     List<Clause> clauses = policies.get(policyName);
@@ -509,7 +516,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           alreadyExists = true;
           break;
         }
-        if (clause.getReplica() != null) {
+        if (clause.getReplica() != null &&
+            clause.getReplica().getOperand().equals(c.getReplica().getOperand()) &&
+            clause.getReplica().getValue() != c.getReplica().getValue()) {
           throw new Assign.AssignmentException("Both an existing policy=" + policyName + " and " +
               MAX_SHARDS_PER_NODE + "=" + maxReplicasPerNode +
               " was specified, cannot determine the correct replica count in policy: " + clauses +

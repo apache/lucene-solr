@@ -129,6 +129,6 @@ public interface CollectionAdminParams {
   String FOLLOW_ALIASES = "followAliases";
 
   /** Prefix for automatically created config elements. */
-  String AUTO_PREFIX = ".auto_";
+  String AUTO_PREFIX = ".AUTOCREATED_";
 
 }
