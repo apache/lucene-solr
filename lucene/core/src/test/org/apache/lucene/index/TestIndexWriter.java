@@ -44,6 +44,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -3947,6 +3949,140 @@ public class TestIndexWriter extends LuceneTestCase {
       for (Thread thread : threads) {
         thread.join();
       }
+    }
+  }
+
+  public void testMaxCompletedSequenceNumber() throws IOException, InterruptedException {
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());) {
+      assertEquals(1, writer.addDocument(new Document()));
+      assertEquals(2, writer.updateDocument(new Term("foo", "bar"), new Document()));
+      writer.flushNextBuffer();
+      assertEquals(3, writer.commit());
+      assertEquals(4, writer.addDocument(new Document()));
+      assertEquals(4, writer.getMaxCompletedSequenceNumber());
+      // commit moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(6, writer.commit());
+      assertEquals(6, writer.getMaxCompletedSequenceNumber());
+      assertEquals(7, writer.addDocument(new Document()));
+      writer.getReader().close();
+      // getReader moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(9, writer.getMaxCompletedSequenceNumber());
+    }
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+         SearcherManager manager = new SearcherManager(writer, new SearcherFactory())) {
+      CountDownLatch start = new CountDownLatch(1);
+      int numDocs = 100 + random().nextInt(500);
+      AtomicLong maxCompletedSeqID = new AtomicLong(-1);
+      Thread[] threads = new Thread[2 + random().nextInt(2)];
+      for (int i = 0; i < threads.length; i++) {
+        int idx = i;
+        threads[i] = new Thread(() -> {
+          try {
+            start.await();
+            for (int j = 0; j < numDocs; j++) {
+              Document doc = new Document();
+              String id = idx +"-"+j;
+              doc.add(new StringField("id", id, Field.Store.NO));
+              long seqNo = writer.addDocument(doc);
+              if (maxCompletedSeqID.get() < seqNo) {
+                long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+                manager.maybeRefreshBlocking();
+                maxCompletedSeqID.updateAndGet(oldVal-> Math.max(oldVal, maxCompletedSequenceNumber));
+              }
+              IndexSearcher acquire = manager.acquire();
+              try {
+                assertEquals(1, acquire.search(new TermQuery(new Term("id", id)), 10).totalHits.value);
+              } finally {
+                manager.release(acquire);
+              }
+            }
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+        });
+        threads[i].start();
+      }
+      start.countDown();
+      for (int i = 0; i < threads.length; i++) {
+        threads[i].join();
+      }
+    }
+  }
+
+  public void testEnsureMaxSeqNoIsAccurateDuringFlush() throws IOException, InterruptedException {
+    AtomicReference<CountDownLatch> waitRef = new AtomicReference<>(new CountDownLatch(0));
+    AtomicReference<CountDownLatch> arrivedRef = new AtomicReference<>(new CountDownLatch(0));
+    InfoStream stream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if ("TP".equals(component) && "DocumentsWriterPerThread addDocuments start".equals(message)) {
+          try {
+            arrivedRef.get().countDown();
+            waitRef.get().await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
+          }
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return "TP".equals(component);
+      }
+
+      @Override
+      public void close() throws IOException {
+      }
+    };
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setInfoStream(stream);
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, indexWriterConfig) {
+           @Override
+           protected boolean isEnableTestPoints() {
+             return true;
+           }
+         }) {
+      // we produce once DWPT with 1 doc
+      writer.addDocument(new Document());
+      assertEquals(1, writer.docWriter.perThreadPool.size());
+      long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+      // safe the seqNo and use the latches to block this DWPT such that a refresh must wait for it
+      waitRef.set(new CountDownLatch(1));
+      arrivedRef.set(new CountDownLatch(1));
+      Thread waiterThread = new Thread(() -> {
+        try {
+          writer.addDocument(new Document());
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      waiterThread.start();
+      arrivedRef.get().await();
+      Thread refreshThread = new Thread(() -> {
+        try {
+          writer.getReader().close();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      DocumentsWriterDeleteQueue deleteQueue = writer.docWriter.deleteQueue;
+      refreshThread.start();
+      // now we wait until the refresh has swapped the deleted queue and assert that
+      // we see an accurate seqId
+      while (writer.docWriter.deleteQueue == deleteQueue) {
+        Thread.yield(); // busy wait for refresh to swap the queue
+      }
+      try {
+        assertEquals(maxCompletedSequenceNumber, writer.getMaxCompletedSequenceNumber());
+      } finally {
+        waitRef.get().countDown();
+        waiterThread.join();
+        refreshThread.join();
+      }
+      assertEquals(maxCompletedSequenceNumber+2, writer.getMaxCompletedSequenceNumber());
     }
   }
 }
