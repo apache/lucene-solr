@@ -102,7 +102,6 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
     this(infoStream, 0, 1, () -> 0);
   }
-  
 
   private DocumentsWriterDeleteQueue(InfoStream infoStream, long generation, long startSeqNo, LongSupplier previousMaxSeqId) {
     this.infoStream = infoStream;
