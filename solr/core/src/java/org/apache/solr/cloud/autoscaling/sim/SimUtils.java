@@ -225,7 +225,6 @@ public class SimUtils {
       perColl.put("activeShards", coll.getActiveSlices().size());
       perColl.put("inactiveShards", coll.getSlices().size() - coll.getActiveSlices().size());
       perColl.put("rf", coll.getReplicationFactor());
-      perColl.put("maxShardsPerNode", coll.getMaxShardsPerNode());
       perColl.put("maxActualShardsPerNode", maxActualShardsPerNode);
       perColl.put("minActualShardsPerNode", minActualShardsPerNode);
       perColl.put("maxShardReplicasPerNode", maxShardReplicasPerNode);

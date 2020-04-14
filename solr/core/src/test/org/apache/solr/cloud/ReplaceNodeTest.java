@@ -83,7 +83,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
                         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0)
                         //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
     );
-    create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
+    create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
     
     cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));

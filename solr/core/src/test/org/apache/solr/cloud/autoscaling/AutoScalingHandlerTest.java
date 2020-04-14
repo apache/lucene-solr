@@ -106,7 +106,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLLNAME = "testSuggestionsWithPayload.COLL";
     CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
-        .setMaxShardsPerNode(4)
         .process(solrClient);
     cluster.waitForActiveCollection(COLLNAME, 1, 2);
     DocCollection collection = solrClient.getClusterStateProvider().getCollection(COLLNAME);
@@ -139,7 +138,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLLNAME = "testDiagnosticsWithPayload.COLL";
     CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
-        .setMaxShardsPerNode(4)
         .process(solrClient);
     cluster.waitForActiveCollection(COLLNAME, 1, 2);
     DocCollection collection = solrClient.getClusterStateProvider().getCollection(COLLNAME);
@@ -846,8 +844,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // lets create a collection which violates the rule replicas < 2
-    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
-        .setMaxShardsPerNode(3);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
     CollectionAdminResponse adminResponse = create.process(solrClient);
     cluster.waitForActiveCollection("readApiTestViolations", 1, 6);
     assertTrue(adminResponse.isSuccess());

@@ -53,7 +53,6 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     DocCollection collection = cmd.collection;
     assertEquals("xyz", collection.getName());
     assertEquals(1, collection.getSlicesMap().size());
-    assertEquals(1, collection.getMaxShardsPerNode());
 
     ClusterState state = new ClusterState(-1, Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
     message = new ZkNodeProps(Utils.makeMap(
@@ -61,8 +60,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
         "numShards", "2",
         "router.name", "implicit",
         "shards", "x,y",
-        "replicationFactor", "3",
-        "maxShardsPerNode", "4"
+        "replicationFactor", "3"
     ));
     cmd = mutator.createCollection(state, message);
     collection = cmd.collection;
@@ -74,7 +72,6 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertNull(collection.getSlicesMap().get("y").getRange());
     assertSame(Slice.State.ACTIVE, collection.getSlicesMap().get("x").getState());
     assertSame(Slice.State.ACTIVE, collection.getSlicesMap().get("y").getState());
-    assertEquals(4, collection.getMaxShardsPerNode());
     assertEquals(ImplicitDocRouter.class, collection.getRouter().getClass());
     assertNotNull(state.getCollectionOrNull("xyz")); // we still have the old collection
   }

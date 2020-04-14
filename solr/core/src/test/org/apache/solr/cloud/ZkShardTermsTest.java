@@ -65,7 +65,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     // When new collection is created, the old term nodes will be removed
     CollectionAdminRequest.createCollection(collection, 2, 2)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
-        .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());

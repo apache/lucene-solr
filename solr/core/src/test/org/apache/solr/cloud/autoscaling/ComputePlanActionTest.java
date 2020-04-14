@@ -283,7 +283,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf", 2, 3);
-    create.setMaxShardsPerNode(2);
     create.process(solrClient);
     
     cluster.waitForActiveCollection("testNodeWithMultipleReplicasLost", 2, 6);
@@ -363,7 +362,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 2).setMaxShardsPerNode(2);
+        "conf",1, 2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -610,7 +609,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas).setMaxShardsPerNode(2);
+        "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -637,7 +636,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     for (int i = 1; i < numCollections; i++) {
       create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_" + i,
-          "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
+          "conf", numShards, 2);
       create.process(solrClient);
 
       waitForState("Timed out waiting for replicas of new collection to be active",
@@ -708,7 +707,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String newNodeName = newNode.getNodeName();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
+        "conf", numShards, 2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",

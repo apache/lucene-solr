@@ -75,7 +75,6 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -358,8 +357,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-    if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -383,22 +380,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
       }
 
-      int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
-          Integer.MAX_VALUE :
-          maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * totalNumReplicas;
-      if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        throw new Assign.AssignmentException("Cannot create collection " + collectionName + ". Value of "
-            + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-            + ", and the number of nodes currently live or live and part of your "+OverseerCollectionMessageHandler.CREATE_NODE_SET+" is " + nodeList.size()
-            + ". This allows a maximum of " + maxShardsAllowedToCreate
-            + " to be created. Value of " + OverseerCollectionMessageHandler.NUM_SLICES + " is " + numSlices
-            + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
-            + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
-            + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
-            + ". This requires " + requestedShardsToCreate
-            + " shards to be created (higher than the allowed number)");
-      }
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
           .forCollection(collectionName)
           .forShard(shardNames)

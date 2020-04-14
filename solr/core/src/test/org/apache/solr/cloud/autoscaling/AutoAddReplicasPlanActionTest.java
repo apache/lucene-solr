@@ -87,18 +87,15 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     CollectionAdminRequest.createCollection(collection1, "conf", 2, 2)
         .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
         .setAutoAddReplicas(true)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection(collection2, "conf", 1, 2)
         .setCreateNodeSet(jetty2.getNodeName()+","+jetty3.getNodeName())
         .setAutoAddReplicas(false)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     // the number of cores in jetty1 (5) will be larger than jetty3 (1)
     CollectionAdminRequest.createCollection("testSimple3", "conf", 3, 1)
         .setCreateNodeSet(jetty1.getNodeName())
         .setAutoAddReplicas(false)
-        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection1, 2, 4);

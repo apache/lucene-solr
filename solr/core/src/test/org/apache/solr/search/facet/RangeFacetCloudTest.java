@@ -84,7 +84,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     final int numShards = TestUtil.nextInt(random(),1,5);
     final int numReplicas = 1;
-    final int maxShardsPerNode = 1;
     final int nodeCount = numShards * numReplicas;
 
     configureCluster(nodeCount)
@@ -92,7 +91,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       .configure();
 
     assertEquals(0, (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
-                     .setMaxShardsPerNode(maxShardsPerNode)
                      .setProperties(Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                      .process(cluster.getSolrClient())).getStatus());
     

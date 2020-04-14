@@ -128,7 +128,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     String collectionName = "testExecute";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
     
     cluster.waitForActiveCollection(collectionName, 1, 2);
@@ -222,7 +221,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     String collectionName = "testIntegration";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
     
     cluster.waitForActiveCollection(collectionName, 1, 2);
@@ -288,7 +286,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     String collectionName = "testTaskTimeout";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     cluster.waitForActiveCollection(collectionName, 1, 2);
@@ -346,7 +343,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     String collectionName = "testTaskFail";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     cluster.waitForActiveCollection(collectionName, 1, 2);

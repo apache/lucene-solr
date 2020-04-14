@@ -106,7 +106,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(true)
-      .setMaxShardsPerNode(2)
       .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
@@ -154,7 +153,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(true)
-      .setMaxShardsPerNode(2)
       .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
@@ -207,7 +205,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(false) // NOTE: false
-      .setMaxShardsPerNode(2)
       .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
@@ -278,7 +275,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(false) // NOTE: false
-      .setMaxShardsPerNode(2)
       .process(cluster.getSolrClient());
     
     log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", ALT_COLLECTION,
@@ -288,7 +284,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(true) // NOTE: true
-      .setMaxShardsPerNode(2)
       .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 2, 4);

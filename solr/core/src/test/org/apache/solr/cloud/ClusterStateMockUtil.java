@@ -35,7 +35,7 @@ import org.apache.solr.common.util.Utils;
 
 /**
  * A utility class that can create mock ZkStateReader objects with custom ClusterState objects created
- * using a simple string based description. See {@link #buildClusterState(String, int, int, String...)} for
+ * using a simple string based description. See {@link #buildClusterState(String, int, String...)} for
  * details on how the cluster state can be created.
  *
  * @lucene.experimental
@@ -46,10 +46,6 @@ public class ClusterStateMockUtil {
 
   public static ZkStateReader buildClusterState(String clusterDescription, String ... liveNodes) {
     return buildClusterState(clusterDescription, 1, liveNodes);
-  }
-
-  public static ZkStateReader buildClusterState(String clusterDescription, int replicationFactor, String ... liveNodes) {
-    return buildClusterState(clusterDescription, replicationFactor, 10, liveNodes);
   }
 
   /**
@@ -112,11 +108,10 @@ public class ClusterStateMockUtil {
    *
    */
   @SuppressWarnings("resource")
-  public static ZkStateReader buildClusterState(String clusterDescription, int replicationFactor, int maxShardsPerNode, String ... liveNodes) {
+  public static ZkStateReader buildClusterState(String clusterDescription, int replicationFactor, String ... liveNodes) {
     Map<String,Slice> slices = null;
     Map<String,Replica> replicas = null;
     Map<String,Object> collectionProps = new HashMap<>();
-    collectionProps.put(ZkStateReader.MAX_SHARDS_PER_NODE, Integer.toString(maxShardsPerNode));
     collectionProps.put(ZkStateReader.REPLICATION_FACTOR, Integer.toString(replicationFactor));
     Map<String,DocCollection> collectionStates = new HashMap<>();
     DocCollection docCollection = null;

@@ -412,7 +412,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     final String collectionName = "addshard_with_reptype_using_policy";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "s1", 1, 1, 1)
-        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collectionName, 1, 3);

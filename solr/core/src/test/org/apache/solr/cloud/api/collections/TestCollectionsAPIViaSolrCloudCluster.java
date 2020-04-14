@@ -56,7 +56,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 1;
   private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
@@ -77,14 +76,12 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   private void createCollection(String collectionName, String createNodeSet) throws Exception {
     if (random().nextBoolean()) { // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .processAndWait(cluster.getSolrClient(), 30);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .process(cluster.getSolrClient());

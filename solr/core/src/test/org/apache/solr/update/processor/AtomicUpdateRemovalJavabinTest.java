@@ -45,7 +45,6 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 1;
-  private static final int MAX_SHARDS_PER_NODE = 1;
   private static final Date DATE_1 = new Date();
   private static final Date DATE_2 = Date.from(Instant.ofEpochSecond(1554243909));
 
@@ -56,7 +55,6 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
-        .setMaxShardsPerNode(MAX_SHARDS_PER_NODE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION, 1, 1);

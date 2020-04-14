@@ -142,7 +142,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 public void testCantConnectToPullReplica() throws Exception {
     int numShards = 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
-      .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
     addDocs(10);
@@ -185,7 +184,6 @@ public void testCantConnectToPullReplica() throws Exception {
   public void testCantConnectToLeader() throws Exception {
     int numShards = 1;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
-      .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
     addDocs(10);
@@ -221,7 +219,6 @@ public void testCantConnectToPullReplica() throws Exception {
   public void testPullReplicaDisconnectsFromZooKeeper() throws Exception {
     int numShards = 1;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
-      .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);

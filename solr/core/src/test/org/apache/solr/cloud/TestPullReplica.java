@@ -136,7 +136,6 @@ public class TestPullReplica extends SolrCloudTestCase {
         case 0:
           // Sometimes use SolrJ
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-          .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
           break;
         case 1:
@@ -227,7 +226,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
-    .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
@@ -285,7 +283,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   public void testAddRemovePullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 2 shards and 1 replica each", collectionName, clusterShape(2, 2));
     DocCollection docCollection = assertNumberOfReplicas(2, 0, 0, false, true);
@@ -321,7 +318,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testPullReplicaStates() throws Exception {
     // Validate that pull replicas go through the correct states when starting, stopping, reconnecting
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
 //    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed?
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
@@ -351,7 +347,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean()?1:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Unexpected replica count", collectionName, activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
@@ -395,7 +390,6 @@ public class TestPullReplica extends SolrCloudTestCase {
    */
   private void doTestNoLeader(boolean removeReplica) throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
@@ -501,7 +495,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   public void testKillPullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
 //    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed?
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));

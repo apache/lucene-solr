@@ -378,7 +378,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
   private void createCollection(String name, String config, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
-        .setMaxShardsPerNode(-1)
         .process(solrClient);
 
     cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);

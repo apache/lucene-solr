@@ -77,8 +77,7 @@ public class TestUtilizeNode extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
     log.info("Creating Collection...");
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION)
-        .setMaxShardsPerNode(2);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     cloudClient.request(create);
 
     log.info("Spinning up additional jettyX...");

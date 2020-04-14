@@ -46,7 +46,6 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(NUM_SHARDS).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));

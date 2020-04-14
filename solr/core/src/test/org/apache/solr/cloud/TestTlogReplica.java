@@ -152,7 +152,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
-        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
@@ -328,7 +327,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int numReplicas = random().nextBoolean()?1:2;
     int numNrtReplicas = random().nextBoolean()?0:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numNrtReplicas, numReplicas, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Unexpected replica count", collectionName, activeReplicaCount(numNrtReplicas, numReplicas, 0));
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
@@ -753,7 +751,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private DocCollection createAndWaitForCollection(int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) throws SolrServerException, IOException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, numNrtReplicas, numTlogReplicas, numPullReplicas)
-    .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",

@@ -62,7 +62,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
-    create.setMaxShardsPerNode(2);
     cloudClient.request(create);
     cluster.waitForActiveCollection(collection, 1, 1);
 
@@ -130,7 +129,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
-    create.setMaxShardsPerNode(2);
     cloudClient.request(create);
     
     cluster.waitForActiveCollection(collection, 2, 2);

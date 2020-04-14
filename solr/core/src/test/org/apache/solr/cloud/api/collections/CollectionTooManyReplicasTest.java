@@ -51,7 +51,6 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   public void testAddTooManyReplicas() throws Exception {
     final String collectionName = "TooManyReplicasInSeveralFlavors";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
 
     // I have two replicas, one for each shard
@@ -122,7 +121,6 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
     String collectionName = "TooManyReplicasWhenAddingShards";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 2)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
 
     // We have two nodes, maxShardsPerNode is set to 2. Therefore, we should be able to add 2 shards each with
@@ -179,7 +177,6 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   public void testDownedShards() throws Exception {
     String collectionName = "TooManyReplicasWhenAddingDownedNode";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
 
     // Shut down a Jetty, I really don't care which

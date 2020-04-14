@@ -59,7 +59,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -88,7 +87,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       RULE,
       SNITCH,
       REPLICATION_FACTOR,
-      MAX_SHARDS_PER_NODE,
       AUTO_ADD_REPLICAS,
       POLICY,
       COLL_CONF,
@@ -437,7 +435,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String shards;
     protected String routerField;
     protected Integer numShards;
-    protected Integer maxShardsPerNode;
     protected Integer nrtReplicas;
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
@@ -477,7 +474,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
     public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
-    public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
@@ -498,7 +494,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getRouterName() { return  routerName; }
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
-    public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
@@ -557,9 +552,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(CREATE_NODE_SET_PARAM, createNodeSet);
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
-      }
-      if (maxShardsPerNode != null) {
-        params.set( ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
       }
       if (routerName != null)
         params.set( "router.name", routerName);
@@ -1172,9 +1164,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.NAME, backupName);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); //note: optional
       params.set("collection.configName", configName); //note: optional
-      if (maxShardsPerNode != null) {
-        params.set( ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-      }
       if (replicationFactor != null && nrtReplicas != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");

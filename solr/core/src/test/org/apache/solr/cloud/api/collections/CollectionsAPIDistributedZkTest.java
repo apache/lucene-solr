@@ -407,11 +407,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
       int numShards = TestUtil.nextInt(random(), 0, cluster.getJettySolrRunners().size()) + 1;
       int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
-      int maxShardsPerNode = (((numShards * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
       createRequests[i]
-          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor)
-          .setMaxShardsPerNode(maxShardsPerNode);
+          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor);
       createRequests[i].processAsync(cluster.getSolrClient());
       
       Coll coll = new Coll();
@@ -607,7 +605,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String collectionName = "addReplicaColl";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 4);
 

@@ -1100,8 +1100,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "name", "perf" + i,
             ZkStateReader.NUM_SHARDS_PROP, "1",
             "stateFormat", String.valueOf(STATE_FORMAT),
-            ZkStateReader.REPLICATION_FACTOR, "1",
-            ZkStateReader.MAX_SHARDS_PER_NODE, "1"
+            ZkStateReader.REPLICATION_FACTOR, "1"
             );
         ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
@@ -1477,12 +1476,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // create collection
       {
-        final Integer maxShardsPerNode = numReplicas * numShards;
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
             "name", COLLECTION,
             ZkStateReader.NUM_SHARDS_PROP, numShards.toString(),
-            ZkStateReader.REPLICATION_FACTOR, "1",
-            ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
+            ZkStateReader.REPLICATION_FACTOR, "1"
             );
         q.offer(Utils.toJSON(m));
       }

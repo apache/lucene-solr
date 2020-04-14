@@ -71,11 +71,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
       }
-      req.setMaxShardsPerNode(2);
       setV2(req);
       client.request(req);
       assertV2CallsCount();
-      createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
@@ -411,7 +410,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
-      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1).setMaxShardsPerNode(1)).process(client);
+      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)).process(client);
       assertV2CallsCount();
       waitForRecoveriesToFinish(cname, true);
 

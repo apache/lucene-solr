@@ -35,7 +35,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -69,7 +68,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numNrtReplicas;
   private final Integer numTlogReplicas;
   private final Integer numPullReplicas;
-  private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
   private final String policy;
   private final Boolean readOnly;
@@ -97,7 +95,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
     this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
-    this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
     this.policy = (String) props.get(Policy.POLICY);
     this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
@@ -149,7 +146,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Object o = props.get(propName);
     if (o == null) return def;
     switch (propName) {
-      case MAX_SHARDS_PER_NODE:
       case REPLICATION_FACTOR:
       case NRT_REPLICAS:
       case PULL_REPLICAS:
@@ -262,14 +258,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return autoAddReplicas;
   }
   
-  public int getMaxShardsPerNode() {
-    if (maxShardsPerNode == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
-    }
-    //maxShardsPerNode=0 when policy is used. This variable is not important then
-    return maxShardsPerNode == 0 ? Integer.MAX_VALUE : maxShardsPerNode;
-  }
-
   public String getZNode(){
     return znode;
   }

@@ -147,7 +147,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   public void testTrigger() throws Exception {
     String collectionName = "testTrigger_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
     
     if (SPEED == 1) {
@@ -256,7 +256,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   public void testSplitIntegration() throws Exception {
     String collectionName = "testSplitIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
     
     if (SPEED == 1) {
@@ -379,7 +379,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   public void testMergeIntegration() throws Exception {
     String collectionName = "testMergeIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
     
     if (SPEED == 1) {
@@ -493,7 +493,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   public void testMaxOps() throws Exception {
     String collectionName = "testMaxOps_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 5, 2).setMaxShardsPerNode(10);
+        "conf", 5, 2);
     create.process(solrClient);
     
     CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
@@ -636,7 +636,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   public void testSplitConfig() throws Exception {
     String collectionName = "testSplitConfig_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
     CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
         CloudUtil.clusterShape(2, 2, false, true));

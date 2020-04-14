@@ -90,7 +90,6 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
         props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, legacyAnti));
 
     CollectionAdminRequest.createCollection(coll, "conf", 1, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(coll, 1, 1);

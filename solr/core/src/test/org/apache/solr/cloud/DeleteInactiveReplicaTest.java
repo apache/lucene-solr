@@ -56,10 +56,8 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
     int numShards = 2;
-    int maxShardsPerNode = ((((numShards + 1) * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
     waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
       return DocCollection.isFullyActive(n, c, numShards, replicationFactor);

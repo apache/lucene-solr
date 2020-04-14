@@ -109,7 +109,6 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         // setup the target cluster
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 2)
-            .setMaxShardsPerNode(2)
             .process(target.getSolrClient());
         target.waitForActiveCollection("cdcr-target", 1, 2);
         CloudSolrClient targetSolrClient = target.getSolrClient();

@@ -66,7 +66,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -131,16 +130,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     assert totalReplicasPerShard > 0;
     
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
-    int availableNodeCount = nodeList.size();
-    if (maxShardsPerNode != -1 && (numShards * totalReplicasPerShard) > (availableNodeCount * maxShardsPerNode)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "Solr cloud with available number of nodes:%d is insufficient for"
-              + " restoring a collection with %d shards, total replicas per shard %d and maxShardsPerNode %d."
-              + " Consider increasing maxShardsPerNode value OR number of available nodes.",
-              availableNodeCount, numShards, totalReplicasPerShard, maxShardsPerNode));
-    }
-
     //Upload the configs
     String configName = (String) properties.get(CollectionAdminParams.COLL_CONF);
     String restoreConfigName = message.getStr(CollectionAdminParams.COLL_CONF, configName);
@@ -167,7 +156,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(NRT_REPLICAS, numNrtReplicas);
       propMap.put(TLOG_REPLICAS, numTlogReplicas);
       propMap.put(PULL_REPLICAS, numPullReplicas);
-      properties.put(MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
