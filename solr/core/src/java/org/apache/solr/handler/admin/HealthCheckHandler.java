@@ -46,12 +46,12 @@ import static org.apache.solr.common.params.CommonParams.STATUS;
  * <p>
  *   By default the handler returns status <code>200 OK</code> if all checks succeed, else it returns
  *   status <code>503 UNAVAILABLE</code>:
+ * </p>
  *   <ol>
  *     <li>Cores container is active.</li>
  *     <li>Node connected to zookeeper.</li>
  *     <li>Node listed in <code>live_nodes</code> in zookeeper.</li>
  *   </ol>
- * </p>
  *
  * <p>
  *   The handler takes an optional request parameter <code>requireHealthyCores=true</code>
