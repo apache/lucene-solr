@@ -112,6 +112,22 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       cluster.shutdown();
     }
   }
+  @Test
+  public void testApiPackage() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("cloud-minimal"))
+            .configure();
+    String errPath = "/error/details[0]/errorMessages[0]";
+    try {
+
+
+
+    } finally {
+      cluster.shutdown();
+    }
+  }
 
   public static class C1 {
 
