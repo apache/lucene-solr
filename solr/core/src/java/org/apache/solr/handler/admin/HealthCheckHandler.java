@@ -40,14 +40,27 @@ import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.OK;
 import static org.apache.solr.common.params.CommonParams.STATUS;
 
-/*
+/**
  * Health Check Handler for reporting the health of a specific node.
  *
- * This checks if:
- * 1. Cores container is active.
- * 2. Node connected to zookeeper.
- * 3. Node listed in 'live_nodes' in zookeeper.
- * 4. No RECOVERING or DOWN cores (if request param requireHealthyCores=true)
+ * <p>
+ *   By default the handler returns status <code>200 OK</code> if all checks succeed, else it returns
+ *   status <code>503 UNAVAILABLE</code>:
+ *   <ol>
+ *     <li>Cores container is active.</li>
+ *     <li>Node connected to zookeeper.</li>
+ *     <li>Node listed in <code>live_nodes</code> in zookeeper.</li>
+ *   </ol>
+ * </p>
+ *
+ * <p>
+ *   The handler takes an optional request parameter <code>requireHealthyCores=true</code>
+ *   which will also require that all local cores that are part of an <b>active shard</b>
+ *   are done initializing, i.e. not in states <code>RECOVERING</code> or <code>DOWN</code>.
+ *   This parameter is designed to help during rolling restarts, to make sure each node
+ *   is fully initialized and stable before proceeding with restarting the next node, and thus
+ *   reduce the risk of restarting the last live replica of a shard.
+ * </p>
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 
