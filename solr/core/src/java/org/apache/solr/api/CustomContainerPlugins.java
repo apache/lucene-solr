@@ -122,7 +122,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       } else {
         ApiHolder old = plugins.get(apiInfo.key);
         if (path.equals(apiInfo.key)) {
-          if (Objects.equals(info.packageVersion, old.apiInfo.info.packageVersion)) {
+          if (Objects.equals(info.version, old.apiInfo.info.version)) {
             //this plugin uses the same version. No need to update
             continue;
           }
@@ -202,31 +202,32 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
       Pair<String, String> klassInfo = org.apache.solr.core.PluginInfo.parseClassName(info.klass);
-      pkg = klassInfo.second();
-      if (klassInfo.first() != null) {
-        PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(klassInfo.first());
+      pkg = klassInfo.first();
+      if (pkg != null) {
+        PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
         if (p == null) {
           errs.add("Invalid package " + klassInfo.first());
           return;
         }
-        this.pkgVersion = p.getLatest();
+        this.pkgVersion = p.getLatest(info.version);
         try {
-          klas = pkgVersion.getLoader().findClass(pkg, Object.class);
+          klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
         } catch (Exception e) {
-          errs.add("Error instantiating class " + e.getMessage());
+          log.error("Error loading class", e);
+          errs.add("Error loading class " + e.getMessage());
           return;
         }
       } else {
         try {
           klas = Class.forName(klassInfo.second());
         } catch (ClassNotFoundException e) {
-          errs.add("Error instantiating class " + e.getMessage());
+          errs.add("Error loading class " + e.getMessage());
           return;
         }
         pkgVersion = null;
       }
-      if(!Modifier.isPublic(klas.getModifiers()) || !Modifier.isStatic(klas.getModifiers())){
-        errs.add("Class must be public and static : "+ klas.getName());
+      if (!Modifier.isPublic(klas.getModifiers())) {
+        errs.add("Class must be public and static : " + klas.getName());
         return;
       }
 
@@ -252,7 +253,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length > 1 ||
           (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {
-        errs.add("Must have a no-arg constructor or CoreContainer constructor ");
+        errs.add("Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
         return;
       }
       if (!Modifier.isPublic(constructor.getModifiers())) {

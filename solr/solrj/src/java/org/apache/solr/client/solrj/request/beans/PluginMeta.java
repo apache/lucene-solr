@@ -28,5 +28,5 @@ public class PluginMeta implements ReflectMapWriter {
   public String klass;
 
   @JsonProperty
-  public String packageVersion;
+  public String version;
 }

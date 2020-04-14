@@ -124,7 +124,7 @@ public class ContainerPluginsApi {
 
   private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) {
     if (info.klass.indexOf(':') > 0) {
-      if (info.packageVersion == null) {
+      if (info.version == null) {
         payload.addError("Using package. must provide a packageVersion");
         return;
       }
