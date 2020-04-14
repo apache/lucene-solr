@@ -17,9 +17,7 @@
 package org.apache.lucene.index;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,11 +53,6 @@ class BufferedUpdates implements Accountable {
      OBJ_HEADER + INT. */
   final static int BYTES_PER_DEL_TERM = 9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 7*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 10*Integer.BYTES;
 
-  /* Rough logic: del docIDs are List<Integer>.  Say list
-     allocates ~2X size (2*POINTER).  Integer is OBJ_HEADER
-     + int */
-  final static int BYTES_PER_DEL_DOCID = 2*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
-
   /* Rough logic: HashMap has an array[Entry] w/ varying
      load factor (say 2 * POINTER).  Entry is object w/
      Query key, Integer val, int hash, Entry next
@@ -71,7 +64,6 @@ class BufferedUpdates implements Accountable {
 
   final Map<Term,Integer> deleteTerms = new HashMap<>(); // TODO cut this over to FieldUpdatesBuffer
   final Map<Query,Integer> deleteQueries = new HashMap<>();
-  final List<Integer> deleteDocIDs = new ArrayList<>();
 
   final Map<String, FieldUpdatesBuffer> fieldUpdates = new HashMap<>();
   
@@ -96,7 +88,7 @@ class BufferedUpdates implements Accountable {
   public String toString() {
     if (VERBOSE_DELETES) {
       return "gen=" + gen + " numTerms=" + numTermDeletes + ", deleteTerms=" + deleteTerms
-        + ", deleteQueries=" + deleteQueries + ", deleteDocIDs=" + deleteDocIDs + ", fieldUpdates=" + fieldUpdates
+        + ", deleteQueries=" + deleteQueries + ", fieldUpdates=" + fieldUpdates
         + ", bytesUsed=" + bytesUsed;
     } else {
       String s = "gen=" + gen;
@@ -105,9 +97,6 @@ class BufferedUpdates implements Accountable {
       }
       if (deleteQueries.size() != 0) {
         s += " " + deleteQueries.size() + " deleted queries";
-      }
-      if (deleteDocIDs.size() != 0) {
-        s += " " + deleteDocIDs.size() + " deleted docIDs";
       }
       if (numFieldUpdates.get() != 0) {
         s += " " + numFieldUpdates.get() + " field updates";
@@ -126,11 +115,6 @@ class BufferedUpdates implements Accountable {
     if (current == null) {
       bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
     }
-  }
-
-  public void addDocID(int docID) {
-    deleteDocIDs.add(Integer.valueOf(docID));
-    bytesUsed.addAndGet(BYTES_PER_DEL_DOCID);
   }
 
   public void addTerm(Term term, int docIDUpto) {
@@ -185,7 +169,6 @@ class BufferedUpdates implements Accountable {
   void clear() {
     deleteTerms.clear();
     deleteQueries.clear();
-    deleteDocIDs.clear();
     numTermDeletes.set(0);
     numFieldUpdates.set(0);
     fieldUpdates.clear();
@@ -195,16 +178,11 @@ class BufferedUpdates implements Accountable {
   }
   
   boolean any() {
-    return deleteTerms.size() > 0 || deleteDocIDs.size() > 0 || deleteQueries.size() > 0 || numFieldUpdates.get() > 0;
+    return deleteTerms.size() > 0 || deleteQueries.size() > 0 || numFieldUpdates.get() > 0;
   }
 
   @Override
   public long ramBytesUsed() {
     return bytesUsed.get() + fieldUpdatesBytesUsed.get() + termsBytesUsed.get();
-  }
-
-  void clearDeletedDocIds() {
-    bytesUsed.addAndGet(-deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
-    deleteDocIDs.clear();
   }
 }
