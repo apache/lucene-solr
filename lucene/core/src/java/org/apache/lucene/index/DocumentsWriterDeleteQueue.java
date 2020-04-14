@@ -365,7 +365,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
 
     /**
-     * Returns <code>true</code> iff the given node is identical to the the slices tail,
+     * Returns <code>true</code> iff the given node is identical to the slices tail,
      * otherwise <code>false</code>.
      */
     boolean isTail(Node<?> node) {
@@ -569,7 +569,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     } else {
       // if we haven't advanced the seqNo make sure we fall back to the previous queue
       long value = previousMaxSeqId.getAsLong();
-      assert value <= startSeqNo : "illegal max sequence ID: " + value + " start was: " + startSeqNo;
+      assert value < startSeqNo : "illegal max sequence ID: " + value + " start was: " + startSeqNo;
       return value;
     }
   }
@@ -591,7 +591,11 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     advanced = true;
     long seqNo = getLastSequenceNumber() + maxNumPendingOps + 1;
     maxSeqNo = seqNo;
-    return new DocumentsWriterDeleteQueue(infoStream, generation + 1, seqNo + 1, () -> nextSeqNo.get() - 1);
+    return new DocumentsWriterDeleteQueue(infoStream, generation + 1, seqNo + 1,
+        // don't pass ::getMaxCompletedSeqNo here b/c otherwise we keep an reference to this queue
+        // and this will be a memory leak since the queues can't be GCed
+        () -> nextSeqNo.get() - 1);
+
   }
 
   /**

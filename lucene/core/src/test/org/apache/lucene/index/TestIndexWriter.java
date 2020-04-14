@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -4045,11 +4044,12 @@ public class TestIndexWriter extends LuceneTestCase {
            protected boolean isEnableTestPoints() {
              return true;
            }
-         };
-         SearcherManager manager = new SearcherManager(writer, new SearcherFactory())) {
+         }) {
+      // we produce once DWPT with 1 doc
       writer.addDocument(new Document());
       assertEquals(1, writer.docWriter.perThreadPool.size());
       long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+      // safe the seqNo and use the latches to block this DWPT such that a refresh must wait for it
       waitRef.set(new CountDownLatch(1));
       arrivedRef.set(new CountDownLatch(1));
       Thread waiterThread = new Thread(() -> {
@@ -4063,19 +4063,25 @@ public class TestIndexWriter extends LuceneTestCase {
       arrivedRef.get().await();
       Thread refreshThread = new Thread(() -> {
         try {
-          manager.maybeRefreshBlocking();
+          writer.getReader().close();
         } catch (IOException e) {
           throw new AssertionError(e);
         }
       });
+      DocumentsWriterDeleteQueue deleteQueue = writer.docWriter.deleteQueue;
       refreshThread.start();
-      while (writer.docWriter.perThreadPool.hasLockedWriters() == false) {
-        Thread.yield(); // busy wait for refresh to lock writers
+      // now we wait until the refresh has swapped the deleted queue and assert that
+      // we see an accurate seqId
+      while (writer.docWriter.deleteQueue == deleteQueue) {
+        Thread.yield(); // busy wait for refresh to swap the queue
       }
-      assertEquals(maxCompletedSequenceNumber, writer.getMaxCompletedSequenceNumber());
-      waitRef.get().countDown();
-      waiterThread.join();
-      refreshThread.join();
+      try {
+        assertEquals(maxCompletedSequenceNumber, writer.getMaxCompletedSequenceNumber());
+      } finally {
+        waitRef.get().countDown();
+        waiterThread.join();
+        refreshThread.join();
+      }
       assertEquals(maxCompletedSequenceNumber+2, writer.getMaxCompletedSequenceNumber());
     }
   }
