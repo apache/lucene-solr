@@ -23,22 +23,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePuller;
 import org.apache.solr.store.blob.process.CorePusher;
-import org.apache.solr.store.blob.util.BlobStoreUtils;
-import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * This class helps coordinate synchronization of concurrent indexing, pushes and pulls
@@ -121,15 +119,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class SharedCoreConcurrencyController {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  /**
-   * Time indexing thread needs to wait to try acquiring pull write lock before checking if someone else has already done the pull.
-   */
-  public static int SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK = 5;
-  /**
-   * Max attempts by indexing thread to try acquiring pull write lock before bailing out. Ideally bail out scenario should never happen.
-   * If it does then either we are too slow in pulling and can tune this value or something else is wrong.
-   */
-  public static int MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK = 10;
 
   /**
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
@@ -173,7 +162,7 @@ public class SharedCoreConcurrencyController {
   /**
    * Returns a {@link ReentrantReadWriteLock} corresponding to the core. It protects pulls from each other and indexing from pulls.
    * A write lock is required whenever pulling contents into a core from shared store.
-   * A read lock is required for the whole duration of indexing on the core(including the push to shared store {@link CorePusher#pushCoreToBlob(PushPullData)}.)
+   * A read lock is required for the whole duration of indexing on the core(including the push to shared store {@link CorePusher#pushCoreToSharedStore(SolrCore, PushPullData)}.)
    */
   public ReentrantReadWriteLock getCorePullLock(String collectionName, String shardName, String coreName) {
     SharedCoreVersionMetadata coreVersionMetadata = getOrCreateCoreVersionMetadata(collectionName, shardName, coreName);
@@ -182,7 +171,7 @@ public class SharedCoreConcurrencyController {
 
   /**
    * Returns a {@link ReentrantLock} corresponding to the core. It protects shared store pushes from each other.
-   * This lock is required for pushing the core to shared store {@link CorePusher#pushCoreToBlob(PushPullData)}.
+   * This lock is required for pushing the core to shared store {@link CorePusher#pushCoreToSharedStore(SolrCore, PushPullData)}.
    */
   public ReentrantLock getCorePushLock(String collectionName, String shardName, String coreName) {
     SharedCoreVersionMetadata coreVersionMetadata = getOrCreateCoreVersionMetadata(collectionName, shardName, coreName);
@@ -324,9 +313,9 @@ public class SharedCoreConcurrencyController {
     /**
      * Whether there is a soft guarantee of being in sync with {@link SharedShardVersionMetadata} of the shard.
      * In steady state this guarantee is provided for leader cores when they push
-     * {@link CorePusher#pushCoreToBlob(PushPullData)}
+     * {@link CorePusher#pushCoreToSharedStore(SolrCore, PushPullData)} 
      * and pull
-     * {@link BlobStoreUtils#syncLocalCoreWithSharedStore(String, String, String, CoreContainer, SharedShardVersionMetadata, boolean)}
+     * {@link CorePuller#pullCoreFromSharedStore(SolrCore, String, SharedShardVersionMetadata, boolean)} 
      * {@link CorePullTask#pullCoreFromBlob(boolean)} ()}
      * since followers cannot index. In presence of this guarantee we can skip consulting zookeeper before processing an indexing batch.
      */

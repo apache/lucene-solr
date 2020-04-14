@@ -22,15 +22,17 @@ import java.util.Locale;
 import java.util.concurrent.Future;
 
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
-import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
@@ -88,7 +90,6 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
     CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
     if (cloudDesc.getReplicaType().equals(Replica.Type.SHARED)) {
       CoreContainer cc = core.getCoreContainer();
-      CoreUpdateTracker sharedCoreTracker = new CoreUpdateTracker(cc);
 
       String collectionName = cloudDesc.getCollectionName();
       String shardName = cloudDesc.getShardId();
@@ -113,15 +114,13 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       // sync local cache with zk's default information i.e. equivalent of no-op pull
       // this syncing is necessary for the zk conditional update to succeed at the end of core push
       SharedCoreConcurrencyController concurrencyController = cc.getSharedStoreManager().getSharedCoreConcurrencyController();
-      String sharedBlobName = Assign.buildSharedShardName(collectionName, shardName);
+      ClusterState clusterState = core.getCoreContainer().getZkController().getClusterState();
+      DocCollection collection = clusterState.getCollection(collectionName);
+      String sharedShardName = (String) collection.getSlicesMap().get(shardName).get(ZkStateReader.SHARED_SHARD_NAME);
       concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName,
-          shardVersionMetadata, BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName));
+          shardVersionMetadata, BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedShardName));
 
-      sharedCoreTracker.persistShardIndexToSharedStore(
-          cc.getZkController().zkStateReader.getClusterState(),
-          collectionName,
-          shardName,
-          coreName);
+      new CorePusher().pushCoreToSharedStore(core, sharedShardName);
     }
   }
 }

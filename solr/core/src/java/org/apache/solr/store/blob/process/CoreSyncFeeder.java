@@ -23,7 +23,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-//import com.force.commons.util.concurrent.NamedThreadFactory; difference?
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.store.shared.SharedStoreManager;
 import org.slf4j.Logger;
@@ -43,8 +42,8 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
    * Maximum number of elements in the queue, NOT counting re-inserts after failures. Total queue size might therefore
    * exceed this value by the number of syncThreads which is around 5 or 10...
    * <p>
-   * Note that this queue sits behind other tracking queues (see {@link CoreUpdateTracker} and
-   * {@link CorePullTracker}). The other queue has to be large, this one does not.
+   * Note that this queue sits behind another tracking queue (see {@link CorePullTracker}).
+   * The other queue has to be large, this one does not.
    */
   protected static final int ALMOST_MAX_WORKER_QUEUE_SIZE = 2000;
 

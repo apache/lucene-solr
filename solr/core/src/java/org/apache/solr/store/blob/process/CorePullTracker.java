@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracks cores that are being queried and if necessary enqueues them for pull from blob store
+ * Tracks cores that are being queried and if necessary enqueues them for pull from the shared store
  */
 public class CorePullTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -99,7 +99,8 @@ public class CorePullTracker {
 
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error enqueueing a pull from the shared store," +
+            " collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName, ex);
       }
     }
   }
@@ -120,7 +121,7 @@ public class CorePullTracker {
   /**
    * Enqueues a core for pull
    * 
-   * @param pushPullData pull request data required to interact with blob store
+   * @param pushPullData pull request data required to interact with the shared store
    * @param createCoreIfAbsent whether to create core before pulling if absent
    * @param waitForSearcher whether to wait for newly pulled contents be reflected through searcher 
    */
