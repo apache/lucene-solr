@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
@@ -175,6 +176,9 @@ final class DocumentsWriterPerThread {
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
   private final ReentrantLock lock = new ReentrantLock();
+  private int[] deleteDocIDs = new int[0];
+  private int numDeletedDocIds = 0;
+
 
   public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
@@ -202,7 +206,7 @@ final class DocumentsWriterPerThread {
     }
     this.enableTestPoints = enableTestPoints;
     this.indexVersionCreated = indexVersionCreated;
-    // this should be the last call in the ctor 
+    // this should be the last call in the ctor
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
   }
@@ -313,9 +317,14 @@ final class DocumentsWriterPerThread {
   // we only mark these docs as deleted and turn it into a livedocs
   // during flush
   private void deleteLastDocs(int docCount) {
-    for (int docId = numDocsInRAM - docCount; docId < numDocsInRAM; docId++) {
-      pendingUpdates.addDocID(docId);
+    int from = numDocsInRAM-docCount;
+    int to = numDocsInRAM;
+    int size = deleteDocIDs.length;
+    deleteDocIDs = ArrayUtil.grow(deleteDocIDs, numDeletedDocIds + (to-from));
+    for (int docId = from; docId < to; docId++) {
+      deleteDocIDs[numDeletedDocIds++] = docId;
     }
+    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.SIZE);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -367,14 +376,16 @@ final class DocumentsWriterPerThread {
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
-    if (pendingUpdates.deleteDocIDs.size() > 0) {
+    if (numDeletedDocIds > 0) {
       flushState.liveDocs = new FixedBitSet(numDocsInRAM);
       flushState.liveDocs.set(0, numDocsInRAM);
-      for(int delDocID : pendingUpdates.deleteDocIDs) {
-        flushState.liveDocs.clear(delDocID);
+      for (int i = 0; i < numDeletedDocIds; i++) {
+        flushState.liveDocs.clear(deleteDocIDs[i]);
       }
-      flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.clearDeletedDocIds();
+      flushState.delCountOnFlush = numDeletedDocIds;
+      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.SIZE));
+      deleteDocIDs = null;
+
     }
 
     if (aborted) {
@@ -606,7 +617,7 @@ final class DocumentsWriterPerThread {
   public String toString() {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
-        + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
+        + numDocsInRAM + ", deleteQueue=" + deleteQueue + ", " + numDeletedDocIds + " deleted docIds" + "]";
   }
 
 
