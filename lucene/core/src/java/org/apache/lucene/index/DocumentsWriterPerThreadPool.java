@@ -188,4 +188,8 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   public synchronized void close() {
     this.closed = true;
   }
+
+  synchronized boolean hasLockedWriters() {
+    return takenWriterPermits > 0;
+  }
 }

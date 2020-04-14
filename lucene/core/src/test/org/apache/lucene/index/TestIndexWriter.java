@@ -45,6 +45,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -3988,12 +3990,7 @@ public class TestIndexWriter extends LuceneTestCase {
               if (maxCompletedSeqID.get() < seqNo) {
                 long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
                 manager.maybeRefreshBlocking();
-                long prevValue;
-                while ((prevValue = maxCompletedSeqID.get()) < maxCompletedSequenceNumber) {
-                  if (maxCompletedSeqID.compareAndSet(prevValue, maxCompletedSequenceNumber)) {
-                    break;
-                  }
-                }
+                maxCompletedSeqID.updateAndGet(oldVal-> Math.max(oldVal, maxCompletedSequenceNumber));
               }
               IndexSearcher acquire = manager.acquire();
               try {
@@ -4012,7 +4009,74 @@ public class TestIndexWriter extends LuceneTestCase {
       for (int i = 0; i < threads.length; i++) {
         threads[i].join();
       }
+    }
+  }
 
+  public void testEnsureMaxSeqNoIsAccurateDuringFlush() throws IOException, InterruptedException {
+    AtomicReference<CountDownLatch> waitRef = new AtomicReference<>(new CountDownLatch(0));
+    AtomicReference<CountDownLatch> arrivedRef = new AtomicReference<>(new CountDownLatch(0));
+    InfoStream stream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if ("TP".equals(component) && "DocumentsWriterPerThread addDocuments start".equals(message)) {
+          try {
+            arrivedRef.get().countDown();
+            waitRef.get().await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
+          }
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return "TP".equals(component);
+      }
+
+      @Override
+      public void close() throws IOException {
+      }
+    };
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setInfoStream(stream);
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, indexWriterConfig) {
+           @Override
+           protected boolean isEnableTestPoints() {
+             return true;
+           }
+         };
+         SearcherManager manager = new SearcherManager(writer, new SearcherFactory())) {
+      writer.addDocument(new Document());
+      assertEquals(1, writer.docWriter.perThreadPool.size());
+      long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+      waitRef.set(new CountDownLatch(1));
+      arrivedRef.set(new CountDownLatch(1));
+      Thread waiterThread = new Thread(() -> {
+        try {
+          writer.addDocument(new Document());
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      waiterThread.start();
+      arrivedRef.get().await();
+      Thread refreshThread = new Thread(() -> {
+        try {
+          manager.maybeRefreshBlocking();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      refreshThread.start();
+      while (writer.docWriter.perThreadPool.hasLockedWriters() == false) {
+        Thread.yield(); // busy wait for refresh to lock writers
+      }
+      assertEquals(maxCompletedSequenceNumber, writer.getMaxCompletedSequenceNumber());
+      waitRef.get().countDown();
+      waiterThread.join();
+      refreshThread.join();
+      assertEquals(maxCompletedSequenceNumber+2, writer.getMaxCompletedSequenceNumber());
     }
   }
 }
