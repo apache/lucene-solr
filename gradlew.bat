@@ -80,7 +80,7 @@ set CMD_LINE_ARGS=%*
 
 @rem LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
 set GRADLE_WRAPPER_JAR=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
-"%JAVA_EXE%" --source 11 "%APP_HOME%"/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java "%GRADLE_WRAPPER_JAR%"
+"%JAVA_EXE%" --source 11 "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
 IF %ERRORLEVEL% NEQ 0 goto fail
 
 @rem Setup the command line

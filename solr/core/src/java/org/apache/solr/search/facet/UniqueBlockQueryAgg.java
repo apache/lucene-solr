@@ -65,7 +65,7 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots);
   }
 }

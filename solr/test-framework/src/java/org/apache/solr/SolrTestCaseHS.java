@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -45,6 +46,7 @@ import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -54,6 +56,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.util.TestHarness;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -143,6 +146,31 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     String resp;
     resp = getJSON(client, args);
     matchJSON(resp, tests);
+  }
+
+  /**
+   * Pass "null" for the client to query to the local server.
+   * Fetches response in xml format and matches with the given set of xpaths
+   */
+  public static void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+    String resp;
+    resp = getQueryResponse(client, "xml", args);
+    try {
+      String results = TestHarness.validateXPath(resp, tests);
+      if (null != results) {
+        String msg = "REQUEST FAILED: xpath=" + results
+            + "\n\txml response was: " + resp
+            + "\n\tparams were:" + args.toQueryString();
+
+        log.error(msg);
+        throw new RuntimeException(msg);
+      }
+    } catch (XPathExpressionException e1) {
+      throw new RuntimeException("XPath is invalid", e1);
+    } catch (Exception e2) {
+      SolrException.log(log,"REQUEST FAILED for params: " + args.toQueryString(), e2);
+      throw new RuntimeException("Exception during query", e2);
+    }
   }
 
   public static void matchJSON(String response, String... tests) throws Exception {
@@ -256,6 +284,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       public  void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
         SolrTestCaseHS.assertJQ(client, args, tests);
       }
+
+      public  void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+        SolrTestCaseHS.assertQ(client, args, tests);
+      }
     }
 
     public static Client localClient = new Client(null, 1);
@@ -297,6 +329,19 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
       SolrClient client = provider==null ? null : provider.client(null, args);
       tester.assertJQ(client, args, tests);
+    }
+
+    /**
+     * tests are validated against xml response
+     */
+    public void testXQ(SolrParams args, String... tests) throws Exception {
+      if (queryDefaults != null) {
+        ModifiableSolrParams newParams = params(queryDefaults);
+        newParams.add(args);
+        args = newParams;
+      }
+      SolrClient client = provider==null ? null : provider.client(null, args);
+      tester.assertQ(client, args, tests);
     }
 
     public Long add(SolrInputDocument sdoc, ModifiableSolrParams params) throws Exception {

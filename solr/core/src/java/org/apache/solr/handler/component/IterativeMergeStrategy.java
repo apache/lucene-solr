@@ -35,7 +35,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true;   // Turn off the second pass distributed.
-    executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("IterativeMergeStrategy"));
+    executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("IterativeMergeStrategy"));
     httpClient = getHttpClient();
     try {
       process(rb, sreq);

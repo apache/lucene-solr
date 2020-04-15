@@ -77,7 +77,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -119,7 +119,6 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
@@ -183,7 +182,7 @@ public class CoreContainer {
   private volatile UpdateShardHandler updateShardHandler;
 
   private volatile ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new DefaultSolrThreadFactory("coreContainerWorkExecutor"));
+      new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -329,7 +328,7 @@ public class CoreContainer {
         cfg.getReplayUpdatesThreads(),
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
-            new DefaultSolrThreadFactory("replayUpdatesExecutor")));
+            new SolrNamedThreadFactory("replayUpdatesExecutor")));
   }
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
@@ -749,7 +748,7 @@ public class CoreContainer {
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
         ExecutorUtil.newMDCAwareFixedThreadPool(
             cfg.getCoreLoadThreadCount(isZooKeeperAware()),
-            new DefaultSolrThreadFactory("coreLoadExecutor")), null,
+            new SolrNamedThreadFactory("coreLoadExecutor")), null,
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
         SolrMetricManager.mkName("coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
     final List<Future<SolrCore>> futures = new ArrayList<>();
@@ -932,7 +931,7 @@ public class CoreContainer {
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     isShutDown = true;
     try {

@@ -87,8 +87,7 @@ final class FrozenBufferedUpdates {
   public FrozenBufferedUpdates(InfoStream infoStream, BufferedUpdates updates, SegmentCommitInfo privateSegment) {
     this.infoStream = infoStream;
     this.privateSegment = privateSegment;
-    assert updates.deleteDocIDs.isEmpty();
-    assert privateSegment == null || updates.deleteTerms.isEmpty() : "segment private packet should only have del queries"; 
+    assert privateSegment == null || updates.deleteTerms.isEmpty() : "segment private packet should only have del queries";
     Term termsArray[] = updates.deleteTerms.keySet().toArray(new Term[updates.deleteTerms.size()]);
     ArrayUtil.timSort(termsArray);
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
@@ -859,5 +858,4 @@ final class FrozenBufferedUpdates {
       return postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
     }
   }
-
 }
