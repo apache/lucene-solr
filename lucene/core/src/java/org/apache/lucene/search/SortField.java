@@ -128,7 +128,7 @@ public class SortField {
         return "SortField.STRING_FIRST";
       }
     };
-
+  
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort last. */
   public final static Object STRING_LAST = new Object() {
@@ -269,7 +269,7 @@ public class SortField {
       case CUSTOM:
         buffer.append("<custom:\"").append(field).append("\": ").append(comparatorSource).append('>');
         break;
-
+      
       case REWRITEABLE:
         buffer.append("<rewriteable: \"").append(field).append("\">");
         break;
@@ -368,7 +368,7 @@ public class SortField {
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
-
+        
     default:
       throw new IllegalStateException("Illegal sort type: " + type);
     }
@@ -387,7 +387,7 @@ public class SortField {
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
-
+  
   /** Whether the relevance score is needed to sort documents. */
   public boolean needsScores() {
     return type == Type.SCORE;

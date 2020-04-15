@@ -94,15 +94,15 @@ public interface LeafCollector {
   void collect(int doc) throws IOException;
 
   /**
-   * Optionally creates a view of the scorerIterator where only competitive documents
-   * in the scorerIterator are kept and non-competitive are skipped.
+   * Optionally returns an iterator over competitive documents.
    *
    * Collectors should delegate this method to their comparators if
    * their comparators provide the skipping functionality over non-competitive docs.
-   * The default is to return the same iterator which is interpreted as the collector doesn't filter any documents.
+   *
+   * The default is to return {@code null} which is interpreted as the collector provide any competitive iterator.
    */
-  default DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
-    return scorerIterator;
+  default DocIdSetIterator competitiveIterator() {
+    return null;
   }
 
 }

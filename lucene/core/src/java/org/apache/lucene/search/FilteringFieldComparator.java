@@ -30,8 +30,8 @@ import java.util.Arrays;
 /**
  * Decorates a wrapped FieldComparator to add a functionality to skip over non-competitive docs.
  * FilteringFieldComparator provides two additional functions for a FieldComparator:
- * 1) {@code filterIterator(DocIdSetIterator scorerIterator))} that returns a view over the given scorerIterator
- *      that includes only competitive docs that are stronger than already collected docs.
+ * 1) {@code competitiveIterator()} that returns an iterator over
+ *      competitive docs that are stronger than already collected docs.
  * 2) {@code setCanUpdateIterator()} that notifies the comparator when it is ok to start updating its internal iterator.
  *  This method is called from a collector to inform the comparator to start updating its iterator.
  */
@@ -41,15 +41,6 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
 
     public FilteringFieldComparator(FieldComparator<T> in) {
         this.in = in;
-    }
-
-    /**
-     * Creates a view of the scorerIterator where only competitive documents
-     * in the scorerIterator are kept and non-competitive are skipped.
-     */
-    public DocIdSetIterator filterIterator(DocIdSetIterator scorerIterator) {
-        if (iterator == null) return scorerIterator;
-        return ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, competitiveIterator()));
     }
 
     protected abstract void setCanUpdateIterator() throws IOException;
@@ -74,7 +65,11 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
         return in.compareValues(first, second);
     }
 
-    private DocIdSetIterator competitiveIterator() {
+    /**
+     * Returns an iterator over competitive documents
+     */
+    public DocIdSetIterator competitiveIterator() {
+        if (iterator == null) return null;
         return new DocIdSetIterator() {
             private int doc;
             @Override

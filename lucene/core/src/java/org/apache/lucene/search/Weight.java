@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -202,8 +203,10 @@ public abstract class Weight implements SegmentCacheable {
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null? iterator : twoPhase.approximation();
-      // if possible filter scorerIterator to keep only competitive docs
-      DocIdSetIterator filteredIterator = collector.filterIterator(scorerIterator);
+      DocIdSetIterator collectorIterator = collector.competitiveIterator();
+      // if possible filter scorerIterator to keep only competitive docs as defined by collector
+      DocIdSetIterator filteredIterator = collectorIterator == null ? scorerIterator :
+          ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
