@@ -31,6 +31,9 @@ import org.apache.lucene.store.Lock;
  */
 public abstract class CompoundDirectory extends Directory {
 
+  /** Sole constructor. */
+  protected CompoundDirectory() {}
+
   /**
    * Checks consistency of this directory.
    * <p>
