@@ -828,13 +828,14 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** A directory that tracks read bytes. */
   protected static class ReadBytesDirectoryWrapper extends FilterDirectory {
 
+    /** Sole constructor. */
     public ReadBytesDirectoryWrapper(Directory in) {
       super(in);
     }
 
     private final Map<String, FixedBitSet> readBytes = new ConcurrentHashMap<>();
 
-    /** Sole constructor. */
+    /** Get information about which bytes have been read. */
     public Map<String, FixedBitSet> getReadBytes() {
       return Map.copyOf(readBytes);
     }
