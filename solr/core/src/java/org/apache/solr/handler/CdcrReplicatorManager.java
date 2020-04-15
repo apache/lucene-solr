@@ -46,7 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
@@ -133,7 +133,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     if (leaderStateManager.amILeader() && processStateManager.getState().equals(CdcrParams.ProcessState.STARTED)) {
       if (replicatorStates.size() > 0)  {
         this.bootstrapExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(replicatorStates.size(),
-            new SolrjNamedThreadFactory("cdcr-bootstrap-status"));
+            new SolrNamedThreadFactory("cdcr-bootstrap-status"));
       }
       this.initLogReaders();
       this.scheduler.start();

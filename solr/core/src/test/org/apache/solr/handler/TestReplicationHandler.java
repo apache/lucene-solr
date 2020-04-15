@@ -44,7 +44,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
@@ -1624,7 +1624,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // confirm backups really are empty
     for (int i = 1; i <=2; i++) {
       final String name = "snapshot.empty_backup"+i;
-      try (Directory dir = new SimpleFSDirectory(new File(backupDir, name).toPath());
+      try (Directory dir = new NIOFSDirectory(new File(backupDir, name).toPath());
            IndexReader reader = DirectoryReader.open(dir)) {
         assertEquals(name + " is not empty", 0, reader.numDocs());
       }

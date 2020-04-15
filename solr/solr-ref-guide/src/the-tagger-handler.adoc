@@ -43,7 +43,7 @@ To configure the tagger, your Solr schema needs 2 fields:
   Recommended field settings: set `docValues=true`.
 * A tag field, which must be a `TextField`, with `ConcatenateGraphFilterFactory` at the end of the index chain (not the query chain):
   Set `preservePositionIncrements=false` on that filter.
-  Recommended field settings: `omitNorms=true`, `omitTermFreqAndPositions=true` and `postingsFormat=FST50`.
+  Recommended field settings: `omitNorms=true`, `omitTermFreqAndPositions=true` and _maybe_ specify the postings format -- see <<tagger-performance-tips,performance tips>>.
 
 The text field's _index analysis chain_, aside from needing `ConcatenateGraphFilterFactory` at the end,
   can otherwise have whatever tokenizer and filters suit your matching preferences.
@@ -271,11 +271,12 @@ The response should be this (the QTime may vary):
   }}
 ----
 
-== Tagger Tips
+== Tagger Performance Tips
 
-Performance Tips:
-
-* Follow the recommended configuration field settings, especially `postingsFormat=FST50`.
+* Follow the recommended configuration field settings above.
+Additionally, for the best tagger performance, set `postingsFormat=FST50`.
+However, non-default postings formats have no backwards-compatibility guarantees, and so if you upgrade Solr then you may find a nasty exception on startup as it fails to read the older index.
+If the input text to be tagged is small (e.g. you are tagging queries or tweets) then the postings format choice isn't as important.
 * "optimize" after loading your dictionary down to 1 Lucene segment, or at least to as few as possible.
 * For bulk tagging lots of documents, there are some strategies, not mutually exclusive:
 ** Batch them.

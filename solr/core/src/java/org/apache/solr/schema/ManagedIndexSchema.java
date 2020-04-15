@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -68,7 +69,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
@@ -96,13 +97,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   /**
    * Constructs a schema using the specified resource name and stream.
    *
-   * @see org.apache.solr.core.SolrResourceLoader#openSchema
-   *      By default, this follows the normal config path directory searching rules.
+   * By default, this follows the normal config path directory searching rules.
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
-  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable, 
+  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
                      String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader());
+    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -236,7 +236,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("managedSchemaExecutor"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("managedSchemaExecutor"));
     try {
       List<Future<Integer>> results =
           parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
@@ -1323,8 +1323,8 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(luceneVersion, loader);
+                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
+    super(luceneVersion, loader, substitutableProps);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1342,7 +1342,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
    ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
      ManagedIndexSchema newSchema = new ManagedIndexSchema
-         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock(), substitutableProperties);
 
     newSchema.name = name;
     newSchema.version = version;

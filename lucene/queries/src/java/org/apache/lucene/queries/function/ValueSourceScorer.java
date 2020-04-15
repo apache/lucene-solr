@@ -39,6 +39,9 @@ import org.apache.lucene.search.Weight;
  * @lucene.experimental
  */
 public abstract class ValueSourceScorer extends Scorer {
+  // Fixed cost for a single iteration of the TwoPhaseIterator instance
+  private static final int DEF_COST = 5;
+
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
@@ -55,7 +58,7 @@ public abstract class ValueSourceScorer extends Scorer {
 
       @Override
       public float matchCost() {
-        return 100; // TODO: use cost of ValueSourceScorer.this.matches()
+        return ValueSourceScorer.this.matchCost();
       }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
@@ -94,4 +97,17 @@ public abstract class ValueSourceScorer extends Scorer {
     return Float.POSITIVE_INFINITY;
   }
 
+  /**
+   * Cost evaluation function which defines the cost of access for the TwoPhaseIterator for this class
+   * This method should be overridden for specifying custom cost methods. Used by {@link TwoPhaseIterator#matchCost()}
+   * for the instance owned by this class
+   *
+   * @return cost of access
+   *
+   * @lucene.experimental
+   */
+  protected float matchCost() {
+    // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
+    return DEF_COST + values.cost();
+  }
 }

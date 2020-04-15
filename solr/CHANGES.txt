@@ -18,6 +18,9 @@ Improvements
 
 * SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
 
+* SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
+  (hossman, Munendra S N, yonik)
+
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -40,32 +43,141 @@ Other Changes
 * SOLR-14256: Remove HashDocSet; add DocSet.getBits() instead.  DocSet is now strictly immutable and ascending order.
   It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
 
+* SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
+
+* SOLR-14012: Return long value for unique and hll aggregations irrespective of shard count (Munendra S N, hossman)
+
+* SOLR-14322: AbstractFullDistribZkTestBase.waitForRecoveriesToFinish now takes a timeout and time unit instead of
+  assuming that we are passed value in seconds. (Mike Drob)
+
+* SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
+* SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
+
+* SOLR-9909: The deprecated SolrjNamedThreadFactory has been removed. Use SolrNamedThreadFactory instead.
+  (Andras Salamon, shalin)
+
+==================  8.6.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+* SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
+  To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
+
+Improvements
+---------------------
+* SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
+  (Aroop Ganguly, Tomás Fernández Löbbe, Noble Paul, Anshum Gupta)
+
+* SOLR-14260: Make SolrJ ConnectionSocketFactory pluggable via SocketFactoryRegistryProvider setting on HttpClientUtil
+  (Andy Throgmorton via David Smiley)
+
+* SOLR-14342: Load cores in an order that makes collections available sooner and reduces leaderVoteWait timeouts in
+  large SolrCloud clusters. (David Smiley)
+
+* SOLR-14329: Add support to choose collapse group to expand in ExpandComponent based on cost (Munendra S N)
+
+* SOLR-14307: User defined "<cache/>" entries in solrconfig.xml now support enabled="true|false" just like
+  core searcher caches. (hossman)
+
+* SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
+
+* SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
+
+Optimizations
+---------------------
+* SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
+
+* SOLR-14340: Remove unnecessary configset verification checks when SolrCloud merely wants to know which configset a
+  collection is using.  Improves CLUSTERSTATUS times for massive clusters.  (Mathieu Marie, David Smiley)
+
+* SOLR-14365: CollapsingQParser - Avoiding always allocate int[] and float[] with size equals to number of unique values.
+  (Cao Manh Dat)
+
+* SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
+
+Bug Fixes
+---------------------
+* SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
+  (Christine Poerschke, ab)
+
+* SOLR-13199: Return proper error when invalid parentFilter is passed in ChildDocTransformer
+  (Johannes Kloos, Munendra S N, David Smiley, Mikhail Khludnev)
+
+* SOLR-14347: Autoscaling placement wrong when concurrent replica placements are calculated. (ab)
+
+* SOLR-14128: Improve distributed locking around managed schema upgrade process. (ab)
+
+* SOLR-14302: Ensure Solr always includes the stacktrace for exceptions by using '-OmitStackTraceInFastThrow'
+  (hossman)
+
+* SOLR-14317: HttpClusterStateProvider throws exception when only one node down. (Lyle Wang via Ishan Chattopadhyaya)
+
+* SOLR-14356: PeerSync should not fail with SocketTimeoutException from hanging nodes (Cao Manh Dat)
+
+* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
+
+* SOLR-14402: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed search.
+  This is a fix for incomplete optimization made by SOLR-11880 in Solr 7.4 which fixed distributed updates but not
+  distributed search. (shalin)
+
+Other Changes
+---------------------
+* SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
+  them. (David Smiley)
+
+* SOLR-14312: Upgrade Zookeeper to 3.5.7 (Erick Erickson)
+
+* SOLR-14296: Update netty to 4.1.46 (Andras Solaman via Erick Erickson)
+
+* SOLR-10157: Improve error messages when unknown aggregations are specified in the request (hossman, Munendra S N)
+
+* SOLR-13944: Remove redundant checks in SpellCheckCollator and add tests for spellcheck with collapse
+  (Stefan, Munendra S N, Tomas Eduardo Fernandez Lobbe)
+
+* SOLR-12353: SolrDispatchFilter expensive non-conditional debug line degrades performance (Pascal Proulx via Erick Erickson)
+
+* SOLR-13842: Remove redundant defaults from ImplicitPlugins.json (Munendra S N)
+
+* SOLR-13893: BlobRepository reads max jar size from `runtime.lib.size` system property. Old `runtme.lib.size` is Deprecated
+  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
+
+* SOLR-14367: Upgrade Tika to 1.24 (Mibo via Erick Erickson)
+
+* SOLR-14351: Hardened MDC logging; sometimes info was absent (David Smiley)
+
+* SOLR-14386: Update Jetty to 9.4.27 and dropwizard-metrics version to 4.1.5 (Erick Erickson)
+
+* SOLR-9909: SolrjNamedThreadFactory is deprecated in favor of SolrNamedThreadFactory. DefaultSolrThreadFactory is
+  removed from solr-core in favor of SolrNamedThreadFactory in solrj package and all solr-core classes now use
+  SolrNamedThreadFactory. (Andras Salamon, shalin)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
- * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named 
-   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
+* SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named
+   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names
    (Anatolii Siuniaev via Mikhail Khludnev)
 
- * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+* SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
 
- * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
- * SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+* SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
 
- * SOLR-12325: Introducing uniqueBlock({!v=type:parent}) aggregation (Anatolii Siuniaev via Mikhail Khludnev)
+* SOLR-14241: New delete() Stream Decorator (hossman)
 
- * SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
+* SOLR-14139: Support backtick phrase queries in Streaming Expressions (Joel Bernstein)
 
- * SOLR-14241: New delete() Stream Decorator (hossman)
-
- * SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
-   (Eric Pugh via Christine Poerschke)
-
-* SOLR-13942: /api/cluster/zk/* to fetch raw ZK data (noble)
+* SOLR-12238: Synonyms can be individually boosted by marking them with '|<boost>' in
+  the synonyms file, and adding a DelimitedBoostTokenFilter to the analysis chain
+  (Alessandro Benedetti, Alan Woodward)
 
 Improvements
 ---------------------
@@ -90,8 +202,6 @@ Improvements
 * SOLR-13984: Java's SecurityManager sandbox can be enabled via environment variable,
   SOLR_SECURITY_MANAGER_ENABLED=true. (rmuir)
 
-* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
-
 * SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
 
 * LUCENE-9093: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio and
@@ -113,12 +223,17 @@ Improvements
 
 * SOLR-14270: export command to have an option to write to a zip file (noble)
 
-* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
-
 * SOLR-14286: Upgrade Jaegar to 1.1.0 (Cao Manh Dat)
 
 * SOLR-14281: Make sharedLib configurable through system property. Also allow multiple paths, separated by comma.
   See Reference Guide 'format-of-solr-xml.adoc' and comment in 'solr.in.sh' for details (janhoy)
+
+* SOLR-13892: New "top-level" docValues join implementation (Jason Gerlowski, Joel Bernstein)
+
+* SOLR-14242: HdfsDirectory now supports indexing geo-points, ranges or shapes. (Adrien Grand)
+
+* SOLR-13965: In GraphHandler, support <expressible> configuration and deprecate <streamFunctions> configuration.
+   (Eric Pugh via Christine Poerschke)
 
 Optimizations
 ---------------------
@@ -127,6 +242,8 @@ Optimizations
   queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
   terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
   docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
+
+* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
 
 * SOLR-14040: The shareSchema solr.xml option now supports SolrCloud.  shareSchema is useful when you have many
   cores per node and large schemas.  (David Smiley)
@@ -196,7 +313,9 @@ Bug Fixes
 
 * SOLR-14287: Admin UI Properties screen does not show colons (janhoy)
 
-* SOLR-14299 IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+* SOLR-14299: IndexFetcher doesn't reset error count to 0 after the last packet is received (Pushkar Raste via Mike Drob)
+
+* SOLR-14073: Fix segment look ahead NPE in CollapsingQParserPlugin (Joel Bernstein)
 
 Other Changes
 ---------------------
@@ -231,6 +350,11 @@ Other Changes
   during SolrCore reload. Removed Bandaid kludge. (Erick Erickson)
 
 * SOLR-10306: Document in Reference Guide how to disable or reduce swapping (janhoy)
+
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+execute `uname -a` and "`uptime`" on non-Windows platforms is no longer made. (rmuir)
+
+* SOLR-14114: Add WARN to Solr log that embedded ZK is not supported in production (janhoy)
 
 ==================  8.4.1 ==================
 

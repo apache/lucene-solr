@@ -61,7 +61,7 @@ import org.apache.lucene.util.TestUtil;
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
  */
-@LuceneTestCase.SuppressCodecs("SimpleText")
+@LuceneTestCase.SuppressCodecs({"SimpleText", "Direct"})
 public class TestPerfTasksLogic extends BenchmarkTestCase {
 
   @Override
