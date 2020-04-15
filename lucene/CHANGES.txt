@@ -54,6 +54,8 @@ API Changes
   must now also implement the default constructor (see MIGRATE.txt).
   (Uwe Schindler, Dawid Weiss)
 
+* LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
