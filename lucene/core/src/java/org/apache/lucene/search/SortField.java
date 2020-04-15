@@ -91,7 +91,6 @@ public class SortField {
   private String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private boolean filterNonCompetitiveDocs = false; // if true, sortField tries to use a comparator that can skip non-competitive docs
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
@@ -121,14 +120,6 @@ public class SortField {
     this.reverse = reverse;
   }
 
-  /**
-   * Allows to skip non-competitive docs
-   * should be called only from TopFieldCollector
-   */
-  void allowFilterNonCompetitveDocs() {
-    filterNonCompetitiveDocs = true;
-  }
-
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort first. */
   public final static Object STRING_FIRST = new Object() {
@@ -137,7 +128,7 @@ public class SortField {
         return "SortField.STRING_FIRST";
       }
     };
-  
+
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort last. */
   public final static Object STRING_LAST = new Object() {
@@ -278,7 +269,7 @@ public class SortField {
       case CUSTOM:
         buffer.append("<custom:\"").append(field).append("\": ").append(comparatorSource).append('>');
         break;
-      
+
       case REWRITEABLE:
         buffer.append("<rewriteable: \"").append(field).append("\">");
         break;
@@ -292,9 +283,6 @@ public class SortField {
     if (missingValue != null) {
       buffer.append(" missingValue=");
       buffer.append(missingValue);
-    }
-    if (filterNonCompetitiveDocs) {
-      buffer.append(" filterNonCompetitiveDocs=true");
     }
 
     return buffer.toString();
@@ -314,7 +302,6 @@ public class SortField {
       && other.reverse == this.reverse
       && Objects.equals(this.comparatorSource, other.comparatorSource)
       && Objects.equals(this.missingValue, other.missingValue)
-      && this.filterNonCompetitiveDocs == other.filterNonCompetitiveDocs
     );
   }
 
@@ -323,7 +310,7 @@ public class SortField {
    *  implement hashCode (unless a singleton is always used). */
   @Override
   public int hashCode() {
-    return Objects.hash(field, type, reverse, comparatorSource, missingValue, filterNonCompetitiveDocs);
+    return Objects.hash(field, type, reverse, comparatorSource, missingValue);
   }
 
   private Comparator<BytesRef> bytesComparator = Comparator.naturalOrder();
@@ -357,41 +344,17 @@ public class SortField {
     case DOC:
       return new FieldComparator.DocComparator(numHits);
 
-    case INT: {
-      FieldComparator.IntComparator comparator = new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
-      if (filterNonCompetitiveDocs) {
-        return new FilteringFieldComparator.FilteringIntComparator(comparator, reverse);
-      } else {
-        return comparator;
-      }
-    }
+    case INT:
+      return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
 
-    case FLOAT: {
-      FieldComparator.FloatComparator comparator = new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
-      if (filterNonCompetitiveDocs) {
-        return new FilteringFieldComparator.FilteringFloatComparator(comparator, reverse);
-      } else {
-        return comparator;
-      }
-    }
+    case FLOAT:
+      return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
 
-    case LONG: {
-      FieldComparator.LongComparator comparator = new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
-      if (filterNonCompetitiveDocs) {
-        return new FilteringFieldComparator.FilteringLongComparator(comparator, reverse);
-      } else {
-        return comparator;
-      }
-    }
+    case LONG:
+      return new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
 
-    case DOUBLE: {
-      FieldComparator.DoubleComparator comparator = new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
-      if (filterNonCompetitiveDocs) {
-        return new FilteringFieldComparator.FilteringDoubleComparator(comparator, reverse);
-      } else {
-        return comparator;
-      }
-    }
+    case DOUBLE:
+      return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
 
     case CUSTOM:
       assert comparatorSource != null;
@@ -405,7 +368,7 @@ public class SortField {
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
-        
+
     default:
       throw new IllegalStateException("Illegal sort type: " + type);
     }
@@ -424,7 +387,7 @@ public class SortField {
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
-  
+
   /** Whether the relevance score is needed to sort documents. */
   public boolean needsScores() {
     return type == Type.SCORE;

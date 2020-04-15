@@ -30,6 +30,8 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
+import static org.apache.lucene.search.SortField.FIELD_SCORE;
+
 public class TestSortOptimization extends LuceneTestCase {
 
   public void testLongSortOptimization() throws IOException {
@@ -74,6 +76,21 @@ public class TestSortOptimization extends LuceneTestCase {
       for (int i = 0; i < numHits; i++) {
         FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
         assertEquals(afterValue + 1 + i, fieldDoc.fields[0]);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+    }
+
+    { // test that if there is the secondary sort on _score, scores are filled correctly
+      final TopFieldCollector collector = TopFieldCollector.create(new Sort(sortField, FIELD_SCORE), numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(i, ((Long) fieldDoc.fields[0]).intValue());
+        float score = (float) fieldDoc.fields[1];
+        assertEquals(1.0, score, 0.001);
       }
       assertTrue(collector.isEarlyTerminated());
       assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);

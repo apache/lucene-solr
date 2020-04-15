@@ -100,6 +100,26 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
     }
 
     /**
+     * Try to wrap a given field comparator to add to it a functionality to skip over non-competitive docs.
+     * If for the given comparator the skip functionality is not implemented, return the comparator itself.
+     */
+    public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse) {
+        if (comparator instanceof FieldComparator.LongComparator){
+            return new FilteringFieldComparator.FilteringLongComparator((FieldComparator.LongComparator) comparator, reverse);
+        }
+        if (comparator instanceof FieldComparator.IntComparator){
+            return new FilteringFieldComparator.FilteringIntComparator((FieldComparator.IntComparator) comparator, reverse);
+        }
+        if (comparator instanceof FieldComparator.DoubleComparator){
+            return new FilteringFieldComparator.FilteringDoubleComparator((FieldComparator.DoubleComparator) comparator, reverse);
+        }
+        if (comparator instanceof FieldComparator.FloatComparator){
+            return new FilteringFieldComparator.FilteringFloatComparator((FieldComparator.FloatComparator) comparator, reverse);
+        }
+        return comparator;
+    }
+
+    /**
      * A wrapper over {@code NumericComparator} that adds a functionality to filter non-competitive docs.
      */
     public static abstract class FilteringNumericComparator<T extends Number> extends FilteringFieldComparator<T> implements LeafFieldComparator {

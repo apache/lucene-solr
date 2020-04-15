@@ -30,7 +30,6 @@ import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.MaxScoreAccumulator.DocAndScore;
 import org.apache.lucene.search.TotalHits.Relation;
 
-
 /**
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
@@ -462,13 +461,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("hitsThresholdChecker should not be null");
     }
 
-    // here we assume that if hitsThreshold was set, we let the corresponding comparator to skip non-competitive docs
-    // It is beneficial for the 1st field only to skip non-competitive docs
-    if (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
-      sort.fields[0].allowFilterNonCompetitveDocs();
-    }
-
-    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
+    // here we assume that if hitsThreshold was set, we let a comparator to skip non-competitive docs
+    boolean filterNonCompetitveDocs = hitsThresholdChecker.getHitsThreshold() == Integer.MAX_VALUE ? false : true;
+    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitveDocs);
 
     if (after == null) {
       return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);
