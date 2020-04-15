@@ -80,7 +80,7 @@ import org.apache.lucene.util.Version;
 /**
  * Common tests to all index formats.
  */
-abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
+public abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   // metadata or Directory-level objects
   private static final Set<Class<?>> EXCLUDED_CLASSES = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
@@ -728,15 +728,20 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     return r;
   }
 
-  private static class FileTrackingDirectoryWrapper extends FilterDirectory {
+  /**
+   * A directory that tracks created files that haven't been deleted.
+   */
+  protected static class FileTrackingDirectoryWrapper extends FilterDirectory {
 
     private final Set<String> files = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
+    /** Sole constructor. */
     FileTrackingDirectoryWrapper(Directory in) {
       super(in);
     }
 
-    Set<String> getFiles() {
+    /** Get the set of created files. */
+    public Set<String> getFiles() {
       return Collections.unmodifiableSet(new HashSet<>(files));
     }
 
@@ -820,15 +825,18 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   }
 
-  private static class ReadBytesDirectoryWrapper extends FilterDirectory {
+  /** A directory that tracks read bytes. */
+  protected static class ReadBytesDirectoryWrapper extends FilterDirectory {
 
-    ReadBytesDirectoryWrapper(Directory in) {
+    /** Sole constructor. */
+    public ReadBytesDirectoryWrapper(Directory in) {
       super(in);
     }
 
     private final Map<String, FixedBitSet> readBytes = new ConcurrentHashMap<>();
 
-    Map<String, FixedBitSet> getReadBytes() {
+    /** Get information about which bytes have been read. */
+    public Map<String, FixedBitSet> getReadBytes() {
       return Collections.unmodifiableMap(new HashMap<>(readBytes));
     }
 
