@@ -283,6 +283,9 @@ Optimizations
 
 * LUCENE-9237: Faster UniformSplit intersect TermsEnum. (Bruno Roustant)
 
+* LUCENE-9260: LeafReader#checkIntegrity verifies checksums of CFS files.
+  (Adrien Grand)
+
 * LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
 
 * LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
