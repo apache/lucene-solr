@@ -53,7 +53,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.CustomContainerPlugins;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -620,8 +619,8 @@ public class CoreContainer {
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
+    containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -656,8 +655,8 @@ public class CoreContainer {
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
       packageLoader = new PackageLoader(this);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
+      containerHandlers.getApiBag().registerObject (packageLoader.getPackageAPI().readAPI);
     }
 
     MDCLoggingContext.setNode(this);
@@ -830,8 +829,8 @@ public class CoreContainer {
       customContainerPlugins.refresh(null);
       getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
-      containerHandlers.getApiBag().register(new AnnotatedApi(containerPluginsApi.readAPI), Collections.EMPTY_MAP);
-      containerHandlers.getApiBag().register(new AnnotatedApi(containerPluginsApi.editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
+      containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);

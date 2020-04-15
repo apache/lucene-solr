@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -280,6 +279,4 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     return new ApiInfo(info, errs);
 
   }
-
-  static final Set<String> supportedPaths = ImmutableSet.of("node", "cluster");
 }

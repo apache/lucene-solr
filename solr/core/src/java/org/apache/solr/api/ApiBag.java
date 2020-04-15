@@ -67,6 +67,13 @@ public class ApiBag {
     this.isCoreSpecific = isCoreSpecific;
   }
 
+  /** Register an Object with an annotated class using {@link EndPoint}
+   */
+  public synchronized void registerObject(Object o) {
+    AnnotatedApi api = new AnnotatedApi(o);
+    register(api, Collections.EMPTY_MAP);
+  }
+
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
     try {
       validateAndRegister(api, nameSubstitutes);
