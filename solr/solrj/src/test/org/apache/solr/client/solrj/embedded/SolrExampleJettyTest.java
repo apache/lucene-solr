@@ -19,9 +19,12 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -43,7 +46,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * TODO? perhaps use:
@@ -85,7 +89,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     HttpClient httpClient = client.getHttpClient();
     HttpPost post = new HttpPost(getUri(client));
     post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
+    post.setEntity(new InputStreamEntity(
+        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
     HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();
@@ -94,13 +99,13 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
     SolrDocument doc = rsp.getResults().get(0);
     String src = (String) doc.getFieldValue("_src_");
-    Map m = (Map) ObjectBuilder.fromJSON(src);
+    Map m = (Map) fromJSONString(src);
     assertEquals("abc1",m.get("id"));
     assertEquals("name1",m.get("name"));
 
     doc = rsp.getResults().get(1);
     src = (String) doc.getFieldValue("_src_");
-    m = (Map) ObjectBuilder.fromJSON(src);
+    m = (Map) fromJSONString(src);
     assertEquals("name2",m.get("name"));
 
   }
@@ -110,6 +115,37 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     return random().nextBoolean() ?
         baseURL.replace("/collection1", "/____v2/cores/collection1/update") :
         baseURL + "/update/json/docs";
+  }
+
+  private void runQueries(HttpSolrClient client, int count, boolean warmup) throws SolrServerException, IOException {
+    long start = System.nanoTime();
+    for (int i = 0; i < count; i++) {
+      client.query(new SolrQuery("*:*"));
+    }
+    if (warmup) return;
+    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
+  }
+
+
+  @Test
+  public void testUtf8PerfDegradation() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+
+    client.deleteByQuery("*:*");
+    client.commit();
+
+
+    doc.addField("id", "1");
+    doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
+
+    client.add(doc);
+    client.commit();
+    long start = System.nanoTime();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
+    assertEquals(1, rsp.getResults().getNumFound());
+
   }
 
   @Ignore
@@ -156,14 +192,5 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     runQueries(client, 10000, false);
   }
 
-
-  private void runQueries(HttpSolrClient client, int count, boolean warmup) throws SolrServerException, IOException {
-    long start = System.nanoTime();
-    for (int i = 0; i < count; i++) {
-      client.query(new SolrQuery("*:*"));
-    }
-    if (warmup) return;
-    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
-  }
 
 }
