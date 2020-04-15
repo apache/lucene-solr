@@ -53,7 +53,7 @@ public class PackageLoader implements Closeable {
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
 
-  private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
+  private PackageAPI.Packages myCopy = new PackageAPI.Packages();
 
   private PackageAPI packageAPI;
 
@@ -162,6 +162,10 @@ public class PackageLoader implements Closeable {
       return deleted;
     }
 
+    public Set<String> allVersions() {
+      return myVersions.keySet();
+    }
+
 
     private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
       for (PackageAPI.PkgVersion v : modified) {
@@ -172,7 +176,7 @@ public class PackageLoader implements Closeable {
           try {
             ver = new Version(this, v);
           } catch (Exception e) {
-            log.error("package could not be loaded "+ ver.toString(), e);
+            log.error("package could not be loaded " + ver.toString(), e);
             continue;
           }
           myVersions.put(v.version, ver);
@@ -212,6 +216,10 @@ public class PackageLoader implements Closeable {
 
     public Version getLatest() {
       return latest == null ? null : myVersions.get(latest);
+    }
+
+    public Version getVersion(String version) {
+      return myVersions.get(version);
     }
 
     public Version getLatest(String lessThan) {
@@ -258,8 +266,8 @@ public class PackageLoader implements Closeable {
 
         List<String> errs = new ArrayList<>();
         coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
-        if(!errs.isEmpty()) {
-          throw new RuntimeException("Cannot load package: " +errs);
+        if (!errs.isEmpty()) {
+          throw new RuntimeException("Cannot load package: " + errs);
         }
         for (String file : version.files) {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
@@ -309,7 +317,7 @@ public class PackageLoader implements Closeable {
   }
 
   @Override
-  public void close()  {
+  public void close() {
     for (Package p : packageClassLoaders.values()) closeWhileHandlingException(p);
   }
 }

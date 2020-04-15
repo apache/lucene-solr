@@ -208,7 +208,8 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
           errs.add("Invalid package " + klassInfo.first());
           return;
         }
-        this.pkgVersion = p.getLatest(info.version);
+        this.pkgVersion = p.getVersion(info.version);
+        if(pkgVersion == null) errs.add("No such package version:"+ pkg+":"+ info.version + " . available versions :"+ p.allVersions());
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
         } catch (Exception e) {
@@ -265,7 +266,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       if (delegate != null) return delegate;
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
-        return delegate = new AnnotatedApi(constructor.newInstance(null));
+        return delegate = new AnnotatedApi(constructor.newInstance());
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
         return delegate = new AnnotatedApi(constructor.newInstance(coreContainer));
       } else {
