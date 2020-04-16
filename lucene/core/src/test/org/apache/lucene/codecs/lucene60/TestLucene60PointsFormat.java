@@ -299,12 +299,13 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         return Relation.CELL_CROSSES_QUERY;
       }
     };
-    // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
-    // in general, or maybe 2x that if the point is a split value
+
     final long pointCount = points.estimatePointCount(onePointMatchVisitor);
-    assertTrue(""+pointCount,
-        pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
-        pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
+    // The number of matches needs to be multiple of count per leaf
+    final long countPerLeaf = (actualMaxPointsInLeafNode + 1) / 2;
+    assertTrue(""+pointCount, pointCount % countPerLeaf == 0);
+    // in extreme cases, a point can be be shared by 4 leaves
+    assertTrue(""+pointCount, pointCount / countPerLeaf <= 4 && pointCount / countPerLeaf >= 1);
 
     final long docCount = points.estimateDocCount(onePointMatchVisitor);
     if (multiValues) {

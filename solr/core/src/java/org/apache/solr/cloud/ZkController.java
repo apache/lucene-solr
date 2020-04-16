@@ -96,7 +96,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.URLUtil;
@@ -609,7 +609,7 @@ public class ZkController implements Closeable {
       log.warn("Error publishing nodes as down. Continuing to close CoreContainer", e);
     }
 
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("preCloseThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("preCloseThreadPool"));
 
     try {
       synchronized (collectionToTerms) {
@@ -629,7 +629,7 @@ public class ZkController implements Closeable {
     if (!this.isClosed)
       preClose();
 
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     customThreadPool.submit(() -> Collections.singleton(overseerElector.getContext()).parallelStream().forEach(IOUtils::closeQuietly));
 
@@ -1172,9 +1172,7 @@ public class ZkController implements Closeable {
    */
   public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
                          boolean afterExpiration, boolean skipRecovery) throws Exception {
-    try (SolrCore core = cc.getCore(desc.getName())) {
-      MDCLoggingContext.setCore(core);
-    }
+    MDCLoggingContext.setCoreDescriptor(cc, desc);
     try {
       // pre register has published our down state
       final String baseUrl = getBaseUrl();
@@ -1528,11 +1526,9 @@ public class ZkController implements Closeable {
         if (core == null || core.isClosed()) {
           return;
         }
-        MDCLoggingContext.setCore(core);
       }
-    } else {
-      MDCLoggingContext.setCoreDescriptor(cc, cd);
     }
+    MDCLoggingContext.setCoreDescriptor(cc, cd);
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
 
@@ -2188,41 +2184,40 @@ public class ZkController implements Closeable {
   }
 
   public void rejoinShardLeaderElection(SolrParams params) {
+
+    String collectionName = params.get(COLLECTION_PROP);
+    String shardId = params.get(SHARD_ID_PROP);
+    String coreNodeName = params.get(CORE_NODE_NAME_PROP);
+    String coreName = params.get(CORE_NAME_PROP);
+    String electionNode = params.get(ELECTION_NODE_PROP);
+    String baseUrl = params.get(BASE_URL_PROP);
+
     try {
+      MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
 
-      String collectionName = params.get(COLLECTION_PROP);
-      String shardId = params.get(SHARD_ID_PROP);
-      String coreNodeName = params.get(CORE_NODE_NAME_PROP);
-      String coreName = params.get(CORE_NAME_PROP);
-      String electionNode = params.get(ELECTION_NODE_PROP);
-      String baseUrl = params.get(BASE_URL_PROP);
+      log.info("Rejoin the shard leader election.");
 
-      try (SolrCore core = cc.getCore(coreName)) {
-        MDCLoggingContext.setCore(core);
+      ContextKey contextKey = new ContextKey(collectionName, coreNodeName);
 
-        log.info("Rejoin the shard leader election.");
+      ElectionContext prevContext = electionContexts.get(contextKey);
+      if (prevContext != null) prevContext.cancelElection();
 
-        ContextKey contextKey = new ContextKey(collectionName, coreNodeName);
+      ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
 
-        ElectionContext prevContext = electionContexts.get(contextKey);
-        if (prevContext != null) prevContext.cancelElection();
+      LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
+      ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
+          coreNodeName, zkProps, this, getCoreContainer());
 
-        ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
+      context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
+      elect.setup(context);
+      electionContexts.put(contextKey, context);
 
-        LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
-        ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
-            coreNodeName, zkProps, this, getCoreContainer());
-
-        context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
-        elect.setup(context);
-        electionContexts.put(contextKey, context);
-
-        elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
-      }
+      elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
+    } finally {
+      MDCLoggingContext.clear();
     }
-
   }
 
   public void checkOverseerDesignate() {

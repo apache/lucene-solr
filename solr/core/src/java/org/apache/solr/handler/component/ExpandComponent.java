@@ -39,8 +39,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
@@ -81,6 +79,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
@@ -177,7 +176,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       sort = SortSpecParsing.parseSortSpec(sortParam, rb.req).getSort();
     }
 
-    Query query;
+    final Query query;
     List<Query> newFilters = new ArrayList<>();
     try {
       if (qs == null) {
@@ -416,13 +415,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    if (pfilter.filter != null) {
-      query = new BooleanQuery.Builder()
-          .add(query, Occur.MUST)
-          .add(pfilter.filter, Occur.FILTER)
-          .build();
-    }
-    searcher.search(query, collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
 
     ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();

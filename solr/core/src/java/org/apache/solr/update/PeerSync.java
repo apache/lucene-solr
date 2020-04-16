@@ -18,8 +18,8 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -48,7 +48,6 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -173,7 +172,6 @@ public class PeerSync implements SolrMetricProducer {
       syncErrors.inc();
       return PeerSyncResult.failure();
     }
-    MDCLoggingContext.setCore(core);
     Timer.Context timerContext = null;
     try {
       log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
@@ -257,7 +255,6 @@ public class PeerSync implements SolrMetricProducer {
       if (timerContext != null) {
         timerContext.close();
       }
-      MDCLoggingContext.clear();
     }
   }
 
@@ -346,7 +343,7 @@ public class PeerSync implements SolrMetricProducer {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
         boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
-        if (connectTimeoutExceptionInChain || solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
+        if (connectTimeoutExceptionInChain || solrException instanceof ConnectTimeoutException || solrException instanceof SocketTimeoutException
             || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
           log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success", srsp.getException());
 

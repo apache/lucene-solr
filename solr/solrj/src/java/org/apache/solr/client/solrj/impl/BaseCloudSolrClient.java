@@ -81,7 +81,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -105,7 +105,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
-      .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
+      .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
   private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";

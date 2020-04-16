@@ -307,7 +307,6 @@ public class HttpSolrCall {
 
     // With a valid core...
     if (core != null) {
-      MDCLoggingContext.setCore(core);
       config = core.getSolrConfig();
       // get or create/cache the parser for the core
       SolrRequestParsers parser = config.getRequestParsers();
@@ -614,8 +613,6 @@ public class HttpSolrCall {
         t = t.getCause();
       }
       return RETURN;
-    } finally {
-      MDCLoggingContext.clear();
     }
 
   }

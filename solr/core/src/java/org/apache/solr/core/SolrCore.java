@@ -157,7 +157,7 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -930,7 +930,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
-      MDCLoggingContext.setCore(this);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
@@ -1499,6 +1498,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void open() {
     refCount.incrementAndGet();
+    MDCLoggingContext.setCore(this);
   }
 
   /**
@@ -1528,6 +1528,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
+    MDCLoggingContext.clear(); // balance out open with close
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
@@ -1836,7 +1837,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
   final ExecutorService searcherExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new DefaultSolrThreadFactory("searcherExecutor"));
+      new SolrNamedThreadFactory("searcherExecutor"));
   private int onDeckSearchers;  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private Object searcherLock = new Object();  // the sync object for the searcher

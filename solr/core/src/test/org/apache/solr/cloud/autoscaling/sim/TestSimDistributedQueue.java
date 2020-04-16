@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ import org.junit.Test;
  */
 public class TestSimDistributedQueue extends SolrTestCaseJ4 {
   private static final Charset UTF8 = Charset.forName("UTF-8");
-  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("sdqtest-"));
+  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("sdqtest-"));
 
   @Test
 // commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
