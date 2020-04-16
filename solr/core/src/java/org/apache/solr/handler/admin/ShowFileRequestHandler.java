@@ -195,14 +195,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     // Make sure the file exists, is readable and is not a hidden file
     if( !adminFile.exists() ) {
-      log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath()); //verified
+      log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
                        ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
-      log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath()); //verified
+      log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
                        ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
                          + " ["+adminFile.getAbsolutePath()+"]" ));

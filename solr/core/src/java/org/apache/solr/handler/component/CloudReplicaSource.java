@@ -192,7 +192,7 @@ class CloudReplicaSource implements ReplicaSource {
         } catch (SolrException e) {
           if (log.isDebugEnabled()) {
             log.debug("Exception finding leader for shard {} in collection {}. Collection State: {}",
-                sliceName, collectionName, clusterState.getCollectionOrNull(collectionName)); //verified
+                sliceName, collectionName, clusterState.getCollectionOrNull(collectionName));
           }
           throw e;
         }

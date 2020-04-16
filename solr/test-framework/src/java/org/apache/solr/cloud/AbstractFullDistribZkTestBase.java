@@ -419,8 +419,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
-    
-    log.info("Creating jetty instances pullReplicaCount={} numOtherReplicas={}", getPullReplicaCount(), numOtherReplicas); // verified
+
+    if (log.isInfoEnabled()) {
+      log.info("Creating jetty instances pullReplicaCount={} numOtherReplicas={}", getPullReplicaCount(), numOtherReplicas);
+    }
     
     int addedReplicas = 0;
     for (int i = 1; i <= numJettys; i++) {
@@ -435,7 +437,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (numOtherReplicas > 0) {
         numOtherReplicas--;
         if (useTlogReplicas()) {
-          log.info("create jetty {} in directory {} of type {} in shard {}", i, jettyDir, Replica.Type.TLOG, ((currentI % sliceCount) + 1)); // verified
+          int tmp = ((currentI % sliceCount) + 1)
+          log.info("create jetty {} in directory {} of type {} in shard {}", i, jettyDir, Replica.Type.TLOG, tmp);
           customThreadPool.submit(() -> {
             try {
               JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
@@ -464,7 +467,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
           addedReplicas++;
         } else {
-          log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1)); // verified
+          int tmp = ((currentI % sliceCount) + 1);
+          log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.NRT, tmp);
           
           customThreadPool.submit(() -> {
             try {
@@ -492,7 +496,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           addedReplicas++;
         }
       } else {
-        log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1)); // verified
+        int tmp = ((currentI % sliceCount) + 1);
+        log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.PULL, tmp);
         customThreadPool.submit(() -> {
           try {
             JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
@@ -589,7 +594,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void waitForLiveNode(JettySolrRunner j) throws InterruptedException, TimeoutException {
     if (log.isInfoEnabled()) {
-      log.info("waitForLiveNode: {}", j.getNodeName()); // verified
+      log.info("waitForLiveNode: {}", j.getNodeName());
     }
     cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
   }
@@ -1983,8 +1988,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             random().nextBoolean(), 5000, 120000);
         commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
         commonCloudSolrClient.connect();
-        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
-            commonCloudSolrClient.isUpdatesToLeaders(), commonCloudSolrClient.isParallelUpdates()); // verified
+        if (log.isInfoEnabled()) {
+          log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
+              commonCloudSolrClient.isUpdatesToLeaders(), commonCloudSolrClient.isParallelUpdates());
+        }
       }
     }
     return commonCloudSolrClient;
@@ -2121,13 +2128,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       leader = shard.getLeader();
       assertNotNull(leader);
-      log.info("Found {} replicas and leader on {} for {} in {}" ,replicas.size(), leader.getNodeName(), shardId, testCollectionName); // verified
+      if (log.isInfoEnabled()) {
+        log.info("Found {} replicas and leader on {} for {} in {}", replicas.size(), leader.getNodeName(), shardId, testCollectionName);
+      }
 
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
         if (!zkShardTerms.canBecomeLeader(replica.getName()) ||
             replica.getState() != Replica.State.ACTIVE) {
-          log.info("Replica {} is currently {}", replica.getName(), replica.getState()); // verified
+          if (log.isInfoEnabled()) {
+            log.info("Replica {} is currently {}", replica.getName(), replica.getState());
+          }
           allReplicasUp = false;
         }
 
@@ -2151,7 +2162,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (notLeaders.isEmpty())
       fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
 
-    log.info("Took {} ms to see all replicas become active.", timer.getTime()); //verified
+    if (log.isInfoEnabled()) {
+      log.info("Took {} ms to see all replicas become active.", timer.getTime());
+    }
 
     List<Replica> replicas = new ArrayList<>(notLeaders.values());
     return replicas;
@@ -2266,7 +2279,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         while (true) {
           long replicaIndexVersion = getIndexVersion(pullReplica); 
           if (leaderIndexVersion == replicaIndexVersion) {
-            log.info("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion); // verified
+            if (log.isInfoEnabled()) {
+              log.info("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            }
             
             // Make sure the host is serving the correct version
             try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getCoreName())) {
@@ -2277,7 +2292,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 if (Long.parseLong(servingVersion) == replicaIndexVersion) {
                   break;
                 } else {
-                  log.info("Replica {} has the correct version replicated, but the searcher is not ready yet. Replicated version: {}, Serving version: {}", pullReplica.getName(), replicaIndexVersion, servingVersion); // verified
+                  if (log.isInfoEnabled()) {
+                    log.info("Replica {} has the correct version replicated, but the searcher is not ready yet. Replicated version: {}, Serving version: {}", pullReplica.getName(), replicaIndexVersion, servingVersion);
+                  }
                 }
               } finally {
                 if (ref != null) ref.decref();
@@ -2289,9 +2306,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
             }
             if (leaderIndexVersion > replicaIndexVersion) {
-              log.info("{} version is {} and leader's is {}, will wait for replication", pullReplica.getName(), replicaIndexVersion, leaderIndexVersion); // verified
+              if (log.isInfoEnabled()) {
+                log.info("{} version is {} and leader's is {}, will wait for replication", pullReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+              }
             } else {
-              log.info("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion); // verified
+              if (log.isInfoEnabled()) {
+                log.info("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+              }
             }
           }
           Thread.sleep(1000);
@@ -2324,7 +2345,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         Collections.max(commits, (a,b)->((Long)a.get("indexVersion")).compareTo((Long)b.get("indexVersion")));
         return (long) Collections.max(commits, (a,b)->((Long)a.get("indexVersion")).compareTo((Long)b.get("indexVersion"))).get("indexVersion");
       } catch (SolrServerException e) {
-        log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e); // verified
+        if (log.isWarnEnabled()) {
+          log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
+        }
         return -1;
       }
     }
@@ -2355,7 +2378,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         QueryResponse response = client.query(params);
         builder.append(String.format(Locale.ROOT, "%s: %s%s", replica.getName(), response.getResponse(), System.lineSeparator()));
       } catch (SolrServerException e) {
-        log.warn("Unable to ger replication details for replica {}", replica.getName(), e); // verified
+        if (log.isWarnEnabled()) {
+          log.warn("Unable to ger replication details for replica {}", replica.getName(), e);
+        }
       }
     }
   }

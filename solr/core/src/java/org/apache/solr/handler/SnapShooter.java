@@ -186,7 +186,7 @@ public class SnapShooter {
         final Optional<IndexCommit> namedCommit = snapshotMgr.getIndexCommitByName(commitName);
         if (namedCommit.isPresent()) {
           final IndexCommit commit = namedCommit.get();
-          log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration()); // verified
+          log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration());
           delPolicy.saveCommitPoint(commit.getGeneration());
           return commit;
         }
@@ -200,7 +200,7 @@ public class SnapShooter {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Index does not yet have any commits for core " +
                               solrCore.getName());
     }
-    log.debug("Using latest commit: generation={}", commit.getGeneration()); //verified
+    log.debug("Using latest commit: generation={}", commit.getGeneration());
     return commit;
   }
 
@@ -240,7 +240,7 @@ public class SnapShooter {
    */
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
-    log.info("Creating backup snapshot {} at {}", (snapshotName == null ? "<not named>" : snapshotName), baseSnapDirPath); //verified
+    log.info("Creating backup snapshot {} at {}", (snapshotName == null ? "<not named>" : snapshotName), baseSnapDirPath);
     boolean success = false;
     try {
       NamedList<Object> details = new NamedList<>();
@@ -262,7 +262,7 @@ public class SnapShooter {
       details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
       details.add("directoryName", directoryName);
-      log.info("Done creating backup snapshot: {} into {}", (snapshotName == null ? "<not named>" : snapshotName), snapshotDirPath); //verified
+      log.info("Done creating backup snapshot: {} into {}", (snapshotName == null ? "<not named>" : snapshotName), snapshotDirPath);
       success = true;
       return details;
     } finally {

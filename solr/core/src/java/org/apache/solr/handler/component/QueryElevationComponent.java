@@ -247,7 +247,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             elevationProvider = handleConfigLoadingException(e, true);
           } else {
             configFileExists = true;
-            log.info("Loading QueryElevation from: {}", fC.getAbsolutePath()); // verified
+            log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
             XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
             elevationProvider = loadElevationProvider(cfg);
           }

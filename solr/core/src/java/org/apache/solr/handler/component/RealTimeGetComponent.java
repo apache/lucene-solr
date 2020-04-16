@@ -169,7 +169,7 @@ public class RealTimeGetComponent extends SearchComponent
             log.debug(req.getCore()
                 .getCoreContainer().getZkController().getNodeName()
                 + " min count to sync to (from most recent searcher view) "
-                + searcher.count(new MatchAllDocsQuery())); //verified
+                + searcher.count(new MatchAllDocsQuery()));
           } finally {
             searchHolder.decref();
           }

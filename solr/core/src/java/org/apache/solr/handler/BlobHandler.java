@@ -150,10 +150,10 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
         if (log.isInfoEnabled()) {
-          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5)); //verified
+          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
         }
         indexMap(req, rsp, doc);
-        log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit()); //verified
+        log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
 
         break;
       }

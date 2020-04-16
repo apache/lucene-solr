@@ -221,7 +221,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       DocCollection coll = clusterState.getCollection("collection1");
       Slice slice = coll.getSlice(shardName);
       if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) ); // verified
+        if (log.isInfoEnabled()) {
+          log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS));
+        }
         break;
       }
 
@@ -240,7 +242,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
       Slice slice = docCollection.getSlice(shardName);
       if (slice != null && slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) ); // verified
+        if (log.isInfoEnabled()) {
+          log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS));
+        }
         return true;
       }
       return false;

@@ -675,13 +675,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch (Exception e) {
               //TODO Should this trigger a larger error?
-              log.warn("Could not read checksum from index file: {}", infos.getSegmentsFileName(), e); //verified
+              log.warn("Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
             }
           }
         }
         result.add(fileMeta);
       } catch (IOException e) {
-        log.error("Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e); //verified
+        log.error("Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
         reportErrorOnResponse(rsp, "unable to get file names for given index generation", e);
         return;
       } finally {
@@ -702,7 +702,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           rsp.add(TLOG_FILES, tlogfiles);
         }
         catch (IOException e) {
-          log.error("Unable to get tlog file names for indexCommit generation: {}", commit.getGeneration(), e); //verified
+          log.error("Unable to get tlog file names for indexCommit generation: {}", commit.getGeneration(), e);
           reportErrorOnResponse(rsp, "unable to get tlog file names for given index generation", e);
           return;
         }
@@ -1245,7 +1245,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (core.getCoreContainer().getZkController() != null) {
         log.warn("SolrCloud is enabled for core {}  but so is old-style replication. Make sure you intend this behavior," +
                 "it usually indicates a mis-configuration. Master setting is {} and the slave setting is {}"
-            , core.getName(), enableMaster,enableSlave); //verified
+            , core.getName(), enableMaster,enableSlave);
       }
     }
 
@@ -1607,7 +1607,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
-          log.debug("Wrote {} bytes for file {}", offset + read, fileName); //verified
+          log.debug("Wrote {} bytes for file {}", offset + read, fileName);
 
           //Pause if necessary
           maxBytesBeforePause += read;

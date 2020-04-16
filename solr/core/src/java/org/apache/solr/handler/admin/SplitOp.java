@@ -350,7 +350,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions); //verified
+    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions);
 
     return counts.values();
   }
@@ -434,7 +434,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions); // verified
+    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions);
 
     return counts.values();
   }

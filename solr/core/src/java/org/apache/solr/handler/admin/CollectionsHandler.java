@@ -250,7 +250,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isInfoEnabled()) {
-        log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue); //verified
+        log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue);
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
@@ -1360,7 +1360,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           success = true;
           break;
         }
-        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice); //verified
+        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice);
       }
 
       if (success) {
@@ -1382,7 +1382,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     if (createCollResponse.getResponse().get("exception") != null) {
       // the main called failed, don't wait
       if (log.isInfoEnabled()) {
-        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception")); //verified
+        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception"));
       }
       return;
     }
@@ -1398,7 +1398,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
     log.info("Wait for new collection to be active for at most {} seconds. Check all shard ",
-        seconds, (checkLeaderOnly ? "leaders" : "replicas")); //verified
+        seconds, (checkLeaderOnly ? "leaders" : "replicas"));
 
     try {
       cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c) -> {
@@ -1421,7 +1421,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             for (Replica replica : replicas) {
               String state = replica.getStr(ZkStateReader.STATE_PROP);
               log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
-                  replica.getCoreUrl(), state); //verified
+                  replica.getCoreUrl(), state);
               if (!n.contains(replica.getNodeName())
                   || !state.equals(Replica.State.ACTIVE.toString())) {
                 replicaNotAliveCnt++;

@@ -238,7 +238,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               }, SolrConfigHandler.class.getSimpleName() + "-refreshconf").start();
             } else {
               if (log.isInfoEnabled()) {
-                log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName()); //verified
+                log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
               }
             }
 
@@ -367,7 +367,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
-            log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage()); //verified
+            log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage());
           }
         }
       } catch (Exception e) {
@@ -459,7 +459,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           ZkController.touchConfDir(zkLoader);
         } else {
           if (log.isDebugEnabled()) {
-            log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>()))); //verified
+            log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
           }
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader,
               params.getZnodeVersion(), RequestParams.RESOURCE, params.toByteArray(), true);
@@ -514,7 +514,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        log.error("ERROR: {}", Utils.toJSONString(errs)); //verified
+        log.error("ERROR: {}", Utils.toJSONString(errs));
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -780,7 +780,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     if (log.isInfoEnabled()) {
       log.info(formatString("Waiting up to {0} secs for {1} replicas to set the property {2} to be of version {3} for collection {4}",
-          maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection)); //verified
+          maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection));
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
@@ -823,7 +823,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       if (log.isWarnEnabled()) {
         log.warn(formatString(
             "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
-            prop, expectedVersion, concurrentTasks.size(), collection)); //verified
+            prop, expectedVersion, concurrentTasks.size(), collection));
       }
       Thread.currentThread().interrupt();
     } finally {
@@ -831,7 +831,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
 
     log.info("Took {}ms to set the property {} to be of version {} for collection {}",
-        timer.getTime(), prop, expectedVersion, collection); //verified
+        timer.getTime(), prop, expectedVersion, collection);
   }
 
   public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
@@ -917,7 +917,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             attempts++;
             if (log.isInfoEnabled()) {
               log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts"
-                  , expectedZkVersion, coreUrl, prop, attempts)); //verified
+                  , expectedZkVersion, coreUrl, prop, attempts));
             }
           } catch (Exception e) {
             if (e instanceof InterruptedException) {

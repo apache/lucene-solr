@@ -175,7 +175,7 @@ public class CatStream extends TupleStream implements Expressible {
 
       final String rootAbsolutePath = getAbsolutePath(crawlRoot);
       if (! new File(getAbsolutePath(crawlRoot)).exists()) {
-        log.warn("Unable to find abs path: {}", getAbsolutePath(crawlRoot)); // verified
+        log.warn("Unable to find abs path: {}", getAbsolutePath(crawlRoot));
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "file/directory to stream doesn't exist: " + crawlRoot);
       }

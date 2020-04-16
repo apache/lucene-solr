@@ -82,9 +82,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     if(params.get("test")!=null) {
       log.trace("trace message");
       log.debug( "debug message");
-      log.info("info (with exception)", new RuntimeException("test") ); //verified
-      log.warn("warn (with exception)", new RuntimeException("test") ); //verified
-      log.error("error (with exception)", new RuntimeException("test")); //verified
+      log.info("info (with exception)", new RuntimeException("test") );
+      log.warn("warn (with exception)", new RuntimeException("test") );
+      log.error("error (with exception)", new RuntimeException("test"));
     }
     
     String[] set = params.getParams("set");

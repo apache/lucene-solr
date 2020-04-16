@@ -390,11 +390,11 @@ public class IndexFetcher {
           return IndexFetchResult.EXPECTING_NON_LEADER;
         }
         if (replica.getState() != Replica.State.ACTIVE) {
-          log.info("Replica {} is leader but it's state is {}, skipping replication", replica.getName(), replica.getState()); //verified
+          log.info("Replica {} is leader but it's state is {}, skipping replication", replica.getName(), replica.getState());
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
         if (!solrCore.getCoreContainer().getZkController().getClusterState().liveNodesContain(replica.getNodeName())) {
-          log.info("Replica {} is leader but it's not hosted on a live node, skipping replication", replica.getName()); //verified
+          log.info("Replica {} is leader but it's not hosted on a live node, skipping replication", replica.getName());
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
         if (!replica.getCoreUrl().equals(masterUrl)) {
@@ -445,8 +445,8 @@ public class IndexFetcher {
       }
 
       if (log.isInfoEnabled()) {
-        log.info("Slave's generation: {}", commit.getGeneration()); //verified
-        log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); //verified
+        log.info("Slave's generation: {}", commit.getGeneration());
+        log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
       }
 
       if (latestVersion == 0L) {
@@ -489,9 +489,9 @@ public class IndexFetcher {
       if (filesToDownload.isEmpty()) {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
       }
-      log.info("Number of files in latest index in master: {}", filesToDownload.size()); //verified
+      log.info("Number of files in latest index in master: {}", filesToDownload.size());
       if (tlogFilesToDownload != null) {
-        log.info("Number of tlog files in master: " + tlogFilesToDownload.size()); //verified
+        log.info("Number of tlog files in master: " + tlogFilesToDownload.size());
       }
 
       // Create the sync service
@@ -557,7 +557,7 @@ public class IndexFetcher {
               }
             }
             if (c > 0)  {
-              log.info("IndexFetcher slept for {} ms for unused lucene index files to be delete-able", (c * 1000)); //verified
+              log.info("IndexFetcher slept for {} ms for unused lucene index files to be delete-able", (c * 1000));
             }
           } finally {
             writer.decref();
@@ -644,7 +644,7 @@ public class IndexFetcher {
 
         // we must reload the core after we open the IW back up
        if (successfulInstall && (reloadCore || forceCoreReload)) {
-         log.info("Reloading SolrCore {}", solrCore.getName()); //verified
+         log.info("Reloading SolrCore {}", solrCore.getName());
           reloadCore();
         }
 
@@ -1013,7 +1013,7 @@ public class IndexFetcher {
                                   String indexDirPath, String tmpIndexDirPath, long latestGeneration)
       throws Exception {
     if (log.isDebugEnabled()) {
-      log.debug("Download files to dir: " + Arrays.asList(indexDir.listAll())); // verified
+      log.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
     long bytesDownloaded = 0;
     long bytesSkippedCopying = 0;
@@ -1030,7 +1030,7 @@ public class IndexFetcher {
     }
 
     if (log.isInfoEnabled()) {
-      log.info("tmpIndexDir_type  : " + tmpIndexDir.getClass() + " , " + FilterDirectory.unwrap(tmpIndexDir)); // verified
+      log.info("tmpIndexDir_type  : " + tmpIndexDir.getClass() + " , " + FilterDirectory.unwrap(tmpIndexDir));
     }
     long usableSpace = usableDiskSpaceProvider.apply(tmpIndexDirPath);
     if (getApproxTotalSpaceReqd(totalSpaceRequired) > usableSpace) {
@@ -1043,7 +1043,7 @@ public class IndexFetcher {
       CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
       boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
       if (log.isDebugEnabled()) {
-        log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload); //verified
+        log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
       }
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
         File localFile = new File(indexDirPath, filename);
@@ -1051,7 +1051,7 @@ public class IndexFetcher {
             && localFile.exists()) {
           if (log.isInfoEnabled()) {
             log.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
-                localFile.getAbsolutePath(), file.get(CHECKSUM)); //verified
+                localFile.getAbsolutePath(), file.get(CHECKSUM));
           }
           // A hard link here should survive the eventual directory move, and should be more space efficient as
           // compared to a file copy. TODO: Maybe we could do a move safely here?
@@ -1067,7 +1067,7 @@ public class IndexFetcher {
         filesDownloaded.add(new HashMap<>(file));
       } else {
         if (log.isDebugEnabled()) {
-          log.debug("Skipping download for {} because it already exists", file.get(NAME)); // verified
+          log.debug("Skipping download for {} because it already exists", file.get(NAME));
         }
       }
     }
@@ -1132,7 +1132,7 @@ public class IndexFetcher {
       return;
     }
     log.info("This disk does not have enough space to download the index from leader/master. So cleaning up the local index. " +
-        " This may lead to loss of data/or node if index replication fails in between"); //verified
+        " This may lead to loss of data/or node if index replication fails in between");
     //now we should disable searchers and index writers because this core will not have all the required files
     this.clearLocalIndexFirst = true;
     this.solrCore.searchEnabled = false;
@@ -1202,7 +1202,7 @@ public class IndexFetcher {
         } else {
           log.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
               "expected length is {} and actual length is {}", filename, backupIndexFileChecksum, indexFileChecksum,
-              backupIndexFileLen, indexFileLen); //verified
+              backupIndexFileLen, indexFileLen);
           compareResult.equal = false;
           return compareResult;
         }
@@ -1252,7 +1252,7 @@ public class IndexFetcher {
           if (length != dir.fileLength(filename)) {
             if (log.isWarnEnabled()) {
               log.warn("File {} did not match. expected length is {} and actual length is {}",
-                  filename, length, dir.fileLength(filename)); //verified
+                  filename, length, dir.fileLength(filename));
             }
             return true;
           }
@@ -1297,8 +1297,8 @@ public class IndexFetcher {
     if (log.isDebugEnabled()) {
       try {
         if (log.isInfoEnabled()) {
-          log.info("From dir files:" + Arrays.asList(tmpIdxDir.listAll())); // verified
-          log.info("To dir files:" + Arrays.asList(indexDir.listAll())); // verified
+          log.info("From dir files:" + Arrays.asList(tmpIdxDir.listAll()));
+          log.info("To dir files:" + Arrays.asList(indexDir.listAll()));
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

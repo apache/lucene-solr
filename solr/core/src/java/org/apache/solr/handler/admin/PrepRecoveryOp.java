@@ -132,7 +132,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                 "onlyIfActiveCheckResult={}, nodeProps: {}"
                 , waitForState, collectionName, slice.getName(), cname, leaderDoesNotNeedRecovery,cloudDescriptor.isLeader()
                 , live, checkLive, state, localState, nodeName, coreNodeName, onlyIfActiveCheckResult
-                , replica); //verified
+                , replica);
 
             if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {
               if (checkLive == null) {

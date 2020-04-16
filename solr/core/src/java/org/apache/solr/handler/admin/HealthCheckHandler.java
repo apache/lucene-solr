@@ -89,7 +89,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
     if (log.isDebugEnabled()) {
-      log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName()); //verified
+      log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();

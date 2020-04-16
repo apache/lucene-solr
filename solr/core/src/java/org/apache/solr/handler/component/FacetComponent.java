@@ -718,7 +718,7 @@ public class FacetComponent extends SearchComponent {
             continue;
           } else {
             if (log.isWarnEnabled()) {
-              log.warn("corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse()); //verified
+              log.warn("corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse());
             }
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "facet_counts is absent in response from " + srsp.getNodeName() +
@@ -872,7 +872,7 @@ public class FacetComponent extends SearchComponent {
         newQueryFacets.put(ent.getKey(), ent.getValue());
       } else {
         if (log.isTraceEnabled()) {
-          log.trace("Removing facetQuery/key: {}/{} mincount=", ent.getKey(), ent.getValue().toString(), minCount); //verified
+          log.trace("Removing facetQuery/key: {}/{} mincount=", ent.getKey(), ent.getValue().toString(), minCount);
         }
         replace = true;
       }
@@ -1009,7 +1009,7 @@ public class FacetComponent extends SearchComponent {
             log.error("Unexpected term returned for facet refining. key=" + key
                       + " term='" + name + "'" + "\n\trequest params=" + sreq.params
                       + "\n\ttoRefine=" + dff._toRefine + "\n\tresponse="
-                      + shardCounts); //verified
+                      + shardCounts);
             continue;
           }
           sfc.count += count;
@@ -1543,7 +1543,7 @@ public class FacetComponent extends SearchComponent {
           newOne.put(ent.getKey(), ent.getValue());
         } else {
           if (log.isTraceEnabled()) {
-            log.trace("Removing facet/key: {}/{} mincount={}", ent.getKey(), ent.getValue().toString(), minCount); //verified
+            log.trace("Removing facet/key: {}/{} mincount={}", ent.getKey(), ent.getValue().toString(), minCount);
           }
           replace = true;
         }

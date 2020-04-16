@@ -650,7 +650,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   @Override
   public void close() {
-    log.debug("Closing {}", hashCode()); //verified
+    log.debug("Closing {}", hashCode());
     if (collectService != null) {
       boolean shutdown = false;
       while (!shutdown) {

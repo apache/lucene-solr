@@ -70,7 +70,7 @@ public class ApiBag {
     try {
       validateAndRegister(api, nameSubstitutes);
     } catch (Exception e) {
-      log.error("Unable to register plugin: {} with spec: {}", api.getClass().getName(), Utils.toJSONString(api.getSpec()), e); // verified
+      log.error("Unable to register plugin: {} with spec: {}", api.getClass().getName(), Utils.toJSONString(api.getSpec()), e);
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       } else {

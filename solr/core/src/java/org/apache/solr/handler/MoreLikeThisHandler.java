@@ -280,7 +280,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         if (log.isWarnEnabled()) {
-          log.warn("Query: {}; {}", req.getParamString(), ex.getMessage()); // verified
+          log.warn("Query: {}; {}", req.getParamString(), ex.getMessage());
         }
       } finally {
         SolrQueryTimeoutImpl.reset();

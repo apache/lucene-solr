@@ -103,13 +103,13 @@ public class AdminHandlersProxy {
         entry.getValue().second().close();
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {
-        log.warn("Exception when fetching result from node {}", entry.getKey(), ee); //verified
+        log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
       } catch (TimeoutException te) {
-        log.warn("Timeout when fetching result from node {}", entry.getKey(), te); //verified
+        log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
       }
     }
     if (log.isInfoEnabled()) {
-      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet()); //verified
+      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
     }
     return true;
   } 

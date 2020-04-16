@@ -122,7 +122,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
         if (log.isInfoEnabled()) {
-          log.info("Created znode {}", this.getZnodePath()); // verified
+          log.info("Created znode {}", this.getZnodePath());
         }
       }
     } catch (KeeperException.NodeExistsException ne) {

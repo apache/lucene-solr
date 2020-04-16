@@ -183,7 +183,7 @@ public class JsonLoader extends ContentStreamLoader {
           case JSONParser.BIGNUMBER:
           case JSONParser.BOOLEAN:
           case JSONParser.NULL:
-            log.info("Can't have a value here. Unexpected {} at [{}]", JSONParser.getEventString(ev), parser.getPosition()); // verified
+            log.info("Can't have a value here. Unexpected {} at [{}]", JSONParser.getEventString(ev), parser.getPosition());
 
           case JSONParser.OBJECT_START:
           case JSONParser.OBJECT_END:

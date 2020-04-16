@@ -187,12 +187,12 @@ public class CloudInspectUtil {
     q = SolrTestCaseJ4.params("q", "*:*", "rows", "100000", "fl", "id", "tests", "checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
     controlDocList = controlClient.query(q).getResults();
     if (controlDocs != controlDocList.getNumFound()) {
-      log.error("Something changed! control now {}", controlDocList.getNumFound()); // verified
+      log.error("Something changed! control now {}", controlDocList.getNumFound());
     }
 
     cloudDocList = cloudClient.query(q).getResults();
     if (cloudClientDocs != cloudDocList.getNumFound()) {
-      log.error("Something changed! cloudClient now {}", cloudDocList.getNumFound()); // verified
+      log.error("Something changed! cloudClient now {}", cloudDocList.getNumFound());
     }
 
     if (controlDocs != cloudClientDocs && (addFails != null || deleteFails != null)) {

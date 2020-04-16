@@ -75,7 +75,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
                 log.debug(core.getCoreContainer()
                     .getZkController().getNodeName()
                     + " synched "
-                    + searcher.count(new MatchAllDocsQuery())); //verified
+                    + searcher.count(new MatchAllDocsQuery()));
               }
             } finally {
               searchHolder.decref();

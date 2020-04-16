@@ -324,7 +324,7 @@ public class QueryComponent extends SearchComponent
   public void process(ResponseBuilder rb) throws IOException
   {
     if (log.isDebugEnabled()) {
-      log.debug("process: {}", rb.req.getParams()); // verified
+      log.debug("process: {}", rb.req.getParams());
     }
   
     SolrQueryRequest req = rb.req;

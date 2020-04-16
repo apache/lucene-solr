@@ -407,7 +407,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Unable to read spelling info for shard: " + srsp.getShard(), e);
           }
-          log.info("{} {}", srsp.getShard(), nl); //verified
+          log.info("{} {}", srsp.getShard(), nl);
           if (nl != null) {
             mergeData.totalNumberShardResponses++;
             collectShardSuggestions(nl, mergeData);
@@ -778,7 +778,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       boolean buildOnCommit = Boolean.parseBoolean((String) spellchecker.get("buildOnCommit"));
       boolean buildOnOptimize = Boolean.parseBoolean((String) spellchecker.get("buildOnOptimize"));
       if (buildOnCommit || buildOnOptimize) {
-        log.info("Registering newSearcher listener for spellchecker: {}", checker.getDictionaryName()); //verified
+        log.info("Registering newSearcher listener for spellchecker: {}", checker.getDictionaryName());
         core.registerNewSearcherListener(new SpellCheckerListener(core, checker, buildOnCommit, buildOnOptimize));
       }
     } else {
@@ -810,10 +810,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       if (currentSearcher == null) {
         // firstSearcher event
         try {
-          log.info("Loading spell index for spellchecker: {}", checker.getDictionaryName()); //verified
+          log.info("Loading spell index for spellchecker: {}", checker.getDictionaryName());
           checker.reload(core, newSearcher);
         } catch (IOException e) {
-          log.error( "Exception in reloading spell check index for spellchecker: {}", checker.getDictionaryName(), e); //verified
+          log.error( "Exception in reloading spell check index for spellchecker: {}", checker.getDictionaryName(), e);
         }
       } else {
         // newSearcher event
@@ -823,7 +823,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           if (newSearcher.getIndexReader().leaves().size() == 1)  {
             buildSpellIndex(newSearcher);
           } else  {
-            log.info("Index is not optimized therefore skipping building spell check index for: {}", checker.getDictionaryName()); //verified
+            log.info("Index is not optimized therefore skipping building spell check index for: {}", checker.getDictionaryName());
           }
         }
       }
@@ -832,10 +832,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     private void buildSpellIndex(SolrIndexSearcher newSearcher) {
       try {
-        log.info("Building spell index for spell checker: {}", checker.getDictionaryName()); //verified
+        log.info("Building spell index for spell checker: {}", checker.getDictionaryName());
         checker.build(core, newSearcher);
       } catch (Exception e) {
-        log.error("Exception in building spell check index for spellchecker: {}", checker.getDictionaryName(), e); //verified
+        log.error("Exception in building spell check index for spellchecker: {}", checker.getDictionaryName(), e);
       }
     }
 

@@ -151,7 +151,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           
           if (buildOnCommit || buildOnOptimize || buildOnStartup) {
             SuggesterListener listener = new SuggesterListener(core, suggester, buildOnCommit, buildOnOptimize, buildOnStartup, core.isReloaded());
-            log.info("Registering searcher listener for suggester: {} - {}", suggester.getName(), listener); //verified
+            log.info("Registering searcher listener for suggester: {} - {}", suggester.getName(), listener);
             core.registerFirstSearcherListener(listener);
             core.registerNewSearcherListener(listener);
           }
@@ -288,7 +288,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           @SuppressWarnings("unchecked")
           Map<String, SimpleOrderedMap<NamedList<Object>>> namedList = 
               (Map<String, SimpleOrderedMap<NamedList<Object>>>) resp.get(SuggesterResultLabels.SUGGEST);
-          log.info("{} : {}", srsp.getShard(), namedList); //verified
+          log.info("{} : {}", srsp.getShard(), namedList);
           suggesterResults.add(toSuggesterResult(namedList));
         }
       }
@@ -515,16 +515,16 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         return;
       } else if (thisCallCount == 1 || (isCoreReload && thisCallCount == 2)) {
         if (buildOnStartup) {
-          log.info("buildOnStartup: {}", suggester.getName()); //verified
+          log.info("buildOnStartup: {}", suggester.getName());
           buildSuggesterIndex(newSearcher);
         }
       } else {
         if (buildOnCommit)  {
-          log.info("buildOnCommit: {}", suggester.getName()); //verified
+          log.info("buildOnCommit: {}", suggester.getName());
           buildSuggesterIndex(newSearcher);
         } else if (buildOnOptimize) {
           if (newSearcher.getIndexReader().leaves().size() == 1)  {
-            log.info("buildOnOptimize: {}", suggester.getName()); // verified
+            log.info("buildOnOptimize: {}", suggester.getName());
             buildSuggesterIndex(newSearcher);
           }
         }
@@ -536,7 +536,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       try {
         suggester.build(core, newSearcher);
       } catch (Exception e) {
-        log.error("Exception in building suggester index for: {}", suggester.getName(), e); //verified
+        log.error("Exception in building suggester index for: {}", suggester.getName(), e);
       }
     }
 

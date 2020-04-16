@@ -180,7 +180,7 @@ public class XMLLoader extends ContentStreamLoader {
           // determined by the XML parser, the content-type is only used as a hint!
           if (log.isTraceEnabled()) {
             log.trace("body: {}", new String(body, (charset == null) ?
-                ContentStreamBase.DEFAULT_CHARSET : charset)); //verified
+                ContentStreamBase.DEFAULT_CHARSET : charset));
           }
           IOUtils.closeQuietly(is);
           is = new ByteArrayInputStream(body);
