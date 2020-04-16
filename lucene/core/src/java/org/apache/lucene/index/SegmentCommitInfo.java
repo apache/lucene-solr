@@ -365,7 +365,7 @@ public class SegmentCommitInfo {
     if (softDelCount > 0) {
       s += " :softDel=" + softDelCount;
     }
-    s += " :id=" + StringHelper.idToString(id);
+    s += " :id=" + StringHelper.idToString(getId());
 
     return s;
   }
@@ -377,7 +377,7 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen, id.clone());
+    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen, getId());
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to
@@ -402,10 +402,14 @@ public class SegmentCommitInfo {
 
   private void generationAdvanced() {
     sizeInBytes = -1;
-    id = StringHelper.randomId();
+    id = null;
   }
 
   public byte[] getId() {
+    if (id == null) {
+      // we advanced a generation - need to generate a new ID
+      id = StringHelper.randomId();
+    }
     return id.clone();
   }
 }
