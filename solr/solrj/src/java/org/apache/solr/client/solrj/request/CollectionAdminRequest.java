@@ -71,6 +71,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
@@ -2099,6 +2100,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Properties properties;
     protected Replica.Type type;
     protected Integer nrtReplicas, tlogReplicas, pullReplicas;
+    protected Boolean skipNodeAssignment;
     protected String createNodeSet;
 
     private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
@@ -2131,6 +2133,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public AddReplica setNode(String node) {
       this.node = node;
+      return this;
+    }
+
+    public AddReplica setSkipNodeAssignment(Boolean skipNodeAssignment) {
+      this.skipNodeAssignment = skipNodeAssignment;
       return this;
     }
 
@@ -2228,6 +2235,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (node != null) {
         params.add(CoreAdminParams.NODE, node);
+      }
+      if (skipNodeAssignment != null) {
+        params.add(SKIP_NODE_ASSIGNMENT, String.valueOf(skipNodeAssignment));
       }
       if (instanceDir != null)  {
         params.add(CoreAdminParams.INSTANCE_DIR, instanceDir);

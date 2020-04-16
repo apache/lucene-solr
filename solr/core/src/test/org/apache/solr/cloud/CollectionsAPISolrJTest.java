@@ -1075,13 +1075,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState("Expecting attribute 'replicationFactor' to be 25", collection,
         (n, c) -> 25 == c.getReplicationFactor());
 
-    CollectionAdminRequest.modifyCollection(collection, null)
-        .unsetAttribute("maxShardsPerNode")
-        .process(cluster.getSolrClient());
-
-    waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
-        (n, c) -> null == c.get("maxShardsPerNode"));
-
     expectThrows(IllegalArgumentException.class,
         "An attempt to set unknown collection attribute should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)

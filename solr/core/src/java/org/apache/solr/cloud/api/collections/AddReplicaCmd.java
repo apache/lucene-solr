@@ -62,6 +62,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -75,12 +76,6 @@ import org.slf4j.LoggerFactory;
 
 public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * When AddReplica is called with this set to true, then we do not try to find node assignments
-   * for the add replica API. If set to true, a valid "node" should be specified.
-   */
-  public static final String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -230,7 +225,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.SHARD_ID_PROP, withCollectionShard,
             "node", createReplica.node,
             // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
-            SKIP_NODE_ASSIGNMENT, "true",
+            CollectionAdminParams.SKIP_NODE_ASSIGNMENT, "true",
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
         addReplica(clusterState, props, results, null);
       }
@@ -346,7 +341,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
                                                             EnumMap<Replica.Type, Integer> replicaTypeVsCount,
                                                             AtomicReference< PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
-    boolean skipNodeAssignment = message.getBool(SKIP_NODE_ASSIGNMENT, false);
+    boolean skipNodeAssignment = message.getBool(CollectionAdminParams.SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
 

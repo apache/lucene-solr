@@ -21,8 +21,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -49,6 +51,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @Test
   public void testAddTooManyReplicas() throws Exception {
+
     final String collectionName = "TooManyReplicasInSeveralFlavors";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
         .process(cluster.getSolrClient());
@@ -60,24 +63,33 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     // Get a node to use for the "node" parameter.
     String nodeName = getAllNodeNames(collectionName).get(0);
 
-    // Add a replica using the "node" parameter (no "too many replicas check")
+    // Add a replica using the "node" parameter
+    // AND force skipping the node assignment (no "too many replicas check")
     // this node should have 2 replicas on it
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(nodeName)
+        //.setSkipNodeAssignment(true)
         .process(cluster.getSolrClient());
 
-    // Three replicas so far, should be able to create another one "normally"
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .process(cluster.getSolrClient());
+    // equivalent to maxShardsPerNode=1
+    String commands =  "{ set-cluster-policy: [ {replica: '<2', shard: '#ANY', node: '#ANY', strict: true} ] }";
+    cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
-    // This one should fail though, no "node" parameter specified
-    Exception e = expectThrows(Exception.class, () -> {
+    for (int i = 0; i < 10; i++) {
+      // Three replicas so far, should be able to create another one "normally"
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
           .process(cluster.getSolrClient());
-    });
+    }
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .process(cluster.getSolrClient());
+    // This one should fail though, no "node" parameter specified
+//    Exception e = expectThrows(Exception.class, () -> {
+//      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+//          .process(cluster.getSolrClient());
+//    });
 
-    assertTrue("Should have gotten the right error message back",
-          e.getMessage().contains("given the current number of eligible live nodes"));
+//    assertTrue("Should have gotten the right error message back",
+//          e.getMessage().contains("given the current number of eligible live nodes"));
 
 
     // Oddly, we should succeed next just because setting property.name will not check for nodes being "full up"
@@ -118,6 +130,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @Test
   public void testAddShard() throws Exception {
+    // equivalent to maxShardsPerNode=2
+    String commands =  "{ set-cluster-policy: [ {replica: '<3', shard: '#ANY', node: '#ANY', strict: true} ] }";
+    cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "TooManyReplicasWhenAddingShards";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 2)
@@ -138,38 +153,40 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     });
     assertTrue("Should have gotten the right error message back",
-        e.getMessage().contains("given the current number of eligible live nodes"));
+        e.getMessage().contains("No node can satisfy the rules"));
 
     // Hmmm, providing a nodeset also overrides the checks for max replicas, so prove it.
     List<String> nodes = getAllNodeNames(collectionName);
 
-    CollectionAdminRequest.createShard(collectionName, "shard4")
-        .setNodeSet(String.join(",", nodes))
-        .process(cluster.getSolrClient());
-
-    // And just for yucks, insure we fail the "regular" one again.
     Exception e2 = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.createShard(collectionName, "shard4")
+          .setNodeSet(String.join(",", nodes))
+          .process(cluster.getSolrClient());
+    });
+    assertTrue("Should have gotten the right error message back",
+        e2.getMessage().contains("No node can satisfy the rules"));
+
+//    // And just for yucks, insure we fail the "regular" one again.
+    Exception e3 = expectThrows(Exception.class, () -> {
       CollectionAdminRequest.createShard(collectionName, "shard5")
           .process(cluster.getSolrClient());
     });
     assertTrue("Should have gotten the right error message back",
-        e2.getMessage().contains("given the current number of eligible live nodes"));
+        e3.getMessage().contains("No node can satisfy the rules"));
 
     // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
-    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
-      return DocCollection.isFullyActive(n, c, 4, 2);
+    waitForState("Expected shards shardstart, 1, 2, each with two active replicas", collectionName, (n, c) -> {
+      return DocCollection.isFullyActive(n, c, 3, 2);
     });
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
-    assertEquals("There should be exaclty four slices", slices.size(), 4);
+    assertEquals("There should be exaclty three slices", slices.size(), 3);
     assertNotNull("shardstart should exist", slices.get("shardstart"));
     assertNotNull("shard1 should exist", slices.get("shard1"));
     assertNotNull("shard2 should exist", slices.get("shard2"));
-    assertNotNull("shard4 should exist", slices.get("shard4"));
     assertEquals("Shardstart should have exactly 2 replicas", 2, slices.get("shardstart").getReplicas().size());
     assertEquals("Shard1 should have exactly 2 replicas", 2, slices.get("shard1").getReplicas().size());
     assertEquals("Shard2 should have exactly 2 replicas", 2, slices.get("shard2").getReplicas().size());
-    assertEquals("Shard4 should have exactly 2 replicas", 2, slices.get("shard4").getReplicas().size());
 
   }
 
