@@ -117,9 +117,9 @@ SOLR_LOGS_DIR=/var/solr/logs
 
 For more information about Log4J configuration, please see: <<configuring-logging.adoc#configuring-logging,Configuring Logging>>
 
-==== init.d Script
+==== systemd Service
 
-When running a service like Solr on Linux, it’s common to setup an init.d script so that system administrators can control Solr using the service tool, such as: `service solr start`. The installation script creates a very basic init.d script to help you get started. Take a moment to inspect the `/etc/init.d/solr` file, which is the default script name setup by the installation script. If you used the `-s` option on the install script to change the name of the service, then the filename will be different. Notice that the following variables are setup for your environment based on the parameters passed to the installation script:
+The installation script creates a very basic systemd service to help you get started. Take a moment to inspect the `/etc/systemd/system/solr.service` file, which is the default service file setup by the installation script. If you used the `-s` option on the install script to change the name of the service, then the filename will be different. Notice that the following variables are setup for your environment based on the parameters passed to the installation script:
 
 [source,bash]
 ----
@@ -128,35 +128,43 @@ SOLR_ENV=/etc/default/solr.in.sh
 RUNAS=solr
 ----
 
-The `SOLR_INSTALL_DIR` and `SOLR_ENV` variables should be self-explanatory. The `RUNAS` variable sets the owner of the Solr process, such as `solr`; if you don’t set this value, the script will run Solr as **root**, which is not recommended for production. You can use the `/etc/init.d/solr` script to start Solr by doing the following as root:
+The `SOLR_INSTALL_DIR` and `SOLR_ENV` variables should be self-explanatory. The `RUNAS` variable sets the owner of the Solr process, such as `solr`; if you don’t set this value, the script will run Solr as **root**, which is not recommended for production. You can start Solr by doing the following as root:
 
 [source,bash]
 ----
-service solr start
+systemctl start solr
 ----
 
-The `/etc/init.d/solr` script also supports the **stop**, **restart**, and *status* commands. Please keep in mind that the init script that ships with Solr is very basic and is intended to show you how to setup Solr as a service. However, it’s also common to use more advanced tools like *supervisord* or *upstart* to control Solr as a service on Linux. While showing how to integrate Solr with tools like supervisord is beyond the scope of this guide, the `init.d/solr` script should provide enough guidance to help you get started. Also, the installation script sets the Solr service to start automatically when the host machine initializes.
+Also, the installation script sets the Solr service to start automatically when the host machine initializes.
 
 === Progress Check
 
-In the next section, we cover some additional environment settings to help you fine-tune your production setup. However, before we move on, let's review what we've achieved thus far. Specifically, you should be able to control Solr using `/etc/init.d/solr`. Please verify the following commands work with your setup:
+In the next section, we cover some additional environment settings to help you fine-tune your production setup. However, before we move on, let's review what we've achieved thus far. Specifically, you should be able to control Solr using `systemctl`. Please verify the following commands work with your setup:
 
 [source,bash]
 ----
-sudo service solr restart
-sudo service solr status
+sudo systemctl restart solr
+sudo systemctl status solr
 ----
 
 The status command should give some basic information about the running Solr node that looks similar to:
 
 [source,text]
 ----
-Solr process PID running on port 8983
-{
-  "version":"5.0.0 - ubuntu - 2014-12-17 19:36:58",
-  "startTime":"2014-12-19T19:25:46.853Z",
-  "uptime":"0 days, 0 hours, 0 minutes, 8 seconds",
-  "memory":"85.4 MB (%17.4) of 490.7 MB"}
+● solr.service - Apache Solr
+   Loaded: loaded (/etc/systemd/system/solr.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2020-04-16 20:42:01 UTC; 53s ago
+ Main PID: 3708 (java)
+    Tasks: 41 (limit: 25056)
+   Memory: 517.1M
+   CGroup: /system.slice/solr.service
+           └─3708 java -server -Xms256M -Xmx512M -XX:+UseG1GC -XX:+PerfDisableSharedMem -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=250 -XX:+UseLargePages -XX:+AlwaysPreTouch -Xlog:gc*:file=/var/solr/logs/solr_gc.log:time,...
+
+Apr 16 20:41:47 localhost.localdomain systemd[1]: Starting Apache Solr...
+Apr 16 20:42:01 localhost.localdomain solr[3661]: [326B blob data]
+Apr 16 20:42:01 localhost.localdomain solr[3661]: Started Solr server on port 8983 (pid=3708). Happy searching!
+Apr 16 20:42:01 localhost.localdomain solr[3661]: [14B blob data]
+Apr 16 20:42:01 localhost.localdomain systemd[1]: Started Apache Solr.
 ----
 
 If the `status` command is not successful, look for error messages in `/var/solr/logs/solr.log`.
@@ -365,7 +373,7 @@ There is another issue once the heap reaches 32GB. Below 32GB, Java is able to u
 Because of the potential garbage collection issues and the particular issues that happen at 32GB, if a single instance would require a 64GB heap, performance is likely to improve greatly if the machine is set up with two nodes that each have a 31GB heap.
 ====
 
-If your use case requires multiple instances, at a minimum you will need unique Solr home directories for each node you want to run; ideally, each home should be on a different physical disk so that multiple Solr nodes don’t have to compete with each other when accessing files on disk. Having different Solr home directories implies that you’ll need a different include file for each node. Moreover, if using the `/etc/init.d/solr` script to control Solr as a service, then you’ll need a separate script for each node. The easiest approach is to use the service installation script to add multiple services on the same host, such as:
+If your use case requires multiple instances, at a minimum you will need unique Solr home directories for each node you want to run; ideally, each home should be on a different physical disk so that multiple Solr nodes don’t have to compete with each other when accessing files on disk. Having different Solr home directories implies that you’ll need a different include file for each node. Moreover, if using `systemctl` to control Solr, then you’ll need a separate service for each node. The easiest approach is to use the service installation script to add multiple services on the same host, such as:
 
 [source,bash,subs="attributes"]
 ----
@@ -376,6 +384,6 @@ The command shown above will add a service named `solr2` running on port 8984 us
 
 [source,bash]
 ----
-sudo service solr2 restart
-sudo service solr2 status
+sudo systemctl start solr2
+sudo systemctl status solr2
 ----
