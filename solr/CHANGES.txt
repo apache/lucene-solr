@@ -98,6 +98,14 @@ Other Changes
   removed from solr-core in favor of SolrNamedThreadFactory in solrj package and all solr-core classes now use
   SolrNamedThreadFactory. (Andras Salamon, shalin)
 
+==================  8.5.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+(No changes)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
