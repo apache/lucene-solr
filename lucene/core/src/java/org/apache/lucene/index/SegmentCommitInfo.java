@@ -85,7 +85,7 @@ public class SegmentCommitInfo {
 
   /**
    * Sole constructor.
-   *  @param info
+   * @param info
    *          {@link SegmentInfo} that we wrap
    * @param delCount
    *          number of deleted documents in this segment
@@ -108,7 +108,7 @@ public class SegmentCommitInfo {
     this.docValuesGen = docValuesGen;
     this.nextWriteDocValuesGen = docValuesGen == -1 ? 1 : docValuesGen + 1;
     this.id = id;
-    if (id.length != StringHelper.ID_LENGTH) {
+    if (id != null && id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
   }
@@ -365,7 +365,9 @@ public class SegmentCommitInfo {
     if (softDelCount > 0) {
       s += " :softDel=" + softDelCount;
     }
-    s += " :id=" + StringHelper.idToString(getId());
+    if (id != null) {
+      s += " :id=" + StringHelper.idToString(getId());
+    }
 
     return s;
   }
@@ -405,11 +407,21 @@ public class SegmentCommitInfo {
     id = null;
   }
 
+  /**
+   * Returns and Id that uniquely identifies this segment commit or <code>null</code> if there is no ID assigned.
+   * This ID changes each time the the segment changes due to a delete, doc-value or field update.
+   */
   public byte[] getId() {
-    if (id == null) {
-      // we advanced a generation - need to generate a new ID
-      id = StringHelper.randomId();
+    return id == null ? null : id.clone();
+  }
+
+  /**
+   * Generates a valid id if there is no id set for this segment commit.
+   */
+  byte[] ensureValidId() {
+    if (this.id == null) {
+      this.id = StringHelper.randomId();
     }
-    return id.clone();
+    return getId();
   }
 }

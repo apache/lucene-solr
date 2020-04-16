@@ -381,8 +381,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         sciId = new byte[StringHelper.ID_LENGTH];
         input.readBytes(sciId, 0, sciId.length);
       } else {
-        sciId = infos.id;
-        // NOCOMMIT can we do this? it would at least give us consistent BWC but we can't identify the same SCI in different commits
+        sciId = null;
       }
       SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen, sciId);
       siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
@@ -547,10 +546,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " softDelCount=" + softDelCount);
       }
       out.writeInt(softDelCount);
-      byte[] sciId = siPerCommit.getId();
-      if (sciId.length != StringHelper.ID_LENGTH) {
-        throw new IllegalArgumentException("invalid SegmentCommitInfo#id: " + Arrays.toString(sciId));
-      }
+      // we ensure that there is a valid ID for this SCI just in case
+      // this is manually upgraded outside of IW
+      byte[] sciId = siPerCommit.ensureValidId();
+      assert sciId != null && sciId.length == StringHelper.ID_LENGTH : "invalid SegmentCommitInfo#id: " + Arrays.toString(sciId);
       out.writeBytes(sciId, 0, sciId.length);
       out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
       final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
@@ -783,6 +782,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       throw new IllegalStateException("prepareCommit was already called");
     }
     dir.syncMetaData();
+    assert segments.stream().filter(i -> i.getId() == null).count() == 0 : "some SegmentCommitInfos have no id";
     write(dir);
   }
 

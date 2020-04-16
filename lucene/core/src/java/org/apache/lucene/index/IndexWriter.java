@@ -3249,6 +3249,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 segmentInfos.setUserData(userData, false);
               }
 
+              // we have to generate a new id for every SegmentCommitInfo
+              // before we clone otherwise the ID will be lost for subsequent
+              // commits and SCIs that never had one won't get an ID
+              for (SegmentCommitInfo info : segmentInfos) {
+                info.ensureValidId();
+              }
               // Must clone the segmentInfos while we still
               // hold fullFlushLock and while sync'd so that
               // no partial changes (eg a delete w/o

@@ -1364,6 +1364,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
+  public void testSegmentCommitInfoId() throws IOException {
+    for (String name : oldNames) {
+      Directory dir = oldIndexDirs.get(name);
+      SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+      for (SegmentCommitInfo info : infos) {
+        assertNull(info.getId());
+      }
+    }
+  }
+
   public void verifyUsesDefaultCodec(Directory dir, String name) throws Exception {
     DirectoryReader r = DirectoryReader.open(dir);
     for (LeafReaderContext context : r.leaves()) {
@@ -1389,6 +1399,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     for (SegmentCommitInfo si : infos) {
       assertEquals(Version.LATEST, si.info.getVersion());
+      assertNotNull(si.getId());
     }
     assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
     assertEquals(indexCreatedVersion, infos.getIndexCreatedVersionMajor());
