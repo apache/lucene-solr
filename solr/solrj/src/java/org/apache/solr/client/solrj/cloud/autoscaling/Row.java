@@ -40,6 +40,7 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 /**
@@ -87,6 +88,7 @@ public class Row implements MapWriter {
     _initReplicaCounts();
 
     isAlreadyCopied = true;
+    initPerClauseData();
   }
 
   private void _initReplicaCounts() {
@@ -331,6 +333,8 @@ public class Row implements MapWriter {
       }
     }
 
+    modifyPerClauseCount(ri, 1);
+
     return row;
   }
 
@@ -433,6 +437,7 @@ public class Row implements MapWriter {
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
+    modifyPerClauseCount(removed, -1);
     return row;
 
   }
@@ -462,6 +467,48 @@ public class Row implements MapWriter {
       for (Map.Entry<String, List<ReplicaInfo>> perShard : perColl.getValue().entrySet()) {
         for (int i = 0; i < perShard.getValue().size(); i++) {
           consumer.accept(perShard.getValue().get(i));
+        }
+      }
+    }
+  }
+
+  void modifyPerClauseCount(ReplicaInfo ri, int delta) {
+    if (session == null || session.perClauseData == null || ri == null) return;
+    session.perClauseData.getShardDetails(ri.getCollection(),ri.getShard()).replicas.incr(ri, delta);
+    for (Clause clause : session.expandedClauses) {
+      if (clause.put == Clause.Put.ON_EACH) continue;
+      if (clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
+        if (clause.tag.isPass(this)) {
+          session.perClauseData.getClauseValue(
+              ri.getCollection(),
+              ri.getShard(),
+              clause,
+              String.valueOf(this.getVal(clause.tag.name))).incr(ri, delta);
+        }
+      }
+    }
+  }
+
+  void initPerClauseData() {
+    if(session== null || session.perClauseData == null) return;
+    forEachReplica(it -> {
+      PerClauseData.ShardDetails shardDetails = session.perClauseData.getShardDetails(it.getCollection(), it.getShard());
+      shardDetails.replicas.increment(it.getType());
+      Number idxSize = (Number) it.getVariable(CORE_IDX.tagName);
+      if(idxSize != null){
+        shardDetails.indexSize = idxSize.doubleValue();
+      }
+    });
+    for (Clause clause : session.expandedClauses) {
+      if(clause.put == Clause.Put.ON_EACH) continue;
+      if(clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
+        if(clause.tag.isPass(this)) {
+          forEachReplica(it -> session.perClauseData.getClauseValue(
+              it.getCollection(),
+              it.getShard(),
+              clause, String.valueOf(this.getVal(clause.tag.name))
+
+          ).incr(it, 1));
         }
       }
     }

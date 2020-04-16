@@ -55,7 +55,7 @@ class AddReplicaSuggester extends Suggester {
       // nocommit
       // possible optimization? for large clusters compare only up to
       // that many eligible rows from the top
-      int limitTopRows = getMatrix().size() > 100 ? 10 : getMatrix().size();
+      int limitTopRows = getMatrix().size() > 100 ? 3 : getMatrix().size();
 
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);

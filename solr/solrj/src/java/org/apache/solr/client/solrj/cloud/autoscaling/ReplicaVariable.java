@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.apache.solr.common.util.StrUtils;
 
@@ -31,45 +30,39 @@ class ReplicaVariable extends VariableBase {
     super(type);
   }
 
-  public static final String REPLICASCOUNT = "relevantReplicas";
-
-
-  private static final class ReplicaCounter implements Consumer<ReplicaInfo> {
-    final String collection, shard;
-    final Clause clause;
-    final int[] result = new int[1];
-
-    ReplicaCounter(String collection, String shard, Clause clause) {
-      this.collection = collection;
-      this.shard = shard;
-      this.clause = clause;
-    }
-
-    @Override
-    public void accept(ReplicaInfo replicaInfo) {
-      if (clause.isMatch(replicaInfo, collection, shard)) {
-        result[0]++;
-      }
-    }
-
-    Integer calculate(Row row) {
-      result[0] = 0;
-      row.forEachReplica(collection, this);
-      return result[0];
-    }
-  }
-
   static int getRelevantReplicasCount(Policy.Session session, Condition cv, String collection, String shard) {
-    int totalReplicasOfInterest = 0;
-    Clause clause = cv.getClause();
-    ReplicaCounter counter = new ReplicaCounter(collection, shard, clause);
-    for (int i = 0; i < session.matrix.size(); i++) {
-      Row row = session.matrix.get(i);
-      Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> counter.calculate(row));
+    PerClauseData.CollectionDetails cd = session.perClauseData.collections.get(collection);
+    if (cd != null) {
+      if (shard != null) {
+        PerClauseData.ShardDetails sd = cd.shards.get(shard);
+        if (sd != null) return sd.replicas.getVal(cv.clause.type).intValue();
+
+      } else {
+        int totalReplicasOfInterest = 0;
+
+        for (PerClauseData.ShardDetails sd : cd.shards.values()) {
+          totalReplicasOfInterest += sd.replicas.getVal(cv.clause.type).intValue();
+        }
+        return totalReplicasOfInterest;
+      }
+
+    }
+    return 0;
+
+   /* Clause clause = cv.getClause();
+    for (Row row : session.matrix) {
+      Integer perShardCount = row.computeCacheIfAbsent(collection, shard, REPLICASCOUNT, cv.clause, o -> {
+        int[] result = new int[1];
+        row.forEachReplica(collection, replicaInfo -> {
+          if (clause.isMatch(replicaInfo, collection, shard))
+            result[0]++;
+        });
+        return result[0];
+      });
       if (perShardCount != null)
         totalReplicasOfInterest += perShardCount;
     }
-    return totalReplicasOfInterest;
+    return totalReplicasOfInterest;*/
   }
 
   @Override

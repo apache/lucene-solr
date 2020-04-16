@@ -174,6 +174,13 @@ public class FreeDiskVariable extends VariableBase {
   @Override
   public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
     //go through other replicas of this shard and copy the index size value into this
+    if(cell.getRow().session.perClauseData != null){
+      PerClauseData.ShardDetails sd = cell.getRow().session.perClauseData.getShardDetails(ri.getCollection(), ri.getShard());
+      if(sd.indexSize == null) return;
+      Double currFreeDisk = cell.val == null ? 0.0d : (Double) cell.val;
+      cell.val = currFreeDisk - sd.indexSize;
+      return;
+    }
     IndexSizeGetter getter = new IndexSizeGetter(ri.getCollection(), ri.getShard());
     for (Row row : cell.getRow().session.matrix) {
       if (row.isEmpty() || !row.isLive() || !row.hasColl(ri.getCollection())) {

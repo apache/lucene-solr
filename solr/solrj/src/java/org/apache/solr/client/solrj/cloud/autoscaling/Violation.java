@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +37,7 @@ public class Violation implements MapWriter {
   final Object tagKey;
   private final int hash;
   private final Clause clause;
-  private List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
+  protected List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
 
   Violation(SealedClause clause, String coll, String shard, String node, Object actualVal, Double replicaCountDelta, Object tagKey) {
     this.clause = clause;
@@ -55,7 +56,7 @@ public class Violation implements MapWriter {
   }
 
   public List<ReplicaInfoAndErr> getViolatingReplicas() {
-    return replicaInfoAndErrs;
+    return replicaInfoAndErrs == null ? Collections.EMPTY_LIST : replicaInfoAndErrs;
   }
 
   public Clause getClause() {
@@ -108,7 +109,7 @@ public class Violation implements MapWriter {
     return false;
   }
 
-  static class ReplicaInfoAndErr implements MapWriter{
+  static class ReplicaInfoAndErr implements MapWriter {
     final ReplicaInfo replicaInfo;
     Double delta;
 
@@ -145,7 +146,7 @@ public class Violation implements MapWriter {
       ew1.putIfNotNull("delta", replicaCountDelta);
     });
     ew.put("clause", getClause());
-    if (!replicaInfoAndErrs.isEmpty()) {
+    if (!getViolatingReplicas().isEmpty()) {
       ew.put("violatingReplicas", (IteratorWriter) iw -> {
         for (ReplicaInfoAndErr replicaInfoAndErr : replicaInfoAndErrs) {
           iw.add(replicaInfoAndErr.replicaInfo);

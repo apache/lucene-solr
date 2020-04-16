@@ -83,6 +83,23 @@ class ReplicaCount  implements MapWriter {
     tlog += count.tlog;
   }
 
+  void incr(ReplicaInfo ri, int delta){
+    switch (ri.getType()) {
+      case NRT:
+        nrt+=delta;
+        break;
+      case PULL:
+        pull+=delta;
+        break;
+      case TLOG:
+        tlog+=delta;
+        break;
+      default:
+        nrt+=delta;
+    }
+
+  }
+
 
   public void increment(Replica.Type type) {
     _change(type, 1);
