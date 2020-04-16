@@ -90,10 +90,11 @@ public class SegmentCommitInfo {
    * @param delCount
    *          number of deleted documents in this segment
    * @param delGen
- *          deletion generation number (used to name deletion files)
+   *          deletion generation number (used to name deletion files)
    * @param fieldInfosGen
-*          FieldInfos generation number (used to name field-infos files)
+   *          FieldInfos generation number (used to name field-infos files)
    * @param docValuesGen
+   *          DocValues generation number (used to name doc-values updates files)
    * @param id Id that uniquely identifies this segment commit. This id must be 16 bytes long. See {@link StringHelper#randomId()}
    */
   public SegmentCommitInfo(SegmentInfo info, int delCount, int softDelCount, long delGen, long fieldInfosGen, long docValuesGen, byte[] id) {

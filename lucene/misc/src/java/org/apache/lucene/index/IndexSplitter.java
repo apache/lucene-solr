@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
@@ -143,7 +144,7 @@ public class IndexSplitter {
                                             info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics(), info.getId(), Collections.emptyMap(), null);
       destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getSoftDelCount(),
           infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen(),
-          infoPerCommit.getDocValuesGen()));
+          infoPerCommit.getDocValuesGen(), infoPerCommit.getId()));
       // now copy files over
       Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {
