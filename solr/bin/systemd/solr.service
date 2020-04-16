@@ -20,10 +20,10 @@ After=network.target
 
 [Service]
 Type=forking
-User=solr
-Environment=SOLR_INCLUDE=/etc/default/solr.in.sh
-ExecStart=/opt/solr/bin/solr start
-ExecStop=/opt/solr/bin/solr stop
+User=SOLR_USER
+Environment=SOLR_INCLUDE=/etc/default/SOLR_SERVICE.in.sh
+ExecStart=SOLR_INSTALL_DIR/bin/solr start
+ExecStop=SOLR_INSTALL_DIR/bin/solr stop
 Restart=always
 TimeoutSec=180s
 PrivateTmp=true

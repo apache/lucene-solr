@@ -193,8 +193,8 @@ else
   unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
 fi
 if [[ $SOLR_START == "true" ]] ; then
-  service --version &>/dev/null || service --help &>/dev/null || print_error "Script requires the 'service' command"
-  java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
+  systemctl --version &>/dev/null || print_error "Script requires the 'systemctl' command"
+  java -version &>/dev/null       || print_error "Solr requires java, please install or set JAVA_HOME properly"
 fi
 lsof -h &>/dev/null             || echo "We recommend installing the 'lsof' command for more stable start/stop of Solr"
 
@@ -229,21 +229,21 @@ if [ -z "$SOLR_UPGRADE" ]; then
 fi
 
 if [ ! "$SOLR_UPGRADE" = "YES" ]; then
-  if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
-    print_usage "/etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host? To upgrade Solr use the -f option."
+  if [ -f "/etc/systemd/system/$SOLR_SERVICE.service" ]; then
+    print_usage "/etc/systemd/system/$SOLR_SERVICE.service already exists! Perhaps Solr is already setup as a service on this host? To upgrade Solr use the -f option."
     exit 1
   fi
 
-  if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
-    print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE already exists! Please move this directory / link or choose a different service name using the -s option."
+  if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE.service" ]; then
+    print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE.service already exists! Please move this directory / link or choose a different service name using the -s option."
     exit 1
   fi
 fi
 
 # stop running instance
-if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
+if [ -f "/etc/systemd/system/$SOLR_SERVICE.service" ]; then
   echo -e "\nStopping Solr instance if exists ...\n"
-  service "$SOLR_SERVICE" stop
+  systemctl stop "$SOLR_SERVICE.service"
 fi
 
 # create user if not exists
@@ -296,17 +296,19 @@ else
   ln -s "$SOLR_INSTALL_DIR" "$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
 fi
 
-# install init.d script
-echo -e "\nInstalling /etc/init.d/$SOLR_SERVICE script ...\n"
-cp "$SOLR_INSTALL_DIR/bin/init.d/solr" "/etc/init.d/$SOLR_SERVICE"
-chmod 0744 "/etc/init.d/$SOLR_SERVICE"
-chown root: "/etc/init.d/$SOLR_SERVICE"
-# do some basic variable substitution on the init.d script
-sed_expr1="s#SOLR_INSTALL_DIR=.*#SOLR_INSTALL_DIR=\"$SOLR_EXTRACT_DIR/$SOLR_SERVICE\"#"
-sed_expr2="s#SOLR_ENV=.*#SOLR_ENV=\"/etc/default/$SOLR_SERVICE.in.sh\"#"
-sed_expr3="s#RUNAS=.*#RUNAS=\"$SOLR_USER\"#"
-sed_expr4="s#Provides:.*#Provides: $SOLR_SERVICE#"
-sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" -e "$sed_expr4" "/etc/init.d/$SOLR_SERVICE"
+# install systemd service file
+echo -e "\nInstalling /etc/systemd/system/$SOLR_SERVICE.service ...\n"
+cp "$SOLR_INSTALL_DIR/bin/systemd/solr.service" "/etc/systemd/system/$SOLR_SERVICE.service"
+chmod 0644 "/etc/systemd/system/$SOLR_SERVICE.service"
+chown root "/etc/systemd/system/$SOLR_SERVICE.service"
+
+# do some basic variable substitution on the service file
+SAFE_SOLR_INSTALL_DIR=$(systemd-escape --path "$SOLR_EXTRACT_DIR/$SOLR_SERVICE")
+SAFE_SOLR_SERVICE=$(systemd-escape --path "$SOLR_SERVICE")
+sed_expr1="s/SOLR_INSTALL_DIR/$SAFE_SOLR_INSTALL_DIR/g"
+sed_expr2="s/SOLR_SERVICE/$SAFE_SOLR_SERVICE/"
+sed_expr3="s/SOLR_USER/$SOLR_USER/"
+sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" "/etc/systemd/system/$SOLR_SERVICE.service"
 
 # install/move configuration
 if [ ! -d /etc/default ]; then
@@ -352,19 +354,13 @@ find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
 find "$SOLR_VAR_DIR" -type f -print0 | xargs -0 chmod 0640
 
 # configure autostart of service
-if [[ "$distro" == "RedHat" || "$distro" == "CentOS" || "$distro" == "SUSE" ]]; then
-  chkconfig "$SOLR_SERVICE" on
-else
-  update-rc.d "$SOLR_SERVICE" defaults
-fi
+systemctl enable "$SOLR_SERVICE.service"
 echo "Service $SOLR_SERVICE installed."
 echo "Customize Solr startup configuration in /etc/default/$SOLR_SERVICE.in.sh"
 
 # start service
 if [[ $SOLR_START == "true" ]] ; then
-  service "$SOLR_SERVICE" start
-  sleep 5
-  service "$SOLR_SERVICE" status
+  systemctl start "$SOLR_SERVICE.service"
 else
-  echo "Not starting Solr service (option -n given). Start manually with 'service $SOLR_SERVICE start'"
+  echo "Not starting Solr service (option -n given). Start manually with 'systemctl start $SOLR_SERVICE.service'"
 fi
