@@ -68,6 +68,13 @@
 
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
     <release>
+         <Version>
+           <name>solr-8.5.1</name>
+           <created>2020-04-16</created>
+           <revision>8.5.1</revision>
+         </Version>
+    </release>
+    <release>
       <Version>
         <name>solr-8.5.0</name>
         <created>2020-03-24</created>
