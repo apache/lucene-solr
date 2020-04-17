@@ -173,9 +173,6 @@ Bug Fixes
 
 * LUCENE-9133: Fix for potential NPE in TermFilteredPresearcher for empty fields (Marvin Justice via Mike Drob)
 
-* LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
-  externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
-
 * LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
 
 Other
@@ -196,6 +193,14 @@ Other
 
 * LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
   ByteBuffer API. (Adrien Grand)
+
+======================= Lucene 8.5.1 =======================
+
+Bug Fixes
+---------------------
+
+* LUCENE-9300: Fix corruption of the new gen field infos when doc values updates are applied on a segment created
+  externally and added to the index with IndexWriter#addIndexes(Directory). (Jim Ferenczi, Adrien Grand)
 
 ======================= Lucene 8.5.0 =======================
 
