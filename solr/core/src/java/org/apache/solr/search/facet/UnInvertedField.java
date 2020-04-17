@@ -390,7 +390,7 @@ public class UnInvertedField extends DocTermOrds {
     if (doNegative) {
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        counts.incrementCount(i, maxTermCounts[i] - counts.getCount(i)*2);
+        counts.incrementCount(i, maxTermCounts[i] - (int) counts.getCount(i)*2);
       }
     }
 

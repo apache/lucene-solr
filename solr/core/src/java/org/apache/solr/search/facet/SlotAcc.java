@@ -578,17 +578,17 @@ abstract class CountSlotAcc extends SlotAcc {
     super(fcontext);
   }
 
-  public abstract void incrementCount(int slot, int count);
+  public abstract void incrementCount(int slot, long count);
 
-  public abstract int getCount(int slot);
+  public abstract long getCount(int slot);
 }
 
 class CountSlotArrAcc extends CountSlotAcc {
-  int[] result;
+  long[] result;
 
   public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
     super(fcontext);
-    result = new int[numSlots];
+    result = new long[numSlots];
   }
 
   @Override
@@ -600,7 +600,7 @@ class CountSlotArrAcc extends CountSlotAcc {
 
   @Override
   public int compare(int slotA, int slotB) {
-    return Integer.compare(result[slotA], result[slotB]);
+    return Long.compare(result[slotA], result[slotB]);
   }
 
   @Override
@@ -608,16 +608,18 @@ class CountSlotArrAcc extends CountSlotAcc {
     return result[slotNum];
   }
 
-  public void incrementCount(int slot, int count) {
+  @Override
+  public void incrementCount(int slot, long count) {
     result[slot] += count;
   }
 
-  public int getCount(int slot) {
+  @Override
+  public long getCount(int slot) {
     return result[slot];
   }
 
   // internal and expert
-  int[] getCountArray() {
+  long[] getCountArray() {
     return result;
   }
 
@@ -642,6 +644,7 @@ class SortSlotAcc extends SlotAcc {
     // no-op
   }
 
+  @Override
   public int compare(int slotA, int slotB) {
     return slotA - slotB;
   }

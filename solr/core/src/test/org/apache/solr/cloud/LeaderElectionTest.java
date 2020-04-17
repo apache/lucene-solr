@@ -35,7 +35,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
@@ -420,7 +420,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testStressElection() throws Exception {
     final ScheduledExecutorService scheduler = Executors
-        .newScheduledThreadPool(15, new DefaultSolrThreadFactory("stressElection"));
+        .newScheduledThreadPool(15, new SolrNamedThreadFactory("stressElection"));
     final List<ClientThread> threads = Collections
         .synchronizedList(new ArrayList<ClientThread>());
 

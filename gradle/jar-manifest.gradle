@@ -44,7 +44,11 @@ allprojects {
                 // Because git status is a task we must defer computing this
                 // until status has been computed. We do this with a provider.
                 def implementationVersion = provider {
-                    "${project.version} ${rootProject.gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
+                    // LUCENE-9310: gitRev should always be there but IntelliJ does something
+                    // awkward on import and resolves provider properties even though task dependencies
+                    // have not been run yet?
+                    def gitRev = rootProject.hasProperty("gitRev") ? rootProject.gitRev : ""
+                    "${project.version} ${gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
                 }
 
                 manifest {

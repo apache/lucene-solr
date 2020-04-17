@@ -53,7 +53,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -114,7 +114,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     NUM_THREADS = atLeast(3);
     EXEC_SERVICE = ExecutorUtil.newMDCAwareFixedThreadPool
-      (NUM_THREADS, new DefaultSolrThreadFactory(DEBUG_LABEL));
+      (NUM_THREADS, new SolrNamedThreadFactory(DEBUG_LABEL));
     
     // at least 2, but don't go crazy on nightly/test.multiplier with "atLeast()"
     final int numShards = TEST_NIGHTLY ? 5 : 2; 

@@ -34,7 +34,7 @@ import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.utils.Helpers;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RestTestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,7 +64,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
         true,
         null);
 
-    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new DefaultSolrThreadFactory("solr-cloud-scraper-tests"));
+    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
     configuration = Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
     solrClient = getHttpSolrClient(restTestHarness.getAdminURL());

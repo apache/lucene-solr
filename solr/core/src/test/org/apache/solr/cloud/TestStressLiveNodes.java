@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import org.apache.zookeeper.CreateMode;
 
@@ -176,7 +176,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       }
       try {
         final ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool
-          (thrashers.size()+1, new DefaultSolrThreadFactory("test_live_nodes_thrasher_iter"+iter));
+          (thrashers.size()+1, new SolrNamedThreadFactory("test_live_nodes_thrasher_iter"+iter));
         
         executorService.invokeAll(thrashers);
         executorService.shutdown();

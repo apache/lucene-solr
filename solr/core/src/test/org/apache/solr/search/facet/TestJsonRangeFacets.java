@@ -394,4 +394,42 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
         "facets=={count:6, price:{buckets:[{val:\"[*,*)\",count:5}]}}");
   }
 
+  @Test
+  public void testFacetValueTypes() throws Exception {
+    doFacetValueTypeValidation(Client.localClient());
+  }
+
+  @Test
+  public void testFacetValueTypeDistrib() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    doFacetValueTypeValidation(client);
+  }
+
+  private void doFacetValueTypeValidation(Client client) throws Exception {
+    indexSimple(client);
+
+    // range faceting with start, end, and gap
+    client.testXQ(params("q", "*:*", "rows",  "0",
+        "json.facet", "{num:{type: range, field:num_i,start:0,gap:2,end:10,mincount:1,other:all}}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/int[@name='val'][.=2]", // value
+        "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/long[@name='count'][.=2]", // count
+        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=2]", // no of entries
+        "/response/lst[@name='facets']/lst[@name='num']/lst[@name='before']/long[@name='count'][.=2]", // before
+        "/response/lst[@name='facets']/lst[@name='num']/lst[@name='after']/long[@name='count'][.=0]", // after
+        "/response/lst[@name='facets']/lst[@name='num']/lst[@name='between']/long[@name='count'][.=3]" // between
+    );
+
+    // range faceting with ranges specified
+    client.testXQ(params("q", "*:*", "rows",  "0",
+        "json.facet", "{num:{type: range, field:num_i,ranges:[{from:0, to:4},{from:-4,to:2}],mincount:1}}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/str[@name='val'][.='[0,4)']", // value
+        "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/long[@name='count'][.=2]", // count
+        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=1]" // no of entries
+    );
+  }
+
 }

@@ -47,7 +47,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.rrd4j.core.RrdBackend;
 import org.rrd4j.core.RrdBackendFactory;
 import org.slf4j.Logger;
@@ -104,7 +104,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     log.debug("Created " + hashCode());
     this.idPrefixLength = ID_PREFIX.length() + ID_SEP.length();
     syncService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
-        new DefaultSolrThreadFactory("SolrRrdBackendFactory"));
+        new SolrNamedThreadFactory("SolrRrdBackendFactory"));
     syncService.setRemoveOnCancelPolicy(true);
     syncService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     syncService.scheduleWithFixedDelay(() -> maybeSyncBackends(),
