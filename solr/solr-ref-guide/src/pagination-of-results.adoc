@@ -97,6 +97,7 @@ There are a few important constraints to be aware of when using `cursorMark` par
 
 . `cursorMark` and `start` are mutually exclusive parameters.
 * Your requests must either not include a `start` parameter, or it must be specified with a value of "```0```".
+. When using the <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed` request param>>, partial results may be returned.  If time expires before the search is complete - as indicated when the `responseHeader` includes `"partialResults": true`, some matching documents may have been skipped. Additionally, if `cursorMark` matches `nextCursorMark`, you cannot be sure that there are no more results. In these situation, consider increasing `timeAllowed` and reissuing the query.  When the `responseHeader` no longer includes `"partialResults": true` and `cursorMark` matches `nextCursorMark`, there are no more results.
 . `sort` clauses must include the uniqueKey field (either `asc` or `desc`).
 * If `id` is your uniqueKey field, then sort parameters like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
 . Sorts including <<working-with-dates.adoc#working-with-dates,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
