@@ -584,18 +584,19 @@ interface SweepableSlotAcc<T extends SlotAcc> {
    * be covered by the "sweeping" data structures registered with the specified
    * baseSweepingAcc as a result of the call to this method).
    *
-   * The implementing instance must notify the specified {@link CollectSlotAccMappingAware}
-   * instance of the mapping (possibly "identity") from original SlotAcc to the SlotAcc that
-   * should be used for purposes of read access. It is the responsibility of the specified
-   * {@link CollectSlotAccMappingAware} to ensure proper placement/accessibility of the
-   * SlotAcc to be used for read access.
+   * The implementing instance must call {@link CollectSlotAccMappingAware#registerMapping(SlotAcc, SlotAcc)}
+   * on the specified baseSweepingAcc to notify it of the mapping (possibly "identity") from
+   * original SlotAcc to the SlotAcc that should be used for purposes of read access. It is
+   * the responsibility of the specified {@link CollectSlotAccMappingAware} to ensure proper
+   * placement/accessibility of the SlotAcc to be used for read access.
    *
-   * @param baseSweepingAcc - never null, where the SlotAcc should call "addChild"
-   * @param notify - to be notified of SlotAcc replacements, for purpose of read access
+   * @param baseSweepingAcc - never null, where the SlotAcc may register domains for sweep collection,
+   * and must register mappings ("identity" or otherwise) of new read-access SlotAccs that result
+   * from this call.
    * @return SlotAcc to be used for purpose of collection. If null then collect methods will
    * never be called on this SlotAcc.
    */
-  public T registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify);
+  public T registerSweepingAccs(SweepingAcc baseSweepingAcc);
 }
 
 /**
@@ -656,15 +657,18 @@ final class CountAccEntry {
  * This class may be used by SweepableSlotAccs to register DocSet domains over which to sweep-collect
  * facet counts.
  */
-class SweepingAcc {
+class SweepingAcc implements CollectSlotAccMappingAware {
 
   private final FacetContext fcontext;
   final SweepCountAccStruct base;
   final List<SweepCountAccStruct> others = new ArrayList<>();
+  private final List<SlotAcc> output = new ArrayList<>();
+  final CollectSlotAccMappingAware notify;
 
-  SweepingAcc(CountSlotAcc baseCountAcc) {
+  SweepingAcc(CountSlotAcc baseCountAcc, CollectSlotAccMappingAware notify) {
     this.fcontext = baseCountAcc.fcontext;
     this.base = new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc);
+    this.notify = notify;
   }
 
   /**
@@ -685,6 +689,24 @@ class SweepingAcc {
     assert !sweepCountAcc.isBase;
     others.add(sweepCountAcc);
   }
+
+  @Override
+  public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
+    output.add(toAcc);
+    if (notify != null) {
+      notify.registerMapping(fromAcc, toAcc);
+    }
+  }
+
+  public boolean setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+    if (output.isEmpty()) {
+      return false;
+    }
+    for (SlotAcc acc : output) {
+      acc.setValues(bucket, slotNum);
+    }
+    return true;
+  }
 }
 
 abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, SweepableSlotAcc<CountSlotAcc> {
@@ -693,19 +715,32 @@ abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, Swe
   }
 
   @Override
-  public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc, CollectSlotAccMappingAware notify) {
+  public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
     baseSweepingAcc.add(new SweepCountAccStruct(fcontext.base, false, this, this));
-    notify.registerMapping(this, this);
+    baseSweepingAcc.registerMapping(this, this);
     return null;
+  }
+
+  public SweepingAcc getBaseSweepingAcc() {
+    return baseSweepingAcc == null ? baseSweepingAcc = new SweepingAcc(this, null) : baseSweepingAcc;
   }
 
   private SweepingAcc baseSweepingAcc;
   /**
    * CountSlotAcc always supports being used for sweeping across the base set
+   * @param notify - optional; to be notified of SlotAcc replacements, for purpose of read access
    * @returns never null
    */
-  public SweepingAcc getBaseSweepingAcc() {
-    return baseSweepingAcc == null ? baseSweepingAcc = new SweepingAcc(this) : baseSweepingAcc;
+  public SweepingAcc getBaseSweepingAcc(CollectSlotAccMappingAware notify) {
+    if (notify == null) {
+      throw new IllegalArgumentException("notify must not be null");
+    } else if (baseSweepingAcc == null) {
+      return baseSweepingAcc = new SweepingAcc(this, notify);
+    } else if (baseSweepingAcc.notify != notify) {
+      throw new IllegalStateException(CollectSlotAccMappingAware.class.getSimpleName()+" notify must be stable");
+    } else {
+      return baseSweepingAcc;
+    }
   }
 
   public abstract void incrementCount(int slot, int count);

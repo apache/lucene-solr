@@ -26,7 +26,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
@@ -94,8 +93,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     }
 
     if (collectAcc instanceof SweepableSlotAcc) {
-      fullDomainAccs.clear();
-      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(), slotAccMapper);
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(slotAccMapper));
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
       }
