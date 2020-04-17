@@ -206,7 +206,7 @@ The default value of this parameter is blank, which causes no extra "explain inf
 
 == timeAllowed Parameter
 
-This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set. In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`.
+This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set. In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`. When using `timeAllowed` in combination with <<pagination-of-results.adoc#using-cursors,`cursorMark`>>, and the `partialResults` flag is present, some matching documents may have been skipped in the result set. Additionally, if  the `partialResults` flag is present, `cursorMark` can match `nextCursorMark` even if there may be more results
 
 [source,json]
 ----
@@ -252,7 +252,7 @@ The default value of this parameter is `false`.
 
 This parameter may be set to either `true` or `false`.
 
-If set to `true`, this parameter excludes the header from the returned results. The header contains information about the request, such as the time it took to complete. The default value for this parameter is `false`.
+If set to `true`, this parameter excludes the header from the returned results. The header contains information about the request, such as the time it took to complete. The default value for this parameter is `false`. When using parameters such as <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>>, and <<solrcloud-query-routing-and-read-tolerance.adoc#shards-tolerant-parameter,`shards.tolerant`>>, which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, <<faceting.adoc#faceting,Facet>> counts, and result <<the-stats-component.adoc#the-stats-component,Stats>> can be interpreted in the context of partial results.
 
 == wt Parameter
 
