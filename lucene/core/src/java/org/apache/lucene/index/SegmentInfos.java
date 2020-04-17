@@ -377,9 +377,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
       }
       final byte[] sciId;
-      if (format > VERSION_74) {
-        sciId = new byte[StringHelper.ID_LENGTH];
-        input.readBytes(sciId, 0, sciId.length);
+      if (format > VERSION_74 ) {
+        if (input.readByte() == 1) {
+          sciId = new byte[StringHelper.ID_LENGTH];
+          input.readBytes(sciId, 0, sciId.length);
+        } else {
+          sciId = null;
+        }
       } else {
         sciId = null;
       }
@@ -548,9 +552,15 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       out.writeInt(softDelCount);
       // we ensure that there is a valid ID for this SCI just in case
       // this is manually upgraded outside of IW
-      byte[] sciId = siPerCommit.ensureValidId();
-      assert sciId != null && sciId.length == StringHelper.ID_LENGTH : "invalid SegmentCommitInfo#id: " + Arrays.toString(sciId);
-      out.writeBytes(sciId, 0, sciId.length);
+      byte[] sciId = siPerCommit.getId();
+      if (sciId != null) {
+        out.writeByte((byte)1);
+        assert sciId.length == StringHelper.ID_LENGTH : "invalid SegmentCommitInfo#id: " + Arrays.toString(sciId);
+        out.writeBytes(sciId, 0, sciId.length);
+      } else {
+        out.writeByte((byte)0);
+      }
+
       out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
       final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
       out.writeInt(dvUpdatesFiles.size());
@@ -782,7 +792,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       throw new IllegalStateException("prepareCommit was already called");
     }
     dir.syncMetaData();
-    assert segments.stream().filter(i -> i.getId() == null).count() == 0 : "some SegmentCommitInfos have no id";
     write(dir);
   }
 

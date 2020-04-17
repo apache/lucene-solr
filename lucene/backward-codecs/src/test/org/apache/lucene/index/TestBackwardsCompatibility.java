@@ -831,7 +831,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       w.close();
 
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
-      assertEquals(0, si.asList().stream().filter(sci -> sci.getId() == null).count());
+      assertEquals("none of the segments should have been upgraded", 0, si.asList().stream().filter(sci -> sci.getId() != null).count());
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
@@ -863,7 +863,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       w.close();
       reader.close();
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
-      assertEquals(0, si.asList().stream().filter(sci -> sci.getId() == null).count());
+      assertEquals("all SCIs should have an id now", 0, si.asList().stream().filter(sci -> sci.getId() == null).count());
       targetDir.close();
     }
   }

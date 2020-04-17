@@ -83,6 +83,9 @@ public class SegmentCommitInfo {
   // this is never written to/read from the Directory
   private long bufferedDeletesGen = -1;
 
+  // is set once any of the generations has been advanced.
+  private boolean hasAdvanced;
+
   /**
    * Sole constructor.
    * @param info
@@ -365,7 +368,7 @@ public class SegmentCommitInfo {
     if (softDelCount > 0) {
       s += " :softDel=" + softDelCount;
     }
-    if (id != null) {
+    if (getId() != null) {
       s += " :id=" + StringHelper.idToString(getId());
     }
 
@@ -404,7 +407,7 @@ public class SegmentCommitInfo {
 
   private void generationAdvanced() {
     sizeInBytes = -1;
-    id = null;
+    hasAdvanced = true;
   }
 
   /**
@@ -412,16 +415,17 @@ public class SegmentCommitInfo {
    * This ID changes each time the the segment changes due to a delete, doc-value or field update.
    */
   public byte[] getId() {
+    maybeAdvanceID();
     return id == null ? null : id.clone();
   }
 
   /**
-   * Generates a valid id if there is no id set for this segment commit.
+   * Generates a new Id if this segment commit has changed.
    */
-  byte[] ensureValidId() {
-    if (this.id == null) {
+  private void maybeAdvanceID() {
+    if (hasAdvanced) {
+      hasAdvanced = false;
       this.id = StringHelper.randomId();
     }
-    return getId();
   }
 }

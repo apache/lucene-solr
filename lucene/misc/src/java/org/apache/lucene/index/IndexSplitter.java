@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
