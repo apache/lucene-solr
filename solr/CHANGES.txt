@@ -41,6 +41,8 @@ Improvements
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
 
+* SOLR-14413: Allow timeAllowed and cursorMark parameters together. (John Gallagher via Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
