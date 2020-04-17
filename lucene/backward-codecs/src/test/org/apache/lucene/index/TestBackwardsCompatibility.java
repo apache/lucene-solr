@@ -768,7 +768,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             writer.close();
           }
         }
-        writer = null;
       }
       
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -830,8 +829,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       w.addIndexes(oldDir);
       w.close();
-      targetDir.close();
 
+      SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
+      assertEquals(0, si.asList().stream().filter(sci -> sci.getId() == null).count());
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
@@ -862,7 +862,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       TestUtil.addIndexesSlowly(w, reader);
       w.close();
       reader.close();
-            
+      SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
+      assertEquals(0, si.asList().stream().filter(sci -> sci.getId() == null).count());
       targetDir.close();
     }
   }
