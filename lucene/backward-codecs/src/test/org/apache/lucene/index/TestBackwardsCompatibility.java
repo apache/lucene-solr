@@ -865,7 +865,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       reader.close();
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
       assertNull("all SCIs should have an id now",
-          si.asList().stream().filter(sci -> sci.getId() != null).findAny().orElse(null));
+          si.asList().stream().filter(sci -> sci.getId() == null).findAny().orElse(null));
       targetDir.close();
     }
   }
