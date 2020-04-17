@@ -83,9 +83,6 @@ public class SegmentCommitInfo {
   // this is never written to/read from the Directory
   private long bufferedDeletesGen = -1;
 
-  // is set once any of the generations has been advanced.
-  private boolean hasAdvanced;
-
   /**
    * Sole constructor.
    * @param info
