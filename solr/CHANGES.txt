@@ -67,6 +67,8 @@ Bug Fixes
 
 * SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
 
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -105,7 +107,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Bug Fixes
 ---------------------
 
-* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
+* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen
+  This fix was incomplete, see SOLR-14411 for the followup (janhoy)
 
 ==================  8.5.0 ==================
 
