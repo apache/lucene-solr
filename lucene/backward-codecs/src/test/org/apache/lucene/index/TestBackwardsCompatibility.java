@@ -831,7 +831,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       w.close();
 
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
-      assertEquals("none of the segments should have been upgraded", 0, si.asList().stream().filter(sci -> sci.getId() != null).count());
+      assertNull("none of the segments should have been upgraded",
+          si.asList().stream().filter(sci -> sci.getId() != null).findAny().orElse(null));
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
@@ -863,7 +864,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       w.close();
       reader.close();
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
-      assertEquals("all SCIs should have an id now", 0, si.asList().stream().filter(sci -> sci.getId() == null).count());
+      assertNull("all SCIs should have an id now",
+          si.asList().stream().filter(sci -> sci.getId() != null).findAny().orElse(null));
       targetDir.close();
     }
   }
@@ -1373,7 +1375,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = oldIndexDirs.get(name);
       SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
       for (SegmentCommitInfo info : infos) {
-        assertNull(info.getId());
+        if (info.info.getVersion().onOrAfter(Version.LUCENE_9_0_0)) {
+          assertNotNull(info.toString(), info.getId());
+        } else {
+          assertNull(info.toString(), info.getId());
+        }
       }
     }
   }

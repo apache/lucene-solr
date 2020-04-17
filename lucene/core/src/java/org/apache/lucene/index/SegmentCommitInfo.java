@@ -368,8 +368,8 @@ public class SegmentCommitInfo {
     if (softDelCount > 0) {
       s += " :softDel=" + softDelCount;
     }
-    if (getId() != null) {
-      s += " :id=" + StringHelper.idToString(getId());
+    if (this.id != null) {
+      s += " :id=" + StringHelper.idToString(id);
     }
 
     return s;
@@ -407,7 +407,7 @@ public class SegmentCommitInfo {
 
   private void generationAdvanced() {
     sizeInBytes = -1;
-    hasAdvanced = true;
+    this.id = StringHelper.randomId();
   }
 
   /**
@@ -415,17 +415,6 @@ public class SegmentCommitInfo {
    * This ID changes each time the the segment changes due to a delete, doc-value or field update.
    */
   public byte[] getId() {
-    maybeAdvanceID();
     return id == null ? null : id.clone();
-  }
-
-  /**
-   * Generates a new Id if this segment commit has changed.
-   */
-  private void maybeAdvanceID() {
-    if (hasAdvanced) {
-      hasAdvanced = false;
-      this.id = StringHelper.randomId();
-    }
   }
 }

@@ -377,12 +377,18 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
       }
       final byte[] sciId;
-      if (format > VERSION_74 ) {
-        if (input.readByte() == 1) {
-          sciId = new byte[StringHelper.ID_LENGTH];
-          input.readBytes(sciId, 0, sciId.length);
-        } else {
-          sciId = null;
+      if (format > VERSION_74) {
+        byte marker = input.readByte();
+        switch (marker) {
+          case 1:
+            sciId = new byte[StringHelper.ID_LENGTH];
+            input.readBytes(sciId, 0, sciId.length);
+            break;
+          case 0:
+            sciId = null;
+            break;
+          default:
+            throw new CorruptIndexException("invalid SegmentCommitInfo ID marker: " + marker, input);
         }
       } else {
         sciId = null;
