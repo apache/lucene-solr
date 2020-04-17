@@ -1375,7 +1375,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = oldIndexDirs.get(name);
       SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
       for (SegmentCommitInfo info : infos) {
-        if (info.info.getVersion().onOrAfter(Version.LUCENE_9_0_0)) {
+        if (info.info.getVersion().onOrAfter(Version.LUCENE_8_6_0)) {
           assertNotNull(info.toString(), info.getId());
         } else {
           assertNull(info.toString(), info.getId());
