@@ -4090,46 +4090,48 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testSegmentCommitInfoId() throws IOException {
-    try (Directory dir = newDirectory();
-         IndexWriter writer = new IndexWriter(dir,
-             new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
-      Document doc = new Document();
-      doc.add(new NumericDocValuesField("num", 1));
-      doc.add(new StringField("id", "1", Field.Store.NO));
-      writer.addDocument(doc);
-      doc = new Document();
-      doc.add(new NumericDocValuesField("num", 1));
-      doc.add(new StringField("id", "2", Field.Store.NO));
-      writer.addDocument(doc);
-      writer.commit();
-      SegmentInfos segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
-      byte[] id = segmentCommitInfos.info(0).getId();
-      byte[] segInfoId = segmentCommitInfos.info(0).info.getId();
+    try (Directory dir = newDirectory()) {
+      SegmentInfos segmentCommitInfos;
+      try (IndexWriter writer = new IndexWriter(dir,
+          new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        Document doc = new Document();
+        doc.add(new NumericDocValuesField("num", 1));
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(doc);
+        doc = new Document();
+        doc.add(new NumericDocValuesField("num", 1));
+        doc.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(doc);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        byte[] id = segmentCommitInfos.info(0).getId();
+        byte[] segInfoId = segmentCommitInfos.info(0).info.getId();
 
-      writer.updateNumericDocValue(new Term("id", "1"), "num", 2);
-      writer.commit();
-      segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
-      assertEquals(1, segmentCommitInfos.size());
-      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
-      assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
-      id = segmentCommitInfos.info(0).getId();
-      writer.addDocument(new Document()); // second segment
-      writer.commit();
-      segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
-      assertEquals(2, segmentCommitInfos.size());
-      assertEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
-      assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+        writer.updateNumericDocValue(new Term("id", "1"), "num", 2);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(1, segmentCommitInfos.size());
+        assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+        id = segmentCommitInfos.info(0).getId();
+        writer.addDocument(new Document()); // second segment
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(2, segmentCommitInfos.size());
+        assertEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
 
-      doc = new Document();
-      doc.add(new NumericDocValuesField("num", 5));
-      doc.add(new StringField("id", "1", Field.Store.NO));
-      writer.updateDocument(new Term("id", "1"), doc);
-      writer.commit();
-      segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
-      assertEquals(3, segmentCommitInfos.size());
-      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
-      assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
-      writer.close();
+        doc = new Document();
+        doc.add(new NumericDocValuesField("num", 5));
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.updateDocument(new Term("id", "1"), doc);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(3, segmentCommitInfos.size());
+        assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+      }
+
       try (Directory dir2 = newDirectory();
            IndexWriter writer2 = new IndexWriter(dir2,
                new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
