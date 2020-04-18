@@ -167,6 +167,8 @@ Other Changes
 * SOLR-14391: Removed internal-ish ScoreFilter marker interface; only used by {!collapse}.  Removed needless code in
   SolrIndexSearcher.getDocSet(List<Query>) (processes some filter queries).  (David Smiley)
 
+* SOLR-13886: HDFSSyncSliceTest and SyncSliceTest started failing frequently (Kevin Risden)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
