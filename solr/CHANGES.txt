@@ -42,6 +42,8 @@ Optimizations
 
 * SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
 
+* LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.

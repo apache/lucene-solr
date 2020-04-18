@@ -161,7 +161,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
     List<Map> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
-      log.error(ERR + Utils.toJSONString(errs));
+      log.error("{}{}", ERR, Utils.toJSONString(errs));
       throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
     }
 

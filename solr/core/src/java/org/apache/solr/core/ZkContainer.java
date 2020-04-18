@@ -102,13 +102,13 @@ public class ZkContainer {
         // If this is an ensemble, allow for a long connect time for other servers to come up
         if (zkRun != null && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
-          log.info("Zookeeper client=" + zookeeperHost + "  Waiting for a quorum.");
+          log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
-          log.info("Zookeeper client=" + zookeeperHost);          
+          log.info("Zookeeper client={}", zookeeperHost);
         }
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
-        
+
         if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
@@ -146,11 +146,11 @@ public class ZkContainer {
         }
 
 
-        
+
         if(boostrapConf) {
           ZkController.bootstrapConf(zkController.getZkClient(), cc);
         }
-        
+
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();

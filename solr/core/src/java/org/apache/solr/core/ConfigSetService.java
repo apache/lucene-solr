@@ -231,7 +231,7 @@ public abstract class ConfigSetService {
       } catch (FileNotFoundException e) {
         return null; // acceptable
       } catch (IOException e) {
-        log.warn("Unexpected exception when getting modification time of " + schemaFile, e);
+        log.warn("Unexpected exception when getting modification time of {}", schemaFile, e);
         return null; // debatable; we'll see an error soon if there's a real problem
       }
     }

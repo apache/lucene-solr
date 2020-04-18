@@ -110,7 +110,7 @@ public class SolrSnapshotsTool implements Closeable {
       System.out.println("Successfully created snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
-      log.error("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName, e);
+      log.error("Failed to create a snapshot with name {} for collection {}", snapshotName, collectionName, e);
       System.out.println("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -125,7 +125,7 @@ public class SolrSnapshotsTool implements Closeable {
       System.out.println("Successfully deleted snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
-      log.error("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName, e);
+      log.error("Failed to delete a snapshot with name {} for collection {}", snapshotName, collectionName, e);
       System.out.println("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -145,7 +145,7 @@ public class SolrSnapshotsTool implements Closeable {
       }
 
     } catch (Exception e) {
-      log.error("Failed to list snapshots for collection " + collectionName, e);
+      log.error("Failed to list snapshots for collection {}", collectionName, e);
       System.out.println("Failed to list snapshots for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -274,8 +274,8 @@ public class SolrSnapshotsTool implements Closeable {
       buildCopyListings(collectionName, snapshotName, localFsPath, pathPrefix);
       System.out.println("Successfully prepared copylisting for the snapshot export.");
     } catch (Exception e) {
-      log.error("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
-      + collectionName, e);
+      log.error("Failed to prepare a copylisting for snapshot with name {} for collection {}"
+          , snapshotName, collectionName, e);
       System.out.println("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
       + collectionName + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
@@ -285,7 +285,7 @@ public class SolrSnapshotsTool implements Closeable {
       backupCollectionMetaData(collectionName, snapshotName, destPath);
       System.out.println("Successfully backed up collection meta-data");
     } catch (Exception e) {
-      log.error("Failed to backup collection meta-data for collection " + collectionName, e);
+      log.error("Failed to backup collection meta-data for collection {}", collectionName, e);
       System.out.println("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
@@ -305,7 +305,7 @@ public class SolrSnapshotsTool implements Closeable {
       // if asyncId is null, processAsync will block and throw an Exception with any error
       backup.processAsync(asyncReqId.orElse(null), solrClient);
     } catch (Exception e) {
-      log.error("Failed to backup collection meta-data for collection " + collectionName, e);
+      log.error("Failed to backup collection meta-data for collection {}", collectionName, e);
       System.out.println("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);

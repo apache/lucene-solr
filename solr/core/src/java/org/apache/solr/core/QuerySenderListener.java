@@ -47,7 +47,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
-    log.info("QuerySenderListener sending requests to " + newSearcher);
+    log.info("QuerySenderListener sending requests to {}", newSearcher);
     List<NamedList> allLists = (List<NamedList>)getArgs().get("queries");
     if (allLists == null) return;
     boolean createNewReqInfo = SolrRequestInfo.getRequestInfo() == null;
