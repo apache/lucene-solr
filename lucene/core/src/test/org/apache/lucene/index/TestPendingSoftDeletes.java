@@ -150,7 +150,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
     for (int i = 0; i < si.maxDoc(); i++) {
       writer.addDocument(new Document());

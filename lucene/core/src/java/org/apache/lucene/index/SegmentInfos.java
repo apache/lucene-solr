@@ -124,7 +124,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int VERSION_72 = 8;
   /** The version that recorded softDelCount */
   public static final int VERSION_74 = 9;
-  static final int VERSION_CURRENT = VERSION_74;
+  /** The version that recorded SegmentCommitInfo IDs */
+  public static final int VERSION_86 = 10;
+  static final int VERSION_CURRENT = VERSION_86;
 
   /** Used to name new segments. */
   public long counter;
@@ -367,7 +369,24 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       if (softDelCount + delCount > info.maxDoc()) {
         throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
       }
-      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen);
+      final byte[] sciId;
+      if (format > VERSION_74) {
+        byte marker = input.readByte();
+        switch (marker) {
+          case 1:
+            sciId = new byte[StringHelper.ID_LENGTH];
+            input.readBytes(sciId, 0, sciId.length);
+            break;
+          case 0:
+            sciId = null;
+            break;
+          default:
+            throw new CorruptIndexException("invalid SegmentCommitInfo ID marker: " + marker, input);
+        }
+      } else {
+        sciId = null;
+      }
+      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen, sciId);
       siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
       final Map<Integer,Set<String>> dvUpdateFiles;
       final int numDVFields = input.readInt();
@@ -453,7 +472,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     try {
       segnOutput = directory.createOutput(segmentFileName, IOContext.DEFAULT);
-      write(directory, segnOutput);
+      write(segnOutput);
       segnOutput.close();
       directory.sync(Collections.singleton(segmentFileName));
       success = true;
@@ -472,7 +491,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   /** Write ourselves to the provided {@link IndexOutput} */
-  public void write(Directory directory, IndexOutput out) throws IOException {
+  public void write(IndexOutput out) throws IOException {
     CodecUtil.writeIndexHeader(out, "segments", VERSION_CURRENT, 
                                StringHelper.randomId(), Long.toString(generation, Character.MAX_RADIX));
     out.writeVInt(Version.LATEST.major);
@@ -530,6 +549,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " softDelCount=" + softDelCount);
       }
       out.writeInt(softDelCount);
+      // we ensure that there is a valid ID for this SCI just in case
+      // this is manually upgraded outside of IW
+      byte[] sciId = siPerCommit.getId();
+      if (sciId != null) {
+        out.writeByte((byte)1);
+        assert sciId.length == StringHelper.ID_LENGTH : "invalid SegmentCommitInfo#id: " + Arrays.toString(sciId);
+        out.writeBytes(sciId, 0, sciId.length);
+      } else {
+        out.writeByte((byte)0);
+      }
+
       out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
       final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
       out.writeInt(dvUpdatesFiles.size());

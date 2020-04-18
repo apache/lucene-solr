@@ -40,7 +40,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertNull(deletes.getLiveDocs());
     int docToDelete = TestUtil.nextInt(random(), 0, 7);
@@ -74,7 +74,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 6, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0,  -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0,  -1, -1, -1, StringHelper.randomId());
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertFalse(deletes.writeLiveDocs(dir));
     assertEquals(0, dir.listAll().length);
@@ -131,7 +131,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     FieldInfos fieldInfos = FieldInfos.EMPTY;
     si.getCodec().fieldInfosFormat().write(dir, si, "", fieldInfos, IOContext.DEFAULT);
     PendingDeletes deletes = newPendingDeletes(commitInfo);

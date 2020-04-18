@@ -243,7 +243,7 @@ public abstract class PrimaryNode extends Node {
 
     // Serialize the SegmentInfos:
     RAMOutputStream out = new RAMOutputStream(new RAMFile(), true);
-    infos.write(dir, out);
+    infos.write(out);
     byte[] infosBytes = new byte[(int) out.getFilePointer()];
     out.writeTo(infosBytes, 0);
 
