@@ -73,7 +73,7 @@ public class ResponseUtils {
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
-        log.warn("invalid return code: " + code);
+        log.warn("invalid return code: {}", code);
         code = 500;
       }
     }

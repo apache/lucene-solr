@@ -59,7 +59,7 @@ public class SolrRequestInfo {
     // TODO: temporary sanity check... this can be changed to just an assert in the future
     SolrRequestInfo prev = threadLocal.get();
     if (prev != null) {
-      log.error("Previous SolrRequestInfo was not closed!  req=" + prev.req.getOriginalParams().toString());
+      log.error("Previous SolrRequestInfo was not closed!  req={}", prev.req.getOriginalParams().toString());
       log.error("prev == info : {}", prev.req == info.req, new RuntimeException());
     }
     assert prev == null;

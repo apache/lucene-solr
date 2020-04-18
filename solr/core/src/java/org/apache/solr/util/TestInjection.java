@@ -436,7 +436,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure: " + label);
+        log.info("Injecting failure: {}", label);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }

@@ -160,8 +160,7 @@ public class StatsUtil {
     }
     String[] vals = data.split(",");
     if (vals.length != 5) {
-      log.warn("Invalid collection stats string, num fields " + vals.length
-          + " != 5, '" + data + "'");
+      log.warn("Invalid collection stats string, num fields {} != 5 '{}'", vals.length, data);
       return null;
     }
     String field = vals[0];
@@ -173,8 +172,7 @@ public class StatsUtil {
       return new CollectionStats(field, maxDoc, docCount, sumTotalTermFreq,
           sumDocFreq);
     } catch (Exception e) {
-      log.warn("Invalid collection stats string '" + data + "': "
-          + e.toString());
+      log.warn("Invalid collection stats string '{}', ", data, e);
       return null;
     }
   }
@@ -237,7 +235,7 @@ public class StatsUtil {
   public static String termToEncodedString(String term) {
     int idx = term.indexOf(':');
     if (idx == -1) {
-      log.warn("Invalid term data without ':': '" + term + "'");
+      log.warn("Invalid term data without ':': '{}'", term);
       return null;
     }
     String prefix = term.substring(0, idx + 1);
@@ -252,7 +250,7 @@ public class StatsUtil {
     }
     int idx = data.indexOf(':');
     if (idx == -1) {
-      log.warn("Invalid term data without ':': '" + data + "'");
+      log.warn("Invalid term data without ':': '{}'", data);
       return null;
     }
     String field = data.substring(0, idx);
@@ -260,7 +258,7 @@ public class StatsUtil {
     try {
        return new Term(field, decode(value));
     } catch (Exception e) {
-      log.warn("Invalid term value '" + value + "'");
+      log.warn("Invalid term value '{}'", value);
       return null;
     }
   }
@@ -281,8 +279,7 @@ public class StatsUtil {
     }
     String[] vals = data.split(",");
     if (vals.length < 3) {
-      log.warn("Invalid term stats string, num fields " + vals.length
-          + " < 3, '" + data + "'");
+      log.warn("Invalid term stats string, num fields {} < 3, '{}'", vals.length, data);
       return null;
     }
     Term term = termFromEncodedString(vals[0]);
@@ -291,7 +288,7 @@ public class StatsUtil {
       long totalTermFreq = Long.parseLong(vals[2]);
       return new TermStats(term.toString(), docFreq, totalTermFreq);
     } catch (Exception e) {
-      log.warn("Invalid termStats string '" + data + "'");
+      log.warn("Invalid termStats string '{}'", data);
       return null;
     }
   }

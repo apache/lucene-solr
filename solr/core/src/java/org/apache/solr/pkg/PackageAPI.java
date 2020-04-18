@@ -116,7 +116,9 @@ public class PackageAPI {
                 packageLoader.refreshPackageConf();
               }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+              if (log.isWarnEnabled()) {
+                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+              }
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

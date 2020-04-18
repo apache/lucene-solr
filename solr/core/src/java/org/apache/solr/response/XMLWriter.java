@@ -53,7 +53,7 @@ public class XMLWriter extends TextResponseWriter {
   +" xsi:noNamespaceSchemaLocation=\"http://pi.cnet.com/cnet-search/response.xsd\">\n"
           ).toCharArray();
   ***/
-  
+
   private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
   final int version;
@@ -162,7 +162,7 @@ public class XMLWriter extends TextResponseWriter {
 
 
   @Override
-  public void writeStartDocumentList(String name, 
+  public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
     if (doIndent) indent();
@@ -175,7 +175,7 @@ public class XMLWriter extends TextResponseWriter {
       writeAttr("maxScore",Float.toString(maxScore));
     }
     writer.write(">");
-    
+
     incLevel();
   }
 
@@ -183,7 +183,7 @@ public class XMLWriter extends TextResponseWriter {
   /**
    * The SolrDocument should already have multivalued fields implemented as
    * Collections -- this will not rewrite to &lt;arr&gt;
-   */ 
+   */
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     startTag("doc", name, false);
@@ -197,7 +197,7 @@ public class XMLWriter extends TextResponseWriter {
       Object val = doc.getFieldValue(fname);
       if( "_explain_".equals( fname ) ) {
         System.out.println( val );
-      }
+        }
       writeVal(fname, val);
     }
 
@@ -206,11 +206,11 @@ public class XMLWriter extends TextResponseWriter {
         writeSolrDocument(null, childDoc, new SolrReturnFields(), idx);
       }
     }
-    
+
     decLevel();
     writer.write("</doc>");
   }
-  
+
   @Override
   public void writeEndDocumentList() throws IOException
   {

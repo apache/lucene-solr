@@ -209,7 +209,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
-        log.error("No key available from " + url + PublicKeyHandler.PATH);
+        log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New Key obtained from  node: {} / {}", nodename, key);
@@ -218,7 +218,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       keyCache.put(nodename, pubKey);
       return pubKey;
     } catch (Exception e) {
-      log.error("Exception trying to get public key from : " + url, e);
+      log.error("Exception trying to get public key from : {}", url, e);
       return null;
     } finally {
       Utils.consumeFully(entity);
@@ -237,10 +237,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           return;
         }
         if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
-          log.debug("{} secures this internode request", this.getClass().getSimpleName());
+          if (log.isDebugEnabled()) {
+            log.debug("{} secures this internode request", this.getClass().getSimpleName());
+          }
           generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
         } else {
-          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+          if (log.isDebugEnabled()) {
+            log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+          }
         }
       }
     };
@@ -269,10 +273,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         return;
       }
       if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
-        log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        }
         setHeader(httpRequest);
       } else {
-        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+        }
       }
     }
   }
