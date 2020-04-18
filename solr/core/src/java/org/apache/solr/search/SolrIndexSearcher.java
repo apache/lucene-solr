@@ -200,7 +200,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: [{}]; {}", query, x.getMessage());
+      if (log.isWarnEnabled()) {
+        log.warn("Query: [{}]; {}", query, x.getMessage());
+      }
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
@@ -452,7 +454,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           sb.append("\n\t");
           sb.append(cache);
         }
-        log.debug(sb.toString());
+        log.debug("{}", sb);
       } else {
         log.debug("Closing [{}]", name);
       }

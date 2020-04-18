@@ -84,8 +84,10 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   @Override
   public AuthorizationResponse authorize(AuthorizationContext context) {
     List<AuthorizationContext.CollectionRequest> collectionRequests = context.getCollectionRequests();
-    log.debug("Attempting to authorize request to [{}] of type: [{}], associated with collections [{}]",
-        context.getResource(), context.getRequestType(), collectionRequests);
+    if (log.isDebugEnabled()) {
+      log.debug("Attempting to authorize request to [{}] of type: [{}], associated with collections [{}]",
+          context.getResource(), context.getRequestType(), collectionRequests);
+    }
 
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
       log.debug("Authorizing an ADMIN request, checking admin permissions");
@@ -134,10 +136,14 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     log.trace("Following perms are associated with this collection and path: [{}]", permissions);
     final Permission governingPermission = findFirstGoverningPermission(permissions, context);
     if (governingPermission == null) {
-      log.debug("No perms configured for the resource {} . So allowed to access", context.getResource());
+      if (log.isDebugEnabled()) {
+        log.debug("No perms configured for the resource {} . So allowed to access", context.getResource());
+      }
       return MatchStatus.NO_PERMISSIONS_FOUND;
     }
-    log.debug("Found perm [{}] to govern resource [{}]", governingPermission, context.getResource());
+    if (log.isDebugEnabled()) {
+      log.debug("Found perm [{}] to govern resource [{}]", governingPermission, context.getResource());
+    }
 
     return determineIfPermissionPermitsPrincipal(principal, governingPermission);
   }
@@ -152,7 +158,9 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   }
 
   private boolean permissionAppliesToRequest(Permission permission, AuthorizationContext context) {
-    log.trace("Testing whether permission [{}] applies to request [{}]", permission, context.getResource());
+    if (log.isTraceEnabled()) {
+      log.trace("Testing whether permission [{}] applies to request [{}]", permission, context.getResource());
+    }
     if (PermissionNameProvider.values.containsKey(permission.name)) {
       return predefinedPermissionAppliesToRequest(permission, context);
     } else {
@@ -166,7 +174,9 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; //'ALL' applies to everything!
     } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
-      log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
+      if (log.isTraceEnabled()) {
+        log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
+      }
       return false; // We're not 'ALL', and the handler isn't associated with any other predefined permissions
     } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
@@ -182,8 +192,10 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   private boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {
     log.trace("Permission [{}] is a custom permission", customPermission);
     if (customPermission.method != null && !customPermission.method.contains(context.getHttpMethod())) {
-      log.trace("Custom permission requires method [{}] but request had method [{}]; permission doesn't apply",
-          customPermission.method, context.getHttpMethod());
+      if (log.isTraceEnabled()) {
+        log.trace("Custom permission requires method [{}] but request had method [{}]; permission doesn't apply",
+            customPermission.method, context.getHttpMethod());
+      }
       //this permissions HTTP method does not match this rule. try other rules
       return false;
     }
@@ -191,8 +203,10 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       for (Map.Entry<String, Function<String[], Boolean>> e : customPermission.params.entrySet()) {
         String[] paramVal = context.getParams().getParams(e.getKey());
         if(!e.getValue().apply(paramVal)) {
-          log.trace("Request has param [{}] which is incompatible with custom perm [{}]; perm doesnt apply",
-              e.getKey(), customPermission);
+          if (log.isTraceEnabled()) {
+            log.trace("Request has param [{}] which is incompatible with custom perm [{}]; perm doesnt apply",
+                e.getKey(), customPermission);
+          }
           return false;
         }
       }

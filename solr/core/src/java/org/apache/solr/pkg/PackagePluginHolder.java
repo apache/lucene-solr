@@ -90,7 +90,9 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     if (lessThan != null) {
       PackageLoader.Package.Version pkgLatest = pkg.getLatest();
       if (pkgLatest != newest) {
-        log.info("Using version :{}. latest is {},  params.json has config {} : {}", newest.getVersion(), pkgLatest.getVersion(), pkg.name(), lessThan);
+        if (log.isInfoEnabled()) {
+          log.info("Using version :{}. latest is {},  params.json has config {} : {}", newest.getVersion(), pkgLatest.getVersion(), pkg.name(), lessThan);
+        }
       }
     }
 
@@ -101,8 +103,10 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
     }
 
-    log.info("loading plugin: {} -> {} using  package {}:{}",
-        pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("loading plugin: {} -> {} using  package {}:{}",
+          pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+    }
 
     initNewInstance(newest);
     pkgVersion = newest;
