@@ -1,0 +1,21 @@
+/* You can add global styles to this file, and also import other style files */
+@import 'theme.scss';
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+a fa-icon {
+    padding-right: 0.5em;
+}
+
+.container {
+    padding: 1rem;
+}
+
+mat-progress-bar.mat-progress-bar {
+    height: 20px;
+}
+
+mat-grid-tile > .mat-figure > mat-card {
+    width: 100%;
+}

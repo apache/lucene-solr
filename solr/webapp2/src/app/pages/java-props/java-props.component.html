@@ -1,0 +1,18 @@
+<div fxLayout>
+  <div fxFlex fxLayout="column">
+
+
+<div id="system-properties">
+
+  <mat-toolbar>Java Properties<span fxFlex></span></mat-toolbar>
+      <mat-nav-list>
+        <a mat-list-item *ngFor="let item of systemProperties | keyvalue">
+          <b id="Java-property-key">
+            {{item.key + " :"}}&nbsp; &nbsp; &nbsp; &nbsp;</b
+            ><b>{{item.value}}</b>
+        </a>
+      </mat-nav-list>
+</div>
+
+</div>
+</div>

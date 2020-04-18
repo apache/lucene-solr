@@ -1,0 +1,14 @@
+{
+  "/solr/*": {
+    "target": "http://localhost:8983",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": false
+  },
+  "/api/*": {
+    "target": "http://localhost:8983",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": false
+  }
+}

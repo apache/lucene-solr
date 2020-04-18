@@ -1,0 +1,16 @@
+<div class="container" *ngIf="collectionNames">
+  <div fxLayout>
+    <div fxLayout="column">
+        <mat-toolbar>Collections<span fxFlex></span> <a mat-raised-button color="primary">Add Collection</a></mat-toolbar>
+      <mat-nav-list>
+        <a mat-list-item *ngFor="let name of collectionNames">{{name}}</a>
+      </mat-nav-list>
+    </div>
+    <div fxLayout="column">
+        <mat-toolbar><span></span></mat-toolbar>
+        <div>
+            Collection Details:
+        </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+
+<h2> Thread Dumps</h2>
+<mat-expansion-panel class="thread-dump-panel" (opened)="panelOpenState = true"
+    (closed)="panelOpenState = false" *ngFor="let item of threadDumpData">
+<mat-expansion-panel-header class="thread-dump-name">
+<mat-panel-title >
+{{ item["name"] }} ({{item.stackTrace.length}})
+</mat-panel-title>
+<p class="thread-system-time">
+  CPU Time: <b>{{ item["cpuTime"] }}</b>
+</p>
+<p class="thread-system-time">
+  User Time: <b>{{ item["userTime"] }}</b>
+</p>
+<mat-panel-description>
+
+</mat-panel-description>
+</mat-expansion-panel-header>
+<div>
+<p *ngFor="let i of item.stackTrace">&#9643; {{ i }}</p>
+</div>
+</mat-expansion-panel>

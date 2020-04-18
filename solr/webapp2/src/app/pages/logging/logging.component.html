@@ -1,0 +1,18 @@
+
+<table matSort [hidden]="!history" (matSortChange)="sortData($event)">
+  <tr>
+    <th mat-sort-header="time" id="time">Time</th>
+    <th mat-sort-header="level" id="level">Level</th>
+    <th mat-sort-header="core" id="core">Core</th>
+    <th mat-sort-header="message" id="message">Message</th>
+  </tr>
+
+  <tr *ngFor="let i of sortedData">
+    <td >{{ i.time }}</td>
+    <td >{{ i.level || "" }}</td>
+    <td >{{ i.core || "" }}</td>
+    <td >{{ i.message || "" }}</td>
+  </tr>
+
+</table>
+

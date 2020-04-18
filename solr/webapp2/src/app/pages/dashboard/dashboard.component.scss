@@ -1,0 +1,18 @@
+table {
+    width: 100%;
+}
+
+.chart-container {
+    width: 300px;
+    height: 250px;
+    text-align: center;
+}
+.chart-container-wide {
+    width: 800px;
+    height: 300px;
+    text-align: center;
+}
+.chart-container label {
+    position: relative;
+    top: -50px;
+}

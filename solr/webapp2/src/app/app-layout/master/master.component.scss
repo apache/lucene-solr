@@ -1,0 +1,26 @@
+.sidenav-container {
+  height: 100%;
+}
+
+.sidenav {
+  width: 200px;
+}
+
+.sidenav .mat-toolbar {
+  background: inherit;
+}
+
+.mat-toolbar.mat-primary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.logo {
+    background-position: left;
+    background-image: url('../../../assets/img/solr.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    height: 100%;
+    width: 100%;
+}

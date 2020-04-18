@@ -1,0 +1,132 @@
+
+<mat-tab-group mat-align-tabs="start">
+  
+  <mat-tab label="Cloud Stats">
+    <ng-template matTabContent>
+      <mat-card class="cloud-stats-card" *ngFor="let i of arrayOfNodeNames">
+        <mat-card-header>
+          <mat-card-title>{{ i.node }}</mat-card-title>
+          <mat-card-subtitle> "for Replicas see Cluster Tab"</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="cloud-table"  [hidden]="!arrayOfNodeNames">
+            <tr>
+              <th id="cpu">CPU</th>
+              <th id="heap">Heap</th>
+              <th id="requests">RPM / P95</th>
+              <th id="collections">Collections</th>
+            </tr>
+          
+            <tr  >
+              <td >{{ i.details.system.processCpuLoad.toFixed(1) }}%</td>
+              <td >{{ i.details.jvm.memory.used }}</td>
+              <td *ngIf="i.metrics"> {{ i.metrics["1minRate"]}} / {{ i.metrics.p95_ms }}</td>
+              <td > {{ cloudStatus.collections.join() }} </td>
+            </tr>
+          
+          </table>
+        </mat-card-content>
+      </mat-card>
+      
+    </ng-template>
+  </mat-tab>
+  <mat-tab label="Zookeeper" [hidden]="!zkStatus">
+    <ng-template matTabContent>
+      
+      <mat-card class="zk-status-card">
+        <mat-card-header>
+          <mat-card-title>{{ zkStatus.zkStatus.status }}</mat-card-title>
+          <mat-card-subtitle>Status</mat-card-subtitle>
+          <mat-card-subtitle>Connection String: {{ zkStatus.zkStatus.zkHost }}</mat-card-subtitle>
+          <mat-card-subtitle>Ensemble Size: {{ zkStatus.zkStatus.ensembleSize }}</mat-card-subtitle>
+          <mat-card-subtitle>Ensemble Mode: {{ zkStatus.zkStatus.mode }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content  *ngFor="let i of zkStatus.zkStatus.details">
+          <mat-list>
+            <mat-list-item>ok: {{i.ok}}</mat-list-item>
+            <mat-divider [inset]="true"></mat-divider>
+            <mat-list-item>clientPort: {{i.clientPort}}</mat-list-item>
+            <mat-divider></mat-divider>
+            <mat-list-item>secureClientPort: {{i.secureClientPort}}</mat-list-item>
+            <mat-divider ></mat-divider>
+            <mat-list-item>zk_server_state: {{i.zk_server_state}}</mat-list-item>
+            <mat-divider></mat-divider>
+            <mat-list-item>zk_version: {{i.zk_version}}</mat-list-item>
+            <mat-divider></mat-divider>
+            <mat-list-item>zk_approximate_data_sizet: {{i.zk_approximate_data_size}}</mat-list-item>
+            <mat-divider></mat-divider>
+            <mat-list-item>zk_znode_count: {{i.zk_znode_count}}</mat-list-item>
+            <mat-divider></mat-divider>
+            <mat-list-item>zk_num_alive_connections: {{i.zk_num_alive_connections}}</mat-list-item>
+          </mat-list>
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                More Details
+              </mat-panel-title>
+              <mat-panel-description>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <mat-list>
+              <mat-list-item>dataDir: {{i.dataDir}}</mat-list-item>
+              <mat-divider [inset]="true"></mat-divider>
+              <mat-list-item>dataLogDir: {{i.dataLogDir}}</mat-list-item>
+              <mat-divider  [inset]="true"></mat-divider>
+              <mat-list-item>zk_avg_latency: {{i.zk_avg_latency}}</mat-list-item>
+              <mat-divider ></mat-divider>
+              <mat-list-item >zk_max_file_descriptor_count: {{i.zk_max_file_descriptor_count}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>zk_watch_count: {{i.zk_watch_count}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>zk_packets_sent: {{i.zk_packets_sent}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>zk_packets_received: {{i.zk_packets_received}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>tickTime: {{i.tickTime}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>maxClientCnxns: {{i.maxClientCnxns}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>minSessionTimeout: {{i.minSessionTimeout}}</mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>maxSessionTimeout: {{i.maxSessionTimeout}}</mat-list-item>
+            </mat-list>
+          </mat-expansion-panel>
+        </mat-card-content>
+      </mat-card>
+    </ng-template>
+  </mat-tab>
+  <mat-tab label="Cluster View"[hidden]="!aggregateClusterData">
+    
+    <ng-template matTabContent>
+     
+
+      <mat-tree [dataSource]="aggregateClusterData" [treeControl]="nestedTreeControl" class="cloud-tree">
+        <!-- This is the tree node template for expandable nodes -->
+        <mat-nested-tree-node *matTreeNodeDef="let node; when: hasChild">
+          <li>
+            <div class="mat-tree-node">
+              <button mat-icon-button matTreeNodeToggle
+                      [attr.aria-label]="'toggle ' + node.name">
+                <mat-icon class="mat-icon-rtl-mirror" *ngIf="nestedDataSource.data">
+                  {{true ? 'expand_more' : 'chevron_right'}}
+                </mat-icon>
+              </button>
+              {{node.name || node}}
+            </div>
+            <ul [class.example-tree-invisible]="false">
+              <ng-container matTreeNodeOutlet></ng-container>
+            </ul>
+          </li>
+        </mat-nested-tree-node>
+        
+      </mat-tree>
+
+    </ng-template>
+
+
+  </mat-tab>
+</mat-tab-group>
+
+
+
+

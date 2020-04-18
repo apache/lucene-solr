@@ -1,0 +1,24 @@
+.mat-tab-group {
+    margin: 16px;
+}
+.mat-card-title {
+    font-size: 24px;
+    color: green;
+}
+.mat-card {
+    max-width: 33%;
+}
+.cloud-stats-card {
+    padding: 22px;
+}
+.cloud-tree-invisible {
+    display: none;
+  }
+  
+  .cloud-tree ul,
+  .cloud-tree li {
+    margin-top: 0;
+    margin-bottom: 0;
+    list-style-type: none;
+    margin-left: 60 px;
+  }

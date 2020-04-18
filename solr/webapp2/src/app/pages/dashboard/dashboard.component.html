@@ -1,0 +1,79 @@
+<div fxLayout>
+  <div fxFlex fxLayout="column">
+    <div>
+      <mat-toolbar>
+        <a (click)="openSolrVersionDialog()">
+          <fa-icon icon="info-circle"></fa-icon>
+        </a>
+        Solr v{{data?.lucene['solr-spec-version']}} started {{data?.jvm.jmx.startTime | amTimeAgo }}
+      </mat-toolbar>
+    </div>
+    <div fxLayout class="container">
+      <div fxLayout="column" fxFill fxLayoutGap="10px" class="card-row">
+        <mat-card fxFlex>
+          <mat-card-title>
+            <a (click)="openJVMDialog()">
+              <fa-icon icon="info-circle"></fa-icon>
+            </a>Operating System:
+            <span *ngIf="jvmMetrics">{{jvmMetrics['os.name']}}</span>
+          </mat-card-title>
+          <mat-card-content>
+            <div fxLayout="row wrap" fxLayoutAlign="space-evenly start">
+              <div class="chart-container" *ngIf="cpuUtilization">
+                <ngx-charts-gauge [results]="[{name: 'cpu', value: cpuUtilization}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>CPU Utlilization</label>
+              </div>
+              <div class="chart-container" *ngIf="processCpuUtilization">
+                <ngx-charts-gauge [results]="[{name: 'cpu', value: processCpuUtilization}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>Solr CPU Utlilization</label>
+              </div>
+              <div class="chart-container" *ngIf="usedPhysicalMemoryPercent">
+                <ngx-charts-gauge [results]="[{name: 'b', value: usedPhysicalMemoryPercent}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>Physical Memory {{usedPhysicalMemory | bytes}}/{{totalPhysicalMemory | bytes}}</label>
+              </div>
+              <div class="chart-container" *ngIf="fileDescriptorUtilization">
+                <ngx-charts-gauge [results]="[{name: 'fileDescriptors', value: fileDescriptorUtilization}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>File Descriptors {{jvmMetrics['os.openFileDescriptorCount']}}/{{jvmMetrics['os.maxFileDescriptorCount']}}</label>
+              </div>
+              <div class="chart-container" *ngIf="usedSwapSpacePercent">
+                <ngx-charts-gauge [results]="[{name: 'swapSpace', value: usedSwapSpacePercent}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>Used Swap {{usedSwapSpace | bytes: 2}}/{{jvmMetrics['os.totalSwapSpaceSize'] | bytes}}</label>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card fxFlex>
+          <mat-card-title>JVM Memory</mat-card-title>
+          <mat-card-content>
+            <div fxLayout="row wrap" fxLayoutAlign="space-evenly start">
+              <div class="chart-container" *ngIf="jvmMetricsGrouped">
+                <ngx-charts-gauge [results]="[{name: 'utilized', value: jvmMetricsGrouped.memory.heap.usage * 100}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>Heap Utilization</label>
+              </div>
+              <div class="chart-container" *ngIf="jvmMetricsGrouped && jvmMetricsGrouped.memory['non-heap'].max > 0">
+                <ngx-charts-gauge [results]="[{name: 'utilized', value: jvmMetricsGrouped.memory['non-heap'].usage * 100}]" [valueFormatting]="valueAsPercent"></ngx-charts-gauge>
+                <label>Non-Heap Utilization</label>
+              </div>
+              <div class="chart-container-wide" *ngIf="jvmMemoryChartData">
+                <ngx-charts-bar-horizontal-2d [results]="jvmMemoryChartData" xAxis="true" yAxis="true" [xAxisTickFormatting]="valueAsMemorySize"
+                  [dataLabelFormatting]="valueAsMemorySize" legend="true"></ngx-charts-bar-horizontal-2d>
+                <label></label>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card fxFlex>
+          <mat-card-title>Garbage Collection</mat-card-title>
+          <mat-card-content>
+            <div fxLayout="row wrap" fxLayoutAlign="space-evenly start">
+              <div *ngFor="let item of gcGroups" class="chart-container">
+                <ngx-charts-gauge [results]="[{name: 'i', value: item.time / item.count}]" max="250" [valueFormatting]="valueAsMS"></ngx-charts-gauge>
+                <label>Avg {{item.name}} GC time {{item.time}}ms/{{item.count}}count</label>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+</div>
