@@ -74,7 +74,9 @@ public final class SolrPaths {
     } catch (NamingException e) {
       log.debug("No /solr/home in JNDI");
     } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
+      if (log.isWarnEnabled()) {
+        log.warn("Odd RuntimeException while testing for JNDI: {}", ex.getMessage());
+      }
     }
 
     // Now try system property
@@ -104,7 +106,8 @@ public final class SolrPaths {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
         }
       } catch (Exception e) {
-        log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.",
+            USER_FILES_DIRECTORY, solrHome, e);
       }
     }
   }

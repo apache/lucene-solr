@@ -541,8 +541,10 @@ class SolrCores {
   public TransientSolrCoreCache getTransientCacheHandler() {
 
     if (transientCoreCache == null) {
-      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
-          "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      if (log.isErrorEnabled()) {
+        log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
+            "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      }
       return null;
     }
     return transientCoreCache.getTransientSolrCoreCache();

@@ -101,6 +101,8 @@ Optimizations
 
 * SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
 
+* LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -125,6 +127,11 @@ Bug Fixes
   distributed search. (shalin)
 
 * SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
+
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
+
+* SOLR-14371: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin UI Zookeeper Status
+  screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
 Other Changes
 ---------------------
@@ -164,7 +171,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Bug Fixes
 ---------------------
 
-* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen (janhoy)
+* SOLR-14359: Admin UI collection/core drop-downs had wrong placeholder text. Fixed by upgrading angular-chosen
+  This fix was incomplete, see SOLR-14411 for the followup (janhoy)
 
 ==================  8.5.0 ==================
 

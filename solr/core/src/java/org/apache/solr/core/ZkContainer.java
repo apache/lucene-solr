@@ -99,9 +99,9 @@ public class ZkContainer {
         // If this is an ensemble, allow for a long connect time for other servers to come up
         if (zkRun != null && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
-          log.info("Zookeeper client=" + zookeeperHost + "  Waiting for a quorum.");
+          log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
-          log.info("Zookeeper client=" + zookeeperHost);          
+          log.info("Zookeeper client={}", zookeeperHost);
         }
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
@@ -178,7 +178,9 @@ public class ZkContainer {
         try {
           if (testing_beforeRegisterInZk != null) {
             boolean didTrigger = testing_beforeRegisterInZk.test(cd);
-            log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
+            if (log.isDebugEnabled()) {
+              log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
+            }
           }
           if (!core.getCoreContainer().isShutDown()) {
             zkController.register(core.getName(), cd, skipRecovery);
