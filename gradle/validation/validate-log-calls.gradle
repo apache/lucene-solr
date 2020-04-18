@@ -53,14 +53,46 @@ class ValidateLogCallsTask extends DefaultTask {
   @Input
   boolean checkPlus
 
+  // nocommit, remove when you go to project-based checking.
+  Set<String> dirsToCheck = ["solr/core/src/java/org/apache/solr/analysis"
+                             , "solr/core/src/java/org/apache/solr/api"
+                             , "solr/core/src/java/org/apache/solr/client"
+//  , "solr/core/src/java/org/apache/solr/cloud"
+                             , "solr/core/src/java/org/apache/solr/core"
+                             , "solr/core/src/java/org/apache/solr/filestore"
+//                             , "solr/core/src/java/org/apache/solr/handler"
+                             , "solr/core/src/java/org/apache/solr/highlight"
+                             , "solr/core/src/java/org/apache/solr/index"
+                             , "solr/core/src/java/org/apache/solr/internal"
+                             , "solr/core/src/java/org/apache/solr/legacy"
+                             , "solr/core/src/java/org/apache/solr/logging"
+//  , "solr/core/src/java/org/apache/solr/metrics"
+                             , "solr/core/src/java/org/apache/solr/packagemanager"
+                             , "solr/core/src/java/org/apache/solr/parser"
+                             , "solr/core/src/java/org/apache/solr/pkg"
+                             , "solr/core/src/java/org/apache/solr/query"
+                             , "solr/core/src/java/org/apache/solr/request"
+                             , "solr/core/src/java/org/apache/solr/response"
+                             , "solr/core/src/java/org/apache/solr/rest"
+//  , "solr/core/src/java/org/apache/solr/schema"
+                             , "solr/core/src/java/org/apache/solr/search"
+                             , "solr/core/src/java/org/apache/solr/security"
+                             , "solr/core/src/java/org/apache/solr/servlet"
+                             , "solr/core/src/java/org/apache/solr/spelling"
+                             , "solr/core/src/java/org/apache/solr/store"
+                             , "solr/core/src/java/org/apache/solr/uninverting"
+//  , "solr/core/src/java/org/apache/solr/update"
+                             , "solr/core/src/java/org/apache/solr/util"
+  ]
+
   def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
 
-  def found = 0;
+  def errsFound = 0;
   def violations = new TreeSet();
 
   def reportViolation(String msg) {
     violations.add(System.lineSeparator + msg);
-    found++;
+    errsFound++;
   }
 
   // We have a log.someting line, check for patterns we're not fond of.
@@ -118,6 +150,10 @@ class ValidateLogCallsTask extends DefaultTask {
         case "SolrCore.java": // Except for two know log files with a different name.
           if (line.contains("requestLog") || line.contains("slowLog")) {
             break
+          }
+        case "StartupLoggingUtils.java":
+          if (line.contains("getLoggerImplStr")) {
+            break;
           }
         default:
           reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line)
@@ -181,16 +217,23 @@ class ValidateLogCallsTask extends DefaultTask {
 
   @TaskAction
   def checkLogLines() {
+    dirsToCheck.add(srcDir)
     project.sourceSets.each { srcSet ->
       srcSet.java.each { f ->
-        if (srcDir != null && f.getCanonicalPath().contains(srcDir)) {
+        if (dirsToCheck.any {
+          f.getCanonicalPath().contains(it)
+        }) {
           checkFile(f)
         }
+        //nocommit move this to project based whenever
+//        if (srcDir != null && f.getCanonicalPath().contains(srcDir)) {
+//          checkFile(f)
+//        }
       }
     }
-    if (found) {
+    if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-          found, violations.join(', ')));
+          errsFound, violations.join(', ')));
     }
   }
 }

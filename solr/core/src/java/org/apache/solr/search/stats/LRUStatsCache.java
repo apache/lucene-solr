@@ -82,7 +82,9 @@ public class LRUStatsCache extends ExactStatsCache {
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
-    log.debug("## GET total={}, cache {}", currentGlobalColStats , currentGlobalTermStats.size());
+    if (log.isDebugEnabled()) {
+      log.debug("## GET total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
+    }
     return new LRUStatsSource(statsCacheMetrics);
   }
 
@@ -158,7 +160,9 @@ public class LRUStatsCache extends ExactStatsCache {
         return super.doRetrieveStatsRequest(rb);
       }
     } catch (IOException e) {
-      log.warn("Exception checking missing stats for query " + rb.getQuery() + ", forcing retrieving stats", e);
+      if (log.isWarnEnabled()) {
+        log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
+      }
       // retrieve anyway
       return super.doRetrieveStatsRequest(rb);
     }
