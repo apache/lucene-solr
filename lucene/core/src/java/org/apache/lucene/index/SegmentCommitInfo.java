@@ -404,7 +404,7 @@ public class SegmentCommitInfo {
 
   private void generationAdvanced() {
     sizeInBytes = -1;
-    this.id = StringHelper.randomId();
+    id = StringHelper.randomId();
   }
 
   /**
