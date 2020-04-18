@@ -208,6 +208,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void getConfig() {
+    // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data here
+    assertEquals("", defaultClient.getConfig());
+  }
+
+  @Test
   public void testCheckInterrupted() {
     assertFalse(Thread.currentThread().isInterrupted());
     SolrZkClient.checkInterrupted(new RuntimeException());
@@ -215,6 +221,4 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
   }
-
-
 }

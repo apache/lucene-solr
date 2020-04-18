@@ -22,6 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
+import static org.apache.lucene.util.fst.FST.Arc.BitTable;
+
 /** Can next() and advance() through the terms in an FST
  *
  * @lucene.experimental
@@ -36,7 +38,6 @@ abstract class FSTEnum<T> {
 
   protected final T NO_OUTPUT;
   protected final FST.BytesReader fstReader;
-  protected final FST.Arc<T> scratchArc = new FST.Arc<>();
 
   protected int upto;
   int targetLength;
@@ -178,7 +179,7 @@ abstract class FSTEnum<T> {
     } else {
       if (targetIndex < 0) {
         targetIndex = -1;
-      } else if (arc.bitTable().isBitSet(targetIndex)) {
+      } else if (BitTable.isBitSet(targetIndex, arc, in)) {
         fst.readArcByDirectAddressing(arc, in, targetIndex);
         assert arc.label() == targetLabel;
         // found -- copy pasta from below
@@ -191,7 +192,7 @@ abstract class FSTEnum<T> {
         return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
       }
       // Not found, return the next arc (ceil).
-      int ceilIndex = arc.bitTable().nextBitSet(targetIndex);
+      int ceilIndex = BitTable.nextBitSet(targetIndex, arc, in);
       assert ceilIndex != -1;
       fst.readArcByDirectAddressing(arc, in, ceilIndex);
       assert arc.label() > targetLabel;
@@ -335,14 +336,14 @@ abstract class FSTEnum<T> {
       return backtrackToFloorArc(arc, targetLabel, in);
    } else if (targetIndex >= arc.numArcs()) {
       // After last arc.
-      fst.readArcByDirectAddressing(arc, in, arc.numArcs() - 1);
+      fst.readLastArcByDirectAddressing(arc, in);
       assert arc.label() < targetLabel;
       assert arc.isLast();
       pushLast();
       return null;
     } else {
       // Within label range.
-      if (arc.bitTable().isBitSet(targetIndex)) {
+      if (BitTable.isBitSet(targetIndex, arc, in)) {
         fst.readArcByDirectAddressing(arc, in, targetIndex);
         assert arc.label() == targetLabel;
         // found -- copy pasta from below
@@ -355,7 +356,7 @@ abstract class FSTEnum<T> {
         return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
       }
       // Scan backwards to find a floor arc.
-      int floorIndex = arc.bitTable().previousBitSet(targetIndex);
+      int floorIndex = BitTable.previousBitSet(targetIndex, arc, in);
       assert floorIndex != -1;
       fst.readArcByDirectAddressing(arc, in, floorIndex);
       assert arc.label() < targetLabel;
@@ -421,10 +422,10 @@ abstract class FSTEnum<T> {
       assert targetIndex >= 0;
       if (targetIndex >= arc.numArcs()) {
         // Beyond last arc. Take last arc.
-        fst.readArcByDirectAddressing(arc, in, arc.numArcs() - 1);
+        fst.readLastArcByDirectAddressing(arc, in);
       } else {
         // Take the preceding arc, even if the target is present.
-        int floorIndex = arc.bitTable().previousBitSet(targetIndex);
+        int floorIndex = BitTable.previousBitSet(targetIndex, arc, in);
         if (floorIndex > 0) {
           fst.readArcByDirectAddressing(arc, in, floorIndex);
         }

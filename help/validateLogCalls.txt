@@ -1,0 +1,50 @@
+Using log calls
+===============
+
+There are several hidden gotchas when using logging. The main
+problem is that certain patterns are evaluated and objects
+constructed even if the logging level is more restrictive
+than this call. If the logging level is WARN, then the following
+log.info patterns are evaluated and never-used objects are
+created even though the message is never logged.
+
+This can be very expensive as per measurements with Java Flight
+Recorder. It's particularly egregious when complex operations
+are performed for, say, log.debug or trace calls, which
+are rarely actually used.
+
+- log.info("some stuff " + "some other stuff") will concatenate the
+  strings and create an object 
+
+- log.info("some stuff {}", object.method()) will execute the
+  method.
+
+- log.info("some stuff {}", object.toString()) will execute
+  the toString and then throw the results away.
+
+-----------
+NOTES:
+
+- If you're creating a logging call that has no choice but to
+  do something expensive, surround it with "if (log.is*Enabled)".
+
+- Logging calls can take a bare exception, but do not
+  use the braces if you want the stack trace! So
+  log.info("stuff {}", exception) will not print the full stack,
+  log.info("stuff ", exception) _will_ print the full stack.
+  log.inf0("stuff {} ", some_object, exception) will print the full stack.
+
+- When slf4j supports lambdas in logging calls (log4j2 does now),
+  we can use lambdas rather than "if log.is*Enabled". slf4j 2.0
+  will when released.
+
+- error and fatal level messages are NOT checked. However, if you want to
+  check these levels for including '+', specify '-PcheckPlus=true'. This is more
+  a style than functional check.
+
+For a fuller discussion, see LUCENE-7788 and the other JIRAs linked
+from there.
+
+Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path,
+ e.g. '-PsrcDir=solr/core/src/java/org/apache/solr/core'. This task will
+ recursively check all '*.java. files under that directory.

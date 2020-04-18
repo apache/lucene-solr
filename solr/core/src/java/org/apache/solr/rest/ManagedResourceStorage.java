@@ -110,7 +110,7 @@ public abstract class ManagedResourceStorage {
     } else {
       if (zkClient != null) {
         String znodeBase = "/configs/"+zkConfigName;
-        log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: "+znodeBase);
+        log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {
         storageIO = new FileStorageIO();        
@@ -133,8 +133,9 @@ public abstract class ManagedResourceStorage {
           // that doesn't have write-access to the config dir
           // while this failover approach is not ideal, it's better
           // than causing the core to fail esp. if managed resources aren't being used
-          log.warn("Cannot write to config directory "+configDir.getAbsolutePath()+
-              "; switching to use InMemory storage instead.");
+          if (log.isWarnEnabled()) {
+            log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
+          }
           storageIO = new ManagedResourceStorage.InMemoryStorageIO();
         }
       }       
@@ -165,7 +166,7 @@ public abstract class ManagedResourceStorage {
         dir.mkdirs();
 
       storageDir = dir.getAbsolutePath();      
-      log.info("File-based storage initialized to use dir: "+storageDir);
+      log.info("File-based storage initialized to use dir: {}", storageDir);
     }
     
     @Override
@@ -238,7 +239,7 @@ public abstract class ManagedResourceStorage {
         throw new SolrException(ErrorCode.SERVER_ERROR, errMsg, exc);
       }
       
-      log.info("Configured ZooKeeperStorageIO with znodeBase: "+znodeBase);      
+      log.info("Configured ZooKeeperStorageIO with znodeBase: {}", znodeBase);
     }    
     
     @Override
@@ -446,9 +447,11 @@ public abstract class ManagedResourceStorage {
             writer.close();
           } catch (Exception ignore){}
         }
-      }    
-      log.info("Saved JSON object to path {} using {}", 
-          storedResourceId, storageIO.getInfo());
+      }
+      if (log.isInfoEnabled()) {
+        log.info("Saved JSON object to path {} using {}",
+            storedResourceId, storageIO.getInfo());
+      }
     }
   } // end JsonStorage 
   
@@ -489,8 +492,10 @@ public abstract class ManagedResourceStorage {
    */
   public Object load(String resourceId) throws IOException {
     String storedResourceId = getStoredResourceId(resourceId);
-    
-    log.debug("Reading {} using {}", storedResourceId, storageIO.getInfo());
+
+    if (log.isDebugEnabled()) {
+      log.debug("Reading {} using {}", storedResourceId, storageIO.getInfo());
+    }
     
     InputStream inputStream = storageIO.openInputStream(storedResourceId);
     if (inputStream == null) {
@@ -501,9 +506,11 @@ public abstract class ManagedResourceStorage {
       parsed = parseText(reader, resourceId);
     }
     
-    String objectType = (parsed != null) ? parsed.getClass().getSimpleName() : "null"; 
-    log.info(String.format(Locale.ROOT, "Loaded %s at path %s using %s",
-                                        objectType, storedResourceId, storageIO.getInfo()));
+    String objectType = (parsed != null) ? parsed.getClass().getSimpleName() : "null";
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ROOT, "Loaded %s at path %s using %s",
+          objectType, storedResourceId, storageIO.getInfo()));
+    }
     
     return parsed;
   }

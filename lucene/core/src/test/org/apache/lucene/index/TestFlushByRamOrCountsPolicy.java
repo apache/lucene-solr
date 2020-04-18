@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
@@ -70,8 +69,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer)
                               .setFlushPolicy(flushPolicy);
-    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
-    iwc.setIndexerThreadPool(threadPool);
     iwc.setRAMBufferSizeMB(maxRamMB);
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     IndexWriter writer = new IndexWriter(dir, iwc);
@@ -125,8 +122,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       IndexWriterConfig iwc = newIndexWriterConfig(analyzer)
                                 .setFlushPolicy(flushPolicy);
 
-      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
-      iwc.setIndexerThreadPool(threadPool);
       iwc.setMaxBufferedDocs(2 + atLeast(10));
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       IndexWriter writer = new IndexWriter(dir, iwc);
@@ -172,9 +167,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     iwc.setFlushPolicy(flushPolicy);
-
-    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
-    iwc.setIndexerThreadPool(threadPool);
 
     IndexWriter writer = new IndexWriter(dir, iwc);
     flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
@@ -237,8 +229,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();
       iwc.setFlushPolicy(flushPolicy);
       
-      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
-      iwc.setIndexerThreadPool(threadPool);
       // with such a small ram buffer we should be stalled quite quickly
       iwc.setRAMBufferSizeMB(0.25);
       IndexWriter writer = new IndexWriter(dir, iwc);
@@ -273,13 +263,11 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   }
 
   protected void assertActiveBytesAfter(DocumentsWriterFlushControl flushControl) {
-    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreadStates();
+    Iterator<DocumentsWriterPerThread> allActiveWriter = flushControl.allActiveWriters();
     long bytesUsed = 0;
-    while (allActiveThreads.hasNext()) {
-      ThreadState next = allActiveThreads.next();
-      if (next.dwpt != null) {
-        bytesUsed += next.dwpt.bytesUsed();
-      }
+    while (allActiveWriter.hasNext()) {
+      DocumentsWriterPerThread next = allActiveWriter.next();
+      bytesUsed += next.bytesUsed();
     }
     assertEquals(bytesUsed, flushControl.activeBytes());
   }
@@ -332,81 +320,81 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     boolean hasMarkedPending = false;
 
     @Override
-    public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<>();
-      final ArrayList<ThreadState> notPending = new ArrayList<>();
+    public void onDelete(DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
+      final ArrayList<DocumentsWriterPerThread> pending = new ArrayList<>();
+      final ArrayList<DocumentsWriterPerThread> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
-      final boolean flushCurrent = state.flushPending;
-      final ThreadState toFlush;
-      if (state.flushPending) {
-        toFlush = state;
+      final boolean flushCurrent = perThread.isFlushPending();
+      final DocumentsWriterPerThread toFlush;
+      if (perThread.isFlushPending()) {
+        toFlush = perThread;
       } else {
         toFlush = null;
       }
-      super.onDelete(control, state);
+      super.onDelete(control, perThread);
       if (toFlush != null) {
         if (flushCurrent) {
           assertTrue(pending.remove(toFlush));
         } else {
           assertTrue(notPending.remove(toFlush));
         }
-        assertTrue(toFlush.flushPending);
+        assertTrue(toFlush.isFlushPending());
         hasMarkedPending = true;
       }
 
-      for (ThreadState threadState : notPending) {
-        assertFalse(threadState.flushPending);
+      for (DocumentsWriterPerThread dwpt : notPending) {
+        assertFalse(dwpt.isFlushPending());
       }
     }
 
     @Override
-    public void onInsert(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<>();
-      final ArrayList<ThreadState> notPending = new ArrayList<>();
+    public void onInsert(DocumentsWriterFlushControl control, DocumentsWriterPerThread dwpt) {
+      final ArrayList<DocumentsWriterPerThread> pending = new ArrayList<>();
+      final ArrayList<DocumentsWriterPerThread> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
-      final boolean flushCurrent = state.flushPending;
+      final boolean flushCurrent = dwpt.isFlushPending();
       long activeBytes = control.activeBytes();
-      final ThreadState toFlush;
-      if (state.flushPending) {
-        toFlush = state;
+      final DocumentsWriterPerThread toFlush;
+      if (dwpt.isFlushPending()) {
+        toFlush = dwpt;
       } else if (flushOnDocCount()
-          && state.dwpt.getNumDocsInRAM() >= indexWriterConfig
+          && dwpt.getNumDocsInRAM() >= indexWriterConfig
               .getMaxBufferedDocs()) {
-        toFlush = state;
+        toFlush = dwpt;
       } else if (flushOnRAM()
           && activeBytes >= (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024. * 1024.)) {
-        toFlush = findLargestNonPendingWriter(control, state);
-        assertFalse(toFlush.flushPending);
+        toFlush = findLargestNonPendingWriter(control, dwpt);
+        assertFalse(toFlush.isFlushPending());
       } else {
         toFlush = null;
       }
-      super.onInsert(control, state);
+      super.onInsert(control, dwpt);
       if (toFlush != null) {
         if (flushCurrent) {
           assertTrue(pending.remove(toFlush));
         } else {
           assertTrue(notPending.remove(toFlush));
         }
-        assertTrue(toFlush.flushPending);
+        assertTrue(toFlush.isFlushPending());
         hasMarkedPending = true;
       } else {
         peakBytesWithoutFlush = Math.max(activeBytes, peakBytesWithoutFlush);
-        peakDocCountWithoutFlush = Math.max(state.dwpt.getNumDocsInRAM(),
+        peakDocCountWithoutFlush = Math.max(dwpt.getNumDocsInRAM(),
             peakDocCountWithoutFlush);
       }
 
-      for (ThreadState threadState : notPending) {
-        assertFalse(threadState.flushPending);
+      for (DocumentsWriterPerThread perThread : notPending) {
+        assertFalse(perThread.isFlushPending());
       }
     }
   }
 
   static void findPending(DocumentsWriterFlushControl flushControl,
-      ArrayList<ThreadState> pending, ArrayList<ThreadState> notPending) {
-    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreadStates();
+      ArrayList<DocumentsWriterPerThread> pending, ArrayList<DocumentsWriterPerThread> notPending) {
+    Iterator<DocumentsWriterPerThread> allActiveThreads = flushControl.allActiveWriters();
     while (allActiveThreads.hasNext()) {
-      ThreadState next = allActiveThreads.next();
-      if (next.flushPending) {
+      DocumentsWriterPerThread next = allActiveThreads.next();
+      if (next.isFlushPending()) {
         pending.add(next);
       } else {
         notPending.add(next);

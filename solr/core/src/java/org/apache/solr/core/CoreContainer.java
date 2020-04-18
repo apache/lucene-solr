@@ -77,7 +77,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -119,7 +119,6 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
@@ -183,7 +182,7 @@ public class CoreContainer {
   private volatile UpdateShardHandler updateShardHandler;
 
   private volatile ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new DefaultSolrThreadFactory("coreContainerWorkExecutor"));
+      new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -275,7 +274,9 @@ public class CoreContainer {
   }
 
   {
-    log.debug("New CoreContainer " + System.identityHashCode(this));
+    if (log.isDebugEnabled()) {
+      log.debug("New CoreContainer {}", System.identityHashCode(this));
+    }
   }
 
   /**
@@ -329,7 +330,7 @@ public class CoreContainer {
         cfg.getReplayUpdatesThreads(),
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
-            new DefaultSolrThreadFactory("replayUpdatesExecutor")));
+            new SolrNamedThreadFactory("replayUpdatesExecutor")));
   }
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
@@ -347,7 +348,7 @@ public class CoreContainer {
         log.debug("Authorization config not modified");
         return;
       }
-      log.info("Initializing authorization plugin: " + klas);
+      log.info("Initializing authorization plugin: {}", klas);
       authorizationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
 
@@ -381,7 +382,7 @@ public class CoreContainer {
         log.debug("Auditlogger config not modified");
         return;
       }
-      log.info("Initializing auditlogger plugin: " + klas);
+      log.info("Initializing auditlogger plugin: {}", klas);
       newAuditloggerPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
@@ -414,11 +415,11 @@ public class CoreContainer {
     }
 
     if (pluginClassName != null) {
-      log.debug("Authentication plugin class obtained from security.json: " + pluginClassName);
+      log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
     } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
       pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug("Authentication plugin class obtained from system property '" +
-          AUTHENTICATION_PLUGIN_PROP + "': " + pluginClassName);
+      log.debug("Authentication plugin class obtained from system property '{}': {}"
+          , AUTHENTICATION_PLUGIN_PROP, pluginClassName);
     } else {
       log.debug("No authentication plugin used.");
     }
@@ -432,7 +433,7 @@ public class CoreContainer {
 
     // Initialize the plugin
     if (pluginClassName != null) {
-      log.info("Initializing authentication plugin: " + pluginClassName);
+      log.info("Initializing authentication plugin: {}", pluginClassName);
       authenticationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(pluginClassName,
               AuthenticationPlugin.class,
@@ -583,7 +584,9 @@ public class CoreContainer {
    * Load the cores defined for this CoreContainer
    */
   public void load() {
-    log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
+    if (log.isDebugEnabled()) {
+      log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
+    }
 
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
@@ -749,7 +752,7 @@ public class CoreContainer {
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
         ExecutorUtil.newMDCAwareFixedThreadPool(
             cfg.getCoreLoadThreadCount(isZooKeeperAware()),
-            new DefaultSolrThreadFactory("coreLoadExecutor")), null,
+            new SolrNamedThreadFactory("coreLoadExecutor")), null,
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
         SolrMetricManager.mkName("coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
     final List<Future<SolrCore>> futures = new ArrayList<>();
@@ -891,16 +894,17 @@ public class CoreContainer {
 
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
-      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
-          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
-          "external.  See https://s.apache.org/solrsecurity for more info",
-          (authenticationPlugin != null) ? "enabled" : "disabled",
-          (authorizationPlugin != null) ? "enabled" : "disabled");
+      if (log.isWarnEnabled()) {
+        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+                "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+                "external.  See https://s.apache.org/solrsecurity for more info",
+            (authenticationPlugin != null) ? "enabled" : "disabled",
+            (authorizationPlugin != null) ? "enabled" : "disabled");
+      }
     }
 
     if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
-      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and " +
-          "data with encryption.");
+      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
   }
 
@@ -929,10 +933,12 @@ public class CoreContainer {
       OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
       overseerCollectionQueue.allowOverseerPendingTasksToComplete();
     }
-    log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
+    if (log.isInfoEnabled()) {
+      log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
+    }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     isShutDown = true;
     try {
@@ -1112,13 +1118,17 @@ public class CoreContainer {
     coreInitFailures.remove(cd.getName());
 
     if (old == null || old == core) {
-      log.debug("registering core: " + cd.getName());
+      if (log.isDebugEnabled()) {
+        log.debug("registering core: {}", cd.getName());
+      }
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
       }
       return null;
     } else {
-      log.debug("replacing core: " + cd.getName());
+      if (log.isDebugEnabled()) {
+        log.debug("replacing core: {}", cd.getName());
+      }
       old.close();
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
@@ -1264,7 +1274,9 @@ public class CoreContainer {
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
-      log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
+      if (log.isInfoEnabled()) {
+        log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
+      }
       try {
         core = new SolrCore(this, dcore, coreConfig);
       } catch (SolrException e) {
@@ -1366,8 +1378,10 @@ public class CoreContainer {
       case none:
         throw original;
       default:
-        log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
-            action, Arrays.asList(CoreInitFailedAction.values()));
+        if (log.isWarnEnabled()) {
+          log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
+              action, Arrays.asList(CoreInitFailedAction.values()));
+        }
         throw original;
     }
   }
@@ -1517,7 +1531,9 @@ public class CoreContainer {
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
-        log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
+        }
         newCore = core.reload(coreConfig);
 
         DocCollection docCollection = null;
@@ -1601,7 +1617,7 @@ public class CoreContainer {
 
     coresLocator.swap(this, solrCores.getCoreDescriptor(n0), solrCores.getCoreDescriptor(n1));
 
-    log.info("swapped: " + n0 + " with " + n1);
+    log.info("swapped: {} with {}", n0, n1);
   }
 
   /**
@@ -1964,9 +1980,11 @@ public class CoreContainer {
     DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
     for (Replica rep : coll.getReplicas()) {
       if (coreName.equals(rep.getCoreName())) {
-        log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. " +
-                "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1.",
-            rep.getCoreName(), rep.getName());
+        if (log.isWarnEnabled()) {
+          log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. " +
+                  "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1.",
+              rep.getCoreName(), rep.getName());
+        }
         cd.getCloudDescriptor().setCoreNodeName(rep.getName());
         coresLocator.persist(this, cd);
         return true;

@@ -77,7 +77,6 @@ apply from: file('gradle/ant-compat/folder-layout.gradle')
 // (java, tests)
 apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
-apply from: file('gradle/defaults-javadoc.gradle')
 apply from: file('gradle/render-javadoc.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
@@ -88,8 +87,8 @@ apply from: file('gradle/jar-manifest.gradle')
 // Maven publishing.
 apply from: file('gradle/maven/defaults-maven.gradle')
 
-// IDE settings and specials.
-apply from: file('gradle/defaults-idea.gradle')
+// IDE support, settings and specials.
+apply from: file('gradle/ide/intellij-idea.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
@@ -104,6 +103,7 @@ apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/missing-docs-check.gradle')
+apply from: file('gradle/validation/validate-log-calls.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')

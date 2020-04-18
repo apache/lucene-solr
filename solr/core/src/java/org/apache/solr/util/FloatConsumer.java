@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-allprojects {
-  apply plugin: 'idea'
+package org.apache.solr.util;
 
-  idea {
-    module {
-      outputDir file('build/idea/classes/main')
-      testOutputDir file('build/idea/classes/test')
-      downloadSources = true
-    }
-  }
+import java.util.function.Consumer;
+
+/**
+ * Represents an operation that accepts a single {@code float}-valued argument and
+ * returns no result.  This is the primitive type specialization of
+ * {@link Consumer} for {@code float}.  Unlike most other functional interfaces,
+ * {@code IntConsumer} is expected to operate via side-effects.
+ *
+ * @see Consumer
+ */
+@FunctionalInterface
+public interface FloatConsumer {
+
+  /**
+   * Performs this operation on the given argument.
+   *
+   * @param value the input argument
+   */
+  void accept(float value);
 }
-

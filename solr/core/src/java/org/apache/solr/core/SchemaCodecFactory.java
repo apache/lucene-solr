@@ -86,10 +86,10 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             "Invalid compressionMode: '" + compressionModeStr + 
             "'. Value must be one of " + Arrays.toString(Mode.values()));
       }
-      log.debug("Using compressionMode: " + compressionMode);
+      log.debug("Using compressionMode: {}", compressionMode);
     } else {
       compressionMode = SOLR_DEFAULT_COMPRESSION_MODE;
-      log.debug("Using default compressionMode: " + compressionMode);
+      log.debug("Using default compressionMode: {}", compressionMode);
     }
     codec = new Lucene84Codec(compressionMode) {
       @Override
