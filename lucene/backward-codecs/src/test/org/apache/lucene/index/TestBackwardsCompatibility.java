@@ -832,7 +832,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
       assertNull("none of the segments should have been upgraded",
-          si.asList().stream().filter(sci -> sci.getId() != null).findAny().orElse(null));
+          si.asList().stream().filter( // depending on the MergePolicy we might see these segments merged away
+              sci -> sci.getId() != null && sci.info.getVersion().onOrAfter(Version.LUCENE_8_6_0) == false
+          ).findAny().orElse(null));
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
