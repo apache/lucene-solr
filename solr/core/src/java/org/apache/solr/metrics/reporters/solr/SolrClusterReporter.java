@@ -196,7 +196,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       reporter.close();;
     }
     if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
+      log.info("Reporter disabled for registry {}", registryName);
       return;
     }
     // start reporter only in cloud mode
@@ -205,7 +205,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       return;
     }
     if (period < 1) { // don't start it
-      log.info("Turning off node reporter, period=" + period);
+      log.info("Turning off node reporter, period={}", period);
       return;
     }
     HttpClient httpClient = cc.getUpdateShardHandler().getDefaultHttpClient();
@@ -275,7 +275,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       try {
         nodeName = LeaderElector.getNodeName(oid);
       } catch (Exception e) {
-        log.warn("Unknown format of leader id, skipping: " + oid, e);
+        log.warn("Unknown format of leader id, skipping: {}", oid, e);
         return lastKnownUrl;
       }
       // convert nodeName back to URL

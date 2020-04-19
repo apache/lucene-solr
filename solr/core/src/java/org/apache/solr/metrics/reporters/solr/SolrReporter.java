@@ -106,11 +106,11 @@ public class SolrReporter extends ScheduledReporter {
         } else if (oFilters instanceof Collection) {
           metricFilters = (Collection<String>)oFilters;
         } else {
-          log.warn("Invalid report filters, ignoring: " + oFilters);
+          log.warn("Invalid report filters, ignoring: {}", oFilters);
         }
       }
       if (groupPattern == null || registryPattern == null) {
-        log.warn("Invalid report configuration, group and registry required!: " + map);
+        log.warn("Invalid report configuration, group and registry required!: {}", map);
         return null;
       }
       return new Report(groupPattern, labelPattern, registryPattern, metricFilters);
@@ -328,7 +328,7 @@ public class SolrReporter extends ScheduledReporter {
         CompiledReport cs = new CompiledReport(report);
         compiledReports.add(cs);
       } catch (PatternSyntaxException e) {
-        log.warn("Skipping report with invalid registryPattern: " + report.registryPattern, e);
+        log.warn("Skipping report with invalid registryPattern: {}", report.registryPattern, e);
       }
     });
     this.skipHistograms = skipHistograms;
@@ -404,7 +404,9 @@ public class SolrReporter extends ScheduledReporter {
       //log.info("%%% sending to " + url + ": " + req.getParams());
       solr.request(req);
     } catch (Exception e) {
-      log.debug("Error sending metric report: {}", e.toString());
+      if (log.isDebugEnabled()) {
+        log.debug("Error sending metric report: {}", e.toString());
+      }
     }
 
   }
