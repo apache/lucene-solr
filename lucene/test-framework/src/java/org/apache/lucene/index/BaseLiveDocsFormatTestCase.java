@@ -125,10 +125,10 @@ public abstract class BaseLiveDocsFormatTestCase extends LuceneTestCase {
     final Directory dir = newDirectory();
     final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "foo", maxDoc, random().nextBoolean(),
         codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
-    SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, 0, -1, -1);
+    SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, 0, -1, -1, StringHelper.randomId());
     format.writeLiveDocs(bits, dir, sci, maxDoc - numLiveDocs, IOContext.DEFAULT);
 
-    sci = new SegmentCommitInfo(si, maxDoc - numLiveDocs, 0, 1, -1, -1);
+    sci = new SegmentCommitInfo(si, maxDoc - numLiveDocs, 0, 1, -1, -1, StringHelper.randomId());
     final Bits bits2 = format.readLiveDocs(dir, sci, IOContext.READONCE);
     assertEquals(maxDoc, bits2.length());
     for (int i = 0; i < maxDoc; ++i) {

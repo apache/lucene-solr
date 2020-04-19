@@ -46,7 +46,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.IdUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -232,7 +232,7 @@ public class SimDistribStateManager implements DistribStateManager {
   public SimDistribStateManager(Node root) {
     this.id = IdUtils.timeRandomId();
     this.root = root != null ? root : createNewRootNode();
-    watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new DefaultSolrThreadFactory("sim-watchers"));
+    watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new SolrNamedThreadFactory("sim-watchers"));
     String bufferSize = System.getProperty("jute.maxbuffer", Integer.toString(0xffffff));
     juteMaxbuffer = Integer.parseInt(bufferSize);
   }

@@ -55,7 +55,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,7 +144,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.scheduler = builder.executorService;
       this.shutdownExecutor = false;
     } else {
-      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
+      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("concurrentUpdateScheduler"));
       this.shutdownExecutor = true;
     }
     
@@ -389,7 +389,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
             } finally {
-              solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
+              solrExc = new BaseHttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);
               }

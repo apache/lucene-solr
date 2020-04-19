@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -34,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
@@ -41,6 +43,7 @@ import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
@@ -156,6 +159,9 @@ final class DocumentsWriterPerThread {
   final BufferedUpdates pendingUpdates;
   final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
+  private SetOnce<Boolean> flushPending = new SetOnce<>();
+  private volatile long lastCommittedBytesUsed;
+  private SetOnce<Boolean> hasFlushed = new SetOnce<>();
 
   private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
@@ -169,6 +175,10 @@ final class DocumentsWriterPerThread {
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
+  private final ReentrantLock lock = new ReentrantLock();
+  private int[] deleteDocIDs = new int[0];
+  private int numDeletedDocIds = 0;
+
 
   public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
@@ -196,7 +206,7 @@ final class DocumentsWriterPerThread {
     }
     this.enableTestPoints = enableTestPoints;
     this.indexVersionCreated = indexVersionCreated;
-    // this should be the last call in the ctor 
+    // this should be the last call in the ctor
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
   }
@@ -307,9 +317,14 @@ final class DocumentsWriterPerThread {
   // we only mark these docs as deleted and turn it into a livedocs
   // during flush
   private void deleteLastDocs(int docCount) {
-    for (int docId = numDocsInRAM - docCount; docId < numDocsInRAM; docId++) {
-      pendingUpdates.addDocID(docId);
+    int from = numDocsInRAM-docCount;
+    int to = numDocsInRAM;
+    int size = deleteDocIDs.length;
+    deleteDocIDs = ArrayUtil.grow(deleteDocIDs, numDeletedDocIds + (to-from));
+    for (int docId = from; docId < to; docId++) {
+      deleteDocIDs[numDeletedDocIds++] = docId;
     }
+    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.SIZE);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -350,6 +365,7 @@ final class DocumentsWriterPerThread {
 
   /** Flush all pending docs to a new segment */
   FlushedSegment flush(DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
+    assert flushPending.get() == Boolean.TRUE;
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -360,14 +376,16 @@ final class DocumentsWriterPerThread {
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
-    if (pendingUpdates.deleteDocIDs.size() > 0) {
+    if (numDeletedDocIds > 0) {
       flushState.liveDocs = new FixedBitSet(numDocsInRAM);
       flushState.liveDocs.set(0, numDocsInRAM);
-      for(int delDocID : pendingUpdates.deleteDocIDs) {
-        flushState.liveDocs.clear(delDocID);
+      for (int i = 0; i < numDeletedDocIds; i++) {
+        flushState.liveDocs.clear(deleteDocIDs[i]);
       }
-      flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.clearDeletedDocIds();
+      flushState.delCountOnFlush = numDeletedDocIds;
+      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.SIZE));
+      deleteDocIDs = null;
+
     }
 
     if (aborted) {
@@ -401,7 +419,7 @@ final class DocumentsWriterPerThread {
       pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
-      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L);
+      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L, StringHelper.randomId());
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
         infoStream.message("DWPT", "new segment has " + flushState.softDelCountOnFlush + " soft-deleted docs");
@@ -445,6 +463,7 @@ final class DocumentsWriterPerThread {
       throw t;
     } finally {
       maybeAbort("flush", flushNotifications);
+      hasFlushed.set(Boolean.TRUE);
     }
   }
 
@@ -598,7 +617,83 @@ final class DocumentsWriterPerThread {
   public String toString() {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
-        + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
+        + numDocsInRAM + ", deleteQueue=" + deleteQueue + ", " + numDeletedDocIds + " deleted docIds" + "]";
   }
-  
+
+
+  /**
+   * Returns true iff this DWPT is marked as flush pending
+   */
+  boolean isFlushPending() {
+    return flushPending.get() == Boolean.TRUE;
+  }
+
+  /**
+   * Sets this DWPT as flush pending. This can only be set once.
+   */
+  void setFlushPending() {
+    flushPending.set(Boolean.TRUE);
+  }
+
+
+  /**
+   * Returns the last committed bytes for this DWPT. This method can be called
+   * without acquiring the DWPTs lock.
+   */
+  long getLastCommittedBytesUsed() {
+    return lastCommittedBytesUsed;
+  }
+
+  /**
+   * Commits the current {@link #bytesUsed()} and stores it's value for later reuse.
+   * The last committed bytes used can be retrieved via {@link #getLastCommittedBytesUsed()}
+   * @return the delta between the current {@link #bytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
+   */
+  long commitLastBytesUsed() {
+    assert isHeldByCurrentThread();
+    long delta = bytesUsed() - lastCommittedBytesUsed;
+    lastCommittedBytesUsed += delta;
+    return delta;
+  }
+
+  /**
+   * Locks this DWPT for exclusive access.
+   * @see ReentrantLock#lock()
+   */
+  void lock() {
+    lock.lock();
+  }
+
+  /**
+   * Acquires the DWPT's lock only if it is not held by another thread at the time
+   * of invocation.
+   * @return true if the lock was acquired.
+   * @see ReentrantLock#tryLock()
+   */
+  boolean tryLock() {
+    return lock.tryLock();
+  }
+
+  /**
+   * Returns true if the DWPT's lock is held by the current thread
+   * @see ReentrantLock#isHeldByCurrentThread()
+   */
+  boolean isHeldByCurrentThread() {
+    return lock.isHeldByCurrentThread();
+  }
+
+  /**
+   * Unlocks the DWPT's lock
+   * @see ReentrantLock#unlock()
+   */
+  void unlock() {
+    lock.unlock();
+  }
+
+  /**
+   * Returns <code>true</code> iff this DWPT has been flushed
+   */
+  boolean hasFlushed() {
+    return hasFlushed.get() == Boolean.TRUE;
+  }
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -93,7 +94,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    HttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(HttpSolrClient.RemoteSolrException.class,
+    BaseHttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
         "Expected an exception in case split.key is not specified", () -> {
           CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
               .setForwardTimeout(45)

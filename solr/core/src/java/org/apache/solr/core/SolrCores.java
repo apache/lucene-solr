@@ -21,7 +21,7 @@ import org.apache.http.annotation.Experimental;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +130,7 @@ class SolrCores {
       }
       
       ExecutorService coreCloseExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(Integer.MAX_VALUE,
-          new DefaultSolrThreadFactory("coreCloseExecutor"));
+          new SolrNamedThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
           coreCloseExecutor.submit(() -> {
@@ -541,8 +541,10 @@ class SolrCores {
   public TransientSolrCoreCache getTransientCacheHandler() {
 
     if (transientCoreCache == null) {
-      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
-          "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      if (log.isErrorEnabled()) {
+        log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
+            "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      }
       return null;
     }
     return transientCoreCache.getTransientSolrCoreCache();

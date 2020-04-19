@@ -206,7 +206,9 @@ public class SolrXmlConfig {
       return properties;
     }
     catch (XPathExpressionException e) {
-      log.warn("Error parsing solr.xml: " + e.getMessage());
+      if (log.isWarnEnabled()) {
+        log.warn("Error parsing solr.xml: {}", e.getMessage());
+      }
       return null;
     }
   }
@@ -397,9 +399,6 @@ public class SolrXmlConfig {
         case "zkClientTimeout":
           builder.setZkClientTimeout(parseInt(name, value));
           break;
-        case "autoReplicaFailoverWaitAfterExpiration":
-          builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
-          break;
         case "zkHost":
           builder.setZkHost(value);
           break;
@@ -533,7 +532,7 @@ public class SolrXmlConfig {
     // if there's an MBean server running but there was no JMX reporter then add a default one
     MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
     if (mBeanServer != null && !hasJmxReporter) {
-      log.info("MBean server found: " + mBeanServer + ", but no JMX reporters were configured - adding default JMX reporter.");
+      log.info("MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.", mBeanServer);
       Map<String,Object> attributes = new HashMap<>();
       attributes.put("name", "default");
       attributes.put("class", SolrJmxReporter.class.getName());

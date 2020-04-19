@@ -26,12 +26,25 @@ plugins {
   id "de.undercouch.download" version "4.0.2" apply false
 }
 
-// Project version and main properties. Applies to all projects.
+// Project version.
+version = "9.0.0-SNAPSHOT"
+
+// Propagate version and derived properties across projects.
 allprojects {
-  version = "9.0.0-SNAPSHOT"
+  version = rootProject.version
 }
 
 ext {
+  // "base" version is stripped of the qualifier. Compute it.
+  baseVersion = {
+    def m = (version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
+    if (!m) {
+      throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
+    }
+    return m[0][1]
+  }()
+
+  // Build timestamp.
   def tstamp = ZonedDateTime.now()
   buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
@@ -64,18 +77,18 @@ apply from: file('gradle/ant-compat/folder-layout.gradle')
 // (java, tests)
 apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
-apply from: file('gradle/defaults-javadoc.gradle')
 apply from: file('gradle/render-javadoc.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/runtime-jvm-support.gradle')
+apply from: file('gradle/jar-manifest.gradle')
 
 // Maven publishing.
 apply from: file('gradle/maven/defaults-maven.gradle')
 
-// IDE settings and specials.
-apply from: file('gradle/defaults-idea.gradle')
+// IDE support, settings and specials.
+apply from: file('gradle/ide/intellij-idea.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
@@ -90,6 +103,7 @@ apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/missing-docs-check.gradle')
+apply from: file('gradle/validation/validate-log-calls.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')

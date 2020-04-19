@@ -459,7 +459,7 @@
                   fullpath="${fullnamever}/solr/LUCENE_CHANGES.txt" />
       <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
-                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
+                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/** gradle/wrapper/gradle-wrapper.jar"/>
       <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
                   filemode="755"

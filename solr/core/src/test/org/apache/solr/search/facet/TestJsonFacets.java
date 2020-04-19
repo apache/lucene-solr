@@ -3283,6 +3283,64 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
+  @Test
+  public void testFacetValueTypes() throws Exception {
+    doFacetValueTypeValidation(Client.localClient());
+  }
+
+  @Test
+  public void testFacetValueTypesDistrib() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    doFacetValueTypeValidation(client);
+  }
+
+  private void doFacetValueTypeValidation(Client client) throws Exception {
+    indexSimple(client);
+
+    client.testXQ(params("q", "*:*", "rows", "0",
+        "json.facet", "{cat_s:{type:terms,field:cat_s,mincount:0,missing:true,allBuckets:true,numBuckets:true,limit:1}}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/lst[@name='cat_s']/long[@name='numBuckets'][.=2]", // total no of buckets
+        "*[count(/response/lst[@name='facets']/lst[@name='cat_s']/arr[@name='buckets']/lst)=1]", // no of entries
+        "/response/lst[@name='facets']/lst[@name='cat_s']/lst[@name='allBuckets']/long[@name='count'][.=5]", // allBuckets
+        "/response/lst[@name='facets']/lst[@name='cat_s']/lst[@name='missing']/long[@name='count'][.=1]", // missing
+        "/response/lst[@name='facets']/lst[@name='cat_s']/arr[@name='buckets']/lst[1]/str[@name='val'][.='B']", // facet value
+        "/response/lst[@name='facets']/lst[@name='cat_s']/arr[@name='buckets']/lst[1]/long[@name='count'][.='3']" // facet count
+    );
+
+    // aggregations types for string
+    client.testXQ(params("q", "*:*", "rows", "0",
+        "json.facet", "{unique:'unique(cat_s)',hll:'hll(cat_s)',vals:'countvals(cat_s)',missing:'missing(cat_s)'}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/long[@name='unique'][.=2]", // unique
+        "/response/lst[@name='facets']/long[@name='hll'][.=2]", // hll
+        "/response/lst[@name='facets']/long[@name='vals'][.=5]", // values
+        "/response/lst[@name='facets']/long[@name='missing'][.=1]" // missing
+    );
+
+    // aggregations types for number
+    client.testXQ(params("q", "*:*", "rows", "0",
+        "json.facet", "{unique:'unique(num_i)',hll:'hll(num_i)',vals:'countvals(num_i)',missing:'missing(num_i)'}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/long[@name='unique'][.=4]", // unique
+        "/response/lst[@name='facets']/long[@name='hll'][.=4]", // hll
+        "/response/lst[@name='facets']/long[@name='vals'][.=5]", // values
+        "/response/lst[@name='facets']/long[@name='missing'][.=1]" // missing
+    );
+
+    // aggregations types for multi-valued number
+    client.testXQ(params("q", "*:*", "rows", "0",
+        "json.facet", "{unique:'unique(num_is)',hll:'hll(num_is)',vals:'countvals(num_is)',missing:'missing(num_is)'}"),
+        "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
+        "/response/lst[@name='facets']/long[@name='unique'][.=7]", // unique
+        "/response/lst[@name='facets']/long[@name='hll'][.=7]", // hll
+        "/response/lst[@name='facets']/long[@name='vals'][.=9]", // values
+        "/response/lst[@name='facets']/long[@name='missing'][.=1]" // missing
+    );
+  }
+
   public void XtestPercentiles() {
     AVLTreeDigest catA = new AVLTreeDigest(100);
     catA.add(4);

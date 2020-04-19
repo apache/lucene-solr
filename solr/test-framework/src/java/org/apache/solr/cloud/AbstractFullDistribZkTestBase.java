@@ -82,7 +82,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -416,7 +416,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                              // expect sliceCount active shards, but no active replicas
                              SolrCloudTestCase.activeClusterShape(sliceCount, 0));
     
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
     
@@ -522,7 +522,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
-    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("createReplicaRequests"));
+    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createReplicaRequests"));
     
     for (CollectionAdminRequest r : createReplicaRequests) {
       customThreadPool.submit(() -> {
@@ -541,7 +541,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
     customThreadPool = ExecutorUtil
-        .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("createPullReplicaRequests"));
+        .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createPullReplicaRequests"));
     for (CollectionAdminRequest r : createPullReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
@@ -1055,7 +1055,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     super.waitForRecoveriesToFinish(collection, zkStateReader, verbose);
   }
 
-  protected void waitForRecoveriesToFinish(boolean verbose, int timeoutSeconds)
+  protected void waitForRecoveriesToFinish(boolean verbose, long timeoutSeconds)
       throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose, true, timeoutSeconds);
@@ -1329,11 +1329,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try {
         SolrParams query = params("q","*:*", "rows","0", "distrib","false", "tests","checkShardConsistency"); // "tests" is just a tag that won't do anything except be echoed in logs
         num = cjetty.client.solrClient.query(query).getResults().getNumFound();
-      } catch (SolrServerException e) {
-        if (verbose) System.err.println("error contacting client: "
-            + e.getMessage() + "\n");
-        continue;
-      } catch (SolrException e) {
+      } catch (SolrException | SolrServerException e) {
         if (verbose) System.err.println("error contacting client: "
             + e.getMessage() + "\n");
         continue;
@@ -1610,36 +1606,40 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     public abstract void safeStop();
   }
 
-  public void waitForThingsToLevelOut(int waitForRecTimeSeconds) throws Exception {
-    log.info("Wait for recoveries to finish - wait " + waitForRecTimeSeconds + " for each attempt");
+  public void waitForThingsToLevelOut() throws Exception {
+    // Arbitrary, but if we're waiting for longer than 10 minutes, then fail the test anyway
+    waitForThingsToLevelOut(10, TimeUnit.MINUTES);
+  }
+
+  public void waitForThingsToLevelOut(int timeout, TimeUnit unit) throws Exception {
+    log.info("Wait for recoveries to finish - wait {}{} for each attempt", timeout, unit);
     int cnt = 0;
-    boolean retry = false;
+    boolean retry;
     do {
-      waitForRecoveriesToFinish(VERBOSE, waitForRecTimeSeconds);
+      waitForRecoveriesToFinish(VERBOSE, unit.toSeconds(timeout));
 
       try {
         commit();
-      } catch (Throwable t) {
-        t.printStackTrace();
+      } catch (Exception e) {
         // we don't care if this commit fails on some nodes
+        log.info("Commit failed while waiting for recoveries", e);
       }
 
       updateMappingsFromZk(jettys, clients);
 
       Set<String> theShards = shardToJetty.keySet();
-      String failMessage = null;
+      retry = false;
       for (String shard : theShards) {
-        failMessage = checkShardConsistency(shard, true, false);
+        String failMessage = checkShardConsistency(shard, true, false);
+        if (failMessage != null) {
+          log.info("shard inconsistency - will retry ...");
+          retry = true;
+        }
       }
 
-      if (failMessage != null) {
-        log.info("shard inconsistency - waiting ...");
-        retry = true;
-      } else {
-        retry = false;
+      if (cnt++ > 30) {
+        throw new TimeoutException("Cluster state still in flux after 30 retry intervals.");
       }
-      cnt++;
-      if (cnt > 30) break;
       Thread.sleep(2000);
     } while (retry);
   }
@@ -1714,7 +1714,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   @Override
   protected void destroyServers() throws Exception {
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
     
     customThreadPool.submit(() -> Collections.singleton(commonCloudSolrClient).parallelStream().forEach(c -> {
       IOUtils.closeQuietly(c);
@@ -2035,12 +2035,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
-
-  protected void assertCollectionNotExists(String collectionName, int timeoutSeconds) throws Exception {
-    waitForCollectionToDisappear(collectionName, getCommonCloudSolrClient().getZkStateReader(), false, true, timeoutSeconds);
-    assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
-  }
-
 
   protected void createCollection(String collName,
                                   CloudSolrClient client,

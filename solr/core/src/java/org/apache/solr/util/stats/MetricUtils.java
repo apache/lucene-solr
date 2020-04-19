@@ -274,7 +274,7 @@ public class MetricUtils {
         convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
       } catch (InternalError ie) {
         if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
-          log.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
+          log.warn("Error converting gauge '{}', possible JDK bug: SOLR-10362", n, ie);
           consumer.accept(n, null);
         } else {
           throw ie;
@@ -577,7 +577,9 @@ public class MetricUtils {
       try {
         beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
       } catch (IntrospectionException e) {
-        log.warn("Unable to fetch properties of MXBean " + obj.getClass().getName());
+        if (log.isWarnEnabled()) {
+          log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+        }
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
