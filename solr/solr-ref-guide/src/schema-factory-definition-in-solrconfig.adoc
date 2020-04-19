@@ -57,7 +57,7 @@ An alternative to using a managed schema is to explicitly configure a `ClassicIn
 
 [source,xml]
 ----
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <schemaFactory class="solr.ClassicIndexSchemaFactory"/>
 ----
 
 === Switching from schema.xml to Managed Schema
