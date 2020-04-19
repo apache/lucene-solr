@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 /**
  * This class started life as a test for SOLR-749 to prove that value source plugins were properly
  * intialized, but it has since evolved to also help prove that ValueSource's are not asked to compute
- * values for documents unneccessarily.
+ * values for documents unnecessarily.
  *
  * @see CountUsageValueSourceParser
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-749">SOLR-749</a>
@@ -117,7 +117,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
       assertEquals(0, CountUsageValueSourceParser.getAndClearCount("postfilt_match_all"));
 
       // Tests that TwoPhaseIterator is employed optimally
-      int cost = random().nextBoolean() ? 10 : 100; // 100 will cause "post filter
+      int cost = random().nextBoolean() ? 10 : 100; // 100 will cause "post filter"
       assertQ("query matching 20 -> 10 -> 5 docs; two non-cached queries",
           req("q","{!notfoo cache=false}id_i1:[20 TO 39]", // match 20
               // the below IDs have alternating even/odd pairings so as to test possible sequencing of evaluation

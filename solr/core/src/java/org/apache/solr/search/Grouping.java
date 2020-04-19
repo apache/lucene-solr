@@ -101,8 +101,6 @@ public class Grouping {
   private boolean getGroupedDocSet;
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
-  private DocSet filter;
-  private Filter luceneFilter;
   private NamedList grouped = new SimpleOrderedMap();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
