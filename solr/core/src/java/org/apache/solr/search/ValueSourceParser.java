@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -329,7 +330,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         if (fp.hasMoreArguments()){
           String selectorArg = fp.parseArg();
           try {
-            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase()); //TODO: handle invalid input
+            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase(Locale.ROOT)); //TODO: handle invalid input
           }
           catch (NullPointerException npe){
             throw new InvalidParameterException("Selector " + selectorArg + " is invalid." );
@@ -351,7 +352,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         if (fp.hasMoreArguments()){
           String selectorArg = fp.parseArg();
           try {
-            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase()); //TODO: handle invalid input
+            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase(Locale.ROOT)); //TODO: handle invalid input
           }
           catch (NullPointerException npe){
             throw new InvalidParameterException("Selector " + selectorArg + " is invalid." );

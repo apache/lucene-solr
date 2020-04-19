@@ -20,22 +20,13 @@ import org.apache.lucene.queries.function.ValueSource;
 
 public class FloatVectorCosineFunction extends FloatVectorFunction {
 
-
-  /*
-  public FloatVectorCosineFunction(String queryVector, ValueSource denseVectorFieldValueSource, Selector selector, Encoding encoding) {
+  public FloatVectorCosineFunction(String queryVector, ValueSource denseVectorFieldValueSource, Selector selector) {
     super(queryVector, denseVectorFieldValueSource, selector);
   }
 
   public FloatVectorCosineFunction(String queryVector, ValueSource denseVectorFieldValueSource) {
     this(queryVector, denseVectorFieldValueSource, Selector.MAX);
   }
-
-  */
-
-  public FloatVectorCosineFunction(String queryVector, ValueSource denseVectorFieldValueSource, Selector selector) {
-    super(queryVector, denseVectorFieldValueSource, selector);
-  }
-
 
   protected float func(float[] vectorA, float[] vectorB){
       double dotProduct = 0.0;
@@ -50,12 +41,9 @@ public class FloatVectorCosineFunction extends FloatVectorFunction {
       return (float) d;
   }
 
-  public static final String NAME = "vector_cosine";
-
   @Override
-  public String description() {
-    return NAME;
+  protected String getName(){
+    return "vector_cosine";
   }
-
 
 }

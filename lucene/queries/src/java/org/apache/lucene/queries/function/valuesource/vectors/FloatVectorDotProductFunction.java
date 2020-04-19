@@ -36,12 +36,9 @@ public class FloatVectorDotProductFunction extends FloatVectorFunction {
       return (float) dotProduct;
   }
 
-  public static final String NAME = "vector_dotproduct";
-
   @Override
-  public String description() {
-    return NAME;
-  } //TODO: Useful description, but not too large
-
+  protected String getName(){
+    return "vector_dotproduct";
+  }
 
 }
