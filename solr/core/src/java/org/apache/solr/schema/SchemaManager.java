@@ -155,7 +155,7 @@ public class SchemaManager {
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
-      log.warn(errorMsg + "Timed out.");
+      log.warn("{} Timed out", errorMsg);
       errors = singletonList(errorMsg + "Timed out.");
     }
     return errors;
@@ -428,7 +428,7 @@ public class SchemaManager {
         if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name, true)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
           if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
-            log.warn("Unable to retrieve fresh managed schema, neither " + name + " nor " + backupName + " exist.");
+            log.warn("Unable to retrieve fresh managed schema, neither {} nor {} exist.", name, backupName);
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
           } else {
@@ -436,7 +436,7 @@ public class SchemaManager {
           }
         }
       } catch (Exception e) {
-        log.warn("Unable to retrieve fresh managed schema " + name, e);
+        log.warn("Unable to retrieve fresh managed schema {}", name, e);
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }
