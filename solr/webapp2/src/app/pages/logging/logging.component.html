@@ -14,7 +14,12 @@ software distributed under the License is distributed on an
 KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License. -->
-<table matSort [hidden]="!history" (matSortChange)="sortData($event)">
+<mat-tab-group mat-align-tabs="start">
+  <mat-tab label="Sort Logs">
+    <ng-template matTabContent>
+
+      <table  matSort [hidden]="!history" (matSortChange)="sortData($event)">
+
   <tr>
     <th mat-sort-header="time" id="time">Time</th>
     <th mat-sort-header="level" id="level">Level</th>
@@ -30,4 +35,63 @@ under the License. -->
   </tr>
 
 </table>
+    </ng-template>
+  </mat-tab>
+  <mat-tab label="Filter Logs">
+    <ng-template matTabContent>
+      <mat-form-field>
+        <mat-label>Filter</mat-label>
+        <input matInput (keyup)="applyFilter($event)" placeholder="ZooKeeper">
+      </mat-form-field>
 
+      <table mat-table matSort [dataSource]="dataSourceFilter" [hidden]="!dataSourceFilter">
+        
+
+        <ng-container matColumnDef="time">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="time" > Time </th>
+          <td mat-cell *matCellDef="let log"> {{log.time}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="level">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="level"> Level </th>
+          <td mat-cell *matCellDef="let log"> {{log.level}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="message">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="message"> Message </th>
+          <td mat-cell *matCellDef="let log"> {{log.message}} </td>
+        </ng-container>
+
+
+        <ng-container matColumnDef="core">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="core"> Core </th>
+          <td mat-cell *matCellDef="let log"> {{log.core}} </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </ng-template>
+  </mat-tab>
+</mat-tab-group>
+  
+<!-- <table matSort [hidden]="!history" (matSortChange)="sortData($event)"> -->
+
+  <!-- <tr>
+    <th mat-sort-header="time" id="time">Time</th>
+    <th mat-sort-header="level" id="level">Level</th>
+    <th mat-sort-header="core" id="core">Core</th>
+    <th mat-sort-header="message" id="message">Message</th>
+  </tr>
+
+  <tr *ngFor="let i of sortedData">
+    <td >{{ i.time }}</td>
+    <td >{{ i.level || "" }}</td>
+    <td >{{ i.core || "" }}</td>
+    <td >{{ i.message || "" }}</td>
+  </tr>
+
+</table>
+ -->

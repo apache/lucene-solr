@@ -29,10 +29,11 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import {MatTableModule} from '@angular/material/table';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import {Sort, MatSortModule} from '@angular/material/sort';
+import {MatSort, MatSortModule} from '@angular/material/sort';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import {MatTreeModule} from '@angular/material/tree';
+import { MatPaginator } from '@angular/material/paginator';
 
 @NgModule({
   declarations: [
@@ -57,8 +58,9 @@ import {MatTreeModule} from '@angular/material/tree';
   ],
   providers: [
     {provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: {hasBackdrop: true},
-  }
-  ],
+    
+  }, MatSort, MatPaginator
+],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -31,6 +31,8 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import {MatTreeNestedDataSource, MatTreeModule} from '@angular/material/tree';
+import {MatInputModule} from '@angular/material/input';
+import {MatPaginatorModule} from '@angular/material/paginator';
 
 @NgModule({
     declarations: [],
@@ -48,7 +50,10 @@ import {MatTreeNestedDataSource, MatTreeModule} from '@angular/material/tree';
         MatSortModule,
         MatTabsModule,
         MatDividerModule,
-        MatTreeModule
+        MatTreeModule,
+        MatInputModule,
+        MatPaginatorModule
+
     ],
     exports: [
         LayoutModule,
@@ -65,7 +70,9 @@ import {MatTreeNestedDataSource, MatTreeModule} from '@angular/material/tree';
         MatSortModule,
         MatTabsModule,
         MatDividerModule,
-        MatTreeModule
+        MatTreeModule,
+        MatInputModule,
+        MatPaginatorModule
     ]
 })
 export class MaterialModule { }

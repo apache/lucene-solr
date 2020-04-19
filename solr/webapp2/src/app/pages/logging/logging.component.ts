@@ -14,10 +14,11 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, AfterViewInit, ViewChild } from '@angular/core';
 // import * as table from '@angular/material/table';
-import { Sort, MatSortModule } from '@angular/material/sort';
-import { MatTableModule } from '@angular/material/table';
+import { MatSort} from '@angular/material/sort';
+import {MatPaginator} from '@angular/material/paginator'
+import { MatTableModule,MatTableDataSource } from '@angular/material/table';
 import { LoggingService } from '../../services/solr-logging/logging.service';
 
 export interface Docs {
@@ -37,17 +38,22 @@ export interface Docs {
 
 export class LoggingComponent implements AfterViewInit {
   historyArray: Docs[];
-  dataSource;
+  dataSourceFilter;
+  dataSourceSort;
   sortedData: Docs[];
   history; 
+  displayedColumns: string[] = ['time', 'level', 'message', 'core'];
 
-  constructor(private loggingService: LoggingService, public sort: MatSortModule) {  }
 
+  constructor(private loggingService: LoggingService, public sort: MatSort, public paginator: MatPaginator) {  }
+ 
   ngAfterViewInit() {
     this.loggingService.getData().subscribe(
       response => {
           this.history = response["history"];
+          console.log("history: ", this.history);
           this.processHistoryData(this.history);
+          this.filterableData(this.historyArray);
           this.sortedData = this.historyArray.slice();
       },
       err => {
@@ -59,14 +65,24 @@ export class LoggingComponent implements AfterViewInit {
     this.historyArray = history["docs"];
     return this.historyArray;
   }
-  sortData(sort: Sort) {
-    const data = this.sortedData.slice();
+  filterableData(history: Docs[]){
+    this.dataSourceFilter = new MatTableDataSource(this.historyArray);
+    console.log(this.dataSourceFilter);
+    return this.dataSourceFilter;
+  }
+  applyFilter(event: Event) {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSourceFilter.filter = filterValue.trim().toLowerCase();
+  }
+  sortData(sort: MatSort) {
+    // this.dataSource.sort = this.sortData;
+    this.dataSourceSort = this.sortedData.slice();
     if (!sort.active || sort.direction === '') {
-      this.sortedData = data;
+      this.sortedData = this.dataSourceSort;
       return;
     }
 
-    this.sortedData = data.sort((a, b) => {
+    this.sortedData = this.dataSourceSort.sort((a, b) => {
       const isAsc = sort.direction === 'asc';
       switch (sort.active) {
         case 'level': return compare(a.level, b.level, isAsc);
