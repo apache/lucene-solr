@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -43,7 +45,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception{
-    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(1, createTempDir())
+    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, createTempDir())
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(getFile("solr/solr.xml").toPath())
         .build();
@@ -52,13 +54,19 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
       timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.getTracer() instanceof io.jaegertracing.internal.JaegerTracer);
+
+      //TODO add run Jaeger through Docker and verify spans available after run these commands
+      CollectionAdminRequest.createCollection("test", 2, 1).process(cluster.getSolrClient());
+      new UpdateRequest()
+          .add("id", "1")
+          .add("id", "2")
+          .process(cluster.getSolrClient(), "test");
+      cluster.getSolrClient().query("test", new SolrQuery("*:*"));
     } finally {
       cluster.shutdown();
     }
 
   }
-
-  //TODO add integration test with Jaeger run on a container
 
   @Test
   public void testRequiredParameters() throws IOException {

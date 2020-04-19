@@ -86,14 +86,14 @@ public class DummyCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
   public DummyCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("DummyCompressingStoredFields",
+    super("DummyCompressingStoredFieldsData",
           withSegmentSuffix ? "DummyCompressingStoredFields" : "",
           DUMMY, chunkSize, maxDocsPerChunk, blockSize);
   }
 
   /** Default constructor. */
   public DummyCompressingCodec() {
-    this(1 << 14, 128, false, 1024);
+    this(1 << 14, 128, false, 10);
   }
 
 }

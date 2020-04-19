@@ -51,7 +51,7 @@ import org.apache.lucene.search.TermRangeQuery;
  *
  * <p>
  * In {@link TermRangeQuery}s, QueryParser tries to detect date values, e.g.
- * <tt>date:[6/1/2005 TO 6/4/2005]</tt> produces a range query that searches
+ * <code>date:[6/1/2005 TO 6/4/2005]</code> produces a range query that searches
  * for "date" fields between 2005-06-01 and 2005-06-04. Note that the format
  * of the accepted input depends on {@link #setLocale(Locale) the locale}.
  * A {@link org.apache.lucene.document.DateTools.Resolution} has to be set,
@@ -863,7 +863,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

@@ -82,7 +82,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -303,7 +303,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request, null);
-    ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
+    ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
       mrr.future = pool.submit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)));
@@ -811,29 +811,6 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
    */
   public void setUseMultiPartPost(boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
-  }
-
-
-  /**
-   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteSolrException} instead
-   */
-  @Deprecated
-  public static class RemoteSolrException extends BaseHttpSolrClient.RemoteSolrException {
-
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(remoteHost, code, msg, th);
-    }
-  }
-
-  /**
-   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteExecutionException} instead
-   */
-  @Deprecated
-  public static class RemoteExecutionException extends BaseHttpSolrClient.RemoteExecutionException {
-
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, meta);
-    }
   }
 
   /**

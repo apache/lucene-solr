@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -34,13 +33,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Solr core descriptor
+ * Metadata about a {@link SolrCore}.
+ * It's mostly loaded from a file on disk at the very beginning of loading a core.
+ *
+ * It's mostly but not completely immutable; we should fix this!
  *
  * @since solr 1.3
  */
@@ -137,9 +140,9 @@ public class CoreDescriptor {
   /** The properties for this core, substitutable by resource loaders */
   protected final Properties substitutableProperties = new Properties();
 
-  public CoreDescriptor(String name, Path instanceDir, Properties containerProperties,
-                        boolean isZooKeeperAware, String... properties) {
-    this(name, instanceDir, toMap(properties), containerProperties, isZooKeeperAware);
+  /** TESTS ONLY */
+  public CoreDescriptor(String name, Path instanceDir, CoreContainer coreContainer, String... coreProps) {
+    this(name, instanceDir, toMap(coreProps), coreContainer.getContainerProperties(), coreContainer.getZkController());
   }
 
   private static Map<String, String> toMap(String... properties) {
@@ -149,18 +152,6 @@ public class CoreDescriptor {
       props.put(properties[i], properties[i+1]);
     }
     return props;
-  }
-
-  /**
-   * Create a new CoreDescriptor with a given name and instancedir
-   * @param name          the CoreDescriptor's name
-   * @param instanceDir   the CoreDescriptor's instancedir
-   * @param containerProperties the enclosing container properties for variable resolution
-   * @param isZooKeeperAware whether we are part of SolrCloud or not. 
-   */
-  public CoreDescriptor(String name, Path instanceDir,
-                        Properties containerProperties, boolean isZooKeeperAware) {
-    this(name, instanceDir, Collections.emptyMap(), containerProperties, isZooKeeperAware);
   }
 
   /**
@@ -187,12 +178,10 @@ public class CoreDescriptor {
    * @param instanceDir     a Path resolving to the instanceDir
    * @param coreProps       a Map of the properties for this core
    * @param containerProperties the properties from the enclosing container.
-   * @param isZooKeeperAware if true, we ar in SolrCloud mode.
+   * @param zkController    the ZkController in SolrCloud mode, otherwise null.
    */
-
-
   public CoreDescriptor(String name, Path instanceDir, Map<String, String> coreProps,
-                        Properties containerProperties, boolean isZooKeeperAware) {
+                        Properties containerProperties, ZkController zkController) {
     this.instanceDir = instanceDir;
 
     originalCoreProperties.setProperty(CORE_NAME, name);
@@ -221,14 +210,12 @@ public class CoreDescriptor {
     buildSubstitutableProperties();
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
-    if (isZooKeeperAware) {
-      cloudDesc = new CloudDescriptor(name, coreProperties, this);
-    }
-    else {
+    if (zkController != null) {
+      cloudDesc = new CloudDescriptor(this, name, coreProperties);
+    } else {
       cloudDesc = null;
     }
-
-    log.debug("Created CoreDescriptor: " + coreProperties);
+    log.debug("Created CoreDescriptor: {}", coreProperties);
   }
 
   /**
@@ -315,7 +302,7 @@ public class CoreDescriptor {
     return coreProperties.getProperty(CORE_CONFIG);
   }
 
-  /**@return the core schema resource name. */
+  /**@return the core schema resource name.  Not actually used if schema is managed mode. */
   public String getSchemaName() {
     return coreProperties.getProperty(CORE_SCHEMA);
   }
@@ -324,8 +311,9 @@ public class CoreDescriptor {
   public String getName() {
     return coreProperties.getProperty(CORE_NAME);
   }
-  
-  public void setProperty(String prop, String val) {
+
+  /** TODO remove mutability */
+  void setProperty(String prop, String val) {
     if (substitutableProperties.containsKey(prop)) {
       substitutableProperties.setProperty(prop, val);
       return;
@@ -379,7 +367,13 @@ public class CoreDescriptor {
   }
 
   public String getConfigSet() {
+    //TODO consider falling back on "collection.configName" ( CollectionAdminParams.COLL_CONF )
     return coreProperties.getProperty(CORE_CONFIGSET);
+  }
+
+  /** TODO remove mutability or at least make this non-public? */
+  public void setConfigSet(String configSetName) {
+    coreProperties.setProperty(CORE_CONFIGSET, configSetName);
   }
 
   public String getConfigSetPropertiesName() {
@@ -390,6 +384,7 @@ public class CoreDescriptor {
     return trustedConfigSet;
   }
 
+  /** TODO remove mutability */
   public void setConfigSetTrusted(boolean trusted) {
     this.trustedConfigSet = trusted;
   }

@@ -153,7 +153,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       CollectionSnapshotMetaData newResult = new CollectionSnapshotMetaData(meta.get().getName(), SnapshotStatus.Failed,
           meta.get().getCreationDate(), replicasWithSnapshot);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, newResult);
-      log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows", collectionName, commitName,
+      log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows: {}", collectionName, commitName,
           Utils.toJSON(newResult));
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to delete snapshot on cores " + coresWithSnapshot);
 

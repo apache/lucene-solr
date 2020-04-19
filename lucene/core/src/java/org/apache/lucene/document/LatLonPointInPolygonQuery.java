@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -141,7 +141,7 @@ final class LatLonPointInPolygonQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
-    final Component2D tree = Polygon2D.create(polygons);
+    final Component2D tree = LatLonGeometry.create(polygons);
     final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(tree);
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
     final byte minLat[] = new byte[Integer.BYTES];

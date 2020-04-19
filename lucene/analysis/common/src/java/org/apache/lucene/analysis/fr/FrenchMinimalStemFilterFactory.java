@@ -49,6 +49,11 @@ public class FrenchMinimalStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public FrenchMinimalStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new FrenchMinimalStemFilter(input);

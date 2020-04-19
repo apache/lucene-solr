@@ -682,13 +682,14 @@ final public class Operations {
     //System.out.println("DET:");
     //a.writeDot("/l/la/lucene/core/detin.dot");
 
-    SortedIntSet.FrozenIntSet initialset = new SortedIntSet.FrozenIntSet(0, 0);
+    // Same initial values and state will always have the same hashCode
+    FrozenIntSet initialset = new FrozenIntSet(new int[] { 0 }, 683, 0);
 
     // Create state 0:
     b.createState();
 
-    ArrayDeque<SortedIntSet.FrozenIntSet> worklist = new ArrayDeque<>();
-    Map<SortedIntSet.FrozenIntSet,Integer> newstate = new HashMap<>();
+    ArrayDeque<FrozenIntSet> worklist = new ArrayDeque<>();
+    Map<IntSet,Integer> newstate = new HashMap<>();
 
     worklist.add(initialset);
 
@@ -704,7 +705,7 @@ final public class Operations {
     Transition t = new Transition();
 
     while (worklist.size() > 0) {
-      SortedIntSet.FrozenIntSet s = worklist.removeFirst();
+      FrozenIntSet s = worklist.removeFirst();
       //System.out.println("det: pop set=" + s);
 
       // Collate all outgoing transitions by min/1+max:
@@ -745,7 +746,7 @@ final public class Operations {
             if (q >= maxDeterminizedStates) {
               throw new TooComplexToDeterminizeException(a, maxDeterminizedStates);
             }
-            final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
+            final FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
             b.setAccept(q, accCount > 0);

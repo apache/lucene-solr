@@ -51,6 +51,11 @@ public class KoreanNumberFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public KoreanNumberFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new KoreanNumberFilter(input);

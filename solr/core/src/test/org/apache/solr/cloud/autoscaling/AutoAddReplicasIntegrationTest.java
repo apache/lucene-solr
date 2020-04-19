@@ -73,6 +73,12 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}")
         .build()
         .process(cluster.getSolrClient());
+
+    new V2Request.Builder("/cluster/autoscaling")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{'set-trigger':{'name':'.auto_add_replicas','event':'nodeLost','waitFor':'5s','enabled':'true','actions':[{'name':'auto_add_replicas_plan','class':'solr.AutoAddReplicasPlanAction'},{'name':'auto_add_replicas_plan','class':'solr.ExecutePlanAction'}]}}")
+        .build()
+        .process(cluster.getSolrClient());
   }
   
   @After

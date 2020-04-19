@@ -490,7 +490,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   boolean endInc=false;
   QueryNode q =null;
   FieldQueryNode qLower, qUpper;
-  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
+  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMaxEdits;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
     case REGEXPTERM:
@@ -961,7 +961,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

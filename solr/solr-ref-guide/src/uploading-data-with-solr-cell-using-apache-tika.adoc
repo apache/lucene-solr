@@ -191,7 +191,7 @@ This parameter is valid only if `extractOnly` is set to true.
 +
 Example: `extractFormat=text`
 +
-Output: For an example output (in XML), see http://wiki.apache.org/solr/TikaExtractOnlyExampleOutput
+Output: For an example output (in XML), see https://cwiki.apache.org/confluence/display/solr/TikaExtractOnlyExampleOutput
 
 `fmap._source_field_`::
 Maps (moves) one field name to another. The `source_field` must be a field in incoming documents, and the value is the Solr field to map to.

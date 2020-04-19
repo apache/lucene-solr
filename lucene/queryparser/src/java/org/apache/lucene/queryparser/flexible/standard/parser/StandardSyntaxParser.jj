@@ -416,7 +416,7 @@ QueryNode Term(CharSequence field) : {
   boolean endInc=false;
   QueryNode q =null; 
   FieldQueryNode qLower, qUpper;
-  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
+  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMaxEdits;
 }
 {
   (

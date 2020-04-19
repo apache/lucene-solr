@@ -51,6 +51,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField wt = doc.getField("wt_s");
     SolrInputField distrib = doc.getField("distrib_s");
     SolrInputField isShard = doc.getField("isShard_s");
+    SolrInputField ids = doc.getField("ids_s");
+    SolrInputField shards = doc.getField("shards_s");
 
     assertEquals(query.getValue(), "*:*");
     assertEquals(date.getValue(), "2019-12-09T15:05:01.931");
@@ -65,6 +67,29 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(wt.getValue(), "javabin");
     assertEquals(distrib.getValue(), "false");
     assertEquals(isShard.getValue(), "true");
+    assertEquals(ids.getValue(), "false");
+    assertEquals(shards.getValue(), "false");
+  }
+
+  @Test
+  public void testRTGRecord() throws Exception {
+    final String record = "2020-03-19 20:00:30.845 INFO  (qtp1635378213-20354) [c:logs4 s:shard8 r:core_node63 x:logs4_shard8_replica_n60] o.a.s.c.S.Request [logs4_shard8_replica_n60]  webapp=/solr path=/get params={qt=/get&_stateVer_=logs4:104&ids=id1&ids=id2&ids=id3&wt=javabin&version=2} status=0 QTime=61";
+
+    List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+    SolrInputDocument doc = docs.get(0);
+
+    assertEquals(doc.getField("type_s").getValue(), "get");
+    assertEquals(doc.getField("date_dt").getValue(), "2020-03-19T20:00:30.845");
+    assertEquals(doc.getField("collection_s").getValue(), "logs4");
+    assertEquals(doc.getField("path_s").getValue(), "/get");
+    assertEquals(doc.getField("status_s").getValue(), "0");
+    assertEquals(doc.getField("shard_s").getValue(), "shard8");
+    assertEquals(doc.getField("replica_s").getValue(), "core_node63");
+    assertEquals(doc.getField("core_s").getValue(), "logs4_shard8_replica_n60");
+    assertEquals(doc.getField("wt_s").getValue(), "javabin");
+    assertEquals(doc.getField("distrib_s").getValue(), "true");
+    assertEquals(doc.getField("ids_s").getValue(), "false");
   }
 
   @Test
@@ -201,7 +226,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCommit() throws Exception{
-    String record = "2019-12-16 14:20:19.708 INFO  (qtp812143047-22671) [c:production_201912 s:shard128 r:core_node7 x:production_201912_shard128_replica] o.a.s.u.DirectUpdateHandler2 start commit{_version_=1653086376121335808,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}\n";
+    String record = "2019-12-16T14:20:19.708 INFO  (qtp812143047-22671) [c:production_201912 s:shard128 r:core_node7 x:production_201912_shard128_replica] o.a.s.u.DirectUpdateHandler2 start commit{_version_=1653086376121335808,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}\n";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);

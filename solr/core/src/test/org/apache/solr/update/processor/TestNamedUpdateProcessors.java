@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.UnaryOperator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -80,20 +79,16 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
     client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
-    forAllRestTestHarnesses( new UnaryOperator<RestTestHarness>() {
-      @Override
-      public RestTestHarness apply(RestTestHarness restTestHarness) {
-        try {
-          TestSolrConfigHandler.testForResponseElement(restTestHarness,
-              null,
-              "/config/overlay",
-              null,
-              Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
-              "test_s", 10);
-        } catch (Exception ex) {
-          fail("Caught exception: "+ex);
-        }
-        return restTestHarness;
+    forAllRestTestHarnesses(restTestHarness -> {
+      try {
+        TestSolrConfigHandler.testForResponseElement(restTestHarness,
+            null,
+            "/config/overlay",
+            null,
+            Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
+            "test_s", 10);
+      } catch (Exception ex) {
+        fail("Caught exception: "+ex);
       }
     });
 

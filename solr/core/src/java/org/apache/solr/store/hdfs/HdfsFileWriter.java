@@ -44,8 +44,7 @@ public class HdfsFileWriter extends OutputStreamIndexOutput {
     Configuration conf = fileSystem.getConf();
     FsServerDefaults fsDefaults = fileSystem.getServerDefaults(path);
     short replication = fileSystem.getDefaultReplication(path);
-    EnumSet<CreateFlag> flags = EnumSet.of(CreateFlag.CREATE,
-        CreateFlag.OVERWRITE);
+    EnumSet<CreateFlag> flags = EnumSet.of(CreateFlag.CREATE);
     if (Boolean.getBoolean(HDFS_SYNC_BLOCK)) {
       flags.add(CreateFlag.SYNC_BLOCK);
     }

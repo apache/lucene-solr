@@ -274,12 +274,17 @@ public class TestKoreanNumberFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomHugeStrings() throws Exception {
-    checkRandomData(random(), analyzer, 50 * RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), analyzer, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Test @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    checkRandomData(random(), analyzer, 5 * RANDOM_MULTIPLIER, 8192);
   }
 
   @Test
   public void testRandomSmallStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500 * RANDOM_MULTIPLIER, 128);
+    checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER, 128);
   }
 
   @Test

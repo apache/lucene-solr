@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
  * An {@link Iterator} implementation that filters elements with a boolean predicate.
  *
  * @param <T> generic parameter for this iterator instance: this iterator implements {@link Iterator Iterator&lt;T&gt;}
- * @param <InnerT> generic parameter of the wrapped iterator, must be <tt>T</tt> or extend <tt>T</tt>
+ * @param <InnerT> generic parameter of the wrapped iterator, must be <code>T</code> or extend <code>T</code>
  * @see #predicateFunction
  * @lucene.internal
  */

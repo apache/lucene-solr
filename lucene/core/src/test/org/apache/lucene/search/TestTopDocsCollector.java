@@ -128,10 +128,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
     try {
       IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
-      CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
+      CollectorManager<TopScoreDocCollector,TopDocs> collectorManager = TopScoreDocCollector.createSharedManager(numResults,
           null, threshold);
 
-      return (TopDocs) searcher.search(q, collectorManager);
+      return searcher.search(q, collectorManager);
     } finally {
       service.shutdown();
     }
@@ -344,7 +344,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(2, reader.leaves().size());
     w.close();
 
-    TopDocsCollector collector = doSearchWithThreshold( 5, 10, q, reader);
+    TopDocsCollector<ScoreDoc> collector = doSearchWithThreshold( 5, 10, q, reader);
     TopDocs tdc = doConcurrentSearchWithThreshold(5, 10, q, reader);
     TopDocs tdc2 = collector.topDocs();
 
@@ -556,7 +556,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
             .build()
     };
     for (Query query : queries) {
-      TopDocsCollector collector = doSearchWithThreshold(5, 0, query, indexReader);
+      TopDocsCollector<ScoreDoc> collector = doSearchWithThreshold(5, 0, query, indexReader);
       TopDocs tdc = doConcurrentSearchWithThreshold(5, 0, query, indexReader);
       TopDocs tdc2 = collector.topDocs();
 
@@ -582,7 +582,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    final IndexSearcher s = newSearcher(reader);
     Terms terms = MultiTerms.getTerms(reader, "body");
     int termCount = 0;
     TermsEnum termsEnum = terms.iterator();
@@ -599,7 +598,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         BytesRef term = BytesRef.deepCopyOf(termsEnum.term());
         Query query = new TermQuery(new Term("body", term));
 
-        TopDocsCollector collector = doSearchWithThreshold(5, 0, query, reader);
+        TopDocsCollector<ScoreDoc> collector = doSearchWithThreshold(5, 0, query, reader);
         TopDocs tdc = doConcurrentSearchWithThreshold(5, 0, query, reader);
         TopDocs tdc2 = collector.topDocs();
 

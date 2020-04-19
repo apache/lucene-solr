@@ -159,10 +159,9 @@ The code below shows how to configure a ReplicationHandler on a slave.
     <!-- To use compression while transferring the index files. The possible
          values are internal|external.  If the value is 'external' make sure
          that your master Solr has the settings to honor the accept-encoding header.
-         See here for details: http://wiki.apache.org/solr/SolrHttpCompression
          If it is 'internal' everything will be taken care of automatically.
          USE THIS ONLY IF YOUR BANDWIDTH IS LOW.
-         THIS CAN ACTUALLY SLOWDOWN REPLICATION IN A LAN -->
+         THIS CAN ACTUALLY SLOW DOWN REPLICATION IN A LAN -->
     <str name="compression">internal</str>
 
     <!-- The following values are used when the slave connects to the master to

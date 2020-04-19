@@ -20,8 +20,8 @@ package org.apache.solr.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,11 +113,15 @@ public class PackageLoader implements Closeable {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
-          log.info("Package {} is modified ", e.getKey());
+          if (log.isInfoEnabled()) {
+            log.info("Package {} is modified ", e.getKey());
+          }
           changed.put(e.getKey(), e.getValue());
         }
       } else {
-        log.info("A new package: {} introduced", e.getKey());
+        if (log.isInfoEnabled()) {
+          log.info("A new package: {} introduced", e.getKey());
+        }
         changed.put(e.getKey(), e.getValue());
       }
     }
@@ -168,7 +172,14 @@ public class PackageLoader implements Closeable {
         Version version = myVersions.get(v.version);
         if (version == null) {
           log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
-          myVersions.put(v.version, new Version(this, v));
+          Version ver = null;
+          try {
+            ver = new Version(this, v);
+          } catch (Exception e) {
+            log.error("package could not be loaded {}", ver, e);
+            continue;
+          }
+          myVersions.put(v.version, ver);
           sortedVersions.add(v.version);
         }
       }
@@ -248,21 +259,21 @@ public class PackageLoader implements Closeable {
         this.parent = parent;
         this.version = v;
         List<Path> paths = new ArrayList<>();
+
+        List<String> errs = new ArrayList<>();
+        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        if(!errs.isEmpty()) {
+          throw new RuntimeException("Cannot load package: " +errs);
+        }
         for (String file : version.files) {
-          //ensure that the files are downloaded and available
-          coreContainer.getPackageStoreAPI().getPackageStore().fetch(file,null);
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        try {
-          loader = new SolrResourceLoader(
-              "PACKAGE_LOADER: " + parent.name() + ":" + version,
-              paths,
-              coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
-        } catch (MalformedURLException e) {
-          log.error("Could not load classloader ", e);
-        }
+        loader = new SolrResourceLoader(
+            "PACKAGE_LOADER: " + parent.name() + ":" + version,
+            paths,
+            Paths.get(coreContainer.getSolrHome()),
+            coreContainer.getResourceLoader().getClassLoader());
       }
 
       public String getVersion() {
@@ -282,6 +293,11 @@ public class PackageLoader implements Closeable {
         if (loader != null) {
           closeWhileHandlingException(loader);
         }
+      }
+
+      @Override
+      public String toString() {
+        return jsonStr();
       }
     }
   }

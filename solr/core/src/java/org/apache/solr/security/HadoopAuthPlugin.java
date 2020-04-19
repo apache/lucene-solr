@@ -156,7 +156,9 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       authFilter.init(conf);
 
     } catch (ServletException e) {
-      log.error("Error initializing " + getClass().getSimpleName(), e);
+      if (log.isErrorEnabled()) {
+        log.error("Error initializing {}", getClass().getSimpleName(), e);
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing " + getClass().getName() + ": "+e);
     }
   }
@@ -193,7 +195,9 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
         "false");
 
     final ServletContext servletContext = new AttributeOnlyServletContext();
-    log.info("Params: "+params);
+    if (log.isInfoEnabled()) {
+      log.info("Params: {}", params);
+    }
 
     ZkController controller = coreContainer.getZkController();
     if (controller != null) {
@@ -232,16 +236,22 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
 
     if (TRACE_HTTP) {
       HttpServletRequest req = (HttpServletRequest) request;
-      log.info("----------HTTP Request---------");
-      log.info("{} : {}", req.getMethod(), req.getRequestURI());
-      log.info("Query : {}", req.getQueryString());
+      log.info("----------HTTP Request---------{}");
+      if (log.isInfoEnabled()) {
+        log.info("{} : {}", req.getMethod(), req.getRequestURI());
+      }
+      if (log.isInfoEnabled()) {
+        log.info("Query : {}", req.getQueryString());
+      }
       log.info("Headers :");
       Enumeration<String> headers = req.getHeaderNames();
       while (headers.hasMoreElements()) {
         String name = headers.nextElement();
         Enumeration<String> hvals = req.getHeaders(name);
         while (hvals.hasMoreElements()) {
-          log.info("{} : {}", name, hvals.nextElement());
+          if (log.isInfoEnabled()) {
+            log.info("{} : {}", name, hvals.nextElement());
+          }
         }
       }
       log.info("-------------------------------");
@@ -269,7 +279,9 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
      
     if (TRACE_HTTP) {
       log.info("----------HTTP Response---------");
-      log.info("Status : {}", frsp.getStatus());
+      if (log.isInfoEnabled()) {
+        log.info("Status : {}", frsp.getStatus());
+      }
       log.info("Headers :");
       for (String name : frsp.getHeaderNames()) {
         for (String value : frsp.getHeaders(name)) {
@@ -283,7 +295,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     if (authFilter instanceof HadoopAuthFilter) { // delegation token mgmt.
       String requestContinuesAttr = (String)request.getAttribute(REQUEST_CONTINUES_ATTR);
       if (requestContinuesAttr == null) {
-        log.warn("Could not find " + REQUEST_CONTINUES_ATTR);
+        log.warn("Could not find {}", REQUEST_CONTINUES_ATTR);
         return false;
       } else {
         return Boolean.parseBoolean(requestContinuesAttr);

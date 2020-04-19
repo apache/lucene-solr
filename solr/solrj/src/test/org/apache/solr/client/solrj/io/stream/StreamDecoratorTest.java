@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -56,8 +57,10 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Assume;
@@ -2696,7 +2699,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     try {
       //Copy all docs to destinationCollection
-      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
+      // confirm update() stream defaults to ignoring _version_ field in tuples
+      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,_version_,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
       stream = new UpdateStream(expression, factory);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
@@ -4267,6 +4271,155 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  public void testDeleteStream() throws Exception {
+    final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    final SolrClient client = cluster.getSolrClient();
+    
+    { final UpdateRequest req = new UpdateRequest();
+      for (int i = 0; i < 20; i++) {
+        req.add(id, "doc_"+i, "deletable_s", "yup");
+      }
+      assertEquals(0, req.commit(cluster.getSolrClient(), COLLECTIONORALIAS).getStatus());
+    }
+
+    // fetch the _version_ param assigned each doc to test optimistic concurrency later...
+    final Map<String,Long> versions = new HashMap<>();  
+    { final QueryResponse allDocs = client.query(COLLECTIONORALIAS, params("q","deletable_s:yup",
+                                                                           "rows","100"));
+      assertEquals(20L, allDocs.getResults().getNumFound());
+      for (SolrDocument doc : allDocs.getResults()) {
+        versions.put(doc.getFirstValue("id").toString(), (Long) doc.getFirstValue("_version_"));
+      }
+    }
+                 
+    { // trivially delete 1 doc
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,     "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,   "
+        + "              tuple(id=doc_2)))                     "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+      
+      assertEquals(20L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // delete 5 docs, spread across 3 batches (2 + 2 + 1)
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,          "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=2,list(    " // NOTE: batch size
+        + "               tuple(id=doc_3),                          "
+        + "               tuple(id=doc_11),                         "
+        + "               tuple(id=doc_7),                          "
+        + "               tuple(id=doc_17),                         "
+        + "               tuple(id=doc_15),                         "
+        + "              ) ) )                                      "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(3, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+      assertEquals(4L, tuples.get(1).get("totalIndexed"));
+      assertEquals(5L, tuples.get(2).get("totalIndexed"));
+      
+      assertEquals(20L - 1L - 5L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // attempt to delete 2 docs, one with correct version, one with "stale" version that should fail
+      // but config uses TolerantUpdateProcessorFactory so batch should still be ok...
+      //
+      // It would be nice it there was a more explicit, targetted, option for update() and delete() to
+      // ensure that even if one "batch" fails it continues with other batches.
+      // See TODO in UpdateStream
+
+      final long v13_ok = versions.get("doc_13").longValue();
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,list(     "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "               tuple(id=doc_13,_version_="+v13_ok+"),      "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+
+      // should still be in the index due to version conflict...
+      assertEquals(1L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      // should not be in the index due to successful delete...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_13")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // by using pruneVersionField=true we should be able to ignore optimistic concurrency constraints,
+      // and delete docs even if the stream we are wrapping returns _version_ values that are no
+      // longer valid...
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,          "
+        + "              pruneVersionField=true, list(                "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+
+      // _version_should have been ignored and doc deleted anyway...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // now test a "realistic" DBQ type situation, confirm all (remaining) matching docs deleted...
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,                "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=99,              "
+        + "              search("+COLLECTIONORALIAS+",qt=\"/export\",     "
+        + "                     q=\"deletable_s:yup\",                    "
+        + "                     sort=\"id asc\",fl=\"id,_version_\"       "
+        + "              ) ) )                                            "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   tuples.get(0).get("totalIndexed"));
+
+      // shouldn't be anything left...
+      assertEquals(0L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+      
+    }
+    
+  }
+
+
+  
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     List<Tuple> tuples = new ArrayList<Tuple>();
 

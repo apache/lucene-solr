@@ -170,7 +170,7 @@ public class ConcurrentQueryLoader implements Closeable {
    */
   private static <E> int drain(BlockingQueue<E> q, Collection<? super E> buffer, int numElements,
                               long timeout, TimeUnit unit) throws InterruptedException {
-    buffer = Objects.requireNonNull(buffer);
+    Objects.requireNonNull(buffer);
     /*
      * This code performs one System.nanoTime() more than necessary, and in return, the time to
      * execute Queue#drainTo is not added *on top* of waiting for the timeout (which could make

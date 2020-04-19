@@ -2216,7 +2216,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private List<Integer> getRandomInts(int length, boolean missingVals, int bound) {
-    return getRandomList(length, missingVals, () -> random().nextInt() % bound);
+    return getRandomList(length, missingVals, () -> random().nextInt(bound));
   }
 
   private List<Integer> getRandomInts(int length, boolean missingVals) {

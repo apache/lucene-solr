@@ -72,13 +72,13 @@ public abstract class MockFileSystemTestCase extends LuceneTestCase {
     assumeFalse("broken on J9: see https://issues.apache.org/jira/browse/LUCENE-6517", Constants.JAVA_VENDOR.startsWith("IBM"));
     Path dir = wrap(createTempDir());
 
+    Path f1 = null;
     try {
-      dir.resolve(fileName);
+      f1 = dir.resolve(fileName);
     } catch (InvalidPathException ipe) {
       assumeNoException("couldn't resolve '"+fileName+"'", ipe);
     }
 
-    Path f1 = dir.resolve(fileName);
     URI uri = f1.toUri();
     Path f2 = dir.getFileSystem().provider().getPath(uri);
     assertEquals(f1, f2);

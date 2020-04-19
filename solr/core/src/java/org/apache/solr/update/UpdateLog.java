@@ -73,7 +73,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -362,7 +362,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
 
       if (debug) {
-        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id, " this is a reopen... nothing else to do.");
+        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id + " this is a reopen... nothing else to do.");
       }
       return;
     }
@@ -2096,7 +2096,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   
   ThreadPoolExecutor recoveryExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
       Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("recoveryExecutor"));
+      new SolrNamedThreadFactory("recoveryExecutor"));
 
 
   public static void deleteFile(File file) {

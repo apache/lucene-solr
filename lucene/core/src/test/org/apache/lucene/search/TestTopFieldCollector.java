@@ -88,10 +88,10 @@ public class TestTopFieldCollector extends LuceneTestCase {
     try {
       IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
-      CollectorManager collectorManager = TopFieldCollector.createSharedManager(sort, numResults,
+      CollectorManager<TopFieldCollector,TopFieldDocs> collectorManager = TopFieldCollector.createSharedManager(sort, numResults,
           null, threshold);
 
-      TopDocs tdc = (TopDocs) searcher.search(q, collectorManager);
+      TopDocs tdc = searcher.search(q, collectorManager);
 
       return tdc;
     } finally {
@@ -155,10 +155,10 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
       is.search(q, tdc);
 
-      CollectorManager tsdc = TopFieldCollector.createSharedManager(sort[i], 10, null, Integer.MAX_VALUE);
+      CollectorManager<TopFieldCollector,TopFieldDocs> tsdc = TopFieldCollector.createSharedManager(sort[i], 10, null, Integer.MAX_VALUE);
 
       TopDocs td = tdc.topDocs();
-      TopDocs td2 = (TopDocs) concurrentSearcher.search(q, tsdc);
+      TopDocs td2 = concurrentSearcher.search(q, tsdc);
       ScoreDoc[] sd = td.scoreDocs;
       for(int j = 0; j < sd.length; j++) {
         assertTrue(Float.isNaN(sd[j].score));

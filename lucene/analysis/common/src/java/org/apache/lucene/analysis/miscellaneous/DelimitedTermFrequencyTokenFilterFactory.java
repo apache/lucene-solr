@@ -52,6 +52,11 @@ public class DelimitedTermFrequencyTokenFilterFactory extends TokenFilterFactory
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public DelimitedTermFrequencyTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public DelimitedTermFrequencyTokenFilter create(TokenStream input) {
     return new DelimitedTermFrequencyTokenFilter(input, delimiter);

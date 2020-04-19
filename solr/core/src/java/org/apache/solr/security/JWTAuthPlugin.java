@@ -259,7 +259,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
           ic.init();
           configs.add(ic);
-          log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          if (log.isDebugEnabled()) {
+            log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          }
         });
       }
       return configs;
@@ -338,12 +340,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
         numPassThrough.inc();
+        request.setAttribute(AuthenticationPlugin.class.getName(), getPromptHeaders(null, null));
         filterChain.doFilter(request, response);
         return true;
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
-        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
+        if (log.isWarnEnabled()) {
+          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
+        }
         numErrors.mark();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
@@ -352,7 +357,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
+        if (log.isWarnEnabled()) {
+          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
+        }
         numWrongCredentials.inc();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
@@ -536,16 +543,28 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope}
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
+    getPromptHeaders(responseError, message).forEach(response::setHeader);
+    response.sendError(httpCode, message);
+    log.info("JWT Authentication attempt failed: {}", message);
+  }
+
+  /**
+   * Generate proper response prompt headers
+   * @param responseError standardized error code. Set to 'null' to generate WWW-Authenticate header with no error
+   * @param message custom message string to return in www-authenticate, or null if no error
+   * @return map of headers to add to response
+   */
+  private Map<String, String> getPromptHeaders(BearerWwwAuthErrorCode responseError, String message) {
+    Map<String,String> headers = new HashMap<>();
     List<String> wwwAuthParams = new ArrayList<>();
     wwwAuthParams.add("Bearer realm=\"" + realm + "\"");
     if (responseError != null) {
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
-    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
-    response.addHeader(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
-    response.sendError(httpCode, message);
-    log.info("JWT Authentication attempt failed: {}", message);
+    headers.put(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
+    headers.put(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
+    return headers;
   }
 
   protected String generateAuthDataHeader() {

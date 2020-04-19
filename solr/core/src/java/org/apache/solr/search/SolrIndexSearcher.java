@@ -201,7 +201,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: [{}]; {}", query, x.getMessage());
+      if (log.isWarnEnabled()) {
+        log.warn("Query: [{}]; {}", query, x.getMessage());
+      }
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
@@ -453,7 +455,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           sb.append("\n\t");
           sb.append(cache);
         }
-        log.debug(sb.toString());
+        log.debug("{}", sb);
       } else {
         log.debug("Closing [{}]", name);
       }
@@ -760,6 +762,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private BitDocSet makeBitDocSet(DocSet answer) {
     // TODO: this should be implemented in DocSet, most likely with a getBits method that takes a maxDoc argument
     // or make DocSet instances remember maxDoc
+    if (answer instanceof BitDocSet) {
+      return (BitDocSet) answer;
+    }
     FixedBitSet bs = new FixedBitSet(maxDoc());
     DocIterator iter = answer.iterator();
     while (iter.hasNext()) {
@@ -771,11 +776,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public BitDocSet getDocSetBits(Query q) throws IOException {
     DocSet answer = getDocSet(q);
-    if (answer instanceof BitDocSet) {
-      return (BitDocSet) answer;
-    }
     BitDocSet answerBits = makeBitDocSet(answer);
-    if (filterCache != null) {
+    if (answerBits != answer && filterCache != null) {
       filterCache.put(q, answerBits);
     }
     return answerBits;
@@ -879,23 +881,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void setLiveDocs(DocSet docs) {
     // a few places currently expect BitDocSet
     assert docs.size() == numDocs();
-    if (docs instanceof BitDocSet) {
-      this.liveDocs = (BitDocSet)docs;
-    } else {
-      this.liveDocs = makeBitDocSet(docs);
-    }
-  }
-
-  /**
-   * Holds a filter and postFilter pair that together match a set of documents.  Either of them may be null.
-   * Additionally, this might have a DocSet {@code answer}.  When this is present, it is guaranteed to match the same
-   * documents.  Certain callers might simply want the DocSet and so that's here.
-   * @see #getProcessedFilter(DocSet, List)
-   */
-  public static class ProcessedFilter {
-    public DocSet answer; // the answer, if non-null
-    public Query filter;
-    public DelegatingCollector postFilter;
+    this.liveDocs = makeBitDocSet(docs);
   }
 
   private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
@@ -904,29 +890,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
    * answer from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a
    * result of this call. This method can handle negative queries.
+   * A null/empty list results in {@link #getLiveDocSet()}.
    * <p>
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(List<Query> queries) throws IOException {
 
-    Query mainScoring = null; // only used if one of 'queries' is a "ScoreFilter"
-    if (queries != null) { // TODO and queries.size > 1?
-      for (Query q : queries) {
-        if (q instanceof ScoreFilter) {
-          mainScoring = queries.get(0); // TODO Joel: why the first?  Seems very hacky!
-          queries = queries.subList(1, queries.size()); // remove
-        }
-      }
-    }
-
     ProcessedFilter pf = getProcessedFilter(null, queries);
 
-    if (mainScoring == null) {
+    if (pf.postFilter == null) {
       if (pf.answer != null) {
         return pf.answer;
-      }
-      if (pf.filter == null && pf.postFilter == null) {
-        return getLiveDocSet();
+      } else if (pf.filter == null) {
+        return getLiveDocSet(); // note: this is what happens when queries is an empty list
       }
     }
 
@@ -937,19 +913,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    Query q; // combine mainScoring and pf.filter
-    if (mainScoring == null) { // then we only have filter (if that)
-      q = pf.filter;
-      if (q == null) {
-        q = matchAllDocsQuery;
-      }
-    } else if (pf.filter == null) {
-      q = mainScoring;
-    } else {
-      q = new BooleanQuery.Builder().add(mainScoring, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    Query query = pf.filter != null ? pf.filter : matchAllDocsQuery;
 
-    search(q, collector);
+    search(query, collector);
 
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -958,6 +924,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return DocSetUtil.getDocSet(setCollector, this);
   }
 
+  /**
+   * INTERNAL: The response object from {@link #getProcessedFilter(DocSet, List)}.
+   * Holds a filter and postFilter pair that together match a set of documents.
+   * Either of them may be null, in which case the semantics are to match everything.
+   * @see #getProcessedFilter(DocSet, List)
+   */
+  public static class ProcessedFilter {
+    public DocSet answer; // maybe null. Sometimes we have a docSet answer that represents the complete answer / result.
+    public Query filter; // maybe null
+    public DelegatingCollector postFilter; // maybe null
+  }
+
+  /**
+   * INTERNAL: Processes conjunction (AND) of both args into a {@link ProcessedFilter} result.
+   * Either arg may be null/empty thus doesn't restrict the matching docs.
+   * Queries typically are resolved against the filter cache, and populate it.
+   */
   public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
@@ -968,8 +951,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return pf;
     }
 
-    // We combine all the filter queries that come from the filter cache & setFilter into "answer".  This might
-    //  not be the final "answer" if there are any non-cached filters.
+    // We combine all the filter queries that come from the filter cache & setFilter into "answer".
+    // This might become pf.answer but not if there are any non-cached filters
     DocSet answer = null;
 
     boolean[] neg = new boolean[queries.size() + 1];
@@ -983,7 +966,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (setFilter != null) {
       answer = sets[end++] = setFilter;
       smallestIndex = end;
-    }
+    } // we are done with setFilter at this point
 
     int smallestCount = Integer.MAX_VALUE;
     for (Query q : queries) {
@@ -1050,6 +1033,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       answer = null;
     }
 
+    // answer is done.
+
+    // If no notCached nor postFilters, we can return now.
     if (notCached == null && postFilters == null) {
       // "answer" is the only part of the filter, so set it.
       if (answer != null) {
@@ -1058,16 +1044,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       return pf;
     }
+    // pf.answer will remain null ...  (our local "answer" var is not the complete answer)
 
-    // Set pf.filter based on 'answer' and 'notCached'
-    if (answer != null) {
-      pf.filter = answer.getTopFilter();
-    }
-    if (notCached != null) {
+    // Set pf.filter based on combining "answer" and "notCached"
+    if (notCached == null) {
+      if (answer != null) {
+        pf.filter = answer.getTopFilter();
+      }
+    } else {
       notCached.sort(sortByCost); // pointless?
       final BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      if (pf.filter != null) { // == answer.getTopFilter()
-        builder.add(pf.filter, Occur.FILTER);
+      if (answer != null) {
+        builder.add(answer.getTopFilter(), Occur.FILTER);
       }
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
@@ -1160,7 +1148,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       bitsSet += upto;
       result = new BitDocSet(fbs, bitsSet);
     } else {
-      result = upto == 0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
+      result = upto == 0 ? DocSet.empty() : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
 
     if (useCache) {
@@ -1533,12 +1521,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -1642,10 +1626,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int maxDoc = maxDoc();
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -2073,8 +2054,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // have deleted documents, but UninvertedField's doNegative has sets with deleted docs
       TotalHitCountCollector collector = new TotalHitCountCollector();
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.add(QueryUtils.makeQueryable(a), BooleanClause.Occur.MUST);
-      bq.add(new ConstantScoreQuery(b.getTopFilter()), BooleanClause.Occur.MUST);
+      bq.add(QueryUtils.makeQueryable(a), Occur.MUST);
+      bq.add(new ConstantScoreQuery(b.getTopFilter()), Occur.MUST);
       super.search(bq.build(), collector);
       return collector.getTotalHits();
     }

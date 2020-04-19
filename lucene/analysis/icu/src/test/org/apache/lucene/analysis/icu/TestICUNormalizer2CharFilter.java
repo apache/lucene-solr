@@ -188,7 +188,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
         return new ICUNormalizer2CharFilter(reader, Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
       }
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     // huge strings
     checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
     a.close();
@@ -205,7 +205,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
         return new ICUNormalizer2CharFilter(reader, Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.DECOMPOSE));
       }
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     // huge strings
     checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
     a.close();

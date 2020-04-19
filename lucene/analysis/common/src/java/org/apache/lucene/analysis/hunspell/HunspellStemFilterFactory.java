@@ -88,6 +88,11 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public HunspellStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     String dicts[] = dictionaryFiles.split(",");

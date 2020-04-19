@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,7 +42,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -86,7 +85,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile, null, true);
+      return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
@@ -140,7 +139,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())),
+    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -155,16 +154,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome), solrXml);
-  }
-
-  /**
-   * Create a TestHarness using a specific solr resource loader and solr xml
-   * @param loader the SolrResourceLoader to use
-   * @param solrXml the text of a solrxml
-   */
-  public TestHarness(SolrResourceLoader loader, String solrXml) {
-    this(SolrXmlConfig.fromString(loader, solrXml));
+    this(SolrXmlConfig.fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -176,13 +166,13 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, new Properties(), coresLocator);
+    container = new CoreContainer(config, coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
-  public static NodeConfig buildTestNodeConfig(SolrResourceLoader loader) {
+  public static NodeConfig buildTestNodeConfig(Path solrHome) {
     CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
                                                                  Integer.getInteger("hostPort", 8983),
                                                                  System.getProperty("hostContext", ""))
@@ -204,7 +194,7 @@ public class TestHarness extends BaseTestHarness {
         .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
         .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", loader)
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
@@ -228,8 +218,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName),
-          cc.getContainerProperties(), cc.isZooKeeperAware(),
+      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc,
           CoreDescriptor.CORE_DATADIR, dataDir,
           CoreDescriptor.CORE_CONFIG, solrConfig,
           CoreDescriptor.CORE_SCHEMA, schema,

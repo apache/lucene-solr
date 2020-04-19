@@ -37,6 +37,11 @@ public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
     super(args);
   }
 
+  /** Default ctor for compatibility with SPI */
+  public FixBrokenOffsetsFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new FixBrokenOffsetsFilter(input);

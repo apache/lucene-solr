@@ -416,7 +416,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT, Collections.emptyMap());
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 
@@ -952,7 +952,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1037,7 +1037,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1215,7 +1215,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
