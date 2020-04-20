@@ -171,6 +171,58 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void deleteReplicaByCountWithType() throws Exception {
+
+    final String collectionName = "deleteByCountWithType";
+
+    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2, 0, 2);
+    req.setMaxShardsPerNode(2);
+    req.process(cluster.getSolrClient());
+    waitForState("Expected a single shard with six replicas", collectionName, clusterShape(1, 4));
+
+    CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1, Replica.Type.NRT).process(cluster.getSolrClient());
+    waitForState("Expected a single shard with a single NRT replica", collectionName, clusterShape(1, 1, Replica.Type.NRT));
+    waitForState("Expected a single shard with two PULL replicas", collectionName, clusterShape(1, 2, Replica.Type.PULL));
+
+    CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 2, Replica.Type.PULL).process(cluster.getSolrClient());
+    waitForState("Expected a single shard with a single PULL replica", collectionName, clusterShape(1, 0, Replica.Type.PULL));
+
+    SolrException e = expectThrows(SolrException.class,
+        "Can't delete the last replica by count",
+        () -> CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1, Replica.Type.NRT).process(cluster.getSolrClient())
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("There are lesser num replicas or qualified leaders requested to be deleted than are available in shard/collection"));
+    DocCollection docCollection = getCollectionState(collectionName);
+    // We know that since leaders are preserved, PULL replicas should not be left alone in the shard
+    assertEquals(0, docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+  }
+
+  @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  public void deleteReplicaByCountForAllShardsWithType() throws Exception {
+
+    final String collectionName = "deleteByCountNewWithType";
+    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2, 2, 2);
+    req.setMaxShardsPerNode(3);
+    req.process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 12);
+
+    waitForState("Expected two shards with six replicas each", collectionName, clusterShape(2, 12));
+
+    CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1, Replica.Type.NRT).process(cluster.getSolrClient());
+    waitForState("Expected two shards with one replica each", collectionName, clusterShape(2, 2, Replica.Type.NRT));
+
+    CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1, Replica.Type.TLOG).process(cluster.getSolrClient());
+    waitForState("Expected two shards with one replica each", collectionName, clusterShape(2, 2, Replica.Type.TLOG));
+
+    CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1, Replica.Type.PULL).process(cluster.getSolrClient());
+    waitForState("Expected two shards with one replica each", collectionName, clusterShape(2, 2, Replica.Type.PULL));
+
+  }
+
+  @Test
   public void deleteReplicaByCount() throws Exception {
 
     final String collectionName = "deleteByCount";
