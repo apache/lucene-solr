@@ -21,7 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
   }
 
   @Override
-  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
     String user = null;
     if (predicate != null) {
       if (predicate.test(request)) {
@@ -63,12 +63,7 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
                                     FilterChain chain) throws IOException, ServletException {
     if(user != null) {
       final Principal p = new BasicUserPrincipal(user);
-      req = new HttpServletRequestWrapper((HttpServletRequest) req) {
-        @Override
-        public Principal getUserPrincipal() {
-          return p;
-        }
-      };
+      req = wrapWithPrincipal((HttpServletRequest) req, p);
     }
     chain.doFilter(req,rsp);
   }
