@@ -169,8 +169,6 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
-  private boolean skipCommitOnMasterVersionZero = true;
-
   private boolean clearLocalIndexFirst = false;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
@@ -236,9 +234,8 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
-    if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
-      this.skipCommitOnMasterVersionZero = (boolean) skipCommitOnMasterVersionZero;
+    if (initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO) != null) {
+      log.info("{} property is no longer needed. In case of TLOG/PULL replicas, index is never replicated when the leader has version 0", SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
     }
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
@@ -400,7 +397,6 @@ public class IndexFetcher {
         if (!replica.getCoreUrl().equals(masterUrl)) {
           masterUrl = replica.getCoreUrl();
           log.info("Updated masterUrl to {}", masterUrl);
-          // TODO: Do we need to set forceReplication = true?
         } else {
           log.debug("masterUrl didn't change");
         }
@@ -418,17 +414,16 @@ public class IndexFetcher {
             log.warn("Master at: " + masterUrl + " is not available. Index fetch failed by exception: " + errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
-    }
+      }
 
-      long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
-      long latestGeneration = (Long) response.get(GENERATION);
+      long masterVersion = (Long) response.get(CMD_INDEX_VERSION);
+      long masterGeneration = (Long) response.get(GENERATION);
 
-      log.info("Master's generation: " + latestGeneration);
-      log.info("Master's version: " + latestVersion);
+      log.info("Master's generation: " + masterGeneration);
+      log.info("Master's version: " + masterVersion);
 
-      // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
-      IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
-      if (commit == null) {
+      IndexCommit localCommit = solrCore.getDeletionPolicy().getLatestCommit();
+      if (localCommit == null) {
         // Presumably the IndexWriter hasn't been opened yet, and hence the deletion policy hasn't been updated with commit points
         RefCounted<SolrIndexSearcher> searcherRefCounted = null;
         try {
@@ -437,20 +432,20 @@ public class IndexFetcher {
             log.warn("No open searcher found - fetch aborted");
             return IndexFetchResult.NO_INDEX_COMMIT_EXIST;
           }
-          commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
+          localCommit = searcherRefCounted.get().getIndexReader().getIndexCommit();
         } finally {
           if (searcherRefCounted != null)
             searcherRefCounted.decref();
         }
       }
 
-      log.info("Slave's generation: " + commit.getGeneration());
-      log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
+      log.info("Slave's generation: " + localCommit.getGeneration());
+      log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(localCommit));
 
-      if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0) {
+      if (masterVersion == 0L) {
+        if (localCommit.getGeneration() != 0 && !fetchFromLeader) {
           // since we won't get the files for an empty index,
-          // we just clear ours and commit
+          // we just clear ours and commit.
           log.info("New index in Master. Deleting mine...");
           RefCounted<IndexWriter> iw = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
           try {
@@ -459,12 +454,8 @@ public class IndexFetcher {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeSlaveCommitRefresh();
-          if (skipCommitOnMasterVersionZero) {
-            openNewSearcherAndUpdateCommitPoint();
-          } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
-            solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-          }
+          SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+          solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
         }
 
         //there is nothing to be replicated
@@ -474,7 +465,7 @@ public class IndexFetcher {
       }
 
       // TODO: Should we be comparing timestamps (across machines) here?
-      if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
+      if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(localCommit) == masterVersion) {
         //master and slave are already in sync just return
         log.info("Slave in sync with master.");
         successfulInstall = true;
@@ -482,7 +473,7 @@ public class IndexFetcher {
       }
       log.info("Starting replication process");
       // get the list of files first
-      fetchFileList(latestGeneration);
+      fetchFileList(masterGeneration);
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
@@ -498,9 +489,11 @@ public class IndexFetcher {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index directory to be created and all the files need to be copied
+      log.debug("Checking if isFullCopyNeeded");
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
-          .getCommitTimestamp(commit) >= latestVersion
-          || commit.getGeneration() >= latestGeneration || forceReplication;
+          .getCommitTimestamp(localCommit) >= masterVersion
+          || localCommit.getGeneration() >= masterGeneration || forceReplication;
+      log.debug("isFullCopyNeeded? {}", isFullCopyNeeded);
 
       String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       String tmpIdxDirName = "index." + timestamp;
@@ -525,6 +518,7 @@ public class IndexFetcher {
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
+        log.debug("isFullCopyNeeded stilll? {}", isFullCopyNeeded);
 
         if (!isFullCopyNeeded && !fetchFromLeader) {
           // a searcher might be using some flushed but not committed segments
@@ -532,18 +526,22 @@ public class IndexFetcher {
           // so we need to close the existing searcher on the last commit
           // and wait until we are able to clean up all unused lucene files
           if (solrCore.getCoreContainer().isZooKeeperAware()) {
+            log.debug("closing searcher");
             solrCore.closeSearcher();
+            log.debug("searcher closed");
           }
 
           // rollback and reopen index writer and wait until all unused files
           // are successfully deleted
+          log.debug("creating new IndexWriter");
           solrCore.getUpdateHandler().newIndexWriter(true);
+          log.debug("Done creating new IndexWriter");
           RefCounted<IndexWriter> writer = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
           try {
             IndexWriter indexWriter = writer.get();
             int c = 0;
             indexWriter.deleteUnusedFiles();
-            while (hasUnusedFiles(indexDir, commit)) {
+            while (hasUnusedFiles(indexDir, localCommit)) {
               indexWriter.deleteUnusedFiles();
               log.info("Sleeping for 1000ms to wait for unused lucene index files to be delete-able");
               Thread.sleep(1000);
@@ -560,22 +558,25 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
+          log.debug("Done cleaning up unused files");
         }
         boolean reloadCore = false;
 
         try {
           // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
           if (!isFullCopyNeeded) {
+            log.debug("Closing IndexWriter");
             solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+            log.debug("Done Closing IndexWriter");
           }
 
           log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
           long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir,
-              tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+              tmpIndexDir, indexDirPath, tmpIndexDirPath, masterGeneration);
           if (tlogFilesToDownload != null) {
-            bytesDownloaded += downloadTlogFiles(tmpTlogDir, latestGeneration);
+            bytesDownloaded += downloadTlogFiles(tmpTlogDir, masterGeneration);
             reloadCore = true; // reload update log
           }
           final long timeTakenSeconds = getReplicationTimeElapsed();
@@ -586,7 +587,7 @@ public class IndexFetcher {
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
-            downloadConfFiles(confFilesToDownload, latestGeneration);
+            downloadConfFiles(confFilesToDownload, masterGeneration);
             if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;
@@ -904,6 +905,9 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a reload
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
+    if (core == null) {
+      throw new IllegalStateException("No core for name " + solrCore.getName() + " in CoreContainer. isClosed: " + solrCore.isClosed());
+    }
     try {
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
@@ -1228,6 +1232,7 @@ public class IndexFetcher {
    * @throws IOException  if low level io error
    */
   private boolean isIndexStale(Directory dir) throws IOException {
+    log.debug("Start isIndexStale");
     for (Map<String, Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
