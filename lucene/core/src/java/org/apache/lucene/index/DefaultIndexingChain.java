@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -75,8 +73,6 @@ final class DefaultIndexingChain extends DocConsumer {
   // Holds fields seen in each document
   private PerField[] fields = new PerField[1];
 
-  private final Set<String> finishedDocValues = new HashSet<>();
-
   public DefaultIndexingChain(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.fieldInfos = docWriter.getFieldInfosBuilder();
@@ -94,29 +90,100 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash = new FreqProxTermsWriter(docWriter, termVectorsWriter);
   }
 
+  private LeafReader getDocValuesReader(int maxDoc) {
+    return new DocValuesReader() {
+      @Override
+      public NumericDocValues getNumericDocValues(String field) throws IOException {
+        PerField pf = getPerField(field);
+        if (pf == null) {
+          return null;
+        }
+        if (pf.fieldInfo.getDocValuesType() == DocValuesType.NUMERIC) {
+          return (NumericDocValues) pf.docValuesWriter.getDocValues();
+        }
+        return null;
+      }
+
+      @Override
+      public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+        PerField pf = getPerField(field);
+        if (pf == null) {
+          return null;
+        }
+        if (pf.fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+          return (BinaryDocValues) pf.docValuesWriter.getDocValues();
+        }
+        return null;
+      }
+
+      @Override
+      public SortedDocValues getSortedDocValues(String field) throws IOException {
+        PerField pf = getPerField(field);
+        if (pf == null) {
+          return null;
+        }
+        if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED) {
+          return (SortedDocValues) pf.docValuesWriter.getDocValues();
+        }
+        return null;
+      }
+
+      @Override
+      public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+        PerField pf = getPerField(field);
+        if (pf == null) {
+          return null;
+        }
+        if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
+          return (SortedNumericDocValues) pf.docValuesWriter.getDocValues();
+        }
+        return null;
+      }
+
+      @Override
+      public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+        PerField pf = getPerField(field);
+        if (pf == null) {
+          return null;
+        }
+        if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED_SET) {
+          return (SortedSetDocValues) pf.docValuesWriter.getDocValues();
+        }
+        return null;
+      }
+
+      @Override
+      public FieldInfos getFieldInfos() {
+        return fieldInfos.finish();
+      }
+
+      @Override
+      public int maxDoc() {
+        return maxDoc;
+      }
+    };
+  }
+
   private Sorter.DocMap maybeSortSegment(SegmentWriteState state) throws IOException {
     Sort indexSort = state.segmentInfo.getIndexSort();
     if (indexSort == null) {
       return null;
     }
 
-    List<Sorter.DocComparator> comparators = new ArrayList<>();
+    LeafReader docValuesReader = getDocValuesReader(state.segmentInfo.maxDoc());
+
+    List<IndexSorter.DocComparator> comparators = new ArrayList<>();
     for (int i = 0; i < indexSort.getSort().length; i++) {
       SortField sortField = indexSort.getSort()[i];
-      PerField perField = getPerField(sortField.getField());
-      if (perField != null && perField.docValuesWriter != null &&
-          finishedDocValues.contains(perField.fieldInfo.name) == false) {
-          perField.docValuesWriter.finish(state.segmentInfo.maxDoc());
-          Sorter.DocComparator cmp = perField.docValuesWriter.getDocComparator(state.segmentInfo.maxDoc(), sortField);
-          comparators.add(cmp);
-          finishedDocValues.add(perField.fieldInfo.name);
-      } else {
-        // safe to ignore, sort field with no values or already seen before
+      IndexSorter sorter = sortField.getIndexSorter();
+      if (sorter == null) {
+        throw new UnsupportedOperationException("Cannot sort index using sort field " + sortField);
       }
+      comparators.add(sorter.getDocComparator(docValuesReader));
     }
     Sorter sorter = new Sorter(indexSort);
     // returns null if the documents are already sorted
-    return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(new Sorter.DocComparator[comparators.size()]));
+    return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(new IndexSorter.DocComparator[0]));
   }
 
   @Override
@@ -254,10 +321,6 @@ final class DefaultIndexingChain extends DocConsumer {
               // lazy init
               DocValuesFormat fmt = state.segmentInfo.getCodec().docValuesFormat();
               dvConsumer = fmt.fieldsConsumer(state);
-            }
-
-            if (finishedDocValues.contains(perField.fieldInfo.name) == false) {
-              perField.docValuesWriter.finish(maxDoc);
             }
             perField.docValuesWriter.flush(state, sortMap, dvConsumer);
             perField.docValuesWriter = null;
@@ -713,7 +776,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     // Non-null if this field ever had doc values in this
     // segment:
-    DocValuesWriter docValuesWriter;
+    DocValuesWriter<?> docValuesWriter;
 
     // Non-null if this field ever had points in this segment:
     PointValuesWriter pointValuesWriter;

@@ -21,7 +21,12 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -118,6 +123,86 @@ public class SortField {
   public SortField(String field, Type type, boolean reverse) {
     initFieldType(field, type);
     this.reverse = reverse;
+  }
+
+  /** Deserializes a SortField from a DataInput */
+  public SortField(DataInput in) throws IOException {
+    this(in.readString(), readType(in), in.readInt() == 1);
+    if (in.readInt() == 1) {
+      // missing object
+      switch (type) {
+        case STRING:
+          int missingString = in.readInt();
+          if (missingString == 1) {
+            setMissingValue(STRING_FIRST);
+          }
+          else {
+            setMissingValue(STRING_LAST);
+          }
+          break;
+        case INT:
+          setMissingValue(in.readInt());
+          break;
+        case LONG:
+          setMissingValue(in.readLong());
+          break;
+        case FLOAT:
+          setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
+          break;
+        case DOUBLE:
+          setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
+          break;
+        default:
+          throw new IllegalArgumentException("Cannot deserialize sort of type " + type);
+      }
+    }
+  }
+
+  private static Type readType(DataInput in) throws IOException {
+    int type = in.readInt();
+    if (type >= Type.values().length) {
+      throw new IllegalArgumentException("Can't deserialize SortField - unknown type " + type);
+    }
+    return Type.values()[type];
+  }
+
+  private void serialize(DataOutput out) throws IOException {
+    out.writeString(field);
+    out.writeInt(type.ordinal());
+    out.writeInt(reverse ? 1 : 0);
+    if (missingValue == null) {
+      out.writeInt(0);
+    }
+    else {
+      out.writeInt(1);
+      switch (type) {
+        case STRING:
+          if (missingValue == STRING_LAST) {
+            out.writeInt(0);
+          }
+          else if (missingValue == STRING_FIRST) {
+            out.writeInt(1);
+          }
+          else {
+            throw new IllegalArgumentException("Cannot serialize missing value of " + missingValue + " for type STRING");
+          }
+          break;
+        case INT:
+          out.writeInt((int)missingValue);
+          break;
+        case LONG:
+          out.writeLong((long)missingValue);
+          break;
+        case FLOAT:
+          out.writeInt(NumericUtils.floatToSortableInt((float)missingValue));
+          break;
+        case DOUBLE:
+          out.writeLong(NumericUtils.doubleToSortableLong((double)missingValue));
+          break;
+        default:
+          throw new IllegalArgumentException("Cannot serialize SortField of type " + type);
+      }
+    }
   }
 
   /** Pass this to {@link #setMissingValue} to have missing
@@ -392,4 +477,31 @@ public class SortField {
   public boolean needsScores() {
     return type == Type.SCORE;
   }
+
+  /**
+   * Returns an {@link IndexSorter} used for sorting index segments by this SortField.
+   *
+   * If the SortField cannot be used for index sorting (for example, if it uses scores or
+   * other query-dependent values) then this method should return {@code null}
+   *
+   * SortFields that implement this method should also implement a constructor that
+   * takes a {@link DataInput} for deserialization, to match the {@link IndexSorter#serialize(DataOutput)}
+   * method on the returned IndexSorter
+   */
+  public IndexSorter getIndexSorter() {
+    switch (type) {
+      case STRING:
+        return new IndexSorter.StringSorter(missingValue, reverse, reader -> DocValues.getSorted(reader, field), this::serialize);
+      case INT:
+        return new IndexSorter.IntSorter((Integer)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+      case LONG:
+        return new IndexSorter.LongSorter((Long)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+      case DOUBLE:
+        return new IndexSorter.DoubleSorter((Double)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+      case FLOAT:
+        return new IndexSorter.FloatSorter((Float)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+      default: return null;
+    }
+  }
+
 }

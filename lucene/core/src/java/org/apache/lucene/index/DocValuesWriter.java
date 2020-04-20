@@ -21,12 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.SortField;
 
-abstract class DocValuesWriter {
-  abstract void finish(int numDoc);
+abstract class DocValuesWriter<T> {
   abstract void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer consumer) throws IOException;
-  abstract Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException;
+  abstract T getDocValues();
   abstract DocIdSetIterator getDocIdSet();
 
 }

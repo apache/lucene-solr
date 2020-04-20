@@ -17,10 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
 
-import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -30,8 +27,6 @@ import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Sorts documents of a given index by returning a permutation on the document
@@ -84,21 +79,13 @@ final class Sorter {
     return true;
   }
 
-  /** A comparator of doc IDs. */
-  static abstract class DocComparator {
-
-    /** Compare docID1 against docID2. The contract for the return value is the
-     *  same as {@link Comparator#compare(Object, Object)}. */
-    public abstract int compare(int docID1, int docID2);
-  }
-
   private static final class DocValueSorter extends TimSorter {
     
     private final int[] docs;
-    private final Sorter.DocComparator comparator;
+    private final IndexSorter.DocComparator comparator;
     private final int[] tmp;
     
-    DocValueSorter(int[] docs, Sorter.DocComparator comparator) {
+    DocValueSorter(int[] docs, IndexSorter.DocComparator comparator) {
       super(docs.length / 64);
       this.docs = docs;
       this.comparator = comparator;
@@ -139,7 +126,7 @@ final class Sorter {
   }
 
   /** Computes the old-to-new permutation over the given comparator. */
-  private static Sorter.DocMap sort(final int maxDoc, DocComparator comparator) {
+  private static Sorter.DocMap sort(final int maxDoc, IndexSorter.DocComparator comparator) {
     // check if the index is sorted
     boolean sorted = true;
     for (int i = 1; i < maxDoc; ++i) {
@@ -236,162 +223,10 @@ final class Sorter {
     }
   }
 
-  static DocComparator getDocComparator(LeafReader reader, SortField sortField) throws IOException {
-    return getDocComparator(reader.maxDoc(), sortField,
-        () -> getOrWrapSorted(reader, sortField),
-        () -> getOrWrapNumeric(reader, sortField));
-  }
-
-  interface NumericDocValuesSupplier {
-    NumericDocValues get() throws IOException;
-  }
-
-  interface SortedDocValuesSupplier {
-    SortedDocValues get() throws IOException;
-  }
-
-  /** We cannot use the {@link FieldComparator} API because that API requires that you send it docIDs in order.  Note that this API
-   *  allocates arrays[maxDoc] to hold the native values needed for comparison, but 1) they are transient (only alive while sorting this one
-   *  segment), and 2) in the typical index sorting case, they are only used to sort newly flushed segments, which will be smaller than
-   *  merged segments.  */
-  static DocComparator getDocComparator(int maxDoc,
-                                        SortField sortField,
-                                        SortedDocValuesSupplier sortedProvider,
-                                        NumericDocValuesSupplier numericProvider) throws IOException {
-
-    final int reverseMul = sortField.getReverse() ? -1 : 1;
-    final SortField.Type sortType = getSortFieldType(sortField);
-
-    switch(sortType) {
-
-      case STRING:
-      {
-        final SortedDocValues sorted = sortedProvider.get();
-        final int missingOrd;
-        if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = Integer.MAX_VALUE;
-        } else {
-          missingOrd = Integer.MIN_VALUE;
-        }
-
-        final int[] ords = new int[maxDoc];
-        Arrays.fill(ords, missingOrd);
-        int docID;
-        while ((docID = sorted.nextDoc()) != NO_MORE_DOCS) {
-          ords[docID] = sorted.ordValue();
-        }
-
-        return new DocComparator() {
-          @Override
-          public int compare(int docID1, int docID2) {
-            return reverseMul * Integer.compare(ords[docID1], ords[docID2]);
-          }
-        };
-      }
-
-      case LONG:
-      {
-        final NumericDocValues dvs = numericProvider.get();
-        long[] values = new long[maxDoc];
-        if (sortField.getMissingValue() != null) {
-          Arrays.fill(values, (Long) sortField.getMissingValue());
-        }
-        while (true) {
-          int docID = dvs.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          values[docID] = dvs.longValue();
-        }
-
-        return new DocComparator() {
-          @Override
-          public int compare(int docID1, int docID2) {
-            return reverseMul * Long.compare(values[docID1], values[docID2]);
-          }
-        };
-      }
-
-      case INT:
-      {
-        final NumericDocValues dvs = numericProvider.get();
-        int[] values = new int[maxDoc];
-        if (sortField.getMissingValue() != null) {
-          Arrays.fill(values, (Integer) sortField.getMissingValue());
-        }
-
-        while (true) {
-          int docID = dvs.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          values[docID] = (int) dvs.longValue();
-        }
-
-        return new DocComparator() {
-          @Override
-          public int compare(int docID1, int docID2) {
-            return reverseMul * Integer.compare(values[docID1], values[docID2]);
-          }
-        };
-      }
-
-      case DOUBLE:
-      {
-        final NumericDocValues dvs = numericProvider.get();
-        double[] values = new double[maxDoc];
-        if (sortField.getMissingValue() != null) {
-          Arrays.fill(values, (Double) sortField.getMissingValue());
-        }
-        while (true) {
-          int docID = dvs.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          values[docID] = Double.longBitsToDouble(dvs.longValue());
-        }
-
-        return new DocComparator() {
-          @Override
-          public int compare(int docID1, int docID2) {
-            return reverseMul * Double.compare(values[docID1], values[docID2]);
-          }
-        };
-      }
-
-      case FLOAT:
-      {
-        final NumericDocValues dvs = numericProvider.get();
-        float[] values = new float[maxDoc];
-        if (sortField.getMissingValue() != null) {
-          Arrays.fill(values, (Float) sortField.getMissingValue());
-        }
-        while (true) {
-          int docID = dvs.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          values[docID] = Float.intBitsToFloat((int) dvs.longValue());
-        }
-
-        return new DocComparator() {
-          @Override
-          public int compare(int docID1, int docID2) {
-            return reverseMul * Float.compare(values[docID1], values[docID2]);
-          }
-        };
-      }
-
-      default:
-        throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());
-    }
-  }
-
-
   /**
    * Returns a mapping from the old document ID to its new location in the
    * sorted index. Implementations can use the auxiliary
-   * {@link #sort(int, DocComparator)} to compute the old-to-new permutation
+   * {@link #sort(int, IndexSorter.DocComparator)} to compute the old-to-new permutation
    * given a list of documents and their corresponding values.
    * <p>
    * A return value of <code>null</code> is allowed and means that
@@ -401,28 +236,29 @@ final class Sorter {
    * well, they will however be marked as deleted in the sorted view.
    */
   DocMap sort(LeafReader reader) throws IOException {
-    SortField fields[] = sort.getSort();
-    final DocComparator comparators[] = new DocComparator[fields.length];
+    SortField[] fields = sort.getSort();
+    final IndexSorter.DocComparator[] comparators = new IndexSorter.DocComparator[fields.length];
 
     for (int i = 0; i < fields.length; i++) {
-      comparators[i] = getDocComparator(reader, fields[i]);
+      IndexSorter sorter = fields[i].getIndexSorter();
+      if (sorter == null) {
+        throw new IllegalArgumentException("Cannot use sortfield + "  + fields[i] + " to sort indexes");
+      }
+      comparators[i] = sorter.getDocComparator(reader);
     }
     return sort(reader.maxDoc(), comparators);
   }
 
 
-  DocMap sort(int maxDoc, DocComparator[] comparators) throws IOException {
-    final DocComparator comparator = new DocComparator() {
-      @Override
-      public int compare(int docID1, int docID2) {
-        for (int i = 0; i < comparators.length; i++) {
-          int comp = comparators[i].compare(docID1, docID2);
-          if (comp != 0) {
-            return comp;
-          }
+  DocMap sort(int maxDoc, IndexSorter.DocComparator[] comparators) throws IOException {
+    final IndexSorter.DocComparator comparator = (docID1, docID2) -> {
+      for (int i = 0; i < comparators.length; i++) {
+        int comp = comparators[i].compare(docID1, docID2);
+        if (comp != 0) {
+          return comp;
         }
-        return Integer.compare(docID1, docID2); // docid order tiebreak
       }
+      return Integer.compare(docID1, docID2); // docid order tiebreak
     };
 
     return sort(maxDoc, comparator);

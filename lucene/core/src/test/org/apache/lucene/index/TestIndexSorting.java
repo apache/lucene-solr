@@ -2498,6 +2498,7 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("  float=" + docValues.floatValue);
         System.out.println("  double=" + docValues.doubleValue);
         System.out.println("  bytes=" + new BytesRef(docValues.bytesValue));
+        System.out.println("  mvf=" + Arrays.toString(docValues.floatValues));
       }
 
       Document doc = new Document();

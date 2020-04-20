@@ -16,13 +16,16 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
 /** 
  * SortField for {@link SortedSetDocValues}.
@@ -67,6 +70,37 @@ public class SortedSetSortField extends SortField {
       throw new NullPointerException();
     }
     this.selector = selector;
+  }
+
+  public SortedSetSortField(DataInput in) throws IOException {
+    super(in.readString(), Type.CUSTOM, in.readInt() == 1);
+    int type = in.readInt();
+    if (type >= SortedSetSelector.Type.values().length) {
+      throw new IllegalArgumentException("Cannot deserialize SortedSetSortField: unknown selector type " + type);
+    }
+    this.selector = SortedSetSelector.Type.values()[type];
+    int missingValue = in.readInt();
+    if (missingValue == 1) {
+      setMissingValue(SortField.STRING_FIRST);
+    }
+    else if (missingValue == 2) {
+      setMissingValue(SortField.STRING_LAST);
+    }
+  }
+
+  private void serialize(DataOutput out) throws IOException {
+    out.writeString(getField());
+    out.writeInt(reverse ? 1 : 0);
+    out.writeInt(selector.ordinal());
+    if (missingValue == SortField.STRING_FIRST) {
+      out.writeInt(1);
+    }
+    else if (missingValue == SortField.STRING_LAST) {
+      out.writeInt(2);
+    }
+    else {
+      out.writeInt(0);
+    }
   }
   
   /** Returns the selector in use for this sort */
@@ -125,5 +159,14 @@ public class SortedSetSortField extends SortField {
         return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
       }
     };
+  }
+
+  private SortedDocValues getValues(LeafReader reader) throws IOException {
+    return SortedSetSelector.wrap(DocValues.getSortedSet(reader, getField()), selector);
+  }
+
+  @Override
+  public IndexSorter getIndexSorter() {
+    return new IndexSorter.StringSorter(missingValue, reverse, this::getValues, this::serialize);
   }
 }

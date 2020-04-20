@@ -20,9 +20,14 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.NumericUtils;
 
 /** 
  * SortField for {@link SortedNumericDocValues}.
@@ -81,6 +86,68 @@ public class SortedNumericSortField extends SortField {
     }
     this.selector = selector;
     this.type = type;
+  }
+
+  public SortedNumericSortField(DataInput in) throws IOException {
+    super(in.readString(), Type.CUSTOM, in.readInt() == 1);
+    int selectorType = in.readInt();
+    if (selectorType >= SortedNumericSelector.Type.values().length) {
+      throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown selector type " + selectorType);
+    }
+    this.selector = SortedNumericSelector.Type.values()[selectorType];
+    int numericType = in.readInt();
+    if (numericType >= Type.values().length) {
+      throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown numeric type " + numericType);
+    }
+    this.type = Type.values()[numericType];
+    if (in.readInt() == 1) {
+      switch (type) {
+        case INT:
+          setMissingValue(in.readInt());
+          break;
+        case LONG:
+          setMissingValue(in.readLong());
+          break;
+        case FLOAT:
+          setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
+          break;
+        case DOUBLE:
+          setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+  }
+
+  private void serialize(DataOutput out) throws IOException {
+    out.writeString(getField());
+    out.writeInt(reverse ? 1 : 0);
+    out.writeInt(selector.ordinal());
+    out.writeInt(type.ordinal());
+    if (missingValue == null) {
+      out.writeInt(0);
+    }
+    else {
+      out.writeInt(1);
+      // oh for switch expressions...
+      switch (type) {
+        case INT:
+          out.writeInt((int)missingValue);
+          break;
+        case LONG:
+          out.writeLong((long)missingValue);
+          break;
+        case FLOAT:
+          out.writeInt(NumericUtils.floatToSortableInt((float)missingValue));
+          break;
+        case DOUBLE:
+          out.writeLong(NumericUtils.doubleToSortableLong((double)missingValue));
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
   }
 
   /** Returns the numeric type in use for this sort */
@@ -166,6 +233,26 @@ public class SortedNumericSortField extends SortField {
             return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  private NumericDocValues getValue(LeafReader reader) throws IOException {
+    return SortedNumericSelector.wrap(DocValues.getSortedNumeric(reader, getField()), selector, type);
+  }
+
+  @Override
+  public IndexSorter getIndexSorter() {
+    switch(type) {
+      case INT:
+        return new IndexSorter.IntSorter((Integer)missingValue, reverse, this::getValue, this::serialize);
+      case LONG:
+        return new IndexSorter.LongSorter((Long)missingValue, reverse, this::getValue, this::serialize);
+      case DOUBLE:
+        return new IndexSorter.DoubleSorter((Double)missingValue, reverse, this::getValue, this::serialize);
+      case FLOAT:
+        return new IndexSorter.FloatSorter((Float)missingValue, reverse, this::getValue, this::serialize);
       default:
         throw new AssertionError();
     }

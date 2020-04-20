@@ -60,31 +60,31 @@ public class Lucene84Codec extends Codec {
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
   private final PostingsFormat defaultFormat;
-  
+
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       return Lucene84Codec.this.getPostingsFormatForField(field);
     }
   };
-  
+
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
       return Lucene84Codec.this.getDocValuesFormatForField(field);
     }
   };
-  
+
   private final StoredFieldsFormat storedFieldsFormat;
 
-  /** 
+  /**
    * Instantiates a new codec.
    */
   public Lucene84Codec() {
     this(Mode.BEST_SPEED);
   }
-  
-  /** 
+
+  /**
    * Instantiates a new codec, specifying the stored fields compression
    * mode to use.
    * @param mode stored fields compression mode to use for newly
@@ -95,12 +95,12 @@ public class Lucene84Codec extends Codec {
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
     this.defaultFormat = new Lucene84PostingsFormat();
   }
-  
+
   @Override
   public final StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
-  
+
   @Override
   public final TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
@@ -110,17 +110,17 @@ public class Lucene84Codec extends Codec {
   public final PostingsFormat postingsFormat() {
     return postingsFormat;
   }
-  
+
   @Override
   public final FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
-  
+
   @Override
   public final SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
-  
+
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
@@ -136,32 +136,32 @@ public class Lucene84Codec extends Codec {
     return new Lucene60PointsFormat();
   }
 
-  /** Returns the postings format that should be used for writing 
+  /** Returns the postings format that should be used for writing
    *  new segments of <code>field</code>.
-   *  
+   *
    *  The default implementation always returns "Lucene84".
    *  <p>
-   *  <b>WARNING:</b> if you subclass, you are responsible for index 
-   *  backwards compatibility: future version of Lucene are only 
-   *  guaranteed to be able to read the default implementation. 
+   *  <b>WARNING:</b> if you subclass, you are responsible for index
+   *  backwards compatibility: future version of Lucene are only
+   *  guaranteed to be able to read the default implementation.
    */
   public PostingsFormat getPostingsFormatForField(String field) {
     return defaultFormat;
   }
-  
-  /** Returns the docvalues format that should be used for writing 
+
+  /** Returns the docvalues format that should be used for writing
    *  new segments of <code>field</code>.
-   *  
+   *
    *  The default implementation always returns "Lucene80".
    *  <p>
-   *  <b>WARNING:</b> if you subclass, you are responsible for index 
-   *  backwards compatibility: future version of Lucene are only 
-   *  guaranteed to be able to read the default implementation. 
+   *  <b>WARNING:</b> if you subclass, you are responsible for index
+   *  backwards compatibility: future version of Lucene are only
+   *  guaranteed to be able to read the default implementation.
    */
   public DocValuesFormat getDocValuesFormatForField(String field) {
     return defaultDVFormat;
   }
-  
+
   @Override
   public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;
