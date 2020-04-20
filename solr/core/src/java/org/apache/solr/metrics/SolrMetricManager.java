@@ -702,8 +702,8 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(fullName);
     }
-    synchronized (metricRegistry) {
-      if (force && metricRegistry.getMetrics().containsKey(fullName)) {
+    synchronized (metricRegistry) { // prevent race; register() throws if metric is already present
+      if (force) { // must remove any existing one if present
         metricRegistry.remove(fullName);
       }
       metricRegistry.register(fullName, metric);
