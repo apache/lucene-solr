@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
@@ -47,17 +47,14 @@ import static org.apache.lucene.queries.function.valuesource.vectors.FloatVector
 public class DenseVectorField extends FieldType  {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   public static final String DIMENSIONS_PARAM = "dimensions";
-  public static final int DEFAULT_DIMENSIONS = -1; //Don't enforce
+  public static final int DEFAULT_DIMENSIONS = -1; //Don't enforce.
   public static int dimensions; //-1 = don't validate
-
   public static final String ENCODING = "encoding";
   public static final Encoding DEFAULT_ENCODING = Encoding.STRING; //for now
   public static Encoding encoding;
 
-
-  public int getDimensions() {
+  public int getDimensions() { //TODO: Dimension enforcement not implemented yet
     return dimensions;
   }
   public Encoding getEncoding() {
@@ -69,17 +66,12 @@ public class DenseVectorField extends FieldType  {
     SolrParams p = new MapSolrParams(args);
     dimensions = p.getInt(DIMENSIONS_PARAM, DEFAULT_DIMENSIONS);
     args.remove(DIMENSIONS_PARAM);
-
     encoding = Encoding.valueOf(p.get(ENCODING, DEFAULT_ENCODING.toString()).toUpperCase(Locale.ROOT));  //TODO: Error handling on parse
     args.remove(ENCODING);
-
     super.init(schema, args);
-
     //TODO: remove these? Not using them.
     properties |= DOC_VALUES;
     properties &= USE_DOCVALUES_AS_STORED;
-
-
   }
 
   /** called to get the default value source (normally, from the
@@ -92,14 +84,15 @@ public class DenseVectorField extends FieldType  {
   }
 
   @Override
-  protected void checkSupportsDocValues() { // we support DocValues
-  }
+  protected void checkSupportsDocValues() { } // we support DocValues
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), false);
-    //Vector Fields are Not Indexable by default. If overrridden by a field type
-    //that enables quantization, then perform indexing logic there.
+    //If field is stored, toExternal() will transform the stored value
+    //There's an issue right now where "useDocValuesAsStored=false" is ignored
+    //that I'm working on separately in SolrDocumentFetcher.
+    // TODO: clean up this comment and file separate JIRA
   }
 
   @Override
@@ -109,78 +102,19 @@ public class DenseVectorField extends FieldType  {
 
   @Override
   public Type getUninversionType(SchemaField sf) {
-    // TODO: maybe just return null?
-    //if (sf.multiValued()) {
-    //  return Type.SORTED_SET_BINARY;
-    //} else {
       return Type.BINARY;
-    //}
   }
-
-  //@Override
-  //public String toExternal(IndexableField f) {
-    //Convert from Encoded to Array of String
-  //  return indexableFieldToReadableString(f);
-  //}
 
   @Override
   public String toInternal(String val) {
     return super.toInternal(val);
   }
 
-
-
-
-  /*@Override
-  public ByteBuffer toObject(IndexableField f) {
-    float[] decodedVector;
-    switch (encoding) {
-      case BFLOAT16:
-        //TODO
-        break;
-      case BASE64:
-        decodedVector = base64ToVector(f.stringValue());
-        break;
-      case STRING:
-        decodedVector = parseStringInputToVector(f.stringValue());
-        break;
-    }
-
-    decodedVector.
-    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
-  }
-  */
-
-  //@Override
-  //public ByteBuffer toObject(IndexableField f) {
-  //  String vector = f.stringValue();
-  //
-  //  BytesRef bytes = f.binaryValue();
-  //  return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
-  //}
-
-
-  /*
-  protected float[] parseStringInputToVector(String stringifiedVector) {
-    //format: 1.0,2.345|6.0,7.89
-
-    String[] split = stringifiedVector.split(",");
-    float[] output = new float[split.length];
-
-    for(int i=0;  i< split.length; i++) {
-      output[i] = Float.parseFloat(split[i]);
-    }
-
-    return output;
-  }
-*/
-
   protected static float[] base64ToVector(byte[] encoded) {
     final byte[] decoded = java.util.Base64.getDecoder().decode(encoded);
     final FloatBuffer buffer = ByteBuffer.wrap(decoded).asFloatBuffer();
     final float[] vector = new float[buffer.capacity()];
     buffer.get(vector);
-
     return vector;
   }
 
@@ -192,69 +126,10 @@ public class DenseVectorField extends FieldType  {
     }
     buffer.rewind();
 
-
-    //Temporary - testing decoding
-    byte[] encoded = java.util.Base64.getEncoder().encode(buffer).array();
-    vector = base64ToVector(encoded);
-    int size2 = Float.BYTES * vector.length;
-    ByteBuffer buffer2 = ByteBuffer.allocate(size2);
-    for (float value : vector) {
-      buffer2.putFloat(value);
-    }
-    buffer2.rewind();
-
-    return java.util.Base64.getEncoder().encode(buffer2).array();
+    return java.util.Base64.getEncoder().encode(buffer).array();
   }
-
-  /*
-  protected static float[] base64ToVector(String encoded) {
-    final byte[] decoded = java.util.Base64.getDecoder().decode(encoded.getBytes());
-    final FloatBuffer buffer = ByteBuffer.wrap(decoded).asFloatBuffer();
-    final float[] vector = new float[buffer.capacity()];
-    buffer.get(vector);
-
-    return vector;
-  }
-*/
-  /*
-  //change to float[][] later...
-  protected String indexableFieldToReadableString(IndexableField field){
-    byte[] encodedVectors = field.binaryValue().bytes;
-    BytesRefBuilder currentEncodedVector = new BytesRefBuilder();
-    StringBuilder external = new StringBuilder();
-
-      for (int i=0; i< encodedVectors.length; i++) {
-        if (encodedVectors[i] == (byte) '|' || i == encodedVectors.length - 1) {
-          float[] currentVector = null;
-          switch (encoding) {
-            case BFLOAT16:
-              //TODO
-              break;
-            case BASE64:
-              currentVector = base64ToVector(currentEncodedVector.get().toString());
-              break;
-            case STRING:
-              currentVector = parseStringInputToVector(currentEncodedVector.get().toString());
-              break;
-          }
-          if (external.length() > 0) {
-            external.append("|");
-          }
-          external.append(vectorToString(currentVector));
-
-        } else {
-          currentEncodedVector.append(encodedVectors[i]);
-        }
-      }
-    return external.toString();
-  }
-*/
-
-
-
 
   protected BytesRef readableStringToEncodedBytes(String val){
-
     final char[] inputStringVectors = ((String) val).toCharArray();
     StringBuilder currentInputStringVector = new StringBuilder();
     float[] currentInputVector = null;
@@ -279,7 +154,7 @@ public class DenseVectorField extends FieldType  {
             currentVectorBytes = vectorToBase64(currentInputVector);
             break;
           case STRING:
-            currentVectorBytes = vectorToRawString(currentInputVector).getBytes();
+            currentVectorBytes = vectorToRawString(currentInputVector).getBytes(StandardCharsets.UTF_8);
             break;
         }
         encodedVectors.append(currentVectorBytes, 0, currentVectorBytes.length);
@@ -311,7 +186,7 @@ public class DenseVectorField extends FieldType  {
    */
   @Override
   public Object toNativeType(Object val) {
-    if (val instanceof float[]) {
+    if (val instanceof float[]) { //TODO: clean this up
       return val;
     }
     else if (val instanceof String){

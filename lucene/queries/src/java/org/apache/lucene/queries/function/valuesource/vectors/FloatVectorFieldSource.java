@@ -19,6 +19,7 @@ package org.apache.lucene.queries.function.valuesource.vectors;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
@@ -79,7 +80,7 @@ public class FloatVectorFieldSource extends BytesRefFieldSource {
         if (builder.length() > 0){
           builder.append((byte)',');
         }
-        bytes = Float.toString(vector[i]).getBytes();
+        bytes = Float.toString(vector[i]).getBytes(StandardCharsets.UTF_8);
         builder.append(bytes, 0, bytes.length);
       }
       return builder.get();

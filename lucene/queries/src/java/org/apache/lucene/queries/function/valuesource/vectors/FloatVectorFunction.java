@@ -52,11 +52,11 @@ public abstract class FloatVectorFunction extends ValueSource {
   }
 
   private ScoreSelectionStrategy createSelectionStrategy(Selector selector){
-    //case MAX:
-    ScoreSelectionStrategy strategy = new MaxScoreSelectionStrategy();
+    ScoreSelectionStrategy strategy = null;
     switch (selector) {
       case FIRST:  strategy = new FirstScoreSelectionStrategy(); break;
       case LAST:  strategy =  new LastScoreSelectionStrategy(); break;
+      case MAX: strategy = new MaxScoreSelectionStrategy(); break;
       case MIN:  strategy =  new MinScoreSelectionStrategy(); break;
       case AVG:  strategy =  new AverageScoreSelectionStrategy();
   }
