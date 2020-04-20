@@ -49,6 +49,11 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
+* LUCENE-9273: Speed up geometry queries by specialising Component2D spatial operations. Instead of using a generic
+  relate method for all relations, we use specialize methods for each one. In addition, the type of triangle is
+  computed at deserialization time, therefore we can be more selective when decoding points of a triangle.
+  (Ignacio Vera)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
