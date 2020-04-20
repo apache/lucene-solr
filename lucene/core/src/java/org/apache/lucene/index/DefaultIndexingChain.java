@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -37,8 +38,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedNumericSortField;
-import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -590,45 +589,61 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.pointValuesWriter.addPackedValue(docState.docID, field.binaryValue());
   }
 
-  private void validateIndexSortDVType(Sort indexSort, String fieldName, DocValuesType dvType) {
+  private void validateIndexSortDVType(Sort indexSort, String fieldToValidate, DocValuesType dvType) throws IOException {
     for (SortField sortField : indexSort.getSort()) {
-      if (sortField.getField().equals(fieldName)) {
-        switch (dvType) {
-          case NUMERIC:
-            if (sortField.getType().equals(SortField.Type.INT) == false &&
-                  sortField.getType().equals(SortField.Type.LONG) == false &&
-                  sortField.getType().equals(SortField.Type.FLOAT) == false &&
-                  sortField.getType().equals(SortField.Type.DOUBLE) == false) {
-              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
-            }
-            break;
-
-          case BINARY:
-            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
-
-          case SORTED:
-            if (sortField.getType().equals(SortField.Type.STRING) == false) {
-              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
-            }
-            break;
-
-          case SORTED_NUMERIC:
-            if (sortField instanceof SortedNumericSortField == false) {
-              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
-            }
-            break;
-
-          case SORTED_SET:
-            if (sortField instanceof SortedSetSortField == false) {
-              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
-            }
-            break;
-
-          default:
-            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+      IndexSorter sorter = sortField.getIndexSorter();
+      assert sorter != null;
+      sorter.getDocComparator(new DocValuesReader() {
+        @Override
+        public NumericDocValues getNumericDocValues(String field) {
+          if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.NUMERIC) {
+            throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be NUMERIC but it is [" + dvType + "]");
+          }
+          return DocValues.emptyNumeric();
         }
-        break;
-      }
+
+        @Override
+        public BinaryDocValues getBinaryDocValues(String field) {
+          if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.BINARY) {
+            throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be BINARY but it is [" + dvType + "]");
+          }
+          return DocValues.emptyBinary();
+        }
+
+        @Override
+        public SortedDocValues getSortedDocValues(String field) {
+          if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.SORTED) {
+            throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be SORTED but it is [" + dvType + "]");
+          }
+          return DocValues.emptySorted();
+        }
+
+        @Override
+        public SortedNumericDocValues getSortedNumericDocValues(String field) {
+          if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.SORTED_NUMERIC) {
+            throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be SORTED_NUMERIC but it is [" + dvType + "]");
+          }
+          return DocValues.emptySortedNumeric(0);
+        }
+
+        @Override
+        public SortedSetDocValues getSortedSetDocValues(String field) {
+          if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.SORTED_SET) {
+            throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be SORTED_SET but it is [" + dvType + "]");
+          }
+          return DocValues.emptySortedSet();
+        }
+
+        @Override
+        public FieldInfos getFieldInfos() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int maxDoc() {
+          return 0;
+        }
+      });
     }
   }
 
@@ -644,8 +659,8 @@ final class DefaultIndexingChain extends DocConsumer {
         validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
       }
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
-
     }
+
     fp.fieldInfo.setDocValuesType(dvType);
 
     int docID = docState.docID;
