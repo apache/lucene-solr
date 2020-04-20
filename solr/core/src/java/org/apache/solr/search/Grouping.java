@@ -384,7 +384,9 @@ public class Grouping {
             cachedCollector.replay(secondPhaseCollectors);
           } else {
             signalCacheWarning = true;
-            log.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
+            if (log.isWarnEnabled()) {
+              log.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
+            }
             log.warn("Please increase cache size or disable group caching.");
             searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
           }
@@ -440,7 +442,9 @@ public class Grouping {
     try {
       searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      if (log.isWarnEnabled()) {
+        log.warn("Query: {}; {}", query, x.getMessage());
+      }
       qr.setPartialResults(true);
     }
   }

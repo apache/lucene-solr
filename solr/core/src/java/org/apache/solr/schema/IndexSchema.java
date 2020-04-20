@@ -480,14 +480,14 @@ public class IndexSchema {
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
         sb.append("schema has no name!");
-        log.warn(sb.toString());
+        log.warn("{}", sb);
       } else {
         name = nd.getNodeValue();
         sb.append("Schema ");
         sb.append(NAME);
         sb.append("=");
         sb.append(name);
-        log.info(sb.toString());
+        log.info("{}", sb);
       }
 
       //                      /schema/@version
@@ -546,7 +546,7 @@ public class IndexSchema {
       expression = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       if (node==null) {
-        log.warn("no " + UNIQUE_KEY + " specified in schema.");
+        log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
         uniqueKeyField=getIndexedField(node.getNodeValue().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
@@ -572,7 +572,7 @@ public class IndexSchema {
         }
 
         if (!uniqueKeyField.stored()) {
-          log.warn(UNIQUE_KEY + " is not stored - distributed search and MoreLikeThis will not work");
+          log.warn("{} is not stored - distributed search and MoreLikeThis will not work", UNIQUE_KEY);
         }
         if (uniqueKeyField.multiValued()) {
           String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
@@ -651,7 +651,7 @@ public class IndexSchema {
       NamedNodeMap attrs = node.getAttributes();
 
       String name = DOMUtil.getAttr(attrs, NAME, "field definition");
-      log.trace("reading field def "+name);
+      log.trace("reading field def {}", name);
       String type = DOMUtil.getAttr(attrs, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
@@ -674,13 +674,15 @@ public class IndexSchema {
             + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
           throw new SolrException(ErrorCode.SERVER_ERROR, msg );
         }
-        log.debug("field defined: " + f);
+        log.debug("field defined: {}", f);
         if( f.getDefaultValue() != null ) {
-          log.debug(name+" contains default value: " + f.getDefaultValue());
+          if (log.isDebugEnabled()) {
+            log.debug("{} contains default value {}", name, f.getDefaultValue());
+          }
           fieldsWithDefaultValue.add( f );
         }
         if (f.isRequired()) {
-          log.debug(name+" is required in this schema");
+          log.debug("{} is required in this schema", name);
           requiredFields.add(f);
         }
       } else if (node.getNodeName().equals(DYNAMIC_FIELD)) {
@@ -713,7 +715,9 @@ public class IndexSchema {
     DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
     Arrays.sort(dFields);
 
-    log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+    if (log.isTraceEnabled()) {
+      log.trace("Dynamic Field Ordering: {}", Arrays.toString(dFields));
+    }
 
     return dFields; 
   }
@@ -738,8 +742,8 @@ public class IndexSchema {
         try {
           maxCharsInt = Integer.parseInt(maxChars);
         } catch (NumberFormatException e) {
-          log.warn("Couldn't parse " + MAX_CHARS + " attribute for " + COPY_FIELD + " from "
-                  + source + " to " + dest + " as integer. The whole field will be copied.");
+          log.warn("Couldn't parse {} attribute for '{}' from '{}' to '{}' as integer. The whole field will be copied."
+              , MAX_CHARS, COPY_FIELD, source, dest);
         }
       }
 
@@ -755,9 +759,10 @@ public class IndexSchema {
       
     for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet()) {
       if (entry.getValue() > 1 && !entry.getKey().multiValued())  {
-        log.warn("Field " + entry.getKey().name + " is not multivalued "+
-            "and destination for multiple " + COPY_FIELDS + " ("+
-            entry.getValue()+")");
+        if (log.isWarnEnabled()) {
+          log.warn("Field {} is not multivalued and destination for multiople {} ({})"
+              , entry.getKey().name, COPY_FIELDS, entry.getValue());
+        }
       }
     }
   }
@@ -814,9 +819,13 @@ public class IndexSchema {
     List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
     for (SchemaField field : fields) {
       if (isDuplicateDynField(dynFields, field)) {
-        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
+        if (log.isDebugEnabled()) {
+          log.debug("dynamic field already exists: dynamic field: [{}]", field.getName());
+        }
       } else {
-        log.debug("dynamic field creation for schema field: " + field.getName());
+        if (log.isDebugEnabled()) {
+          log.debug("dynamic field creation for schema field: {}", field.getName());
+        }
         addDynamicFieldNoDupCheck(dynFields, field);
       }
     }
@@ -825,7 +834,7 @@ public class IndexSchema {
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
     dFields.add(new DynamicField(f));
-    log.debug("dynamic field defined: " + f);
+    log.debug("dynamic field defined: {}", f);
   }
 
   protected boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
@@ -849,8 +858,8 @@ public class IndexSchema {
    * @see SolrCoreAware
    */
   public void registerCopyField(String source, String dest, int maxChars) {
-    log.debug(COPY_FIELD + " " + SOURCE + "='" + source + "' " + DESTINATION + "='" + dest
-              + "' " + MAX_CHARS + "=" + maxChars);
+    log.debug("{} {}='{}' {}='{}' {}='{}'", COPY_FIELD, SOURCE, source, DESTINATION, dest
+              ,MAX_CHARS, maxChars);
 
     DynamicField destDynamicField = null;
     SchemaField destSchemaField = fields.get(dest);

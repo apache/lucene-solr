@@ -155,7 +155,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
     StartupLoggingUtils.checkLogDir();
-    log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+    if (log.isInfoEnabled()) {
+      log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+    }
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
@@ -231,10 +233,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private void logWelcomeBanner() {
-    log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
-    log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
-    log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+    // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is the only one
+    // that's so ugly so far.
+    if (log.isInfoEnabled()) {
+      log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
+    }
+    if (log.isInfoEnabled()) {
+      log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
+    }
+    if (log.isInfoEnabled()) {
+      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
+    }
+    if (log.isInfoEnabled()) {
+      log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+    }
   }
 
   private String solrVersion() {
@@ -275,8 +287,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
-      log.warn("Solr property solr.solrxml.location is no longer supported. " +
-          "Will automatically load solr.xml from ZooKeeper if it exists");
+      log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
 
     String zkHost = System.getProperty("zkHost");
@@ -410,7 +421,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       if (cores.getAuthenticationPlugin() != null) {
-        log.debug("User principal: {}", request.getUserPrincipal());
+        if (log.isDebugEnabled()) {
+          log.debug("User principal: {}", request.getUserPrincipal());
+        }
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);

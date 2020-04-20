@@ -200,7 +200,9 @@ public class XMLWriter extends TextResponseWriter {
 
       Object val = doc.getFieldValue(fname);
       if( "_explain_".equals( fname ) ) {
-        log.debug(String.valueOf(val));
+        if (log.isDebugEnabled()) {
+          log.debug(String.valueOf(val));
+        }
       }
       writeVal(fname, val);
     }

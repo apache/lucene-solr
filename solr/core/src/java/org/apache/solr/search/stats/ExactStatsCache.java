@@ -72,7 +72,9 @@ public class ExactStatsCache extends StatsCache {
   protected StatsSource doGet(SolrQueryRequest req) {
     Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Collections.emptyMap());
     Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Collections.emptyMap());
-    log.debug("Returning StatsSource. Collection stats={}, Term stats size= {}", currentGlobalColStats, currentGlobalTermStats.size());
+    if (log.isDebugEnabled()) {
+      log.debug("Returning StatsSource. Collection stats={}, Term stats size= {}", currentGlobalColStats, currentGlobalTermStats.size());
+    }
     return new ExactStatsSource(statsCacheMetrics, currentGlobalTermStats, currentGlobalColStats);
   }
 
@@ -91,7 +93,9 @@ public class ExactStatsCache extends StatsCache {
   protected void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     Set<Term> allTerms = new HashSet<>();
     for (ShardResponse r : responses) {
-      log.debug("Merging to global stats, shard={}, response={}", r.getShard(), r.getSolrResponse().getResponse());
+      if (log.isDebugEnabled()) {
+        log.debug("Merging to global stats, shard={}, response={}", r.getShard(), r.getSolrResponse().getResponse());
+      }
       // response's "shard" is really a shardURL, or even a list of URLs
       String shard = r.getShard();
       SolrResponse res = r.getSolrResponse();
@@ -201,7 +205,7 @@ public class ExactStatsCache extends StatsCache {
         }
       }
     } catch (IOException e) {
-      log.error("Error collecting local stats, query='" + q.toString() + "'", e);
+      log.error("Error collecting local stats, query='{}'", q, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error collecting local stats.", e);
     }
   }
@@ -223,7 +227,7 @@ public class ExactStatsCache extends StatsCache {
       for (String shardUrl : rb.shards) {
         String shard = StatsUtil.shardUrlToShard(collectionName, shardUrl);
         if (shard == null) {
-          log.warn("Can't determine shard from collectionName=" + collectionName + " and shardUrl=" + shardUrl + ", skipping...");
+          log.warn("Can't determine shard from collectionName={} and shardUrl={}, skipping...", collectionName, shardUrl);
           continue;
         } else {
           shards.add(shard);
