@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -88,43 +89,52 @@ public class SortedNumericSortField extends SortField {
     this.type = type;
   }
 
-  public SortedNumericSortField(DataInput in) throws IOException {
-    super(in.readString(), Type.CUSTOM, in.readInt() == 1);
+  public static final class Provider extends SortFieldProvider {
+
+    public static final String NAME = "sortedNumericField";
+
+    public Provider() {
+      super(NAME);
+    }
+
+    @Override
+    public SortField loadSortField(DataInput in) throws IOException {
+      SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
+      if (in.readInt() == 1) {
+        switch (sf.type) {
+          case INT:
+            sf.setMissingValue(in.readInt());
+            break;
+          case LONG:
+            sf.setMissingValue(in.readLong());
+            break;
+          case FLOAT:
+            sf.setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
+            break;
+          case DOUBLE:
+            sf.setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
+      return sf;
+    }
+  }
+
+  private static SortedNumericSelector.Type readSelectorType(DataInput in) throws IOException {
     int selectorType = in.readInt();
     if (selectorType >= SortedNumericSelector.Type.values().length) {
       throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown selector type " + selectorType);
     }
-    this.selector = SortedNumericSelector.Type.values()[selectorType];
-    int numericType = in.readInt();
-    if (numericType >= Type.values().length) {
-      throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown numeric type " + numericType);
-    }
-    this.type = Type.values()[numericType];
-    if (in.readInt() == 1) {
-      switch (type) {
-        case INT:
-          setMissingValue(in.readInt());
-          break;
-        case LONG:
-          setMissingValue(in.readLong());
-          break;
-        case FLOAT:
-          setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
-          break;
-        case DOUBLE:
-          setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
-          break;
-        default:
-          throw new AssertionError();
-      }
-    }
+    return SortedNumericSelector.Type.values()[selectorType];
   }
 
   private void serialize(DataOutput out) throws IOException {
     out.writeString(getField());
+    out.writeInt(type.ordinal());
     out.writeInt(reverse ? 1 : 0);
     out.writeInt(selector.ordinal());
-    out.writeInt(type.ordinal());
     if (missingValue == null) {
       out.writeInt(0);
     }
@@ -246,13 +256,13 @@ public class SortedNumericSortField extends SortField {
   public IndexSorter getIndexSorter() {
     switch(type) {
       case INT:
-        return new IndexSorter.IntSorter((Integer)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, this::getValue, this::serialize);
       case LONG:
-        return new IndexSorter.LongSorter((Long)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, this::getValue, this::serialize);
       case DOUBLE:
-        return new IndexSorter.DoubleSorter((Double)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, this::getValue, this::serialize);
       case FLOAT:
-        return new IndexSorter.FloatSorter((Float)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, this::getValue, this::serialize);
       default:
         throw new AssertionError();
     }

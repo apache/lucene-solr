@@ -22,6 +22,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.DataInput;
@@ -72,20 +73,34 @@ public class SortedSetSortField extends SortField {
     this.selector = selector;
   }
 
-  public SortedSetSortField(DataInput in) throws IOException {
-    super(in.readString(), Type.CUSTOM, in.readInt() == 1);
+  public static final class Provider extends SortFieldProvider {
+
+    public static final String NAME = "sortedSetField";
+
+    public Provider() {
+      super(NAME);
+    }
+
+    @Override
+    public SortField loadSortField(DataInput in) throws IOException {
+      SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
+      int missingValue = in.readInt();
+      if (missingValue == 1) {
+        sf.setMissingValue(SortField.STRING_FIRST);
+      }
+      else if (missingValue == 2) {
+        sf.setMissingValue(SortField.STRING_LAST);
+      }
+      return sf;
+    }
+  }
+
+  private static SortedSetSelector.Type readSelectorType(DataInput in) throws IOException {
     int type = in.readInt();
     if (type >= SortedSetSelector.Type.values().length) {
       throw new IllegalArgumentException("Cannot deserialize SortedSetSortField: unknown selector type " + type);
     }
-    this.selector = SortedSetSelector.Type.values()[type];
-    int missingValue = in.readInt();
-    if (missingValue == 1) {
-      setMissingValue(SortField.STRING_FIRST);
-    }
-    else if (missingValue == 2) {
-      setMissingValue(SortField.STRING_LAST);
-    }
+    return SortedSetSelector.Type.values()[type];
   }
 
   private void serialize(DataOutput out) throws IOException {
@@ -167,6 +182,6 @@ public class SortedSetSortField extends SortField {
 
   @Override
   public IndexSorter getIndexSorter() {
-    return new IndexSorter.StringSorter(missingValue, reverse, this::getValues, this::serialize);
+    return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, this::getValues, this::serialize);
   }
 }

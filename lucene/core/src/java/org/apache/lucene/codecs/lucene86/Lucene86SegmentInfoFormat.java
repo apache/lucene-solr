@@ -25,10 +25,11 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -57,7 +58,7 @@ import org.apache.lucene.util.Version;
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>IndexSort --&gt; {@link DataOutput#writeVInt Int32} count, followed by {@code count} SortField</li>
  *   <li>SortField --&gt; {@link DataOutput#writeString String} sort class, followed by a per-sort bytestream
- *    (see {@link IndexSorter#deserialize(String, DataInput)})
+ *    (see {@link SortFieldProvider#loadSortField(DataInput)})
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * Field Descriptions:
@@ -124,8 +125,8 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
         if (numSortFields > 0) {
           SortField[] sortFields = new SortField[numSortFields];
           for(int i=0;i<numSortFields;i++) {
-            String className = input.readString();
-            sortFields[i] = IndexSorter.deserialize(className, input);
+            String name = input.readString();
+            sortFields[i] = SortFieldProvider.forName(name).loadSortField(input);
           }
           indexSort = new Sort(sortFields);
         } else if (numSortFields < 0) {
@@ -200,7 +201,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
         if (sorter == null) {
           throw new IllegalArgumentException("cannot serialize SortField " + sortField);
         }
-        output.writeString(sortField.getClass().getCanonicalName());
+        output.writeString(sorter.getProviderName());
         sorter.serialize(output);
       }
 

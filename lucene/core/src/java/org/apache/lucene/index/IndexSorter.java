@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -79,32 +78,11 @@ public abstract class IndexSorter {
   /**
    * Serializes the parent SortField.  This is used to write Sort information into the Segment header
    *
-   * @see #deserialize(String, DataInput)
+   * @see SortFieldProvider#loadSortField(DataInput)
    */
   public abstract void serialize(DataOutput out) throws IOException;
 
-  /**
-   * Deserialize a SortField from serialized bytes
-   * @param sortClass the canonical name of the SortField class to deserialize
-   * @param in        a data input holding the serialized sort information
-   *
-   * @see #serialize(DataOutput)
-   */
-  public static SortField deserialize(String sortClass, DataInput in) {
-    try {
-      Class<?> c = Class.forName(sortClass);
-      Constructor<?> constructor = c.getConstructor(DataInput.class);
-      return (SortField) constructor.newInstance(in);
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Class " + sortClass + " is not of type org.apache.lucene.search.SortField");
-    } catch (ClassNotFoundException e) {
-      throw new IllegalArgumentException("Cannot find sort class " + sortClass);
-    } catch (NoSuchMethodException e) {
-      throw new IllegalArgumentException("Sort class " + sortClass + " does not have a constructor that takes a DataInput");
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalArgumentException("Could not construct new SortField", e);
-    }
-  }
+  public abstract String getProviderName();
 
   /**
    * Provide a NumericDocValues instance for a LeafReader
@@ -143,15 +121,17 @@ public abstract class IndexSorter {
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
     private final Serializer serializer;
+    private final String providerName;
 
     /**
      * Creates a new IntSorter
      */
-    public IntSorter(Integer missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public IntSorter(String providerName, Integer missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
       this.serializer = serializer;
+      this.providerName = providerName;
     }
 
     @Override
@@ -200,6 +180,11 @@ public abstract class IndexSorter {
     public void serialize(DataOutput out) throws IOException {
       serializer.serialize(out);
     }
+
+    @Override
+    public String getProviderName() {
+      return providerName;
+    }
   }
 
   /**
@@ -207,13 +192,15 @@ public abstract class IndexSorter {
    */
   public static final class LongSorter extends IndexSorter {
 
+    private final String providerName;
     private final Long missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
     private final Serializer serializer;
 
     /** Creates a new LongSorter */
-    public LongSorter(Long missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public LongSorter(String providerName, Long missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+      this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
@@ -266,6 +253,11 @@ public abstract class IndexSorter {
     public void serialize(DataOutput out) throws IOException {
       serializer.serialize(out);
     }
+
+    @Override
+    public String getProviderName() {
+      return providerName;
+    }
   }
 
   /**
@@ -273,13 +265,15 @@ public abstract class IndexSorter {
    */
   public static final class FloatSorter extends IndexSorter {
 
+    private final String providerName;
     private final Float missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
     private final Serializer serializer;
 
     /** Creates a new FloatSorter */
-    public FloatSorter(Float missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public FloatSorter(String providerName, Float missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+      this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
@@ -332,6 +326,11 @@ public abstract class IndexSorter {
     public void serialize(DataOutput out) throws IOException {
       serializer.serialize(out);
     }
+
+    @Override
+    public String getProviderName() {
+      return providerName;
+    }
   }
 
   /**
@@ -339,13 +338,15 @@ public abstract class IndexSorter {
    */
   public static final class DoubleSorter extends IndexSorter {
 
+    private final String providerName;
     private final Double missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
     private final Serializer serializer;
 
     /** Creates a new DoubleSorter */
-    public DoubleSorter(Double missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public DoubleSorter(String providerName, Double missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+      this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
@@ -398,6 +399,11 @@ public abstract class IndexSorter {
     public void serialize(DataOutput out) throws IOException {
       serializer.serialize(out);
     }
+
+    @Override
+    public String getProviderName() {
+      return providerName;
+    }
   }
 
   /**
@@ -405,13 +411,15 @@ public abstract class IndexSorter {
    */
   public static final class StringSorter extends IndexSorter {
 
+    private final String providerName;
     private final Object missingValue;
     private final int reverseMul;
     private final SortedDocValuesProvider valuesProvider;
     private final Serializer serializer;
 
     /** Creates a new StringSorter */
-    public StringSorter(Object missingValue, boolean reverse, SortedDocValuesProvider valuesProvider, Serializer serializer) {
+    public StringSorter(String providerName, Object missingValue, boolean reverse, SortedDocValuesProvider valuesProvider, Serializer serializer) {
+      this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
@@ -472,6 +480,11 @@ public abstract class IndexSorter {
     @Override
     public void serialize(DataOutput out) throws IOException {
       serializer.serialize(out);
+    }
+
+    @Override
+    public String getProviderName() {
+      return providerName;
     }
   }
 

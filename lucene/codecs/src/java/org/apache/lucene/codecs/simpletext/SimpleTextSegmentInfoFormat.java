@@ -29,12 +29,14 @@ import java.util.Set;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -66,7 +68,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   final static BytesRef SI_ID               = new BytesRef("    id ");
   final static BytesRef SI_SORT             = new BytesRef("    sort ");
   final static BytesRef SI_SORT_TYPE        = new BytesRef("      type ");
-  final static BytesRef SI_SORT_CLASS       = new BytesRef("      class ");
+  final static BytesRef SI_SORT_NAME        = new BytesRef("      name ");
   final static BytesRef SI_SORT_BYTES       = new BytesRef("      bytes ");
 
   public static final String SI_EXTENSION = "si";
@@ -166,18 +168,17 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SortField[] sortField = new SortField[numSortFields];
       for (int i = 0; i < numSortFields; ++i) {
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch.get(), SI_SORT_CLASS);
-        final String className = readString(SI_SORT_CLASS.length, scratch);
+        assert StringHelper.startsWith(scratch.get(), SI_SORT_NAME);
+        final String provider = readString(SI_SORT_NAME.length, scratch);
 
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), SI_SORT_TYPE);
 
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), SI_SORT_BYTES);
-        BytesRef serializedSort = scratch.get();
-        int length = serializedSort.length - SI_SORT_BYTES.length;
-        final ByteArrayDataInput bytes = new ByteArrayDataInput(serializedSort.bytes, SI_SORT_BYTES.length, length);
-        sortField[i] = IndexSorter.deserialize(className, bytes);
+        BytesRef serializedSort = SimpleTextUtil.fromBytesRefString(readString(SI_SORT_BYTES.length, scratch));
+        final ByteArrayDataInput bytes = new ByteArrayDataInput(serializedSort.bytes, serializedSort.offset, serializedSort.length);
+        sortField[i] = SortFieldProvider.forName(provider).loadSortField(bytes);
       }
       Sort indexSort = sortField.length == 0 ? null : new Sort(sortField);
 
@@ -282,9 +283,13 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.writeNewline(output);
       for (int i = 0; i < numSortFields; ++i) {
         final SortField sortField = indexSort.getSort()[i];
+        IndexSorter sorter = sortField.getIndexSorter();
+        if (sorter == null) {
+          throw new IllegalStateException("Cannot serialize sort " + sortField);
+        }
 
-        SimpleTextUtil.write(output, SI_SORT_CLASS);
-        SimpleTextUtil.write(output, sortField.getClass().getCanonicalName(), scratch);
+        SimpleTextUtil.write(output, SI_SORT_NAME);
+        SimpleTextUtil.write(output, sorter.getProviderName(), scratch);
         SimpleTextUtil.writeNewline(output);
 
         SimpleTextUtil.write(output, SI_SORT_TYPE);
@@ -292,15 +297,28 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
         SimpleTextUtil.writeNewline(output);
 
         SimpleTextUtil.write(output, SI_SORT_BYTES);
-        IndexSorter sorter = sortField.getIndexSorter();
-        if (sorter == null) {
-          throw new IllegalStateException("Cannot serialize sort " + sortField);
-        }
-        sorter.serialize(output);
+        BytesRefOutput b = new BytesRefOutput();
+        sorter.serialize(b);
+        SimpleTextUtil.write(output, b.bytes.get().toString(), scratch);
         SimpleTextUtil.writeNewline(output);
       }
       
       SimpleTextUtil.writeChecksum(output, scratch);
+    }
+  }
+
+  static class BytesRefOutput extends DataOutput {
+
+    final BytesRefBuilder bytes = new BytesRefBuilder();
+
+    @Override
+    public void writeByte(byte b) throws IOException {
+      bytes.append(b);
+    }
+
+    @Override
+    public void writeBytes(byte[] b, int offset, int length) throws IOException {
+      bytes.append(b, offset, length);
     }
   }
 }
