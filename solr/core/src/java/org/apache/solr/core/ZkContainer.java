@@ -30,12 +30,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -124,12 +127,18 @@ public class ZkContainer {
 
         ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
-        if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
-          // we are part of an ensemble and we are not uploading the config - pause to give the config time
-          // to get up
-          Thread.sleep(10000);
+        if (zkRun != null) {
+          if (StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+            // Embedded ZK and probably running with SSL
+            new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, "https");
+          }
+          if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
+            // we are part of an ensemble and we are not uploading the config - pause to give the config time
+            // to get up
+            Thread.sleep(10000);
+          }
         }
-        
+
         if(confDir != null) {
           Path configPath = Paths.get(confDir);
           if (!Files.isDirectory(configPath))
