@@ -65,11 +65,11 @@ public abstract class UpdateHandler implements SolrInfoBean {
       if ("postCommit".equals(event)) {
         SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
         commitCallbacks.add(obj);
-        log.info("added SolrEventListener for postCommit: " + obj);
+        log.info("added SolrEventListener for postCommit: {}", obj);
       } else if ("postOptimize".equals(event)) {
         SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
         optimizeCallbacks.add(obj);
-        log.info("added SolrEventListener for postOptimize: " + obj);
+        log.info("added SolrEventListener for postOptimize: {}", obj);
       }
     }
   }
@@ -134,7 +134,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
         ulog.clearLog(core, ulogPluginInfo);
       }
 
-      log.info("Using UpdateLog implementation: " + ulog.getClass().getName());
+      if (log.isInfoEnabled()) {
+        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
+      }
       ulog.init(ulogPluginInfo);
       ulog.init(this, core);
     } else {

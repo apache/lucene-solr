@@ -167,7 +167,9 @@ public class PeerSync implements SolrMetricProducer {
     }
     Timer.Context timerContext = null;
     try {
-      log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
+      if (log.isInfoEnabled()) {
+        log.info("{} START replicas={} nUpdates={}", msg(), replicas, nUpdates);
+      }
 
       // check if we already in sync to begin with 
       if(doFingerprint && alreadyInSync()) {
@@ -200,7 +202,9 @@ public class PeerSync implements SolrMetricProducer {
       } else {
         // we have no versions and hence no frame of reference to tell if we can use a peers
         // updates to bring us into sync
-        log.info(msg() + "DONE.  We have no versions.  sync failed.");
+        if (log.isInfoEnabled()) {
+          log.info("{} DONE. We have no versions. sync failed.", msg());
+        }
         for (;;)  {
           ShardResponse srsp = shardHandler.takeCompletedOrError();
           if (srsp == null) break;
@@ -223,7 +227,9 @@ public class PeerSync implements SolrMetricProducer {
         if (srsp == null) break;
         boolean success = handleResponse(srsp);
         if (!success) {
-          log.info(msg() + "DONE. sync failed");
+          if (log.isInfoEnabled()) {
+            log.info("{} DONE. sync failed", msg());
+          }
           shardHandler.cancelAll();
           syncErrors.inc();
           return PeerSyncResult.failure();
@@ -239,7 +245,9 @@ public class PeerSync implements SolrMetricProducer {
         }
       }
 
-      log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
+      if (log.isInfoEnabled()) {
+        log.info("{} DONE. sync {}", msg(), (success ? "succeeded" : "failed"));
+      }
       if (!success) {
         syncErrors.inc();
       }
@@ -338,20 +346,28 @@ public class PeerSync implements SolrMetricProducer {
         boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain || solrException instanceof ConnectTimeoutException || solrException instanceof SocketTimeoutException
             || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
-          log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success", srsp.getException());
+          if (log.isWarnEnabled()) {
+            log.warn("{} couldn't connect to {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
+          }
+
 
           return true;
         }
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
-        log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success", srsp.getException());
+        if (log.isWarnEnabled()) {
+          log.warn("{} got a 503 from {}, counting as success "
+              , msg(), srsp.getShardAddress(), srsp.getException());
+        }
         return true;
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
-        log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success. " +
-            "Perhaps /get is not registered?", srsp.getException());
+        if (log.isWarnEnabled()) {
+          log.warn("{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?"
+              , msg(), srsp.getShardAddress(), srsp.getException());
+        }
         return true;
       }
       
@@ -360,8 +376,10 @@ public class PeerSync implements SolrMetricProducer {
       
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
-     
-      log.warn(msg() + " exception talking to " + srsp.getShardAddress() + ", failed", srsp.getException());
+
+      if (log.isWarnEnabled()) {
+        log.warn("{} exception talking to {}, failed", msg(), srsp.getShardAddress(), srsp.getException());
+      }
       
       return false;
     }
@@ -423,7 +441,9 @@ public class PeerSync implements SolrMetricProducer {
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
     Object fingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
 
-    log.info(msg() + " Received " + otherVersions.size() + " versions from " + sreq.shards[0] + " fingerprint:" + fingerprint );
+    if (log.isInfoEnabled()) {
+      log.info("{} Received {} versions from {} fingerprint:{}", msg(), otherVersions.size(), sreq.shards[0], fingerprint);
+    }
     if (fingerprint != null) {
       sreq.fingerprint = IndexFingerprint.fromObject(fingerprint);
     }
@@ -466,7 +486,7 @@ public class PeerSync implements SolrMetricProducer {
       }
       return cmp == 0;  // currently, we only check for equality...
     } catch(IOException e){
-      log.error(msg() + "Error getting index fingerprint", e);
+      log.error("{} Error getting index fingerprint", msg(), e);
       return false;
     }
   }
@@ -474,7 +494,9 @@ public class PeerSync implements SolrMetricProducer {
   private boolean requestUpdates(ShardResponse srsp, String versionsAndRanges, long totalUpdates) {
     String replica = srsp.getShardRequest().shards[0];
 
-    log.info(msg() + "Requesting updates from " + replica + "n=" + totalUpdates + " versions=" + versionsAndRanges);
+    if (log.isInfoEnabled()) {
+      log.info("{} Requesting updates from {} n={} versions={}", msg(), replica, totalUpdates, versionsAndRanges);
+    }
 
     // reuse our original request object
     ShardRequest sreq = srsp.getShardRequest();
@@ -501,7 +523,7 @@ public class PeerSync implements SolrMetricProducer {
 
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
     if (updates.size() < sreq.totalRequestedUpdates) {
-      log.error(msg() + " Requested " + sreq.totalRequestedUpdates + " updates from " + sreq.shards[0] + " but retrieved " + updates.size());
+      log.error("{} Requested {} updates from {} but retrieved {}", msg(), sreq.totalRequestedUpdates, sreq.shards[0], updates.size());
       return false;
     }
     
@@ -600,7 +622,7 @@ public class PeerSync implements SolrMetricProducer {
           List<Object> entry = (List<Object>)o;
 
           if (debug) {
-            log.debug(logPrefix + "raw update record " + o);
+            log.debug("{} raw update record {}", logPrefix, o);
           }
 
           int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
@@ -619,7 +641,7 @@ public class PeerSync implements SolrMetricProducer {
               cmd.setVersion(version);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
-                log.debug(logPrefix + "add " + cmd + " id " + sdoc.getField(ID));
+                log.debug("{} add {} id {}", logPrefix, cmd, sdoc.getField(ID));
               }
               proc.processAdd(cmd);
               break;
@@ -632,7 +654,9 @@ public class PeerSync implements SolrMetricProducer {
               cmd.setVersion(version);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
-                log.debug(logPrefix + "delete " + cmd + " " + new BytesRef(idBytes).utf8ToString());
+                if (log.isDebugEnabled()) {
+                  log.debug("{} delete {} {}", logPrefix, cmd, new BytesRef(idBytes).utf8ToString());
+                }
               }
               proc.processDelete(cmd);
               break;
@@ -646,7 +670,7 @@ public class PeerSync implements SolrMetricProducer {
               cmd.setVersion(version);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
-                log.debug(logPrefix + "deleteByQuery " + cmd);
+                log.debug("{} deleteByQuery {}", logPrefix, cmd);
               }
               proc.processDelete(cmd);
               break;
@@ -656,7 +680,7 @@ public class PeerSync implements SolrMetricProducer {
               AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
-                log.debug(logPrefix + "inplace update " + cmd + " prevVersion=" + cmd.prevVersion + ", doc=" + cmd.solrDoc);
+                log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, cmd, cmd.prevVersion, cmd.solrDoc);
               }
               proc.processAdd(cmd);
               break;
@@ -671,16 +695,16 @@ public class PeerSync implements SolrMetricProducer {
       } catch (IOException e) {
         // TODO: should this be handled separately as a problem with us?
         // I guess it probably already will by causing replication to be kicked off.
-        log.error(logPrefix + "Error applying updates from " + updateFrom + " ,update=" + o, e);
+        log.error("{} Error applying updates from {}, update={}", logPrefix, updateFrom, o, e);
         throw e;
       } catch (Exception e) {
-        log.error(logPrefix + "Error applying updates from " + updateFrom + " ,update=" + o, e);
+        log.error("{} Error applying updates from {}, update={} ", logPrefix, updateFrom,  o, e);
         throw e;
       } finally {
         try {
           proc.finish();
         } catch (Exception e) {
-          log.error(logPrefix + "Error applying updates from " + updateFrom + " ,finish()", e);
+          log.error("{} Error applying updates from {}, finish()", logPrefix, updateFrom, e);
           throw e;
         } finally {
           IOUtils.closeQuietly(proc);

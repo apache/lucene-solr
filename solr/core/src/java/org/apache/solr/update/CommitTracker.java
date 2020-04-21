@@ -87,7 +87,7 @@ public final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
-    log.info(name + " AutoCommit: " + this);
+    log.info("{} AutoCommit: {}", name, this);
   }
 
   public boolean getOpenSearcher() {

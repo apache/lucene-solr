@@ -139,7 +139,9 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
-      log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
+      if (log.isDebugEnabled()) {
+        log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
+      }
       recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
     } else {
       log.debug("Creating recoveryExecutor with unbounded pool");
