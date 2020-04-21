@@ -92,6 +92,9 @@ Other
 * LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
   ByteBuffer API. (Adrien Grand)
 
+* LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
+  Mike McCandless)
+
 ======================= Lucene 8.5.1 =======================
 
 Bug Fixes
