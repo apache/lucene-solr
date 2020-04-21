@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.Bits;
 
-public abstract class DocValuesReader extends LeafReader {
+abstract class DocValuesReader extends LeafReader {
   @Override
   public CacheHelper getCoreCacheHelper() {
     throw new UnsupportedOperationException();

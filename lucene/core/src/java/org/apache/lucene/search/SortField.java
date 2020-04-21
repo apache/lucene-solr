@@ -126,10 +126,13 @@ public class SortField {
     this.reverse = reverse;
   }
 
+  /** A SortFieldProvider for field sorts */
   public static final class Provider extends SortFieldProvider {
 
+    /** The name this Provider is registered under */
     public static final String NAME = "field";
 
+    /** Creates a new Provider */
     public Provider() {
       super(NAME);
     }

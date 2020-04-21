@@ -89,10 +89,13 @@ public class SortedNumericSortField extends SortField {
     this.type = type;
   }
 
+  /** A SortFieldProvider for this sort field */
   public static final class Provider extends SortFieldProvider {
 
+    /** The name this provider is registered under */
     public static final String NAME = "sortedNumericField";
 
+    /** Creates a new Provider */
     public Provider() {
       super(NAME);
     }

@@ -18,11 +18,15 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.NamedSPILoader;
 
+/**
+ * Reads a named SortField from a segment info file, used to record index sorts
+ */
 public abstract class SortFieldProvider implements NamedSPILoader.NamedSPI {
 
   private static class Holder {
@@ -37,17 +41,47 @@ public abstract class SortFieldProvider implements NamedSPILoader.NamedSPI {
     }
   }
 
+  /**
+   * Looks up a SortFieldProvider by name
+   */
   public static SortFieldProvider forName(String name) {
     return Holder.getLoader().lookup(name);
   }
 
+  /**
+   * Lists all available SortFieldProviders
+   */
+  public static Set<String> availableSortFieldProviders() {
+    return Holder.getLoader().availableServices();
+  }
+
+  /**
+   * Reloads the SortFieldProvider list from the given {@link ClassLoader}.
+   * Changes to the list are visible after the method ends, all
+   * iterators ({@link #availableSortFieldProviders()} ()},...) stay consistent.
+   *
+   * <p><b>NOTE:</b> Only new SortFieldProviders are added, existing ones are
+   * never removed or replaced.
+   *
+   * <p><em>This method is expensive and should only be called for discovery
+   * of new SortFieldProviders on the given classpath/classloader!</em>
+   */
   public static void reloadSortFieldProviders(ClassLoader classLoader) {
     Holder.getLoader().reload(classLoader);
   }
 
+  /** The name this SortFieldProvider is registered under */
   protected final String name;
 
-  public SortFieldProvider(String name) {
+  /**
+   * Creates a new SortFieldProvider.
+   * <p>
+   * The provided name will be written into the index segment: in order to
+   * for the segment to be read this class should be registered with Java's
+   * SPI mechanism (registered in META-INF/ of your jar file, etc).
+   * @param name must be all ascii alphanumeric, and less than 128 characters in length.
+   */
+  protected SortFieldProvider(String name) {
     this.name = name;
   }
 
@@ -56,5 +90,8 @@ public abstract class SortFieldProvider implements NamedSPILoader.NamedSPI {
     return name;
   }
 
+  /**
+   * Loads a SortField from serialized bytes
+   */
   public abstract SortField loadSortField(DataInput in) throws IOException;
 }

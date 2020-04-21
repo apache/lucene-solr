@@ -40,12 +40,18 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * {@link #getDocComparator(LeafReader)} - an object that determines how documents within a segment are to be sorted
  * {@link #getComparableProviders(List)} - an array of objects that return a sortable long value per document and segment
  * {@link #serialize(DataOutput)} - how the sort should be written into the segment header
+ * {@link #getProviderName()} - the SPI-registered name of a {@link SortFieldProvider} to deserialize the sort
+ *
+ * The companion {@link SortFieldProvider} should be registered with SPI via {@code META-INF/services}
  */
-public abstract class IndexSorter {
+public interface IndexSorter {
 
-  /** Returns a long so that the natural ordering of long values matches the
-   *  ordering of doc IDs for the given comparator. Used for sorting documents across segments */
+  /** Used for sorting documents across segments */
   public interface ComparableProvider {
+    /**
+     * Returns a long so that the natural ordering of long values matches the
+     * ordering of doc IDs for the given comparator
+     */
     long getAsComparableLong(int docID) throws IOException;
   }
 
@@ -82,6 +88,9 @@ public abstract class IndexSorter {
    */
   public abstract void serialize(DataOutput out) throws IOException;
 
+  /**
+   * The SPI-registered name of a {@link SortFieldProvider} that will deserialize the parent SortField
+   */
   public abstract String getProviderName();
 
   /**
@@ -115,7 +124,7 @@ public abstract class IndexSorter {
   /**
    * Sorts documents based on integer values from a NumericDocValues instance
    */
-  public static final class IntSorter extends IndexSorter {
+  public static final class IntSorter implements IndexSorter {
 
     private final Integer missingValue;
     private final int reverseMul;
@@ -190,7 +199,7 @@ public abstract class IndexSorter {
   /**
    * Sorts documents based on long values from a NumericDocValues instance
    */
-  public static final class LongSorter extends IndexSorter {
+  public static final class LongSorter implements IndexSorter {
 
     private final String providerName;
     private final Long missingValue;
@@ -263,7 +272,7 @@ public abstract class IndexSorter {
   /**
    * Sorts documents based on float values from a NumericDocValues instance
    */
-  public static final class FloatSorter extends IndexSorter {
+  public static final class FloatSorter implements IndexSorter {
 
     private final String providerName;
     private final Float missingValue;
@@ -336,7 +345,7 @@ public abstract class IndexSorter {
   /**
    * Sorts documents based on double values from a NumericDocValues instance
    */
-  public static final class DoubleSorter extends IndexSorter {
+  public static final class DoubleSorter implements IndexSorter {
 
     private final String providerName;
     private final Double missingValue;
@@ -409,7 +418,7 @@ public abstract class IndexSorter {
   /**
    * Sorts documents based on terms from a SortedDocValues instance
    */
-  public static final class StringSorter extends IndexSorter {
+  public static final class StringSorter implements IndexSorter {
 
     private final String providerName;
     private final Object missingValue;

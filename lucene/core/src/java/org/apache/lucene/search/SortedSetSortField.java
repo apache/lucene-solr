@@ -73,10 +73,13 @@ public class SortedSetSortField extends SortField {
     this.selector = selector;
   }
 
+  /** A SortFieldProvider for this sort */
   public static final class Provider extends SortFieldProvider {
 
+    /** The name this provider is registered under */
     public static final String NAME = "sortedSetField";
 
+    /** Creates a new Provider */
     public Provider() {
       super(NAME);
     }
