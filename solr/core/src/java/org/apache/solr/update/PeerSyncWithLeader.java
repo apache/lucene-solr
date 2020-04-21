@@ -132,10 +132,12 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
     Timer.Context timerContext = null;
     try {
-      log.info(msg() + "START leader=" + leaderUrl + " nUpdates=" + nUpdates);
+      if (log.isInfoEnabled()) {
+        log.info("{} START leader={} nUpdates={}", msg(), leaderUrl, nUpdates);
+      }
 
       if (debug) {
-        log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
+        log.debug("{} startingVersions={} {}", msg(), startingVersions.size(), startingVersions);
       }
       // check if we already in sync to begin with
       if(doFingerprint && alreadyInSync()) {
@@ -163,8 +165,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       long smallestNewUpdate = Math.abs(ourUpdates.get(ourUpdates.size() - 1));
 
       if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
-        log.warn(msg()
-            + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
+        if (log.isWarnEnabled()) {
+          log.warn("{} too many updates received since start - startingUpdates no longer overlaps with our currentUpdates", msg());
+        }
         syncErrors.inc();
         return PeerSync.PeerSyncResult.failure();
       }
@@ -178,7 +181,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
       boolean success = doSync(ourUpdates, ourLowThreshold, ourHighThreshold);
 
-      log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
+      if (log.isInfoEnabled()) {
+        log.info("{} DONE. sync {}", msg(), (success ? "succeeded" : "failed"));
+      }
       if (!success) {
         syncErrors.inc();
       }
@@ -190,7 +195,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       try {
         clientToLeader.close();
       } catch (IOException e) {
-        log.warn("{} unable to close client to leader", msg(), e);
+        if (log.isWarnEnabled()) {
+          log.warn("{} unable to close client to leader", msg(), e);
+        }
       }
     }
   }
@@ -226,7 +233,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private MissedUpdatesRequest buildMissedUpdatesRequest(NamedList<Object> rsp) {
     // we retrieved the last N updates from the replica
     List<Long> otherVersions = (List<Long>)rsp.get("versions");
-    log.info(msg() + " Received " + otherVersions.size() + " versions from " + leaderUrl);
+    if (log.isInfoEnabled()) {
+      log.info("{} Received {} versions from {}", msg(), otherVersions.size(), leaderUrl);
+    }
 
     if (otherVersions.isEmpty()) {
       return MissedUpdatesRequest.UNABLE_TO_SYNC;
@@ -242,7 +251,10 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   }
 
   private NamedList<Object> requestUpdates(MissedUpdatesRequest missedUpdatesRequest) {
-    log.info(msg() + "Requesting updates from " + leaderUrl + " n=" + missedUpdatesRequest.totalRequestedUpdates + " versions=" + missedUpdatesRequest.versionsAndRanges);
+    if (log.isInfoEnabled()) {
+      log.info("{} Requesting updates from {} n={} versions={}", msg(), leaderUrl
+          , missedUpdatesRequest.totalRequestedUpdates, missedUpdatesRequest.versionsAndRanges);
+    }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/get");
@@ -259,7 +271,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     List<Object> updates = (List<Object>)rsp.get("updates");
 
     if (updates.size() < numRequestedUpdates) {
-      log.error(msg() + " Requested " + numRequestedUpdates + " updates from " + leaderUrl + " but retrieved " + updates.size());
+      log.error("{} Requested {} updated from {} but retrieved {}", msg(), numRequestedUpdates, leaderUrl, updates.size());
       return false;
     }
 
