@@ -63,7 +63,7 @@ public class TestSortOptimization extends LuceneTestCase {
         assertEquals(i, ((Long) fieldDoc.fields[0]).intValue());
       }
       assertTrue(collector.isEarlyTerminated());
-      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+      assertTrue(topDocs.totalHits.value < numDocs);
     }
 
     { // paging sort with after
@@ -78,7 +78,7 @@ public class TestSortOptimization extends LuceneTestCase {
         assertEquals(afterValue + 1 + i, fieldDoc.fields[0]);
       }
       assertTrue(collector.isEarlyTerminated());
-      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+      assertTrue(topDocs.totalHits.value < numDocs);
     }
 
     { // test that if there is the secondary sort on _score, scores are filled correctly
@@ -93,7 +93,7 @@ public class TestSortOptimization extends LuceneTestCase {
         assertEquals(1.0, score, 0.001);
       }
       assertTrue(collector.isEarlyTerminated());
-      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+      assertTrue(topDocs.totalHits.value < numDocs);
     }
 
     writer.close();
@@ -131,11 +131,58 @@ public class TestSortOptimization extends LuceneTestCase {
       FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
       assertEquals(i, ((Long) fieldDoc.fields[0]).intValue()); // returns expected values
     }
+    assertEquals(topDocs.totalHits.value, numDocs); // assert that all documents were collected => optimization was not run
 
     writer.close();
     reader.close();
     dir.close();
   }
+
+
+  public void testSortOptimizationWithMissingValues() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(10000);
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      if ((i % 500) != 0) { // miss values on every 500th document
+        doc.add(new NumericDocValuesField("my_field", i));
+        doc.add(new LongPoint("my_field", i));
+      }
+      writer.addDocument(doc);
+      if (i == 7000) writer.flush(); // two segments
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+
+    { // test that optimization is not run when missing value setting of SortField is competitive
+      final SortField sortField = new SortField("my_field", SortField.Type.LONG);
+      sortField.setMissingValue(0L); // set a competitive missing value
+      final Sort sort = new Sort(sortField);
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertEquals(topDocs.totalHits.value, numDocs); // assert that all documents were collected => optimization was not run
+    }
+    { // test that optimization is run when missing value setting of SortField is NOT competitive
+      final SortField sortField = new SortField("my_field", SortField.Type.LONG);
+      sortField.setMissingValue(100L); // set a NON competitive missing value
+      final Sort sort = new Sort(sortField);
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertTrue(topDocs.totalHits.value < numDocs); // assert that some docs were skipped => optimization was run
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
 
   public void testFloatSortOptimization() throws IOException {
     final Directory dir = newDirectory();
@@ -165,7 +212,7 @@ public class TestSortOptimization extends LuceneTestCase {
         assertEquals(1f * i, fieldDoc.fields[0]);
       }
       assertTrue(collector.isEarlyTerminated());
-      assertTrue(topDocs.totalHits.value >= topDocs.scoreDocs.length);
+      assertTrue(topDocs.totalHits.value < numDocs);
     }
 
     writer.close();

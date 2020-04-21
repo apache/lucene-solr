@@ -462,8 +462,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     // here we assume that if hitsThreshold was set, we let a comparator to skip non-competitive docs
-    boolean filterNonCompetitveDocs = hitsThresholdChecker.getHitsThreshold() == Integer.MAX_VALUE ? false : true;
-    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitveDocs);
+    boolean filterNonCompetitiveDocs = hitsThresholdChecker.getHitsThreshold() == Integer.MAX_VALUE ? false : true;
+    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitiveDocs);
 
     if (after == null) {
       return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);
