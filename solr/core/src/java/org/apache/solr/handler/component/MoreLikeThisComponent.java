@@ -40,7 +40,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.InterestingTerm;
-import org.apache.solr.handler.MoreLikeThisHandler;
 import org.apache.solr.handler.MoreLikeThisHelper;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
