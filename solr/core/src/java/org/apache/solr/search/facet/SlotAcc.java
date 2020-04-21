@@ -612,7 +612,10 @@ interface CollectSlotAccMappingAware {
  * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
  */
 interface CountSlotAccFactory {
-
+  // nocommit: this is only *indirectly* a factory for CountSlotAcc instances?
+  // nocommit: should we rename it 'SweepCountAccStructFactory' or simplify?
+  // nocommit: seems like SweepCountAccStruct instantiation should be refactored out into SweepingAcc.add ?
+  
   SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots);
 
   static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
@@ -627,6 +630,9 @@ interface CountSlotAccFactory {
 final class SweepCountAccStruct {
   final DocSet docSet;
   final boolean isBase;
+
+  // nocommit: seems like a 1-to-1 final binding between SweepCountAccStruct & CountAccEntry ...
+  // nocommit: so why not refactor CountAccEntry into SweepCountAccStruct?
   final CountAccEntry countAccEntry;
 
   public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
@@ -642,8 +648,10 @@ final class SweepCountAccStruct {
 }
 
 final class CountAccEntry {
-  final CountSlotAcc countAcc;
-  final ReadOnlyCountSlotAcc roCountAcc;
+  // nocommit: why do we need a distinact constructor arg & ref to roCountAcc ?
+  // nocommit: should always be the same as countAcc ?
+  final CountSlotAcc countAcc; // nocommit: make private
+  final ReadOnlyCountSlotAcc roCountAcc; // nocommit: make public method that returns countAcc
   public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
     this.countAcc = countAcc;
     this.roCountAcc = roCountAcc;
@@ -709,17 +717,21 @@ class SweepingAcc implements CollectSlotAccMappingAware {
   }
 }
 
-abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, SweepableSlotAcc<CountSlotAcc> {
+// nocommit: since 'countAcc' is now the special place all sweeping is tracked, it seems
+// nocommit: unneccessary (and uneccessarly confusing) for it to also be a 'SweepableSlotAcc'
+// nocommit: any reason not to just remove this?
+abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc /*, SweepableSlotAcc<CountSlotAcc> ... nocommit... */ {
   public CountSlotAcc(FacetContext fcontext) {
     super(fcontext);
   }
 
-  @Override
-  public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
-    baseSweepingAcc.add(new SweepCountAccStruct(fcontext.base, false, this, this));
-    baseSweepingAcc.registerMapping(this, this);
-    return null;
-  }
+  // nocommit: CountSlotAcc no longer implements SweepableSlotAcc...
+  // @Override
+  // public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
+  //   baseSweepingAcc.add(new SweepCountAccStruct(fcontext.base, false, this, this));
+  //   baseSweepingAcc.registerMapping(this, this);
+  //   return null;
+  // }
 
   public SweepingAcc getBaseSweepingAcc() {
     return baseSweepingAcc == null ? baseSweepingAcc = new SweepingAcc(this, null) : baseSweepingAcc;
@@ -732,6 +744,18 @@ abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc, Swe
    * @returns never null
    */
   public SweepingAcc getBaseSweepingAcc(CollectSlotAccMappingAware notify) {
+    // nocommit: this logic seems like a code smell ... need to investigate/reconsider.
+    // nocommit: Perhaps a single "initSweeping(CollectSlotAccMappingAware notify) for use by processors,
+    // nocommit: that fails if called more then once?
+    // nocommit: All other code paths use getBaseSweepingAcc() ?
+    // nocommit: (or maybe a second constructor that takes in CollectSlotAccMappingAware and
+    // nocommit: sweeping processors use that?)
+    //
+    // nocommit: for that matter: can we eliminate SweepingAcc as a class,
+    // nocommit: and just roll that specific logic into CountSlotAcc?
+    // nocommit: IIUC: there should only ever be a single SweepingAcc instance,
+    // nocommit: and callers should never use/instantiate a SweepingAcc w/o using 'countAcc' ... correct?
+    
     if (notify == null) {
       throw new IllegalArgumentException("notify must not be null");
     } else if (baseSweepingAcc == null) {
