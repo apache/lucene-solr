@@ -58,9 +58,19 @@ class ValidateLogCallsTask extends DefaultTask {
                              , "solr/core/src/java/org/apache/solr/api"
                              , "solr/core/src/java/org/apache/solr/client"
 //  , "solr/core/src/java/org/apache/solr/cloud"
+//  , "solr/core/src/java/org/apache/solr/cloud/api"
+//  , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
+//  , "solr/core/src/java/org/apache/solr/cloud/cdcr"
+//  , "solr/core/src/java/org/apache/solr/cloud/hdfs"
+//  , "solr/core/src/java/org/apache/solr/cloud/overseer"
+//  , "solr/core/src/java/org/apache/solr/cloud/rule"
                              , "solr/core/src/java/org/apache/solr/core"
                              , "solr/core/src/java/org/apache/solr/filestore"
-//                             , "solr/core/src/java/org/apache/solr/handler"
+//                             , "solr/core/src/java/org/apache/solr/handler/admin"
+//                             , "solr/core/src/java/org/apache/solr/handler/component"
+//                             , "solr/core/src/java/org/apache/solr/handler/export"
+//                             , "solr/core/src/java/org/apache/solr/handler/loader"
+//                             , "solr/core/src/java/org/apache/solr/handler/tagger"
                              , "solr/core/src/java/org/apache/solr/highlight"
                              , "solr/core/src/java/org/apache/solr/index"
                              , "solr/core/src/java/org/apache/solr/internal"
@@ -81,7 +91,7 @@ class ValidateLogCallsTask extends DefaultTask {
                              , "solr/core/src/java/org/apache/solr/spelling"
                              , "solr/core/src/java/org/apache/solr/store"
                              , "solr/core/src/java/org/apache/solr/uninverting"
-//  , "solr/core/src/java/org/apache/solr/update"
+                             , "solr/core/src/java/org/apache/solr/update"
                              , "solr/core/src/java/org/apache/solr/util"
   ]
 
@@ -123,6 +133,13 @@ class ValidateLogCallsTask extends DefaultTask {
     if (prevLine.toLowerCase().contains("is" + level + "enabled")) {
       return
     }
+    // There's a convention to declare a member variable for whether a level is enabled and check that rather than
+    // isDebugEnabled. So check plusses there too.
+    if (prevLine.toLowerCase().replaceAll("\\s+", "").contains("if(" + level + ")")
+        && (checkPlus == false || line.contains("+") == false)) {
+      return
+    }
+
     if (level.equals("error") || level.equals("fatal")) {
       if (checkPlus == false || hasPlus == false) {
         return

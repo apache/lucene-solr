@@ -38,7 +38,7 @@ NOTES:
   we can use lambdas rather than "if log.is*Enabled". slf4j 2.0
   will when released.
 
-- error and fatal level messages are NOT checked. However, if you want to
+- error and fatal level messages are NOT flagged. However, if you want to
   check these levels for including '+', specify '-PcheckPlus=true'. This is more
   a style than functional check.
 

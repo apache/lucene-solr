@@ -148,8 +148,10 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
             try {
               return Date.from(parseInstant(parser, srcStringVal, parsePosition));
             } catch (DateTimeParseException e) {
-              log.debug("value '{}' is not parseable with format '{}'",
-                        new Object[] { srcStringVal, format.getKey() });
+              if (log.isDebugEnabled()) {
+                log.debug("value '{}' is not parseable with format '{}'",
+                    new Object[]{srcStringVal, format.getKey()});
+              }
             }
           }
           log.debug("value '{}' was not parsed by any configured format, thus was not mutated", srcStringVal);
