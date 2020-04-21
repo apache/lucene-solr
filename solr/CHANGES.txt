@@ -60,6 +60,8 @@ Other Changes
 * SOLR-9909: The deprecated SolrjNamedThreadFactory has been removed. Use SolrNamedThreadFactory instead.
   (Andras Salamon, shalin)
 
+* SOLR-14420: AuthenticationPlugin.authenticate accepts HttpServletRequest instead of ServletRequest. (Mike Drob)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
