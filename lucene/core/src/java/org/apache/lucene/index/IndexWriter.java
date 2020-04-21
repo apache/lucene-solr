@@ -441,13 +441,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     @Override
     public void afterSegmentsFlushed() throws IOException {
-      try {
-        publishFlushedSegments(false);
-      } finally {
-        if (false) {
-          maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
-        }
-      }
+      publishFlushedSegments(false);
     }
 
     @Override
