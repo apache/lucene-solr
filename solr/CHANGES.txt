@@ -40,6 +40,9 @@ Optimizations
 * SOLR-14340: Remove unnecessary configset verification checks when SolrCloud merely wants to know which configset a
   collection is using.  Improves CLUSTERSTATUS times for massive clusters.  (Mathieu Marie, David Smiley)
 
+* SOLR-14365: CollapsingQParser - Avoiding always allocate int[] and float[] with size equals to number of unique values.
+  (Cao Manh Dat)
+
 * SOLR-14376: Optimize filter queries that match all docs. (David Smiley)
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
