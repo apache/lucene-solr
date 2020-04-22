@@ -80,7 +80,7 @@ public class FSHDFSUtils {
    */
   static boolean recoverDFSFileLease(final DistributedFileSystem dfs, final Path p, final Configuration conf, CallerInfo callerInfo)
   throws IOException {
-    log.info("Recovering lease on dfs file " + p);
+    log.info("Recovering lease on dfs file {}", p);
     long startWaiting = System.nanoTime();
     // Default is 15 minutes. It's huge, but the idea is that if we have a major issue, HDFS
     // usually needs 10 minutes before marking the nodes as dead. So we're putting ourselves
@@ -134,10 +134,12 @@ public class FSHDFSUtils {
   static boolean checkIfTimedout(final Configuration conf, final long recoveryTimeout,
       final int nbAttempt, final Path p, final long startWaiting) {
     if (recoveryTimeout < System.nanoTime()) {
-      log.warn("Cannot recoverLease after trying for " +
-        conf.getInt("solr.hdfs.lease.recovery.timeout", 900000) +
-        "ms (solr.hdfs.lease.recovery.timeout); continuing, but may be DATALOSS!!!; " +
-        getLogMessageDetail(nbAttempt, p, startWaiting));
+      if (log.isWarnEnabled()) {
+        log.warn("Cannot recoverLease after trying for " +
+            conf.getInt("solr.hdfs.lease.recovery.timeout", 900000) +
+            "ms (solr.hdfs.lease.recovery.timeout); continuing, but may be DATALOSS!!!; " +
+            getLogMessageDetail(nbAttempt, p, startWaiting));
+      }
       return true;
     }
     return false;
@@ -152,8 +154,9 @@ public class FSHDFSUtils {
     boolean recovered = false;
     try {
       recovered = dfs.recoverLease(p);
-      log.info("recoverLease=" + recovered + ", " +
-        getLogMessageDetail(nbAttempt, p, startWaiting));
+      if (log.isInfoEnabled()) {
+        log.info("recoverLease={}, {}", recovered, getLogMessageDetail(nbAttempt, p, startWaiting));
+      }
     } catch (IOException e) {
       if (e.getMessage().contains("File does not exist")) {
         // This exception comes out instead of FNFE, fix it
@@ -161,7 +164,9 @@ public class FSHDFSUtils {
       } else if (e instanceof FileNotFoundException) {
         throw (FileNotFoundException)e;
       }
-      log.warn(getLogMessageDetail(nbAttempt, p, startWaiting), e);
+      if (log.isWarnEnabled()) {
+        log.warn(getLogMessageDetail(nbAttempt, p, startWaiting), e);
+      }
     }
     return recovered;
   }

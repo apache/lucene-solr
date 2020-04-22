@@ -180,12 +180,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.classLoader = newLoader;
     this.needToReloadLuceneSPI = true;
 
-    log.info("Added {} libs to classloader, from paths: {}",
-        urls.size(), urls.stream()
-        .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))
-        .sorted()
-        .distinct()
-        .collect(Collectors.toList()));
+    if (log.isInfoEnabled()) {
+      log.info("Added {} libs to classloader, from paths: {}",
+          urls.size(), urls.stream()
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .sorted()
+              .distinct()
+              .collect(Collectors.toList()));
+    }
   }
 
   /**
@@ -220,7 +222,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     allURLs.addAll(Arrays.asList(oldLoader.getURLs()));
     allURLs.addAll(urls);
     for (URL url : urls) {
-      log.debug("Adding '{}' to classloader", url.toString());
+      if (log.isDebugEnabled()) {
+        log.debug("Adding '{}' to classloader", url.toString());
+      }
     }
 
     ClassLoader oldParent = oldLoader.getParent();
@@ -447,7 +451,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           return Class.forName(c, true, classLoader).asSubclass(expectedType);
         } catch (ClassNotFoundException | ClassCastException e) {
           // this can happen if the legacyAnalysisPattern below caches the wrong thing
-          log.warn( name + " Unable to load cached class, attempting lookup. name={} shortname={} reason={}", c, cname, e);
+          log.warn("{} Unable to load cached class, attempting lookup. name={} shortname={} reason={}", name , c, cname, e);
           classNameCache.remove(cname);
         }
       }
@@ -468,7 +472,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
             return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
           } else {
-            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+            if (log.isWarnEnabled()) {
+              log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+            }
           }
         } catch (IllegalArgumentException ex) {
           // ok, we fall back to legacy loading
@@ -486,7 +492,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         for (String subpackage : subpackages) {
           try {
             String name = base + '.' + subpackage + newName;
-            log.trace("Trying class name " + name);
+            log.trace("Trying class name {}", name);
             return clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
           } catch (ClassNotFoundException e1) {
             // ignore... assume first exception is best.
@@ -555,8 +561,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
 
     } catch (Error err) {
-      log.error("Loading Class " + cName + " (" + clazz.getName() + ") triggered serious java error: "
-          + err.getClass().getName(), err);
+      log.error("Loading Class {} ({}) triggered serious java error: {}", cName, clazz.getName(),
+          err.getClass().getName(), err);
+
       throw err;
 
     } catch (Exception e) {
@@ -649,7 +656,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         try {
           infoRegistry.put(bean.getName(), bean);
         } catch (Exception e) {
-          log.warn("could not register MBean '" + bean.getName() + "'.", e);
+          if (log.isWarnEnabled()) {
+            log.warn("could not register MBean '{}'.", bean.getName(), e);
+          }
         }
       }
     }
@@ -754,7 +763,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       try (OutputStream out = new FileOutputStream(confFile);) {
         out.write(content);
       }
-      log.info("Written confile " + resourceName);
+      log.info("Written confile {}", resourceName);
     } catch (IOException e) {
       final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);

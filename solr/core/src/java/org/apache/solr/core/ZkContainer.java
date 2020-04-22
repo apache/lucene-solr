@@ -30,16 +30,19 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +54,7 @@ public class ZkContainer {
   private SolrZkServer zkServer;
 
   private ExecutorService coreZkRegister = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new DefaultSolrThreadFactory("coreZkRegister") );
+      new SolrNamedThreadFactory("coreZkRegister") );
   
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
@@ -99,9 +102,9 @@ public class ZkContainer {
         // If this is an ensemble, allow for a long connect time for other servers to come up
         if (zkRun != null && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
-          log.info("Zookeeper client=" + zookeeperHost + "  Waiting for a quorum.");
+          log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
-          log.info("Zookeeper client=" + zookeeperHost);          
+          log.info("Zookeeper client={}", zookeeperHost);
         }
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
@@ -124,12 +127,18 @@ public class ZkContainer {
 
         ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
-        if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
-          // we are part of an ensemble and we are not uploading the config - pause to give the config time
-          // to get up
-          Thread.sleep(10000);
+        if (zkRun != null) {
+          if (StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+            // Embedded ZK and probably running with SSL
+            new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, "https");
+          }
+          if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
+            // we are part of an ensemble and we are not uploading the config - pause to give the config time
+            // to get up
+            Thread.sleep(10000);
+          }
         }
-        
+
         if(confDir != null) {
           Path configPath = Paths.get(confDir);
           if (!Files.isDirectory(configPath))
@@ -178,7 +187,9 @@ public class ZkContainer {
         try {
           if (testing_beforeRegisterInZk != null) {
             boolean didTrigger = testing_beforeRegisterInZk.test(cd);
-            log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
+            if (log.isDebugEnabled()) {
+              log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
+            }
           }
           if (!core.getCoreContainer().isShutDown()) {
             zkController.register(core.getName(), cd, skipRecovery);

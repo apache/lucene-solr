@@ -1285,7 +1285,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
 
     // First one triggers, but does not reflect, the merge:
-    System.out.println("TEST: now get reader");
+    if (VERBOSE) {
+      System.out.println("TEST: now get reader");
+    }
     DirectoryReader.open(w).close();
     IndexReader r = DirectoryReader.open(w);
     assertEquals(1, r.leaves().size());

@@ -298,7 +298,7 @@ public class Assign {
     // if no autoscaling configuration exists then obviously we cannot use the policy framework
     if (autoScalingConfig.getPolicy().isEmpty()) return false;
     // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
+    if (!autoScalingConfig.getPolicy().hasEmptyPreferences()) return true;
     // does a cluster policy exist
     if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
     // finally we check if the current collection has a policy

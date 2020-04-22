@@ -165,7 +165,7 @@ public final class FieldTypePluginLoader
   protected FieldType register(String name, 
                                FieldType plugin) throws Exception {
 
-    log.trace("fieldtype defined: " + plugin );
+    log.trace("fieldtype defined: {}", plugin);
     return fieldTypes.put( name, plugin );
   }
 
@@ -241,7 +241,7 @@ public final class FieldTypePluginLoader
         analyzer.setVersion(luceneMatchVersion);
         return analyzer;
       } catch (Exception e) {
-        log.error("Cannot load analyzer: "+analyzerName, e);
+        log.error("Cannot load analyzer: {}", analyzerName, e);
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
                                  "Cannot load analyzer: "+analyzerName, e );
       }
@@ -264,7 +264,7 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = CharFilterFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.error("Both of name: " + name + " and className: " + className + " are specified for charFilter.");
+            log.error("Both of name: {} and className: {} are specified for charFilter.", name, className);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Cannot create charFilter: Both of name and className are specified.");
           }
@@ -314,7 +314,7 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = TokenizerFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.error("Both of name: " + name + " and className: " + className + " are specified for tokenizer.");
+            log.error("Both of name: {} and className: {} are specified for tokenizer.", name, className);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Cannot create tokenizer: Both of name and className are specified.");
           }
@@ -368,7 +368,7 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = TokenFilterFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.error("Both of name: " + name + " and className: " + className + " are specified for tokenFilter.");
+            log.error("Both of name: {} and className: {} are specified for tokenFilter.", name, className);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Cannot create tokenFilter: Both of name and className are specified.");
           }
@@ -406,9 +406,12 @@ public final class FieldTypePluginLoader
             SolrConfig.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
     if (!version.onOrAfter(Version.LUCENE_8_0_0)) {
-      log.warn(pluginClassName + " is using deprecated " + version +
-        " emulation. You should at some point declare and reindex to at least 8.0, because " +
-        "7.x emulation is deprecated and will be removed in 9.0");
+      if (log.isWarnEnabled()) {
+        log.warn("{} is using deprecated {}" +
+                " emulation. You should at some point declare and reindex to at least 8.0, because " +
+                "7.x emulation is deprecated and will be removed in 9.0"
+            , pluginClassName, version);
+      }
     }
     return version;
   }

@@ -46,7 +46,7 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -56,6 +56,7 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -83,9 +84,9 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   private final ExecutorService zkCallbackExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
   private final ExecutorService zkConnManagerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("zkConnectionManagerCallback"));
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -742,6 +743,30 @@ public class SolrZkClient implements Closeable {
    */
   public String getZkServerAddress() {
     return zkServerAddress;
+  }
+
+  /**
+   * Gets the raw config node /zookeeper/config as returned by server. Response may look like
+   * <pre>
+   * server.1=localhost:2780:2783:participant;localhost:2791
+   * server.2=localhost:2781:2784:participant;localhost:2792
+   * server.3=localhost:2782:2785:participant;localhost:2793
+   * version=400000003
+   * </pre>
+   * @return Multi line string representing the config. For standalone ZK this will return empty string
+   */
+  public String getConfig() {
+    try {
+      Stat stat = new Stat();
+      keeper.sync(ZooDefs.CONFIG_NODE, null, null);
+      byte[] data = keeper.getConfig(false, stat);
+      if (data == null || data.length == 0) {
+        return "";
+      }
+      return new String(data, StandardCharsets.UTF_8);
+    } catch (KeeperException|InterruptedException ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
+    }
   }
 
   public ZkACLProvider getZkACLProvider() {

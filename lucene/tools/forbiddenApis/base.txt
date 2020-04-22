@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-@defaultMessage Spawns threads with vague names; use a custom thread factory (Lucene's NamedThreadFactory, Solr's DefaultSolrThreadFactory) and name threads so that you can tell (by its name) which executor it is associated with
+@defaultMessage Spawns threads with vague names; use a custom thread factory (Lucene's NamedThreadFactory, Solr's SolrNamedThreadFactory) and name threads so that you can tell (by its name) which executor it is associated with
 java.util.concurrent.Executors#newFixedThreadPool(int)
 java.util.concurrent.Executors#newSingleThreadExecutor()
 java.util.concurrent.Executors#newCachedThreadPool()

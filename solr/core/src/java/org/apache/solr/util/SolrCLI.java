@@ -230,7 +230,7 @@ public class SolrCLI implements CLIO {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
 
-      log.debug("Connecting to Solr cluster: " + zkHost);
+      log.debug("Connecting to Solr cluster: {}", zkHost);
       try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
 
         String collection = cli.getOptionValue("collection");
@@ -560,7 +560,7 @@ public class SolrCLI implements CLIO {
       }
     } catch (Exception e) {
       // safe to squelch this as it's just looking for tools to run
-      log.debug("Failed to find Tool impl classes in "+packageName+" due to: "+e);
+      log.debug("Failed to find Tool impl classes in {}, due to: ", packageName, e);
     }
     return toolClasses;
   }
@@ -680,8 +680,10 @@ public class SolrCLI implements CLIO {
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            log.warn("Request to "+getUrl+" failed due to: "+exc.getMessage()+
-                ", sleeping for 5 seconds before re-trying the request ...");
+            if (log.isWarnEnabled()) {
+              log.warn("Request to {} failed due to: {}, sleeping for 5 seconds before re-trying the request ..."
+                  , getUrl, exc.getMessage());
+            }
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) { Thread.interrupted(); }
@@ -985,7 +987,7 @@ public class SolrCLI implements CLIO {
       } else {
         String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
 
-        log.debug("Connecting to Solr cluster: " + zkHost);
+        log.debug("Connecting to Solr cluster: {}", zkHost);
         try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
 
           String collection = cli.getOptionValue("collection");
@@ -1039,7 +1041,7 @@ public class SolrCLI implements CLIO {
         try {
           iterations = Integer.parseInt(iterStr);
         } catch (Exception e) {
-          log.warn("Invalid option 'i' value, using default 10:" + e);
+          log.warn("Invalid option 'i' value, using default 10:", e);
           iterations = 10;
         }
         Map<String, Object> simulationResults = new HashMap<>();
@@ -1586,7 +1588,7 @@ public class SolrCLI implements CLIO {
       if (collection == null)
         throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
 
-      log.debug("Running healthcheck for "+collection);
+      log.debug("Running healthcheck for {}", collection);
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
@@ -1622,7 +1624,7 @@ public class SolrCLI implements CLIO {
         try {
           leaderUrl = zkStateReader.getLeaderUrl(collection, shardName, 1000);
         } catch (Exception exc) {
-          log.warn("Failed to get leader for shard "+shardName+" due to: "+exc);
+          log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
         }
 
         List<ReplicaHealth> replicaList = new ArrayList<ReplicaHealth>();
@@ -1664,7 +1666,7 @@ public class SolrCLI implements CLIO {
               // if we get here, we can trust the state
               replicaStatus = replicaCoreProps.getState();
             } catch (Exception exc) {
-              log.error("ERROR: " + exc + " when trying to reach: " + coreUrl);
+              log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 
               if (checkCommunicationError(exc)) {
                 replicaStatus = Replica.State.DOWN.toString();
@@ -2250,7 +2252,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
-        log.error("Could not complete upconfig operation for reason: " + e.getMessage());
+        log.error("Could not complete upconfig operation for reason: {}", e.getMessage());
         throw (e);
       }
     }
@@ -2324,7 +2326,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.downConfig(confName, configSetPath);
       } catch (Exception e) {
-        log.error("Could not complete downconfig operation for reason: " + e.getMessage());
+        log.error("Could not complete downconfig operation for reason: {}", e.getMessage());
         throw (e);
       }
 
@@ -2401,7 +2403,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse));
         zkClient.clean(znode);
       } catch (Exception e) {
-        log.error("Could not complete rm operation for reason: " + e.getMessage());
+        log.error("Could not complete rm operation for reason: {}", e.getMessage());
         throw (e);
       }
 
@@ -2470,7 +2472,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse), cli);
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
-        log.error("Could not complete ls operation for reason: " + e.getMessage());
+        log.error("Could not complete ls operation for reason: {}", e.getMessage());
         throw (e);
       }
     }
@@ -2530,7 +2532,7 @@ public class SolrCLI implements CLIO {
         echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
         zkClient.makePath(znode, true);
       } catch (Exception e) {
-        log.error("Could not complete mkroot operation for reason: " + e.getMessage());
+        log.error("Could not complete mkroot operation for reason: {}", e.getMessage());
         throw (e);
       }
     }
@@ -2622,7 +2624,7 @@ public class SolrCLI implements CLIO {
         }
         zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
       } catch (Exception e) {
-        log.error("Could not complete the zk operation for reason: " + e.getMessage());
+        log.error("Could not complete the zk operation for reason: {}", e.getMessage());
         throw (e);
       }
     }
@@ -2701,7 +2703,7 @@ public class SolrCLI implements CLIO {
         echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
         zkClient.moveZnode(source, dest);
       } catch (Exception e) {
-        log.error("Could not complete mv operation for reason: " + e.getMessage());
+        log.error("Could not complete mv operation for reason: {}", e.getMessage());
         throw (e);
       }
 
@@ -2804,15 +2806,16 @@ public class SolrCLI implements CLIO {
       boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
       if (deleteConfig && configName != null) {
         if (cli.hasOption("forceDeleteConfig")) {
-          log.warn("Skipping safety checks, configuration directory "+configName+" will be deleted with impunity.");
+          log.warn("Skipping safety checks, configuration directory {} will be deleted with impunity.", configName);
         } else {
           // need to scan all Collections to see if any are using the config
           Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
 
           // give a little note to the user if there are many collections in case it takes a while
           if (collections.size() > 50)
-            log.info("Scanning " + collections.size() +
-                " to ensure no other collections are using config " + configName);
+            if (log.isInfoEnabled()) {
+              log.info("Scanning {} to ensure no other collections are using config {}", collections.size(), configName);
+            }
 
           for (String next : collections) {
             if (collectionName.equals(next))
@@ -2820,8 +2823,11 @@ public class SolrCLI implements CLIO {
 
             if (configName.equals(zkStateReader.readConfigName(next))) {
               deleteConfig = false;
-              log.warn("Configuration directory "+configName+" is also being used by "+next+
-                  "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete.");
+              if (log.isWarnEnabled()) {
+                log.warn("Configuration directory {} is also being used by {}" +
+                        "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete."
+                    , configName, next);
+              }
               break;
             }
           }
@@ -3981,7 +3987,7 @@ public class SolrCLI implements CLIO {
       } catch (SolrException se) {
         throw se; // Auth error
       } catch (IOException e) {
-        log.debug("Opening connection to " + url + " failed, Solr does not seem to be running", e);
+        log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
         return 0;
       }
       while (System.nanoTime() < timeout) {

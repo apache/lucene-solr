@@ -185,7 +185,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     } else {
       kerberosFilter = new KerberosFilter(coreContainer);
     }
-    log.info("Params: "+params);
+    log.info("Params: {}", params);
 
     FilterConfig conf = new FilterConfig() {
       @Override
@@ -230,12 +230,12 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   @Override
   public boolean doAuthenticate(ServletRequest req, ServletResponse rsp,
       FilterChain chain) throws Exception {
-    log.debug("Request to authenticate using kerberos: "+req);
+    log.debug("Request to authenticate using kerberos: {}", req);
     kerberosFilter.doFilter(req, rsp, chain);
 
     String requestContinuesAttr = (String)req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
     if (requestContinuesAttr == null) {
-      log.warn("Could not find " + RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
+      log.warn("Could not find {}", RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
       return false;
     } else {
       return Boolean.parseBoolean(requestContinuesAttr);
@@ -248,7 +248,9 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
         info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
       if (info.getUserPrincipal() != null) {
-        log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
+        if (log.isInfoEnabled()) {
+          log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
+        }
         httpRequest.setHeader(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
         return true;
       }

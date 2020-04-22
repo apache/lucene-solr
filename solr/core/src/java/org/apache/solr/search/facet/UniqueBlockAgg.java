@@ -79,7 +79,7 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
   }
 
   @Override
-  public abstract SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException ;
+  public abstract SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException ;
   
   @Override
   public FacetMerger createFacetMerger(Object prototype) {

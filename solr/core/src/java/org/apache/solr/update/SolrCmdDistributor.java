@@ -131,7 +131,7 @@ public class SolrCmdDistributor implements Closeable {
         builder.append(errors.size() - 10);
         builder.append(" more");
       }
-      log.debug(builder.toString());
+      log.debug("{}", builder);
     }
 
     for (Error err : errors) {
@@ -162,7 +162,9 @@ public class SolrCmdDistributor implements Closeable {
       // Only backoff once for the full batch
       try {
         int backoffTime = Math.min(retryPause * resubmitList.get(0).req.retries, 2000);
-        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        if (log.isDebugEnabled()) {
+          log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        }
         Thread.sleep(backoffTime);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();

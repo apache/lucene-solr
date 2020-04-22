@@ -205,7 +205,7 @@ public class UnInvertedField extends DocTermOrds {
     if (tnums != null) {
       for(byte[] target : tnums) {
         if (target != null && target.length > (1<<24)*.9) {
-          log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          log.warn("Approaching too many values for UnInvertedField faceting on field '{}' : bucket size={}", field, target.length);
         }
       }
     }
@@ -217,7 +217,9 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    log.info("UnInverted multi-valued field " + toString());
+    if (log.isInfoEnabled()) {
+      log.info("UnInverted multi-valued field {}", toString());
+    }
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 
@@ -390,7 +392,7 @@ public class UnInvertedField extends DocTermOrds {
     if (doNegative) {
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        counts.incrementCount(i, maxTermCounts[i] - counts.getCount(i)*2);
+        counts.incrementCount(i, maxTermCounts[i] - (int) counts.getCount(i)*2);
       }
     }
 

@@ -238,7 +238,7 @@ public class TestDoc extends LuceneTestCase {
       }
     }
 
-    return new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L);
+    return new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L, StringHelper.randomId());
   }
 
 

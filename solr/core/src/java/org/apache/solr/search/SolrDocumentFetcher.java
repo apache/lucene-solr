@@ -617,8 +617,10 @@ public class SolrDocumentFetcher {
     }
 
     if (schemaField.getType().getNumberType() == null) {
-      log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
-          schemaField.getName(), schemaField);
+      if (log.isWarnEnabled()) {
+        log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
+            schemaField.getName(), schemaField);
+      }
       return null;
     }
 
