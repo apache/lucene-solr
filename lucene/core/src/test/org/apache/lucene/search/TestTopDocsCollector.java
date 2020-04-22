@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -400,6 +402,36 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
     reader.close();
     dir.close();
+  }
+  
+  public void testRelationVsTopDocsCount() throws Exception {
+    try (Directory dir = newDirectory();
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+      Document doc = new Document();
+      doc.add(new TextField("f", "foo bar", Store.NO));
+      w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc));
+      w.flush();
+      w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc));
+      w.flush();
+      
+      try (IndexReader reader = DirectoryReader.open(w)) {
+        IndexSearcher searcher = new IndexSearcher(reader);
+        TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 10);
+        searcher.search(new TermQuery(new Term("f", "foo")), collector);
+        assertEquals(10, collector.totalHits);
+        assertEquals(TotalHits.Relation.EQUAL_TO, collector.totalHitsRelation);
+        
+        collector = TopScoreDocCollector.create(2, null, 2);
+        searcher.search(new TermQuery(new Term("f", "foo")), collector);
+        assertTrue(10 >= collector.totalHits);
+        assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, collector.totalHitsRelation);
+        
+        collector = TopScoreDocCollector.create(10, null, 2);
+        searcher.search(new TermQuery(new Term("f", "foo")), collector);
+        assertEquals(10, collector.totalHits);
+        assertEquals(TotalHits.Relation.EQUAL_TO, collector.totalHitsRelation);
+      }
+    }
   }
 
   public void testConcurrentMinScore() throws Exception {
