@@ -76,7 +76,14 @@ public class SharedCoreIndexingBatchProcessor implements Closeable {
 
     Slice shard = collection.getSlicesMap().get(shardName);
     if (shard == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown shard=" + shardName + " in collection=" + collectionName);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Indexing batch received for an unknown shard," +
+          " collection=" + collectionName + " shard=" + shardName + " core=" + core.getName());
+    }
+
+    if (!Slice.State.ACTIVE.equals(shard.getState())) {
+      // unclear what this means, but logging a warning for now
+      log.warn("Processing an indexing batch for a non-active shard," +
+          " collection=" + collectionName + " shard=" + shardName + " core=" + core.getName());
     }
 
     sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
