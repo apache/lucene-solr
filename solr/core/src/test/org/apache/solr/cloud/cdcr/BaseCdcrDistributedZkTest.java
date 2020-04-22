@@ -499,7 +499,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       client.connect();
       ZkStateReader zkStateReader = client.getZkStateReader();
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, false, true, 15);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, true, 15);
     } finally {
       client.close();
     }

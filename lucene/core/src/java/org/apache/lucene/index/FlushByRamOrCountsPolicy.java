@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 
-import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
-
 /**
  * Default {@link FlushPolicy} implementation that flushes new segments based on
  * RAM used and document count depending on the IndexWriter's
@@ -27,11 +25,11 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * 
  * <ul>
  * <li>
- * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThread)}
  * - applies pending delete operations based on the global number of buffered
  * delete terms if the consumed memory is greater than {@link IndexWriterConfig#getRAMBufferSizeMB()}</li>.
  * <li>
- * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThread)}
  * - flushes either on the number of documents per
  * {@link DocumentsWriterPerThread} (
  * {@link DocumentsWriterPerThread#getNumDocsInRAM()}) or on the global active
@@ -39,11 +37,11 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * {@link IndexWriterConfig#getMaxBufferedDocs()} or
  * {@link IndexWriterConfig#getRAMBufferSizeMB()} is enabled respectively</li>
  * <li>
- * {@link #onUpdate(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * {@link #onUpdate(DocumentsWriterFlushControl, DocumentsWriterPerThread)}
  * - calls
- * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThread)}
  * and
- * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThread)}
  * in order</li>
  * </ul>
  * All {@link IndexWriterConfig} settings are used to mark
@@ -58,7 +56,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 class FlushByRamOrCountsPolicy extends FlushPolicy {
 
   @Override
-  public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
+  public void onDelete(DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
     if ((flushOnRAM() && control.getDeleteBytesUsed() > 1024*1024*indexWriterConfig.getRAMBufferSizeMB())) {
       control.setApplyAllDeletes();
       if (infoStream.isEnabled("FP")) {
@@ -68,12 +66,12 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
   }
 
   @Override
-  public void onInsert(DocumentsWriterFlushControl control, ThreadState state) {
+  public void onInsert(DocumentsWriterFlushControl control, DocumentsWriterPerThread perThread) {
     if (flushOnDocCount()
-        && state.dwpt.getNumDocsInRAM() >= indexWriterConfig
+        && perThread.getNumDocsInRAM() >= indexWriterConfig
             .getMaxBufferedDocs()) {
       // Flush this state by num docs
-      control.setFlushPending(state);
+      control.setFlushPending(perThread);
     } else if (flushOnRAM()) {// flush by RAM
       final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
       final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
@@ -81,7 +79,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
         if (infoStream.isEnabled("FP")) {
           infoStream.message("FP", "trigger flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
         }
-        markLargestWriterPending(control, state, totalRam);
+        markLargestWriterPending(control, perThread);
       }
     }
   }
@@ -91,8 +89,8 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
    * pending
    */
   protected void markLargestWriterPending(DocumentsWriterFlushControl control,
-      ThreadState perThreadState, final long currentBytesPerThread) {
-    ThreadState largestNonPendingWriter = findLargestNonPendingWriter(control, perThreadState);
+      DocumentsWriterPerThread perThread) {
+    DocumentsWriterPerThread largestNonPendingWriter = findLargestNonPendingWriter(control, perThread);
     if (largestNonPendingWriter != null) {
       control.setFlushPending(largestNonPendingWriter);
     }

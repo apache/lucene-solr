@@ -54,7 +54,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -310,7 +309,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
         return;
       }
-      MDCLoggingContext.setCore(core);
 
       log.info("Starting recovery process. recoveringAfterStartup=" + recoveringAfterStartup);
 
@@ -324,8 +322,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
-    } finally {
-      MDCLoggingContext.clear();
     }
   }
 

@@ -63,7 +63,10 @@ Regarding the sort parameter's arguments:
 * A sort ordering must include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`).
 
 * Multiple sort orderings can be separated by a comma, using this syntax: `sort=<field name>+<direction>,<field name>+<direction>],...`
-** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. This pattern continues with further entries.
+** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. And so on.
+** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
+This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
+Users looking to avoid this behavior can add an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g. `price desc,id asc`).
 
 == start Parameter
 

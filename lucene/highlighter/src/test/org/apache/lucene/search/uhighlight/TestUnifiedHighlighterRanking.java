@@ -59,9 +59,9 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
   // TODO: this only tests single-valued fields. we should also index multiple values per field!
   public void testRanking() throws Exception {
     // number of documents: we will check each one
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(20);
     // number of top-N snippets, we will check 1 .. N
-    final int maxTopN = 5;
+    final int maxTopN = 3;
     // maximum number of elements to put in a sentence.
     final int maxSentenceLength = 10;
     // maximum number of sentences in a document

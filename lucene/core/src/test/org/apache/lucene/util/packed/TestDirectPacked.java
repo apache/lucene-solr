@@ -99,7 +99,7 @@ public class TestDirectPacked extends LuceneTestCase {
       String name = "bpv" + bpv + "_" + i;
       IndexOutput output = directory.createOutput(name, IOContext.DEFAULT);
       for (long j = 0; j < offset; ++j) {
-        output.writeByte((byte) random().nextInt());
+        output.writeByte((byte) random.nextInt());
       }
       DirectWriter writer = DirectWriter.getInstance(output, original.length, bitsRequired);
       for (int j = 0; j < original.length; j++) {

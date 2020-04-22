@@ -167,7 +167,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
     AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, true, 330);
+        (collectionName, client.getZkStateReader(), true, 330);
 
     // create it again
     createCollection(collectionName, null);
@@ -206,7 +206,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // delete the collection
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
     AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, true, 330);
+        (collectionName, client.getZkStateReader(), true, 330);
   }
 
   @Test

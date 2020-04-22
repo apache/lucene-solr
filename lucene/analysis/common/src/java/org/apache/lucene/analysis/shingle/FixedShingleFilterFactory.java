@@ -51,6 +51,11 @@ public class FixedShingleFilterFactory extends TokenFilterFactory {
     this.fillerToken = get(args, "fillerToken", "_");
   }
 
+  /** Default ctor for compatibility with SPI */
+  public FixedShingleFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new FixedShingleFilter(input, shingleSize, tokenSeparator, fillerToken);

@@ -57,7 +57,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -220,7 +220,7 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Used to submit notifications to Collection Properties watchers in order
    **/
-  private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("collectionPropsNotifications"));
+  private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("collectionPropsNotifications"));
 
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
@@ -283,6 +283,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * Returns config set name for collection.
+   * TODO move to DocCollection (state.json).
    *
    * @param collection to return config set name for
    */
@@ -294,10 +295,6 @@ public class ZkStateReader implements SolrCloseable {
     log.debug("Loading collection config from: [{}]", path);
 
     try {
-      if (zkClient.exists(path, true) == false) {
-        log.warn("No collection found at path {}.", path);
-        throw new KeeperException.NoNodeException("No collection found at path: " + path);
-      }
       byte[] data = zkClient.getData(path, null, null, true);
       if (data == null) {
         log.warn("No config data found at path {}.", path);
@@ -310,14 +307,6 @@ public class ZkStateReader implements SolrCloseable {
       if (configName == null) {
         log.warn("No config data found at path{}. ", path);
         throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      String configPath = CONFIGS_ZKNODE + "/" + configName;
-      if (zkClient.exists(configPath, true) == false) {
-        log.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
-        throw new KeeperException.NoNodeException("Specified config=[" + configName + "] does not exist in ZooKeeper at location=[" + configPath + "]");
-      } else {
-        log.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
       }
     } catch (InterruptedException e) {
       SolrZkClient.checkInterrupted(e);

@@ -90,6 +90,19 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     //Test page 2
     query("q", "*:*", "start","1", "rows", "1", "fq", "{!collapse field="+group+"}", "defType", "edismax", "bf", "field(test_i)", "expand", "true", "fl","*,score");
 
+    // multiple collapse and equal cost
+    ModifiableSolrParams baseParams = params("q", "*:*", "defType", "edismax", "expand", "true", "fl", "*,score",
+        "bf", "field(test_i)", "expand.sort", "id asc");
+    baseParams.set("fq", "{!collapse field="+group+"}", "{!collapse field=test_i}");
+    query(baseParams);
+
+    // multiple collapse and unequal cost case1
+    baseParams.set("fq", "{!collapse cost=1000 field="+group+"}", "{!collapse cost=2000 field=test_i}");
+    query(baseParams);
+
+    // multiple collapse and unequal cost case2
+    baseParams.set("fq", "{!collapse cost=1000 field="+group+"}", "{!collapse cost=200 field=test_i}");
+    query(baseParams);
 
     ignoreException("missing expand field");
     SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
@@ -153,6 +166,42 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     assertExpandGroupCountAndOrder("group3", 1, results, "9");
     assertExpandGroupCountAndOrder("group4", 1, results, "14");
 
+    //Test expand.rows = 0 - no docs only expand count
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field="+group+"}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    params.add("expand", "true");
+    params.add("expand.rows", "0");
+    params.add("fl", "id");
+    setDistributedParams(params);
+    rsp = queryServer(params);
+    results = rsp.getExpandedResults();
+    assertExpandGroups(results, "group1","group2", "group3", "group4");
+    assertExpandGroupCountAndOrder("group1", 0, results);
+    assertExpandGroupCountAndOrder("group2", 0, results);
+    assertExpandGroupCountAndOrder("group3", 0, results);
+    assertExpandGroupCountAndOrder("group4", 0, results);
+
+    //Test expand.rows = 0 with expand.field
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "test_l:10");
+    params.add("defType", "edismax");
+    params.add("expand", "true");
+    params.add("expand.fq", "test_f:2000");
+    params.add("expand.field", group);
+    params.add("expand.rows", "0");
+    params.add("fl", "id,score");
+    setDistributedParams(params);
+    rsp = queryServer(params);
+    results = rsp.getExpandedResults();
+    assertExpandGroups(results, "group1", "group4");
+    assertExpandGroupCountAndOrder("group1", 0, results);
+    assertExpandGroupCountAndOrder("group4", 0, results);
 
     //Test key-only fl
 

@@ -128,6 +128,6 @@ public class TestScandinavianNormalizationFilter extends BaseTokenStreamTestCase
   
   /** blast some random strings through the analyzer */
   public void testRandomData() throws Exception {
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
 }

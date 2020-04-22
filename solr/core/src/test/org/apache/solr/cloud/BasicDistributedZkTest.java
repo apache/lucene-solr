@@ -81,7 +81,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TestInjection.Hook;
 import org.junit.BeforeClass;
@@ -709,7 +709,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       try {
         executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
             5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-            new DefaultSolrThreadFactory("testExecutor"));
+            new SolrNamedThreadFactory("testExecutor"));
         int cnt = 3;
 
         // create the cores

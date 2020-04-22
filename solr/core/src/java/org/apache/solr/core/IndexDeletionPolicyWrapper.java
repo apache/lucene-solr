@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * commit points for certain amounts of time to support features such as index replication
  * or snapshooting directly out of a live index directory.
  * <p>
- * <b>NOTE</b>: The {@link #clone()} method returns <tt>this</tt> in order to make
+ * <b>NOTE</b>: The {@link #clone()} method returns <code>this</code> in order to make
  * this {@link IndexDeletionPolicy} instance trackable across {@link IndexWriter}
  * instantiations. This is correct because each core has its own
  * {@link IndexDeletionPolicy} and never has more than one open {@link IndexWriter}.

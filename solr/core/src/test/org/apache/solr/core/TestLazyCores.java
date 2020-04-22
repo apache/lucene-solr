@@ -60,7 +60,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String isTransient, String loadOnStartup) {
-    return new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc.getContainerProperties(), false,
+    return new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc,
         CoreDescriptor.CORE_TRANSIENT, isTransient,
         CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
   }
@@ -615,8 +615,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
     }
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
-    NodeConfig config = SolrXmlConfig.fromString(loader, "<solr/>");
+    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
     return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));

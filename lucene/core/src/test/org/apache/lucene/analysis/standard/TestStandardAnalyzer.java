@@ -439,14 +439,14 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new StandardAnalyzer();
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Analyzer analyzer = new StandardAnalyzer();
-    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), analyzer, 20*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
 
@@ -461,7 +461,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenStream);
       }
     };
-    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
 

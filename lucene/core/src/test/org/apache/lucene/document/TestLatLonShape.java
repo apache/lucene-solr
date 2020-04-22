@@ -18,20 +18,18 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
@@ -189,7 +187,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     // search a bounding box
     searcher = newSearcher(reader);
-    q = new LatLonShapeBoundingBoxQuery(FIELDNAME, QueryRelation.CONTAINS,0, 0, 0, 0);
+    q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.CONTAINS,0, 0, 0, 0);
     assertEquals(1, searcher.count(q));
     IOUtils.close(reader, dir);
   }
@@ -223,7 +221,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   /** test we can search for a point with a large number of vertices*/
   public void testLargeVertexPolygon() throws Exception {
-    int numVertices = TestUtil.nextInt(random(), 200000, 500000);
+    int numVertices = TEST_NIGHTLY ? TestUtil.nextInt(random(), 200000, 500000) : TestUtil.nextInt(random(), 20000, 50000);
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int mbd = iwc.getMaxBufferedDocs();
@@ -402,20 +400,6 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon poly = new Polygon(new double[] {-1.490648725633769E-132d, 90d, 90d, -1.490648725633769E-132d},
         new double[] {0d, 0d, 180d, 0d});
 
-    Rectangle rectangle = new Rectangle(-29.46555603761226d, 0.0d, 8.381903171539307E-8d, 0.9999999403953552d);
-    Rectangle2D rectangle2D = Rectangle2D.create(rectangle);
-
-    Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
-
-    byte[] encoded = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.isEdgefromPolygon(0),
-                                       encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
-                                       encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
-    ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
-    ShapeField.decodeTriangle(encoded, decoded);
-
-    int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
-
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, poly);
     writer.addDocument(document);
@@ -427,7 +411,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     // search a bbox in the hole
     Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.DISJOINT,-29.46555603761226d, 0.0d, 8.381903171539307E-8d, 0.9999999403953552d);
-    assertEquals(expected, searcher.count(q));
+    assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
   }
@@ -514,67 +498,102 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Component2D polygon2D = Polygon2D.create(polygon);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    Component2D polygon2D = LatLonGeometry.create(polygon);
+    boolean intersects = polygon2D.intersectsTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
         quantizeLon(alon), quantizeLat(alat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersects);
 
-    rel = polygon2D.relateTriangle(
+    intersects = polygon2D.intersectsTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(alon), quantizeLat(alat),
         quantizeLon(blon), quantizeLat(blat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersects);
   }
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Component2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = LatLonGeometry.create(p);
     //3 shared points
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    boolean containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //2 shared points
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0.75));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //1 shared point
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(0.75), quantizeLat(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0.75));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     // 1 shared point but out
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(2), quantizeLat(0),
         quantizeLon(2), quantizeLat(2));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(2), quantizeLat(0),
+        quantizeLon(2), quantizeLat(2));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
     // 1 shared point but crossing
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(2), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(2), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
     //share one edge
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0), quantizeLat(0),
         quantizeLon(0), quantizeLat(1),
         quantizeLon(0.5), quantizeLat(0.5));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0), quantizeLat(0),
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(0.5), quantizeLat(0.5));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //share one edge outside
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0), quantizeLat(1),
         quantizeLon(1.5), quantizeLat(1.5),
         quantizeLon(1), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(1.5), quantizeLat(1.5),
+        quantizeLon(1), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
   }
 
   public void testLUCENE8736() throws Exception {
@@ -632,32 +651,31 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
-    Component2D polygon2D = Polygon2D.create(p);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    Component2D polygon2D = LatLonGeometry.create(p);
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
         quantizeLon(-5), quantizeLat(-15));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersectsTriangle);
   }
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Component2D polygon2D = Polygon2D.create(p);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    Component2D polygon2D = LatLonGeometry.create(p);
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
         quantizeLon(-1.5), quantizeLat(0));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersectsTriangle);
   }
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
-    Component2D l2d = Line2D.create(l);
-    PointValues.Relation r = l2d.relateTriangle(
+    Component2D l2d = LatLonGeometry.create(l);
+    boolean intersectsLine = l2d.intersectsLine(
         quantizeLon(-5), quantizeLat(0),
-        quantizeLon(5), quantizeLat(0),
-        quantizeLon(-5), quantizeLat(0));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
+        quantizeLon(5), quantizeLat(0));
+    assertTrue(intersectsLine);
   }
 
   public void testLUCENE9055() throws Exception {
@@ -698,5 +716,117 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(2, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
+  }
+
+  public void testIndexAndQuerySamePolygon() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Polygon polygon;
+    while(true) {
+      try {
+        polygon = GeoTestUtil.nextPolygon();
+        // quantize the polygon
+        double[] lats = new double[polygon.numPoints()];
+        double[] lons = new double[polygon.numPoints()];
+        for (int i = 0; i < polygon.numPoints(); i++) {
+          lats[i] = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(polygon.getPolyLat(i)));
+          lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
+        }
+        polygon = new Polygon(lats, lons);
+        Tessellator.tessellate(polygon);
+        break;
+      } catch (Exception e) {
+        // invalid polygon, try a new one
+      }
+    }
+    addPolygonsToDoc(FIELDNAME, doc, polygon);
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, polygon);
+    assertEquals(1, searcher.count(q));
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.DISJOINT, polygon);
+    assertEquals(0, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    double lat = GeoTestUtil.nextLatitude();
+    double lon = GeoTestUtil.nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    }
+    Circle circle = new Circle(lat, lon, radiusMeters);
+    Component2D circle2D = LatLonGeometry.create(circle);
+    int expected;
+    int expectedDisjoint;
+    if (circle2D.contains(p.lon, p.lat))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
+  }
+
+  public void testLucene9239() throws Exception {
+
+    double[] lats = new double[] {-22.350172194105966, 90.0, 90.0, -22.350172194105966, -22.350172194105966};
+    double[] lons = new double[] {49.931598911327825, 49.931598911327825,51.40819689137876, 51.408196891378765, 49.931598911327825};
+    Polygon polygon = new Polygon(lats, lons);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    Circle circle = new Circle(78.01086555431775, 0.9513280497489234, 1097753.4254892308);
+    // Circle is not within the polygon
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
+    assertEquals(0, s.count(q));
+
+    IOUtils.close(r, dir);
   }
 }

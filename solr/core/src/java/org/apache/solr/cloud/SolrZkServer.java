@@ -134,6 +134,8 @@ public class SolrZkServer {
       log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port " + zkProps.getClientPortAddress().getPort());
     }
 
+    log.warn("Embedded Zookeeper is not recommended in production environments. See Reference Guide for details.");
+
     zkThread.setDaemon(true);
     zkThread.start();
     try {

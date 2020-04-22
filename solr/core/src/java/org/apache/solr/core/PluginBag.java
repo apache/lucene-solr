@@ -128,7 +128,9 @@ public class PluginBag<T> implements AutoCloseable {
 
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
-      log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
+      if (log.isDebugEnabled()) {
+        log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
+      }
       LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
           core.getMemClassLoader() :
           core.getResourceLoader(), true);
@@ -137,7 +139,9 @@ public class PluginBag<T> implements AutoCloseable {
           (PluginHolder<T>) new UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder(holder) :
           holder;
     } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
-      log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
+      if (log.isDebugEnabled()) {
+        log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
+      }
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
       if (info.pkgName != null) {
@@ -254,7 +258,11 @@ public class PluginBag<T> implements AutoCloseable {
 
   void setDefault(String def) {
     if (!registry.containsKey(def)) return;
-    if (this.def != null) log.warn("Multiple defaults for : " + meta.getCleanTag());
+    if (this.def != null) {
+      if (log.isWarnEnabled()) {
+        log.warn("Multiple defaults for : {}", meta.getCleanTag());
+      }
+    }
     this.def = def;
   }
 
@@ -291,11 +299,17 @@ public class PluginBag<T> implements AutoCloseable {
       String name = info.name;
       if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
       PluginHolder<T> old = put(name, o);
-      if (old != null) log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+      if (old != null) {
+        if (log.isWarnEnabled()) {
+          log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+        }
+      }
     }
     if (infos.size() > 0) { // Aggregate logging
-      log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
-          infos.stream().map(i -> i.name).collect(Collectors.toList()));
+      if (log.isDebugEnabled()) {
+        log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
+            infos.stream().map(i -> i.name).collect(Collectors.toList()));
+      }
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {
       if (!contains(e.getKey())) {
@@ -332,7 +346,7 @@ public class PluginBag<T> implements AutoCloseable {
       try {
         e.getValue().close();
       } catch (Exception exp) {
-        log.error("Error closing plugin " + e.getKey() + " of type : " + meta.getCleanTag(), exp);
+        log.error("Error closing plugin {} of type : {}", e.getKey(), meta.getCleanTag(), exp);
       }
     }
   }
@@ -341,7 +355,7 @@ public class PluginBag<T> implements AutoCloseable {
     try {
       if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
     } catch (Exception e) {
-      log.error("Error closing "+ inst , e);
+      log.error("Error closing {}", inst , e);
     }
   }
 
@@ -442,7 +456,9 @@ public class PluginBag<T> implements AutoCloseable {
 
     private synchronized boolean createInst() {
       if (lazyInst != null) return false;
-      log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo.toString());
+      if (log.isInfoEnabled()) {
+        log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo.toString());
+      }
       if (resourceLoader instanceof MemClassLoader) {
         MemClassLoader loader = (MemClassLoader) resourceLoader;
         loader.loadJars();

@@ -160,7 +160,9 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
           cpsm.mappings.put(key, sortedVals);
         }
       }
-      log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());
+      if (log.isInfoEnabled()) {
+        log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());
+      }
     }
 
     @SuppressWarnings("unchecked")
@@ -376,6 +378,11 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
 
   public ManagedSynonymGraphFilterFactory(Map<String,String> args) {
     super(args);
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ManagedSynonymGraphFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

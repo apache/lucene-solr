@@ -209,9 +209,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
   /** Make sure we close open files, delete temp files, etc., on exception */
   public void testWithExceptions() throws Exception {
-    int numDocs = atLeast(10000);
+    int numDocs = atLeast(1000);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numIndexDims = TestUtil.nextInt(random(), 1, Math.min(numDims, PointValues.MAX_INDEX_DIMENSIONS));
 
     byte[][][] docValues = new byte[numDocs][][];
 
@@ -231,7 +232,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         try {
           dir.setRandomIOExceptionRate(0.05);
           dir.setRandomIOExceptionRateOnOpen(0.05);
-          verify(dir, docValues, null, numDims, numBytesPerDim, true);
+          verify(dir, docValues, null, numDims, numIndexDims, numBytesPerDim, true);
         } catch (IllegalStateException ise) {
           done = handlePossiblyFakeException(ise);
         } catch (AssertionError ae) {
@@ -270,8 +271,9 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   public void testMultiValued() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numIndexDims = TestUtil.nextInt(random(), 1, Math.min(PointValues.MAX_INDEX_DIMENSIONS, numDims));
 
-    int numDocs = atLeast(1000);
+    int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     List<byte[][]> docValues = new ArrayList<>();
     List<Integer> docIDs = new ArrayList<>();
 
@@ -294,12 +296,12 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       docIDsArray[i] = docIDs.get(i);
     }
 
-    verify(docValuesArray, docIDsArray, numDims, numBytesPerDim);
+    verify(docValuesArray, docIDsArray, numDims, numIndexDims, numBytesPerDim);
   }
 
   public void testAllEqual() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     byte[][][] docValues = new byte[numDocs][][];
@@ -322,7 +324,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testOneDimEqual() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     int theEqualDim = random().nextInt(numDims);
@@ -346,7 +348,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   // this should trigger run-length compression with lengths that are greater than 255
   public void testOneDimTwoValues() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     int theDim = random().nextInt(numDims);
@@ -375,10 +377,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   // Tests on N-dimensional points where each dimension is a BigInteger
   public void testBigIntNDims() throws Exception {
 
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(200);
     try (Directory dir = getDirectory(numDocs)) {
       int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-      int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+      int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       // We rely on docIDs not changing:
       iwc.setMergePolicy(newLogMergePolicy());
@@ -508,7 +510,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(200);
   }
 
   @Nightly
@@ -520,7 +522,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   private void doTestRandomBinary(int count) throws Exception {
     int numDocs = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDataDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDataDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
     int numIndexDims = TestUtil.nextInt(random(), 1, numDataDims);
 
     byte[][][] docValues = new byte[numDocs][][];
@@ -558,10 +560,6 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     }
   }
 
-  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDims, int numBytesPerDim, boolean expectExceptions) throws Exception {
-    verify(dir, docValues, ids, numDims, numDims, numBytesPerDim, expectExceptions);
-  }
-
   private byte[] flattenBinaryPoint(byte[][] value, int numDataDims, int numBytesPerDim) {
     byte[] result = new byte[value.length * numBytesPerDim];
     for (int d = 0; d < numDataDims; ++d) {
@@ -571,10 +569,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   /** test selective indexing */
-  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDataDims, int numIndexDims, int numBytesPerDim, boolean expectExceptions) throws Exception {
+  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDims, int numIndexDims, int numBytesPerDim, boolean expectExceptions) throws Exception {
     int numValues = docValues.length;
     if (VERBOSE) {
-      System.out.println("TEST: numValues=" + numValues + " numDataDims=" + numDataDims + " numIndexDims=" + numIndexDims + " numBytesPerDim=" + numBytesPerDim);
+      System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numIndexDims=" + numIndexDims + " numBytesPerDim=" + numBytesPerDim);
     }
 
     // RandomIndexWriter is too slow:
@@ -597,10 +595,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     DirectoryReader r = null;
 
     // Compute actual min/max values:
-    byte[][] expectedMinValues = new byte[numDataDims][];
-    byte[][] expectedMaxValues = new byte[numDataDims][];
+    byte[][] expectedMinValues = new byte[numDims][];
+    byte[][] expectedMaxValues = new byte[numDims][];
     for(int ord=0;ord<docValues.length;ord++) {
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numDims;dim++) {
         if (ord == 0) {
           expectedMinValues[dim] = new byte[numBytesPerDim];
           System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
@@ -649,7 +647,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     try {
 
       FieldType fieldType = new FieldType();
-      fieldType.setDimensions(numDataDims, numIndexDims, numBytesPerDim);
+      fieldType.setDimensions(numDims, numIndexDims, numBytesPerDim);
       fieldType.freeze();
 
       Document doc = null;
@@ -673,7 +671,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           doc.add(new NumericDocValuesField("id", id));
         }
         // pack the binary point
-        byte[] val = flattenBinaryPoint(docValues[ord], numDataDims, numBytesPerDim);
+        byte[] val = flattenBinaryPoint(docValues[ord], numDims, numBytesPerDim);
 
         doc.add(new BinaryPoint("field", val, fieldType));
         lastID = id;
@@ -693,7 +691,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         if (random().nextInt(30) == 17) {
           // randomly index some documents with this field, but we will delete them:
           Document xdoc = new Document();
-          val = flattenBinaryPoint(docValues[ord], numDataDims, numBytesPerDim);
+          val = flattenBinaryPoint(docValues[ord], numDims, numBytesPerDim);
           xdoc.add(new BinaryPoint("field", val, fieldType));
           xdoc.add(new StringField("nukeme", "yes", Field.Store.NO));
           if (useRealWriter) {
@@ -716,7 +714,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         if (VERBOSE) {
           System.out.println("  ord=" + ord + " id=" + id);
-          for(int dim=0;dim<numDataDims;dim++) {
+          for(int dim=0;dim<numDims;dim++) {
             System.out.println("    dim=" + dim + " value=" + new BytesRef(docValues[ord][dim]));
           }
         }

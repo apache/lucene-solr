@@ -55,7 +55,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -168,7 +168,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     // Now shutdown cluster while 1 event still in process
     // Do this in a background thread because it blocks...
-    final Thread shutdownThread = new DefaultSolrThreadFactory("shutdown")
+    final Thread shutdownThread = new SolrNamedThreadFactory("shutdown")
       .newThread(() -> { try {
             log.info("START Shutting down Cluster.");
             harness.shutdownCluster();
@@ -498,7 +498,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     AuditTestHarness() throws IOException {
       receiver = new CallbackReceiver();
       callbackPort = receiver.getPort();
-      receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);
+      receiverThread = new SolrNamedThreadFactory("auditTestCallback").newThread(receiver);
       receiverThread.start();
     }
 

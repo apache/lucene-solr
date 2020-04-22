@@ -76,6 +76,11 @@ public class SimplePatternTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public SimplePatternTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public SimplePatternTokenizer create(final AttributeFactory factory) {
     return new SimplePatternTokenizer(factory, dfa);

@@ -103,8 +103,8 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
 
   public void testRandomData() throws IOException {
     Random random = random();
-    checkRandomData(random, katakanaAnalyzer, 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random, romajiAnalyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random, katakanaAnalyzer, 200 * RANDOM_MULTIPLIER);
+    checkRandomData(random, romajiAnalyzer, 200 * RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

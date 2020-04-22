@@ -97,6 +97,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'state': state,
+        'gpg_key' : state.get_gpg_key(),
         'epoch': unix_time_millis(datetime.utcnow()),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
@@ -172,6 +173,8 @@ def check_prerequisites(todo=None):
         sys.exit("You will need gpg installed")
     if not check_ant().startswith('1.8'):
         print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
+    if not 'GPG_TTY' in os.environ:
+        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(TTY)'")
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
     try:
@@ -298,6 +301,13 @@ class ReleaseState:
 
     def is_released(self):
         return self.get_todo_by_id('announce_lucene').is_done()
+
+    def get_gpg_key(self):
+        gpg_task = self.get_todo_by_id('gpg')
+        if gpg_task.is_done():
+            return gpg_task.get_state()['gpg_key']
+        else:
+            return None
 
     def get_release_date(self):
         publish_task = self.get_todo_by_id('publish_maven')

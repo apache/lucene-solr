@@ -310,11 +310,11 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
               , "//double[@name='sum'][.='9.0']"
               , "//long[@name='count'][.='8']"
               , "//long[@name='missing'][.='3']"
-              , json ? "//int[@name='countDistinct'][.='8']": "//long[@name='countDistinct'][.='8']" // SOLR-11775
+              , "//long[@name='countDistinct'][.='8']"
               , json ? "//*" : "count(//arr[@name='distinctValues']/*)=8"
               , "//double[@name='sumOfSquares'][.='53101.0']"
               , "//double[@name='mean'][.='1.125']"
-              ,json ? "//*" :  "//double[@name='stddev'][.='87.08852228787508']" // SOLR-11725
+              ,"//double[@name='stddev'][.='87.08852228787508']"
               );
 
       assertQ("test statistics values w/fq", 
@@ -325,12 +325,17 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
               , "//double[@name='sum'][.='119.0']"
               , "//long[@name='count'][.='6']"
               , "//long[@name='missing'][.='3']"
-              , json? "//int[@name='countDistinct'][.='6']" :"//long[@name='countDistinct'][.='6']" // SOLR-11775
+              , "//long[@name='countDistinct'][.='6']"
               , json ? "//*" : "count(//arr[@name='distinctValues']/*)=6"
               , "//double[@name='sumOfSquares'][.='43001.0']"
               , "//double[@name='mean'][.='19.833333333333332']"
-              , json ? "//*" : "//double[@name='stddev'][.='90.15634568163611']" // SOLR-11725
+              ,"//double[@name='stddev'][.='90.15634568163611']"
               );
+
+      assertQ("test stdDev",
+          req(baseParams, "q", "id:5", "rows", "0")
+          ,"//double[@name='stddev'][.='0.0']"
+      );
       
       if (!json) { // checking stats.facet makes no sense for json faceting
         assertQ("test stats.facet (using boolean facet field)",
@@ -372,59 +377,82 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       }
     }
 
-    assertQ("cardinality"
-        , req("q", "*:*", "rows", "0", "stats", "true", "stats.field", "{!cardinality=true}" + f)
-        , "//long[@name='cardinality'][.='8']"
-    );
-    assertQ("json cardinality"
-        , req("q", "*:*", "rows", "0", "json.facet", "{cardinality:'hll("+f+")'}")
-        , "//int[@name='cardinality'][.='8']" // SOLR-11775
-    );
+    // cardinality
+    for (SolrParams baseParams : new SolrParams[] {
+        params("stats.field", "{!cardinality=true}"+f, "stats", "true"),
+        params("json.facet", "{cardinality:'hll("+f+")'}")
+    }) {
+      assertQ("test cardinality",
+          req(baseParams, "q", "*:*", "rows", "0"),
+          "//long[@name='cardinality'][.='8']"
+      );
+    }
   }
 
   public void testFieldStatisticsResultsStringField() throws Exception {
+    String f = "active_s";
+
     SolrCore core = h.getCore();
-    assertU(adoc("id", "1", "active_s", "string1"));
-    assertU(adoc("id", "2", "active_s", "string2"));
-    assertU(adoc("id", "3", "active_s", "string3"));
+    assertU(adoc("id", "1", f, "string1"));
+    assertU(adoc("id", "2", f, "string2"));
+    assertU(adoc("id", "3", f, "string3"));
     assertU(adoc("id", "4"));
     assertU(commit());
 
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "active_s");
-    args.put("f.active_s.stats.calcdistinct","true");
+    args.put(StatsParams.STATS_FIELD, f);
+    args.put("f." + f +".stats.calcdistinct","true");
     args.put("indent", "true");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
-    assertQ("test string statistics values", req,
-            "//str[@name='min'][.='string1']",
-            "//str[@name='max'][.='string3']",
-            "//long[@name='count'][.='3']",
-            "//long[@name='missing'][.='1']",
-            "//long[@name='countDistinct'][.='3']",
-            "count(//arr[@name='distinctValues']/str)=3");
 
-    assertQ("test string cardinality"
-            , req("q", "*:*",
-                  "rows", "0",
-                  "stats","true",
-                  "stats.field","{!cardinality=true}active_s")
-            , "//long[@name='cardinality'][.='3']");
+    for (SolrParams baseParams : new SolrParams[] {
+        params("stats.field", f, "stats", "true", "f." + f +".stats.calcdistinct","true"),
+        params("json.facet", // note: no distinctValues support
+            "{min:'min("+f+")',count:'countvals("+f+")',missing:'missing("+f+")',max:'max("+f+")', " +
+                " countDistinct:'unique("+f+")'}")
+    }) {
+      final boolean json = (null != baseParams.get("json.facet"));
+      assertQ("test string statistics values", req(baseParams, "q", "*:*", "rows", "0"),
+          "//str[@name='min'][.='string1']",
+          "//str[@name='max'][.='string3']",
+          "//long[@name='count'][.='3']",
+          "//long[@name='missing'][.='1']",
+          "//long[@name='countDistinct'][.='3']",
+          json ? "//*": "count(//arr[@name='distinctValues']/str)=3"); // SOLR-14011
+    }
 
+    // string field cardinality
+    for (SolrParams baseParams : new SolrParams[] {
+        params("stats.field", "{!cardinality=true}"+f, "stats", "true"),
+        params("json.facet", "{cardinality:'hll("+f+")'}")
+    }) {
+      assertQ("test string cardinality",
+          req(baseParams, "q", "*:*", "rows", "0"),
+          "//long[@name='cardinality'][.='3']"
+      );
+    }
+
+    String strFunc = "strdist(\"string22\","+ f +",edit)";
     // stats over a string function
-    assertQ("strdist func stats",
-            req("q", "*:*",
-                "stats","true",
-                "stats.field","{!func}strdist('string22',active_s,edit)")
-            , "//double[@name='min'][.='0.75']"
-            , "//double[@name='max'][.='0.875']"
-            , "//double[@name='sum'][.='2.375']"
-            , "//long[@name='count'][.='3']"
-            ,"//long[@name='missing'][.='1']"
-            );
-
+    for (SolrParams baseParams : new SolrParams[] {
+        params("stats.field", "{!func}"+strFunc, "stats", "true"),
+        params("json.facet", // note: no function support for unique
+            "{min:'min("+strFunc+")',count:'countvals("+strFunc+")',missing:'missing("+strFunc+")'," +
+                "sum:'sum("+ strFunc +")', max:'max("+strFunc+")'}")
+    }) {
+      final boolean json = (null != baseParams.get("json.facet"));
+      assertQ("strdist func stats",
+          req(baseParams, "q", "*:*", "rows", "0")
+          , "//double[@name='min'][.='0.75']"
+          , "//double[@name='max'][.='0.875']"
+          , "//double[@name='sum'][.='2.375']"
+          , json? "//*": "//long[@name='count'][.='3']" // SOLR-14010
+          ,"//long[@name='missing'][.='1']"
+      );
+    }
   }
 
   public void testFieldStatisticsResultsDateField() throws Exception {

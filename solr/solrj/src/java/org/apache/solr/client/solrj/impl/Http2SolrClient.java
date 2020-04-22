@@ -68,7 +68,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -146,7 +146,7 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = serverBaseUrl;
     }
 
-    if (builder.idleTimeout != null) idleTimeout = builder.idleTimeout;
+    if (builder.idleTimeout != null && builder.idleTimeout > 0) idleTimeout = builder.idleTimeout;
     else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
 
     if (builder.http2SolrClient == null) {
@@ -177,7 +177,7 @@ public class Http2SolrClient extends SolrClient {
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
     ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
-        256, 60, TimeUnit.SECONDS, queue, new SolrjNamedThreadFactory("h2sc"));
+        256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
 
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
@@ -215,7 +215,7 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
 
-    if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
+    httpClient.setIdleTimeout(idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     try {
       httpClient.start();

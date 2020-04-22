@@ -20,6 +20,7 @@ import static org.apache.lucene.util.BaseBitSetTestCase.randomSet;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Random;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -62,9 +63,10 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
 
   /** Compare the content of the set against a {@link BitSet}. */
   public void testAgainstBitSet() throws IOException {
-    final int numBits = TestUtil.nextInt(random(), 100, 1 << 20);
+    Random random = random();
+    final int numBits = TestUtil.nextInt(random, 100, 1 << 20);
     // test various random sets with various load factors
-    for (float percentSet : new float[] {0f, 0.0001f, random().nextFloat(), 0.9f, 1f}) {
+    for (float percentSet : new float[] {0f, 0.0001f, random.nextFloat(), 0.9f, 1f}) {
       final BitSet set = randomSet(numBits, percentSet);
       final T copy = copyOf(set, numBits);
       assertEquals(numBits, set, copy);
@@ -75,13 +77,21 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     T copy = copyOf(set, numBits);
     assertEquals(numBits, set, copy);
     set.clear(0);
-    set.set(random().nextInt(numBits));
+    set.set(random.nextInt(numBits));
     copy = copyOf(set, numBits); // then random index
     assertEquals(numBits, set, copy);
     // test regular increments
-    for (int inc = 2; inc < 1000; inc += TestUtil.nextInt(random(), 1, 100)) {
+    int maxIterations = TEST_NIGHTLY ? Integer.MAX_VALUE : 10;
+    int iterations = 0;
+    for (int inc = 2; inc < 1000; inc += TestUtil.nextInt(random, 1, 100)) {
+      // don't let this test run too many times, even if it gets unlucky with "inc"
+      if (iterations >= maxIterations) {
+        break;
+      }
+      iterations++;
+
       set = new BitSet(numBits);
-      for (int d = random().nextInt(10); d < numBits; d += inc) {
+      for (int d = random.nextInt(10); d < numBits; d += inc) {
         set.set(d);
       }
       copy = copyOf(set, numBits);
@@ -91,11 +101,12 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
 
   /** Test ram usage estimation. */
   public void testRamBytesUsed() throws IOException {
+    Random random = random();
     final int iters = 100;
     for (int i = 0; i < iters; ++i) {
-      final int pow = random().nextInt(20);
-      final int maxDoc = TestUtil.nextInt(random(), 1, 1 << pow);
-      final int numDocs = TestUtil.nextInt(random(), 0, Math.min(maxDoc, 1 << TestUtil.nextInt(random(), 0, pow)));
+      final int pow = random.nextInt(20);
+      final int maxDoc = TestUtil.nextInt(random, 1, 1 << pow);
+      final int numDocs = TestUtil.nextInt(random, 0, Math.min(maxDoc, 1 << TestUtil.nextInt(random, 0, pow)));
       final BitSet set = randomSet(maxDoc, numDocs);
       final DocIdSet copy = copyOf(set, maxDoc);
       final long actualBytes = ramBytesUsed(copy, maxDoc);
@@ -106,6 +117,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
 
   /** Assert that the content of the {@link DocIdSet} is the same as the content of the {@link BitSet}. */
   public void assertEquals(int numBits, BitSet ds1, T ds2) throws IOException {
+    Random random = random();
     // nextDoc
     DocIdSetIterator it2 = ds2.iterator();
     if (it2 == null) {
@@ -126,7 +138,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
       assertEquals(-1, ds1.nextSetBit(0));
     } else {
       for (int doc = -1; doc != DocIdSetIterator.NO_MORE_DOCS;) {
-        if (random().nextBoolean()) {
+        if (random.nextBoolean()) {
           doc = ds1.nextSetBit(doc + 1);
           if (doc == -1) {
             doc = DocIdSetIterator.NO_MORE_DOCS;
@@ -134,7 +146,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
           assertEquals(doc, it2.nextDoc());
           assertEquals(doc, it2.docID());
         } else {
-          final int target = doc + 1 + random().nextInt(random().nextBoolean() ? 64 : Math.max(numBits / 8, 1));
+          final int target = doc + 1 + random.nextInt(random.nextBoolean() ? 64 : Math.max(numBits / 8, 1));
           doc = ds1.nextSetBit(target);
           if (doc == -1) {
             doc = DocIdSetIterator.NO_MORE_DOCS;

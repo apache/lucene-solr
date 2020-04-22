@@ -18,13 +18,12 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 
 /** base shape encoding class for testing encoding of tessellated {@link org.apache.lucene.document.XYShape} and
  * {@link LatLonShape}
-  */
+ */
 public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
   protected abstract int encodeX(double x);
@@ -486,77 +485,77 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     double ax = nextX();
     double by = nextY();
     double bx = nextX();
-    while (ax == bx && ay == by) {
-      by = nextY();
-      bx = nextX();
-    }
     double cy = nextY();
     double cx = nextX();
-    while ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      cy = nextY();
-      cx = nextX();
-    }
     verifyEncoding(ay, ax, by, bx, cy, cx);
   }
 
   private void verifyEncoding(double ay, double ax, double by, double bx, double cy, double cx) {
-    int[] original = new int[]{
-        encodeY(ay),
-        encodeX(ax),
-        encodeY(by),
-        encodeX(bx),
-        encodeY(cy),
-        encodeX(cx)};
-
-    // quantize the triangle
+    // encode triangle
+    int[] original = new int[]{encodeX(ax), encodeY(ay), encodeX(bx), encodeY(by), encodeX(cx), encodeY(cy)};
     byte[] b = new byte[7 * ShapeField.BYTES];
-    encodeTriangle(b, original[0], original[1], true, original[2], original[3], true, original[4], original[5], true);
+    encodeTriangle(b, original[1], original[0], true, original[3], original[2], true, original[5], original[4], true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
-    double[] encodedQuantize = new double[]{
-        decodeY(encoded.aY),
-        decodeX(encoded.aX),
-        decodeY(encoded.bY),
-        decodeX(encoded.bX),
-        decodeY(encoded.cY),
-        decodeX(encoded.cX)};
-    // quantize original
-    double[] originalQuantize;
-    // we need to change the take into account orientation. If orientation is CW we need
-    // to change it to CCW. If is a line we need to make sure that minX is in the first
-    // pair of coordinates.
-    final int orientation = GeoUtils.orient(original[1], original[0], original[3], original[2], original[5], original[4]);
-    if (encoded.type == ShapeField.DecodedTriangle.TYPE.LINE && original[1] > original[3]) {
-        originalQuantize = new double[] {
-            decodeY(original[2]),
-            decodeX(original[3]),
-            decodeY(original[0]),
-            decodeX(original[1]),
-            decodeY(original[2]),
-            decodeX(original[3])};
-    } else if (orientation == -1) {
-        originalQuantize = new double[]{
-            decodeY(original[4]),
-            decodeX(original[5]),
-            decodeY(original[2]),
-            decodeX(original[3]),
-            decodeY(original[0]),
-            decodeX(original[1])};
-    } else {
-      originalQuantize = new double[]{
-          decodeY(original[0]),
-          decodeX(original[1]),
-          decodeY(original[2]),
-          decodeX(original[3]),
-          decodeY(original[4]),
-          decodeX(original[5])};
-    }
+    // quantize decoded triangle
+    double[] encodedQuantize = new double[] {decodeX(encoded.aX), decodeY(encoded.aY), decodeX(encoded.bX), decodeY(encoded.bY), decodeX(encoded.cX), decodeY(encoded.cY)};
+    // quantize original and order it to reflect encoding
+    double[] originalQuantize  = orderTriangle(original[0], original[1], original[2], original[3], original[4], original[5]);
+    // check spatial property
     for (int i =0; i < 100; i ++) {
       Component2D polygon2D = createPolygon2D(nextPolygon());
-      PointValues.Relation originalRelation = polygon2D.relateTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
-      PointValues.Relation encodedRelation = polygon2D.relateTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
-      assertEquals(originalRelation, encodedRelation);
+      boolean originalIntersects = false;
+      boolean encodedIntersects = false;
+      boolean originalContains = false;
+      boolean encodedContains = false;
+      switch (encoded.type) {
+        case POINT:
+          originalIntersects = polygon2D.contains(originalQuantize[0], originalQuantize[1]);
+          encodedIntersects = polygon2D.contains(encodedQuantize[0], encodedQuantize[1]);
+          originalContains = polygon2D.contains(originalQuantize[0], originalQuantize[1]);
+          encodedContains = polygon2D.contains(encodedQuantize[0], encodedQuantize[1]);
+          break;
+        case LINE:
+          originalIntersects = polygon2D.intersectsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
+          encodedIntersects = polygon2D.intersectsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
+          originalContains = polygon2D.containsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
+          encodedContains = polygon2D.containsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
+          break;
+        case TRIANGLE:
+          originalIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          encodedIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          originalContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          encodedContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          break;
+      }
+      assertTrue(originalIntersects == encodedIntersects);
+      assertTrue(originalContains == encodedContains);
     }
+  }
+
+  private double[] orderTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
+    // quantize original and order it to reflect encoding
+    int orientation = GeoUtils.orient(aX, aY, bX, bY, cX, cY);
+
+    if (orientation == -1) {
+      // we need to change the orientation if CW for triangles
+      return  new double[]{decodeX(cX), decodeY(cY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
+    } else if (aX == bX && aY == bY) {
+      if (aX != cX || aY != cY) { // not a point
+        if (aX < cX) {
+          return new double[]{decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY)};
+        } else {
+          return new double[]{decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY)};
+        }
+      }
+    } else if ((aX == cX && aY == cY) || (bX == cX && bY == cY)) {
+      if (aX < bX) {
+        return new double[]{decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
+      } else {
+        return new double[]{decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY)};
+      }
+    }
+    return new double[]{decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(cX), decodeY(cY)};
   }
 
   public void testDegeneratedTriangle() {

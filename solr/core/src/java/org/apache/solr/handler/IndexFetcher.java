@@ -97,7 +97,7 @@ import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
@@ -493,7 +493,7 @@ public class IndexFetcher {
       }
 
       // Create the sync service
-      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("fsyncService"));
+      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
@@ -1728,7 +1728,7 @@ public class IndexFetcher {
             long checkSumClient = checksum.getValue();
             if (checkSumClient != checkSumServer) {
               log.error("Checksum not matched between client and server for file: {}", fileName);
-              //if checksum is wrong it is a problem return for retry
+              //if checksum is wrong it is a problem return (there doesn't seem to be a retry in this case.)
               return 1;
             }
           }
@@ -1736,10 +1736,10 @@ public class IndexFetcher {
           file.write(buf, packetSize);
           bytesDownloaded += packetSize;
           log.debug("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
-          if (bytesDownloaded >= size)
-            return 0;
           //errorCount is always set to zero after a successful packet
           errorCount = 0;
+          if (bytesDownloaded >= size)
+            return 0;
         }
       } catch (ReplicationHandlerException e) {
         throw e;

@@ -71,7 +71,7 @@ public class Lift extends Reduce {
   /**
    * Constructor for the Lift object.
    * 
-   * @param changeSkip when set to <tt>true</tt>, comparison of two Cells takes
+   * @param changeSkip when set to <code>true</code>, comparison of two Cells takes
    *          a skip command into account
    */
   public Lift(boolean changeSkip) {

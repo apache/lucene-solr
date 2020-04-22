@@ -75,10 +75,10 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * Solr Request Handler for streaming data.
  * </p>
  * <p>
- * It loads a default set of mappings via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
+ * It loads a Solr specific set of streaming expression functions via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
  * </p>
  * <p>
- * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * To add additional functions, just define them as plugins in solrconfig.xml via
  * {@code
  * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
  * }
@@ -123,17 +123,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
-    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
-    for (PluginInfo pluginInfo : pluginInfos) {
-      if (pluginInfo.pkgName != null) {
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
-        streamFactory.withFunctionName(pluginInfo.name,
-            () -> holder.getClazz());
-      } else {
-        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
-        streamFactory.withFunctionName(pluginInfo.name, clazz);
-      }
-    }
+    addExpressiblePlugins(streamFactory, core);
 
     core.addCloseHook(new CloseHook() {
       @Override
@@ -146,6 +136,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         clientCache.close();
       }
     });
+  }
+
+  public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
+    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    for (PluginInfo pluginInfo : pluginInfos) {
+      if (pluginInfo.pkgName != null) {
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        streamFactory.withFunctionName(pluginInfo.name,
+            () -> holder.getClazz());
+      } else {
+        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        streamFactory.withFunctionName(pluginInfo.name, clazz);
+      }
+    }
   }
 
   public static class ExpressibleHolder extends PackagePluginHolder {
@@ -241,9 +245,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         daemons.remove(daemonStream.getId()).close();
       }
       daemonStream.setDaemons(daemons);
-      daemonStream.open(); // This will start the deamonStream
+      daemonStream.open(); // This will start the daemonStream
       daemons.put(daemonStream.getId(), daemonStream);
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + daemonStream.getId() + " started on " + coreName));
+      rsp.add("result-set", new DaemonResponseStream("Daemon:" + daemonStream.getId() + " started on " + coreName));
     } else {
       rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
     }
@@ -265,14 +269,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     String id = params.get(ID);
     DaemonStream d = daemons.get(id);
     if (d == null) {
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
+      rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " not found on " + coreName));
       return;
     }
 
     switch (action) {
       case "stop":
         d.close();
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " stopped on " + coreName));
+        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " stopped on " + coreName));
         break;
 
       case "start":
@@ -281,17 +285,17 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         } catch (IOException e) {
           rsp.add("result-set", new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
         }
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
+        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " started on " + coreName));
         break;
 
       case "kill":
         daemons.remove(id);
         d.close(); // we already found it in the daemons list, so we don't need to verify we removed it.
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
+        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));
         break;
 
       default:
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " action '"
+        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " action '"
             + action + "' not recognized on " + coreName));
         break;
     }

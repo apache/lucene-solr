@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -49,7 +50,7 @@ public class TestExportTool extends SolrCloudTestCase {
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", configset("cloud-dynamic"))
         .configure();
 
     try {
@@ -67,7 +68,9 @@ public class TestExportTool extends SolrCloudTestCase {
       int docCount = 1000;
 
       for (int i = 0; i < docCount; i++) {
-        ur.add("id", String.valueOf(i), "desc_s", TestUtil.randomSimpleString(random(), 10, 50));
+        ur.add("id", String.valueOf(i),
+            "desc_s", TestUtil.randomSimpleString(random(), 10, 50) ,
+            "a_dt", "2019-09-30T05:58:03Z");
       }
       cluster.getSolrClient().request(ur, COLLECTION_NAME);
 
@@ -81,10 +84,10 @@ public class TestExportTool extends SolrCloudTestCase {
       String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
-      info.fields = "id,desc_s";
+      info.fields = "id,desc_s,a_dt";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 200);
+      assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
@@ -93,7 +96,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 1000);
+      assertJsonDocsCount(info, 1000,null);
 
       info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
@@ -186,9 +189,9 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.setLimit("-1");
       info.exportDocs();
-      long actual = ((ExportTool.JsonSink) info.sink).docs.get();
+      long actual = ((ExportTool.JsonSink) info.sink).info.docsWritten.get();
       assertTrue("docs written :" + actual + "docs produced : " + info.docsWritten.get(), actual >= docCount);
-      assertJsonDocsCount(info, docCount);
+      assertJsonDocsCount(info, docCount,null);
     } finally {
       cluster.shutdown();
 
@@ -213,7 +216,7 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-  private void assertJsonDocsCount(ExportTool.Info info, int expected) throws IOException {
+    private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
     assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
@@ -222,7 +225,12 @@ public class TestExportTool extends SolrCloudTestCase {
     rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
     try {
       int[] count = new int[]{0};
-      jsonReader.streamRecords(rdr, (record, path) -> count[0]++);
+      jsonReader.streamRecords(rdr, (record, path) -> {
+        if(predicate != null){
+          assertTrue(predicate.test(record));
+        }
+        count[0]++;
+      });
       assertTrue(count[0] >= expected);
     } finally {
       rdr.close();

@@ -47,9 +47,9 @@ public class FieldMetadata implements Accountable {
   protected final boolean isMutable;
   protected final FixedBitSet docsSeen;
 
-  protected int sumDocFreq;
-  protected int numTerms;
-  protected int sumTotalTermFreq;
+  protected long sumDocFreq;
+  protected long numTerms;
+  protected long sumTotalTermFreq;
   protected int docCount;
 
   protected long dictionaryStartFP;
@@ -59,31 +59,38 @@ public class FieldMetadata implements Accountable {
   protected BytesRef lastTerm;
 
   /**
-   * Constructs a {@link FieldMetadata} used for writing the index. This {@link FieldMetadata} is mutable.
-   *
+   * Constructs field metadata for writing.
    * @param maxDoc The total number of documents in the segment being written.
    */
   public FieldMetadata(FieldInfo fieldInfo, int maxDoc) {
     this(fieldInfo, maxDoc, true);
   }
 
-  public FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable) {
-    this(fieldInfo, maxDoc, isMutable, -1, -1, null);
+  /**
+   * Constructs immutable virtual field metadata for reading.
+   */
+  public FieldMetadata(long dictionaryStartFP, long firstBlockStartFP, long lastBlockStartFP, BytesRef lastTerm) {
+    this(null, 0, false);
+    this.dictionaryStartFP = dictionaryStartFP;
+    this.firstBlockStartFP = firstBlockStartFP;
+    this.lastBlockStartFP = lastBlockStartFP;
+    this.lastTerm = lastTerm;
   }
 
   /**
+   * Constructs field metadata for reading or writing.
+   * @param maxDoc The total number of documents in the segment being written.
    * @param isMutable Set true if this FieldMetadata is created for writing the index. Set false if it is used for reading the index.
    */
-  public FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable, long firstBlockStartFP, long lastBlockStartFP, BytesRef lastTerm) {
+  protected FieldMetadata(FieldInfo fieldInfo, int maxDoc, boolean isMutable) {
     assert isMutable || maxDoc == 0;
     this.fieldInfo = fieldInfo;
     this.isMutable = isMutable;
     // docsSeen must not be set if this FieldMetadata is immutable, that means it is used for reading the index.
     this.docsSeen = isMutable ? new FixedBitSet(maxDoc) : null;
     this.dictionaryStartFP = -1;
-    this.firstBlockStartFP = firstBlockStartFP;
-    this.lastBlockStartFP = lastBlockStartFP;
-    this.lastTerm = lastTerm;
+    this.firstBlockStartFP = -1;
+    this.lastBlockStartFP = -1;
   }
 
   /**
@@ -118,15 +125,15 @@ public class FieldMetadata implements Accountable {
     return fieldInfo;
   }
 
-  public int getSumDocFreq() {
+  public long getSumDocFreq() {
     return sumDocFreq;
   }
 
-  public int getNumTerms() {
+  public long getNumTerms() {
     return numTerms;
   }
 
-  public int getSumTotalTermFreq() {
+  public long getSumTotalTermFreq() {
     return sumTotalTermFreq;
   }
 
@@ -214,12 +221,12 @@ public class FieldMetadata implements Accountable {
 
       output.writeVInt(fieldMetadata.fieldInfo.number);
 
-      output.writeVInt(fieldMetadata.numTerms);
-      output.writeVInt(fieldMetadata.sumDocFreq);
+      output.writeVLong(fieldMetadata.numTerms);
+      output.writeVLong(fieldMetadata.sumDocFreq);
 
       if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
         assert fieldMetadata.sumTotalTermFreq >= fieldMetadata.sumDocFreq : "sumTotalFQ: " + fieldMetadata.sumTotalTermFreq + " sumDocFQ: " + fieldMetadata.sumDocFreq;
-        output.writeVInt(fieldMetadata.sumTotalTermFreq - fieldMetadata.sumDocFreq);
+        output.writeVLong(fieldMetadata.sumTotalTermFreq - fieldMetadata.sumDocFreq);
       }
 
       output.writeVInt(fieldMetadata.getDocCount());
@@ -244,15 +251,15 @@ public class FieldMetadata implements Accountable {
       }
       FieldMetadata fieldMetadata = new FieldMetadata(fieldInfo, 0, false);
 
-      fieldMetadata.numTerms = input.readVInt();
+      fieldMetadata.numTerms = input.readVLong();
       if (fieldMetadata.numTerms <= 0) {
         throw new CorruptIndexException("Illegal number of terms= " + fieldMetadata.numTerms + " for field= " + fieldId, input);
       }
 
-      fieldMetadata.sumDocFreq = input.readVInt();
+      fieldMetadata.sumDocFreq = input.readVLong();
       fieldMetadata.sumTotalTermFreq = fieldMetadata.sumDocFreq;
       if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
-        fieldMetadata.sumTotalTermFreq += input.readVInt();
+        fieldMetadata.sumTotalTermFreq += input.readVLong();
         if (fieldMetadata.sumTotalTermFreq < fieldMetadata.sumDocFreq) {
           // #positions must be >= #postings.
           throw new CorruptIndexException("Illegal sumTotalTermFreq= " + fieldMetadata.sumTotalTermFreq

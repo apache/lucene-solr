@@ -205,7 +205,7 @@ public class MetricSuppliers {
         }
         return reservoir;
       } catch (Exception e) {
-        log.warn("Error initializing custom Reservoir implementation (will use default): " + info, e);
+        log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
         return new ExponentiallyDecayingReservoir(size, alpha, clk);
       }
     }
@@ -285,7 +285,7 @@ public class MetricSuppliers {
     try {
       supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
     } catch (Exception e) {
-      log.warn("Error creating custom Counter supplier (will use default): " + info, e);
+      log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
       supplier = new DefaultCounterSupplier();
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -310,7 +310,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Meter supplier (will use default): " + info, e);
+        log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
         supplier = new DefaultMeterSupplier();
       }
     }
@@ -336,7 +336,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Timer supplier (will use default): " + info, e);
+        log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
         supplier = new DefaultTimerSupplier(loader);
       }
     }
@@ -361,7 +361,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Histogram supplier (will use default): " + info, e);
+        log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
         supplier = new DefaultHistogramSupplier(loader);
       }
     }

@@ -60,6 +60,11 @@ public class WikipediaTokenizerFactory extends TokenizerFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public WikipediaTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public WikipediaTokenizer create(AttributeFactory factory) {
     return new WikipediaTokenizer(factory, tokenOutput, untokenizedTypes);

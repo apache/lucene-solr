@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * Tokenizes the given token into n-grams of given size(s).
  * <p>
  * This {@link TokenFilter} create n-grams from the beginning edge of a input token.
- * <p><a name="match_version"></a>As of Lucene 4.4, this filter handles correctly
+ * <p><a id="match_version"></a>As of Lucene 4.4, this filter handles correctly
  * supplementary characters.
  */
 public final class EdgeNGramTokenFilter extends TokenFilter {

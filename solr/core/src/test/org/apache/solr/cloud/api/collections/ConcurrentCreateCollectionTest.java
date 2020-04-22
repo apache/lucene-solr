@@ -36,12 +36,10 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@Ignore("SOLR-13884")
 public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,8 +49,8 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NODES)
-        // .addConfig("conf", configset("cloud-minimal"))
-        .addConfig("conf", configset("_default"))
+         .addConfig("conf", configset("cloud-minimal"))
+        //.addConfig("conf", configset("_default"))
         .configure();
   }
 

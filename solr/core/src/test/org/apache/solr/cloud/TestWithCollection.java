@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +29,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
@@ -53,6 +51,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
  * Tests for co-locating a collection with another collection such that any Collection API
@@ -113,7 +113,7 @@ public class TestWithCollection extends SolrCloudTestCase {
 
       CollectionAdminRequest.createCollection(xyz, 1, 1)
           .setWithCollection(abc).process(solrClient);
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("The 'withCollection' does not exist"));
     }
 
@@ -122,7 +122,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     try {
       CollectionAdminRequest.createCollection(xyz, 1, 1)
           .setWithCollection(abc).process(solrClient);
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("The `withCollection` must have only one shard, found: 2"));
     }
   }
@@ -175,7 +175,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     try {
       CollectionAdminResponse response = CollectionAdminRequest.deleteCollection(abc).process(solrClient);
       fail("Deleting collection: " + abc + " should have failed with an exception. Instead response was: " + response.getResponse());
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("is co-located with collection"));
     }
 
@@ -195,7 +195,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     try {
       CollectionAdminResponse response = CollectionAdminRequest.deleteCollection(abc).process(solrClient);
       fail("Deleting collection: " + abc + " should have failed with an exception. Instead response was: " + response.getResponse());
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("is co-located with collection"));
     }
 
@@ -380,7 +380,7 @@ public class TestWithCollection extends SolrCloudTestCase {
       new CollectionAdminRequest.MoveReplica(abc, collection.getReplicas().iterator().next().getName(), otherNode)
           .process(solrClient);
       fail("Expected moving a replica of 'withCollection': " + abc + " to fail");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("Collection: testMoveReplicaWithCollection_abc is co-located with collection: testMoveReplicaWithCollection_xyz"));
     }
 //    zkClient().printLayoutToStdOut();

@@ -49,7 +49,8 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<>();
     fileExtensions.add(CompressingStoredFieldsWriter.FIELDS_EXTENSION);
-    fileExtensions.add(CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
+    fileExtensions.add("fdx");
+    fileExtensions.add("fdm");
     
     MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     primaryDir.setCheckIndexOnClose(false); // only part of an index
@@ -98,8 +99,8 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   }
 
   private Directory newFSSwitchDirectory(Path aDir, Path bDir, Set<String> primaryExtensions) throws IOException {
-    Directory a = new SimpleFSDirectory(aDir);
-    Directory b = new SimpleFSDirectory(bDir);
+    Directory a = new NIOFSDirectory(aDir);
+    Directory b = new NIOFSDirectory(bDir);
     return new FileSwitchDirectory(primaryExtensions, a, b, true);
   }
   
@@ -172,11 +173,12 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path indexPath = new FilterPath(path, fs);
     try (final FileSwitchDirectory dir = new FileSwitchDirectory(Collections.singleton("tim"),
-        new SimpleFSDirectory(indexPath), new SimpleFSDirectory(indexPath), true)) {
+        new NIOFSDirectory(indexPath), new NIOFSDirectory(indexPath), true)) {
       dir.createOutput("foo.tim", IOContext.DEFAULT).close();
       Function<String[], Long> stripExtra = array -> Arrays.asList(array).stream()
           .filter(f -> f.startsWith("extra") == false).count();
       try (IndexInput indexInput = dir.openInput("foo.tim", IOContext.DEFAULT)) {
+        assert indexInput != null;
         dir.deleteFile("foo.tim");
         assertEquals(1, dir.getPrimaryDir().getPendingDeletions().size());
         assertEquals(1, dir.getPendingDeletions().size());
