@@ -33,6 +33,8 @@ Improvements
 
 * SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
 
+* SOLR-12845: Add a default autoscaling cluster policy. (shalin, varunthacker, ab)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)

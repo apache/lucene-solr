@@ -117,7 +117,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
       globalTag = parse(globalTagName.get(), m);
-      if (m.size() > 2) {
+      if (m.size() > 3) {
         throw new RuntimeException("Only one extra tag supported for the tag " + globalTagName.get() + " in " + toJSONString(m));
       }
       tag = parse(m.keySet().stream()
@@ -677,7 +677,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
       for (Row r : session.matrix) {
         computedValueEvaluator.node = r.node;
         SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-        if (!sealedClause.getGlobalTag().isPass(r)) {
+        // check only live nodes
+        if (r.isLive() && !sealedClause.getGlobalTag().isPass(r)) {
           ctx.resetAndAddViolation(r.node, null, new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
               sealedClause.globalTag.delta(r.getVal(globalTag.name)), r.node));
           addViolatingReplicasForGroup(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session.matrix);
