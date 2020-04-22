@@ -284,7 +284,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(2, reader.leaves().size());
     w.close();
 
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 2);
     ScoreAndDoc scorer = new ScoreAndDoc();
 
     LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
@@ -299,35 +299,40 @@ public class TestTopDocsCollector extends LuceneTestCase {
     scorer.doc = 1;
     scorer.score = 2;
     leafCollector.collect(1);
-    assertEquals(Math.nextUp(1f), scorer.minCompetitiveScore, 0f);
-
+    assertNull(scorer.minCompetitiveScore);
+    
     scorer.doc = 2;
+    scorer.score = 3;
+    leafCollector.collect(2);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+
+    scorer.doc = 3;
     scorer.score = 0.5f;
     // Make sure we do not call setMinCompetitiveScore for non-competitive hits
     scorer.minCompetitiveScore = Float.NaN;
-    leafCollector.collect(2);
+    leafCollector.collect(3);
     assertTrue(Float.isNaN(scorer.minCompetitiveScore));
 
-    scorer.doc = 3;
+    scorer.doc = 4;
     scorer.score = 4;
-    leafCollector.collect(3);
-    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    leafCollector.collect(4);
+    assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
 
     // Make sure the min score is set on scorers on new segments
     scorer = new ScoreAndDoc();
     leafCollector = collector.getLeafCollector(reader.leaves().get(1));
     leafCollector.setScorer(scorer);
-    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
 
     scorer.doc = 0;
     scorer.score = 1;
     leafCollector.collect(0);
-    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
 
     scorer.doc = 1;
-    scorer.score = 3;
+    scorer.score = 4;
     leafCollector.collect(1);
-    assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(4f), scorer.minCompetitiveScore, 0f);
 
     reader.close();
     dir.close();
