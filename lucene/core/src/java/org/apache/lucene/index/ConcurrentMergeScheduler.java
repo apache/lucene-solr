@@ -636,7 +636,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   synchronized void runOnMergeFinished(IndexWriter writer) {
     // the merge call as well as the merge thread handling in the finally
-    // block must be synched on CMS otherwise stalling decisions might cause
+    // block must be sync'd on CMS otherwise stalling decisions might cause
     // us to miss pending merges
     assert mergeThreads.contains(Thread.currentThread()) : "caller is not a merge thread";
     // Let CMS run new merges if necessary:

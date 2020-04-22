@@ -185,6 +185,12 @@ Bug Fixes
 
 * LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
 
+* LUCENE-9337: Ensure CMS updates it's thread accounting datastructures consistently.
+  CMS today releases it's lock after finishing a merge before it re-acquires it to update
+  the thread accounting datastructures. This causes threading issues where concurrently
+  finishing threads fail to pick up pending merges causing potential thread starvation on
+  forceMerge calls. (Simon Willnauer)
+
 Other
 ---------------------
 

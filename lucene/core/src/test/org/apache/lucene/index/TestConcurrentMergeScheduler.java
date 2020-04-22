@@ -664,7 +664,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
    * This test tries to produce 2 merges running concurrently with 2 segments per merge. While these
    * merges run we kick off a forceMerge that puts a pending merge in the queue but waits for things to happen.
    * While we do this we reduce maxMergeCount to 1. If concurrency in CMS is not right the forceMerge will wait forever
-   * since non of the currently running merges picks up the pending merge. This test fails every
+   * since none of the currently running merges picks up the pending merge. This test fails every time.
    */
   public void testChangeMaxMergeCountyWhileForceMerge() throws IOException, InterruptedException {
     int numIters = TEST_NIGHTLY ? 100 : 10;
