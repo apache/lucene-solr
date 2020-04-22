@@ -259,7 +259,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
           ic.init();
           configs.add(ic);
-          log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          if (log.isDebugEnabled()) {
+            log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          }
         });
       }
       return configs;
@@ -344,7 +346,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
-        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
+        if (log.isWarnEnabled()) {
+          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
+        }
         numErrors.mark();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
@@ -353,7 +357,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
+        if (log.isWarnEnabled()) {
+          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
+        }
         numWrongCredentials.inc();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;

@@ -213,7 +213,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  public static class CollapsingPostFilter extends ExtendedQueryBase implements PostFilter, ScoreFilter {
+  public static class CollapsingPostFilter extends ExtendedQueryBase implements PostFilter {
 
     private String collapseField;
     private final GroupHeadSelector groupHeadSelector;

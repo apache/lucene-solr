@@ -59,11 +59,12 @@ public class TransformerProvider {
   private TransformerProvider() {
     // tell'em: currently, we only cache the last used XSLT transform, and blindly recompile it
     // once cacheLifetimeSeconds expires
-    log.warn(
-        "The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
-        + "for high load scenarios, unless a single XSLT transform is used"
-        + " and xsltCacheLifetimeSeconds is set to a sufficiently high value."
-    );
+    if (log.isWarnEnabled()) {
+      log.warn(
+          "The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
+              + "for high load scenarios, unless a single XSLT transform is used"
+              + " and xsltCacheLifetimeSeconds is set to a sufficiently high value.");
+    }
   }
   
   /** Return a new Transformer, possibly created from our cached Templates object  

@@ -105,7 +105,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
         this.boostEntries = cachedBoostEntries;
       }
     } catch (IOException ioe) {
-      log.warn("IOException while initializing boost entries from file " + this.boostFilename, ioe);
+      log.warn("IOException while initializing boost entries from file {}", this.boostFilename, ioe);
     }
   }
 
@@ -140,9 +140,9 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
           String regexp = fields[0];
           String boost = fields[1];
           newBoostEntries.add(new BoostEntry(Pattern.compile(regexp), Double.parseDouble(boost)));
-          log.debug("Read regexp " + regexp + " with boost " + boost);
+          log.debug("Read regexp {} with boost {}", regexp, boost);
         } else {
-          log.warn("Malformed config input line: " + line + " (expected 2 fields, got " + fields.length + " fields).  Skipping entry.");
+          log.warn("Malformed config input line: {} (expected 2 fields, got {} fields).  Skipping entry.", line, fields.length);
           continue;
         }
       }

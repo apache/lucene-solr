@@ -63,10 +63,10 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
     }
     validate();
     if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
+      log.info("Reporter disabled for registry {}", registryName);
       return;
     }
-    log.debug("Initializing for registry " + registryName);
+    log.debug("Initializing for registry {}", registryName);
     doInit();
   }
 

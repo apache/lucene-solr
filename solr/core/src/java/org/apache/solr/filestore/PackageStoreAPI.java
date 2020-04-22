@@ -254,7 +254,7 @@ public class PackageStoreAPI {
           try {
             packageStore.fetch(pathCopy, getFrom);
           } catch (Exception e) {
-            log.error("Failed to download file: " + pathCopy, e);
+            log.error("Failed to download file: {}", pathCopy, e);
           }
           log.info("downloaded file: {}", pathCopy);
         });
