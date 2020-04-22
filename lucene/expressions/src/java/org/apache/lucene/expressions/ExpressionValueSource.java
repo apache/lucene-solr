@@ -42,13 +42,17 @@ final class ExpressionValueSource extends DoubleValuesSource {
     this.expression = Objects.requireNonNull(expression);
     variables = new DoubleValuesSource[expression.variables.length];
     boolean needsScores = false;
-    for (int i = 0; i < variables.length; i++) {
-      DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
-      if (source == null) {
-        throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
+    try {
+      for (int i = 0; i < variables.length; i++) {
+        DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
+        if (source == null) {
+          throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
+        }
+        needsScores |= source.needsScores();
+        variables[i] = source;
       }
-      needsScores |= source.needsScores();
-      variables[i] = source;
+    } catch (StackOverflowError e) {
+      throw new IllegalArgumentException("Recursion error: Cycle detected originating in " + this);
     }
     this.needsScores = needsScores;
   }
