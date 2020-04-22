@@ -32,8 +32,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -841,6 +845,31 @@ public class SolrZkClient implements Closeable {
   }
   public void downloadFromZK(String zkPath, Path dir) throws IOException {
     ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
+  }
+
+  /**
+   * Ensures we can subsequently read the most up-to-date state of the provided {@code path} and all data below
+   * it, after this method completes.
+   * This should not be called a lot; there may be some delay.  Consider alternative approaches It's often better to try to devise a way to
+   * "watch" for state changed instead of calling this.
+   */
+  public void sync(String path) {
+    // zookeeper.sync is asynchronous; we need to wait till it's done
+    CompletableFuture<Integer> future = new CompletableFuture<>();
+    keeper.sync(path, (rc, path1, ctx) -> future.complete(rc), null);
+    try {
+      Integer status = future.get(zkClientTimeout, TimeUnit.MILLISECONDS);
+      if (status != 0) {
+        log.info("Not successful waiting for ZooKeeper.sync({}}", path);
+      }
+    } catch (InterruptedException e) {
+      log.warn("Interrupted while doing ZooKeeper.sync({}}", path);
+      Thread.currentThread().interrupt();
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      log.warn("Timeout while doing ZooKeeper.sync({}}", path);
+    }
   }
 
   /**

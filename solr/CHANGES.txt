@@ -135,6 +135,9 @@ Bug Fixes
 
 * SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
 
+* SOLR-14425: Reading of collection aliases didn't always read the latest state from ZooKeeper (incorrect sync() usage)
+  (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
