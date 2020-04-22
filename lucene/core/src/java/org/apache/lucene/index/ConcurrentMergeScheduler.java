@@ -564,7 +564,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  /** This is invoked by {@link MergeScheduler#merge} to possibly stall the incoming
+  /** This is invoked by {@link #merge} to possibly stall the incoming
    *  thread when there are too many merges running or pending.  The 
    *  default behavior is to force this thread, which is producing too
    *  many segments for merging to keep up, to wait until merges catch
