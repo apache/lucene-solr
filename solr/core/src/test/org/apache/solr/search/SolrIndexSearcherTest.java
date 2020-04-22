@@ -22,12 +22,13 @@ import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.IOException;
 
 public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   
-  private final static int NUM_DOCS = 100;
+  private final static int NUM_DOCS = 20;
 
   @BeforeClass
   public static void setUpClass() throws Exception {
@@ -126,6 +127,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
+  @Ignore("see https://github.com/apache/lucene-solr/pull/1448")
   public void testMinExactHitsMoreRows() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = new QueryCommand();
@@ -140,6 +142,16 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   }
   
   public void testMinExactHitsMatchWithDocSet() throws IOException {
-    
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = new QueryCommand();
+      cmd.setNeedDocSet(true);
+      cmd.setMinExactHits(2);
+      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
+      searcher.search(new QueryResult(), cmd);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesEqual(NUM_DOCS, qr);
+      return null;
+    });
   }
 }
