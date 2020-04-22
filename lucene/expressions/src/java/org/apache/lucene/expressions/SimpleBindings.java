@@ -52,10 +52,15 @@ public final class SimpleBindings extends Bindings {
   
   /** 
    * Adds a SortField to the bindings.
-   * <p>
-   * This can be used to reference a DocValuesField, a field from
-   * FieldCache, the document's score, etc. 
+   *
+   * @deprecated use {@link #add(String, DoubleValuesSource)}
+   * @see DoubleValuesSource#fromIntField(String)
+   * @see DoubleValuesSource#fromLongField(String)
+   * @see DoubleValuesSource#fromFloatField(String)
+   * @see DoubleValuesSource#fromDoubleField(String)
+   * @see DoubleValuesSource#SCORES
    */
+  @Deprecated
   public void add(SortField sortField) {
     map.put(sortField.getField(), () -> fromSortField(sortField));
   }
