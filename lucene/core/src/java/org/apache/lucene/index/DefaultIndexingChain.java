@@ -90,7 +90,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   private LeafReader getDocValuesReader(int maxDoc) {
-    return new DocValuesReader() {
+    return new DocValuesLeafReader() {
       @Override
       public NumericDocValues getNumericDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
@@ -182,7 +182,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
     Sorter sorter = new Sorter(indexSort);
     // returns null if the documents are already sorted
-    return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(new IndexSorter.DocComparator[0]));
+    return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(IndexSorter.DocComparator[]::new));
   }
 
   @Override
@@ -592,8 +592,10 @@ final class DefaultIndexingChain extends DocConsumer {
   private void validateIndexSortDVType(Sort indexSort, String fieldToValidate, DocValuesType dvType) throws IOException {
     for (SortField sortField : indexSort.getSort()) {
       IndexSorter sorter = sortField.getIndexSorter();
-      assert sorter != null;
-      sorter.getDocComparator(new DocValuesReader() {
+      if (sorter == null) {
+        throw new IllegalStateException("Cannot sort index with sort order " + sortField);
+      }
+      sorter.getDocComparator(new DocValuesLeafReader() {
         @Override
         public NumericDocValues getNumericDocValues(String field) {
           if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.NUMERIC) {
@@ -985,7 +987,7 @@ final class DefaultIndexingChain extends DocConsumer {
           return null;
         }
 
-        return perField.docValuesWriter.getDocIdSet();
+        return perField.docValuesWriter.getDocValues();
       }
     }
     return null;

@@ -202,7 +202,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
           throw new IllegalArgumentException("cannot serialize SortField " + sortField);
         }
         output.writeString(sorter.getProviderName());
-        sorter.serialize(output);
+        SortFieldProvider.serialize(sortField, output);
       }
 
       CodecUtil.writeFooter(output);

@@ -179,6 +179,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
         BytesRef serializedSort = SimpleTextUtil.fromBytesRefString(readString(SI_SORT_BYTES.length, scratch));
         final ByteArrayDataInput bytes = new ByteArrayDataInput(serializedSort.bytes, serializedSort.offset, serializedSort.length);
         sortField[i] = SortFieldProvider.forName(provider).loadSortField(bytes);
+        assert bytes.eof();
       }
       Sort indexSort = sortField.length == 0 ? null : new Sort(sortField);
 
@@ -298,7 +299,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
 
         SimpleTextUtil.write(output, SI_SORT_BYTES);
         BytesRefOutput b = new BytesRefOutput();
-        sorter.serialize(b);
+        SortFieldProvider.serialize(sortField, b);
         SimpleTextUtil.write(output, b.bytes.get().toString(), scratch);
         SimpleTextUtil.writeNewline(output);
       }

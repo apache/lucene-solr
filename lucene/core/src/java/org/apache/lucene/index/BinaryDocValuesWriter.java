@@ -202,9 +202,4 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
       return value.get();
     }
   }
-
-  @Override
-  DocIdSetIterator getDocIdSet() {
-    return docsWithField.iterator();
-  }
 }

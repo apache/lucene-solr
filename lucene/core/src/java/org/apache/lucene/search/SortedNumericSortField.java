@@ -93,7 +93,7 @@ public class SortedNumericSortField extends SortField {
   public static final class Provider extends SortFieldProvider {
 
     /** The name this provider is registered under */
-    public static final String NAME = "sortedNumericField";
+    public static final String NAME = "SortedNumericSortField";
 
     /** Creates a new Provider */
     public Provider() {
@@ -122,6 +122,12 @@ public class SortedNumericSortField extends SortField {
         }
       }
       return sf;
+    }
+
+    @Override
+    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+      assert sf instanceof SortedNumericSortField;
+      ((SortedNumericSortField)sf).serialize(out);
     }
   }
 
@@ -259,13 +265,13 @@ public class SortedNumericSortField extends SortField {
   public IndexSorter getIndexSorter() {
     switch(type) {
       case INT:
-        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, this::getValue);
       case LONG:
-        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, this::getValue);
       case DOUBLE:
-        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, this::getValue);
       case FLOAT:
-        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, this::getValue, this::serialize);
+        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, this::getValue);
       default:
         throw new AssertionError();
     }
