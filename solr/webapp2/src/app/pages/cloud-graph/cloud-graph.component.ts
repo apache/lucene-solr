@@ -59,9 +59,9 @@ export class CloudGraphComponent implements OnInit {
   nestedTreeControl;
   nestedDataSource = new MatTreeNestedDataSource<SolrPrimitive>();
 
-  constructor(private cloudGraphService: CloudGraphService, private systemService: SystemService, 
+  constructor(private cloudGraphService: CloudGraphService, private systemService: SystemService,
     private cloudJvmMetricsService: SolrAdminMetricsService, public table: MatTableModule, public tree: MatTreeModule)  {
-      
+
      }
 
   ngOnInit() {
@@ -123,19 +123,18 @@ export class CloudGraphComponent implements OnInit {
       }
     );
   }
-  
+
   handleCloudStatusCall(){
     this.cloudGraphService.getCloudStatus().subscribe(
       response => {
         this.cloudStatus = response;
         delete response.responseHeader;
-        return this.cloudStatus;
       },
       err => {
         console.error(err);
       }
     );
-  } 
+  }
 
 
   processCloudGraphData(cloudGraphData: any){
@@ -143,9 +142,9 @@ export class CloudGraphComponent implements OnInit {
     this.arrayOfNodeNames  = []; //will be array of node names
     let keys = Object.keys(data); /// node names
     for(var i = 0, j = keys.length; i < j; i++){
-      var key  = keys[i]; 
+      var key  = keys[i];
       this.arrayOfNodeNames.push({"node": key, "details": data[key]});
-    
+
     }
     return this.arrayOfNodeNames;
   }
@@ -155,7 +154,7 @@ export class CloudGraphComponent implements OnInit {
     this.arrayOfJvmNodeNames = []; //will be array of node names
     let keys = Object.keys(data); /// node names
     for(var i = 0, j = keys.length; i < j; i++){
-      var key  = keys[i]; 
+      var key  = keys[i];
       this.arrayOfNodeNames[i]["metrics"]  = data[key]["metrics"]["solr.jetty"]["org.eclipse.jetty.server.handler.DefaultHandler.get-requests"];
       this.arrayOfNodeNames[i]["metrics"]["1minRate"] = this.trimRPM(this.arrayOfNodeNames[i]["metrics"]["1minRate"]) || "";
     }
@@ -170,19 +169,19 @@ export class CloudGraphComponent implements OnInit {
     this.clusterNodesObj = {};
     for(let i = 0, j = clusterNodes.length; i < j; i++){
     this.clusterNodesObj[i] = {"node": this.clusterNodes[i]};
-    } 
+    }
     return this.clusterNodesObj;
   }
-   
+
 
   prepDataForNodeTree(aggregateClusterData){
     var data = aggregateClusterData.cluster.collections;
-    
-    var collectionsArray = []; // 
+
+    var collectionsArray = []; //
     // Shard
     var shardsArrayed  = function(collection){
         var shardsArray = [];
-        Object.keys(collection).map(function(k) { 
+        Object.keys(collection).map(function(k) {
         let newKey ="";
         newKey = k;
         if(collection[newKey]["replicas"]) {
@@ -202,7 +201,7 @@ export class CloudGraphComponent implements OnInit {
     ​
     var replicasArrayed  = function(shard){
         var replicasArray = [];
-        Object.keys(shard).map(function(k) { 
+        Object.keys(shard).map(function(k) {
         let newKey ="";
         newKey = k;
         let newObject = {};
@@ -215,7 +214,7 @@ export class CloudGraphComponent implements OnInit {
     }
     ​
     var array = Object.keys(data).map(function(k) {
-        
+
         var newKey ="";
         newKey = k;
         if(data[newKey]["shards"]) {
@@ -229,13 +228,13 @@ export class CloudGraphComponent implements OnInit {
         //newObject[newKey]["children"] = shardsArrayed(data[newKey]["shards"]);
      ​   delete newObject[newKey];
         collectionsArray.push(newObject);
-        
+
     });
     this.aggregateClusterData = collectionsArray;
     this.nestedDataSource.data = this.aggregateClusterData;
     return this.nestedDataSource;
   }
- 
+
 
   //process
   hasChild = (_: number, node: SolrPrimitive) => !!node.children && node.children.length > 0;

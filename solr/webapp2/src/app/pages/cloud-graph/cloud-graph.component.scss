@@ -13,7 +13,7 @@
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
-// under the License. 
+// under the License.
 .mat-tab-group {
     margin: 16px;
 }
@@ -30,11 +30,14 @@
 .cloud-tree-invisible {
     display: none;
   }
-  
+
   .cloud-tree ul,
   .cloud-tree li {
     margin-top: 0;
     margin-bottom: 0;
     list-style-type: none;
     margin-left: 60 px;
+  }
+  .cloud-table td{
+    padding: 32px;
   }

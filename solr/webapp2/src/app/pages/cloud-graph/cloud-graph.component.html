@@ -15,7 +15,7 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License. -->
 <mat-tab-group mat-align-tabs="start">
-  
+
   <mat-tab label="Cloud Stats">
     <ng-template matTabContent>
       <mat-card class="cloud-stats-card" *ngFor="let i of arrayOfNodeNames">
@@ -31,23 +31,23 @@ under the License. -->
               <th id="requests">RPM / P95</th>
               <th id="collections">Collections</th>
             </tr>
-          
-            <tr  >
+
+            <tr >
               <td >{{ i.details.system.processCpuLoad.toFixed(1) }}%</td>
               <td >{{ i.details.jvm.memory.used }}</td>
               <td *ngIf="i.metrics"> {{ i.metrics["1minRate"]}} / {{ i.metrics.p95_ms }}</td>
-              <td > {{ cloudStatus.collections.join() }} </td>
+              <td *ngIf="cloudStatus"> {{ cloudStatus.collections.join() }} </td>
             </tr>
-          
+
           </table>
         </mat-card-content>
       </mat-card>
-      
+
     </ng-template>
   </mat-tab>
   <mat-tab label="Zookeeper" [hidden]="!zkStatus">
     <ng-template matTabContent>
-      
+
       <mat-card class="zk-status-card">
         <mat-card-header>
           <mat-card-title>{{ zkStatus.zkStatus.status }}</mat-card-title>
@@ -111,9 +111,9 @@ under the License. -->
     </ng-template>
   </mat-tab>
   <mat-tab label="Cluster View"[hidden]="!aggregateClusterData">
-    
+
     <ng-template matTabContent>
-     
+
 
       <mat-tree [dataSource]="aggregateClusterData" [treeControl]="nestedTreeControl" class="cloud-tree">
         <!-- This is the tree node template for expandable nodes -->
@@ -133,7 +133,7 @@ under the License. -->
             </ul>
           </li>
         </mat-nested-tree-node>
-        
+
       </mat-tree>
 
     </ng-template>
