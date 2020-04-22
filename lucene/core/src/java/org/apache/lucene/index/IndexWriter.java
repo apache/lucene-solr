@@ -2007,7 +2007,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (doWait) {
       synchronized(this) {
         while(true) {
-
           if (tragedy.get() != null) {
             throw new IllegalStateException("this writer hit an unrecoverable error; cannot complete forceMerge", tragedy.get());
           }
@@ -2024,10 +2023,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
           }
 
-          if (maxNumSegmentsMergesPending())
+          if (maxNumSegmentsMergesPending()) {
+            testPoint("forceMergeBeforeWait");
             doWait();
-          else
+          } else {
             break;
+          }
         }
       }
 
@@ -4394,6 +4395,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
   private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
+    testPoint("mergeMiddleStart");
     merge.checkAborted();
 
     Directory mergeDirectory = config.getMergeScheduler().wrapForMerge(merge, directory);
