@@ -44,6 +44,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -363,8 +364,14 @@ public class QueryComponent extends SearchComponent
                               CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
+    int minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, -1);
+    if (minExactHits < 0) {
+      minExactHits = Integer.MAX_VALUE;
+    }
+
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
+    cmd.setMinExactHits(minExactHits);
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -1274,7 +1281,7 @@ public class QueryComponent extends SearchComponent
     }
 
     DocListAndSet res = new DocListAndSet();
-    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, TotalHits.Relation.EQUAL_TO);
     if (rb.isNeedDocSet()) {
       // TODO: create a cache for this!
       List<Query> queries = new ArrayList<>();
