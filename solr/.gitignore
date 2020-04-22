@@ -1,7 +1,7 @@
 *.iml
 
 /bin/*.pid
-
+*=*
 /contrib/dataimporthandler/test-lib/
 
 /core/test-lib/
