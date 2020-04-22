@@ -15,7 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 import { Component, OnInit } from '@angular/core';
+import { FormsModule, FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 import { SolrCollectionsService } from '../../services/solr-collections/solr-collections.service';
+import {trimTrailingNulls} from "@angular/compiler/src/render3/view/util";
 
 @Component({
   selector: 'app-collections',
@@ -24,13 +26,52 @@ import { SolrCollectionsService } from '../../services/solr-collections/solr-col
 })
 export class CollectionsComponent implements OnInit {
     collectionNames;
+    collectionName: string;
+    formGroup: FormGroup;
+    queryResults: string;
+    params: any;
 
-  constructor(private collectionsService: SolrCollectionsService) { }
+  constructor(private collectionsService: SolrCollectionsService, private formBuilder: FormBuilder) { }
 
   ngOnInit() {
       this.collectionsService.get().subscribe(response => {
         this.collectionNames = response.collections;
       });
+    this.createForm();
+  }
+  createForm() {
+    this.formGroup = this.formBuilder.group({
+      'qt': [null],
+      'q': [null, Validators.required],
+      'fq': [null],
+      'sort': [null],
+      'start': [null],
+      'rows': [null],
+      'fl': [null],
+      'df': [null],
+      'queryParameters': [null],
+      'wt': [null],
+    });
+  }
+  get query() {
+    return this.formGroup.get('q') as FormControl
+  }
+  setCollection(collectionName){
+      console.log("Form working ish", this.collectionName);
+      return this.collectionName;
+  }
+  onSubmit(params){
+    // @ts-ignore
+    let filteredObject = Object.entries(params).reduce((a,[k,v]) => (v == null ? a : {
+        ...a,
+        [k]:v}),
+      {});
+
+    let queryString = Object.keys(filteredObject).map(key => key + '=' + params[key]).join('&');
+    this.collectionsService.getResults(this.collectionName, queryString).subscribe(response => {
+      this.queryResults = JSON.stringify(response, undefined, 4);
+      return this.queryResults;
+    })
   }
 
 }

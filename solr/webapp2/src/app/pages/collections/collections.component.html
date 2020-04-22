@@ -18,15 +18,211 @@ under the License. -->
   <div fxLayout>
     <div fxLayout="column">
         <mat-toolbar>Collections<span fxFlex></span> <a mat-raised-button color="primary">Add Collection</a></mat-toolbar>
-      <mat-nav-list>
-        <a mat-list-item *ngFor="let name of collectionNames">{{name}}</a>
-      </mat-nav-list>
+      <mat-form-field>
+        <mat-label>Collection Name</mat-label>
+        <mat-select name="collectionName" (selectionChange)="setCollection(collectionName)" [(ngModel)]="collectionName">
+          <mat-option name="name" click="setCollection(name)" *ngFor="let name of collectionNames" [value]="name">
+            {{name}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
     <div fxLayout="column">
+
         <mat-toolbar><span></span></mat-toolbar>
         <div>
             Collection Details:
         </div>
     </div>
   </div>
+
+  <mat-accordion>
+    <mat-expansion-panel class="collection-overview-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Overview
+        </mat-panel-title>
+        <mat-panel-description>
+          See an overview of the selected collection.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+    </mat-expansion-panel>
+    <mat-expansion-panel class="collection-analysis-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Analysis
+        </mat-panel-title>
+        <mat-panel-description>
+          Inspect how data will be handled according to a field.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+
+    </mat-expansion-panel>
+    <mat-expansion-panel hideToggle="true" class="collection-dataimport-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+         Dataimport
+        </mat-panel-title>
+        <mat-panel-description>
+          The Data Import Handler is not configured in solr.xml.
+        </mat-panel-description>
+        <mat-icon>cloud_upload</mat-icon>
+      </mat-expansion-panel-header>
+
+    </mat-expansion-panel>
+    <mat-expansion-panel class="collection-documents-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Documents
+        </mat-panel-title>
+        <mat-panel-description>
+          Modify, add, or remove documents in the collection.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+    </mat-expansion-panel>
+    <mat-expansion-panel class="collection-query-card">
+
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Query
+        </mat-panel-title>
+        <mat-panel-description>
+          Query a collection and see the results.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <div class="container" *ngIf="!post; else forminfo" novalidate>
+      <form [formGroup]="formGroup" (ngSubmit)="onSubmit(formGroup.value)" class="form">
+        <div *ngIf="queryResults" >
+          <pre class="form-results form-components">{{queryResults}}</pre>
+        </div>
+        <p>
+        <mat-form-field appearance="fill">
+          <mat-label>/select</mat-label>
+          <input matInput formControlName="qt">
+          <mat-hint>Request-Handler (qt)</mat-hint>
+        </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label></mat-label>
+            <textarea required minlength="3" matInput value="*:*" formControlName="q"></textarea>
+            <mat-hint>q</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label></mat-label>
+            <input matInput formControlName="fq">
+            <mat-hint>fq</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label></mat-label>
+            <input matInput formControlName="sort">
+            <mat-hint>sort</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p class="query-sort-rows">
+          <mat-form-field appearance="fill">
+            <mat-label></mat-label>
+            <input matInput formControlName="start">
+            <mat-hint>start</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label></mat-label>
+            <input matInput formControlName="rows">
+            <mat-hint>rows</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label>fl</mat-label>
+            <input matInput formControlName="fl">
+            <mat-hint>fl</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label>df</mat-label>
+            <input matInput formControlName="df">
+            <mat-hint>df</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label>key1=val1&key2=val2</mat-label>
+            <input matInput formControlName="queryParameters">
+            <mat-hint>Raw Query Parmeters</mat-hint>
+
+          </mat-form-field>
+
+        </p>
+        <br>
+        <p>
+          <mat-form-field appearance="fill">
+            <mat-label>Select</mat-label>
+            <mat-select formControlName="wt">
+              <mat-option value="json">json</mat-option>
+              <mat-option value="xml">xml</mat-option>
+              <mat-option value="python">python</mat-option>
+              <mat-option value="ruby">ruby</mat-option>
+              <mat-option value="php">php</mat-option>
+              <mat-option value="csv">csv</mat-option>
+            </mat-select>
+            <mat-hint>wt</mat-hint>
+          </mat-form-field>
+        </p>
+        <br>
+        <div class="example-button-row">
+          <div class="form-element">
+            <button mat-raised-button type="submit" class="button"
+                    [disabled]="!formGroup.valid">
+                    Execute Query
+            </button>
+          </div>
+        </div>
+      </form>
+      </div>
+      <ng-template #forminfo>
+        <div class="container">
+          {{ get | json }}
+        </div>
+      </ng-template>
+
+
+    </mat-expansion-panel>
+    <mat-expansion-panel class="collection-stream-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Stream
+        </mat-panel-title>
+        <mat-panel-description>
+          Enter a streaming expression and see the results.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+    </mat-expansion-panel>
+    <mat-expansion-panel class="collection-schema-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Schema Browser
+        </mat-panel-title>
+        <mat-panel-description>
+          Review schema data about a collection.
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+    </mat-expansion-panel>
+  </mat-accordion>
 </div>

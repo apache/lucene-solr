@@ -24,6 +24,7 @@ import { SolrService } from '../solr.service';
 export class SolrCollectionsService extends SolrService {
 
     path = '/api/c';
+    queryPath = '/solr/';
 
   constructor(private http: HttpClient) {
       super();
@@ -31,5 +32,8 @@ export class SolrCollectionsService extends SolrService {
 
   get() {
       return this.http.get<any>(this.path);
+  }
+  getResults(collectionName, params){
+      return this.http.get<any>(this.queryPath+`${collectionName}/select?${params}`)
   }
 }

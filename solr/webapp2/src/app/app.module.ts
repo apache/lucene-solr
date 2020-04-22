@@ -16,7 +16,7 @@
 // under the License.
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-
+import {FormsModule, ReactiveFormsModule, FormBuilder} from "@angular/forms";
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -45,6 +45,7 @@ import { MatPaginator } from '@angular/material/paginator';
     BrowserAnimationsModule,
     HttpClientModule,
     FontAwesomeModule,
+    FormsModule,
     AppLayoutModule,
     PagesModule,
     IconsModule,
@@ -54,12 +55,12 @@ import { MatPaginator } from '@angular/material/paginator';
     MatSortModule,
     MatTabsModule,
     MatDividerModule,
-    MatTreeModule
+    MatTreeModule,
+    ReactiveFormsModule
   ],
   providers: [
     {provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: {hasBackdrop: true},
-    
-  }, MatSort, MatPaginator
+  }, MatSort, MatPaginator, FormBuilder
 ],
   bootstrap: [AppComponent]
 })

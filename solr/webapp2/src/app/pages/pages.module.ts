@@ -36,23 +36,27 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import { NgxGraphModule } from '@swimlane/ngx-graph';
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 
 @NgModule({
     declarations: [DashboardComponent, LoggingComponent, CloudConfigsComponent,
         CloudGraphComponent, CollectionsComponent, JavaPropsComponent, ThreadDumpComponent],
-    imports: [
-        CommonModule,
-        FlexLayoutModule,
-        MaterialModule,
-        FontAwesomeModule,
-        MomentModule,
-        DialogsModule,
-        ComponentsModule,
-        NgMathPipesModule,
-        NgxChartsModule,
-        MatExpansionModule,
-        MatTableModule,
-        MatFormFieldModule
-    ]
+  imports: [
+    CommonModule,
+    FlexLayoutModule,
+    MaterialModule,
+    FontAwesomeModule,
+    FormsModule,
+    MomentModule,
+    DialogsModule,
+    ComponentsModule,
+    NgMathPipesModule,
+    NgxChartsModule,
+    NgxGraphModule,
+    MatExpansionModule,
+    MatTableModule,
+    MatFormFieldModule,
+    ReactiveFormsModule
+  ]
 })
 export class PagesModule { }
