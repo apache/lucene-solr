@@ -463,7 +463,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testMaybeStallCalled() throws Exception {
     final AtomicBoolean wasCalled = new AtomicBoolean();
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(new LogByteSizeMergePolicy());
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
         protected boolean maybeStall(IndexWriter writer) {
@@ -473,9 +474,10 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       });
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
+    w.flush();
+    w.addDocument(new Document());
     w.forceMerge(1);
     assertTrue(wasCalled.get());
-
     w.close();
     dir.close();
   }

@@ -310,7 +310,7 @@ public class TestIndexWriterMerging extends LuceneTestCase {
   // merging a segment with >= 20 (maxMergeDocs) docs
   private static class MyMergeScheduler extends MergeScheduler {
     @Override
-    synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+    synchronized public void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
 
       while(true) {
         MergePolicy.OneMerge merge = writer.getNextMerge();

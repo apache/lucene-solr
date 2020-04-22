@@ -495,7 +495,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   @Override
-  public synchronized void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+  public synchronized void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
 
     assert !Thread.holdsLock(writer);
 
@@ -564,7 +564,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  /** This is invoked by {@link #merge} to possibly stall the incoming
+  /** This is invoked by {@link MergeScheduler#merge} to possibly stall the incoming
    *  thread when there are too many merges running or pending.  The 
    *  default behavior is to force this thread, which is producing too
    *  many segments for merging to keep up, to wait until merges catch
@@ -641,7 +641,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     assert mergeThreads.contains(Thread.currentThread()) : "caller is not a merge thread";
     // Let CMS run new merges if necessary:
     try {
-      merge(writer, MergeTrigger.MERGE_FINISHED, true);
+      merge(writer, MergeTrigger.MERGE_FINISHED);
     } catch (AlreadyClosedException ace) {
       // OK
     } catch (IOException ioe) {

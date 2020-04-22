@@ -2070,7 +2070,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    mergeScheduler.merge(this, MergeTrigger.EXPLICIT, newMergesFound);
+    mergeScheduler.merge(this, MergeTrigger.EXPLICIT);
 
     if (spec != null && doWait) {
       final int numMerges = spec.merges.size();
@@ -2152,8 +2152,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    boolean newMergesFound = updatePendingMerges(mergePolicy, trigger, maxNumSegments);
-    mergeScheduler.merge(this, trigger, newMergesFound);
+    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments)) {
+      mergeScheduler.merge(this, trigger);
+    }
   }
 
   private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
@@ -2534,7 +2535,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Give merge scheduler last chance to run, in case
     // any pending merges are waiting. We can't hold IW's lock
     // when going into merge because it can lead to deadlock.
-    mergeScheduler.merge(this, MergeTrigger.CLOSING, false);
+    mergeScheduler.merge(this, MergeTrigger.CLOSING);
 
     synchronized (this) {
       ensureOpen(false);
