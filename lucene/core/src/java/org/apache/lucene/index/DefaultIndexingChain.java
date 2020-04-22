@@ -37,7 +37,7 @@ import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -173,7 +173,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     List<IndexSorter.DocComparator> comparators = new ArrayList<>();
     for (int i = 0; i < indexSort.getSort().length; i++) {
-      SortField sortField = indexSort.getSort()[i];
+      SortOrder sortField = indexSort.getSort()[i];
       IndexSorter sorter = sortField.getIndexSorter();
       if (sorter == null) {
         throw new UnsupportedOperationException("Cannot sort index using sort field " + sortField);
@@ -590,7 +590,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   private void validateIndexSortDVType(Sort indexSort, String fieldToValidate, DocValuesType dvType) throws IOException {
-    for (SortField sortField : indexSort.getSort()) {
+    for (SortOrder sortField : indexSort.getSort()) {
       IndexSorter sorter = sortField.getIndexSorter();
       assert sorter != null;
       sorter.getDocComparator(new DocValuesReader() {

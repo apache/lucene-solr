@@ -38,7 +38,7 @@ import org.apache.lucene.util.NumericUtils;
  * @since   lucene 1.4
  * @see Sort
  */
-public class SortField {
+public class SortField implements SortOrder {
 
   /**
    * Specifies the type of the terms to be sorted, or special types such as CUSTOM
@@ -315,9 +315,7 @@ public class SortField {
     return type;
   }
 
-  /** Returns whether the sort should be reversed.
-   * @return  True if natural order should be reversed.
-   */
+  @Override
   public boolean getReverse() {
     return reverse;
   }
@@ -473,35 +471,17 @@ public class SortField {
     }
   }
 
-  /**
-   * Rewrites this SortField, returning a new SortField if a change is made.
-   * Subclasses should override this define their rewriting behavior when this
-   * SortField is of type {@link SortField.Type#REWRITEABLE}
-   *
-   * @param searcher IndexSearcher to use during rewriting
-   * @return New rewritten SortField, or {@code this} if nothing has changed.
-   * @throws IOException Can be thrown by the rewriting
-   * @lucene.experimental
-   */
+  @Override
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
   
-  /** Whether the relevance score is needed to sort documents. */
+  @Override
   public boolean needsScores() {
     return type == Type.SCORE;
   }
 
-  /**
-   * Returns an {@link IndexSorter} used for sorting index segments by this SortField.
-   *
-   * If the SortField cannot be used for index sorting (for example, if it uses scores or
-   * other query-dependent values) then this method should return {@code null}
-   *
-   * SortFields that implement this method should also implement a constructor that
-   * takes a {@link DataInput} for deserialization, to match the {@link IndexSorter#serialize(DataOutput)}
-   * method on the returned IndexSorter
-   */
+  @Override
   public IndexSorter getIndexSorter() {
     switch (type) {
       case STRING:

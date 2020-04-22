@@ -57,6 +57,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
@@ -371,11 +372,12 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private Comparator<GroupDoc> getComparator(Sort sort) {
-    final SortField[] sortFields = sort.getSort();
+    final SortOrder[] sortFields = sort.getSort();
     return new Comparator<GroupDoc>() {
       @Override
       public int compare(GroupDoc d1, GroupDoc d2) {
-        for(SortField sf : sortFields) {
+        for(SortOrder so : sortFields) {
+          SortField sf = (SortField) so;
           final int cmp;
           if (sf.getType() == SortField.Type.SCORE) {
             if (d1.score > d2.score) {
@@ -406,11 +408,11 @@ public class TestGrouping extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   private Comparable<?>[] fillFields(GroupDoc d, Sort sort) {
-    final SortField[] sortFields = sort.getSort();
+    final SortOrder[] sortFields = sort.getSort();
     final Comparable<?>[] fields = new Comparable[sortFields.length];
     for(int fieldIDX=0;fieldIDX<sortFields.length;fieldIDX++) {
       final Comparable<?> c;
-      final SortField sf = sortFields[fieldIDX];
+      final SortField sf = (SortField) sortFields[fieldIDX];
       if (sf.getType() == SortField.Type.SCORE) {
         c = d.score;
       } else if (sf.getField().equals("sort1")) {
@@ -1086,10 +1088,10 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
           
-          final SortField[] sortFields = groupSort.getSort();
+          final SortOrder[] sortFields = groupSort.getSort();
           final Map<Float,Float> termScoreMap = scoreMap.get(searchTerm);
           for(int groupSortIDX=0;groupSortIDX<sortFields.length;groupSortIDX++) {
-            if (sortFields[groupSortIDX].getType() == SortField.Type.SCORE) {
+            if (sortFields[groupSortIDX].needsScores()) {
               for (GroupDocs<?> groupDocsHits : expectedGroups.groups) {
                 if (groupDocsHits.groupSortValues != null) {
                   //System.out.println("remap " + groupDocsHits.groupSortValues[groupSortIDX] + " to " + termScoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]));
@@ -1100,9 +1102,9 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
           
-          final SortField[] docSortFields = docSort.getSort();
+          final SortOrder[] docSortFields = docSort.getSort();
           for(int docSortIDX=0;docSortIDX<docSortFields.length;docSortIDX++) {
-            if (docSortFields[docSortIDX].getType() == SortField.Type.SCORE) {
+            if (docSortFields[docSortIDX].needsScores()) {
               for (GroupDocs<?> groupDocsHits : expectedGroups.groups) {
                 for(ScoreDoc _hit : groupDocsHits.scoreDocs) {
                   FieldDoc hit = (FieldDoc) _hit;

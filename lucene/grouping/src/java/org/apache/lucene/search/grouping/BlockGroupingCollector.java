@@ -29,7 +29,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -238,13 +238,13 @@ public class BlockGroupingCollector extends SimpleCollector {
     
     this.topNGroups = topNGroups;
 
-    final SortField[] sortFields = groupSort.getSort();
+    final SortOrder[] sortFields = groupSort.getSort();
     comparators = new FieldComparator<?>[sortFields.length];
     leafComparators = new LeafFieldComparator[sortFields.length];
     compIDXEnd = comparators.length - 1;
     reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
-      final SortField sortField = sortFields[i];
+      final SortOrder sortField = sortFields[i];
       comparators[i] = sortField.getComparator(topNGroups, i);
       reversed[i] = sortField.getReverse() ? -1 : 1;
     }

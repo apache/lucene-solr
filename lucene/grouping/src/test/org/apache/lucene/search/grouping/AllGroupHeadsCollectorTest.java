@@ -48,6 +48,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -474,11 +475,12 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   private Comparator<GroupDoc> getComparator(Sort sort, final boolean sortByScoreOnly, final int[] fieldIdToDocID) {
-    final SortField[] sortFields = sort.getSort();
+    final SortOrder[] sortFields = sort.getSort();
     return new Comparator<GroupDoc>() {
       @Override
       public int compare(GroupDoc d1, GroupDoc d2) {
-        for (SortField sf : sortFields) {
+        for (SortOrder so : sortFields) {
+          SortField sf = (SortField) so;
           final int cmp;
           if (sf.getType() == SortField.Type.SCORE) {
             if (d1.score > d2.score) {

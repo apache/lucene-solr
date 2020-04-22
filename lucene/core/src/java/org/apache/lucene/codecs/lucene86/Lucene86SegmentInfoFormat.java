@@ -32,6 +32,7 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -196,7 +197,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
       int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
       output.writeVInt(numSortFields);
       for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
+        SortOrder sortField = indexSort.getSort()[i];
         IndexSorter sorter = sortField.getIndexSorter();
         if (sorter == null) {
           throw new IllegalArgumentException("cannot serialize SortField " + sortField);

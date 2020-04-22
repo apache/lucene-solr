@@ -663,14 +663,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       rewrittenSort = nullEquivalent;
     }
 
-    final SortField[] rewrittenSortFields = rewrittenSort.getSort();
+    final SortOrder[] rewrittenSortFields = rewrittenSort.getSort();
     final SchemaField[] rewrittenSchemaFields = new SchemaField[rewrittenSortFields.length];
     for (int ii = 0; ii < rewrittenSortFields.length; ++ii) {
-      final String fieldName = rewrittenSortFields[ii].getField();
+      final String fieldName = getSortFieldName(rewrittenSortFields[ii]);
       rewrittenSchemaFields[ii] = (fieldName == null ? null : schema.getFieldOrNull(fieldName));
     }
 
     return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
+  }
+
+  private static String getSortFieldName(SortOrder so) {
+    if (so instanceof SortField) {
+      return ((SortField)so).getField();
+    }
+    return null;
   }
 
   /**
@@ -1427,9 +1434,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) == 0 && useFilterForSortedQuery && cmd.getSort() != null
         && filterCache != null) {
       useFilterCache = true;
-      SortField[] sfields = cmd.getSort().getSort();
-      for (SortField sf : sfields) {
-        if (sf.getType() == SortField.Type.SCORE) {
+      SortOrder[] sfields = cmd.getSort().getSort();
+      for (SortOrder sf : sfields) {
+        if (sf.needsScores()) {
           useFilterCache = false;
           break;
         }

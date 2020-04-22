@@ -47,7 +47,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -824,7 +824,7 @@ public final class CheckIndex implements Closeable {
         infoStream.print("    test: index sort..........");
       }
 
-      SortField fields[] = sort.getSort();
+      SortOrder fields[] = sort.getSort();
       final int reverseMul[] = new int[fields.length];
       final LeafFieldComparator comparators[] = new LeafFieldComparator[fields.length];
 

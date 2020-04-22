@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.MergeState.DocMap;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.packed.PackedInts;
@@ -38,7 +38,7 @@ final class MultiSorter {
 
     // TODO: optimize if only 1 reader is incoming, though that's a rare case
 
-    SortField fields[] = sort.getSort();
+    SortOrder fields[] = sort.getSort();
     final IndexSorter.ComparableProvider[][] comparables = new IndexSorter.ComparableProvider[fields.length][];
     final int[] reverseMuls = new int[fields.length];
     for(int i=0;i<fields.length;i++) {

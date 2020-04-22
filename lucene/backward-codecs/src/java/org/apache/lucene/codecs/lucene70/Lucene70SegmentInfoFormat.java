@@ -319,7 +319,10 @@ public class Lucene70SegmentInfoFormat extends SegmentInfoFormat {
       int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
       output.writeVInt(numSortFields);
       for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
+        if (indexSort.getSort()[i] instanceof SortField == false) {
+          throw new IllegalArgumentException("Lucene70SegmentInfoFormat cannot write Sort of type " + indexSort.getSort()[i]);
+        }
+        SortField sortField = (SortField) indexSort.getSort()[i];
         SortField.Type sortType = sortField.getType();
         output.writeString(sortField.getField());
         int sortTypeID;

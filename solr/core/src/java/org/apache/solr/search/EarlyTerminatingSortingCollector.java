@@ -28,7 +28,7 @@ import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
@@ -61,8 +61,8 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
    *  provided {@link Sort} and if segments are merged with the provided
    *  {@link Sort}. */
   public static boolean canEarlyTerminate(Sort searchSort, Sort mergePolicySort) {
-    final SortField[] fields1 = searchSort.getSort();
-    final SortField[] fields2 = mergePolicySort.getSort();
+    final SortOrder[] fields1 = searchSort.getSort();
+    final SortOrder[] fields2 = mergePolicySort.getSort();
     // early termination is possible if fields1 is a prefix of fields2
     if (fields1.length > fields2.length) {
       return false;

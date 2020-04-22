@@ -29,7 +29,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -70,7 +70,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     this.groupSelector = selector;
     this.sort = sort;
     this.reversed = new int[sort.getSort().length];
-    final SortField[] sortFields = sort.getSort();
+    final SortOrder[] sortFields = sort.getSort();
     for (int i = 0; i < sortFields.length; i++) {
       reversed[i] = sortFields[i].getReverse() ? -1 : 1;
     }
@@ -258,7 +258,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
     protected SortingGroupHead(Sort sort, T groupValue, int doc, LeafReaderContext context, Scorable scorer) throws IOException {
       super(groupValue, doc, context.docBase);
-      final SortField[] sortFields = sort.getSort();
+      final SortOrder[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
       leafComparators = new LeafFieldComparator[sortFields.length];
       for (int i = 0; i < sortFields.length; i++) {

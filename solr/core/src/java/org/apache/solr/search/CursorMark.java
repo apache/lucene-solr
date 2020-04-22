@@ -16,26 +16,28 @@
  */
 package org.apache.solr.search;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-
-import static org.apache.solr.common.params.CursorMarkParams.*;
-
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 /**
  * An object that encapsulates the basic information about the current Mark Point of a 
@@ -93,8 +95,8 @@ public final class CursorMark {
                               "Cursor functionality requires start=0");
     }
 
-    for (SortField sf : sort.getSort()) {
-      if (sf.getType().equals(SortField.Type.DOC)) {
+    for (SortOrder sf : sort.getSort()) {
+      if (sf instanceof SortField && ((SortField)sf).getType().equals(SortField.Type.DOC)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
                                 "Cursor functionality can not be used with internal doc ordering sort: _docid_");
       }
@@ -177,7 +179,7 @@ public final class CursorMark {
       values = null;
       return;
     }
-    final SortField[] sortFields = sortSpec.getSort().getSort();
+    final SortOrder[] sortFields = sortSpec.getSort().getSort();
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
     List<Object> pieces = null;
@@ -213,10 +215,8 @@ public final class CursorMark {
 
     this.values = new ArrayList<>(sortFields.length);
 
-    final BytesRef tmpBytes = new BytesRef();
     for (int i = 0; i < sortFields.length; i++) {
 
-      SortField curSort = sortFields[i];
       SchemaField curField = schemaFields.get(i);
       Object rawValue = pieces.get(i);
 

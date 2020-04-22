@@ -17,9 +17,11 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.io.UncheckedIOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -27,7 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
@@ -463,14 +465,68 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
-    for (SortField sortField : sort.getSort()) {
+    for (SortOrder sortField : sort.getSort()) {
       if (sortField.getIndexSorter() == null) {
         throw new IllegalArgumentException("Cannot sort index with sort field " + sortField);
       }
     }
     this.indexSort = sort;
-    this.indexSortFields = Arrays.stream(sort.getSort()).map(SortField::getField).collect(Collectors.toSet());
+    this.indexSortFields = extractFields(sort);
     return this;
+  }
+
+  private Set<String> extractFields(Sort sort) {
+    Set<String> fields = new HashSet<>();
+    for (SortOrder sortOrder : sort.getSort()) {
+      IndexSorter sorter = sortOrder.getIndexSorter();
+      assert sorter != null;
+      try {
+        sorter.getDocComparator(new DocValuesReader() {
+          @Override
+          public NumericDocValues getNumericDocValues(String field) {
+            fields.add(field);
+            return DocValues.emptyNumeric();
+          }
+
+          @Override
+          public BinaryDocValues getBinaryDocValues(String field) {
+            fields.add(field);
+            return DocValues.emptyBinary();
+          }
+
+          @Override
+          public SortedDocValues getSortedDocValues(String field) {
+            fields.add(field);
+            return DocValues.emptySorted();
+          }
+
+          @Override
+          public SortedNumericDocValues getSortedNumericDocValues(String field) {
+            fields.add(field);
+            return DocValues.emptySortedNumeric(0);
+          }
+
+          @Override
+          public SortedSetDocValues getSortedSetDocValues(String field) {
+            fields.add(field);
+            return DocValues.emptySortedSet();
+          }
+
+          @Override
+          public FieldInfos getFieldInfos() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int maxDoc() {
+            return 0;
+          }
+        });
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);  // should never be thrown
+      }
+    }
+    return fields;
   }
 
   @Override

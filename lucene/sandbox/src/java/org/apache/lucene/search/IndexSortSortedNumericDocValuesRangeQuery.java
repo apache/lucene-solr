@@ -151,11 +151,12 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
           Sort indexSort = context.reader().getMetaData().getSort();
           if (indexSort != null
               && indexSort.getSort().length > 0
-              && indexSort.getSort()[0].getField().equals(field)) {
-
-            SortField sortField = indexSort.getSort()[0];
-            DocIdSetIterator disi = getDocIdSetIterator(sortField, context, numericValues);
-            return new ConstantScoreScorer(this, score(), scoreMode, disi);
+              && indexSort.getSort()[0] instanceof SortField) {
+            SortField sortField = (SortField) indexSort.getSort()[0];
+            if (field.equals(sortField.getField())) {
+              DocIdSetIterator disi = getDocIdSetIterator(sortField, context, numericValues);
+              return new ConstantScoreScorer(this, score(), scoreMode, disi);
+            }
           }
         }
         return fallbackWeight.scorer(context);
@@ -182,7 +183,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
    * The returned {@link DocIdSetIterator} makes sure to wrap the original docvalues to skip
    * over documents with no value.
    */
-  private DocIdSetIterator getDocIdSetIterator(SortField sortField,
+  private DocIdSetIterator getDocIdSetIterator(SortOrder sortField,
                                                LeafReaderContext context,
                                                DocIdSetIterator delegate) throws IOException {
     long lower = sortField.getReverse() ? upperValue : lowerValue;
@@ -233,7 +234,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     int compare(int docID) throws IOException;
   }
 
-  private static ValueComparator loadComparator(SortField sortField,
+  private static ValueComparator loadComparator(SortOrder sortField,
                                                 long topValue,
                                                 LeafReaderContext context) throws IOException {
     @SuppressWarnings("unchecked")

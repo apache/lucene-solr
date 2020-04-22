@@ -54,7 +54,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -1028,8 +1028,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * Returns true if <code>indexSort</code> is a prefix of <code>otherSort</code>.
    **/
   static boolean isCongruentSort(Sort indexSort, Sort otherSort) {
-    final SortField[] fields1 = indexSort.getSort();
-    final SortField[] fields2 = otherSort.getSort();
+    final SortOrder[] fields1 = indexSort.getSort();
+    final SortOrder[] fields2 = otherSort.getSort();
     if (fields1.length > fields2.length) {
       return false;
     }

@@ -24,14 +24,14 @@ package org.apache.lucene.search;
 public class TopFieldDocs extends TopDocs {
 
   /** The fields which were used to sort results by. */
-  public SortField[] fields;
+  public SortOrder[] fields;
         
   /** Creates one of these objects.
    * @param totalHits  Total number of hits for the query.
    * @param scoreDocs  The top hits for the query.
    * @param fields     The sort criteria used to find the top hits.
    */
-  public TopFieldDocs (TotalHits totalHits, ScoreDoc[] scoreDocs, SortField[] fields) {
+  public TopFieldDocs (TotalHits totalHits, ScoreDoc[] scoreDocs, SortOrder[] fields) {
     super (totalHits, scoreDocs);
     this.fields = fields;
   }

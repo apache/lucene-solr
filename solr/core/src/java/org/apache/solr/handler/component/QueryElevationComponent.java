@@ -69,6 +69,7 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -574,34 +575,37 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   private SortSpec modifySortSpec(SortSpec current, boolean forceElevation, ElevationComparatorSource comparator) {
     boolean modify = false;
-    SortField[] currentSorts = current.getSort().getSort();
+    SortOrder[] currentSorts = current.getSort().getSort();
     List<SchemaField> currentFields = current.getSchemaFields();
 
-    ArrayList<SortField> sorts = new ArrayList<>(currentSorts.length + 1);
+    ArrayList<SortOrder> sorts = new ArrayList<>(currentSorts.length + 1);
     List<SchemaField> fields = new ArrayList<>(currentFields.size() + 1);
 
     // Perhaps force it to always sort by score
-    if (forceElevation && currentSorts[0].getType() != SortField.Type.SCORE) {
+    if (forceElevation && isSortByScore(currentSorts[0])) {
       sorts.add(new SortField("_elevate_", comparator, true));
       fields.add(null);
       modify = true;
     }
     for (int i = 0; i < currentSorts.length; i++) {
-      SortField sf = currentSorts[i];
-      if (sf.getType() == SortField.Type.SCORE) {
-        sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
+      if (isSortByScore(currentSorts[i])) {
+        sorts.add(new SortField("_elevate_", comparator, !currentSorts[i].getReverse()));
         fields.add(null);
         modify = true;
       }
-      sorts.add(sf);
+      sorts.add(currentSorts[i]);
       fields.add(currentFields.get(i));
     }
     return modify ?
-            new SortSpec(new Sort(sorts.toArray(new SortField[0])),
+            new SortSpec(new Sort(sorts.toArray(new SortOrder[0])),
                     fields,
                     current.getCount(),
                     current.getOffset())
             : null;
+  }
+
+  private static boolean isSortByScore(SortOrder so) {
+    return so instanceof SortField && ((SortField)so).getType() == SortField.Type.SCORE;
   }
 
   private void addDebugInfo(ResponseBuilder rb, Elevation elevation) {

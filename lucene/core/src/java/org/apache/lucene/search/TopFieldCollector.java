@@ -148,14 +148,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   private static boolean canEarlyTerminateOnDocId(Sort searchSort) {
-    final SortField[] fields1 = searchSort.getSort();
+    final SortOrder[] fields1 = searchSort.getSort();
     return SortField.FIELD_DOC.equals(fields1[0]);
   }
 
   private static boolean canEarlyTerminateOnPrefix(Sort searchSort, Sort indexSort) {
     if (indexSort != null) {
-      final SortField[] fields1 = searchSort.getSort();
-      final SortField[] fields2 = indexSort.getSort();
+      final SortOrder[] fields1 = searchSort.getSort();
+      final SortOrder[] fields2 = indexSort.getSort();
       // early termination is possible if fields1 is a prefix of fields2
       if (fields1.length > fields2.length) {
         return false;
@@ -420,7 +420,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
                                          HitsThresholdChecker hitsThresholdChecker, MaxScoreAccumulator minScoreAcc) {
 
-    if (sort.fields.length == 0) {
+    if (sort.getSort().length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
 
@@ -432,7 +432,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("hitsThresholdChecker should not be null");
     }
 
-    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
+    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.getSort(), numHits);
 
     if (after == null) {
       return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);

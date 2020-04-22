@@ -30,7 +30,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 
 /** FirstPassGroupingCollector is the first of two passes necessary
  *  to collect grouped hits.  This pass gathers the top N sorted
@@ -83,13 +83,13 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
 
     this.topNGroups = topNGroups;
     this.needsScores = groupSort.needsScores();
-    final SortField[] sortFields = groupSort.getSort();
+    final SortOrder[] sortFields = groupSort.getSort();
     comparators = new FieldComparator[sortFields.length];
     leafComparators = new LeafFieldComparator[sortFields.length];
     compIDXEnd = comparators.length - 1;
     reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
-      final SortField sortField = sortFields[i];
+      final SortOrder sortField = sortFields[i];
 
       // use topNGroups + 1 so we have a spare slot to use for comparing (tracked by this.spareSlot):
       comparators[i] = sortField.getComparator(topNGroups + 1, i);
