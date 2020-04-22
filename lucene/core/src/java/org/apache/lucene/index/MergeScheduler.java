@@ -40,10 +40,8 @@ public abstract class MergeScheduler implements Closeable {
 
   /** Run the merges provided by {@link IndexWriter#getNextMerge()}.
    * @param writer the {@link IndexWriter} to obtain the merges from.
-   * @param trigger the {@link MergeTrigger} that caused this merge to happen
-   * @param newMergesFound <code>true</code> iff any new merges were found by the caller otherwise <code>false</code>
-   * */
-  public abstract void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException;
+   * @param trigger the {@link MergeTrigger} that caused this merge to happen */
+  public abstract void merge(IndexWriter writer, MergeTrigger trigger) throws IOException;
 
   /** 
    * Wraps the incoming {@link Directory} so that we can merge-throttle it
