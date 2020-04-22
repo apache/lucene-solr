@@ -14,6 +14,9 @@ API Changes
   The DocumentsWriterPerThreadPool is a packaged protected final class which made it impossible
   to customize. (Simon Willnauer)
 
+* LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
+  (Simon Willnauer)
+
 New Features
 ---------------------
 (No changes)
