@@ -158,9 +158,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       long smallestNewUpdate = Math.abs(ourUpdates.get(ourUpdates.size() - 1));
 
       if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
-        if (log.isWarnEnabled()) {
-          log.warn("{} too many updates received since start - startingUpdates no longer overlaps with our currentUpdates", msg());
-        }
+        log.warn("{} too many updates received since start - startingUpdates no longer overlaps with our currentUpdates", msg());
         syncErrors.inc();
         return PeerSync.PeerSyncResult.failure();
       }
@@ -188,9 +186,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       try {
         clientToLeader.close();
       } catch (IOException e) {
-        if (log.isWarnEnabled()) {
-          log.warn("{} unable to close client to leader", msg(), e);
-        }
+        log.warn("{} unable to close client to leader", msg(), e);
       }
     }
   }

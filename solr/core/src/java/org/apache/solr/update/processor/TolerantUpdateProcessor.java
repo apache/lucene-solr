@@ -255,9 +255,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         NamedList<String> remoteErrMetadata = remoteErr.getMetadata();
 
         if (null == remoteErrMetadata) {
-          if (log.isWarnEnabled()) {
-            log.warn("remote error has no metadata to aggregate: {} {}", remoteErr.getMessage(), remoteErr);
-          }
+          log.warn("remote error has no metadata to aggregate: {} {}", remoteErr.getMessage(), remoteErr);
           continue;
         }
 

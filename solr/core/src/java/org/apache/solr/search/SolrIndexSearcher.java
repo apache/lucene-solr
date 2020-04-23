@@ -201,9 +201,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      if (log.isWarnEnabled()) {
-        log.warn("Query: [{}]; {}", query, x.getMessage());
-      }
+      log.warn("Query: [{}]; {}", query, x.getMessage());
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {

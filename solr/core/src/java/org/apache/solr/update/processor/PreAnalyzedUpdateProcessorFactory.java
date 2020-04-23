@@ -164,9 +164,7 @@ class PreAnalyzedUpdateProcessor extends FieldMutatingUpdateProcessor {
       if (pre != null) {
         res.addValue(pre);
       } else { // restore the original value
-        if (log.isWarnEnabled()) {
-          log.warn("Could not parse field {} - using original value as is: {}", src.getName(), o);
-        }
+        log.warn("Could not parse field {} - using original value as is: {}", src.getName(), o);
         res.addValue(o);
       }
     }

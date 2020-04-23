@@ -134,7 +134,7 @@ public class ZkContainer {
           // to get up
           Thread.sleep(10000);
         }
-        
+
         if(confDir != null) {
           Path configPath = Paths.get(confDir);
           if (!Files.isDirectory(configPath))

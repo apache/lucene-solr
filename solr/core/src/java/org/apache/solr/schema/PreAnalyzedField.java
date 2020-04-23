@@ -124,9 +124,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     try {
       f = fromString(field, String.valueOf(value));
     } catch (Exception e) {
-      if (log.isWarnEnabled()) {
-        log.warn("Error parsing pre-analyzed field '{}'", field.getName(), e);
-      }
+      log.warn("Error parsing pre-analyzed field '{}'", field.getName(), e);
       return null;
     }
     return f;
@@ -170,8 +168,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
    */
   public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
     if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+      log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();

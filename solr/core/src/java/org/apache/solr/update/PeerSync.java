@@ -346,28 +346,20 @@ public class PeerSync implements SolrMetricProducer {
         boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain || solrException instanceof ConnectTimeoutException || solrException instanceof SocketTimeoutException
             || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
-          if (log.isWarnEnabled()) {
-            log.warn("{} couldn't connect to {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
-          }
 
-
+          log.warn("{} couldn't connect to {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
           return true;
         }
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
-        if (log.isWarnEnabled()) {
-          log.warn("{} got a 503 from {}, counting as success "
-              , msg(), srsp.getShardAddress(), srsp.getException());
-        }
+        log.warn("{} got a 503 from {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
         return true;
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
-        if (log.isWarnEnabled()) {
-          log.warn("{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?"
-              , msg(), srsp.getShardAddress(), srsp.getException());
-        }
+        log.warn("{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?"
+            , msg(), srsp.getShardAddress(), srsp.getException());
         return true;
       }
       
@@ -377,10 +369,8 @@ public class PeerSync implements SolrMetricProducer {
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
 
-      if (log.isWarnEnabled()) {
-        log.warn("{} exception talking to {}, failed", msg(), srsp.getShardAddress(), srsp.getException());
-      }
-      
+      log.warn("{} exception talking to {}, failed", msg(), srsp.getShardAddress(), srsp.getException());
+
       return false;
     }
 

@@ -217,9 +217,7 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    if (log.isInfoEnabled()) {
-      log.info("UnInverted multi-valued field {}", toString());
-    }
+    log.info("UnInverted multi-valued field {}", this);
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 

@@ -227,7 +227,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     allURLs.addAll(urls);
     for (URL url : urls) {
       if (log.isDebugEnabled()) {
-        log.debug("Adding '{}' to classloader", url.toString());
+        log.debug("Adding '{}' to classloader", url);
       }
     }
 
@@ -510,9 +510,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
             return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
           } else {
-            if (log.isWarnEnabled()) {
-              log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-            }
+            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
           }
         } catch (IllegalArgumentException ex) {
           // ok, we fall back to legacy loading
@@ -697,9 +695,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         try {
           infoRegistry.put(bean.getName(), bean);
         } catch (Exception e) {
-          if (log.isWarnEnabled()) {
-            log.warn("could not register MBean '{}'.", bean.getName(), e);
-          }
+          log.warn("could not register MBean '{}'.", bean.getName(), e);
         }
       }
     }

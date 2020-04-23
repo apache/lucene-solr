@@ -80,9 +80,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     for (Map.Entry<String, String> e : users.entrySet()) {
       String v = e.getValue();
       if (v == null) {
-        if (log.isWarnEnabled()) {
-          log.warn("user has no password {}", e.getKey());
-        }
+        log.warn("user has no password {}", e.getKey());
         continue;
       }
       credentials.put(e.getKey(), v);

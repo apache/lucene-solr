@@ -577,9 +577,7 @@ public class MetricUtils {
       try {
         beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
       } catch (IntrospectionException e) {
-        if (log.isWarnEnabled()) {
-          log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
-        }
+        log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {

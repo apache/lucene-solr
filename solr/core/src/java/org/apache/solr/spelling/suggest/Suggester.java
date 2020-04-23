@@ -164,9 +164,7 @@ public class Suggester extends SolrSpellChecker {
       if(!lookup.store(new FileOutputStream(target))) {
         if (sourceLocation == null) {
           assert reader != null && field != null;
-          if (log.isErrorEnabled()) {
-            log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
-          }
+          log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
         } else {
           log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
         }
