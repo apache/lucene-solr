@@ -31,9 +31,8 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
 final class ExpressionValueSource extends DoubleValuesSource {
-  final DoubleValuesSource variables[];
+  final DoubleValuesSource[] variables;
   final Expression expression;
   final boolean needsScores;
 
@@ -42,17 +41,13 @@ final class ExpressionValueSource extends DoubleValuesSource {
     this.expression = Objects.requireNonNull(expression);
     variables = new DoubleValuesSource[expression.variables.length];
     boolean needsScores = false;
-    try {
-      for (int i = 0; i < variables.length; i++) {
-        DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
-        if (source == null) {
-          throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
-        }
-        needsScores |= source.needsScores();
-        variables[i] = source;
+    for (int i = 0; i < variables.length; i++) {
+      DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
+      if (source == null) {
+        throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
       }
-    } catch (StackOverflowError e) {
-      throw new IllegalArgumentException("Recursion error: Cycle detected originating in " + this);
+      needsScores |= source.needsScores();
+      variables[i] = source;
     }
     this.needsScores = needsScores;
   }
