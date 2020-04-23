@@ -58,7 +58,7 @@ import org.apache.lucene.util.Version;
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>IndexSort --&gt; {@link DataOutput#writeVInt Int32} count, followed by {@code count} SortField</li>
  *   <li>SortField --&gt; {@link DataOutput#writeString String} sort class, followed by a per-sort bytestream
- *    (see {@link SortFieldProvider#loadSortField(DataInput)})
+ *    (see {@link SortFieldProvider#readSortField(DataInput)})
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * Field Descriptions:
@@ -126,7 +126,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
           SortField[] sortFields = new SortField[numSortFields];
           for(int i=0;i<numSortFields;i++) {
             String name = input.readString();
-            sortFields[i] = SortFieldProvider.forName(name).loadSortField(input);
+            sortFields[i] = SortFieldProvider.forName(name).readSortField(input);
           }
           indexSort = new Sort(sortFields);
         } else if (numSortFields < 0) {
@@ -202,7 +202,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
           throw new IllegalArgumentException("cannot serialize SortField " + sortField);
         }
         output.writeString(sorter.getProviderName());
-        SortFieldProvider.serialize(sortField, output);
+        SortFieldProvider.write(sortField, output);
       }
 
       CodecUtil.writeFooter(output);

@@ -101,7 +101,7 @@ public class SortedNumericSortField extends SortField {
     }
 
     @Override
-    public SortField loadSortField(DataInput in) throws IOException {
+    public SortField readSortField(DataInput in) throws IOException {
       SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
       if (in.readInt() == 1) {
         switch (sf.type) {

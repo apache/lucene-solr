@@ -85,7 +85,7 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public SortField loadSortField(DataInput in) throws IOException {
+    public SortField readSortField(DataInput in) throws IOException {
       SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
       int missingValue = in.readInt();
       if (missingValue == 1) {

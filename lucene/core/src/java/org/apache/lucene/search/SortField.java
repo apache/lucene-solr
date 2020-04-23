@@ -138,7 +138,7 @@ public class SortField {
     }
 
     @Override
-    public SortField loadSortField(DataInput in) throws IOException {
+    public SortField readSortField(DataInput in) throws IOException {
       SortField sf = new SortField(in.readString(), readType(in), in.readInt() == 1);
       if (in.readInt() == 1) {
         // missing object
@@ -506,6 +506,8 @@ public class SortField {
    * SortFields that implement this method should also implement a companion
    * {@link SortFieldProvider} to serialize and deserialize the sort in index segment
    * headers
+   *
+   * @lucene.experimental
    */
   public IndexSorter getIndexSorter() {
     switch (type) {

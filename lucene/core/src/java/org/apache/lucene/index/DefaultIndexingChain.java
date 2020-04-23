@@ -89,7 +89,7 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash = new FreqProxTermsWriter(docWriter, termVectorsWriter);
   }
 
-  private LeafReader getDocValuesReader(int maxDoc) {
+  private LeafReader getDocValuesLeafReader(int maxDoc) {
     return new DocValuesLeafReader() {
       @Override
       public NumericDocValues getNumericDocValues(String field) throws IOException {
@@ -169,7 +169,7 @@ final class DefaultIndexingChain extends DocConsumer {
       return null;
     }
 
-    LeafReader docValuesReader = getDocValuesReader(state.segmentInfo.maxDoc());
+    LeafReader docValuesReader = getDocValuesLeafReader(state.segmentInfo.maxDoc());
 
     List<IndexSorter.DocComparator> comparators = new ArrayList<>();
     for (int i = 0; i < indexSort.getSort().length; i++) {
