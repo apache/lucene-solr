@@ -105,7 +105,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.collection = null;
     this.shard = null;
     this.replica = null;
-    this.dataGrouping = null;
+    this.dataGrouping = dataGrouping;
   }
 
   private Clause(Map<String, Object> m) {
@@ -160,14 +160,35 @@ public class Clause implements MapWriter, Comparable<Clause> {
     doPostValidate(collection, shard, replica, tag, globalTag);
     hasComputedValue = hasComputedValue();
 
-    if(globalTag != null || tag.name.equals("node")){
+   /* if(globalTag != null || tag.name.equals("node")){
       dataGrouping = DataGrouping.NODE;
-    } else if(shard.val.toString().equals(ANY)){
+    } else */
+
+    if (globalTag != null) {
+      dataGrouping = DataGrouping.NODE;
+    } else if (shard == null || ANY.equals(shard.val)) {
       dataGrouping = DataGrouping.COLL;
     } else {
       dataGrouping = DataGrouping.SHARD;
     }
 
+  }
+  static final Integer ZERO = 0;
+
+  public boolean isGreedy() {
+    if( replica != null) {
+      if(replica.op == GREATER_THAN) return true;
+      if(replica.op == EQUAL ) {
+        return !ZERO.equals(replica.val);
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  public boolean isType(Replica.Type type) {
+    return this.type == null || this.type == type;
   }
 
   private boolean parseNodeset(Map<String, Object> m) {
@@ -504,6 +525,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         replicaCount.reset();
         List<Row> rows = changedRow != null ? Collections.singletonList(changedRow) : session.matrix;
         for (Row row : rows) {
+          eval.nodeObj = row;
          if(!isRowPass(eval, tag, row)) continue;
           addReplicaCountsForNode(eval, replicaCount, row);
         }
@@ -634,6 +656,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       for (Row row : rows) {
         replicaCount.reset();
         eval.node = row.node;
+        eval.nodeObj = row;
         Condition tag = this.tag;
         if (tag.computedType != null) {
           tag = evaluateValue(tag, eval);
@@ -700,7 +723,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         }
       }
 
-      if(tag.varType == Type.NODE){
+      if(dataGrouping != DataGrouping.NODE && tag.varType == Type.NODE){
         return session.perClauseData.computeViolations(session, this);
       }
 
@@ -769,14 +792,20 @@ public class Clause implements MapWriter, Comparable<Clause> {
     String collName = null;
     String shardName = null;
     String node = null;
+    Row nodeObj;
 
     public ComputedValueEvaluator(Policy.Session session) {
       this.session = session;
     }
 
+    public Row getNode() {
+      if (nodeObj != null) return nodeObj;
+      return session.getNode(node);
+    }
+
     @Override
     public Object apply(Condition computedCondition) {
-      return computedCondition.varType.computeValue(session, computedCondition, collName, shardName, node);
+      return computedCondition.varType.computeValue(computedCondition, this);
     }
 
   }
@@ -866,7 +895,19 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   enum DataGrouping {
-    COLL, SHARD, NODE,GLOBAL;
+    COLL, SHARD, NODE{
+      @Override
+      public boolean storePerClauseData() {
+        return false;
+      }
+    },GLOBAL{
+      @Override
+      public boolean storePerClauseData() {
+        return false;
+      }
+    };
+
+    public boolean storePerClauseData(){return true;}
   }
 
 }

@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -333,7 +332,7 @@ public class Row implements MapWriter {
       }
     }
 
-    modifyPerClauseCount(ri, 1);
+    row.modifyPerClauseCount(ri, 1);
 
     return row;
   }
@@ -437,7 +436,7 @@ public class Row implements MapWriter {
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
-    modifyPerClauseCount(removed, -1);
+    row.modifyPerClauseCount(removed, -1);
     return row;
 
   }
@@ -474,41 +473,60 @@ public class Row implements MapWriter {
 
   void modifyPerClauseCount(ReplicaInfo ri, int delta) {
     if (session == null || session.perClauseData == null || ri == null) return;
-    session.perClauseData.getShardDetails(ri.getCollection(),ri.getShard()).replicas.incr(ri, delta);
+    session.perClauseData.getShardDetails(ri.getCollection(),ri.getShard()).incrReplicas(ri.getType(), delta);
     for (Clause clause : session.expandedClauses) {
+      if(!clause.dataGrouping.storePerClauseData()) continue;
+      if(!clause.collection.isPass(ri.getCollection()) ||
+          !clause.shard.isPass(ri.getShard())  ||
+          !clause.isType(ri.getType())) continue;
       if (clause.put == Clause.Put.ON_EACH) continue;
-      if (clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
+      if (clause.dataGrouping.storePerClauseData()) {
         if (clause.tag.isPass(this)) {
-          session.perClauseData.getClauseValue(
+          session.perClauseData.getCountsForClause(
               ri.getCollection(),
               ri.getShard(),
-              clause,
-              String.valueOf(this.getVal(clause.tag.name))).incr(ri, delta);
+              clause, Row.this)
+              .incr(ri, delta);
         }
       }
     }
   }
 
   void initPerClauseData() {
-    if(session== null || session.perClauseData == null) return;
+    if (session == null || session.perClauseData == null) return;
+    Clause.ComputedValueEvaluator evaluator = new Clause.ComputedValueEvaluator(session);
+    evaluator.nodeObj = this;
+    evaluator.node = this.node;
     forEachReplica(it -> {
       PerClauseData.ShardDetails shardDetails = session.perClauseData.getShardDetails(it.getCollection(), it.getShard());
-      shardDetails.replicas.increment(it.getType());
+      shardDetails.incrReplicas(it.getType(), 1);// replicas.increment(it.getType());
       Number idxSize = (Number) it.getVariable(CORE_IDX.tagName);
-      if(idxSize != null){
+      if (idxSize != null) {
         shardDetails.indexSize = idxSize.doubleValue();
+      }
+      for (Clause clause : session.expandedClauses) {
+        if (clause.put == Clause.Put.ON_EACH) continue;
+        if (clause.dataGrouping.storePerClauseData()) {
+          if(!clause.collection.isPass(it.getCollection())) return;
+          if(!clause.shard.isPass(it.getShard())) return;
+          session.perClauseData.getCountsForClause(it.getCollection(), it.getShard(), clause, Row.this);
+        }
       }
     });
     for (Clause clause : session.expandedClauses) {
-      if(clause.put == Clause.Put.ON_EACH) continue;
-      if(clause.dataGrouping == Clause.DataGrouping.SHARD || clause.dataGrouping == Clause.DataGrouping.COLL) {
-        if(clause.tag.isPass(this)) {
-          forEachReplica(it -> session.perClauseData.getClauseValue(
-              it.getCollection(),
-              it.getShard(),
-              clause, String.valueOf(this.getVal(clause.tag.name))
-
-          ).incr(it, 1));
+      if (clause.put == Clause.Put.ON_EACH) continue;
+      if (clause.dataGrouping.storePerClauseData()) {
+        if (clause.tag.isPass(this, evaluator)) {
+          forEachReplica(it -> {
+            if(!clause.collection.isPass(it.getCollection())) return;
+            if(!clause.shard.isPass(it.getShard())) return;
+            if(!clause.isType(it.getType())) return;
+            session.perClauseData.getCountsForClause(
+                it.getCollection(),
+                it.getShard(),
+                clause, this)
+                .incr(it, 1);
+          });
         }
       }
     }

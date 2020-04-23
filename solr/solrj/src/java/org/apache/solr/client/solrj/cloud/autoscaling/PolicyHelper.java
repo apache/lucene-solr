@@ -244,7 +244,8 @@ public class PolicyHelper {
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
                                                               SolrCloudManager cloudManager) {
-    return getSuggestions(autoScalingConf, cloudManager, 20, 10, null);
+    //TODO nocommit
+    return getSuggestions(autoScalingConf, cloudManager, 20, 10000, null);
   }
 
 

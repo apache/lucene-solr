@@ -109,7 +109,7 @@ class ReplicaCount  implements MapWriter {
     _change(type, -1);
   }
 
-  private void _change(Replica.Type type, int change) {
+  void _change(Replica.Type type, int change) {
     switch (type) {
       case NRT:
         nrt += change;

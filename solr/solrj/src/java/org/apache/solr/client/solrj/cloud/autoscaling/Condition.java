@@ -71,10 +71,18 @@ public class Condition implements MapWriter {
     return varType.match(inputVal, op, val, name, row);
   }
 
-
   boolean isPass(Row row) {
     return isPass(row.getVal(name), row);
+
   }
+  boolean isPass(Row row, Clause.ComputedValueEvaluator evaluator) {
+    if(computedType== null) return isPass(row.getVal(name), row);
+    Object computedConditionVal = varType.computeValue(this, evaluator);
+    Object inputVal = row.getVal(name);
+    if (inputVal instanceof ReplicaCount) inputVal = ((ReplicaCount) inputVal).getVal(getClause().type);
+    return varType.match (inputVal ,op,   computedConditionVal, name, row);
+  }
+
 
   @Override
   public int hashCode() {

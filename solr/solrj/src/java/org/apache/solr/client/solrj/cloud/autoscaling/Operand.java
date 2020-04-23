@@ -35,6 +35,10 @@ public enum Operand {
       return testVal == null ? NOT_APPLICABLE : PASS;
     }
 
+    @Override
+    public boolean isSingleValue() {
+      return false;
+    }
   },
 
   RANGE_EQUAL("", 0) {
@@ -82,6 +86,11 @@ public enum Operand {
     public TestStatus match(Object ruleVal, Object testVal) {
       List l = (List) ruleVal;
       return (l.contains(testVal)) ?  PASS: FAIL;
+    }
+
+    @Override
+    public boolean isSingleValue() {
+      return false;
     }
   },
   RANGE_NOT_EQUAL("", 2) {
@@ -175,6 +184,11 @@ public enum Operand {
 
   public TestStatus match(Object ruleVal, Object testVal) {
     return Objects.equals(ruleVal, testVal) ? PASS : FAIL;
+  }
+
+  // usually the value for a single string, conditions such as less than greater than are all single valued
+  public boolean isSingleValue() {
+    return  true;
   }
 
   Long getLong(Object o) {

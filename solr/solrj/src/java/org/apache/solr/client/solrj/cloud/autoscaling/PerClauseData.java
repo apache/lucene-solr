@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,22 +25,27 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.ReflectMapWriter;
-import org.apache.solr.common.util.Utils;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.NODE;
 
 public class PerClauseData implements ReflectMapWriter, Cloneable {
   @JsonProperty
   public Map<String, CollectionDetails> collections = new HashMap<>();
 
-  static Function<String, ReplicaCount> NEW_CLAUSEVAL_FUN = c -> new ReplicaCount();
+  static Function<Clause, ReplicaCount> NEW_CLAUSEVAL_FUN = c -> new ReplicaCount();
 
-  ReplicaCount getClauseValue(String coll, String shard, Clause clause, String key) {
+/*  ReplicaCount getClauseValue(String coll, String shard, Clause clause, String key) {
     Map<String, ReplicaCount> countMap = getCountsForClause(coll, shard, clause);
     return countMap.computeIfAbsent(key,NEW_CLAUSEVAL_FUN);
-  }
+  }*/
 
-  private Map<String, ReplicaCount> getCountsForClause(String coll, String shard, Clause clause) {
+  ReplicaCount getCountsForClause(String coll, String shard, Clause clause, Row row) {
     CollectionDetails cd = collections.get(coll);
     if (cd == null) collections.put(coll, cd = new CollectionDetails(coll));
     ShardDetails psd = null;
@@ -47,10 +53,26 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
       psd = cd.shards.get(shard);
       if (psd == null) cd.shards.put(shard, psd = new ShardDetails(coll, shard));
     }
+    Map<Clause,  Map<String, ReplicaCount>> map = (psd == null ? cd.clauseValues : psd.values);
+    if(clause.tag.op.isSingleValue()) {
+      Map<String, ReplicaCount> v = map.get(clause);
+      if (v == null) {
+        ReplicaCount result = new ReplicaCount();
+        map.put(clause, v = singletonMap(SINGLEVALUE, result));
+      }
+      return v.get(SINGLEVALUE);
 
-    Map<Clause, Map<String, ReplicaCount>> map = (psd == null ? cd.clauseValues : psd.values);
+    } else {
+      String clauseVal = String.valueOf(row.getVal(clause.tag.name));
 
-    return (Map<String, ReplicaCount>) map.computeIfAbsent(clause, Utils.NEW_HASHMAP_FUN);
+      Map<String, ReplicaCount> v = map.get(clause);
+      if(v == null){
+        map.put(clause, v = new HashMap<>());
+      }
+      ReplicaCount  result = v.get(clauseVal);
+      if(result == null) v.put(clauseVal, result = new ReplicaCount());
+      return result;
+    }
   }
 
   PerClauseData copy() {
@@ -65,17 +87,30 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
     CollectionDetails cd = collections.get(c);
     if (cd == null) collections.put(c, cd = new CollectionDetails(c));
     ShardDetails sd = cd.shards.get(s);
-    if (sd == null) cd.shards.put(c, sd = new ShardDetails(c, s));
+    if (sd == null) cd.shards.put(s, sd = new ShardDetails(c, s));
     return sd;
   }
 
 
-  public static class CollectionDetails implements ReflectMapWriter, Cloneable {
+  public static class CollectionDetails implements MapWriter, Cloneable {
 
-    final String coll;
-    Map<String, ShardDetails> shards = new HashMap<>();
+    public final String coll;
+    public final Map<String, ShardDetails> shards = new HashMap<>();
 
-    Map<Clause, Map<String, ReplicaCount>> clauseValues = new HashMap<>();
+    Map<Clause,  Map<String,  ReplicaCount>> clauseValues = new HashMap<>();
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      writeClauseVals(ew, clauseValues);
+      shards.forEach(ew.getBiConsumer());
+    }
+
+    public static void writeClauseVals(EntryWriter ew, Map<Clause, Map<String, ReplicaCount>> clauseValues) throws IOException {
+      ew.put("clauseValues", (IteratorWriter) iw -> clauseValues.forEach((clause, k_count) -> {
+        iw.addNoEx(singletonMap( "clause", clause.original));
+        iw.addNoEx( singletonMap("counts",k_count));
+      }));
+    }
 
     CollectionDetails copy() {
       CollectionDetails result = new CollectionDetails(coll);
@@ -88,13 +123,20 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
     }
   }
 
-  public static class ShardDetails implements ReflectMapWriter, Cloneable {
+  public static class ShardDetails implements MapWriter, Cloneable {
     final String coll;
     final String shard;
     Double indexSize;
     ReplicaCount replicas = new ReplicaCount();
+    public Map<Clause,  Map<String, ReplicaCount>> values = new HashMap<>();
 
-    public Map<Clause, Map<String, ReplicaCount>> values = new HashMap<>();
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.putIfNotNull("indexSize", indexSize);
+      ew.putIfNotNull("replicas", replicas);
+      CollectionDetails.writeClauseVals(ew,values);
+    }
+
 
     ShardDetails(String coll, String shard) {
       this.coll = coll;
@@ -110,6 +152,10 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
         result.values.put(clause, m);
       });
       return result;
+    }
+
+    public void incrReplicas(Replica.Type type, int delta) {
+      replicas._change(type, delta);
     }
   }
 
@@ -143,25 +189,29 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
       }
     }
   }
+  public static final String SINGLEVALUE = "";
+  private static final Map<String, ReplicaCount> EMPTY = singletonMap(SINGLEVALUE, new ReplicaCount());
+//  private final ReplicaCount EMPTY = new ReplicaCount();
 
-  void getViolations( Map<Clause, Map<String, ReplicaCount>> vals ,
+  void getViolations( Map<Clause,  Map<String, ReplicaCount>> vals ,
                       List<Violation> violations,
                       Clause.ComputedValueEvaluator evaluator,
-                      Clause clause){
+                      Clause clause) {
+    Map<String,ReplicaCount> rc = vals.get(clause);
+    if (rc == null ) rc= EMPTY;
 
-    Map<String, ReplicaCount> cv = vals.get(clause);
-    if (cv == null || cv.isEmpty()) return;
     SealedClause sc = clause.getSealedClause(evaluator);
-    cv.forEach((s, replicaCount) -> {
+
+    rc.forEach((name, replicaCount) -> {
       if (!sc.replica.isPass(replicaCount)) {
         Violation v = new LazyViolation(
             sc,
             evaluator.collName,
-            evaluator.shardName,
-            null,
+            evaluator.shardName == null? Policy.ANY: evaluator.shardName,
+            NODE.tagName.equals( clause.tag.name)? name:  null,
             replicaCount,
             sc.getReplica().replicaCountDelta(replicaCount),
-            s,
+            name,//TODO
             evaluator.session);
         violations.add(v);
       }
@@ -185,4 +235,7 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
       }
     });
     return result;
-  }}
+  }
+
+
+}

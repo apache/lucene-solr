@@ -60,7 +60,7 @@ public interface Variable {
   /**When a non constant value is used in a variable, the actual value needs to be computed at the runtime
    *
    */
-  default Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
+  default Object computeValue(Condition condition, Clause.ComputedValueEvaluator evaluator) {
     return condition.val;
   }
 
@@ -342,8 +342,8 @@ public interface Variable {
     }
 
     @Override
-    public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
-      return impl.computeValue(session, condition, collection, shard, node);
+    public Object computeValue(Condition condition, Clause.ComputedValueEvaluator evaluator) {
+      return impl.computeValue(condition, evaluator);
     }
 
     @Override

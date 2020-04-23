@@ -33,7 +33,7 @@ class ReplicaVariable extends VariableBase {
   static int getRelevantReplicasCount(Policy.Session session, Condition cv, String collection, String shard) {
     PerClauseData.CollectionDetails cd = session.perClauseData.collections.get(collection);
     if (cd != null) {
-      if (shard != null) {
+      if (shard != null && !Policy.ANY.equals(shard)) {
         PerClauseData.ShardDetails sd = cd.shards.get(shard);
         if (sd != null) return sd.replicas.getVal(cv.clause.type).intValue();
 
@@ -151,17 +151,20 @@ class ReplicaVariable extends VariableBase {
     return null;
   }
 
+
   @Override
-  public Object computeValue(Policy.Session session, Condition cv, String collection, String shard, String node) {
-    if (cv.computedType == ComputedType.ALL)
-      return Double.valueOf(getRelevantReplicasCount(session, cv, collection, shard));
+  public Object computeValue(Condition cv, Clause.ComputedValueEvaluator evaluator) {
+    if (cv.computedType == ComputedType.ALL) {
+      int relevantReplicasCount = getRelevantReplicasCount(evaluator.session, cv, evaluator.collName, evaluator.shardName);
+      return Double.valueOf(relevantReplicasCount);
+    }
     if (cv.computedType == ComputedType.EQUAL) {
-      int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
-      double bucketsCount = getNumBuckets(session, cv.getClause());
+      int relevantReplicasCount = getRelevantReplicasCount(evaluator.session, cv, evaluator.collName, evaluator.shardName);
+      double bucketsCount = getNumBuckets(evaluator.session, cv.getClause());
       if (relevantReplicasCount == 0 || bucketsCount == 0) return 0;
       return (double) relevantReplicasCount / bucketsCount;
     } else if (cv.computedType == ComputedType.PERCENT) {
-      return ComputedType.PERCENT.compute(getRelevantReplicasCount(session, cv, collection, shard), cv);
+      return ComputedType.PERCENT.compute(getRelevantReplicasCount(evaluator.session, cv, evaluator.collName, evaluator.shardName), cv);
     } else {
       throw new IllegalArgumentException("Unsupported type " + cv.computedType);
 

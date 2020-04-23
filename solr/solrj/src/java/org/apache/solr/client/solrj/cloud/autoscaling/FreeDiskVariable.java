@@ -53,9 +53,9 @@ public class FreeDiskVariable extends VariableBase {
   }
 
   @Override
-  public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
+  public Object computeValue(Condition condition, Clause.ComputedValueEvaluator evaluator) {
     if (condition.computedType == ComputedType.PERCENT) {
-      Row r = session.getNode(node);
+      Row r = evaluator.getNode();
       if (r == null) return 0d;
       return ComputedType.PERCENT.compute(r.getVal(TOTALDISK.tagName), condition);
     }

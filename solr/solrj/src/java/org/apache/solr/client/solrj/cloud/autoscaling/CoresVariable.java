@@ -69,16 +69,16 @@ public class CoresVariable extends VariableBase {
   }
 
   @Override
-  public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
+  public Object computeValue(Condition condition, Clause.ComputedValueEvaluator evaluator) {
     if (condition.computedType == ComputedType.EQUAL) {
       AtomicInteger liveNodes = new AtomicInteger(0);
-      int coresCount = getTotalCores(session, liveNodes);
+      int coresCount = getTotalCores(evaluator.session, liveNodes);
       int numBuckets = condition.clause.tag.op == Operand.IN ?
           ((Collection) condition.clause.tag.val).size() :
           liveNodes.get();
       return numBuckets == 0 || coresCount == 0 ? 0d : (double) coresCount / (double) numBuckets;
     } else if (condition.computedType == ComputedType.PERCENT) {
-      return ComputedType.PERCENT.compute(getTotalCores(session, new AtomicInteger()), condition);
+      return ComputedType.PERCENT.compute(getTotalCores(evaluator.session, new AtomicInteger()), condition);
     } else {
       throw new IllegalArgumentException("Invalid computed type in " + condition);
     }
