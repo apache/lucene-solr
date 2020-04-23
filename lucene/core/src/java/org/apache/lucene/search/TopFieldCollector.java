@@ -447,7 +447,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */);
+    return create(sort, numHits, after, HitsThresholdChecker.create(Math.max(totalHitsThreshold, numHits)), null /* bottomValueChecker */);
   }
 
   /**
@@ -494,7 +494,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                                                                                  int totalHitsThreshold) {
     return new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
-      private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+      private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(Math.max(totalHitsThreshold, numHits));
       private final MaxScoreAccumulator minScoreAcc = new MaxScoreAccumulator();
 
       @Override
