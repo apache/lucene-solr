@@ -133,6 +133,7 @@ public abstract class FilteringNumericComparator<T extends Number> extends Filte
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
+        ((NumericComparator) in).setScorer(scorer);
         if (scorer instanceof Scorer) {
             iteratorCost = ((Scorer) scorer).iterator().cost(); // starting iterator cost is the scorer's cost
             updateCompetitiveIterator(); // update an iterator when we have a new segment
