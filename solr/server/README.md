@@ -1,17 +1,19 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
 Solr server
 ------------
@@ -21,14 +23,17 @@ run Solr.
 
 To run Solr:
 
+```
   cd $SOLR_INSTALL
   bin/solr start
+```
 
 where $SOLR_INSTALL is the location where you extracted the Solr installation bundle.
 
 Server directory layout
 -----------------------
 
+```
 server/contexts
 
   This directory contains the Jetty Web application deployment descriptor for the Solr Web app.
@@ -75,18 +80,18 @@ server/solr/configsets
 server/solr-webapp
 
   Contains files used by the Solr server; do not edit files in this directory (Solr is not a Java Web application).
-
+```
 
 Notes About Solr Examples
 --------------------------
 
-* SolrHome *
+### SolrHome
 
 By default, start.jar starts Solr in Jetty using the default Solr Home
 directory of "./solr/" (relative to the working directory of the servlet 
 container).
 
-* References to Jar Files Outside This Directory *
+### References to Jar Files Outside This Directory
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
 statements in the solrconfig.xml file to reference plugin jars outside of 
@@ -98,7 +103,7 @@ clustering component, or any other modules in "contrib", you will need to
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.
 
-* Logging *
+### Logging
 
 By default, Jetty & Solr will log to the console and logs/solr.log. This can
 be convenient when first getting started, but eventually you will want to
