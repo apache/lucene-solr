@@ -125,7 +125,7 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
         }
 
         @Override
-        protected void handleMergeException(Directory dir, Throwable exc) {
+        protected void handleMergeException(Throwable exc) {
         }
       };
 
