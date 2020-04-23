@@ -748,9 +748,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else if (v instanceof Gauge) {
         listener.onGaugeAdded(k, (Gauge)v);
       } else {
-        if (log.isWarnEnabled()) {
-          log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
-        }
+        log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
       }
     });
   }

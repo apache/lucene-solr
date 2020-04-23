@@ -206,9 +206,7 @@ public class SolrXmlConfig {
       return properties;
     }
     catch (XPathExpressionException e) {
-      if (log.isWarnEnabled()) {
-        log.warn("Error parsing solr.xml: {}", e.getMessage());
-      }
+      log.warn("Error parsing solr.xml: {}", e.getMessage());
       return null;
     }
   }

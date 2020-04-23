@@ -313,7 +313,7 @@ public class SolrIndexSplitter {
             if (log.isInfoEnabled()) {
               log.info("SolrIndexSplitter: partition #{} partitionCount={} segment #{} segmentCount={}"
               , partitionNumber, numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "")
-              , segmentNumber, leaves.size());
+              , segmentNumber, leaves.size()); //LOGOK
             }
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
             iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));

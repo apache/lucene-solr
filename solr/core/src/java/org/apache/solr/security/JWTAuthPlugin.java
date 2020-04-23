@@ -335,9 +335,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
-        if (log.isWarnEnabled()) {
-          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
-        }
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
         numErrors.mark();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
@@ -346,9 +344,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        if (log.isWarnEnabled()) {
-          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
-        }
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
         numWrongCredentials.inc();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;

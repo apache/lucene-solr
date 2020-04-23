@@ -1088,9 +1088,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       // for now we don't error - we assume if it was added locally, we
       // succeeded
-      if (log.isWarnEnabled()) {
-        log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.e);
-      }
+      log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.e);
 
       // Since it is not a forward request, for each fail, try to tell them to
       // recover - the doc was already added locally, so it should have been
@@ -1138,11 +1136,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           getLeaderExc = exc;
         }
         if (leaderCoreNodeName == null) {
-          if (log.isWarnEnabled()) {
-            log.warn("Failed to determine if {} is still the leader for collection={} shardId={} " +
-                    "before putting {} into leader-initiated recovery",
-                cloudDesc.getCoreNodeName(), collection, shardId, replicaUrl, getLeaderExc);
-          }
+          log.warn("Failed to determine if {} is still the leader for collection={} shardId={} before putting {} into leader-initiated recovery",
+              cloudDesc.getCoreNodeName(), collection, shardId, replicaUrl, getLeaderExc);
         }
 
         List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection,
@@ -1175,20 +1170,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         } else {
           // not the leader anymore maybe or the error'd node is not my replica?
           if (!foundErrorNodeInReplicaList) {
-            if (log.isWarnEnabled()) {
-              log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent!"
-                  , cloudDesc.getCoreNodeName(), collection, cloudDesc.getShardId(), stdNode.getNodeProps().getCoreUrl());
-            }
+            log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent!"
+                , cloudDesc.getCoreNodeName(), collection, cloudDesc.getShardId(), stdNode.getNodeProps().getCoreUrl());
             if (!shardId.equals(cloudDesc.getShardId())) {
               // some replicas on other shard did not receive the updates (ex: during splitshard),
               // exception must be notified to clients
               errorsForClient.add(error);
             }
           } else {
-            if (log.isWarnEnabled()) {
-              log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent!"
-                  , cloudDesc.getCoreNodeName(), collection, shardId);
-            }
+            log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent!"
+                , cloudDesc.getCoreNodeName(), collection, shardId);
           }
         }
       }

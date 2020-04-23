@@ -894,13 +894,11 @@ public class CoreContainer {
 
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
-      if (log.isWarnEnabled()) {
-        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
-                "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
-                "external.  See https://s.apache.org/solrsecurity for more info",
+        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as {}{}"
+                , "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or "
+                , "external.  See https://s.apache.org/solrsecurity for more info",
             (authenticationPlugin != null) ? "enabled" : "disabled",
             (authorizationPlugin != null) ? "enabled" : "disabled");
-      }
     }
 
     if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
@@ -1378,10 +1376,8 @@ public class CoreContainer {
       case none:
         throw original;
       default:
-        if (log.isWarnEnabled()) {
-          log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
-              action, Arrays.asList(CoreInitFailedAction.values()));
-        }
+        log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
+            action, Arrays.asList(CoreInitFailedAction.values()));
         throw original;
     }
   }
@@ -1980,11 +1976,9 @@ public class CoreContainer {
     DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
     for (Replica rep : coll.getReplicas()) {
       if (coreName.equals(rep.getCoreName())) {
-        if (log.isWarnEnabled()) {
-          log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. " +
-                  "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1.",
-              rep.getCoreName(), rep.getName());
-        }
+        log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. {}"
+            , "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1."
+            , rep.getCoreName(), rep.getName());
         cd.getCloudDescriptor().setCoreNodeName(rep.getName());
         coresLocator.persist(this, cd);
         return true;
