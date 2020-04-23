@@ -666,18 +666,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final SortOrder[] rewrittenSortFields = rewrittenSort.getSort();
     final SchemaField[] rewrittenSchemaFields = new SchemaField[rewrittenSortFields.length];
     for (int ii = 0; ii < rewrittenSortFields.length; ++ii) {
-      final String fieldName = getSortFieldName(rewrittenSortFields[ii]);
+      final String fieldName = rewrittenSortFields[ii].name();
       rewrittenSchemaFields[ii] = (fieldName == null ? null : schema.getFieldOrNull(fieldName));
     }
 
     return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
-  }
-
-  private static String getSortFieldName(SortOrder so) {
-    if (so instanceof SortField) {
-      return ((SortField)so).getField();
-    }
-    return null;
   }
 
   /**

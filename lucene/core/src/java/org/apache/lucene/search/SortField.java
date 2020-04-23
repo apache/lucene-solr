@@ -94,7 +94,15 @@ public class SortField implements SortOrder {
   /** Represents sorting by document number (index order). */
   public static final SortField FIELD_DOC = new SortField(null, Type.DOC);
 
-  private String field;
+  public static boolean isScore(SortOrder so) {
+    return so == SortOrder.SCORE || (so instanceof SortField && ((SortField)so).getType() == Type.SCORE);
+  }
+
+  public static boolean isDoc(SortOrder so) {
+    return so == SortOrder.DOC_ID || (so instanceof SortField && ((SortField)so).getType() == Type.DOC);
+  }
+
+  protected String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
 
@@ -138,7 +146,7 @@ public class SortField implements SortOrder {
     }
 
     @Override
-    public SortField readSortField(DataInput in) throws IOException {
+    public SortOrder readSortField(DataInput in) throws IOException {
       SortField sf = new SortField(in.readString(), readType(in), in.readInt() == 1);
       if (in.readInt() == 1) {
         // missing object
@@ -172,8 +180,9 @@ public class SortField implements SortOrder {
     }
 
     @Override
-    public void writeSortField(SortField sf, DataOutput out) throws IOException {
-      sf.serialize(out);
+    public void writeSortField(SortOrder sf, DataOutput out) throws IOException {
+      assert sf instanceof SortField;
+      ((SortField)sf).serialize(out);
     }
   }
 
@@ -305,11 +314,8 @@ public class SortField implements SortOrder {
     }
   }
 
-  /** Returns the name of the field.  Could return <code>null</code>
-   * if the sort is by SCORE or DOC.
-   * @return Name of field, possibly <code>null</code>.
-   */
-  public String getField() {
+  @Override
+  public String name() {
     return field;
   }
 

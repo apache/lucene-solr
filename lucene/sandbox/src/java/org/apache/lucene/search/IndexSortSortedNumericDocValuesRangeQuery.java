@@ -152,8 +152,8 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
           if (indexSort != null
               && indexSort.getSort().length > 0
               && indexSort.getSort()[0] instanceof SortField) {
-            SortField sortField = (SortField) indexSort.getSort()[0];
-            if (field.equals(sortField.getField())) {
+            SortOrder sortField = indexSort.getSort()[0];
+            if (field.equals(sortField.name())) {
               DocIdSetIterator disi = getDocIdSetIterator(sortField, context, numericValues);
               return new ConstantScoreScorer(this, score(), scoreMode, disi);
             }

@@ -166,7 +166,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_SORT);
       final int numSortFields = Integer.parseInt(readString(SI_SORT.length, scratch));
-      SortField[] sortField = new SortField[numSortFields];
+      SortOrder[] sortField = new SortField[numSortFields];
       for (int i = 0; i < numSortFields; ++i) {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), SI_SORT_NAME);

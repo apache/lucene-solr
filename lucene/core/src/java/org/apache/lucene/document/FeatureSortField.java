@@ -48,7 +48,7 @@ final class FeatureSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new FeatureComparator(numHits, getField(), featureName);
+    return new FeatureComparator(numHits, field, featureName);
   }
   
   @Override
@@ -78,7 +78,7 @@ final class FeatureSortField extends SortField {
     StringBuilder builder = new StringBuilder();
     builder.append("<feature:");
     builder.append('"');
-    builder.append(getField());
+    builder.append(field);
     builder.append('"');
     builder.append(" featureName=");
     builder.append(featureName);

@@ -446,7 +446,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
     @Override
     public String toString() {
       StringBuilder buffer = new StringBuilder("<");
-      buffer.append(getField()).append(">");
+      buffer.append(producer.toString()).append(">");
       if (reverse)
         buffer.append("!");
       return buffer.toString();

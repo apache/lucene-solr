@@ -150,10 +150,10 @@ public class TestLongValuesSource extends LuceneTestCase {
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         switch (s.getType()) {
           case INT:
-            mutated[i] = LongValuesSource.fromIntField(s.getField()).getSortField(reverse);
+            mutated[i] = LongValuesSource.fromIntField(s.name()).getSortField(reverse);
             break;
           case LONG:
-            mutated[i] = LongValuesSource.fromLongField(s.getField()).getSortField(reverse);
+            mutated[i] = LongValuesSource.fromLongField(s.name()).getSortField(reverse);
             break;
           default:
             mutated[i] = (SortField) original[i];

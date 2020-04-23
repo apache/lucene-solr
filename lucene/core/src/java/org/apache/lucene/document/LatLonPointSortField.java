@@ -41,7 +41,7 @@ final class LatLonPointSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new LatLonPointDistanceComparator(getField(), latitude, longitude, numHits);
+    return new LatLonPointDistanceComparator(field, latitude, longitude, numHits);
   }
 
   @Override
@@ -85,7 +85,7 @@ final class LatLonPointSortField extends SortField {
     StringBuilder builder = new StringBuilder();
     builder.append("<distance:");
     builder.append('"');
-    builder.append(getField());
+    builder.append(field);
     builder.append('"');
     builder.append(" latitude=");
     builder.append(latitude);

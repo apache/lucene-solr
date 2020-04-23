@@ -140,7 +140,7 @@ public class TestSort extends SolrTestCaseJ4 {
       List<SchemaField> fields = null;
       try {
         SortSpec spec = SortSpecParsing.parseSortSpec(input.toString(), req);
-        sorts = spec.getSort().getSort();
+        sorts = (SortField[]) spec.getSort().getSort();
         fields = spec.getSchemaFields();
       } catch (RuntimeException e) {
         throw new RuntimeException("Failed to parse sort: " + input, e);
@@ -172,7 +172,7 @@ public class TestSort extends SolrTestCaseJ4 {
         } else {
           assertEquals("sorts["+j+"] ("+type.toString()+
                        ") had unexpected field in: " + input,
-                       names[j], sorts[j].getField());
+                       names[j], sorts[j].name());
           assertEquals("fields["+j+"] ("+type.toString()+
                        ") had unexpected name in: " + input,
                        names[j], fields.get(j).getName());

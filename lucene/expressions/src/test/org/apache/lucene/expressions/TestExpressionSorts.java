@@ -127,7 +127,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     for (int i = 0; i < mutated.length; i++) {
       if (random().nextInt(3) > 0) {
         SortField s = (SortField) original[i];
-        Expression expr = JavascriptCompiler.compile(s.getField());
+        Expression expr = JavascriptCompiler.compile(s.name());
         SimpleBindings simpleBindings = new SimpleBindings();
         simpleBindings.add(s);
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();

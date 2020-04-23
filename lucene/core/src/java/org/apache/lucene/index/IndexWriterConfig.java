@@ -481,7 +481,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
       IndexSorter sorter = sortOrder.getIndexSorter();
       assert sorter != null;
       try {
-        sorter.getDocComparator(new DocValuesReader() {
+        sorter.getDocComparator(new DocValuesLeafReader() {
           @Override
           public NumericDocValues getNumericDocValues(String field) {
             fields.add(field);

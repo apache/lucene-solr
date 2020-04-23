@@ -101,7 +101,7 @@ public class SortedNumericSortField extends SortField {
     }
 
     @Override
-    public SortField readSortField(DataInput in) throws IOException {
+    public SortOrder readSortField(DataInput in) throws IOException {
       SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
       if (in.readInt() == 1) {
         switch (sf.type) {
@@ -125,7 +125,7 @@ public class SortedNumericSortField extends SortField {
     }
 
     @Override
-    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+    public void writeSortField(SortOrder sf, DataOutput out) throws IOException {
       assert sf instanceof SortedNumericSortField;
       ((SortedNumericSortField)sf).serialize(out);
     }
@@ -140,7 +140,7 @@ public class SortedNumericSortField extends SortField {
   }
 
   private void serialize(DataOutput out) throws IOException {
-    out.writeString(getField());
+    out.writeString(field);
     out.writeInt(type.ordinal());
     out.writeInt(reverse ? 1 : 0);
     out.writeInt(selector.ordinal());
@@ -202,7 +202,7 @@ public class SortedNumericSortField extends SortField {
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
-    buffer.append("<sortednumeric" + ": \"").append(getField()).append("\">");
+    buffer.append("<sortednumeric" + ": \"").append(field).append("\">");
     if (getReverse()) buffer.append('!');
     if (missingValue != null) {
       buffer.append(" missingValue=");
@@ -225,28 +225,28 @@ public class SortedNumericSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     switch(type) {
       case INT:
-        return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+        return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
       case FLOAT:
-        return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
+        return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           } 
         };
       case LONG:
-        return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
+        return new FieldComparator.LongComparator(numHits, field, (Long) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
           }
         };
       case DOUBLE:
-        return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+        return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
@@ -258,7 +258,7 @@ public class SortedNumericSortField extends SortField {
   }
 
   private NumericDocValues getValue(LeafReader reader) throws IOException {
-    return SortedNumericSelector.wrap(DocValues.getSortedNumeric(reader, getField()), selector, type);
+    return SortedNumericSelector.wrap(DocValues.getSortedNumeric(reader, field), selector, type);
   }
 
   @Override

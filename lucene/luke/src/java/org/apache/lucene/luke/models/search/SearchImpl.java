@@ -444,16 +444,16 @@ public final class SearchImpl extends LukeModel implements Search {
     // TODO should be refactored...
     for (SortField sf : candidates) {
       if (sf instanceof SortedSetSortField) {
-        return Optional.of(new SortedSetSortField(sf.getField(), reverse));
+        return Optional.of(new SortedSetSortField(sf.name(), reverse));
       } else if (sf instanceof SortedNumericSortField) {
         SortField.Type sfType = ((SortedNumericSortField) sf).getNumericType();
         if (sfType.name().equals(type)) {
-          return Optional.of(new SortedNumericSortField(sf.getField(), sfType, reverse));
+          return Optional.of(new SortedNumericSortField(sf.name(), sfType, reverse));
         }
       } else {
         SortField.Type sfType = sf.getType();
         if (sfType.name().equals(type)) {
-          return Optional.of(new SortField(sf.getField(), sfType, reverse));
+          return Optional.of(new SortField(sf.name(), sfType, reverse));
         }
       }
     }

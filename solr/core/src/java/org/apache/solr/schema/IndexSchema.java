@@ -1229,7 +1229,10 @@ public class IndexSchema {
 
   public SchemaField getFieldOrNull(SortOrder sortOrder) {
     if (sortOrder instanceof SortField) {
-      return getFieldOrNull(((SortField)sortOrder).getField());
+      String field = sortOrder.name();
+      if (field != null) {
+        return getFieldOrNull(field);
+      }
     }
     return null;
   }

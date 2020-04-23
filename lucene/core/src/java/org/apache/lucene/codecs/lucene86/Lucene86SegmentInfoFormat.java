@@ -124,7 +124,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
         int numSortFields = input.readVInt();
         Sort indexSort;
         if (numSortFields > 0) {
-          SortField[] sortFields = new SortField[numSortFields];
+          SortOrder[] sortFields = new SortField[numSortFields];
           for(int i=0;i<numSortFields;i++) {
             String name = input.readString();
             sortFields[i] = SortFieldProvider.forName(name).readSortField(input);

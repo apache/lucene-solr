@@ -1678,23 +1678,23 @@ public class TestFieldCacheSort extends SolrTestCase {
     TopDocs td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
 
-    sort.setSort(SortField.FIELD_DOC);
+    sort = new Sort(SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
 
-    sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
+    sort = new Sort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
     
-    sort.setSort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
+    sort = new Sort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
     
-    sort.setSort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
+    sort = new Sort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
     td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
 
-    sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
+    sort = new Sort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
     td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
   }

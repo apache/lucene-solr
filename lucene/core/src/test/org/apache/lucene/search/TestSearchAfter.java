@@ -103,19 +103,19 @@ public class TestSearchAfter extends LuceneTestCase {
     for(int i=0;i<limit;i++) {
       SortField sf = allSortFields.get(i);
       if (sf.getType() == SortField.Type.INT) {
-        SortField sf2 = new SortField(sf.getField(), SortField.Type.INT, sf.getReverse());
+        SortField sf2 = new SortField(sf.name(), SortField.Type.INT, sf.getReverse());
         sf2.setMissingValue(random().nextInt());
         allSortFields.add(sf2);
       } else if (sf.getType() == SortField.Type.LONG) {
-        SortField sf2 = new SortField(sf.getField(), SortField.Type.LONG, sf.getReverse());
+        SortField sf2 = new SortField(sf.name(), SortField.Type.LONG, sf.getReverse());
         sf2.setMissingValue(random().nextLong());
         allSortFields.add(sf2);
       } else if (sf.getType() == SortField.Type.FLOAT) {
-        SortField sf2 = new SortField(sf.getField(), SortField.Type.FLOAT, sf.getReverse());
+        SortField sf2 = new SortField(sf.name(), SortField.Type.FLOAT, sf.getReverse());
         sf2.setMissingValue(random().nextFloat());
         allSortFields.add(sf2);
       } else if (sf.getType() == SortField.Type.DOUBLE) {
-        SortField sf2 = new SortField(sf.getField(), SortField.Type.DOUBLE, sf.getReverse());
+        SortField sf2 = new SortField(sf.name(), SortField.Type.DOUBLE, sf.getReverse());
         sf2.setMissingValue(random().nextDouble());
         allSortFields.add(sf2);
       }

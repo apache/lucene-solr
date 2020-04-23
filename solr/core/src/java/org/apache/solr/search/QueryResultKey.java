@@ -66,7 +66,7 @@ public final class QueryResultKey implements Accountable {
       h = h*29 + sf.hashCode();
       ramSfields += BASE_SF_RAM_BYTES_USED;
       if (sf instanceof SortField) {
-        ramSfields += RamUsageEstimator.sizeOfObject(((SortField)sf).getField());
+        ramSfields += RamUsageEstimator.sizeOfObject(sf.name());
       }
     }
 

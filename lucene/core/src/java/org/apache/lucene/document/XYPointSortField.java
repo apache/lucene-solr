@@ -38,7 +38,7 @@ final class XYPointSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new XYPointDistanceComparator(getField(), x, y, numHits);
+    return new XYPointDistanceComparator(field, x, y, numHits);
   }
 
   @Override
@@ -81,7 +81,7 @@ final class XYPointSortField extends SortField {
     StringBuilder builder = new StringBuilder();
     builder.append("<distance:");
     builder.append('"');
-    builder.append(getField());
+    builder.append(field);
     builder.append('"');
     builder.append(" x=");
     builder.append(x);

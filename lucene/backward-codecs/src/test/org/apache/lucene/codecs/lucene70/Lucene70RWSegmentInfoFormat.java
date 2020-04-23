@@ -89,9 +89,12 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
       int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
       output.writeVInt(numSortFields);
       for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
+        if (indexSort.getSort()[i] instanceof SortField == false) {
+          throw new IllegalArgumentException("Cannot serialize sorts that are not of type SortField");
+        }
+        SortField sortField = (SortField) indexSort.getSort()[i];
         SortField.Type sortType = sortField.getType();
-        output.writeString(sortField.getField());
+        output.writeString(sortField.name());
         int sortTypeID;
         switch (sortField.getType()) {
           case STRING:
@@ -172,7 +175,7 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
               } else if (missingValue == SortField.STRING_FIRST) {
                 output.writeByte((byte) 2);
               } else {
-                throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.getField() + "\": " + missingValue);
+                throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.name() + "\": " + missingValue);
               }
               break;
             case LONG:

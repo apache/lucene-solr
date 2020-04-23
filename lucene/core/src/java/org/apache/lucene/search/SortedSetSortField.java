@@ -85,7 +85,7 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public SortField readSortField(DataInput in) throws IOException {
+    public SortOrder readSortField(DataInput in) throws IOException {
       SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
       int missingValue = in.readInt();
       if (missingValue == 1) {
@@ -98,7 +98,7 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+    public void writeSortField(SortOrder sf, DataOutput out) throws IOException {
       assert sf instanceof SortedSetSortField;
       ((SortedSetSortField)sf).serialize(out);
     }
@@ -113,7 +113,7 @@ public class SortedSetSortField extends SortField {
   }
 
   private void serialize(DataOutput out) throws IOException {
-    out.writeString(getField());
+    out.writeString(field);
     out.writeInt(reverse ? 1 : 0);
     out.writeInt(selector.ordinal());
     if (missingValue == SortField.STRING_FIRST) {
@@ -150,7 +150,7 @@ public class SortedSetSortField extends SortField {
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
-    buffer.append("<sortedset" + ": \"").append(getField()).append("\">");
+    buffer.append("<sortedset" + ": \"").append(field).append("\">");
     if (getReverse()) buffer.append('!');
     if (missingValue != null) {
       buffer.append(" missingValue=");
@@ -177,7 +177,7 @@ public class SortedSetSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
+    return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST) {
       @Override
       protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
         return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
@@ -186,7 +186,7 @@ public class SortedSetSortField extends SortField {
   }
 
   private SortedDocValues getValues(LeafReader reader) throws IOException {
-    return SortedSetSelector.wrap(DocValues.getSortedSet(reader, getField()), selector);
+    return SortedSetSelector.wrap(DocValues.getSortedSet(reader, field), selector);
   }
 
   @Override

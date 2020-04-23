@@ -177,16 +177,16 @@ public class TestDoubleValuesSource extends LuceneTestCase {
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         switch (s.getType()) {
           case INT:
-            mutated[i] = DoubleValuesSource.fromIntField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromIntField(s.name()).getSortField(reverse);
             break;
           case LONG:
-            mutated[i] = DoubleValuesSource.fromLongField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromLongField(s.name()).getSortField(reverse);
             break;
           case FLOAT:
-            mutated[i] = DoubleValuesSource.fromFloatField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromFloatField(s.name()).getSortField(reverse);
             break;
           case DOUBLE:
-            mutated[i] = DoubleValuesSource.fromDoubleField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromDoubleField(s.name()).getSortField(reverse);
             break;
           case SCORE:
             mutated[i] = DoubleValuesSource.SCORES.getSortField(reverse);

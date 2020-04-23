@@ -490,14 +490,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
             } else {
               cmp = sortByScoreOnly ? fieldIdToDocID[d1.id] - fieldIdToDocID[d2.id] : 0;
             }
-          } else if (sf.getField().equals("sort1")) {
+          } else if (sf.name().equals("sort1")) {
             cmp = d1.sort1.compareTo(d2.sort1);
-          } else if (sf.getField().equals("sort2")) {
+          } else if (sf.name().equals("sort2")) {
             cmp = d1.sort2.compareTo(d2.sort2);
-          } else if (sf.getField().equals("sort3")) {
+          } else if (sf.name().equals("sort3")) {
             cmp = d1.sort3.compareTo(d2.sort3);
           } else {
-            assertEquals(sf.getField(), "id");
+            assertEquals(sf.name(), "id");
             cmp = d1.id - d2.id;
           }
           if (cmp != 0) {

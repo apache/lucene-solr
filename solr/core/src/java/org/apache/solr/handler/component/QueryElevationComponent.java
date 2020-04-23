@@ -584,13 +584,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     List<SchemaField> fields = new ArrayList<>(currentFields.size() + 1);
 
     // Perhaps force it to always sort by score
-    if (forceElevation && isSortByScore(currentSorts[0])) {
+    if (forceElevation && SortField.isScore(currentSorts[0]) == false) {
       sorts.add(new SortField("_elevate_", comparator, true));
       fields.add(null);
       modify = true;
     }
     for (int i = 0; i < currentSorts.length; i++) {
-      if (isSortByScore(currentSorts[i])) {
+      if (SortField.isScore(currentSorts[i])) {
         sorts.add(new SortField("_elevate_", comparator, !currentSorts[i].getReverse()));
         fields.add(null);
         modify = true;
@@ -604,10 +604,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
                     current.getCount(),
                     current.getOffset())
             : null;
-  }
-
-  private static boolean isSortByScore(SortOrder so) {
-    return so instanceof SortField && ((SortField)so).getType() == SortField.Type.SCORE;
   }
 
   private void addDebugInfo(ResponseBuilder rb, Elevation elevation) {

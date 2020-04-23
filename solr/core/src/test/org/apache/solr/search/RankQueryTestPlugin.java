@@ -42,6 +42,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHits;
@@ -385,17 +386,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         SortSpec sortSpec = rb.getSortSpec();
         Sort sort = searcher.weightSort(sortSpec.getSort());
-        SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
+        SortOrder[] sortFields = sort==null ? new SortOrder[]{SortOrder.SCORE} : sort.getSort();
         List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
         for (int fld = 0; fld < schemaFields.size(); fld++) {
           SchemaField schemaField = schemaFields.get(fld);
           FieldType ft = null == schemaField? null : schemaField.getType();
-          SortField sortField = sortFields[fld];
+          SortOrder sortField = sortFields[fld];
 
-          SortField.Type type = sortField.getType();
           // :TODO: would be simpler to always serialize every position of SortField[]
-          if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
+          if (SortField.isScore(sortField) || SortField.isDoc(sortField)) continue;
 
           FieldComparator<?> comparator = null;
           LeafFieldComparator leafComparator = null;
@@ -432,7 +432,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             vals[position] = val;
           }
 
-          sortVals.add(sortField.getField(), vals);
+          sortVals.add(sortField.name(), vals);
         }
 
         rsp.add("merge_values", sortVals);
@@ -622,17 +622,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
 
       List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-      SortField[] sortFields = sortSpec.getSort().getSort();
+      SortOrder[] sortFields = sortSpec.getSort().getSort();
 
       int marshalledFieldNum = 0;
       for (int sortFieldNum = 0; sortFieldNum < sortFields.length; sortFieldNum++) {
-        final SortField sortField = sortFields[sortFieldNum];
-        final SortField.Type type = sortField.getType();
+        final SortOrder sortField = sortFields[sortFieldNum];
 
         // :TODO: would be simpler to always serialize every position of SortField[]
-        if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
+        if (SortField.isScore(sortField) || SortField.isDoc(sortField)) continue;
 
-        final String sortFieldName = sortField.getField();
+        final String sortFieldName = sortField.name();
         final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
         assert sortFieldName.equals(valueFieldName)
             : "sortFieldValues name key does not match expected SortField.getField";
@@ -641,14 +640,14 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         final SchemaField schemaField = schemaFields.get(sortFieldNum);
         if (null == schemaField) {
-          unmarshalledSortValsPerField.add(sortField.getField(), sortVals);
+          unmarshalledSortValsPerField.add(sortField.name(), sortVals);
         } else {
           FieldType fieldType = schemaField.getType();
           List unmarshalledSortVals = new ArrayList();
           for (Object sortVal : sortVals) {
             unmarshalledSortVals.add(fieldType.unmarshalSortValue(sortVal));
           }
-          unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
+          unmarshalledSortValsPerField.add(sortField.name(), unmarshalledSortVals);
         }
         marshalledFieldNum++;
       }

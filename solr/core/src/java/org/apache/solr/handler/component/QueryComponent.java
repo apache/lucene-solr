@@ -465,7 +465,7 @@ public class QueryComponent extends SearchComponent
         SortOrder sortField = sortFields[fld];
 
         // :TODO: would be simpler to always serialize every position of SortField[]
-        if (sortField == SortOrder.SCORE || sortField == SortOrder.DOC_ID) continue;
+        if (SortField.isDoc(sortField) || SortField.isScore(sortField)) continue;
 
         FieldComparator<?> comparator = sortField.getComparator(1,0);
         LeafFieldComparator leafComparator = null;
@@ -502,7 +502,7 @@ public class QueryComponent extends SearchComponent
           vals[position] = val;
         }
 
-        sortVals.add(sortField.getField(), vals);
+        sortVals.add(sortField.name(), vals);
       }
       rsp.add("sort_values", sortVals);
     }catch(ExitableDirectoryReader.ExitingReaderException x) {
@@ -1048,11 +1048,11 @@ public class QueryComponent extends SearchComponent
     SortOrder[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
     List<Object> nextCursorMarkValues = new ArrayList<>(sortFields.length);
     for (SortOrder sf : sortFields) {
-      if (sf.getType().equals(SortField.Type.SCORE)) {
+      if (SortField.isScore(sf)) {
         nextCursorMarkValues.add(lastDoc.score);
       } else {
-        assert null != sf.getField() : "SortField has null field";
-        List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.getField());
+        assert null != sf.name() : "SortField has null name";
+        List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.name());
         nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
       }
     }
@@ -1079,7 +1079,7 @@ public class QueryComponent extends SearchComponent
       // :TODO: would be simpler to always serialize every position of SortField[]
       if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-      final String sortFieldName = sortField.getField();
+      final String sortFieldName = sortField.name();
       final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
       assert sortFieldName.equals(valueFieldName)
         : "sortFieldValues name key does not match expected SortField.getField";
@@ -1088,14 +1088,14 @@ public class QueryComponent extends SearchComponent
 
       final SchemaField schemaField = schemaFields.get(sortFieldNum);
       if (null == schemaField) {
-        unmarshalledSortValsPerField.add(sortField.getField(), sortVals);
+        unmarshalledSortValsPerField.add(sortField.name(), sortVals);
       } else {
         FieldType fieldType = schemaField.getType();
         List unmarshalledSortVals = new ArrayList();
         for (Object sortVal : sortVals) {
           unmarshalledSortVals.add(fieldType.unmarshalSortValue(sortVal));
         }
-        unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
+        unmarshalledSortValsPerField.add(sortField.name(), unmarshalledSortVals);
       }
       marshalledFieldNum++;
     }

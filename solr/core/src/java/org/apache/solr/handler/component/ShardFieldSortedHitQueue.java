@@ -52,10 +52,10 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       // keep track of the named fields
       SortField.Type type = fields[i].getType();
       if (type!=SortField.Type.SCORE && type!=SortField.Type.DOC) {
-        fieldNames.add(fields[i].getField());
+        fieldNames.add(fields[i].name());
       }
 
-      String fieldname = fields[i].getField();
+      String fieldname = fields[i].name();
       comparators[i] = getCachedComparator(fields[i], searcher);
 
      if (fields[i].getType() == SortField.Type.STRING) {
@@ -130,7 +130,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
     public ShardComparator(SortField sortField) {
       this.sortField = sortField;
-      this.fieldName = sortField.getField();
+      this.fieldName = sortField.name();
       int fieldNum = 0;
       for (int i=0; i<fieldNames.size(); i++) {
         if (fieldNames.get(i).equals(fieldName)) {

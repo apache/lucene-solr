@@ -56,7 +56,7 @@ public final class SimpleBindings extends Bindings {
    * FieldCache, the document's score, etc. 
    */
   public void add(SortField sortField) {
-    map.put(sortField.getField(), sortField);
+    map.put(sortField.name(), sortField);
   }
 
   /**
@@ -86,13 +86,13 @@ public final class SimpleBindings extends Bindings {
     SortField field = (SortField) o;
     switch(field.getType()) {
       case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
+        return DoubleValuesSource.fromIntField(field.name());
       case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
+        return DoubleValuesSource.fromLongField(field.name());
       case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
+        return DoubleValuesSource.fromFloatField(field.name());
       case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
+        return DoubleValuesSource.fromDoubleField(field.name());
       case SCORE:
         return DoubleValuesSource.SCORES;
       default:

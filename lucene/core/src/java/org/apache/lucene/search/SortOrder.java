@@ -48,6 +48,13 @@ public interface SortOrder {
   boolean needsScores();
 
   /**
+   * A name for the sort order
+   */
+  default String name() {
+    return toString();
+  }
+
+  /**
    * Rewrites this SortOrder, returning a new SortOrder if a change is made.
    *
    * @param searcher IndexSearcher to use during rewriting
@@ -94,7 +101,7 @@ public interface SortOrder {
 
     @Override
     public String toString() {
-      return "score";
+      return "<score>";
     }
   };
 
@@ -121,7 +128,7 @@ public interface SortOrder {
 
     @Override
     public String toString() {
-      return "docid";
+      return "<docid>";
     }
   };
 
