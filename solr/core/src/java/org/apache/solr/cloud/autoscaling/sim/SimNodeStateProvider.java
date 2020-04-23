@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -233,6 +234,11 @@ public class SimNodeStateProvider implements NodeStateProvider {
     return nodeValues;
   }
 
+  /** Get all values for a selected node. */
+  public Map<String, Object> simGetNodeValues(String node) {
+    return nodeValues.getOrDefault(node, Collections.emptyMap());
+  }
+
   private void saveRoles() {
     final Map<String, Set<String>> roles = new HashMap<>();
     nodeValues.forEach((n, values) -> {
@@ -319,7 +325,10 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (values == null) {
       return result;
     }
-    result.putAll(values.entrySet().stream().filter(e -> tags.contains(e.getKey())).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+    result.putAll(values.entrySet().stream()
+        .filter(e -> tags.contains(e.getKey()))
+        .filter(e -> e.getValue() != null)
+        .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
     return result;
   }
 

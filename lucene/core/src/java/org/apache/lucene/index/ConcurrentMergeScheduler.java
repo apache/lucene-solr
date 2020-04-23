@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -494,7 +495,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   @Override
-  public synchronized void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+  public synchronized void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
 
     assert !Thread.holdsLock(writer);
 
@@ -633,6 +634,27 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     return thread;
   }
 
+  synchronized void runOnMergeFinished(IndexWriter writer) {
+    // the merge call as well as the merge thread handling in the finally
+    // block must be sync'd on CMS otherwise stalling decisions might cause
+    // us to miss pending merges
+    assert mergeThreads.contains(Thread.currentThread()) : "caller is not a merge thread";
+    // Let CMS run new merges if necessary:
+    try {
+      merge(writer, MergeTrigger.MERGE_FINISHED);
+    } catch (AlreadyClosedException ace) {
+      // OK
+    } catch (IOException ioe) {
+      throw new UncheckedIOException(ioe);
+    } finally {
+      removeMergeThread();
+      updateMergeThreads();
+      // In case we had stalled indexing, we can now wake up
+      // and possibly unstall:
+      notifyAll();
+    }
+  }
+
   /** Runs a merge thread to execute a single merge, then exits. */
   protected class MergeThread extends Thread implements Comparable<MergeThread> {
     final IndexWriter writer;
@@ -664,35 +686,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         if (verbose()) {
           message("  merge thread: done");
         }
-
-        // Let CMS run new merges if necessary:
-        try {
-          merge(writer, MergeTrigger.MERGE_FINISHED, true);
-        } catch (AlreadyClosedException ace) {
-          // OK
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-
+        runOnMergeFinished(writer);
       } catch (Throwable exc) {
-
         if (exc instanceof MergePolicy.MergeAbortedException) {
           // OK to ignore
         } else if (suppressExceptions == false) {
           // suppressExceptions is normally only set during
           // testing.
           handleMergeException(writer.getDirectory(), exc);
-        }
-
-      } finally {
-        synchronized(ConcurrentMergeScheduler.this) {
-          removeMergeThread();
-
-          updateMergeThreads();
-
-          // In case we had stalled indexing, we can now wake up
-          // and possibly unstall:
-          ConcurrentMergeScheduler.this.notifyAll();
         }
       }
     }

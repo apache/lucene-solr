@@ -98,7 +98,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
           sharedObjectCache.put(BOOST_ENTRIES_CACHE_KEY, cachedBoostEntries);
         } else {
           if (log.isDebugEnabled()) {
-            log.debug("Using cached boost entry list with " + cachedBoostEntries.size() + " elements.");
+            log.debug("Using cached boost entry list with {} elements", cachedBoostEntries.size());
           }
         }
 
@@ -169,7 +169,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
       for (BoostEntry boostEntry : boostEntries) {
         if (boostEntry.getPattern().matcher(value).matches()) {
           if (log.isDebugEnabled()) {
-            log.debug("Pattern match " + boostEntry.getPattern().pattern() + " for " + value);
+            log.debug("Pattern match {} for {}", boostEntry.getPattern().pattern(), value);
           }
           boost = (boostEntry.getBoost() * 1000) * (boost * 1000) / 1000000;
         }
@@ -177,7 +177,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
       document.setField(boostFieldname, boost);
 
       if (log.isDebugEnabled()) {
-        log.debug("Value " + boost + ", applied to field " + boostFieldname);
+        log.debug("Value {}, applied to field {}", boost, boostFieldname);
       }
     }
   }

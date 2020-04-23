@@ -305,10 +305,8 @@ public class FileFloatSource extends ValueSource {
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
-            if (log.isErrorEnabled()) {
-              log.error("Error loading external value source + fileName + " + e
-                  + (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
-            }
+            log.error("Error loading external value source + fileName + {}{}", e
+                , (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
           }
           continue;  // go to next line in file.. leave values as default.
         }
@@ -336,12 +334,10 @@ public class FileFloatSource extends ValueSource {
       // exceptions that happened in the loop
       try{r.close();}catch(Exception e){}
     }
-
     if (log.isInfoEnabled()) {
-      log.info("Loaded external value source " + fname
-          + (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound));
+      String tmp = (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound);
+      log.info("Loaded external value source {}{}", fname, tmp);
     }
-
     return vals;
   }
 

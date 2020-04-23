@@ -184,7 +184,9 @@ public class IndexSizeEstimator {
     }
     if (reader.maxDoc() > samplingThreshold) {
       samplingStep = Math.round(100.0f / samplingPercent);
-      log.info("- number of documents {} larger than {}, sampling percent is {} and sampling step {}", reader.maxDoc(), samplingThreshold, samplingPercent, samplingStep);
+      if (log.isInfoEnabled()) {
+        log.info("- number of documents {} larger than {}, sampling percent is {} and sampling step {}", reader.maxDoc(), samplingThreshold, samplingPercent, samplingStep);
+      }
       if (reader.maxDoc() / samplingStep < 10) {
         throw new IllegalArgumentException("Out of " + reader.maxDoc() + " less than 10 documents would be sampled, which is too unreliable. Increase the samplingPercent.");
       }

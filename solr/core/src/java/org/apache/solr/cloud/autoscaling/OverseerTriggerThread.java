@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
@@ -143,7 +144,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           break;
         }
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        AutoScalingConfig updatedConfig = withAutoAddReplicasTrigger(autoScalingConfig);
+        AutoScalingConfig updatedConfig = withDefaultPolicy(autoScalingConfig);
+        updatedConfig = withAutoAddReplicasTrigger(updatedConfig);
         updatedConfig = withScheduledMaintenanceTrigger(updatedConfig);
         if (updatedConfig.equals(autoScalingConfig)) break;
         log.debug("Adding .auto_add_replicas and .scheduled_maintenance triggers");
@@ -341,6 +343,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     } finally {
       updateLock.unlock();
     }
+  }
+
+  private AutoScalingConfig withDefaultPolicy(AutoScalingConfig autoScalingConfig) {
+    Policy policy = autoScalingConfig.getPolicy();
+    if (policy.hasEmptyClusterPolicy()) {
+      policy = policy.withClusterPolicy(Policy.DEFAULT_CLUSTER_POLICY);
+      autoScalingConfig = autoScalingConfig.withPolicy(policy);
+    }
+    return autoScalingConfig;
   }
 
   private AutoScalingConfig withAutoAddReplicasTrigger(AutoScalingConfig autoScalingConfig) {

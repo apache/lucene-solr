@@ -64,6 +64,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String testSuggestionsScenario =
       "create_cluster numNodes=2\n" +
+      "load_autoscaling json={'cluster-policy':[]}\n" +
       "solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2\n" +
       "wait_collection collection=testCollection&shards=2&replicas=2\n" +
       "ctx_set key=myNode&value=${_random_node_}\n" +
@@ -118,6 +119,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String indexingScenario =
       "create_cluster numNodes=100\n" +
+      "load_autoscaling json={'cluster-policy':[]}\n" +
       "solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2\n" +
       "wait_collection collection=testCollection&shards=2&replicas=2\n" +
       "solr_request /admin/autoscaling?httpMethod=POST&stream.body=" +
@@ -141,6 +143,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String splitShardScenario =
       "create_cluster numNodes=2\n" +
+          "load_autoscaling json={'cluster-policy':[]}\n" +
           "solr_request /admin/collections?action=CREATE&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=5\n" +
           "wait_collection collection=testCollection&shards=2&replicas=2\n" +
           "set_shard_metrics collection=testCollection&shard=shard1&INDEX.sizeInBytes=1000000000\n" +
