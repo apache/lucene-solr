@@ -22,7 +22,7 @@ PDFs, HTML, and many other supported types.
 
 For further explanations, see the frequently asked questions at the end of the guide.
 
-##GETTING STARTED
+## GETTING STARTED
 
 * To start Solr, enter the following command (make sure you’ve cd’ed into the directory in which Solr was installed): 
 
@@ -37,7 +37,7 @@ For further explanations, see the frequently asked questions at the end of the g
 		Started Solr server on port 8983 (pid=<your pid>). Happy searching!
 ```
 
-##CREATING THE CORE/COLLECTION
+## CREATING THE CORE/COLLECTION
 
 * Before you can index your documents, you’ll need to create a core/collection. Do this by entering:
 
@@ -60,7 +60,7 @@ For further explanations, see the frequently asked questions at the end of the g
 			"core":"files"}
 ```
 
-##INDEXING DOCUMENTS
+## INDEXING DOCUMENTS
 
 * Return to your command shell. To post all of your documents to the documents core, enter the following: 
 
@@ -82,7 +82,7 @@ For further explanations, see the frequently asked questions at the end of the g
   	  	bin/post -h
 ```
 
-##BROWSING DOCUMENTS
+## BROWSING DOCUMENTS
 
 * Your document information can be viewed in multiple formats: XML, JSON, CSV, as well as a nice HTML interface. 
 
@@ -91,7 +91,7 @@ For further explanations, see the frequently asked questions at the end of the g
 * To view your document information in XML or other formats, add &wt (for writer type) to the end of that URL. i.e. To view your results in xml format direct your browser to:
 	[http://localhost:8983/solr/files/browse?&wt=xml](http://localhost:8983/solr/files/browse?&wt=xml)
 
-##ADMIN UI
+## ADMIN UI
 
 * Another way to verify that your core has been created is to view it in the Admin User Interface.
 
@@ -108,7 +108,7 @@ For further explanations, see the frequently asked questions at the end of the g
 * Now you’ve opened the core page. On this page there are a multitude of different tools you can use to analyze and search your core. You will make use of these features after indexing your documents.
 * Take note of the "Num Docs" field in your core Statistics. If after indexing your documents, it shows Num Docs to be 0, that means there was a problem indexing.
 
-##QUERYING INDEX
+## QUERYING INDEX
 
 * In the Admin UI, enter a term in the query box to see which documents contain the word. 
 
@@ -121,7 +121,7 @@ For further explanations, see the frequently asked questions at the end of the g
 
 * i.e. : [http://localhost:8983/solr/files/browse?q=Lucene](http://localhost:8983/solr/files/browse?q=Lucene)
 
-##FAQs
+## FAQs
 
 * Why use -d when creating a core?
 	* -d specifies a specific configuration to use.  This example as a configuration tuned for indexing and query rich
