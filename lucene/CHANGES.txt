@@ -126,6 +126,9 @@ API Changes
   The DocumentsWriterPerThreadPool is a packaged protected final class which made it impossible
   to customize. (Simon Willnauer)
 
+* LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
+  (Simon Willnauer)
+
 New Features
 ---------------------
 (No changes)
@@ -185,6 +188,12 @@ Bug Fixes
 
 * LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
 
+* LUCENE-9337: Ensure CMS updates it's thread accounting datastructures consistently.
+  CMS today releases it's lock after finishing a merge before it re-acquires it to update
+  the thread accounting datastructures. This causes threading issues where concurrently
+  finishing threads fail to pick up pending merges causing potential thread starvation on
+  forceMerge calls. (Simon Willnauer)
+
 Other
 ---------------------
 
@@ -203,6 +212,9 @@ Other
 
 * LUCENE-9271: ByteBufferIndexInput was refactored to work on top of the
   ByteBuffer API. (Adrien Grand)
+
+* LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
+  Mike McCandless)
 
 ======================= Lucene 8.5.1 =======================
 

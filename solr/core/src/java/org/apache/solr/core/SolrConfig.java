@@ -203,11 +203,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
     if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
-      if (log.isWarnEnabled()) {
-        log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} " +
-            "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit"
-            , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
-      }
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} {}"
+          , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount()
+          , "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit");
     }
     
     // Warn about deprecated / discontinued parameters
@@ -317,13 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      if (log.isWarnEnabled()) {
-        log.warn(
-            "You should not use LATEST as luceneMatchVersion property: " +
-                "if you use this setting, and then Solr upgrades to a newer release of Lucene, " +
-                "sizable changes may happen. If precise back compatibility is important " +
-                "then you should instead explicitly specify an actual Lucene version.");
-      }
+      log.warn("You should not use LATEST as luceneMatchVersion property: {}{}{}"
+          , "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          , "sizable changes may happen. If precise back compatibility is important "
+          , "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -760,9 +755,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       try {
         urls.addAll(SolrResourceLoader.getURLs(libPath));
       } catch (IOException e) {
-        if (log.isWarnEnabled()) {
-          log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
-        }
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
       }
     }
 
@@ -788,18 +781,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           else
             urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
         } catch (IOException e) {
-          if (log.isWarnEnabled()) {
-            log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
-          }
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
         }
       } else if (null != path) {
         final Path dir = instancePath.resolve(path);
         try {
           urls.add(dir.toUri().toURL());
         } catch (MalformedURLException e) {
-          if (log.isWarnEnabled()) {
-            log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
-          }
+          log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
         }
       } else {
         throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");

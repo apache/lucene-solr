@@ -188,7 +188,7 @@ public class ZkContainer {
           if (testing_beforeRegisterInZk != null) {
             boolean didTrigger = testing_beforeRegisterInZk.test(cd);
             if (log.isDebugEnabled()) {
-              log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
+              log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
             }
           }
           if (!core.getCoreContainer().isShutDown()) {

@@ -17,8 +17,6 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
@@ -141,7 +139,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     public void init(Map<String,Object> pluginConfig) {}
 
     @Override
-    public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
+    public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws Exception {
       if (expectedUsername == null) {
         filterChain.doFilter(request, response);

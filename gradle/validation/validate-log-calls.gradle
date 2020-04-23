@@ -66,11 +66,11 @@ class ValidateLogCallsTask extends DefaultTask {
 //  , "solr/core/src/java/org/apache/solr/cloud/rule"
                              , "solr/core/src/java/org/apache/solr/core"
                              , "solr/core/src/java/org/apache/solr/filestore"
-//                             , "solr/core/src/java/org/apache/solr/handler/admin"
-//                             , "solr/core/src/java/org/apache/solr/handler/component"
-//                             , "solr/core/src/java/org/apache/solr/handler/export"
-//                             , "solr/core/src/java/org/apache/solr/handler/loader"
-//                             , "solr/core/src/java/org/apache/solr/handler/tagger"
+                             , "solr/core/src/java/org/apache/solr/handler/admin"
+                             , "solr/core/src/java/org/apache/solr/handler/component"
+                             , "solr/core/src/java/org/apache/solr/handler/export"
+                             , "solr/core/src/java/org/apache/solr/handler/loader"
+                             , "solr/core/src/java/org/apache/solr/handler/tagger"
                              , "solr/core/src/java/org/apache/solr/highlight"
                              , "solr/core/src/java/org/apache/solr/index"
                              , "solr/core/src/java/org/apache/solr/internal"
@@ -107,11 +107,15 @@ class ValidateLogCallsTask extends DefaultTask {
 
   // We have a log.someting line, check for patterns we're not fond of.
   def checkLogLine(File file, String line, int lineNumber, String prevLine) {
+    // If the line has been explicitly checked, skip it.
+    if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
+      return
+    }
     // Strip all of the comments, things in quotes and the like.
     def level = ""
     def lev = (line =~ "log\\.(.*?)\\(")
     if (lev.find()) {
-      level = lev.group(1)
+      level = lev.group(1).toLowerCase().trim()
     }
     def stripped =
         line.replaceFirst("//.*", " ") // remove comment to EOL. Again, fragile due to the possibility of embedded double slashes
@@ -126,35 +130,50 @@ class ValidateLogCallsTask extends DefaultTask {
     def m = stripped =~ "\\(.*?\\)"
     def hasParens = m.find()
     def hasPlus = stripped.contains("+")
-    if (hasParens == false && hasPlus == false) {
-      return
+
+    // Check that previous line isn't an if statement for always-reported log levels. Arbitrary decision: we don't
+    // really care about checking for awkward constructions for WARN and above, so report a violation if the previous
+    // line contains an if for those levels.
+    boolean violation = false
+    boolean dontCare = level.equals("fatal") || level.equals("error") || level.equals("warn")
+    if (dontCare && prevLine.contains("is" + level + "enabled")) {
+      violation = true
     }
-    // Check that previous line isn't an if statement for this log level
-    if (prevLine.toLowerCase().contains("is" + level + "enabled")) {
-      return
+    // Always report toString()
+    if (line.contains("toString(") == true && line.contains("Arrays.toString(") == false) {
+      violation = true
     }
     // There's a convention to declare a member variable for whether a level is enabled and check that rather than
-    // isDebugEnabled. So check plusses there too.
-    if (prevLine.toLowerCase().replaceAll("\\s+", "").contains("if(" + level + ")")
-        && (checkPlus == false || line.contains("+") == false)) {
-      return
-    }
+    // isDebugEnabled. So check ust plusses there too.
+    if (violation == false) {
+      if (hasParens == false && hasPlus == false) {
+        return
+      }
+      if (prevLine.replaceAll("\\s+", "").contains("if(" + level + ")")
+          && (checkPlus == false || line.contains("+") == false)) {
+        return
+      }
+      if (prevLine.replaceAll("\\s+", "").contains("if(log.is" + level + "enabled")
+          && (checkPlus == false || line.contains("+") == false)) {
+        return
+      }
 
-    if (level.equals("error") || level.equals("fatal")) {
-      if (checkPlus == false || hasPlus == false) {
+
+      if (dontCare && (checkPlus == false || hasPlus == false)) {
         return
       }
     }
-    reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s', level: '%s' checkPlus '%s' hasParens '%s' errorfatal '%s' hasPlus '%s'"
+
+    reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s', level: '%s' checkPlus '%s' hasParens '%s' errorDontCare '%s' hasPlus '%s'"
         , file.name
         , lineNumber, line
         , file.getParentFile().getAbsolutePath()
         , stripped //nocommit, debugging.
         , level
         , checkPlus
-    , hasParens
-    ,level.equals("error") || level.equals("fatal"),
-        hasPlus))
+        , hasParens
+        , dontCare
+        , hasPlus))
   }
 
 
@@ -218,7 +237,7 @@ class ValidateLogCallsTask extends DefaultTask {
       }
       switch (state) { // It's just easier to do this here rather than read another line in the switch above.
         case 0:
-          prevLine = line;
+          prevLine = line.toLowerCase();
           break;
         case 1:
           break;

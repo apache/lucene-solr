@@ -277,12 +277,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         final File nonManagedSchemaFile = locateConfigFile(resourceName);
         if (null == nonManagedSchemaFile) {
           // Don't throw an exception for failure to rename the non-managed schema
-          if (log.isWarnEnabled()) {
-            log.warn("On upgrading to managed schema, did not rename non-managed schema {} "
-                + "because it's neither an absolute file "
-                + "nor under SolrConfig.getConfigDir() or the current directory. "
-                + "PLEASE REMOVE THIS FILE.", resourceName);
-          }
+          log.warn("On upgrading to managed schema, did not rename non-managed schema {} {}{}{}"
+              , resourceName
+              , "because it's neither an absolute file "
+              , "nor under SolrConfig.getConfigDir() or the current directory. "
+              , "PLEASE REMOVE THIS FILE.");
         } else {
           File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
           if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {

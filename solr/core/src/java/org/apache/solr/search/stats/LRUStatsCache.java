@@ -160,9 +160,7 @@ public class LRUStatsCache extends ExactStatsCache {
         return super.doRetrieveStatsRequest(rb);
       }
     } catch (IOException e) {
-      if (log.isWarnEnabled()) {
-        log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
-      }
+      log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
       // retrieve anyway
       return super.doRetrieveStatsRequest(rb);
     }

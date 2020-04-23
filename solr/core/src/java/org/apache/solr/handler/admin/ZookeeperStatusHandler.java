@@ -155,7 +155,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           stat.put("role", zk.role);
         }
       } catch (SolrException se) {
-        log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
+        log.warn("Failed talking to zookeeper {}", zkClientHostPort, se);
         errors.add(se.getMessage());
         Map<String, Object> stat = new HashMap<>();
         stat.put("host", zkClientHostPort);

@@ -60,6 +60,8 @@ Other Changes
 * SOLR-9909: The deprecated SolrjNamedThreadFactory has been removed. Use SolrNamedThreadFactory instead.
   (Andras Salamon, shalin)
 
+* SOLR-14420: AuthenticationPlugin.authenticate accepts HttpServletRequest instead of ServletRequest. (Mike Drob)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -88,6 +90,8 @@ Improvements
 * SOLR-14364: LTR's SolrFeature "fq" now supports PostFilters (e.g. collapse). (David Smiley)
 
 * SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
+
+* SOLR-12845: Add a default autoscaling cluster policy. (shalin, varunthacker, ab)
 
 Optimizations
 ---------------------
@@ -132,6 +136,8 @@ Bug Fixes
 
 * SOLR-14371: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin UI Zookeeper Status
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
+
+* SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
 
 Other Changes
 ---------------------
