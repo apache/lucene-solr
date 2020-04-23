@@ -405,7 +405,7 @@ public class SolrReporter extends ScheduledReporter {
       solr.request(req);
     } catch (Exception e) {
       if (log.isDebugEnabled()) {
-        log.debug("Error sending metric report: {}", e.toString());
+        log.debug("Error sending metric report: {}", e);
       }
     }
 

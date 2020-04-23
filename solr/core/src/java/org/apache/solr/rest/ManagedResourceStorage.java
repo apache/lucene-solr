@@ -133,9 +133,7 @@ public abstract class ManagedResourceStorage {
           // that doesn't have write-access to the config dir
           // while this failover approach is not ideal, it's better
           // than causing the core to fail esp. if managed resources aren't being used
-          if (log.isWarnEnabled()) {
-            log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
-          }
+          log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
           storageIO = new ManagedResourceStorage.InMemoryStorageIO();
         }
       }       

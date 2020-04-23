@@ -148,7 +148,7 @@ public class SolrSuggester implements Accountable {
         storeDir.mkdirs();
       } else if (getStoreFile().exists()) {
         if (log.isDebugEnabled()) {
-          log.debug("attempt reload of the stored lookup from file " + getStoreFile());
+          log.debug("attempt reload of the stored lookup from file {}", getStoreFile());
         }
         try {
           lookup.load(new FileInputStream(getStoreFile()));

@@ -70,7 +70,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       final AtomicBoolean mayMerge = new AtomicBoolean(true);
       final MergeScheduler mergeScheduler = new SerialMergeScheduler() {
           @Override
-          synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+          synchronized public void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
             if (mayMerge.get() == false) {
               MergePolicy.OneMerge merge = writer.getNextMerge();
               if (merge != null) {
@@ -79,7 +79,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
               }
             }
 
-            super.merge(writer, trigger, newMergesFound);
+            super.merge(writer, trigger);
           }
         };
 

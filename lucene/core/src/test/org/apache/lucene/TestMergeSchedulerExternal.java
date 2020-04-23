@@ -153,7 +153,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
-    public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+    public void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
       OneMerge merge = null;
       while ((merge = writer.getNextMerge()) != null) {
         if (VERBOSE) {

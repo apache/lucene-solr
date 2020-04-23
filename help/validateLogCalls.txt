@@ -33,14 +33,21 @@ NOTES:
   log.info("stuff {}", exception) will not print the full stack,
   log.info("stuff ", exception) _will_ print the full stack.
   log.inf0("stuff {} ", some_object, exception) will print the full stack.
+  If you're puzzled as to why so many logging calls don't have a matching
+  number of curly-braces and parameters, this is usually why if they involve
+  exceptions.
 
 - When slf4j supports lambdas in logging calls (log4j2 does now),
   we can use lambdas rather than "if log.is*Enabled". slf4j 2.0
   will when released.
 
-- error and fatal level messages are NOT flagged. However, if you want to
+- warn, error, and fatal level messages are NOT flagged. However, if you want to
   check these levels for including '+', specify '-PcheckPlus=true'. This is more
   a style than functional check.
+
+- You can get into some pretty convolued consructs trying to pass some of these
+  checks. Adding //logok, with or without spaces will cause the line to pass
+  no matter what. Please use this hack sparingly.
 
 For a fuller discussion, see LUCENE-7788 and the other JIRAs linked
 from there.

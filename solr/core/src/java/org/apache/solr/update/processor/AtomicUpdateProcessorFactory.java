@@ -172,10 +172,8 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
               "Atomic update failed after multiple attempts due to " + e.getMessage());
         }
         if (e.code() == ErrorCode.CONFLICT.code) { // version conflict
-          if (log.isWarnEnabled()) {
-            log.warn("Atomic update failed due to {} Retrying with new version .... ({})"
-                , e.getMessage(), attempts);
-          }
+          log.warn("Atomic update failed due to {} Retrying with new version .... ({})"
+              , e.getMessage(), attempts);
 
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
           // if lastVersion is null then we put -1 to assert that document must not exist
