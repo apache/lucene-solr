@@ -18,8 +18,9 @@ package org.apache.lucene.expressions;
 
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.lucene.search.DoubleValuesSource;
@@ -107,18 +108,32 @@ public final class SimpleBindings extends Bindings {
    */
   public void validate() {
     for (String origin : map.keySet()) {
-      map.get(origin).apply(new Bindings() {
-        @Override
-        public DoubleValuesSource getDoubleValuesSource(String name) {
-          if (Objects.equals(name, origin)) {
-            throw new IllegalArgumentException("Recursion error: Cycle detected originating in " + origin);
-          }
-          if (map.containsKey(name) == false) {
-            throw new IllegalArgumentException("Invalid reference '" + name + "'");
-          }
-          return map.get(name).apply(this);
-        }
-      });
+      map.get(origin).apply(new CycleDetectionBindings(origin));
+    }
+  }
+
+  private class CycleDetectionBindings extends Bindings {
+
+    private final Set<String> seenFields = new LinkedHashSet<>();
+
+    CycleDetectionBindings(String current) {
+      seenFields.add(current);
+    }
+
+    CycleDetectionBindings(Set<String> parents, String current) {
+      seenFields.addAll(parents);
+      seenFields.add(current);
+    }
+
+    @Override
+    public DoubleValuesSource getDoubleValuesSource(String name) {
+      if (seenFields.contains(name)) {
+        throw new IllegalArgumentException("Recursion error: Cycle detected " + seenFields + "->" + name);
+      }
+      if (map.containsKey(name) == false) {
+        throw new IllegalArgumentException("Invalid reference '" + name + "'");
+      }
+      return map.get(name).apply(new CycleDetectionBindings(seenFields, name));
     }
   }
 }

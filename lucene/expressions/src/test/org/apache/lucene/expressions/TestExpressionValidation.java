@@ -110,4 +110,15 @@ public class TestExpressionValidation extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
+
+  public void testCoRecursion42() throws Exception {
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("cycle2", JavascriptCompiler.compile("cycle1"));
+    bindings.add("cycle1", JavascriptCompiler.compile("cycle0"));
+    bindings.add("cycle0", JavascriptCompiler.compile("cycle1"));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      bindings.validate();
+    });
+    assertEquals("Recursion error: Cycle detected [cycle2, cycle1, cycle0]->cycle1", expected.getMessage());
+  }
 }
