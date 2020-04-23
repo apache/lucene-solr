@@ -101,7 +101,6 @@ task assemblePackaging(type: Sync) {
     include "scripts/**"
     include "solr/**"
     include "README.md"
-    include "README.md"
   })
 
   from(configurations.compileClasspath, {
