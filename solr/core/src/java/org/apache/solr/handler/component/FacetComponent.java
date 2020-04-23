@@ -717,7 +717,7 @@ public class FacetComponent extends SearchComponent {
           if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             continue;
           } else {
-            log.warn("corrupted response on "+srsp.getShardRequest()+": "+srsp.getSolrResponse());
+            log.warn("corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse());
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "facet_counts is absent in response from " + srsp.getNodeName() +
                 ", but "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" hasn't been responded");
@@ -869,7 +869,9 @@ public class FacetComponent extends SearchComponent {
       if (ent.getValue().count >= minCount) {
         newQueryFacets.put(ent.getKey(), ent.getValue());
       } else {
-        log.trace("Removing facetQuery/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+        if (log.isTraceEnabled()) {
+          log.trace("Removing facetQuery/key: {}/{} mincount={}", ent.getKey(), ent.getValue(), minCount);
+        }
         replace = true;
       }
     }
@@ -1002,10 +1004,8 @@ public class FacetComponent extends SearchComponent {
           ShardFacetCount sfc = dff.counts.get(name);
           if (sfc == null) {
             // we got back a term we didn't ask for?
-            log.error("Unexpected term returned for facet refining. key=" + key
-                      + " term='" + name + "'" + "\n\trequest params=" + sreq.params
-                      + "\n\ttoRefine=" + dff._toRefine + "\n\tresponse="
-                      + shardCounts);
+            log.error("Unexpected term returned for facet refining. key='{}'  term='{}'\n\trequest params={}\n\ttoRefine={}\n\tresponse={}"
+                , key, name, sreq.params, dff._toRefine, shardCounts);
             continue;
           }
           sfc.count += count;
@@ -1538,7 +1538,9 @@ public class FacetComponent extends SearchComponent {
         if (ent.getValue().count >= minCount) {
           newOne.put(ent.getKey(), ent.getValue());
         } else {
-          log.trace("Removing facet/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+          if (log.isTraceEnabled()) {
+            log.trace("Removing facet/key: {}/{} mincount={}", ent.getKey(), ent.getValue(), minCount);
+          }
           replace = true;
         }
       }

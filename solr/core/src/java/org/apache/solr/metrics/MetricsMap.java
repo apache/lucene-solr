@@ -127,7 +127,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
       try {
         list.add(new Attribute(attribute, getAttribute(attribute)));
       } catch (Exception e) {
-        log.warn("Could not get attribute " + attribute);
+        log.warn("Could not get attribute {}", attribute);
       }
     }
     return list;

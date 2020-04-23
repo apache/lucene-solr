@@ -227,7 +227,9 @@ public class SolrSnapshotManager {
       public void onInit(List<? extends IndexCommit> commits) throws IOException {
         for (IndexCommit ic : commits) {
           if (gen == ic.getGeneration()) {
-            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            if (log.isInfoEnabled()) {
+              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            }
             ic.delete();
           }
         }
@@ -258,7 +260,9 @@ public class SolrSnapshotManager {
       public void onInit(List<? extends IndexCommit> commits) throws IOException {
         for (IndexCommit ic : commits) {
           if (!genNumbers.contains(ic.getGeneration())) {
-            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            if (log.isInfoEnabled()) {
+              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            }
             ic.delete();
           }
         }

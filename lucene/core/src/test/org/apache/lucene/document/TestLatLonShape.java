@@ -30,7 +30,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
@@ -500,66 +499,101 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
     Component2D polygon2D = LatLonGeometry.create(polygon);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    boolean intersects = polygon2D.intersectsTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
         quantizeLon(alon), quantizeLat(alat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersects);
 
-    rel = polygon2D.relateTriangle(
+    intersects = polygon2D.intersectsTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(alon), quantizeLat(alat),
         quantizeLon(blon), quantizeLat(blat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersects);
   }
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
     Component2D polygon2D = LatLonGeometry.create(p);
     //3 shared points
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    boolean containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //2 shared points
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0.75));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //1 shared point
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(0.75), quantizeLat(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0.75));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     // 1 shared point but out
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(1), quantizeLat(0.5),
         quantizeLon(2), quantizeLat(0),
         quantizeLon(2), quantizeLat(2));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(2), quantizeLat(0),
+        quantizeLon(2), quantizeLat(2));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
     // 1 shared point but crossing
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0.5), quantizeLat(0),
         quantizeLon(2), quantizeLat(0.5),
         quantizeLon(0.5), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(2), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
     //share one edge
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0), quantizeLat(0),
         quantizeLon(0), quantizeLat(1),
         quantizeLon(0.5), quantizeLat(0.5));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0), quantizeLat(0),
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(0.5), quantizeLat(0.5));
+    assertTrue(intersectsTriangle);
+    assertTrue(containsTriangle);
     //share one edge outside
-    rel = polygon2D.relateTriangle(
+    containsTriangle = polygon2D.containsTriangle(
         quantizeLon(0), quantizeLat(1),
         quantizeLon(1.5), quantizeLat(1.5),
         quantizeLon(1), quantizeLat(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    intersectsTriangle = polygon2D.intersectsTriangle(
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(1.5), quantizeLat(1.5),
+        quantizeLon(1), quantizeLat(1));
+    assertTrue(intersectsTriangle);
+    assertFalse(containsTriangle);
   }
 
   public void testLUCENE8736() throws Exception {
@@ -618,31 +652,30 @@ public class TestLatLonShape extends LuceneTestCase {
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
     Component2D polygon2D = LatLonGeometry.create(p);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
         quantizeLon(-5), quantizeLat(-15));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersectsTriangle);
   }
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
     Component2D polygon2D = LatLonGeometry.create(p);
-    PointValues.Relation rel = polygon2D.relateTriangle(
+    boolean intersectsTriangle = polygon2D.intersectsTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
         quantizeLon(-1.5), quantizeLat(0));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersectsTriangle);
   }
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
     Component2D l2d = LatLonGeometry.create(l);
-    PointValues.Relation r = l2d.relateTriangle(
+    boolean intersectsLine = l2d.intersectsLine(
         quantizeLon(-5), quantizeLat(0),
-        quantizeLon(5), quantizeLat(0),
-        quantizeLon(-5), quantizeLat(0));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
+        quantizeLon(5), quantizeLat(0));
+    assertTrue(intersectsLine);
   }
 
   public void testLUCENE9055() throws Exception {

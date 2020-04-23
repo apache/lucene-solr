@@ -76,11 +76,6 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
   }
 
-  @Override
-  DocIdSetIterator getDocIdSet() {
-    return docsWithField.iterator();
-  }
-
   static SortingLeafReader.CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     long[] values = new long[maxDoc];

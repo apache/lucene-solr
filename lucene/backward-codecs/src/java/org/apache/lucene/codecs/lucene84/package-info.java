@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
 
-public interface ScoreFilter {
-
-}
+/**
+ * Components from the Lucene 8.4 index format.  See {@link org.apache.lucene.codecs.lucene86}
+ * for an overview of the current index format.
+ */
+package org.apache.lucene.codecs.lucene84;

@@ -130,6 +130,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // this doc won't be on one node
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
+    commit();
     
     
     Set<CloudJettyRunner> jetties = new HashSet<>();

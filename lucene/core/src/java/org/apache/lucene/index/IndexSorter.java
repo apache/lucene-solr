@@ -24,8 +24,6 @@ import java.util.List;
 
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.packed.PackedInts;
@@ -39,15 +37,14 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * Implementers must provide the following methods:
  * {@link #getDocComparator(LeafReader)} - an object that determines how documents within a segment are to be sorted
  * {@link #getComparableProviders(List)} - an array of objects that return a sortable long value per document and segment
- * {@link #serialize(DataOutput)} - how the sort should be written into the segment header
- * {@link #getProviderName()} - the SPI-registered name of a {@link SortFieldProvider} to deserialize the sort
+ * {@link #getProviderName()} - the SPI-registered name of a {@link SortFieldProvider} to serialize the sort
  *
  * The companion {@link SortFieldProvider} should be registered with SPI via {@code META-INF/services}
  */
 public interface IndexSorter {
 
   /** Used for sorting documents across segments */
-  public interface ComparableProvider {
+  interface ComparableProvider {
     /**
      * Returns a long so that the natural ordering of long values matches the
      * ordering of doc IDs for the given comparator
@@ -56,7 +53,7 @@ public interface IndexSorter {
   }
 
   /** A comparator of doc IDs, used for sorting documents within a segment */
-  public interface DocComparator {
+  interface DocComparator {
     /** Compare docID1 against docID2. The contract for the return value is the
      *  same as {@link Comparator#compare(Object, Object)}. */
     int compare(int docID1, int docID2);
@@ -66,7 +63,7 @@ public interface IndexSorter {
    * Get an array of {@link ComparableProvider}, one per segment, for merge sorting documents in different segments
    * @param readers the readers to be merged
    */
-  public abstract ComparableProvider[] getComparableProviders(List<? extends LeafReader> readers) throws IOException;
+  ComparableProvider[] getComparableProviders(List<? extends LeafReader> readers) throws IOException;
 
   /**
    * Get a comparator that determines the sort order of docs within a single Reader.
@@ -79,24 +76,17 @@ public interface IndexSorter {
    *
    * @param reader the Reader to sort
    */
-  public abstract DocComparator getDocComparator(LeafReader reader) throws IOException;
-
-  /**
-   * Serializes the parent SortField.  This is used to write Sort information into the Segment header
-   *
-   * @see SortFieldProvider#loadSortField(DataInput)
-   */
-  public abstract void serialize(DataOutput out) throws IOException;
+  DocComparator getDocComparator(LeafReader reader) throws IOException;
 
   /**
    * The SPI-registered name of a {@link SortFieldProvider} that will deserialize the parent SortField
    */
-  public abstract String getProviderName();
+  String getProviderName();
 
   /**
    * Provide a NumericDocValues instance for a LeafReader
    */
-  public interface NumericDocValuesProvider {
+  interface NumericDocValuesProvider {
     /**
      * Returns the NumericDocValues instance for this LeafReader
      */
@@ -106,7 +96,7 @@ public interface IndexSorter {
   /**
    * Provide a SortedDocValues instance for a LeafReader
    */
-  public interface SortedDocValuesProvider {
+  interface SortedDocValuesProvider {
     /**
      * Returns the SortedDocValues instance for this LeafReader
      */
@@ -114,32 +104,22 @@ public interface IndexSorter {
   }
 
   /**
-   * Serialize an object into a DataOutput
-   */
-  public interface Serializer {
-    /** Serializes an object into a DataOutput */
-    void serialize(DataOutput out) throws IOException;
-  }
-
-  /**
    * Sorts documents based on integer values from a NumericDocValues instance
    */
-  public static final class IntSorter implements IndexSorter {
+  final class IntSorter implements IndexSorter {
 
     private final Integer missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
-    private final Serializer serializer;
     private final String providerName;
 
     /**
      * Creates a new IntSorter
      */
-    public IntSorter(String providerName, Integer missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public IntSorter(String providerName, Integer missingValue, boolean reverse, NumericDocValuesProvider valuesProvider) {
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
-      this.serializer = serializer;
       this.providerName = providerName;
     }
 
@@ -186,11 +166,6 @@ public interface IndexSorter {
     }
 
     @Override
-    public void serialize(DataOutput out) throws IOException {
-      serializer.serialize(out);
-    }
-
-    @Override
     public String getProviderName() {
       return providerName;
     }
@@ -199,21 +174,19 @@ public interface IndexSorter {
   /**
    * Sorts documents based on long values from a NumericDocValues instance
    */
-  public static final class LongSorter implements IndexSorter {
+  final class LongSorter implements IndexSorter {
 
     private final String providerName;
     private final Long missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
-    private final Serializer serializer;
 
     /** Creates a new LongSorter */
-    public LongSorter(String providerName, Long missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public LongSorter(String providerName, Long missingValue, boolean reverse, NumericDocValuesProvider valuesProvider) {
       this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
-      this.serializer = serializer;
     }
 
     @Override
@@ -259,11 +232,6 @@ public interface IndexSorter {
     }
 
     @Override
-    public void serialize(DataOutput out) throws IOException {
-      serializer.serialize(out);
-    }
-
-    @Override
     public String getProviderName() {
       return providerName;
     }
@@ -272,21 +240,19 @@ public interface IndexSorter {
   /**
    * Sorts documents based on float values from a NumericDocValues instance
    */
-  public static final class FloatSorter implements IndexSorter {
+  final class FloatSorter implements IndexSorter {
 
     private final String providerName;
     private final Float missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
-    private final Serializer serializer;
 
     /** Creates a new FloatSorter */
-    public FloatSorter(String providerName, Float missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public FloatSorter(String providerName, Float missingValue, boolean reverse, NumericDocValuesProvider valuesProvider) {
       this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
-      this.serializer = serializer;
     }
 
     @Override
@@ -332,11 +298,6 @@ public interface IndexSorter {
     }
 
     @Override
-    public void serialize(DataOutput out) throws IOException {
-      serializer.serialize(out);
-    }
-
-    @Override
     public String getProviderName() {
       return providerName;
     }
@@ -345,21 +306,19 @@ public interface IndexSorter {
   /**
    * Sorts documents based on double values from a NumericDocValues instance
    */
-  public static final class DoubleSorter implements IndexSorter {
+  final class DoubleSorter implements IndexSorter {
 
     private final String providerName;
     private final Double missingValue;
     private final int reverseMul;
     private final NumericDocValuesProvider valuesProvider;
-    private final Serializer serializer;
 
     /** Creates a new DoubleSorter */
-    public DoubleSorter(String providerName, Double missingValue, boolean reverse, NumericDocValuesProvider valuesProvider, Serializer serializer) {
+    public DoubleSorter(String providerName, Double missingValue, boolean reverse, NumericDocValuesProvider valuesProvider) {
       this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
-      this.serializer = serializer;
     }
 
     @Override
@@ -405,11 +364,6 @@ public interface IndexSorter {
     }
 
     @Override
-    public void serialize(DataOutput out) throws IOException {
-      serializer.serialize(out);
-    }
-
-    @Override
     public String getProviderName() {
       return providerName;
     }
@@ -418,21 +372,19 @@ public interface IndexSorter {
   /**
    * Sorts documents based on terms from a SortedDocValues instance
    */
-  public static final class StringSorter implements IndexSorter {
+  final class StringSorter implements IndexSorter {
 
     private final String providerName;
     private final Object missingValue;
     private final int reverseMul;
     private final SortedDocValuesProvider valuesProvider;
-    private final Serializer serializer;
 
     /** Creates a new StringSorter */
-    public StringSorter(String providerName, Object missingValue, boolean reverse, SortedDocValuesProvider valuesProvider, Serializer serializer) {
+    public StringSorter(String providerName, Object missingValue, boolean reverse, SortedDocValuesProvider valuesProvider) {
       this.providerName = providerName;
       this.missingValue = missingValue;
       this.reverseMul = reverse ? -1 : 1;
       this.valuesProvider = valuesProvider;
-      this.serializer = serializer;
     }
 
     @Override
@@ -484,11 +436,6 @@ public interface IndexSorter {
       }
 
       return (docID1, docID2) -> reverseMul * Integer.compare(ords[docID1], ords[docID2]);
-    }
-
-    @Override
-    public void serialize(DataOutput out) throws IOException {
-      serializer.serialize(out);
     }
 
     @Override

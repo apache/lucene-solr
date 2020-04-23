@@ -203,9 +203,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
     if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
-      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} "+
-               "and will have no effect", booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
-      log.warn("set 'maxBooleanClauses' in solr.xml to increase global limit");
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} {}"
+          , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount()
+          , "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit");
     }
     
     // Warn about deprecated / discontinued parameters
@@ -315,12 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn(
-          "You should not use LATEST as luceneMatchVersion property: "+
-              "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
-              "sizable changes may happen. If precise back compatibility is important "+
-              "then you should instead explicitly specify an actual Lucene version."
-      );
+      log.warn("You should not use LATEST as luceneMatchVersion property: {}{}{}"
+          , "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          , "sizable changes may happen. If precise back compatibility is important "
+          , "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -575,7 +573,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         try {
           return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          log.warn("Unrecognized value for lastModFrom: " + s, e);
+          log.warn("Unrecognized value for lastModFrom: {}", s, e);
           return BOGUS;
         }
       }
@@ -608,9 +606,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               ? Long.valueOf(ttlStr)
               : null;
         } catch (Exception e) {
-          log.warn("Ignoring exception while attempting to " +
-              "extract max-age from cacheControl config: " +
-              cacheControlHeader, e);
+          log.warn("Ignoring exception while attempting to extract max-age from cacheControl config: {}"
+              , cacheControlHeader, e);
         }
       }
       maxAge = tmp;
@@ -951,7 +948,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
-    log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
+    if (log.isDebugEnabled()) {
+      log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
+    }
     return requestParams;
   }
 

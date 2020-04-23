@@ -85,6 +85,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     cluster.deleteAllCollections();
     cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
         "{}".getBytes(StandardCharsets.UTF_8), true);
+    // remove default policy
+    String commands =  "{set-cluster-policy : []}";
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
   }
 
   public void testCreateCollection() throws Exception  {

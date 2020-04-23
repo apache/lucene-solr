@@ -440,7 +440,7 @@ public class Grouping {
     try {
       searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; {}", query, x.getMessage());
       qr.setPartialResults(true);
     }
   }

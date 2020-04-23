@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.SortFieldProvider;
 
 /**
  * Defines an ordering for documents within an index
@@ -57,69 +58,71 @@ public interface SortOrder {
   }
 
   /**
-   * Returns an {@link IndexSorter} used for sorting index segments by this SortOrder.
+   * Returns an {@link IndexSorter} used for sorting index segments by this SortField.
    *
-   * If the SortOrder cannot be used for index sorting (for example, if it uses scores or
+   * If the SortField cannot be used for index sorting (for example, if it uses scores or
    * other query-dependent values) then this method should return {@code null}
    *
-   * SortOrders that implement this method should also provide an SPI-registered
-   * {@link org.apache.lucene.index.SortFieldProvider} to reconstruct the sort from
-   * the index Codec.
+   * SortFields that implement this method should also implement a companion
+   * {@link SortFieldProvider} to serialize and deserialize the sort in index segment
+   * headers
+   *
+   * @lucene.experimental
    */
-   IndexSorter getIndexSorter();
+  IndexSorter getIndexSorter();
 
-   SortOrder SCORE = new SortOrder() {
-     @Override
-     public boolean getReverse() {
-       return false;
-     }
+  SortOrder SCORE = new SortOrder() {
+    @Override
+    public boolean getReverse() {
+      return false;
+    }
 
-     @Override
-     public FieldComparator<?> getComparator(int numHits, int sortPos) {
-       return new FieldComparator.RelevanceComparator(numHits);
-     }
+    @Override
+    public FieldComparator<?> getComparator(int numHits, int sortPos) {
+      return new FieldComparator.RelevanceComparator(numHits);
+    }
 
-     @Override
-     public boolean needsScores() {
-       return true;
-     }
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
 
-     @Override
-     public IndexSorter getIndexSorter() {
-       return null;
-     }
+    @Override
+    public IndexSorter getIndexSorter() {
+      return null;
+    }
 
-     @Override
-     public String toString() {
-       return "score";
-     }
-   };
+    @Override
+    public String toString() {
+      return "score";
+    }
+  };
 
-   SortOrder DOC_ID = new SortOrder() {
-     @Override
-     public boolean getReverse() {
-       return false;
-     }
+  SortOrder DOC_ID = new SortOrder() {
+    @Override
+    public boolean getReverse() {
+      return false;
+    }
 
-     @Override
-     public FieldComparator<?> getComparator(int numHits, int sortPos) {
-       return new FieldComparator.DocComparator(numHits);
-     }
+    @Override
+    public FieldComparator<?> getComparator(int numHits, int sortPos) {
+      return new FieldComparator.DocComparator(numHits);
+    }
 
-     @Override
-     public boolean needsScores() {
-       return false;
-     }
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
 
-     @Override
-     public IndexSorter getIndexSorter() {
-       return null;
-     }
+    @Override
+    public IndexSorter getIndexSorter() {
+      return null;
+    }
 
-     @Override
-     public String toString() {
-       return "docid";
-     }
-   };
+    @Override
+    public String toString() {
+      return "docid";
+    }
+  };
 
 }

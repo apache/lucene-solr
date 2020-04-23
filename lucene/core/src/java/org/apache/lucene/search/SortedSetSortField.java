@@ -77,7 +77,7 @@ public class SortedSetSortField extends SortField {
   public static final class Provider extends SortFieldProvider {
 
     /** The name this provider is registered under */
-    public static final String NAME = "sortedSetField";
+    public static final String NAME = "SortedSetSortField";
 
     /** Creates a new Provider */
     public Provider() {
@@ -85,7 +85,7 @@ public class SortedSetSortField extends SortField {
     }
 
     @Override
-    public SortField loadSortField(DataInput in) throws IOException {
+    public SortField readSortField(DataInput in) throws IOException {
       SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
       int missingValue = in.readInt();
       if (missingValue == 1) {
@@ -95,6 +95,12 @@ public class SortedSetSortField extends SortField {
         sf.setMissingValue(SortField.STRING_LAST);
       }
       return sf;
+    }
+
+    @Override
+    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+      assert sf instanceof SortedSetSortField;
+      ((SortedSetSortField)sf).serialize(out);
     }
   }
 
@@ -185,6 +191,6 @@ public class SortedSetSortField extends SortField {
 
   @Override
   public IndexSorter getIndexSorter() {
-    return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, this::getValues, this::serialize);
+    return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, this::getValues);
   }
 }

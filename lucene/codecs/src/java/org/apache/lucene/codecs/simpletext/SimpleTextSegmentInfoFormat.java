@@ -179,7 +179,8 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
         assert StringHelper.startsWith(scratch.get(), SI_SORT_BYTES);
         BytesRef serializedSort = SimpleTextUtil.fromBytesRefString(readString(SI_SORT_BYTES.length, scratch));
         final ByteArrayDataInput bytes = new ByteArrayDataInput(serializedSort.bytes, serializedSort.offset, serializedSort.length);
-        sortField[i] = SortFieldProvider.forName(provider).loadSortField(bytes);
+        sortField[i] = SortFieldProvider.forName(provider).readSortField(bytes);
+        assert bytes.eof();
       }
       Sort indexSort = sortField.length == 0 ? null : new Sort(sortField);
 
@@ -299,7 +300,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
 
         SimpleTextUtil.write(output, SI_SORT_BYTES);
         BytesRefOutput b = new BytesRefOutput();
-        sorter.serialize(b);
+        SortFieldProvider.write(sortField, b);
         SimpleTextUtil.write(output, b.bytes.get().toString(), scratch);
         SimpleTextUtil.writeNewline(output);
       }
@@ -313,12 +314,12 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
     final BytesRefBuilder bytes = new BytesRefBuilder();
 
     @Override
-    public void writeByte(byte b) throws IOException {
+    public void writeByte(byte b) {
       bytes.append(b);
     }
 
     @Override
-    public void writeBytes(byte[] b, int offset, int length) throws IOException {
+    public void writeBytes(byte[] b, int offset, int length) {
       bytes.append(b, offset, length);
     }
   }

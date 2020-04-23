@@ -130,7 +130,7 @@ public class SortField implements SortOrder {
   public static final class Provider extends SortFieldProvider {
 
     /** The name this Provider is registered under */
-    public static final String NAME = "field";
+    public static final String NAME = "SortField";
 
     /** Creates a new Provider */
     public Provider() {
@@ -138,7 +138,7 @@ public class SortField implements SortOrder {
     }
 
     @Override
-    public SortField loadSortField(DataInput in) throws IOException {
+    public SortField readSortField(DataInput in) throws IOException {
       SortField sf = new SortField(in.readString(), readType(in), in.readInt() == 1);
       if (in.readInt() == 1) {
         // missing object
@@ -169,6 +169,11 @@ public class SortField implements SortOrder {
         }
       }
       return sf;
+    }
+
+    @Override
+    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+      sf.serialize(out);
     }
   }
 
@@ -485,15 +490,15 @@ public class SortField implements SortOrder {
   public IndexSorter getIndexSorter() {
     switch (type) {
       case STRING:
-        return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, reader -> DocValues.getSorted(reader, field), this::serialize);
+        return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, reader -> DocValues.getSorted(reader, field));
       case INT:
-        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, reader -> DocValues.getNumeric(reader, field));
       case LONG:
-        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, reader -> DocValues.getNumeric(reader, field));
       case DOUBLE:
-        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, reader -> DocValues.getNumeric(reader, field));
       case FLOAT:
-        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, reader -> DocValues.getNumeric(reader, field), this::serialize);
+        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, reader -> DocValues.getNumeric(reader, field));
       default: return null;
     }
   }

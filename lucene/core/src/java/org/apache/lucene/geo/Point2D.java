@@ -19,6 +19,8 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues;
 
+import static org.apache.lucene.geo.GeoUtils.orient;
+
 /**
  * 2D point implementation containing geo spatial logic.
  */
@@ -66,15 +68,40 @@ final class Point2D implements Component2D {
   }
 
   @Override
-  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                             double ax, double ay, double bx, double by, double cx, double cy) {
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      return contains(ax, ay) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
-    }
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double aX, double aY, double bX, double bY) {
+    return Component2D.containsPoint(x, y, minX, maxX, minY, maxY) &&
+           orient(aX, aY, bX, bY, x, y) == 0;
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY);
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                              double aX, double aY, double bX, double bY) {
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+    return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                   double aX, double aY, boolean ab, double bX, double bY) {
+    // can be improved?
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
   }
 
   @Override
