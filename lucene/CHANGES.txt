@@ -129,6 +129,9 @@ API Changes
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
 
+* LUCENE-9330: SortFields are now responsible for writing themselves into index headers if they
+  are used as index sorts.  (Alan Woodward, Uwe Schindler, Adrien Grand)
+
 New Features
 ---------------------
 (No changes)
