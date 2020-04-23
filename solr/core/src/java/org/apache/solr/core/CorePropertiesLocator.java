@@ -109,9 +109,7 @@ public class CorePropertiesLocator implements CoresLocator {
       try {
         Files.deleteIfExists(propfile);
       } catch (IOException e) {
-        if (log.isWarnEnabled()) {
-          log.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
-        }
+        log.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
       }
     }
   }
@@ -198,7 +196,7 @@ public class CorePropertiesLocator implements CoresLocator {
       return ret;
     }
     catch (IOException e) {
-      log.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
+      log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
       return null;
     }
 

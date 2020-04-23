@@ -1990,7 +1990,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (doWait) {
       synchronized(this) {
         while(true) {
-
           if (tragedy.get() != null) {
             throw new IllegalStateException("this writer hit an unrecoverable error; cannot complete forceMerge", tragedy.get());
           }
@@ -2007,10 +2006,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
           }
 
-          if (maxNumSegmentsMergesPending())
+          if (maxNumSegmentsMergesPending()) {
+            testPoint("forceMergeBeforeWait");
             doWait();
-          else
+          } else {
             break;
+          }
         }
       }
 
@@ -2069,7 +2070,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    mergeScheduler.merge(this, MergeTrigger.EXPLICIT, newMergesFound);
+    mergeScheduler.merge(this, MergeTrigger.EXPLICIT);
 
     if (spec != null && doWait) {
       final int numMerges = spec.merges.size();
@@ -2151,8 +2152,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    boolean newMergesFound = updatePendingMerges(mergePolicy, trigger, maxNumSegments);
-    mergeScheduler.merge(this, trigger, newMergesFound);
+    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments)) {
+      mergeScheduler.merge(this, trigger);
+    }
   }
 
   private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
@@ -2533,7 +2535,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Give merge scheduler last chance to run, in case
     // any pending merges are waiting. We can't hold IW's lock
     // when going into merge because it can lead to deadlock.
-    mergeScheduler.merge(this, MergeTrigger.CLOSING, false);
+    mergeScheduler.merge(this, MergeTrigger.CLOSING);
 
     synchronized (this) {
       ensureOpen(false);
@@ -3472,7 +3474,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   @SuppressWarnings("try")
-  private final void finishCommit() throws IOException {
+  private void finishCommit() throws IOException {
 
     boolean commitCompleted = false;
     String committedSegmentsFileName = null;
@@ -4377,9 +4379,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
   private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
+    testPoint("mergeMiddleStart");
     merge.checkAborted();
 
-    Directory mergeDirectory = config.getMergeScheduler().wrapForMerge(merge, directory);
+    Directory mergeDirectory = mergeScheduler.wrapForMerge(merge, directory);
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getStoreMergeInfo());

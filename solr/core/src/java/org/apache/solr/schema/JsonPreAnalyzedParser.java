@@ -178,17 +178,13 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             FlagsAttribute flags = parent.addAttribute(FlagsAttribute.class);
             flags.setFlags(f);
           } catch (NumberFormatException nfe) {
-            if (log.isWarnEnabled()) {
-              log.warn("Invalid {} attribute, skipped: '{}'", FLAGS_KEY, e.getValue());
-            }
+            log.warn("Invalid {} attribute, skipped: '{}'", FLAGS_KEY, e.getValue());
           }
         } else if (key.equals(TYPE_KEY)) {
           TypeAttribute tattr = parent.addAttribute(TypeAttribute.class);
           tattr.setType(String.valueOf(e.getValue()));
         } else {
-          if (log.isWarnEnabled()) {
-            log.warn("Unknown attribute, skipped: {} = {}", e.getKey(), e.getValue());
-          }
+          log.warn("Unknown attribute, skipped: {} = {}", e.getKey(), e.getValue());
         }
       }
       // handle offset attr

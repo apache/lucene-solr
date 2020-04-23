@@ -259,9 +259,7 @@ public class PluginBag<T> implements AutoCloseable {
   void setDefault(String def) {
     if (!registry.containsKey(def)) return;
     if (this.def != null) {
-      if (log.isWarnEnabled()) {
-        log.warn("Multiple defaults for : {}", meta.getCleanTag());
-      }
+      log.warn("Multiple defaults for : {}", meta.getCleanTag());
     }
     this.def = def;
   }
@@ -300,9 +298,7 @@ public class PluginBag<T> implements AutoCloseable {
       if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
       PluginHolder<T> old = put(name, o);
       if (old != null) {
-        if (log.isWarnEnabled()) {
-          log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
-        }
+        log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
       }
     }
     if (infos.size() > 0) { // Aggregate logging
@@ -457,7 +453,7 @@ public class PluginBag<T> implements AutoCloseable {
     private synchronized boolean createInst() {
       if (lazyInst != null) return false;
       if (log.isInfoEnabled()) {
-        log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo.toString());
+        log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo);
       }
       if (resourceLoader instanceof MemClassLoader) {
         MemClassLoader loader = (MemClassLoader) resourceLoader;
