@@ -70,10 +70,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   SpecialSlotAcc allBucketsAcc;  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
 
-  // nocommit: needs comments explaining purpose
-  // nocommit: can we factor this down into only the processors that need it? (the ones that sweep)
-  protected final CollectSlotAccMappingAware slotAccMapper = new FacetFieldProcessorSlotAccMapper(this);
-
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
@@ -784,7 +780,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
-  // nocommit: needs jdocs
+  /**
+   * Simple {@link CollectSlotAccMappingAware} that receives notifications of {@link SlotAcc}
+   * replacements, and modifies its associated {@link FacetFieldProcessor} if necessary.
+   */
   static class FacetFieldProcessorSlotAccMapper implements CollectSlotAccMappingAware {
 
     private final FacetFieldProcessor p;
@@ -793,6 +792,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       this.p = p;
     }
 
+    /**
+     * sortAcc reference needs to be replaced iff the existing sortAcc {@link SlotAcc}
+     * has been swapped out.
+     */
     @Override
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       if (toAcc != fromAcc && p.sortAcc == fromAcc) {
