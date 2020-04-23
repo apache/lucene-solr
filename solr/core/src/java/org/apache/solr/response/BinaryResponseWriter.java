@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -164,7 +165,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      List l = new ArrayList(3);
+      List l = new ArrayList(4);
       l.add((long) ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
       
@@ -173,6 +174,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         maxScore = ctx.getDocList().maxScore();
       }
       l.add(maxScore);
+      //nocommit: tflobbe: this can be a number and be the index in an enum
+      l.add(ctx.getDocList().matchesRelation() == Relation.EQUAL_TO);
       codec.writeArray(l);
       
       // this is a seprate function so that streaming responses can use just that part
