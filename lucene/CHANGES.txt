@@ -115,6 +115,8 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+* LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
