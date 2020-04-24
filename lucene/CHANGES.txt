@@ -56,6 +56,8 @@ API Changes
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
 
+* LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -130,6 +132,8 @@ API Changes
 
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
+
+* LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
 
 * LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
   interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
@@ -224,6 +228,9 @@ Other
 
 * LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
   Mike McCandless)
+
+* LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
+  Adrien Grand)
 
 ======================= Lucene 8.5.1 =======================
 
