@@ -30,7 +30,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
@@ -198,7 +197,6 @@ public class  TestDemoExpressions extends LuceneTestCase {
       }
       sb.append("x" + i);
       bindings.add("x" + i, DoubleValuesSource.SCORES);
-      bindings.add(new SortField("x" + i, SortField.Type.SCORE));
     }
     
     Expression expr = JavascriptCompiler.compile(sb.toString());
