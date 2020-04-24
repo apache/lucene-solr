@@ -135,6 +135,10 @@ API Changes
 
 * LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
 
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
+
 New Features
 ---------------------
 (No changes)

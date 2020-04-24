@@ -955,7 +955,7 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         cms = new ConcurrentMergeScheduler() {
             @Override
-            protected synchronized boolean maybeStall(IndexWriter writer) {
+            protected synchronized boolean maybeStall(MergeSource mergeSource) {
               return true;
             }
           };
