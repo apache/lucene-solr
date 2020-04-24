@@ -251,7 +251,9 @@ public class TimeRoutedAlias extends RoutedAlias {
     final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {
       if (this.parsedCollectionsAliases != null) {
-        log.debug("Observing possibly updated alias: {}", getAliasName());
+        if (log.isDebugEnabled()) {
+          log.debug("Observing possibly updated alias: {}", getAliasName());
+        }
       }
       this.parsedCollectionsDesc = parseCollections(aliases);
       this.parsedCollectionsAliases = aliases;
@@ -567,13 +569,17 @@ public class TimeRoutedAlias extends RoutedAlias {
       if (colInstant.isBefore(delBefore) || colInstant.equals(delBefore)) {
         if (log.isDebugEnabled()) { // don't perform formatting unless debugging
           assert dtf != null;
-          log.debug("{} is equal to or before {} deletions may be required", dtf.format(colInstant), dtf.format(delBefore));
+          if (log.isDebugEnabled()) {
+            log.debug("{} is equal to or before {} deletions may be required", dtf.format(colInstant), dtf.format(delBefore));
+          }
         }
         break;
       } else {
         if (log.isDebugEnabled()) { // don't perform formatting unless debugging
           assert dtf != null;
-          log.debug("{} is not before {} and will be retained", dtf.format(colInstant), dtf.format(delBefore));
+          if (log.isDebugEnabled()) {
+            log.debug("{} is not before {} and will be retained", dtf.format(colInstant), dtf.format(delBefore));
+          }
         }
       }
     }

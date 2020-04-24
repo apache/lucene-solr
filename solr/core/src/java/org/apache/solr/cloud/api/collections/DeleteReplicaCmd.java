@@ -71,7 +71,9 @@ public class DeleteReplicaCmd implements Cmd {
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
           throws KeeperException, InterruptedException {
-    log.debug("deleteReplica() : {}", Utils.toJSONString(message));
+    if (log.isDebugEnabled()) {
+      log.debug("deleteReplica() : {}", Utils.toJSONString(message));
+    }
     boolean parallel = message.getBool("parallel", false);
 
     //If a count is specified the strategy needs be different
