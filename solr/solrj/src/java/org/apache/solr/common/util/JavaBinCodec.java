@@ -588,10 +588,14 @@ public class JavaBinCodec implements PushWriter {
 
   public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
     SolrDocumentList solrDocs = new SolrDocumentList();
-    List list = (List) readVal(dis);
+    @SuppressWarnings("unchecked")
+    List<Object> list = (List<Object>) readVal(dis);
     solrDocs.setNumFound((Long) list.get(0));
     solrDocs.setStart((Long) list.get(1));
     solrDocs.setMaxScore((Float) list.get(2));
+    if (list.size() > 3) { //needed for back compatibility
+      solrDocs.setExactHitCount((Boolean) list.get(3));
+    }
 
     @SuppressWarnings("unchecked")
     List<SolrDocument> l = (List<SolrDocument>) readVal(dis);
@@ -602,10 +606,11 @@ public class JavaBinCodec implements PushWriter {
   public void writeSolrDocumentList(SolrDocumentList docs)
           throws IOException {
     writeTag(SOLRDOCLST);
-    List<Number> l = new ArrayList<>(3);
+    List<Object> l = new ArrayList<>(4);
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
+    l.add(docs.isExactHitCount());
     writeArray(l);
     writeArray(docs);
   }
