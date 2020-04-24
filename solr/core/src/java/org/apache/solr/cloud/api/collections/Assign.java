@@ -394,9 +394,14 @@ public class Assign {
       throw new AssignmentException("Error getting replica locations : " + e.getMessage(), e);
     } finally {
       if (log.isTraceEnabled()) {
-        if (replicaPositions != null)
-          log.trace("REPLICA_POSITIONS: " + Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
-        log.trace("AUTOSCALING_CONF: " + Utils.toJSONString(autoScalingConfig));
+        if (replicaPositions != null) {
+          if (log.isTraceEnabled()) {
+            log.trace("REPLICA_POSITIONS: {}", Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
+          }
+        }
+        if (log.isTraceEnabled()) {
+          log.trace("AUTOSCALING_CONF: {}", Utils.toJSONString(autoScalingConfig));
+        }
       }
     }
   }

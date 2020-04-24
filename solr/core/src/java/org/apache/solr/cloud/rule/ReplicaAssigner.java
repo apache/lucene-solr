@@ -381,7 +381,7 @@ public class ReplicaAssigner {
         if (context.exception != null) {
           failedNodes.put(node, context);
           participatingLiveNodes.remove(node);
-          log.warn("Not all tags were obtained from node " + node, context.exception);
+          log.warn("Not all tags were obtained from node {}", node, context.exception);
           context.exception = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Not all tags were obtained from node " + node);
         } else {
