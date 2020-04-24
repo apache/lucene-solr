@@ -131,6 +131,10 @@ API Changes
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
 
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
+
 New Features
 ---------------------
 (No changes)
