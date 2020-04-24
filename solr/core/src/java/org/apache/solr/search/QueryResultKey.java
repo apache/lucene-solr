@@ -22,8 +22,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.ListIterator;
+import java.util.stream.Collectors;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
  *
@@ -47,16 +50,17 @@ public final class QueryResultKey implements Accountable {
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
     this.query = query.toCacheKey();
     this.sort = sort;
-    this.filters = filters;
     this.nc_flags = nc_flags;
 
-    int h = query.hashCode();
+    int h = this.query.hashCode();
 
     if (filters != null) {
-      for (Query filt : filters)
-        // NOTE: simple summation used here so keys with the same filters but in
-        // different orders get the same hashCode
-        h += filt.hashCode();
+      this.filters = filters.stream().map(Query::toCacheKey).collect(Collectors.toList());
+      // NOTE: simple summation used here so keys with the same filters but in
+      // different orders get the same hashCode
+      h += filters.stream().mapToInt(Query::hashCode).sum();
+    } else {
+      this.filters = null;
     }
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
@@ -71,8 +75,8 @@ public final class QueryResultKey implements Accountable {
     ramBytesUsed =
         BASE_RAM_BYTES_USED +
         ramSfields +
-        RamUsageEstimator.sizeOfObject(query, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+        RamUsageEstimator.sizeOfObject(this.query, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(this.filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
