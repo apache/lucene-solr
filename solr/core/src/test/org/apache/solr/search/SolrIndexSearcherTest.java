@@ -22,7 +22,6 @@ import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 import java.io.IOException;
 
@@ -71,6 +70,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = new QueryCommand();
       cmd.setMinExactHits(1);
+      cmd.setLen(1);
       cmd.setQuery(new TermQuery(new Term("field2_s", "1")));
       QueryResult qr = new QueryResult();
       searcher.search(qr, cmd);
@@ -127,7 +127,6 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
-  @Ignore("see https://github.com/apache/lucene-solr/pull/1448")
   public void testMinExactHitsMoreRows() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = new QueryCommand();
