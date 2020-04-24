@@ -31,9 +31,8 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
 final class ExpressionValueSource extends DoubleValuesSource {
-  final DoubleValuesSource variables[];
+  final DoubleValuesSource[] variables;
   final Expression expression;
   final boolean needsScores;
 

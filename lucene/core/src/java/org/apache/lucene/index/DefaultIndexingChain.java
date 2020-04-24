@@ -89,7 +89,7 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash = new FreqProxTermsWriter(docWriter, termVectorsWriter);
   }
 
-  private LeafReader getDocValuesLeafReader(int maxDoc) {
+  private LeafReader getDocValuesLeafReader() {
     return new DocValuesLeafReader() {
       @Override
       public NumericDocValues getNumericDocValues(String field) throws IOException {
@@ -156,10 +156,6 @@ final class DefaultIndexingChain extends DocConsumer {
         return fieldInfos.finish();
       }
 
-      @Override
-      public int maxDoc() {
-        return maxDoc;
-      }
     };
   }
 
@@ -169,7 +165,7 @@ final class DefaultIndexingChain extends DocConsumer {
       return null;
     }
 
-    LeafReader docValuesReader = getDocValuesLeafReader(state.segmentInfo.maxDoc());
+    LeafReader docValuesReader = getDocValuesLeafReader();
 
     List<IndexSorter.DocComparator> comparators = new ArrayList<>();
     for (int i = 0; i < indexSort.getSort().length; i++) {
@@ -178,7 +174,7 @@ final class DefaultIndexingChain extends DocConsumer {
       if (sorter == null) {
         throw new UnsupportedOperationException("Cannot sort index using sort field " + sortField);
       }
-      comparators.add(sorter.getDocComparator(docValuesReader));
+      comparators.add(sorter.getDocComparator(docValuesReader, state.segmentInfo.maxDoc()));
     }
     Sorter sorter = new Sorter(indexSort);
     // returns null if the documents are already sorted
@@ -640,12 +636,7 @@ final class DefaultIndexingChain extends DocConsumer {
         public FieldInfos getFieldInfos() {
           throw new UnsupportedOperationException();
         }
-
-        @Override
-        public int maxDoc() {
-          return 0;
-        }
-      });
+      }, 0);
     }
   }
 

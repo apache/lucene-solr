@@ -23,62 +23,67 @@ import org.apache.lucene.util.Bits;
 
 abstract class DocValuesLeafReader extends LeafReader {
   @Override
-  public CacheHelper getCoreCacheHelper() {
+  public final CacheHelper getCoreCacheHelper() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public final Terms terms(String field) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public NumericDocValues getNormValues(String field) throws IOException {
+  public final NumericDocValues getNormValues(String field) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Bits getLiveDocs() {
+  public final Bits getLiveDocs() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public PointValues getPointValues(String field) throws IOException {
+  public final PointValues getPointValues(String field) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void checkIntegrity() throws IOException {
+  public final void checkIntegrity() throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public LeafMetaData getMetaData() {
+  public final LeafMetaData getMetaData() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public final Fields getTermVectors(int docID) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public int numDocs() {
+  public final int numDocs() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
+  public final int maxDoc() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected void doClose() throws IOException {
+  public final void document(int docID, StoredFieldVisitor visitor) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public CacheHelper getReaderCacheHelper() {
+  protected final void doClose() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public final CacheHelper getReaderCacheHelper() {
     throw new UnsupportedOperationException();
   }
 }

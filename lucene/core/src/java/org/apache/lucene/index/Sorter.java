@@ -206,7 +206,7 @@ final class Sorter {
       if (sorter == null) {
         throw new IllegalArgumentException("Cannot use sortfield + "  + fields[i] + " to sort indexes");
       }
-      comparators[i] = sorter.getDocComparator(reader);
+      comparators[i] = sorter.getDocComparator(reader, reader.maxDoc());
     }
     return sort(reader.maxDoc(), comparators);
   }
