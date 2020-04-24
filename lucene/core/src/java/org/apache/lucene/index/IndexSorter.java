@@ -75,6 +75,7 @@ public interface IndexSorter {
    * than merged segments
    *
    * @param reader the Reader to sort
+   * @param maxDoc the number of documents in the Reader
    */
   DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException;
 
