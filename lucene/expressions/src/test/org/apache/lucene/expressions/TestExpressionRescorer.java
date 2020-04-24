@@ -25,10 +25,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -95,8 +95,8 @@ public class TestExpressionRescorer extends LuceneTestCase {
 
     Expression e = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("popularity", SortField.Type.INT));
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
+    bindings.add("_score", DoubleValuesSource.SCORES);
     Rescorer rescorer = e.getRescorer(bindings);
 
     hits = rescorer.rescore(searcher, hits, 10);

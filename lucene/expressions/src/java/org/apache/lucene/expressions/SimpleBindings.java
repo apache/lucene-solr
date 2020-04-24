@@ -27,16 +27,16 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
- * Simple class that binds expression variable names to {@link SortField}s
+ * Simple class that binds expression variable names to {@link DoubleValuesSource}s
  * or other {@link Expression}s.
  * <p>
  * Example usage:
  * <pre class="prettyprint">
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
- *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   bindings.add("_score", DoubleValuesSource.SCORES);
  *   // integer NumericDocValues field
- *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *   bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);
  *   
@@ -48,17 +48,21 @@ import org.apache.lucene.search.SortField;
  */
 public final class SimpleBindings extends Bindings {
 
-  final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
-  
+  private final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
+
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
   
   /** 
    * Adds a SortField to the bindings.
-   * <p>
-   * This can be used to reference a DocValuesField, a field from
-   * FieldCache, the document's score, etc. 
+   *
+   * @see DoubleValuesSource#fromIntField(String)
+   * @see DoubleValuesSource#fromLongField(String)
+   * @see DoubleValuesSource#fromFloatField(String)
+   * @see DoubleValuesSource#fromDoubleField(String)
+   * @see DoubleValuesSource#SCORES
    */
+  @Deprecated
   public void add(SortField sortField) {
     map.put(sortField.getField(), bindings -> fromSortField(sortField));
   }
@@ -67,7 +71,7 @@ public final class SimpleBindings extends Bindings {
    * Bind a {@link DoubleValuesSource} directly to the given name.
    */
   public void add(String name, DoubleValuesSource source) { map.put(name, bindings -> source); }
-  
+
   /** 
    * Adds an Expression to the bindings.
    * <p>

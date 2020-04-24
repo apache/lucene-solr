@@ -46,7 +46,6 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -127,8 +126,8 @@ public class DistanceFacetsExample implements Closeable {
       throw new RuntimeException(pe);
     }
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
-    bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
+    bindings.add("latitude", DoubleValuesSource.fromDoubleField("latitude"));
+    bindings.add("longitude", DoubleValuesSource.fromDoubleField("longitude"));
 
     return distance.getDoubleValuesSource(bindings);
   }
