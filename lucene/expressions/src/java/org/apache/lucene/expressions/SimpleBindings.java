@@ -107,8 +107,8 @@ public final class SimpleBindings extends Bindings {
    * @throws IllegalArgumentException if the bindings is inconsistent
    */
   public void validate() {
-    for (String origin : map.keySet()) {
-      map.get(origin).apply(new CycleDetectionBindings(origin));
+    for (Map.Entry<String, Function<Bindings, DoubleValuesSource>> origin : map.entrySet()) {
+      origin.getValue().apply(new CycleDetectionBindings(origin.getKey()));
     }
   }
 
