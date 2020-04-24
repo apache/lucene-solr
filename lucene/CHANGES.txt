@@ -56,6 +56,8 @@ API Changes
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
 
+* LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -115,6 +117,11 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+* LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-9267: Update MatchingQueries documentation to correct
+  time unit. (Pierre-Luc Perron via Mike Drob)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
@@ -128,6 +135,12 @@ API Changes
 
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
+
+* LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
+
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
 
 New Features
 ---------------------
@@ -148,6 +161,9 @@ Improvements
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
   snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+
+* LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
+  (Tomás Fernández Löbbe)
 
 Optimizations
 ---------------------
@@ -215,6 +231,9 @@ Other
 
 * LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
   Mike McCandless)
+
+* LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
+  Adrien Grand)
 
 ======================= Lucene 8.5.1 =======================
 

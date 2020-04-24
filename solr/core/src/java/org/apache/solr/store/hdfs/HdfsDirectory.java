@@ -274,7 +274,7 @@ public class HdfsDirectory extends BaseDirectory {
   @Override
   public void sync(Collection<String> names) throws IOException {
     if (log.isDebugEnabled()) {
-      log.debug("Sync called on {}", Arrays.toString(names.toArray()));
+      log.debug("Sync called on {}", Arrays.toString(names.toArray())); // logok
     }
   }
   

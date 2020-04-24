@@ -57,13 +57,13 @@ class ValidateLogCallsTask extends DefaultTask {
   Set<String> dirsToCheck = ["solr/core/src/java/org/apache/solr/analysis"
                              , "solr/core/src/java/org/apache/solr/api"
                              , "solr/core/src/java/org/apache/solr/client"
-//  , "solr/core/src/java/org/apache/solr/cloud"
-//  , "solr/core/src/java/org/apache/solr/cloud/api"
-//  , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
-//  , "solr/core/src/java/org/apache/solr/cloud/cdcr"
-//  , "solr/core/src/java/org/apache/solr/cloud/hdfs"
-//  , "solr/core/src/java/org/apache/solr/cloud/overseer"
-//  , "solr/core/src/java/org/apache/solr/cloud/rule"
+//  , "solr/core/src/java/org/apache/solr/cloud" // 120
+                             , "solr/core/src/java/org/apache/solr/cloud/api" // 107
+//                             , "solr/core/src/java/org/apache/solr/cloud/autoscaling" // 120
+                             , "solr/core/src/java/org/apache/solr/cloud/cdcr"
+                             , "solr/core/src/java/org/apache/solr/cloud/hdfs"
+                             , "solr/core/src/java/org/apache/solr/cloud/overseer"
+                             , "solr/core/src/java/org/apache/solr/cloud/rule"
                              , "solr/core/src/java/org/apache/solr/core"
                              , "solr/core/src/java/org/apache/solr/filestore"
                              , "solr/core/src/java/org/apache/solr/handler/admin"
@@ -106,7 +106,7 @@ class ValidateLogCallsTask extends DefaultTask {
   }
 
   // We have a log.someting line, check for patterns we're not fond of.
-  def checkLogLine(File file, String line, int lineNumber, String prevLine) {
+  def checkLogLine(File file, String line, int lineNumber, String previous) {
     // If the line has been explicitly checked, skip it.
     if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
       return
@@ -135,45 +135,42 @@ class ValidateLogCallsTask extends DefaultTask {
     // really care about checking for awkward constructions for WARN and above, so report a violation if the previous
     // line contains an if for those levels.
     boolean violation = false
-    boolean dontCare = level.equals("fatal") || level.equals("error") || level.equals("warn")
-    if (dontCare && prevLine.contains("is" + level + "enabled")) {
-      violation = true
-    }
-    // Always report toString()
-    if (line.contains("toString(") == true && line.contains("Arrays.toString(") == false) {
-      violation = true
-    }
+    boolean dontReportLevels = level.equals("fatal") || level.equals("error") || level.equals("warn")
+
     // There's a convention to declare a member variable for whether a level is enabled and check that rather than
-    // isDebugEnabled. So check ust plusses there too.
-    if (violation == false) {
-      if (hasParens == false && hasPlus == false) {
-        return
-      }
-      if (prevLine.replaceAll("\\s+", "").contains("if(" + level + ")")
-          && (checkPlus == false || line.contains("+") == false)) {
-        return
-      }
-      if (prevLine.replaceAll("\\s+", "").contains("if(log.is" + level + "enabled")
-          && (checkPlus == false || line.contains("+") == false)) {
-        return
-      }
+    // isDebugEnabled so we need to check both.
+    String prevLine = previous.replaceAll("\\s+", "").toLowerCase()
+    boolean prevLineNotIf = ((prevLine.contains("if(log.is" + level + "enabled") == false
+        && prevLine.contains("if(" + level + ")") == false))
 
-
-      if (dontCare && (checkPlus == false || hasPlus == false)) {
-        return
+    if (dontReportLevels) {
+      // Only look (optionally) for plusses if surrounded by an if isLevelEnabled clause
+      // Otherwise, we're always OK with logging the message.
+      if (hasPlus && checkPlus) {
+        violation = true
+      }
+    } else { // less severe than warn, check for parens and plusses and correct
+      if (hasParens && prevLineNotIf) {
+        violation = true
+      }
+      if (hasPlus && checkPlus) {
+        violation = true
+      }
+      if (hasPlus && prevLineNotIf) {
+        violation = true
       }
     }
-
-    reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s', level: '%s' checkPlus '%s' hasParens '%s' errorDontCare '%s' hasPlus '%s'"
-        , file.name
-        , lineNumber, line
-        , file.getParentFile().getAbsolutePath()
-        , stripped //nocommit, debugging.
-        , level
-        , checkPlus
-        , hasParens
-        , dontCare
-        , hasPlus))
+    // Always report toString(). Note, this over-reports constructs like Arrays.toString(something), but just add //logOK.
+    if (line.contains("toString(") == true) {
+      violation = true
+    }
+    if (violation) {
+      reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s'"
+          , file.name
+          , lineNumber, line
+          , file.getParentFile().getAbsolutePath()
+          , stripped))
+    }
   }
 
 
