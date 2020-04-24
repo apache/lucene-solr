@@ -19,16 +19,16 @@ For reference, JRE major versions with their corresponding Unicode versions:
  * Java 8, Unicode 6.2
  * Java 9, Unicode 8.0
 
-In general, whether or not you need to re-index largely depends upon the data that
+In general, whether you need to re-index largely depends upon the data that
 you are searching, and what was changed in any given Unicode version. For example, 
-if you are completely sure that your content is limited to the "Basic Latin" range 
+if you are completely sure your content is limited to the "Basic Latin" range
 of Unicode, you can safely ignore this. 
 
 ## Special Notes: LUCENE 2.9 TO 3.0, JAVA 1.4 TO JAVA 5 TRANSITION
 
 * `StandardAnalyzer` will return the same results under Java 5 as it did under 
 Java 1.4. This is because it is largely independent of the runtime JRE for
-Unicode support, (with the exception of lowercasing).  However, no changes to 
+Unicode support, (except for lowercasing).  However, no changes to
 casing have occurred in Unicode 4.0 that affect StandardAnalyzer, so if you are 
 using this Analyzer you are NOT affected.
 
