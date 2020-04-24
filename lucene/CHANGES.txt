@@ -131,6 +131,8 @@ API Changes
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
 
+* LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
+
 New Features
 ---------------------
 (No changes)
