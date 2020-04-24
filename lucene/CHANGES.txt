@@ -56,6 +56,8 @@ API Changes
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
 
+* LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across

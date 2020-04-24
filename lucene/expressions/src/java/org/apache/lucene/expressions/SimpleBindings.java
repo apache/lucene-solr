@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.lucene.search.DoubleValuesSource;
-import org.apache.lucene.search.SortField;
 
 /**
  * Simple class that binds expression variable names to {@link DoubleValuesSource}s
@@ -52,20 +51,6 @@ public final class SimpleBindings extends Bindings {
 
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
-  
-  /** 
-   * Adds a SortField to the bindings.
-   *
-   * @see DoubleValuesSource#fromIntField(String)
-   * @see DoubleValuesSource#fromLongField(String)
-   * @see DoubleValuesSource#fromFloatField(String)
-   * @see DoubleValuesSource#fromDoubleField(String)
-   * @see DoubleValuesSource#SCORES
-   */
-  @Deprecated
-  public void add(SortField sortField) {
-    map.put(sortField.getField(), bindings -> fromSortField(sortField));
-  }
 
   /**
    * Bind a {@link DoubleValuesSource} directly to the given name.
@@ -79,23 +64,6 @@ public final class SimpleBindings extends Bindings {
    */
   public void add(String name, Expression expression) {
     map.put(name, expression::getDoubleValuesSource);
-  }
-
-  private DoubleValuesSource fromSortField(SortField field) {
-    switch(field.getType()) {
-      case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
-      case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
-      case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
-      case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
-      case SCORE:
-        return DoubleValuesSource.SCORES;
-      default:
-        throw new UnsupportedOperationException();
-    }
   }
   
   @Override
