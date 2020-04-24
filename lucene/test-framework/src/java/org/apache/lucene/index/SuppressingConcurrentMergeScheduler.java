@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.store.Directory;
-
 /** A {@link ConcurrentMergeScheduler} that ignores AlreadyClosedException. */
 public abstract class SuppressingConcurrentMergeScheduler extends ConcurrentMergeScheduler {
   @Override
