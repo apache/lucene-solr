@@ -35,7 +35,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * segments.
  *
  * Implementers must provide the following methods:
- * {@link #getDocComparator(LeafReader)} - an object that determines how documents within a segment are to be sorted
+ * {@link #getDocComparator(LeafReader,int)} - an object that determines how documents within a segment are to be sorted
  * {@link #getComparableProviders(List)} - an array of objects that return a sortable long value per document and segment
  * {@link #getProviderName()} - the SPI-registered name of a {@link SortFieldProvider} to serialize the sort
  *
@@ -76,7 +76,7 @@ public interface IndexSorter {
    *
    * @param reader the Reader to sort
    */
-  DocComparator getDocComparator(LeafReader reader) throws IOException;
+  DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException;
 
   /**
    * The SPI-registered name of a {@link SortFieldProvider} that will deserialize the parent SortField
@@ -148,9 +148,9 @@ public interface IndexSorter {
     }
 
     @Override
-    public DocComparator getDocComparator(LeafReader reader) throws IOException {
+    public DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException {
       final NumericDocValues dvs = valuesProvider.get(reader);
-      int[] values = new int[reader.maxDoc()];
+      int[] values = new int[maxDoc];
       if (this.missingValue != null) {
         Arrays.fill(values, this.missingValue);
       }
@@ -214,9 +214,9 @@ public interface IndexSorter {
     }
 
     @Override
-    public DocComparator getDocComparator(LeafReader reader) throws IOException {
+    public DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException {
       final NumericDocValues dvs = valuesProvider.get(reader);
-      long[] values = new long[reader.maxDoc()];
+      long[] values = new long[maxDoc];
       if (this.missingValue != null) {
         Arrays.fill(values, this.missingValue);
       }
@@ -280,9 +280,9 @@ public interface IndexSorter {
     }
 
     @Override
-    public DocComparator getDocComparator(LeafReader reader) throws IOException {
+    public DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException {
       final NumericDocValues dvs = valuesProvider.get(reader);
-      float[] values = new float[reader.maxDoc()];
+      float[] values = new float[maxDoc];
       if (this.missingValue != null) {
         Arrays.fill(values, this.missingValue);
       }
@@ -346,9 +346,9 @@ public interface IndexSorter {
     }
 
     @Override
-    public DocComparator getDocComparator(LeafReader reader) throws IOException {
+    public DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException {
       final NumericDocValues dvs = valuesProvider.get(reader);
-      double[] values = new double[reader.maxDoc()];
+      double[] values = new double[maxDoc];
       if (missingValue != null) {
         Arrays.fill(values, missingValue);
       }
@@ -419,7 +419,7 @@ public interface IndexSorter {
     }
 
     @Override
-    public DocComparator getDocComparator(LeafReader reader) throws IOException {
+    public DocComparator getDocComparator(LeafReader reader, int maxDoc) throws IOException {
       final SortedDocValues sorted = valuesProvider.get(reader);
       final int missingOrd;
       if (missingValue == SortField.STRING_LAST) {
@@ -428,7 +428,7 @@ public interface IndexSorter {
         missingOrd = Integer.MIN_VALUE;
       }
 
-      final int[] ords = new int[reader.maxDoc()];
+      final int[] ords = new int[maxDoc];
       Arrays.fill(ords, missingOrd);
       int docID;
       while ((docID = sorted.nextDoc()) != NO_MORE_DOCS) {
