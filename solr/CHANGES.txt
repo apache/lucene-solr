@@ -62,6 +62,8 @@ Other Changes
 
 * SOLR-14420: AuthenticationPlugin.authenticate accepts HttpServletRequest instead of ServletRequest. (Mike Drob)
 
+* SOLR-14429: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
