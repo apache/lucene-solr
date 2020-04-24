@@ -126,4 +126,15 @@ public abstract class Query {
   protected final int classHash() {
     return CLASS_NAME_HASH;
   }
+
+  /**
+   * Some Query implementations will compute and store extra fields for execution efficiency. However, when the
+   * resulting Query is used as the key in a cache, it bloats the memory requirements because the extra fields are
+   * not required for equality comparisons. Give Query and Cache objects an opportunity to collaborate and reduce
+   * the memory footprint.
+   * @return a Query that {{@link #equals(Object)}} this query. Can be the same instance or a new instance.
+   */
+  public Query toCacheKey() {
+    return this;
+  }
 }

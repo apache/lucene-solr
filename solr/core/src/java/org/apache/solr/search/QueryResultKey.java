@@ -45,7 +45,7 @@ public final class QueryResultKey implements Accountable {
 
 
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
-    this.query = query;
+    this.query = query.toCacheKey();
     this.sort = sort;
     this.filters = filters;
     this.nc_flags = nc_flags;

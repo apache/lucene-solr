@@ -324,7 +324,7 @@ public abstract class MultiTermQuery extends Query {
    * Sets the rewrite method to be used when executing the
    * query.  You can use one of the four core methods, or
    * implement your own subclass of {@link RewriteMethod}. */
-  public void setRewriteMethod(RewriteMethod method) {
+  public final void setRewriteMethod(RewriteMethod method) {
     rewriteMethod = method;
   }
 

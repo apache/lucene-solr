@@ -55,7 +55,7 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  */
 public class FuzzyQuery extends MultiTermQuery implements Accountable {
 
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(AutomatonQuery.class);
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(FuzzyQuery.class);
   
   public final static int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   public final static int defaultPrefixLength = 0;
@@ -67,10 +67,11 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
   private final boolean transpositions;
   private final int prefixLength;
   private final Term term;
-  private final int termLength;
-  private final CompiledAutomaton[] automata;
 
-  private final long ramBytesUsed;
+  // Not used in equality comparison, may not be set
+  private int termLength;
+  private CompiledAutomaton[] automata;
+  private long ramBytesUsed;
   
   /**
    * Create a new FuzzyQuery that will match terms with an edit distance 
@@ -90,7 +91,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
    */
   public FuzzyQuery(Term term, int maxEdits, int prefixLength, int maxExpansions, boolean transpositions) {
     super(term.field());
-    
+
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
@@ -100,17 +101,42 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     if (maxExpansions <= 0) {
       throw new IllegalArgumentException("maxExpansions must be positive.");
     }
-    
+
     this.term = term;
     this.maxEdits = maxEdits;
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
-    int[] codePoints = FuzzyTermsEnum.stringToUTF32(term.text());
-    this.termLength = codePoints.length;
-    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits);
+
     setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
-    this.ramBytesUsed = calculateRamBytesUsed(term, this.automata);
+    buildAutomata();
+  }
+
+  private FuzzyQuery(FuzzyQuery other) {
+    super(other.field);
+
+    this.term = other.term;
+    this.maxEdits = other.maxEdits;
+    this.prefixLength = other.prefixLength;
+    this.transpositions = other.transpositions;
+    this.maxExpansions = other.maxExpansions;
+
+    setRewriteMethod(other.rewriteMethod);
+
+    this.termLength = other.termLength;
+    this.automata = null;
+    this.ramBytesUsed = BASE_RAM_BYTES + term.ramBytesUsed();
+  }
+
+  private final void buildAutomata() {
+    if (automata == null) {
+      String text = term.text();
+      int[] codePoints = FuzzyTermsEnum.stringToUTF32(text);
+
+      this.termLength = codePoints.length;
+      this.automata = FuzzyTermsEnum.buildAutomata(text, codePoints, prefixLength, transpositions, maxEdits);
+      this.ramBytesUsed = calculateRamBytesUsed(term, automata);
+    }
   }
 
   private static long calculateRamBytesUsed(Term term, CompiledAutomaton[] automata) {
@@ -174,6 +200,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
    * Returns the compiled automata used to match terms
    */
   public CompiledAutomaton[] getAutomata() {
+    buildAutomata();
     return automata;
   }
 
@@ -183,6 +210,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
       if (maxEdits == 0 || prefixLength >= term.text().length()) {
         visitor.consumeTerms(this, term);
       } else {
+        buildAutomata();
         automata[automata.length - 1].visit(visitor, this, field);
       }
     }
@@ -193,6 +221,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
+    buildAutomata();
     return new FuzzyTermsEnum(terms, atts, getTerm(), termLength, maxEdits, automata);
   }
 
@@ -253,6 +282,11 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     } else if (!term.equals(other.term))
       return false;
     return true;
+  }
+
+  @Override
+  public FuzzyQuery toCacheKey() {
+    return new FuzzyQuery(this);
   }
 
   /**
