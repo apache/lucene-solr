@@ -383,7 +383,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
           log.warn("Delete old index directory {} failed.", dirToRmPath);
         }
       } catch (IOException ioExc) {
-        log.error("Failed to delete old directory {} due to: {}", dir.getAbsolutePath(), ioExc.toString());
+        log.error("Failed to delete old directory {} due to: ", dir.getAbsolutePath(), ioExc);
       }
     }
   }

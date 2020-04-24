@@ -115,6 +115,8 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+* LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
@@ -148,6 +150,9 @@ Improvements
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
   snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+
+* LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
+  (Tomás Fernández Löbbe)
 
 Optimizations
 ---------------------

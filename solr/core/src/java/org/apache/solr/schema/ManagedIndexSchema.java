@@ -274,10 +274,8 @@ public final class ManagedIndexSchema extends IndexSchema {
             maxWaitSecs+" seconds! Failed cores: "+failedList);
 
     } catch (InterruptedException ie) {
-      if (log.isWarnEnabled()) {
-        log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
-            , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
-      }
+      log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
+          , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
       Thread.currentThread().interrupt();
     } finally {
       if (!parallelExecutor.isShutdown())

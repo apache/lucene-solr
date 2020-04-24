@@ -499,9 +499,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      if (log.isWarnEnabled()) {
-        log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
-      }
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {

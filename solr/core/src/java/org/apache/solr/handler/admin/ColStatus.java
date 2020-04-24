@@ -210,7 +210,7 @@ public class ColStatus {
             rsp.remove("fieldInfoLegend");
           }
         } catch (SolrServerException | IOException e) {
-          log.warn("Error getting details of replica segments from " + url, e);
+          log.warn("Error getting details of replica segments from {}", url, e);
         }
       }
       if (nonCompliant.isEmpty()) {

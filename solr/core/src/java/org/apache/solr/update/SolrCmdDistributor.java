@@ -322,9 +322,8 @@ public class SolrCmdDistributor implements Closeable {
     }
     
     if (log.isDebugEnabled()) {
-      log.debug("sending update to "
-          + req.node.getUrl() + " retry:"
-          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
+      log.debug("sending update to {} retry: {} {} params {}"
+          , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
     }
     
     if (isCommit) {

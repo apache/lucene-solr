@@ -155,9 +155,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       authFilter.init(conf);
 
     } catch (ServletException e) {
-      if (log.isErrorEnabled()) {
-        log.error("Error initializing {}", getClass().getSimpleName(), e);
-      }
+      log.error("Error initializing {}", getClass().getSimpleName(), e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing " + getClass().getName() + ": "+e);
     }
   }
