@@ -48,7 +48,7 @@ import org.apache.lucene.search.SortField;
  */
 public final class SimpleBindings extends Bindings {
 
-  final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
+  private final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
 
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
