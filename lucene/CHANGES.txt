@@ -221,6 +221,9 @@ Other
 * LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
   Mike McCandless)
 
+* LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
+  Adrien Grand)
+
 ======================= Lucene 8.5.1 =======================
 
 Bug Fixes
