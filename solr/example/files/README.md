@@ -161,9 +161,7 @@ For further explanations, see the frequently asked questions at the end of the g
 If you want to adjust the browse templates for an existing collection, edit the core’s configuration
 under server/solr/files/conf/velocity.
 
+## Provenance of free images used in this example:
 
-=======
-
-* Provenance of free images used in this example:
   - Globe icon: visualpharm.com
   - Flag icons: freeflagicons.com

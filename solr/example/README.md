@@ -58,7 +58,7 @@ To add documents to the index, use bin/post, for example:
 
 For more information about this example please read...
 
- * example/solr/README.md
+ * [solr/example/README.md](./README.md)
  
 For more information about the "Solr Home" and Solr specific configuration
 
@@ -73,7 +73,7 @@ For a list of other tutorials and introductory articles.
 Notes About These Examples
 --------------------------
 
-* References to Jar Files Outside This Directory *
+### References to Jar Files Outside This Directory
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
 statements in the solrconfig.xml file to reference plugin jars outside of 
@@ -85,7 +85,7 @@ clustering component, or any other modules in "contrib", you will need to
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.
 
-* Logging *
+### Logging
 
 By default, Jetty & Solr will log to the console and logs/solr.log. This can
 be convenient when first getting started, but eventually you will want to

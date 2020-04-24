@@ -46,7 +46,9 @@ in cloud mode, do:
 
 To see all available options for starting Solr, please do:
 
+```
   bin/solr start -help
+```
 
 After starting Solr, create either a core or collection depending on whether
 Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
@@ -110,7 +112,7 @@ To add documents to the index, use bin/post.  For example:
 
 For more information about Solr examples please read...
 
- * example/README.md
+ * [example/README.md](example/README.md)
    
 For more information about the "Solr Home" and Solr specific configuration
  
@@ -126,7 +128,7 @@ or linked from "docs/index.html" in a binary distribution.
 
 Also, there are Solr clients for many programming languages, see
 
-   https://wiki.apache.org/solr/IntegratingSolr
+  * https://wiki.apache.org/solr/IntegratingSolr
 
 
 Files included in an Apache Solr binary distribution
