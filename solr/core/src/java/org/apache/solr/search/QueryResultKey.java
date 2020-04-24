@@ -22,10 +22,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
