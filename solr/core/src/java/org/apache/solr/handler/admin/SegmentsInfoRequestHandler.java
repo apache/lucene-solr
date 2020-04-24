@@ -304,7 +304,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     }
     if (withFieldInfos) {
       if (seg == null) {
-        log.debug("Skipping segment info - not available as a SegmentReader: " + segmentCommitInfo);
+        log.debug("Skipping segment info - not available as a SegmentReader: {}", segmentCommitInfo);
       } else {
         FieldInfos fis = seg.getFieldInfos();
         SimpleOrderedMap<Object> fields = new SimpleOrderedMap<>();
@@ -392,7 +392,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         fieldFlags.add("sumTotalTermFreq", terms.getSumTotalTermFreq());
       }
     } catch (Exception e) {
-      log.debug("Exception retrieving term stats for field " + fi.name, e);
+      log.debug("Exception retrieving term stats for field {}", fi.name, e);
     }
 
     // probably too much detail?

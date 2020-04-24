@@ -759,10 +759,8 @@ public class IndexSchema {
       
     for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet()) {
       if (entry.getValue() > 1 && !entry.getKey().multiValued())  {
-        if (log.isWarnEnabled()) {
-          log.warn("Field {} is not multivalued and destination for multiople {} ({})"
-              , entry.getKey().name, COPY_FIELDS, entry.getValue());
-        }
+        log.warn("Field {} is not multivalued and destination for multiople {} ({})"
+            , entry.getKey().name, COPY_FIELDS, entry.getValue());
       }
     }
   }

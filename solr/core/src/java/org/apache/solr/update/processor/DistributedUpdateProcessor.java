@@ -432,8 +432,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
               if (fetchedFromLeader instanceof DeleteUpdateCommand) {
                 if (log.isInfoEnabled()) {
-                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
-                      + " was deleted at the leader subsequently.", idBytes.utf8ToString());
+                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document was deleted at the leader subsequently."
+                      , idBytes.utf8ToString());
                 }
                 versionDelete((DeleteUpdateCommand) fetchedFromLeader);
                 return true;
@@ -558,8 +558,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // trying to index this partial update. Since a full update more recent than this partial update has succeeded,
       // we can drop the current update.
       if (log.isDebugEnabled()) {
-        log.debug("Update was applied on version: {}, but last version I have is: {}"
-            + ". Current update should be dropped. id={}", cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
+        log.debug("Update was applied on version: {}, but last version I have is: {} . Current update should be dropped. id={}"
+            , cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
       }
       return -1;
     } else if (Math.abs(lastFoundVersion) == cmd.prevVersion) {
@@ -579,10 +579,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     UpdateCommand missingUpdate = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
     if (missingUpdate instanceof DeleteUpdateCommand) {
       if (log.isInfoEnabled()) {
-        log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. "
-            + "Deleting the document here and skipping this update: Last found version: {}, was looking for: {}", cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
-        versionDelete((DeleteUpdateCommand) missingUpdate);
+        log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. Deleting the document here and skipping this update: Last found version: {}, was looking for: {}"
+            , cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
       }
+      versionDelete((DeleteUpdateCommand) missingUpdate);
       return -1;
     } else {
       assert missingUpdate instanceof AddUpdateCommand;

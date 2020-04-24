@@ -178,7 +178,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     @Override
     public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
       if (logDebug) {
-        log.debug("PRE_UPDATE {}", cmd, req);
+        log.debug("PRE_UPDATE {} {}", cmd, req);
       }
       if (next != null) next.processRollback(cmd);
 
@@ -202,9 +202,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
         final long elapsed = (long) req.getRequestTimer().getTime();
         if (elapsed >= slowUpdateThresholdMillis) {
-          if (log.isWarnEnabled()) {
-            log.warn("slow: {}", getLogStringAndClearRspToLog());
-          }
+          log.warn("slow: {}", getLogStringAndClearRspToLog());
         }
       }
     }

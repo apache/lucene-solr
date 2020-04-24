@@ -17,10 +17,7 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -274,10 +271,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    * Main authentication method that looks for correct JWT token in the Authorization header
    */
   @Override
-  public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-    HttpServletRequest request = (HttpServletRequest) servletRequest;
-    HttpServletResponse response = (HttpServletResponse) servletResponse;
-    
+  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {
@@ -320,12 +314,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
         final Principal principal = authResponse.getPrincipal();
-        HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-          @Override
-          public Principal getUserPrincipal() {
-            return principal;
-          }
-        };
+        request = wrapWithPrincipal(request, principal);
         if (!(principal instanceof JWTPrincipal)) {
           numErrors.mark();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -333,7 +322,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
         numAuthenticated.inc();
-        filterChain.doFilter(wrapper, response);
+        filterChain.doFilter(request, response);
         return true;
 
       case PASS_THROUGH:
@@ -346,9 +335,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
-        if (log.isWarnEnabled()) {
-          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
-        }
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
         numErrors.mark();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
@@ -357,9 +344,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        if (log.isWarnEnabled()) {
-          log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
-        }
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
         numWrongCredentials.inc();
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
