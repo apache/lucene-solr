@@ -299,6 +299,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   final DocumentsWriter docWriter;
   private final EventQueue eventQueue = new EventQueue(this);
+  private final MergeScheduler.MergeSource mergeSource = new IndexWriterMergeSource(this);
 
   static final class EventQueue implements Closeable {
     private volatile boolean closed;
@@ -805,7 +806,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       analyzer = config.getAnalyzer();
       mergeScheduler = config.getMergeScheduler();
-      mergeScheduler.setInfoStream(infoStream);
+      mergeScheduler.initialize(infoStream, directoryOrig);
       codec = config.getCodec();
       OpenMode mode = config.getOpenMode();
       final boolean indexExists;
@@ -2087,7 +2088,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     }
 
-    mergeScheduler.merge(this, MergeTrigger.EXPLICIT);
+    mergeScheduler.merge(mergeSource, MergeTrigger.EXPLICIT);
 
     if (spec != null && doWait) {
       final int numMerges = spec.merges.size();
@@ -2170,7 +2171,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
     if (updatePendingMerges(mergePolicy, trigger, maxNumSegments)) {
-      mergeScheduler.merge(this, trigger);
+      mergeScheduler.merge(mergeSource, trigger);
     }
   }
 
@@ -2237,7 +2238,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * 
    * @lucene.experimental
    */
-  public synchronized MergePolicy.OneMerge getNextMerge() {
+  private synchronized MergePolicy.OneMerge getNextMerge() {
     if (pendingMerges.size() == 0) {
       return null;
     } else {
@@ -2552,7 +2553,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Give merge scheduler last chance to run, in case
     // any pending merges are waiting. We can't hold IW's lock
     // when going into merge because it can lead to deadlock.
-    mergeScheduler.merge(this, MergeTrigger.CLOSING);
+    mergeScheduler.merge(mergeSource, MergeTrigger.CLOSING);
 
     synchronized (this) {
       ensureOpen(false);
@@ -3686,7 +3687,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private synchronized void ensureValidMerge(MergePolicy.OneMerge merge) {
     for(SegmentCommitInfo info : merge.segments) {
       if (!segmentInfos.contains(info)) {
-        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString(), directoryOrig);
+        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString());
       }
     }
   }
@@ -4067,7 +4068,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * 
    * @lucene.experimental
    */
-  public void merge(MergePolicy.OneMerge merge) throws IOException {
+  protected void merge(MergePolicy.OneMerge merge) throws IOException {
 
     boolean success = false;
 
@@ -4317,9 +4318,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     info.setDiagnostics(diagnostics);
   }
 
-  /** Does fininishing for a merge, which is fast but holds
+  /** Does finishing for a merge, which is fast but holds
    *  the synchronized lock on IndexWriter instance. */
-  final synchronized void mergeFinish(MergePolicy.OneMerge merge) {
+  private synchronized void mergeFinish(MergePolicy.OneMerge merge) {
 
     // forceMerge, addIndexes or waitForMerges may be waiting
     // on merges to finish.
@@ -5348,6 +5349,45 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     private DocStats(int maxDoc, int numDocs) {
       this.maxDoc = maxDoc;
       this.numDocs = numDocs;
+    }
+  }
+
+  private static class IndexWriterMergeSource implements MergeScheduler.MergeSource {
+    private final IndexWriter writer;
+
+    private IndexWriterMergeSource(IndexWriter writer) {
+      this.writer = writer;
+    }
+
+    @Override
+    public MergePolicy.OneMerge getNextMerge() {
+      MergePolicy.OneMerge nextMerge = writer.getNextMerge();
+      if (nextMerge != null) {
+        if (writer.mergeScheduler.verbose()) {
+          writer.mergeScheduler.message("  checked out merge " + writer.segString(nextMerge.segments));
+        }
+      }
+      return nextMerge;
+    }
+
+    @Override
+    public void onMergeFinished(MergePolicy.OneMerge merge) {
+      writer.mergeFinish(merge);
+    }
+
+    @Override
+    public boolean hasPendingMerges() {
+      return writer.hasPendingMerges();
+    }
+
+    @Override
+    public void merge(MergePolicy.OneMerge merge) throws IOException {
+      assert Thread.holdsLock(writer) == false;
+      writer.merge(merge);
+    }
+
+    public String toString() {
+      return writer.segString();
     }
   }
 }

@@ -192,7 +192,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   // we override this method to collect metrics for merges.
   @Override
-  public void merge(MergePolicy.OneMerge merge) throws IOException {
+  protected void merge(MergePolicy.OneMerge merge) throws IOException {
     String segString = merge.segString();
     long totalNumDocs = merge.totalNumDocs();
     runningMerges.put(segString, totalNumDocs);

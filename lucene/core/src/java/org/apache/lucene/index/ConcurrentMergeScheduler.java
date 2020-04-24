@@ -33,6 +33,7 @@ import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** A {@link MergeScheduler} that runs each merge using a
@@ -62,7 +63,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *  settings for spinning or solid state disks for such
  *  operating systems, use {@link #setDefaultMaxMergesAndThreads(boolean)}.
  */ 
-
 public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Dynamic default for {@code maxThreadCount} and {@code maxMergeCount},
@@ -408,9 +408,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  private synchronized void initDynamicDefaults(IndexWriter writer) throws IOException {
+  private synchronized void initDynamicDefaults(Directory directory) throws IOException {
     if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
-      boolean spins = IOUtils.spins(writer.getDirectory());
+      boolean spins = IOUtils.spins(directory);
 
       // Let tests override this to help reproducing a failure on a machine that has a different
       // core count than the one where the test originally failed:
@@ -495,11 +495,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   @Override
-  public synchronized void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
+  void initialize(InfoStream infoStream, Directory directory) throws IOException {
+    super.initialize(infoStream, directory);
+    initDynamicDefaults(directory);
 
-    assert !Thread.holdsLock(writer);
+  }
 
-    initDynamicDefaults(writer);
+  @Override
+  public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
 
     if (trigger == MergeTrigger.CLOSING) {
       // Disable throttling on close:
@@ -516,18 +519,18 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
     if (verbose()) {
       message("now merge");
-      message("  index: " + writer.segString());
+      message("  index(source): " + mergeSource.toString());
     }
     
     // Iterate, pulling from the IndexWriter's queue of
     // pending merges, until it's empty:
     while (true) {
 
-      if (maybeStall(writer) == false) {
+      if (maybeStall(mergeSource) == false) {
         break;
       }
 
-      OneMerge merge = writer.getNextMerge();
+      OneMerge merge = mergeSource.getNextMerge();
       if (merge == null) {
         if (verbose()) {
           message("  no more merges pending; now return");
@@ -537,13 +540,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       boolean success = false;
       try {
-        if (verbose()) {
-          message("  consider merge " + writer.segString(merge.segments));
-        }
-
         // OK to spawn a new merge thread to handle this
         // merge:
-        final MergeThread newMergeThread = getMergeThread(writer, merge);
+        final MergeThread newMergeThread = getMergeThread(mergeSource, merge);
         mergeThreads.add(newMergeThread);
 
         updateIOThrottle(newMergeThread.merge, newMergeThread.rateLimiter);
@@ -558,7 +557,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         success = true;
       } finally {
         if (!success) {
-          writer.mergeFinish(merge);
+          mergeSource.onMergeFinished(merge);
         }
       }
     }
@@ -575,10 +574,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    *  If this method wants to stall but the calling thread is a merge
    *  thread, it should return false to tell caller not to kick off
    *  any new merges. */
-
-  protected synchronized boolean maybeStall(IndexWriter writer) {
+  protected synchronized boolean maybeStall(MergeSource mergeSource) {
     long startStallTime = 0;
-    while (writer.hasPendingMerges() && mergeThreadCount() >= maxMergeCount) {
+    while (mergeSource.hasPendingMerges() && mergeThreadCount() >= maxMergeCount) {
 
       // This means merging has fallen too far behind: we
       // have already created maxMergeCount threads, and
@@ -621,27 +619,27 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  /** Does the actual merge, by calling {@link IndexWriter#merge} */
-  protected void doMerge(IndexWriter writer, OneMerge merge) throws IOException {
-    writer.merge(merge);
+  /** Does the actual merge, by calling {@link org.apache.lucene.index.MergeScheduler.MergeSource#merge} */
+  protected void doMerge(MergeSource mergeSource, OneMerge merge) throws IOException {
+    mergeSource.merge(merge);
   }
 
   /** Create and return a new MergeThread */
-  protected synchronized MergeThread getMergeThread(IndexWriter writer, OneMerge merge) throws IOException {
-    final MergeThread thread = new MergeThread(writer, merge);
+  protected synchronized MergeThread getMergeThread(MergeSource mergeSource, OneMerge merge) throws IOException {
+    final MergeThread thread = new MergeThread(mergeSource, merge);
     thread.setDaemon(true);
     thread.setName("Lucene Merge Thread #" + mergeThreadCount++);
     return thread;
   }
 
-  synchronized void runOnMergeFinished(IndexWriter writer) {
+  synchronized void runOnMergeFinished(MergeSource mergeSource) {
     // the merge call as well as the merge thread handling in the finally
     // block must be sync'd on CMS otherwise stalling decisions might cause
     // us to miss pending merges
     assert mergeThreads.contains(Thread.currentThread()) : "caller is not a merge thread";
     // Let CMS run new merges if necessary:
     try {
-      merge(writer, MergeTrigger.MERGE_FINISHED);
+      merge(mergeSource, MergeTrigger.MERGE_FINISHED);
     } catch (AlreadyClosedException ace) {
       // OK
     } catch (IOException ioe) {
@@ -657,13 +655,13 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Runs a merge thread to execute a single merge, then exits. */
   protected class MergeThread extends Thread implements Comparable<MergeThread> {
-    final IndexWriter writer;
+    final MergeSource mergeSource;
     final OneMerge merge;
     final MergeRateLimiter rateLimiter;
 
     /** Sole constructor. */
-    public MergeThread(IndexWriter writer, OneMerge merge) {
-      this.writer = writer;
+    public MergeThread(MergeSource mergeSource, OneMerge merge) {
+      this.mergeSource = mergeSource;
       this.merge = merge;
       this.rateLimiter = new MergeRateLimiter(merge.getMergeProgress());
     }
@@ -681,19 +679,19 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           message("  merge thread: start");
         }
 
-        doMerge(writer, merge);
+        doMerge(mergeSource, merge);
 
         if (verbose()) {
           message("  merge thread: done");
         }
-        runOnMergeFinished(writer);
+        runOnMergeFinished(mergeSource);
       } catch (Throwable exc) {
         if (exc instanceof MergePolicy.MergeAbortedException) {
           // OK to ignore
         } else if (suppressExceptions == false) {
           // suppressExceptions is normally only set during
           // testing.
-          handleMergeException(writer.getDirectory(), exc);
+          handleMergeException(exc);
         }
       }
     }
@@ -701,8 +699,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Called when an exception is hit in a background merge
    *  thread */
-  protected void handleMergeException(Directory dir, Throwable exc) {
-    throw new MergePolicy.MergeException(exc, dir);
+  protected void handleMergeException(Throwable exc) {
+    throw new MergePolicy.MergeException(exc);
   }
 
   private boolean suppressExceptions;
