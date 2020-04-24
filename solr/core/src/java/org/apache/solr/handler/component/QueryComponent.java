@@ -364,7 +364,7 @@ public class QueryComponent extends SearchComponent
                               CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
-    int minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, 5); //TODO: -1
+    int minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
     if (minExactHits < 0) {
       minExactHits = Integer.MAX_VALUE;
     }
