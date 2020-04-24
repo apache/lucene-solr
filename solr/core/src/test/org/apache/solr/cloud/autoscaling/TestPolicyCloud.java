@@ -59,6 +59,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
@@ -80,14 +81,18 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         .configure();
   }
 
+  @Before
+  public void before() throws Exception {
+    // remove default policy
+    String commands =  "{set-cluster-policy : []}";
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+  }
+
   @After
   public void after() throws Exception {
     cluster.deleteAllCollections();
     cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
         "{}".getBytes(StandardCharsets.UTF_8), true);
-    // remove default policy
-    String commands =  "{set-cluster-policy : []}";
-    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
   }
 
   public void testCreateCollection() throws Exception  {
