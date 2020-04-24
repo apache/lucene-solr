@@ -27,16 +27,16 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
- * Simple class that binds expression variable names to {@link SortField}s
+ * Simple class that binds expression variable names to {@link DoubleValuesSource}s
  * or other {@link Expression}s.
  * <p>
  * Example usage:
  * <pre class="prettyprint">
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
- *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   bindings.add("_score", DoubleValuesSource.SCORES);
  *   // integer NumericDocValues field
- *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *   bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);
  *   
@@ -48,7 +48,7 @@ import org.apache.lucene.search.SortField;
  */
 public final class SimpleBindings extends Bindings {
 
-  final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
+  private final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
 
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
@@ -56,7 +56,7 @@ public final class SimpleBindings extends Bindings {
   /** 
    * Adds a SortField to the bindings.
    *
-   * @deprecated use {@link #add(String, DoubleValuesSource)}
+   * @deprecated Use {@link #add(String, DoubleValuesSource)}.
    * @see DoubleValuesSource#fromIntField(String)
    * @see DoubleValuesSource#fromLongField(String)
    * @see DoubleValuesSource#fromFloatField(String)
