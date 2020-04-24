@@ -28,7 +28,7 @@ public class MockConcurrentMergeScheduler extends ConcurrentMergeScheduler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  protected void handleMergeException(Directory dir, Throwable exc) {
+  protected void handleMergeException(Throwable exc) {
     // swallow the exception
     log.warn("Merge exception:", exc);
   }
