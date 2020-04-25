@@ -203,6 +203,9 @@ public class FunctionQParser extends QParser {
         sp.pos++;
         String param = sp.getId();
         val = getParam(param);
+        if (val == null) {
+          throw new SyntaxError("Missing param $" + param + " while parsing '" + sp.val + "'");
+        }
         break;
       case '\'':
       case '"':

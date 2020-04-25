@@ -135,5 +135,10 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     exception = expectThrows(SolrException.class, () -> h.query(req("q", "*:*", "stats", "true", "stats.field", "{!bleh}")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     assertEquals("invalid query parser 'bleh' for query '{!bleh}'", exception.getMessage());
+    
+    // with invalid field
+    exception = expectThrows(SolrException.class, () -> h.query(req("q", "{!frange l=10 u=100}joindf(genre:comedy,$x)")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertEquals("Missing param $x while parsing 'joindf(genre:comedy,$x)'", exception.getCause().getMessage());
   }
 }
