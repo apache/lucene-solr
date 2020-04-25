@@ -2903,8 +2903,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Creates an empty, temporary folder with the given name prefix under the 
-   * test class's {@link #getBaseTempDirForTestClass()}.
+   * Creates an empty, temporary folder with the given name prefix.
    *  
    * <p>The folder will be automatically removed after the
    * test class completes successfully. The test should close any file handles that would prevent
@@ -2915,8 +2914,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /**
-   * Creates an empty file with the given prefix and suffix under the 
-   * test class's {@link #getBaseTempDirForTestClass()}.
+   * Creates an empty file with the given prefix and suffix.
    * 
    * <p>The file will be automatically removed after the
    * test class completes successfully. The test should close any file handles that would prevent
