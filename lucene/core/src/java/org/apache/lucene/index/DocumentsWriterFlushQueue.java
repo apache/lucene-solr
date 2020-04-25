@@ -35,18 +35,22 @@ final class DocumentsWriterFlushQueue {
   private final AtomicInteger ticketCount = new AtomicInteger();
   private final ReentrantLock purgeLock = new ReentrantLock();
 
-  synchronized void addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+  synchronized boolean addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
     incTickets();// first inc the ticket count - freeze opens
                  // a window for #anyChanges to fail
     boolean success = false;
     try {
-      queue.add(new FlushTicket(deleteQueue.freezeGlobalBuffer(null), false));
-      success = true;
+      FrozenBufferedUpdates frozenBufferedUpdates = deleteQueue.maybeFreezeGlobalBuffer();
+      if (frozenBufferedUpdates != null) { // no need to publish anything if we don't have any frozen updates
+        queue.add(new FlushTicket(frozenBufferedUpdates, false));
+        success = true;
+      }
     } finally {
       if (!success) {
         decTickets();
       }
     }
+    return success;
   }
   
   private void incTickets() {

@@ -42,12 +42,12 @@ public class IntMultiPointField extends AnalyticsField implements CastingIntValu
     count = 0;
     values = new int[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedNumeric(context.reader(), fieldName);
   }
-  
+
   @Override
   public void collect(int doc) throws IOException {
     if (docValues.advanceExact(doc)) {
@@ -60,13 +60,13 @@ public class IntMultiPointField extends AnalyticsField implements CastingIntValu
       count = 0;
     }
   }
-  
+
   private void resizeEmptyValues(int count) {
     if (count > values.length) {
       values = new int[count];
     }
   }
-  
+
   @Override
   public void streamInts(IntConsumer cons) {
     for (int i = 0; i < count; ++i) {

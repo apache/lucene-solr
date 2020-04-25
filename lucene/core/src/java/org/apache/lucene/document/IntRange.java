@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Objects;
+
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -77,8 +78,8 @@ public class IntRange extends Field {
    */
   public void setRangeValues(int[] min, int[] max) {
     checkArgs(min, max);
-    if (min.length*2 != type.pointDataDimensionCount() || max.length*2 != type.pointDataDimensionCount()) {
-      throw new IllegalArgumentException("field (name=" + name + ") uses " + type.pointDataDimensionCount()/2
+    if (min.length*2 != type.pointDimensionCount() || max.length*2 != type.pointDimensionCount()) {
+      throw new IllegalArgumentException("field (name=" + name + ") uses " + type.pointDimensionCount()/2
           + " dimensions; cannot change to (incoming) " + min.length + " dimensions");
     }
 
@@ -108,7 +109,7 @@ public class IntRange extends Field {
   /**
    * Encodes the min, max ranges into a byte array
    */
-  private static byte[] encode(int[] min, int[] max) {
+  static byte[] encode(int[] min, int[] max) {
     checkArgs(min, max);
     byte[] b = new byte[BYTES*2*min.length];
     verifyAndEncode(min, max, b);
@@ -148,7 +149,7 @@ public class IntRange extends Field {
    * @return the decoded min value
    */
   public int getMin(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -158,7 +159,7 @@ public class IntRange extends Field {
    * @return the decoded max value
    */
   public int getMax(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -244,7 +245,7 @@ public class IntRange extends Field {
     sb.append(':');
     byte[] b = ((BytesRef)fieldsData).bytes;
     toString(b, 0);
-    for (int d = 0; d < type.pointDataDimensionCount() / 2; ++d) {
+    for (int d = 0; d < type.pointDimensionCount() / 2; ++d) {
       sb.append(' ');
       sb.append(toString(b, d));
     }

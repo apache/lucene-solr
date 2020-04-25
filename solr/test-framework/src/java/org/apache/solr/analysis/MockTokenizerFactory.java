@@ -28,6 +28,10 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * Factory for {@link MockTokenizer} for testing purposes.
  */
 public class MockTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "mock";
+
   final CharacterRunAutomaton pattern;
   final boolean enableChecks;
   
@@ -47,6 +51,11 @@ public class MockTokenizerFactory extends TokenizerFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public MockTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

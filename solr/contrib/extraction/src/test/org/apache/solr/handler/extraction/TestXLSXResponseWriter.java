@@ -18,23 +18,24 @@ package org.apache.solr.handler.extraction;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
-
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,6 +65,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
     assertU(adoc("id","3", "shouldbeunstored","foo"));
     assertU(adoc("id","4", "foo_s1","foo"));
+    assertU(adoc("id","5", "pubyear_ii", "123", "store_iis", "12", "price_ff", "1.3"));
     assertU(commit());
   }
 
@@ -73,7 +75,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStructuredDataViaBaseWriters() throws IOException, Exception {
+  public void testStructuredDataViaBaseWriters() throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     // Don't send a ContentStream back, this will fall back to the configured base writer.
     // But abuse the CONTENT key to ensure writer is also checking type
@@ -220,19 +222,85 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
     String funcText = getStringFromSheet(getWSResultForQuery(req("df", "text", "q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_s1)")));
     String[] funcLines = funcText.split("\n");
-    assertEquals(5, funcLines.length);
+    assertEquals(6, funcLines.length);
     assertEquals("XXX,YYY", funcLines[0] );
     assertEquals("1,false", funcLines[1] );
     assertEquals("3,false", funcLines[3] );
+
+    //assertions specific to single function without alias (SOLR-5423)
+    String singleFuncText = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","*", "wt","xlsx", "fl","exists(foo_s1),XXX:id")));
+    String[] singleFuncLines = singleFuncText.split("\n");
+    assertEquals(6, singleFuncLines.length);
+    assertEquals("exists(foo_s1),XXX", singleFuncLines[0] );
+    assertEquals("false,1", singleFuncLines[1] );
+    assertEquals("false,3", singleFuncLines[3] );
+
+    // pseudo-fields with * in fl
+    txt = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","id:4", "wt","xlsx", "fl","*,YYY:[docid],FOO:foo_s1")));
+    lines = txt.split("\n");
+    assertEquals(2, lines.length);
+    assertEquals(sortHeader("foo_i,foo_l,FOO,foo_s,pubyear_ii,store_iis," +
+        "v2_ss,multiDefault,timestamp,foo_dt1,foo_b,YYY,foo_d,id,foo_f,v_ss,foo_s1,intDefault"), sortHeader(lines[0]));
+  }
+
+  @Test
+  public void testForDVEnabledFields() throws Exception {
+    // for dv enabled and useDocValueAsStored=true
+    // returns pubyear_ii, store_iis but not price_ff
+    String singleFuncText = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","id:5", "wt","xlsx")));
+    String sortedHeader = sortHeader("foo_i,foo_l,foo_s,pubyear_ii,store_iis," +
+        "v2_ss,multiDefault,timestamp,foo_dt1,foo_b,foo_d,id,foo_f,v_ss,foo_s1,intDefault");
+    String[] singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    List<String> actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertTrue(actualVal.containsAll(Arrays.asList("5", "123", "12")));
+
+    // explicit fl=*
+    singleFuncText = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","id:5", "wt","xlsx", "fl", "*")));
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertTrue(actualVal.containsAll(Arrays.asList("5", "123", "12")));
+
+    // explicit price_ff
+    singleFuncText = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","id:5", "wt","xlsx", "fl", "price_ff")));
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals("price_ff", singleFuncLines[0]);
+    assertEquals("1.3", singleFuncLines[1]);
+
+    // explicit price_ff with fl=*
+    singleFuncText = getStringFromSheet(
+        getWSResultForQuery(req("df", "text", "q","id:5", "wt","xlsx", "csv.header","true", "fl", "*,price_ff")));
+    sortedHeader = sortHeader("foo_i,foo_l,foo_b,foo_s,pubyear_ii,store_iis," +
+        "v2_ss,multiDefault,timestamp,foo_dt1,id,foo_d,foo_f,v_ss,foo_s1,intDefault,price_ff");
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertTrue(actualVal.containsAll(Arrays.asList("5", "123", "12", "1.3")));
   }
 
   // returns first worksheet as XLSXResponseWriter only returns one sheet
-  private XSSFSheet getWSResultForQuery(SolrQueryRequest req) throws IOException, Exception {
+  private XSSFSheet getWSResultForQuery(SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = h.queryAndResponse("", req);
     return getWSResultForQuery(req, rsp);
   }
 
-  private XSSFSheet getWSResultForQuery(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, Exception {
+  private XSSFSheet getWSResultForQuery(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
     writerXlsx.write(xmlBout, req, rsp);
     XSSFWorkbook output = new XSSFWorkbook(new ByteArrayInputStream(xmlBout.toByteArray()));
@@ -253,5 +321,14 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
       output.append("\n");
     }
     return output.toString();
+  }
+
+  /*
+   * Utility method to sort a comma separated list of strings, for easier comparison regardless of platform
+   */
+  private String sortHeader(String input) {
+    String[] output = input.trim().split(",");
+    Arrays.sort(output);
+    return Arrays.toString(output);
   }
 }

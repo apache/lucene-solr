@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class CeilingEvaluatorTest extends LuceneTestCase {
+public class CeilingEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -50,20 +50,17 @@ public class CeilingEvaluatorTest extends LuceneTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
     
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    Assert.assertEquals(2D, result);
     
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-1L, result);
+    Assert.assertEquals(-1D, result);
   }
 
   @Test(expected = IOException.class)
@@ -76,7 +73,7 @@ public class CeilingEvaluatorTest extends LuceneTestCase {
     factory.constructEvaluator("ceil(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     
@@ -85,7 +82,7 @@ public class CeilingEvaluatorTest extends LuceneTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     

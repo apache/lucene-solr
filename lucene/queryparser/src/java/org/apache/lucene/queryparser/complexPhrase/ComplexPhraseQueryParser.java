@@ -36,6 +36,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanBoostQuery;
@@ -146,7 +147,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
   // to throw a runtime exception here if a term for another field is embedded
   // in phrase query
   @Override
-  protected Query newTermQuery(Term term) {
+  protected Query newTermQuery(Term term, float boost) {
     if (isPass2ResolvingPhrases) {
       try {
         checkPhraseClauseIsForSameField(term.field());
@@ -154,7 +155,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         throw new RuntimeException("Error parsing complex phrase", pe);
       }
     }
-    return super.newTermQuery(term);
+    return super.newTermQuery(term, boost);
   }
 
   // Helper method used to report on any clauses that appear in query syntax
@@ -251,6 +252,11 @@ public class ComplexPhraseQueryParser extends QueryParser {
       finally {
         qp.field = oldDefaultParserField;
       }
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     @Override

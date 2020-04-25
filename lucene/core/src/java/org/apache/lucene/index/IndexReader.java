@@ -68,7 +68,7 @@ import org.apache.lucene.util.Bits;  // javadocs
  rely on a given document having the same number between sessions.
 
  <p>
- <a name="thread-safety"></a><p><b>NOTE</b>: {@link
+ <a id="thread-safety"></a><p><b>NOTE</b>: {@link
  IndexReader} instances are completely thread
  safe, meaning multiple threads can call any of its methods,
  concurrently.  If your application requires external
@@ -301,7 +301,9 @@ public abstract class IndexReader implements Closeable {
     return vectors.terms(field);
   }
 
-  /** Returns the number of documents in this index. */
+  /** Returns the number of documents in this index.
+   *  <p><b>NOTE</b>: This operation may run in O(maxDoc). Implementations that
+   *  can't return this number in constant-time should cache it. */
   public abstract int numDocs();
 
   /** Returns one greater than the largest possible document number.
@@ -310,7 +312,8 @@ public abstract class IndexReader implements Closeable {
    */
   public abstract int maxDoc();
 
-  /** Returns the number of deleted documents. */
+  /** Returns the number of deleted documents.
+   *  <p><b>NOTE</b>: This operation may run in O(maxDoc). */
   public final int numDeletedDocs() {
     return maxDoc() - numDocs();
   }

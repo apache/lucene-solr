@@ -36,10 +36,12 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryContext;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class FacetModule extends SearchComponent {
 
@@ -75,7 +77,13 @@ public class FacetModule extends SearchComponent {
       if (!facetsEnabled) return;
       jsonFacet = new LegacyFacet(rb.req.getParams()).getLegacy();
     } else {
-      jsonFacet = (Map<String, Object>) json.get("facet");
+      Object jsonObj = json.get("facet");
+      if (jsonObj instanceof Map) {
+        jsonFacet = (Map<String, Object>) jsonObj;
+      } else if (jsonObj != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Expected Map for 'facet', received " + jsonObj.getClass().getSimpleName() + "=" + jsonObj);
+      }
     }
     if (jsonFacet == null) return;
 
@@ -89,7 +97,7 @@ public class FacetModule extends SearchComponent {
         // if this is a shard request, but there is no _facet_ info, then don't do anything.
         return;
       }
-      facetInfo = (Map<String,Object>) ObjectBuilder.fromJSON(jfacet);
+      facetInfo = (Map<String,Object>) fromJSONString(jfacet);
     }
 
     // At this point, we know we need to do something.  Create and save the state.
@@ -136,7 +144,8 @@ public class FacetModule extends SearchComponent {
       rb.req.getContext().put("FacetDebugInfo", fdebug);
     }
 
-    final Object results = facetState.facetRequest.process(fcontext);
+    Object results = facetState.facetRequest.process(fcontext);
+    // ExitableDirectory timeout causes absent "facets"
     rb.rsp.add("facets", results);
   }
 
@@ -161,7 +170,7 @@ public class FacetModule extends SearchComponent {
     }
 
     // Check if there are any refinements possible
-    if (facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
+    if ((facetState.mcontext==null) ||facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
       clearFaceting(rb.outgoing);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -271,7 +280,13 @@ public class FacetModule extends SearchComponent {
       NamedList<Object> top = rsp.getResponse();
       if (top == null) continue; // shards.tolerant=true will cause this to happen on exceptions/errors
       Object facet = top.get("facets");
-      if (facet == null) continue;
+      if (facet == null) {
+        SimpleOrderedMap shardResponseHeader = (SimpleOrderedMap)rsp.getResponse().get("responseHeader");
+        if(Boolean.TRUE.equals(shardResponseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        }
+        continue;
+      }
       if (facetState.merger == null) {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
         facetState.mcontext = new FacetMerger.Context( sreq.responses.size() );

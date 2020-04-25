@@ -72,8 +72,8 @@ public class MoveReplicaSuggester extends Suggester {
 
           int result = -1;
           if (!force && srcRowModified.isLive && targetRow.isLive)  {
-            result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), true);
-            if (result == 0) result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), false);
+            result = tmpSession.getPolicy().getClusterPreferences().get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), true);
+            if (result == 0) result = tmpSession.getPolicy().getClusterPreferences().get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), false);
           }
 
           if (result <= 0) {
@@ -96,9 +96,12 @@ public class MoveReplicaSuggester extends Suggester {
   }
 
   static Comparator<Pair<ReplicaInfo, Row>> leaderLast = (r1, r2) -> {
-    if (r1.first().isLeader) return 1;
-    if (r2.first().isLeader) return -1;
-    return 0;
+    int leaderCompare = Boolean.compare(r1.first().isLeader, r2.first().isLeader);
+    if ( leaderCompare != 0 ) {
+      return leaderCompare;
+    } else {
+      return r1.first().getName().compareTo(r2.first().getName());
+    }
   };
 
 

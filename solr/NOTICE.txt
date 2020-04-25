@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2019 The Apache Software Foundation
+ Copyright 2006-2020 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -37,7 +37,7 @@ Copyright (c) 2013-2014 Klaus Hartl, https://github.com/carhartl/jquery-cookie
 This product includes jquery.form Javascript library created by Mike Alsup
 Copyright 2006-2014 (c) M. Alsup, https://github.com/malsup/form/
 
-This product includes the jquery.jstree.js Javascript library created by Ivan Bozhanov
+This product includes the jstree Javascript library created by Ivan Bozhanov
 Copyright (c) 2013-2014 Ivan Bozhanov, https://github.com/vakata/jstree
 
 This product includes jquery.timeago.js Javascript library by Ryan McGeary
@@ -129,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2019 The Apache Software Foundation
+Copyright 2001-2020 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -159,6 +159,11 @@ http://bitbucket.org/jpbarrette/moman/overview/
 
 The class org.apache.lucene.util.WeakIdentityMap was derived from
 the Apache CXF project and is Apache License 2.0.
+
+The class org.apache.lucene.util.compress.LZ4 is a Java rewrite of the LZ4
+compression library (https://github.com/lz4/lz4/tree/dev/lib) that is licensed
+under the 2-clause BSD license.
+(https://opensource.org/licenses/bsd-license.php)
 
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
@@ -573,3 +578,34 @@ Copyright 2013 The MITRE Corporation. All Rights Reserved.
   subject to the Rights in Noncommercial Computer Software
   and Noncommercial Computer Software Documentation
   Clause 252.227-7014 (JUN 1995)
+
+=========================================================================
+==     Jose4j Notice                                                   ==
+=========================================================================
+
+jose4j
+Copyright 2012-2015 Brian Campbell
+
+EcdsaUsingShaAlgorithm contains code for converting the concatenated
+R & S values of the signature to and from DER, which was originally
+derived from the Apache Santuario XML Security library's SignatureECDSA
+implementation. http://santuario.apache.org/
+
+The Base64 implementation in this software was derived from the
+Apache Commons Codec project. http://commons.apache.org/proper/commons-codec/
+
+JSON processing in this software was derived from the JSON.simple toolkit.
+https://code.google.com/p/json-simple/
+
+=========================================================================
+==         noggit notice                                               ==
+=========================================================================
+
+noggit
+
+Copyright 2006- Yonik Seeley
+
+Noggit is a  fast streaming JSON parser for java. The code is included
+into Solr codebase.
+
+https://github.com/yonik/noggit

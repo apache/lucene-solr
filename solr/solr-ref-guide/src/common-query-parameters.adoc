@@ -63,7 +63,10 @@ Regarding the sort parameter's arguments:
 * A sort ordering must include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`).
 
 * Multiple sort orderings can be separated by a comma, using this syntax: `sort=<field name>+<direction>,<field name>+<direction>],...`
-** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. This pattern continues with further entries.
+** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. And so on.
+** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
+This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
+Users looking to avoid this behavior can add an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g. `price desc,id asc`).
 
 == start Parameter
 
@@ -102,7 +105,7 @@ fq=+popularity:[10 TO *] +section:0
 ----
 
 * The document sets from each filter query are cached independently. Thus, concerning the previous examples: use a single `fq` containing two mandatory clauses if those clauses appear together often, and use two separate `fq` parameters if they are relatively independent. (To learn about tuning cache sizes and making sure a filter cache actually exists, see <<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>.)
-* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucene-s-classic-query-parser-and-solr-s-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
+* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
 
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
 
@@ -203,14 +206,35 @@ The default value of this parameter is blank, which causes no extra "explain inf
 
 == timeAllowed Parameter
 
-This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set.
+This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set. In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`.
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "zkConnected": true,
+    "partialResults": true,
+    "QTime": 20,
+    "params": {
+      "q": "*:*"
+    }
+  },
+  "response": {
+    "numFound": 77,
+    "start": 0,
+    "docs": [ "..." ]
+  }
+}
+----
 
 This value is only checked at the time of:
 
 . Query Expansion, and
 . Document collection
+. Doc Values reading
 
-As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
+As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request. Regular search, JSON Facet and the Analytics component abandon requests in accordance with this parameter.
 
 == segmentTerminateEarly Parameter
 
@@ -256,7 +280,7 @@ fq=quantity_in_stock:[5 TO *]
 fq={!frange l=10 u=100}mul(popularity,price)
 fq={!frange cost=200 l=0}pow(mul(sum(1, query('tag:smartphone')), div(1,avg_rating)), 2.3)
 
-These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of it's implicit `cost=100`) and only if it matches will the final very complex filter (with it's higher `cost=200`) be checked.
+These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional Lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of its implicit `cost=100`) and only if it matches will the final very complex filter (with its higher `cost=200`) be checked.
 
 [source,text]
 q=some keywords

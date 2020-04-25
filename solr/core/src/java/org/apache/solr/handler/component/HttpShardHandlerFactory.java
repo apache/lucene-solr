@@ -16,18 +16,14 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
-
-import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -38,7 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -48,13 +46,16 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -63,38 +64,35 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
+
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
-  
+
   // We want an executor that doesn't take up any resources if
   // it's not used, so it could be created statically for
   // the distributed search component if desired.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-      0,
-      Integer.MAX_VALUE,
-      5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-      new SynchronousQueue<>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("httpShardExecutor"),
-      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-      // see SOLR-11880 for more details
-      false
-  );
+  //
+  // This executor is initialized in the init method
+  private ExecutorService commExecutor;
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
@@ -108,6 +106,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
   boolean accessPolicy = false;
   private WhitelistHostChecker whitelistHostChecker = null;
+  private SolrMetricsContext solrMetricsContext;
 
   private String scheme = null;
 
@@ -115,7 +114,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected final Random r = new Random();
 
-  private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
+  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
@@ -193,6 +192,64 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return Boolean.getBoolean(INIT_SOLR_DISABLE_SHARDS_WHITELIST);
   }
 
+  private static NamedList<?> getNamedList(Object val) {
+    if (val instanceof NamedList) {
+      return (NamedList<?>)val;
+    } else {
+      throw new IllegalArgumentException("Invalid config for replicaRouting; expected NamedList, but got " + val);
+    }
+  }
+
+  private static String checkDefaultReplicaListTransformer(NamedList<?> c, String setTo, String extantDefaultRouting) {
+    if (!Boolean.TRUE.equals(c.getBooleanArg("default"))) {
+      return null;
+    } else {
+      if (extantDefaultRouting == null) {
+        return setTo;
+      } else {
+        throw new IllegalArgumentException("more than one routing scheme marked as default");
+      }
+    }
+  }
+
+  private void initReplicaListTransformers(NamedList routingConfig) {
+    String defaultRouting = null;
+    ReplicaListTransformerFactory stableRltFactory = null;
+    ReplicaListTransformerFactory defaultRltFactory;
+    if (routingConfig != null && routingConfig.size() > 0) {
+      Iterator<Entry<String,?>> iter = routingConfig.iterator();
+      do {
+        Entry<String, ?> e = iter.next();
+        String key = e.getKey();
+        switch (key) {
+          case ShardParams.REPLICA_RANDOM:
+            // Only positive assertion of default status (i.e., default=true) is supported.
+            // "random" is currently the implicit default, so explicitly configuring
+            // "random" as default would not currently be useful, but if the implicit default
+            // changes in the future, checkDefault could be relevant here.
+            defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
+            break;
+          case ShardParams.REPLICA_STABLE:
+            NamedList<?> c = getNamedList(e.getValue());
+            defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
+            stableRltFactory = new AffinityReplicaListTransformerFactory(c);
+            break;
+          default:
+            throw new IllegalArgumentException("invalid replica routing spec name: " + key);
+        }
+      } while (iter.hasNext());
+    }
+    if (stableRltFactory == null) {
+      stableRltFactory = new AffinityReplicaListTransformerFactory();
+    }
+    if (ShardParams.REPLICA_STABLE.equals(defaultRouting)) {
+      defaultRltFactory = stableRltFactory;
+    } else {
+      defaultRltFactory = RequestReplicaListTransformerGenerator.RANDOM_RLTF;
+    }
+    this.requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator(defaultRltFactory, stableRltFactory);
+  }
+
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
@@ -205,7 +262,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     String strategy = getParameter(args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
     this.metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(strategy);
     if (this.metricNameStrategy == null)  {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(ErrorCode.SERVER_ERROR,
           "Unknown metricNameStrategy: " + strategy + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
     }
 
@@ -226,9 +283,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.whitelistHostChecker = new WhitelistHostChecker(args == null? null: (String) args.get(INIT_SHARDS_WHITELIST), !getDisableShardsWhitelist());
     log.info("Host whitelist initialized: {}", this.whitelistHostChecker);
-    
-    log.debug("created with {}",sb);
-    
+
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -244,7 +299,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         this.maximumPoolSize,
         this.keepAliveTime, TimeUnit.SECONDS,
         blockingQueue,
-        new DefaultSolrThreadFactory("httpShardExecutor")
+        new SolrNamedThreadFactory("httpShardExecutor"),
+        // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+        // see SOLR-11880 for more details
+        false
     );
 
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
@@ -261,6 +319,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         .maxConnectionsPerHost(maxConnectionsPerHost).build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+
+    initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
+
+    log.debug("created with {}",sb);
   }
 
   @Override
@@ -288,12 +350,22 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         if (loadbalancer != null) {
           loadbalancer.close();
         }
-      } finally { 
+      } finally {
         if (defaultClient != null) {
           IOUtils.closeQuietly(defaultClient);
         }
       }
     }
+    try {
+      SolrMetricProducer.super.close();
+    } catch (Exception e) {
+      log.warn("Exception closing.", e);
+    }
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   /**
@@ -333,157 +405,32 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return urls;
   }
 
-  /**
-   * A distributed request is made via {@link LBSolrClient} to the first live server in the URL list.
-   * This means it is just as likely to choose current host as any of the other hosts.
-   * This function makes sure that the cores are sorted according to the given list of preferences.
-   * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from 
-   * healthy nodes. This will help prevent a distributed deadlock or timeouts in all the healthy nodes due 
-   * to one bad node.
-   */
-  static class NodePreferenceRulesComparator implements Comparator<Object> {
-    private static class PreferenceRule {
-      public final String name;
-      public final String value;
-
-      public PreferenceRule(String name, String value) {
-        this.name = name;
-        this.value = value;
-      }
-    }
-
-    private final SolrQueryRequest request;
-    private List<PreferenceRule> preferenceRules;
-    private String localHostAddress = null;
-
-    public NodePreferenceRulesComparator(final List<String> sortRules, final SolrQueryRequest request) {
-      this.request = request;
-      this.preferenceRules = new ArrayList<PreferenceRule>(sortRules.size());
-      sortRules.forEach(rule -> {
-        String[] parts = rule.split(":", 2);
-        if (parts.length != 2) {
-          throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " rule: " + rule);
-        }
-        this.preferenceRules.add(new PreferenceRule(parts[0], parts[1])); 
-      });
-    }
-    @Override
-    public int compare(Object left, Object right) {
-      for (PreferenceRule preferenceRule: this.preferenceRules) {
-        final boolean lhs;
-        final boolean rhs;
-        switch (preferenceRule.name) {
-          case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
-            lhs = hasReplicaType(left, preferenceRule.value);
-            rhs = hasReplicaType(right, preferenceRule.value);
-            break;
-          case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
-            lhs = hasCoreUrlPrefix(left, preferenceRule.value);
-            rhs = hasCoreUrlPrefix(right, preferenceRule.value);
-            break;
-          default:
-            throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
-        }
-        if (lhs != rhs) {
-          return lhs ? -1 : +1;
-        }
-      }
-      return 0;
-    }
-    private boolean hasCoreUrlPrefix(Object o, String prefix) {
-      final String s;
-      if (o instanceof String) {
-        s = (String)o;
-      }
-      else if (o instanceof Replica) {
-        s = ((Replica)o).getCoreUrl();
-      } else {
-        return false;
-      }
-      if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-        if (null == localHostAddress) {
-          final ZkController zkController = this.request.getCore().getCoreContainer().getZkController();
-          localHostAddress = zkController != null ? zkController.getBaseUrl() : "";
-          if (localHostAddress.isEmpty()) {
-            log.warn("Couldn't determine current host address for sorting of local replicas");
-          }
-        }
-        if (!localHostAddress.isEmpty()) {
-          if (s.startsWith(localHostAddress)) {
-            return true;
-          }
-        }
-      } else {
-        if (s.startsWith(prefix)) {
-          return true;
-        }
-      }
-      return false;
-    }
-    private static boolean hasReplicaType(Object o, String preferred) {
-      if (!(o instanceof Replica)) {
-        return false;
-      }
-      final String s = ((Replica)o).getType().toString();
-      return s.equals(preferred);
-    }
-  }
-
   protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
     final SolrParams params = req.getParams();
-    @SuppressWarnings("deprecation")
-    final boolean preferLocalShards = params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
-    final String shardsPreferenceSpec = params.get(ShardParams.SHARDS_PREFERENCE, "");
-
-    if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
-      if (preferLocalShards && !shardsPreferenceSpec.isEmpty()) {
-        throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "preferLocalShards is deprecated and must not be used with shards.preference" 
-        );
-      }
-      List<String> preferenceRules = StrUtils.splitSmart(shardsPreferenceSpec, ',');
-      if (preferLocalShards) {
-        preferenceRules.add(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
-      }
-
-      return new ShufflingReplicaListTransformer(r) {
-        @Override
-        public void transform(List<?> choices)
-        {
-          if (choices.size() > 1) {
-            super.transform(choices);
-            if (log.isDebugEnabled()) {
-              log.debug("Applying the following sorting preferences to replicas: {}",
-                  Arrays.toString(preferenceRules.toArray()));
-            }
-            try {
-              choices.sort(new NodePreferenceRulesComparator(preferenceRules, req));
-            } catch (IllegalArgumentException iae) {
-              throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                iae.getMessage()
-              );
-            }
-            if (log.isDebugEnabled()) {
-              log.debug("Applied sorting preferences to replica list: {}",
-                  Arrays.toString(choices.toArray()));
-            }
-          }
-        }
-      };
+    final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
+    if (zkController != null) {
+      return requestReplicaListTransformerGenerator.getReplicaListTransformer(
+          params,
+          zkController.getZkStateReader().getClusterProperties()
+              .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+              .toString(),
+          zkController.getNodeName(),
+          zkController.getBaseUrl(),
+          zkController.getSysPropsCacher()
+      );
+    } else {
+      return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
     }
-
-    return shufflingReplicaListTransformer;
   }
 
   /**
    * Creates a new completion service for use by a single set of distributed requests.
    */
-  public CompletionService newCompletionService() {
-    return new ExecutorCompletionService<ShardResponse>(commExecutor);
+  public CompletionService<ShardResponse> newCompletionService() {
+    return new ExecutorCompletionService<>(commExecutor);
   }
-  
+
   /**
    * Rebuilds the URL replacing the URL scheme of the passed URL with the
    * configured scheme replacement.If no scheme was configured, the passed URL's
@@ -495,40 +442,41 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     } else if(StringUtils.isNotEmpty(scheme)) {
       return scheme + "://" + URLUtil.removeScheme(url);
     }
-    
+
     return url;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(manager, registry, tag, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
-        manager.registry(registry),
+        solrMetricsContext.getMetricRegistry(),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
-  
+
   /**
    * Class used to validate the hosts in the "shards" parameter when doing a distributed
    * request
    */
   public static class WhitelistHostChecker {
-    
+
     /**
      * List of the whitelisted hosts. Elements in the list will be host:port (no protocol or context)
      */
     private final Set<String> whitelistHosts;
-    
+
     /**
-     * Indicates whether host checking is enabled 
+     * Indicates whether host checking is enabled
      */
     private final boolean whitelistHostCheckingEnabled;
-    
+
     public WhitelistHostChecker(String whitelistStr, boolean enabled) {
       this.whitelistHosts = implGetShardsWhitelist(whitelistStr);
       this.whitelistHostCheckingEnabled = enabled;
     }
-    
+
     final static Set<String> implGetShardsWhitelist(final String shardsWhitelist) {
       if (shardsWhitelist != null && !shardsWhitelist.isEmpty()) {
         return StrUtils.splitSmart(shardsWhitelist, ',')
@@ -544,32 +492,32 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
                   url = new URL(hostUrl);
                 }
               } catch (MalformedURLException e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist, e);
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist, e);
               }
               if (url.getHost() == null || url.getPort() < 0) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist);
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist);
               }
               return url.getHost() + ":" + url.getPort();
             }).collect(Collectors.toSet());
       }
       return null;
     }
-    
-    
+
+
     /**
      * @see #checkWhitelist(ClusterState, String, List)
      */
     protected void checkWhitelist(String shardsParamValue, List<String> shardUrls) {
       checkWhitelist(null, shardsParamValue, shardUrls);
     }
-    
+
     /**
      * Checks that all the hosts for all the shards requested in shards parameter exist in the configured whitelist
      * or in the ClusterState (in case of cloud mode)
-     * 
+     *
      * @param clusterState The up to date ClusterState, can be null in case of non-cloud mode
      * @param shardsParamValue The original shards parameter
-     * @param shardUrls The list of cores generated from the shards parameter. 
+     * @param shardUrls The list of cores generated from the shards parameter.
      */
     protected void checkWhitelist(ClusterState clusterState, String shardsParamValue, List<String> shardUrls) {
       if (!whitelistHostCheckingEnabled) {
@@ -584,7 +532,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       } else {
         localWhitelistHosts = Collections.emptySet();
       }
-      
+
       shardUrls.stream().map(String::trim).forEach((shardUrl) -> {
         URL url;
         try {
@@ -595,13 +543,14 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
             url = new URL(shardUrl);
           }
         } catch (MalformedURLException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue, e);
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue, e);
         }
         if (url.getHost() == null || url.getPort() < 0) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
         }
         if (!localWhitelistHosts.contains(url.getHost() + ":" + url.getPort())) {
-          log.warn("The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist ("+localWhitelistHosts+"), shardUrl:" + shardUrl);
+          log.warn("The '{}' parameter value '{}' contained value(s) not on the shards whitelist ({}), shardUrl: '{}'"
+              , ShardParams.SHARDS, shardsParamValue, localWhitelistHosts, shardUrl);
           throw new SolrException(ErrorCode.FORBIDDEN,
               "The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist. shardUrl:" + shardUrl + "." +
                   HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);

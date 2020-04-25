@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PersianCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "persian";
 
   /** Creates a new PersianCharFilterFactory */
   public PersianCharFilterFactory(Map<String,String> args) {
@@ -44,6 +48,11 @@ public class PersianCharFilterFactory extends CharFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PersianCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Reader create(Reader input) {
     return new PersianCharFilter(input);

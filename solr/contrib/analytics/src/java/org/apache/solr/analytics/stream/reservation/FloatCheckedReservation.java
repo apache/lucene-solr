@@ -26,7 +26,7 @@ import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatCheckedReservation extends ReductionCheckedDataReservation<FloatConsumer, FloatSupplier> {
-  
+
   public FloatCheckedReservation(FloatConsumer applier, FloatSupplier extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }

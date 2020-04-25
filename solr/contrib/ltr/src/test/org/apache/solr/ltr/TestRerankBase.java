@@ -18,13 +18,13 @@ package org.apache.solr.ltr;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -32,10 +32,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -52,7 +53,6 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.SolrSchemaRestApi;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.noggit.ObjectBuilder;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,11 +130,15 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static ManagedFeatureStore getManagedFeatureStore() {
-    return ManagedFeatureStore.getManagedFeatureStore(h.getCore());
+    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      return ManagedFeatureStore.getManagedFeatureStore(core);
+    }
   }
 
   public static ManagedModelStore getManagedModelStore() {
-    return ManagedModelStore.getManagedModelStore(h.getCore());
+    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      return ManagedModelStore.getManagedModelStore(core);
+    }
   }
 
   protected static SortedMap<ServletHolder,String>  setupTestInit(
@@ -193,7 +197,6 @@ public class TestRerankBase extends RestTestBase {
 
   public static void setuptest(String solrconfig, String schema)
       throws Exception {
-    initCore(solrconfig, schema);
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,false);
@@ -205,7 +208,6 @@ public class TestRerankBase extends RestTestBase {
 
   public static void setupPersistentTest(String solrconfig, String schema)
       throws Exception {
-    initCore(solrconfig, schema);
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,true);
@@ -215,11 +217,18 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void aftertest() throws Exception {
-    restTestHarness.close();
-    restTestHarness = null;
-    jetty.stop();
-    jetty = null;
-    FileUtils.deleteDirectory(tmpSolrHome);
+    if (null != restTestHarness) {
+      restTestHarness.close();
+      restTestHarness = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
+    if (null != tmpSolrHome) {
+      FileUtils.deleteDirectory(tmpSolrHome);
+      tmpSolrHome = null;
+    }
     System.clearProperty("managed.schema.mutable");
     // System.clearProperty("enable.update.log");
     unchooseDefaultFeatureFormat();
@@ -333,8 +342,8 @@ public class TestRerankBase extends RestTestBase {
 
     Object parsedFeatureJson = null;
     try {
-      parsedFeatureJson = ObjectBuilder.fromJSON(featureJson);
-    } catch (final IOException ioExc) {
+      parsedFeatureJson = Utils.fromJSONString(featureJson);
+    } catch (final Exception ioExc) {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
 
@@ -357,8 +366,8 @@ public class TestRerankBase extends RestTestBase {
   static private Map<String,Object> mapFromJson(String json) throws ModelException {
     Object parsedJson = null;
     try {
-      parsedJson = ObjectBuilder.fromJSON(json);
-    } catch (final IOException ioExc) {
+      parsedJson = Utils.fromJSONString(json);
+    } catch (final Exception ioExc) {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
     return (Map<String,Object>) parsedJson;
@@ -411,7 +420,7 @@ public class TestRerankBase extends RestTestBase {
     }
 
     loadModel(name, LinearModel.class.getCanonicalName(), features,
-        "{\"weights\":{" + StringUtils.join(weights, ",") + "}}");
+        "{\"weights\":{" + String.join(",", weights) + "}}");
   }
 
   protected static void bulkIndex() throws Exception {
@@ -475,6 +484,61 @@ public class TestRerankBase extends RestTestBase {
     }
     assertU(commit());
     scn.close();
+  }
+
+  protected static void doTestParamsToMap(String featureClassName,
+      LinkedHashMap<String,Object> featureParams) throws Exception {
+
+    // start with default parameters
+    final LinkedHashMap<String,Object> paramsA = new LinkedHashMap<String,Object>();
+    final Object defaultValue;
+    switch (random().nextInt(6)) {
+      case 0:
+        defaultValue = null;
+        break;
+      case 1:
+        defaultValue = "1.2";
+        break;
+      case 2:
+        defaultValue = Double.valueOf(3.4d);
+        break;
+      case 3:
+        defaultValue = Float.valueOf(0.5f);
+        break;
+      case 4:
+        defaultValue = Integer.valueOf(67);
+        break;
+      case 5:
+        defaultValue = Long.valueOf(89);
+        break;
+      default:
+        defaultValue = null;
+        fail("unexpected defaultValue choice");
+        break;
+    }
+    if (defaultValue != null) {
+      paramsA.put("defaultValue", defaultValue);
+    }
+
+    // then add specific parameters
+    paramsA.putAll(featureParams);
+
+    // next choose a random feature name
+    final String featureName = "randomFeatureName"+random().nextInt(10);
+
+    // create a feature from the parameters
+    final Feature featureA = Feature.getInstance(solrResourceLoader,
+        featureClassName, featureName, paramsA);
+
+    // turn the feature back into parameters
+    final LinkedHashMap<String,Object> paramsB = featureA.paramsToMap();
+
+    // create feature B from feature A's parameters
+    final Feature featureB = Feature.getInstance(solrResourceLoader,
+        featureClassName, featureName, paramsB);
+
+    // check that feature A and feature B are identical
+    assertEquals(featureA, featureB);
   }
 
 }

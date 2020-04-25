@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Reduction functions to use for analytics expressions.
  */
 package org.apache.solr.analytics.function.reduction;

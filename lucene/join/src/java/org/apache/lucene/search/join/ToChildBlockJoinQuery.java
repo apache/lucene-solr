@@ -20,13 +20,15 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
@@ -62,6 +64,11 @@ public class ToChildBlockJoinQuery extends Query {
     super();
     this.parentQuery = parentQuery;
     this.parentsFilter = parentsFilter;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   @Override

@@ -52,13 +52,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOSupplier;
@@ -340,7 +341,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void apply(String name) {
-      if (doFail && name.equals("DocumentsWriterPerThread addDocument start"))
+      if (doFail && name.equals("DocumentsWriterPerThread addDocuments start"))
         throw new RuntimeException("intentionally failing");
     }
   }
@@ -566,19 +567,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        boolean sawFlush = false;
-        boolean sawFinishDocument = false;
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName())) {
-            sawFlush = true;
-          }
-          if ("finishDocument".equals(trace[i].getMethodName())) {
-            sawFinishDocument = true;
-          }
-        }
-
-        if (sawFlush && sawFinishDocument == false && count++ >= 30) {
+        if (callStackContainsAnyOf("flush") && false == callStackContainsAnyOf("finishDocument") && count++ >= 30) {
           doFail = false;
           throw new IOException("now failing during flush");
         }
@@ -760,7 +749,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     final int NUM_THREAD = 3;
-    final int NUM_ITER = 100;
+    final int NUM_ITER = atLeast(10);
 
     for(int i=0;i<2;i++) {
       Directory dir = newDirectory();
@@ -871,16 +860,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if (doFail && MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
-            didFail = true;
-            if (VERBOSE) {
-              System.out.println("TEST: now throw exc:");
-              new Throwable().printStackTrace(System.out);
-            }
-            throw new IOException("now failing on purpose during sync");
+        if (callStackContains(MockDirectoryWrapper.class, "sync")) {
+          didFail = true;
+          if (VERBOSE) {
+            System.out.println("TEST: now throw exc:");
+            new Throwable().printStackTrace(System.out);
           }
+          throw new IOException("now failing on purpose during sync");
+          
         }
       }
     }
@@ -948,28 +935,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean isCommit = false;
-      boolean isDelete = false;
-      boolean isSyncMetadata = false;
-      boolean isInGlobalFieldMap = false;
-      for (int i = 0; i < trace.length; i++) {
-        if (isCommit && isDelete && isInGlobalFieldMap && isSyncMetadata) {
-          break;
-        }
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
-          isCommit = true;
-        }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
-          isDelete = true;
-        }
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
-          isInGlobalFieldMap = true;
-        }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "syncMetaData".equals(trace[i].getMethodName())) {
-          isSyncMetadata = true;
-        }
-      }
+      boolean isCommit = callStackContains(SegmentInfos.class, stage);
+      boolean isDelete = callStackContains(MockDirectoryWrapper.class, "deleteFile");
+      boolean isSyncMetadata = callStackContains(MockDirectoryWrapper.class, "syncMetaData");
+      boolean isInGlobalFieldMap = callStackContains(SegmentInfos.class, "writeGlobalFieldMap");
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
         isCommit = false;
       }
@@ -1383,17 +1352,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean fail = false;
-      for (int i = 0; i < trace.length; i++) {
-        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
-          fail = true;
-          break;
-        }
-      }
-      
-      if (fail) {
+      if (callStackContains(TermVectorsConsumer.class, stage)) {
         throw new RuntimeException(EXC_MSG);
       }
     }
@@ -1713,17 +1672,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   
   // TODO: we could also check isValid, to catch "broken" bytesref values, might be too much?
   
-  static class UOEDirectory extends RAMDirectory {
+  static class UOEDirectory extends FilterDirectory {
     boolean doFail = false;
+
+    /**
+     */
+    protected UOEDirectory() {
+      super(new ByteBuffersDirectory());
+    }
 
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
       if (doFail && name.startsWith("segments_")) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("readCommit".equals(trace[i].getMethodName()) || "readLatestCommit".equals(trace[i].getMethodName())) {
-            throw new UnsupportedOperationException("expected UOE");
-          }
+        if (callStackContainsAnyOf("readCommit", "readLatestCommit")) {
+          throw new UnsupportedOperationException("expected UOE");
         }
       }
       return super.openInput(name, context);
@@ -1939,17 +1901,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           if (random().nextInt(10) != 0) {
             return;
           }
-          boolean maybeFail = false;
-          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-          
-          for (int i = 0; i < trace.length; i++) {
-            if ("rollbackInternal".equals(trace[i].getMethodName())) {
-              maybeFail = true;
-              break;
-            }
-          }
-          
-          if (maybeFail) {
+          if (callStackContainsAnyOf("rollbackInternal")) {
             if (VERBOSE) {
               System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
               new Throwable().printStackTrace(System.out);
@@ -1998,6 +1950,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
+  // TODO: can be super slow in pathological cases (merge config?)
+  @Nightly
   public void testMergeExceptionIsTragic() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
     final AtomicBoolean didFail = new AtomicBoolean();
@@ -2012,17 +1966,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             // Already failed
             return;
           }
-          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-          
-          for (int i = 0; i < trace.length; i++) {
-            if ("merge".equals(trace[i].getMethodName())) {
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              didFail.set(true);
-              throw new FakeIOException();
+
+          if (callStackContainsAnyOf("merge")) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+              new Throwable().printStackTrace(System.out);
             }
+            didFail.set(true);
+            throw new FakeIOException();
           }
         }
       });

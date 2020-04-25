@@ -20,11 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-public class NamedListTest extends LuceneTestCase {
+public class NamedListTest extends SolrTestCase {
+
+  @Test
+  public void testToString() {
+    NamedList<String> nl = new NamedList<>();
+    assertEquals("{}", nl.toString());
+    nl.add("key1", "value1");
+    assertEquals("{key1=value1}", nl.toString());
+    nl.add("key2", "value2");
+    assertEquals("{key1=value1, key2=value2}", nl.toString());
+  }
+
   public void testRemove() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1");
@@ -87,14 +98,8 @@ public class NamedListTest extends LuceneTestCase {
     assertEquals("value1-3", values.get(2));
     assertEquals(6, values.size());
     assertEquals(7, nl.size());
-    try {
-      values = (ArrayList<String>) nl.removeConfigArgs("key2");
-      fail();
-    }
-    catch(SolrException e) {
-      // Expected exception.
-      assertTrue(true);
-    }
+
+    expectThrows(SolrException.class, () -> nl.removeConfigArgs("key2"));
     // nl should be unmodified when removeArgs throws an exception.
     assertEquals(7, nl.size());
   }

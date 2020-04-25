@@ -18,9 +18,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,12 +33,11 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.fromJSON;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 /**
@@ -150,13 +147,17 @@ public class RequestParams implements MapSerializable {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
         Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
-        log.debug("latest version of {} in ZK  is : {}", resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
+        if (log.isDebugEnabled()) {
+          log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
+        }
         if (stat == null) {
           requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
           requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
-          log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+          if (log.isInfoEnabled()) {
+            log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+          }
         }
       } catch (KeeperException | InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
@@ -181,9 +182,9 @@ public class RequestParams implements MapSerializable {
         log.info("conf resource {} loaded . version : {} ", name, version);
       }
       try {
-        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
+        Map m = (Map) fromJSON (in);
         return new Object[]{m, version};
-      } catch (IOException e) {
+      } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
       }
 
@@ -253,8 +254,17 @@ public class RequestParams implements MapSerializable {
       return m1;
     }
 
+    /**
+     * @param type one of defaults, appends, invariants
+     */
     public VersionedParams getParams(String type) {
       return paramsMap.get(type);
+    }
+
+    /**get the raw map
+     */
+    public Map<String, Object> get() {
+      return defaults;
     }
   }
 

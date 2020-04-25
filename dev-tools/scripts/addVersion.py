@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -23,7 +25,7 @@ import re
 from configparser import ConfigParser, ExtendedInterpolation
 from textwrap import dedent
 
-def update_changes(filename, new_version, init_changes = '(No Changes)\n\n'):
+def update_changes(filename, new_version, init_changes, headers):
   print('  adding new section to %s...' % filename, end='', flush=True)
   matcher = re.compile(r'\d+\.\d+\.\d+\s+===')
   def edit(buffer, match, line):
@@ -33,6 +35,8 @@ def update_changes(filename, new_version, init_changes = '(No Changes)\n\n'):
     if match is not None:
       buffer.append(line.replace(match.group(0), new_version.dot))
       buffer.append(init_changes)
+      for header in headers:
+        buffer.append('%s\n---------------------\n(No changes)\n\n' % header)
     buffer.append(line)
     return match is not None
      
@@ -174,7 +178,7 @@ def check_solr_version_tests():
   print('ok')
 
 def read_config(current_version):
-  parser = argparse.ArgumentParser(description='Add a new version')
+  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, lucene/version.properties and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse)
   newconf = parser.parse_args()
 
@@ -196,25 +200,21 @@ def get_solr_init_changes():
   return dedent('''
     Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
-    Versions of Major Components
-    ---------------------
-    Apache Tika %(org.apache.tika.version)s
-    Carrot2 %(/org.carrot2/carrot2-mini)s
-    Velocity %(/org.apache.velocity/velocity)s and Velocity Tools %(/org.apache.velocity/velocity-tools)s
-    Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
-    Jetty %(org.eclipse.jetty.version)s
-
-
-    (No Changes)\n\n
-    ''' % parse_properties_file('lucene/ivy-versions.properties'))
+    ''')
   
 def main():
+  if not os.path.exists('lucene/version.properties'):
+    sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
   newconf = read_config(current_version)
+  is_bugfix = newconf.version.is_bugfix_release()
 
   print('\nAdding new version %s' % newconf.version)
-  update_changes('lucene/CHANGES.txt', newconf.version)
-  update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes())
+  # See LUCENE-8883 for some thoughts on which categories to use
+  update_changes('lucene/CHANGES.txt', newconf.version, '\n',
+                 ['Bug Fixes'] if is_bugfix else ['API Changes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other'])
+  update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
+                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:

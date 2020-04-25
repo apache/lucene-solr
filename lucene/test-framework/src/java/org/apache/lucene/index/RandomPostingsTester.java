@@ -519,7 +519,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedTermsEnum extends TermsEnum {
+  private static class SeedTermsEnum extends BaseTermsEnum {
     final SortedMap<BytesRef,SeedAndOrd> terms;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
@@ -1241,7 +1241,7 @@ public class RandomPostingsTester {
                         final boolean alwaysTestMax) throws Exception {
 
     if (options.contains(Option.THREADS)) {
-      int numThreads = TestUtil.nextInt(random, 2, 5);
+      int numThreads = LuceneTestCase.TEST_NIGHTLY ? TestUtil.nextInt(random, 2, 5) : 2;
       Thread[] threads = new Thread[numThreads];
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
         threads[threadUpto] = new TestThread(new Random(random.nextLong()), this, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);

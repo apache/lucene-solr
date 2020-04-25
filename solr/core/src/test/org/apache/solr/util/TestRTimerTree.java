@@ -16,10 +16,10 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 
-public class TestRTimerTree extends LuceneTestCase {
+public class TestRTimerTree extends SolrTestCase {
 
   private static class MockTimerImpl implements RTimer.TimerImpl {
     static private long systemTime;

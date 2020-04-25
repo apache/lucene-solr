@@ -39,7 +39,7 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public DoubleField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getNumeric(context.reader(), fieldName);
@@ -69,7 +69,7 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     if (exists) {

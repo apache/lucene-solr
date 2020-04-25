@@ -34,8 +34,8 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -116,7 +116,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
-
+    if (core != null && (!core.indexEnabled || core.readOnly)) {
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                              "Indexing is temporarily disabled");
+    }
     boolean succeeded = false;
     lock(iwLock.readLock());
     try {
@@ -201,14 +204,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     if (iw != null) {
       if (!rollback) {
         try {
-          log.debug("Closing old IndexWriter... core=" + coreName);
+          log.debug("Closing old IndexWriter... core= {}", coreName);
           iw.close();
         } catch (Exception e) {
           SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, e);
         }
       } else {
         try {
-          log.debug("Rollback old IndexWriter... core=" + coreName);
+          log.debug("Rollback old IndexWriter... core={}", coreName);
           iw.rollback();
         } catch (Exception e) {
           SolrException.log(log, "Error rolling back old IndexWriter. core=" + coreName, e);

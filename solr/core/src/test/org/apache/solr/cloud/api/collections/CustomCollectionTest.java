@@ -149,7 +149,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testRouteFieldForHashRouter()throws Exception{
     String collectionName = "routeFieldColl";
     int numShards = 4;

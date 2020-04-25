@@ -55,8 +55,13 @@ import org.apache.lucene.util.automaton.RegExp;
  * @see SimplePatternTokenizer
  *
  * @since 6.5.0
+ * @lucene.spi {@value #NAME}
  */
 public class SimplePatternTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "simplePattern";
+
   public static final String PATTERN = "pattern";
   private final Automaton dfa;
   private final int maxDeterminizedStates;
@@ -71,6 +76,11 @@ public class SimplePatternTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public SimplePatternTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public SimplePatternTokenizer create(final AttributeFactory factory) {
     return new SimplePatternTokenizer(factory, dfa);

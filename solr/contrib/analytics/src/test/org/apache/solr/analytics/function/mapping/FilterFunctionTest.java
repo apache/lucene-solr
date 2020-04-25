@@ -78,7 +78,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getBoolean();
@@ -125,7 +125,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getInt();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getInt();
@@ -172,7 +172,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getLong();
@@ -219,7 +219,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getFloat();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getFloat();
@@ -266,7 +266,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getDouble();
@@ -298,7 +298,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
   public void singleValueDateTest() throws DateTimeParseException {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValue val = new TestDateValue();
     TestBooleanValue filter = new TestBooleanValue();
 
@@ -316,7 +316,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getLong();
@@ -363,7 +363,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getString();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getString();
@@ -410,7 +410,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     filter.setExists(false);
     func.getObject();
     assertFalse(func.exists());
-    
+
     val.setExists(false);
     filter.setValue(true).setExists(true);
     func.getObject();
@@ -465,10 +465,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(true);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Boolean> values1 = Arrays.asList(true).iterator();
     func.streamBooleans( value -> {
@@ -476,12 +476,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Boolean> values2 = Arrays.asList(true).iterator();
     func.streamBooleans( value -> {
@@ -489,10 +489,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(false, false, true, true);
-    
+
     filter.setValue(false).setExists(true);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
@@ -505,7 +505,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
@@ -539,10 +539,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Integer> values1 = Arrays.asList(-4).iterator();
     func.streamInts( value -> {
@@ -550,12 +550,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().intValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Integer> values2 = Arrays.asList(-4).iterator();
     func.streamInts( value -> {
@@ -563,10 +563,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next().intValue(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(4, -10, 50, -74);
-    
+
     filter.setValue(false).setExists(true);
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
@@ -579,7 +579,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next().intValue(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
@@ -613,10 +613,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4L);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Long> values1 = Arrays.asList(-4L).iterator();
     func.streamLongs( value -> {
@@ -624,12 +624,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Long> values2 = Arrays.asList(-4L).iterator();
     func.streamLongs( value -> {
@@ -637,10 +637,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next().longValue(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(4L, -10L, 50L, -74L);
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
@@ -653,7 +653,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next().longValue(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
@@ -687,10 +687,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4.23423F);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Float> values1 = Arrays.asList(-4.23423F).iterator();
     func.streamFloats( value -> {
@@ -698,12 +698,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .0000001);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Float> values2 = Arrays.asList(-4.23423F).iterator();
     func.streamFloats( value -> {
@@ -711,10 +711,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value, .0000001);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(4.3F, -10.134F, 50.343F, -74.9874F);
-    
+
     filter.setValue(false).setExists(true);
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
@@ -727,7 +727,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value, .0000001);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
@@ -761,10 +761,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4.23423);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Double> values1 = Arrays.asList(-4.23423).iterator();
     func.streamDoubles( value -> {
@@ -772,12 +772,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .0000001);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Double> values2 = Arrays.asList(-4.23423).iterator();
     func.streamDoubles( value -> {
@@ -785,10 +785,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value, .0000001);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(4.3, -10.134, 50.343, -74.9874);
-    
+
     filter.setValue(false).setExists(true);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
@@ -801,7 +801,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value, .0000001);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
@@ -813,7 +813,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1931-03-16T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValueStream val = new TestDateValueStream();
     TestBooleanValue filter = new TestBooleanValue();
 
@@ -839,10 +839,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues("1810-12-02T10:30:15Z");
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Long> values1 = Arrays.asList(date1.getTime()).iterator();
     func.streamLongs( value -> {
@@ -850,12 +850,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Long> values2 = Arrays.asList(date1.getTime()).iterator();
     func.streamLongs( value -> {
@@ -863,10 +863,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next().longValue(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z");
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
@@ -879,7 +879,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next().longValue(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
@@ -913,10 +913,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues("abcdef");
-    
+
     filter.setValue(true).setExists(true);
     Iterator<String> values1 = Arrays.asList("abcdef").iterator();
     func.streamStrings( value -> {
@@ -924,12 +924,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<String> values2 = Arrays.asList("abcdef").iterator();
     func.streamStrings( value -> {
@@ -937,10 +937,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues("abc", "123", "def", "456");
-    
+
     filter.setValue(false).setExists(true);
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
@@ -953,7 +953,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
@@ -985,11 +985,11 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     Object obj = new TestAnalyticsValueStream();
     val.setValues(obj);
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Object> values1 = Arrays.<Object>asList(obj).iterator();
     func.streamObjects( value -> {
@@ -997,12 +997,12 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     filter.setValue(true).setExists(true);
     Iterator<Object> values2 = Arrays.<Object>asList(obj).iterator();
     func.streamObjects( value -> {
@@ -1010,10 +1010,10 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
-    
+
     // Multiple values
     val.setValues(3, "3", new Date(3));
-    
+
     filter.setValue(false).setExists(true);
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
@@ -1026,7 +1026,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     filter.setValue(false).setExists(true);
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);

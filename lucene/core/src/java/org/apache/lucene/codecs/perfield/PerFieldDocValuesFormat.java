@@ -54,8 +54,8 @@ import org.apache.lucene.util.IOUtils;
  * {@link ServiceLoader Service Provider Interface} to resolve format names.
  * <p>
  * Files written by each docvalues format have an additional suffix containing the 
- * format name. For example, in a per-field configuration instead of <tt>_1.dat</tt> 
- * filenames would look like <tt>_1_Lucene40_0.dat</tt>.
+ * format name. For example, in a per-field configuration instead of <code>_1.dat</code> 
+ * filenames would look like <code>_1_Lucene40_0.dat</code>.
  * @see ServiceLoader
  * @lucene.experimental
  */
@@ -135,6 +135,9 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
       // Group each consumer by the fields it handles
       for (FieldInfo fi : mergeState.mergeFieldInfos) {
+        if (fi.getDocValuesType() == DocValuesType.NONE) {
+          continue;
+        }
         // merge should ignore current format for the fields being merged
         DocValuesConsumer consumer = getInstance(fi, true);
         Collection<String> fieldsForConsumer = consumersToField.get(consumer);
@@ -261,7 +264,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     private final Map<String,DocValuesProducer> formats = new HashMap<>();
     
     // clone for merge
-    FieldsReader(FieldsReader other) throws IOException {
+    FieldsReader(FieldsReader other) {
       Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<>();
       // First clone all formats
       for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
@@ -368,7 +371,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
-    public DocValuesProducer getMergeInstance() throws IOException {
+    public DocValuesProducer getMergeInstance() {
       return new FieldsReader(this);
     }
 

@@ -329,7 +329,7 @@ trend or seasonality from a time series. This is known as making a time series
 
 === First Difference
 
-The actual technique of differencing is to use the difference between values rather then the
+The actual technique of differencing is to use the difference between values rather than the
 original values. The *first difference* takes the difference between a value and the value
 that came directly before it. The first difference is often used to remove the trend
 from a time series.

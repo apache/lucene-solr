@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.OffHeapFSTStore;
 
 /**
  * BlockTree's implementation of {@link Terms}.
@@ -57,39 +57,34 @@ public final class FieldReader extends Terms implements Accountable {
   final BytesRef rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final int longsSize;
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
     this.parent = parent;
     this.numTerms = numTerms;
-    this.sumTotalTermFreq = sumTotalTermFreq; 
-    this.sumDocFreq = sumDocFreq; 
+    this.sumTotalTermFreq = sumTotalTermFreq;
+    this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
-    this.longsSize = longsSize;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {
     //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
     // }
-
     rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
-
+    // Initialize FST always off-heap.
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
-      //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
-      index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
-        
+      index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       /*
         if (false) {
         final String dotFileName = segment + "_" + fieldInfo.name + ".dot";

@@ -155,3 +155,5 @@ The current design of CDCR has some limitations. CDCR will continue to evolve ov
 * CDCR works most robustly with the same number of shards in the Source and Target collection. The shards in the two collections may have different numbers of replicas.
 * Running CDCR with the indexes on HDFS is not currently supported, see the https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS] JIRA issue.
 * Configuration files (`solrconfig.xml`, `managed-schema`, etc.) are not automatically synchronized between the Source and Target clusters. This means that when the Source schema or `solrconfig.xml` files are changed, those changes must be replicated manually to the Target cluster. This includes adding fields by the <<schema-api.adoc#schema-api,Schema API>> or <<managed-resources.adoc#managed-resources,Managed Resources>> as well as hand editing those files.
+* CDCR doesn't support <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication features>> across clusters.
+* CDCR does not yet support TLOG or PULL replica types.

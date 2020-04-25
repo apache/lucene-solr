@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -134,7 +135,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     SolrQueryRequest req = req();
     try {
       int nShards = responsesAndTests.length / 2;
-      Object jsonFacet = ObjectBuilder.fromJSON(facet);
+      Object jsonFacet = Utils.fromJSONString(facet);
       FacetParser parser = new FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
@@ -210,7 +211,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null,
         null
     );
-    
+
     // same test, but nested in a terms facet
     doTestRefine("{top:{type:terms, field:Afield, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}], more:true} } ] } }",
@@ -276,7 +277,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "    between:{ x:{_l : [x1]} }" + 
                  "} } ");
     // a range face w/o any sub facets shouldn't require any refinement
-    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" +
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" ,
                  // phase #1
                  "{top: {buckets:[{val:0, count:2}, {val:2, count:2}]," +
                  "       before:{count:3},after:{count:47}," +
@@ -289,7 +290,39 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  // refinement...
                  null,
                  null);
-    
+
+    // same test, but nested in range facet with ranges
+    doTestRefine("{top:{type:range, field:R, ranges:[{from:0, to:1}], facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+        "{top: {buckets:[{val:\"[0,1)\", count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:\"[0,1)\", count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
+        null,
+        "=={top: {" +
+            "_s:[  [\"[0,1)\" , {x:{_l:[x1]}} ]  ]" +
+            "    }  " +
+            "}"
+    );
+
+    doTestRefine("{top:{type:range, field:R, ranges:[{from:\"*\", to:1}], facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+        "{top: {buckets:[{val:\"[*,1)\", count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:\"[*,1)\", count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
+        null,
+        "=={top: {" +
+            "_s:[  [\"[*,1)\" , {x:{_l:[x1]}} ]  ]" +
+            "    }  " +
+            "}"
+    );
+
+    // a range facet w/o any sub facets shouldn't require any refinement
+    // other and include ignored for ranges
+    doTestRefine("{top:{type:range, other:all, field:R, ranges:[{from:0, to:2},{from:2, to:3}] } }",
+            // phase #1
+            "{top: {buckets:[{val:\"[0,2)\", count:2}, {val:\"[2,3)\", count:2}]," +
+            "       } }",
+        "{top: {buckets:[{val:\"[0,2)\", count:2}, {val:\"[2,3)\", count:19}]," +
+            "       } }",
+        // refinement...
+        null,
+        null);
 
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
@@ -1405,24 +1438,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
               "                            cat0:{ buckets: [{val:A,count:4}] } } ] } }");
 
     } // end method loop
-  }
-
-  // Unlike solrconfig.xml this test using solrconfig-tlog.xml should not fail with too-many-exceptions (see TestSolrQueryParser.testManyClauses)
-  @Test
-  public void testManyClauses() throws Exception {
-    String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
-    StringBuilder sb = new StringBuilder("id:(");
-    for (int i = 0; i < 1024; i++) { // historically, the max number of boolean clauses defaulted to 1024
-      sb.append('z').append(i).append(' ');
-    }
-    sb.append(a);
-    sb.append(")");
-
-    String q = sb.toString();
-
-    ignoreException("Too many clauses");
-    assertJQ(req("q", q)
-        , "/response/numFound==");
   }
 
 }

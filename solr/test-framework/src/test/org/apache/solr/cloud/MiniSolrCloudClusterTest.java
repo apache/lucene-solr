@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -31,7 +32,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
-public class MiniSolrCloudClusterTest extends LuceneTestCase {
+public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static TestRule solrClassRules = RuleChain.outerRule(
@@ -81,16 +82,10 @@ public class MiniSolrCloudClusterTest extends LuceneTestCase {
       }
     };
 
-    try {
-      cluster.shutdown();
-      fail("Expected an exception to be thrown on MiniSolrCloudCluster shutdown");
-    }
-    catch (Exception e) {
-      assertEquals("Error shutting down MiniSolrCloudCluster", e.getMessage());
-      assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake IOException on shutdown!", e.getSuppressed()[0].getMessage());
-    }
-
+    Exception ex = expectThrows(Exception.class, cluster::shutdown);
+    assertEquals("Error shutting down MiniSolrCloudCluster", ex.getMessage());
+    assertEquals("Expected one suppressed exception", 1, ex.getSuppressed().length);
+    assertEquals("Fake IOException on shutdown!", ex.getSuppressed()[0].getMessage());
   }
 
   @Test

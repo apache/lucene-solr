@@ -32,6 +32,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -46,7 +47,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FileSwitchDirectory;
 import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
@@ -64,21 +64,21 @@ public final class IOUtils {
   private IOUtils() {} // no instance
 
   /**
-   * Closes all given <tt>Closeable</tt>s.  Some of the
-   * <tt>Closeable</tt>s may be null; they are
+   * Closes all given <code>Closeable</code>s.  Some of the
+   * <code>Closeable</code>s may be null; they are
    * ignored.  After everything is closed, the method either
    * throws the first exception it hit while closing, or
    * completes normally if there were no exceptions.
    * 
    * @param objects
-   *          objects to call <tt>close()</tt> on
+   *          objects to call <code>close()</code> on
    */
   public static void close(Closeable... objects) throws IOException {
     close(Arrays.asList(objects));
   }
   
   /**
-   * Closes all given <tt>Closeable</tt>s.
+   * Closes all given <code>Closeable</code>s.
    * @see #close(Closeable...)
    */
   public static void close(Iterable<? extends Closeable> objects) throws IOException {
@@ -99,18 +99,18 @@ public final class IOUtils {
   }
 
   /**
-   * Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions.
-   * Some of the <tt>Closeable</tt>s may be null, they are ignored.
+   * Closes all given <code>Closeable</code>s, suppressing all thrown exceptions.
+   * Some of the <code>Closeable</code>s may be null, they are ignored.
    * 
    * @param objects
-   *          objects to call <tt>close()</tt> on
+   *          objects to call <code>close()</code> on
    */
   public static void closeWhileHandlingException(Closeable... objects) {
     closeWhileHandlingException(Arrays.asList(objects));
   }
   
   /**
-   * Closes all given <tt>Closeable</tt>s, suppressing all thrown non {@link VirtualMachineError} exceptions.
+   * Closes all given <code>Closeable</code>s, suppressing all thrown non {@link VirtualMachineError} exceptions.
    * Even if a {@link VirtualMachineError} is thrown all given closeable are closed.
    * @see #closeWhileHandlingException(Closeable...)
    */
@@ -261,8 +261,8 @@ public final class IOUtils {
   }
   
   /**
-   * Deletes all given <tt>Path</tt>s, if they exist.  Some of the
-   * <tt>File</tt>s may be null; they are
+   * Deletes all given <code>Path</code>s, if they exist.  Some of the
+   * <code>File</code>s may be null; they are
    * ignored.  After everything is deleted, the method either
    * throws the first exception it hit while deleting, or
    * completes normally if there were no exceptions.
@@ -274,8 +274,8 @@ public final class IOUtils {
   }
   
   /**
-   * Deletes all given <tt>Path</tt>s, if they exist.  Some of the
-   * <tt>File</tt>s may be null; they are
+   * Deletes all given <code>Path</code>s, if they exist.  Some of the
+   * <code>File</code>s may be null; they are
    * ignored.  After everything is deleted, the method either
    * throws the first exception it hit while deleting, or
    * completes normally if there were no exceptions.
@@ -425,18 +425,28 @@ public final class IOUtils {
   public static void fsync(Path fileToSync, boolean isDir) throws IOException {
     // If the file is a directory we have to open read-only, for regular files we must open r/w for the fsync to have an effect.
     // See http://blog.httrack.com/blog/2013/11/15/everything-you-always-wanted-to-know-about-fsync/
-    try (final FileChannel file = FileChannel.open(fileToSync, isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
-      file.force(true);
-    } catch (IOException ioe) {
-      if (isDir) {
-        assert (Constants.LINUX || Constants.MAC_OS_X) == false :
-            "On Linux and MacOSX fsyncing a directory should not throw IOException, "+
-                "we just don't want to rely on that in production (undocumented). Got: " + ioe;
-        // Ignore exception if it is a directory
-        return;
+    if (isDir && Constants.WINDOWS) {
+      // opening a directory on Windows fails, directories can not be fsynced there
+      if (Files.exists(fileToSync) == false) {
+        // yet do not suppress trying to fsync directories that do not exist
+        throw new NoSuchFileException(fileToSync.toString());
       }
-      // Throw original exception
-      throw ioe;
+      return;
+    }
+    try (final FileChannel file = FileChannel.open(fileToSync, isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
+      try {
+        file.force(true);
+      } catch (final IOException e) {
+        if (isDir) {
+          assert (Constants.LINUX || Constants.MAC_OS_X) == false :
+              "On Linux and MacOSX fsyncing a directory should not throw IOException, " +
+                  "we just don't want to rely on that in production (undocumented). Got: " + e;
+          // Ignore exception if it is a directory
+          return;
+        }
+        // Throw original exception
+        throw e;
+      }
     }
   }
 
@@ -454,7 +464,7 @@ public final class IOUtils {
       FileSwitchDirectory fsd = (FileSwitchDirectory) dir;
       // Spinning is contagious:
       return spins(fsd.getPrimaryDir()) || spins(fsd.getSecondaryDir());
-    } else if (dir instanceof RAMDirectory || dir instanceof ByteBuffersDirectory) {
+    } else if (dir instanceof ByteBuffersDirectory) {
       return false;
     } else if (dir instanceof FSDirectory) {
       return spins(((FSDirectory) dir).getDirectory());

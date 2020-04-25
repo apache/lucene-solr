@@ -64,8 +64,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @see PhoneticFilter
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PhoneticFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "phonetic";
+
   /** parameter name: either a short name or a full class name */
   public static final String ENCODER = "encoder";
   /** parameter name: true if encoded tokens should be added as synonyms */
@@ -109,6 +114,11 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public PhoneticFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     clazz = registry.get(name.toUpperCase(Locale.ROOT));
@@ -144,7 +154,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
     // Unfortunately, Commons-Codec doesn't offer any thread-safe guarantees so we must play it safe and instantiate
     // every time.  A simple benchmark showed this as negligible.
     try {
-      Encoder encoder = clazz.newInstance();
+      Encoder encoder = clazz.getConstructor().newInstance();
       // Try to set the maxCodeLength
       if(maxCodeLength != null && setMaxCodeLenMethod != null) {
         setMaxCodeLenMethod.invoke(encoder, maxCodeLength);

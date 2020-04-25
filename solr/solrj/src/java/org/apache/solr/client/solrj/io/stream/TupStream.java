@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Iterator;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.SingleValueComparator;
@@ -45,15 +46,18 @@ public class TupStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private StreamContext streamContext;
-  
+
   private Map<String,String> stringParams = new HashMap<>();
   private Map<String,StreamEvaluator> evaluatorParams = new HashMap<>();
   private Map<String,TupleStream> streamParams = new HashMap<>();
   private List<String> fieldNames = new ArrayList();
   private Map<String, String> fieldLabels = new HashMap();
   private Tuple tup = null;
+  private Tuple unnestedTuple = null;
+  private Iterator<Tuple>  unnestedTuples = null;
   
   private boolean finished;
+
 
   public TupStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
@@ -146,13 +150,27 @@ public class TupStream extends TupleStream implements Expressible {
 
   public Tuple read() throws IOException {
 
-    if(finished) {
-      Map<String,Object> m = new HashMap<>();
-      m.put("EOF", true);
-      return new Tuple(m);
+    if(unnestedTuples == null) {
+      if (finished) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("EOF", true);
+        return new Tuple(m);
+      } else {
+        finished = true;
+        if(unnestedTuple != null) {
+          return unnestedTuple;
+        } else {
+          return tup;
+        }
+      }
     } else {
-      finished = true;
-      return tup;
+      if(unnestedTuples.hasNext()) {
+        return unnestedTuples.next();
+      } else {
+        Map<String, Object> m = new HashMap<>();
+        m.put("EOF", true);
+        return new Tuple(m);
+      }
     }
   }
 
@@ -202,6 +220,19 @@ public class TupStream extends TupleStream implements Expressible {
       }
     }
 
+    if(values.size() == 1) {
+      for(Object o :values.values()) {
+        if(o instanceof Tuple) {
+          unnestedTuple = (Tuple)o;
+        } else if(o instanceof List) {
+          List l = (List)o;
+          if(l.size() > 0 && l.get(0) instanceof Tuple) {
+            List<Tuple> tl = (List<Tuple>)l;
+            unnestedTuples = tl.iterator();
+          }
+        }
+      }
+    }
     this.tup = new Tuple(values);
     tup.fieldNames = fieldNames;
     tup.fieldLabels = fieldLabels;

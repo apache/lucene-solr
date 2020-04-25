@@ -44,7 +44,6 @@ import org.apache.lucene.util.NumericUtils;
  * @see PointValues
  */
 public final class IntPoint extends Field {
-
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
     type.setDimensions(numDims, Integer.BYTES);
@@ -59,8 +58,8 @@ public final class IntPoint extends Field {
 
   /** Change the values of this field */
   public void setIntValues(int... point) {
-    if (type.pointDataDimensionCount() != point.length) {
-      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
+    if (type.pointDimensionCount() != point.length) {
+      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
     }
     fieldsData = pack(point);
   }
@@ -72,15 +71,21 @@ public final class IntPoint extends Field {
 
   @Override
   public Number numericValue() {
-    if (type.pointDataDimensionCount() != 1) {
-      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot convert to a single numeric value");
+    if (type.pointDimensionCount() != 1) {
+      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == Integer.BYTES;
     return decodeDimension(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(int... point) {
+  /**
+   *  Pack an integer point into a BytesRef
+   *
+   * @param point int[] value
+   * @throws IllegalArgumentException is the value is null or of zero length
+   */
+  public static BytesRef pack(int... point) {
     if (point == null) {
       throw new IllegalArgumentException("point must not be null");
     }
@@ -116,7 +121,7 @@ public final class IntPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    for (int dim = 0; dim < type.pointDataDimensionCount(); dim++) {
+    for (int dim = 0; dim < type.pointDimensionCount(); dim++) {
       if (dim > 0) {
         result.append(',');
       }

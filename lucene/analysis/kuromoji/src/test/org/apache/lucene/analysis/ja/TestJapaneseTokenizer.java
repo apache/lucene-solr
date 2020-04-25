@@ -33,7 +33,10 @@ import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.analysis.ja.dict.BinaryDictionary.ResourceScheme;
 import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
+import org.apache.lucene.analysis.ja.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.ja.dict.UnknownDictionary;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -45,28 +48,20 @@ public class
     TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public static UserDictionary readDict() {
-    InputStream is = TestJapaneseTokenizer.class.getResourceAsStream("userdict.txt");
-    if (is == null) {
-      throw new RuntimeException("Cannot find userdict.txt in test classpath!");
-    }
-    try {
-      try {
-        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        return UserDictionary.open(reader);
-      } finally {
-        is.close();
-      }
+    try (InputStream stream = TestJapaneseTokenizer.class.getResourceAsStream("userdict.txt");
+         Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+      return UserDictionary.open(reader);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
   }
 
-  private Analyzer analyzer, analyzerNormal, analyzerNormalNBest, analyzerNoPunct, extendedModeAnalyzerNoPunct;
+  private Analyzer analyzer, analyzerNormal, analyzerNormalNBest, analyzerNoPunct, extendedModeAnalyzerNoPunct, analyzerNoCompound, extendedModeAnalyzerNoCompound;
 
   private JapaneseTokenizer makeTokenizer(boolean discardPunctuation, Mode mode) {
     return new JapaneseTokenizer(newAttributeFactory(), readDict(), discardPunctuation, mode);
   }
-
+  
   private Analyzer makeAnalyzer(final Tokenizer t) {
     return new Analyzer() {
       @Override
@@ -82,21 +77,21 @@ public class
     analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, false, Mode.SEARCH);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     analyzerNormal = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.NORMAL);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, false, Mode.NORMAL);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     analyzerNormalNBest = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        JapaneseTokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.NORMAL);
+        JapaneseTokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, false, Mode.NORMAL);
         tokenizer.setNBestCost(2000);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
@@ -104,14 +99,28 @@ public class
     analyzerNoPunct = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, false, Mode.SEARCH);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     extendedModeAnalyzerNoPunct = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, Mode.EXTENDED);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, false, Mode.EXTENDED);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    analyzerNoCompound = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, true, Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    extendedModeAnalyzerNoCompound = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, true, Mode.EXTENDED);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -119,7 +128,7 @@ public class
 
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct);
+    IOUtils.close(analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct, analyzerNoCompound, extendedModeAnalyzerNoCompound);
     super.tearDown();
   }
 
@@ -181,7 +190,7 @@ public class
     t.setNBestCost(0);
     assertAnalyzesTo(a,
                      "成田空港、米原油流出",
-                     new String[] {"成田", "成田空港", "空港", "米", "原油", "流出"});
+                     new String[] {"成田", "空港", "米", "原油", "流出"});
 
     t.setNBestCost(4000);
     assertAnalyzesTo(a,
@@ -311,17 +320,26 @@ public class
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNoPunct, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNormalNBest, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNoPunct, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNormalNBest, 100*RANDOM_MULTIPLIER);
   }
 
   /** blast some random large strings through the analyzer */
+  @Slow
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNoPunct, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNormalNBest, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerNoPunct, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerNormalNBest, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNoPunct, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNormalNBest, 3*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -335,12 +353,30 @@ public class
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    analyzer.close();
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsMockGraphAfterAtNight() throws Exception {
+    // Randomly inject graph tokens after JapaneseTokenizer:
+    Random random = random();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
+        TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
+        return new TokenStreamComponents(tokenizer, graph);
+      }
+    };
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
 
+
   public void testLargeDocReliability() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int numIters = atLeast(1);
+    for (int i = 0; i < numIters; i++) {
       String s = TestUtil.randomUnicodeString(random(), 10000);
       try (TokenStream ts = analyzer.tokenStream("foo", s)) {
         ts.reset();
@@ -359,7 +395,7 @@ public class
 
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
-    int numIterations = atLeast(10000);
+    int numIterations = atLeast(500);
     for (int i = 0; i < numIterations; i++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + i);
@@ -439,6 +475,23 @@ public class
                               new int[] { 1, 2, 4 },
                               4
     );
+  }
+
+  // Make sure loading custom dictionaries from classpath works:
+  public void testCustomDictionary() throws Exception {
+    Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(),
+        new TokenInfoDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/TokenInfoDictionary"),
+        new UnknownDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/UnknownDictionary"),
+        new ConnectionCosts(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/ConnectionCosts"),
+        readDict(), true, false, Mode.SEARCH);
+    try (Analyzer a = makeAnalyzer(tokenizer)) {
+      assertTokenStreamContents(a.tokenStream("foo", "abcd"),
+                                new String[] { "a", "b", "cd"  },
+                                new int[] { 0, 1, 2 },
+                                new int[] { 1, 2, 4 },
+                                4
+                                );
+    }
   }
 
   // HMM: fails (segments as a/b/cd/efghij)... because the
@@ -835,5 +888,34 @@ public class
     tokenizer.setReader(new StringReader(doc));
     tokenizer.reset();
     while (tokenizer.incrementToken());
+  }
+
+  public void testPatchedSystemDict() throws Exception {
+    assertAnalyzesTo(analyzer, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
+
+    assertAnalyzesTo(analyzerNormal, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
+  }
+
+  public void testNoCompoundToken() throws Exception {
+    assertAnalyzesTo(analyzerNormal, "株式会社とアカデミア",
+        new String[]{"株式会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(analyzer, "株式会社とアカデミア",
+        new String[]{"株式", "株式会社", "会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(analyzerNoCompound, "株式会社とアカデミア",
+        new String[]{"株式", "会社", "と", "アカデミア"});
+
+    assertAnalyzesTo(extendedModeAnalyzerNoPunct, "株式会社とアカデミア",
+        new String[]{"株式", "株式会社", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
+
+    assertAnalyzesTo(extendedModeAnalyzerNoCompound, "株式会社とアカデミア",
+        new String[]{"株式", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
   }
 }

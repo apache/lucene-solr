@@ -1,7 +1,7 @@
 #Sun Sep 23 13:02:27 EDT 2012
 eclipse.preferences.version=1
-org.eclipse.jdt.core.compiler.codegen.targetPlatform=1.8
-org.eclipse.jdt.core.compiler.compliance=1.8
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=11
+org.eclipse.jdt.core.compiler.compliance=11
 org.eclipse.jdt.core.compiler.doc.comment.support=enabled
 org.eclipse.jdt.core.compiler.problem.annotationSuperInterface=error
 org.eclipse.jdt.core.compiler.problem.assertIdentifier=error
@@ -34,7 +34,7 @@ org.eclipse.jdt.core.compiler.problem.overridingPackageDefaultMethod=error
 org.eclipse.jdt.core.compiler.problem.unusedImport=error
 org.eclipse.jdt.core.compiler.problem.varargsArgumentNeedCast=error
 org.eclipse.jdt.core.compiler.annotation.nullanalysis=disabled
-org.eclipse.jdt.core.compiler.source=1.8
+org.eclipse.jdt.core.compiler.source=11
 org.eclipse.jdt.core.compiler.taskCaseSensitive=enabled
 org.eclipse.jdt.core.compiler.taskPriorities=HIGH
 org.eclipse.jdt.core.compiler.taskTags=nocommit

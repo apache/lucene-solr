@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -44,7 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
@@ -62,7 +60,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String isTransient, String loadOnStartup) {
-    return new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc.getContainerProperties(), false,
+    return new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc,
         CoreDescriptor.CORE_TRANSIENT, isTransient,
         CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
   }
@@ -617,8 +615,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
     }
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
-    NodeConfig config = SolrXmlConfig.fromString(loader, "<solr/>");
+    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
     return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
@@ -736,7 +733,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static final String makePath(String... args) {
-    return StringUtils.join(args, File.separator);
+    return String.join(File.separator, args);
   }
 
   @Test
@@ -799,8 +796,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
-    DirectUpdateHandler2.commitOnClose = true;
-
     CoreContainer cc = init();
     String[] coreList = new String[]{
         "collection2",

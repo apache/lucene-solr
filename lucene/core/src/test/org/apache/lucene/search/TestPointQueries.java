@@ -64,7 +64,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -333,7 +332,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testAllEqual() throws Exception {
-    int numValues = atLeast(10000);
+    int numValues = atLeast(1000);
     long value = randomValue();
     long[] values = new long[numValues];
 
@@ -351,7 +350,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomLongsMedium() throws Exception {
-    doTestRandomLongs(10000);
+    doTestRandomLongs(1000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
@@ -603,13 +602,13 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(1000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
     if (VERBOSE) {
@@ -783,7 +782,7 @@ public class TestPointQueries extends LuceneTestCase {
                 upper[dim] = new byte[bytesPerDim];
                 random().nextBytes(upper[dim]);
 
-                if (FutureArrays.compareUnsigned(lower[dim], 0, bytesPerDim, upper[dim], 0, bytesPerDim) > 0) {
+                if (Arrays.compareUnsigned(lower[dim], 0, bytesPerDim, upper[dim], 0, bytesPerDim) > 0) {
                   byte[] x = lower[dim];
                   lower[dim] = upper[dim];
                   upper[dim] = x;
@@ -883,12 +882,12 @@ public class TestPointQueries extends LuceneTestCase {
     int numDims = lower.length;
     for(int dim=0;dim<numDims;dim++) {
 
-      if (FutureArrays.compareUnsigned(value[dim], 0, bytesPerDim, lower[dim], 0, bytesPerDim) < 0) {
+      if (Arrays.compareUnsigned(value[dim], 0, bytesPerDim, lower[dim], 0, bytesPerDim) < 0) {
         // Value is below the lower bound, on this dim
         return false;
       }
 
-      if (FutureArrays.compareUnsigned(value[dim], 0, bytesPerDim, upper[dim], 0, bytesPerDim) > 0) {
+      if (Arrays.compareUnsigned(value[dim], 0, bytesPerDim, upper[dim], 0, bytesPerDim) > 0) {
         // Value is above the upper bound, on this dim
         return false;
       }
@@ -1161,14 +1160,14 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene80")) {
+    if (Codec.getDefault().getName().equals("Lucene84")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 5.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene80", Codec.getDefault()) {
+      return new FilterCodec("Lucene84", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
@@ -1418,7 +1417,7 @@ public class TestPointQueries extends LuceneTestCase {
                 new Comparator<byte[]>() {
                   @Override
                   public int compare(byte[] a, byte[] b) {
-                    return FutureArrays.compareUnsigned(a, 0, a.length, b, 0, a.length);
+                    return Arrays.compareUnsigned(a, 0, a.length, b, 0, a.length);
                   }
                 });
 
@@ -1762,6 +1761,65 @@ public class TestPointQueries extends LuceneTestCase {
     dir.close();
   }
 
+  public void testPointRangeQueryManyEqualValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+
+    int zeroCount = 0;
+    int oneCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(cardinality);
+      if (x == 0) {
+        zeroCount++;
+      } else if (x == 1) {
+        oneCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r, false);
+
+    assertEquals(zeroCount, s.count(IntPoint.newRangeQuery("int", 0, 0)));
+    assertEquals(oneCount, s.count(IntPoint.newRangeQuery("int", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(IntPoint.newRangeQuery("int", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(IntPoint.newRangeQuery("int", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newRangeQuery("long", 0, 0)));
+    assertEquals(oneCount, s.count(LongPoint.newRangeQuery("long", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(LongPoint.newRangeQuery("long", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(LongPoint.newRangeQuery("long", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newRangeQuery("float", 0, 0)));
+    assertEquals(oneCount, s.count(FloatPoint.newRangeQuery("float", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(FloatPoint.newRangeQuery("float", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(FloatPoint.newRangeQuery("float", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newRangeQuery("double", 0, 0)));
+    assertEquals(oneCount, s.count(DoublePoint.newRangeQuery("double", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(DoublePoint.newRangeQuery("double", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(DoublePoint.newRangeQuery("double", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {0})));
+    assertEquals(oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {1}, new byte[] {1})));
+    assertEquals(zeroCount + oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {1})));
+    assertEquals(10000 - zeroCount - oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {2}, new byte[] {(byte) cardinality})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
   public void testPointInSetQueryManyEqualValuesWithBigGap() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -1973,11 +2031,25 @@ public class TestPointQueries extends LuceneTestCase {
     assertFalse(q1.equals(IntPoint.newExactQuery("a", 1)));
     assertFalse(q1.equals(IntPoint.newExactQuery("b", 1000)));
 
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    PointRangeQuery pq1 = (PointRangeQuery) q1;
+    PointRangeQuery pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
+
     q1 = LongPoint.newExactQuery("a", 1000);
     q2 = LongPoint.newExactQuery("a", 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(LongPoint.newExactQuery("a", 1)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
 
     q1 = FloatPoint.newExactQuery("a", 1000);
     q2 = FloatPoint.newExactQuery("a", 1000);
@@ -1985,11 +2057,25 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(FloatPoint.newExactQuery("a", 1)));
 
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
+
     q1 = DoublePoint.newExactQuery("a", 1000);
     q2 = DoublePoint.newExactQuery("a", 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(DoublePoint.newExactQuery("a", 1)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
 
     byte[] ones = new byte[5];
     Arrays.fill(ones, (byte) 0xff);
@@ -2000,6 +2086,13 @@ public class TestPointQueries extends LuceneTestCase {
     byte[] other = ones.clone();
     other[2] = (byte) 5;
     assertFalse(q1.equals(BinaryPoint.newExactQuery("a", other)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
   }
 
   public void testPointInSetEquals() {
@@ -2082,6 +2175,7 @@ public class TestPointQueries extends LuceneTestCase {
     assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
   }
 
+  @Nightly
   public void testInversePointRange() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());

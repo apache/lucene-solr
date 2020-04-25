@@ -24,12 +24,12 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-public abstract class DOMUtilTestBase extends LuceneTestCase {
+public abstract class DOMUtilTestBase extends SolrTestCase {
   
   private DocumentBuilder builder;
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();

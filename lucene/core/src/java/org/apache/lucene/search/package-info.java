@@ -29,11 +29,11 @@
  *     </ol>
  * 
  * 
- * <a name="search"></a>
+ * <a id="search"></a>
  * <h2>Search Basics</h2>
  * <p>
  * Lucene offers a wide variety of {@link org.apache.lucene.search.Query} implementations, most of which are in
- * this package, its subpackage ({@link org.apache.lucene.search.spans spans},
+ * this package, its subpackage ({@link org.apache.lucene.search.spans spans}),
  * or the <a href="{@docRoot}/../queries/overview-summary.html">queries module</a>. These implementations can be combined in a wide 
  * variety of ways to provide complex querying capabilities along with information about where matches took place in the document 
  * collection. The <a href="#query">Query Classes</a> section below highlights some of the more important Query classes. For details 
@@ -50,7 +50,7 @@
  *     <!-- TODO: this page over-links the same things too many times -->
  * 
  * 
- * <a name="query"></a>
+ * <a id="query"></a>
  * <h2>Query Classes</h2>
  * <h3>
  *     {@link org.apache.lucene.search.TermQuery TermQuery}
@@ -74,8 +74,8 @@
  *         TermQuery tq = new TermQuery(new Term("fieldName", "term"));
  *     </pre>In this example, the {@link org.apache.lucene.search.Query Query} identifies all 
  *         {@link org.apache.lucene.document.Document Document}s that have the 
- *         {@link org.apache.lucene.document.Field Field} named <tt>"fieldName"</tt>
- *     containing the word <tt>"term"</tt>.
+ *         {@link org.apache.lucene.document.Field Field} named <code>"fieldName"</code>
+ *     containing the word <code>"term"</code>.
  * <h3>
  *     {@link org.apache.lucene.search.BooleanQuery BooleanQuery}
  * </h3>
@@ -108,7 +108,7 @@
  *     </ol>
  *     Boolean queries are constructed by adding two or more
  *     {@link org.apache.lucene.search.BooleanClause BooleanClause}
- *     instances. If too many clauses are added, a {@link org.apache.lucene.search.BooleanQuery.TooManyClauses TooManyClauses}
+ *     instances. If too many clauses are added, a {@link org.apache.lucene.search.IndexSearcher.TooManyClauses TooManyClauses}
  *     exception will be thrown during searching. This most often occurs
  *     when a {@link org.apache.lucene.search.Query Query}
  *     is rewritten into a {@link org.apache.lucene.search.BooleanQuery BooleanQuery} with many
@@ -116,7 +116,7 @@
  *     for example by {@link org.apache.lucene.search.WildcardQuery WildcardQuery}.
  *     The default setting for the maximum number
  *     of clauses is 1024, but this can be changed via the
- *     static method {@link org.apache.lucene.search.BooleanQuery#setMaxClauseCount(int)}.
+ *     static method {@link org.apache.lucene.search.IndexSearcher#setMaxClauseCount(int)}.
  * 
  * <h3>Phrases</h3>
  * 
@@ -175,11 +175,11 @@
  *     The {@link org.apache.lucene.search.PrefixQuery PrefixQuery} allows an application
  *     to identify all documents with terms that begin with a certain string. The 
  *         {@link org.apache.lucene.search.WildcardQuery WildcardQuery} generalizes this by allowing
- *     for the use of <tt>*</tt> (matches 0 or more characters) and <tt>?</tt> (matches exactly one character) wildcards.
+ *     for the use of <code>*</code> (matches 0 or more characters) and <code>?</code> (matches exactly one character) wildcards.
  *     Note that the {@link org.apache.lucene.search.WildcardQuery WildcardQuery} can be quite slow. Also
  *     note that
  *     {@link org.apache.lucene.search.WildcardQuery WildcardQuery} should
- *     not start with <tt>*</tt> and <tt>?</tt>, as these are extremely slow. 
+ *     not start with <code>*</code> and <code>?</code>, as these are extremely slow. 
  *     Some QueryParsers may not allow this by default, but provide a <code>setAllowLeadingWildcard</code> method
  *     to remove that protection.
  *     The {@link org.apache.lucene.search.RegexpQuery RegexpQuery} is even more general than WildcardQuery,
@@ -196,7 +196,7 @@
  *     This type of query can be useful when accounting for spelling variations in the collection.
  * 
  * 
- * <a name="scoring"></a>
+ * <a id="scoring"></a>
  * <h2>Scoring &mdash; Introduction</h2>
  * <p>Lucene scoring is the heart of why we all love Lucene. It is blazingly fast and it hides 
  *    almost all of the complexity from the user. In a nutshell, it works.  At least, that is, 
@@ -229,7 +229,7 @@
  *    Finally, we will finish up with some reference material in the <a href="#algorithm">Appendix</a>.
  * 
  * 
- * <a name="scoringBasics"></a>
+ * <a id="scoringBasics"></a>
  * <h2>Scoring &mdash; Basics</h2>
  * <p>Scoring is very much dependent on the way documents are indexed, so it is important to understand 
  *    indexing. (see <a href="{@docRoot}/overview-summary.html#overview_description">Lucene overview</a> 
@@ -257,7 +257,7 @@
  * <p>Lucene allows influencing the score contribution of various parts of the query by wrapping with
  *    {@link org.apache.lucene.search.BoostQuery}.</p>
  * 
- * <a name="changingScoring"></a>
+ * <a id="changingScoring"></a>
  * <h2>Changing Scoring &mdash; Similarity</h2>
  * <h3>Changing the scoring formula</h3>
  * <p>
@@ -323,7 +323,7 @@
  *       expr.getDoubleValuesSource(bindings));
  * </pre>
  *
- * <a name="customQueriesExpert"></a>
+ * <a id="customQueriesExpert"></a>
  * <h2>Custom Queries &mdash; Expert Level</h2>
  * 
  * <p>Custom queries are an expert level task, so tread carefully and be prepared to share your code if
@@ -374,7 +374,7 @@
  *                 {@link org.apache.lucene.search.BooleanQuery BooleanQuery}, <span
  *                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,ScoreMode,float) createWeight(IndexSearcher searcher,ScoreMode scoreMode, float boost)}</span></li>
  *         </ol>
- * <a name="weightClass"></a>
+ * <a id="weightClass"></a>
  * <h3>The Weight Interface</h3>
  *     <p>The
  *         {@link org.apache.lucene.search.Weight Weight}
@@ -398,17 +398,11 @@
  *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(Explanation, long) SimScorer#explain(Explanation freq, long norm)}.
  *             </li>
  *             <li>
- *                 {@link org.apache.lucene.search.Weight#extractTerms(java.util.Set) extractTerms(Set&lt;Term&gt; terms)} &mdash; Extract terms that
- *                 this query operates on. This is typically used to support distributed search: knowing the terms that a query operates on helps
- *                 merge index statistics of these terms so that scores are computed over a subset of the data like they would if all documents
- *                 were in the same index.
- *             </li>
- *             <li>
  *                 {@link org.apache.lucene.search.Weight#matches matches(LeafReaderContext context, int doc)} &mdash; Give information about positions
  *                 and offsets of matches. This is typically useful to implement highlighting.
  *             </li>
  *         </ol>
- * <a name="scorerClass"></a>
+ * <a id="scorerClass"></a>
  * <h3>The Scorer Class</h3>
  *     <p>The
  *         {@link org.apache.lucene.search.Scorer Scorer}
@@ -437,7 +431,7 @@
  *                 details on the scoring process.
  *             </li>
  *         </ol>
- * <a name="bulkScorerClass"></a>
+ * <a id="bulkScorerClass"></a>
  * <h3>The BulkScorer Class</h3>
  *     <p>The
  *         {@link org.apache.lucene.search.BulkScorer BulkScorer} scores a range of documents.  There is only one 
@@ -459,7 +453,7 @@
  * <!-- TODO: integrate this better, it's better served as an intro than an appendix -->
  * 
  * 
- * <a name="algorithm"></a>
+ * <a id="algorithm"></a>
  * <h2>Appendix: Search Algorithm</h2>
  * <p>This section is mostly notes on stepping through the Scoring process and serves as
  *    fertilizer for the earlier sections.

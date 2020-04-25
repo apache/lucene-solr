@@ -17,11 +17,9 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
@@ -47,11 +45,11 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -87,6 +85,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
           "type"),null));
 
       checkBlobPost(baseUrl, cloudClient);
+      checkBlobPostMd5(baseUrl, cloudClient);
     }
   }
 
@@ -109,6 +108,15 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     compareInputAndOutput(baseUrl + "/.system/blob/test/1?wt=filestream", bytarr, cloudClient);
   }
 
+  static void checkBlobPostMd5(String baseUrl, CloudSolrClient cloudClient) throws Exception {
+    String blobName = "md5Test";
+    String stringValue = "MHMyugAGUxFzeqbpxVemACGbQ"; // Random string requires padding in md5 hash
+    String stringValueMd5 = "02d82dd5aabc47fae54ee3dd236ad83d";
+    postAndCheck(cloudClient, baseUrl, blobName, ByteBuffer.wrap(stringValue.getBytes(StandardCharsets.UTF_8)), 1);
+    MapWriter map = TestSolrConfigHandlerConcurrent.getAsMap(baseUrl + "/.system/blob/" + blobName, cloudClient);
+    assertEquals(stringValueMd5, map._getStr("response/docs[0]/md5", null));
+  }
+
   public static void createSystemCollection(SolrClient client) throws SolrServerException, IOException {
     CollectionAdminResponse response1;
     CollectionAdminRequest.Create createCollectionRequest = CollectionAdminRequest.createCollection(".system",1,2);
@@ -122,7 +130,6 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
     String url;
     MapWriter map = null;
-    List l;
     final RTimer timer = new RTimer();
     int i = 0;
     for (; i < 150; i++) {//15 secs
@@ -170,10 +177,10 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+        Map m = (Map) fromJSONString(response);
         assertFalse("Error in posting blob " + m.toString(), m.containsKey("error"));
       } catch (JSONParser.ParseException e) {
-        log.error("$ERROR$", response, e);
+        log.error("$ERROR$: {}", response, e);
         fail();
       }
     } finally {

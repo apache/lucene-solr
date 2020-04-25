@@ -22,12 +22,15 @@ import java.util.Iterator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
@@ -36,7 +39,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml"); // *not* the "nest" schema version
+    initCore("solrconfig.xml","schema-root.xml"); // *not* the "nest" schema
   }
 
   @After
@@ -92,8 +95,6 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "/response/result/doc[1]/doc[1]/str[@name='id']='3'" ,
         "/response/result/doc[1]/doc[2]/str[@name='id']='5'"};
 
-
-
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
 
@@ -102,6 +103,29 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Parent filter 'QueryBitSetProducer(subject:bleh)' doesn't match any parent documents"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Parent filter 'QueryBitSetProducer(text:e)' doesn't match any parent documents"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=\"\"]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));
   }
   
   private void testSubQueryXML() {
@@ -356,12 +380,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     String[] tests = new String[] {
         "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/_childDocuments_/[0]/id=='2'",
-        "/response/docs/[0]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[0]/_childDocuments_/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[0]/_childDocuments_/[0]/cat=='childDocument'",
+        "/response/docs/[0]/_childDocuments_/[0]/title=='" + titleVals[0] + "'",
         "/response/docs/[1]/id=='4'",
         "/response/docs/[1]/_childDocuments_/[0]/id=='5'",
-        "/response/docs/[1]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[1]/_childDocuments_/[0]/title/[0]/=='" + titleVals[1] + "'"
+        "/response/docs/[1]/_childDocuments_/[0]/cat=='childDocument'",
+        "/response/docs/[1]/_childDocuments_/[0]/title=='" + titleVals[1] + "'"
     };
 
 
@@ -384,12 +408,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     String[] tests = new String[] {
         "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/children/docs/[0]/id=='2'",
-        "/response/docs/[0]/children/docs/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[0]/children/docs/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[0]/children/docs/[0]/cat=='childDocument'",
+        "/response/docs/[0]/children/docs/[0]/title=='" + titleVals[0] + "'",
         "/response/docs/[1]/id=='4'",
         "/response/docs/[1]/children/docs/[0]/id=='5'",
-        "/response/docs/[1]/children/docs/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[1]/children/docs/[0]/title/[0]/=='" + titleVals[1] + "'"
+        "/response/docs/[1]/children/docs/[0]/cat=='childDocument'",
+        "/response/docs/[1]/children/docs/[0]/title=='" + titleVals[1] + "'"
     };
 
 
@@ -417,12 +441,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "/response/result/doc[1]/str[@name='id']='1'" ,
         "/response/result/doc[1]/doc[1]/str[@name='id']='2'" ,
-        "/response/result/doc[1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
-        "/response/result/doc[1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[1]/doc[1]/str[@name='cat']='childDocument'" ,
+        "/response/result/doc[1]/doc[1]/str[@name='title']='" + titleVals[0] + "'" ,
         "/response/result/doc[2]/str[@name='id']='4'" ,
         "/response/result/doc[2]/doc[1]/str[@name='id']='5'",
-        "/response/result/doc[2]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
-        "/response/result/doc[2]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+        "/response/result/doc[2]/doc[1]/str[@name='cat']='childDocument'",
+        "/response/result/doc[2]/doc[1]/str[@name='title']='" + titleVals[1] + "'"};
 
     assertQ(req("q", "*:*", 
                 "sort", "id asc",
@@ -443,12 +467,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "/response/result/doc[1]/str[@name='id']='1'" ,
         "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='id']='2'" ,
-        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
-        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='cat']='childDocument'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='title']='" + titleVals[0] + "'" ,
         "/response/result/doc[2]/str[@name='id']='4'" ,
         "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='id']='5'",
-        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
-        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='cat']='childDocument'",
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='title']='" + titleVals[1] + "'"};
 
     assertQ(req(
         "q", "*:*", "fq", "subject:\"parentDocument\" ",

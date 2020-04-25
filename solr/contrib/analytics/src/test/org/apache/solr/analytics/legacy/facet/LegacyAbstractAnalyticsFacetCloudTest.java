@@ -32,22 +32,22 @@ import org.junit.AfterClass;
 
 public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
-  
+
   protected String latestType = "";
-  
+
   @AfterClass
   public static void afterClassAbstractAnalysis() {
     defaults.clear();
   }
-  
+
   @SuppressWarnings("unchecked")
   protected <T> ArrayList<T> getValueList(NamedList<Object> response, String infoName, String facetType, String facetName, String exprName, boolean includeMissing) {
-    NamedList<NamedList<Object>> facetList = 
+    NamedList<NamedList<Object>> facetList =
         (NamedList<NamedList<Object>>)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
                                                              infoName,
                                                              facetType,
                                                              facetName);
-    
+
     ArrayList<T> results = new ArrayList<>();
     facetList.forEach( (name, expressions) -> {
       if (!includeMissing && !name.equals("(MISSING)")) {
@@ -58,7 +58,7 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
     });
     return results;
   }
-  
+
   protected boolean responseContainsFacetValue(NamedList<Object> response, String infoName, String facetType, String facetName, String facetValue) {
     return null != response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
                                           infoName,
@@ -72,7 +72,7 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
     Long i = list.remove(idx);
     list.add(idx, i+1);
   }
-  
+
   protected void setLatestType(String latestType) {
     this.latestType = latestType;
   }

@@ -34,7 +34,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   public void dateCastingTest() throws DateTimeParseException {
     Date date = Date.from(Instant.parse("1800-01-01T10:30:15Z"));
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof DateValue);
     DateValue casted = (DateValue)val;
 
@@ -46,7 +46,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   @Test
   public void stringCastingTest() {
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof StringValue);
     StringValue casted = (StringValue)val;
 
@@ -59,7 +59,7 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   public void objectCastingTest() throws DateTimeParseException {
     Date date = Date.from(Instant.parse("1800-01-01T10:30:15Z"));
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof AnalyticsValue);
     AnalyticsValue casted = (AnalyticsValue)val;
 
@@ -72,10 +72,10 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   public void dateStreamCastingTest() throws DateTimeParseException {
     Date date = Date.from(Instant.parse("1800-01-01T10:30:15Z"));
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof DateValueStream);
     DateValueStream casted = (DateValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamDates( value -> {
@@ -95,10 +95,10 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamStrings( value -> {
@@ -119,10 +119,10 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
   public void objectStreamCastingTest() throws DateTimeParseException {
     Date date = Date.from(Instant.parse("1800-01-01T10:30:15Z"));
     TestDateValue val = new TestDateValue();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamObjects( value -> {
@@ -138,11 +138,11 @@ public class CastingDateValueTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() throws DateTimeParseException {
     Date date = Date.from(Instant.parse("1800-01-01T10:30:15Z"));
-    
+
     TestDateValue val = new TestDateValue(ExpressionType.CONST);
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
     AnalyticsValueStream conv = val.convertToConstant();

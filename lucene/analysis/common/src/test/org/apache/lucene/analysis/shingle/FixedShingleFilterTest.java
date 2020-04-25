@@ -18,11 +18,13 @@
 package org.apache.lucene.analysis.shingle;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
 public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
 
@@ -199,6 +201,23 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
           new int[] {    1,        0,      0,       0,       1,        0,     });
   }
 
+  public void testTrailingGraphsOfDifferingLengths() throws IOException {
+
+    // a b:3/c d e f
+    TokenStream ts = new CannedTokenStream(
+        new Token("a", 0, 1),
+        new Token("b", 1, 2, 3, 3),
+        new Token("c", 0, 2, 3),
+        new Token("d", 2, 3),
+        new Token("e", 2, 3),
+        new Token("f", 4, 5)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+        new String[]{ "a b f", "a c d", "c d e", "d e f"});
+
+  }
+
   public void testParameterLimits() {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
       new FixedShingleFilter(new CannedTokenStream(), 1);
@@ -208,6 +227,21 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
       new FixedShingleFilter(new CannedTokenStream(), 5);
     });
     assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
+  }
+
+  public void testWithGraphInput() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("fuz", 0, 3),
+        new Token("foo", 1, 4, 6, 2),
+        new Token("bar", 0, 4, 6),
+        new Token("baz", 1, 4, 6)
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTokenStreamContents(new FixedShingleFilter(it.next(), 2), new String[]{ "fuz foo"});
+    assertTokenStreamContents(new FixedShingleFilter(it.next(), 2), new String[]{ "fuz bar", "bar baz"});
+
   }
 
 }

@@ -37,8 +37,12 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 public class TruncateTokenFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "truncate";
 
   public static final String PREFIX_LENGTH_KEY = "prefixLength";
   private final byte prefixLength;
@@ -51,6 +55,11 @@ public class TruncateTokenFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameter(s): " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public TruncateTokenFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

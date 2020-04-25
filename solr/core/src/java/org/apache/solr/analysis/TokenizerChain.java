@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -30,6 +31,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * An analyzer that uses a tokenizer and a list of token filters to
  * create a TokenStream.
  *
+ * It should probably be replaced with {@link CustomAnalyzer}.
  * @since 3.1
  */
 public final class TokenizerChain extends SolrAnalyzer {
@@ -39,6 +41,17 @@ public final class TokenizerChain extends SolrAnalyzer {
   final private CharFilterFactory[] charFilters;
   final private TokenizerFactory tokenizer;
   final private TokenFilterFactory[] filters;
+
+  /** Copy from CustomAnalyzer. */
+  public TokenizerChain(CustomAnalyzer customAnalyzer) {
+    this(
+        customAnalyzer.getCharFilterFactories().toArray(new CharFilterFactory[0]),
+        customAnalyzer.getTokenizerFactory(),
+        customAnalyzer.getTokenFilterFactories().toArray(new TokenFilterFactory[0]));
+    setPositionIncrementGap(customAnalyzer.getPositionIncrementGap(null));
+    setVersion(customAnalyzer.getVersion());
+    assert customAnalyzer.getOffsetGap(null) == 1; // note: we don't support setting the offset gap
+  }
 
   /** 
    * Creates a new TokenizerChain w/o any CharFilterFactories.

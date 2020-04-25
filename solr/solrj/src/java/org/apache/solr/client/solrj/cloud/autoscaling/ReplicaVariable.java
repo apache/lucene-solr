@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.common.util.StrUtils;
@@ -90,15 +91,29 @@ class ReplicaVariable extends VariableBase {
 
   @Override
   public String postValidate(Condition condition) {
+    Object val = condition.clause.getThirdTag().val;
+    boolean isNodesetObjectList = condition.clause.nodeSetPresent &&  (val instanceof List) && ((List)val).get(0) instanceof Condition ;
+    if(condition.clause.nodeSetPresent ){
+      if(condition.computedType == ComputedType.EQUAL){
+        if(!isNodesetObjectList) return " 'nodeset' must have an array value when 'replica': '#EQUAL` is used";
+      } else {
+        if(isNodesetObjectList){
+          return "cannot use array value for nodeset if replica : '#EQUAL' is not used";
+        }
+
+      }
+
+    }
+
     if (condition.computedType == ComputedType.EQUAL) {
       if (condition.getClause().tag != null &&
-//              condition.getClause().tag.varType == NODE &&
           (condition.getClause().tag.op == Operand.WILDCARD || condition.getClause().tag.op == Operand.IN)) {
         return null;
       } else {
         return "'replica': '#EQUAL` must be used with 'node':'#ANY'";
       }
     } else if (condition.computedType == ComputedType.ALL) {
+      if(isNodesetObjectList) return "replica: '#ALL' cannot be used with a list of values in nodeset";
       if (condition.getClause().tag != null && (condition.getClause().getTag().op == Operand.IN ||
           condition.getClause().getTag().op == Operand.WILDCARD)) {
         return StrUtils.formatString("array value or wild card cannot be used for tag {0} with replica : '#ALL'",

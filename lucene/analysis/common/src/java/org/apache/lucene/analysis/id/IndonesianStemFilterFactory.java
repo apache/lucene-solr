@@ -33,8 +33,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class IndonesianStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "indonesianStem";
+
   private final boolean stemDerivational;
 
   /** Creates a new IndonesianStemFilterFactory */
@@ -44,6 +49,11 @@ public class IndonesianStemFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public IndonesianStemFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

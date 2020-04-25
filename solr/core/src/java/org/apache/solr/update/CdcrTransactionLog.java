@@ -102,7 +102,7 @@ public class CdcrTransactionLog extends TransactionLog {
         }
       }
     } catch (IOException e) {
-      log.error("Error while reading number of records in tlog " + this, e);
+      log.error("Error while reading number of records in tlog {}", this, e);
     }
     return 0;
   }
@@ -340,7 +340,7 @@ public class CdcrTransactionLog extends TransactionLog {
   public void close() {
     try {
       if (debug) {
-        log.debug("Closing tlog" + this);
+        log.debug("Closing tlog {}", this);
       }
 
       synchronized (this) {
@@ -380,7 +380,7 @@ public class CdcrTransactionLog extends TransactionLog {
   synchronized void reopenOutputStream() {
     try {
       if (debug) {
-        log.debug("Re-opening tlog's output stream: " + this);
+        log.debug("Re-opening tlog's output stream: {}", this);
       }
 
       raf = new RandomAccessFile(this.tlogFile, "rw");

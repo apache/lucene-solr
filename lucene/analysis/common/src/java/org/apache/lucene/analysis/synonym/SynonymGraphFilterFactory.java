@@ -74,8 +74,13 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  *
  * @lucene.experimental
  * @since 6.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class SynonymGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "synonymGraph";
+
   private final boolean ignoreCase;
   private final String tokenizerFactory;
   private final String synonyms;
@@ -113,6 +118,11 @@ public class SynonymGraphFilterFactory extends TokenFilterFactory implements Res
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public SynonymGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     // if the fst is null, it means there's actually no synonyms... just return the original stream

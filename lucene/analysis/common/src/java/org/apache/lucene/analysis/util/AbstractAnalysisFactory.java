@@ -28,10 +28,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,12 +64,39 @@ public abstract class AbstractAnalysisFactory {
   protected final Version luceneMatchVersion;
   /** whether the luceneMatchVersion arg is explicitly specified in the serialized schema */
   private boolean isExplicitLuceneMatchVersion = false;
+  
+  /**
+   * This default ctor is required to be implemented by all subclasses because of
+   * service loader (SPI) specification, but it is never called by Lucene.
+   * <p>
+   * Subclass ctors should call: {@code throw defaultCtorException();}
+   * 
+   * @throws UnsupportedOperationException if invoked
+   * @see #defaultCtorException()
+   * @see #AbstractAnalysisFactory(Map)
+   */
+  protected AbstractAnalysisFactory() {
+    throw defaultCtorException();
+  }
+  
+  /**
+   * Helper method to be called from mandatory default constructor of
+   * all subclasses to make {@link ServiceLoader} happy.
+   * <p>
+   * Should be used in subclass ctors like: {@code throw defaultCtorException();}
+   * 
+   * @see #AbstractAnalysisFactory()
+   */
+  protected static RuntimeException defaultCtorException() {
+    return new UnsupportedOperationException("Analysis factories cannot be instantiated without arguments. " +
+        "Use applicable factory methods of TokenizerFactory, CharFilterFactory, or TokenFilterFactory.");
+  }
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
+    originalArgs = Map.copyOf(args);
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     if (version == null) {
       luceneMatchVersion = Version.LATEST;
@@ -81,6 +108,7 @@ public abstract class AbstractAnalysisFactory {
       }
     }
     args.remove(CLASS_NAME);  // consume the class arg
+    args.remove(SPI_NAME);    // consume the spi arg
   }
   
   public final Map<String,String> getOriginalArgs() {
@@ -314,6 +342,8 @@ public abstract class AbstractAnalysisFactory {
   }
 
   private static final String CLASS_NAME = "class";
+
+  private static final String SPI_NAME = "name";
   
   /**
    * @return the string used to specify the concrete class name in a serialized representation: the class arg.  

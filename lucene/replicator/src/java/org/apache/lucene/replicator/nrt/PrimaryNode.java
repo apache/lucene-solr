@@ -136,7 +136,7 @@ public abstract class PrimaryNode extends Node {
     message("top: now flushAndRefresh");
     Set<String> completedMergeFiles;
     synchronized(finishedMergedFiles) {
-      completedMergeFiles = Collections.unmodifiableSet(new HashSet<>(finishedMergedFiles));
+      completedMergeFiles = Set.copyOf(finishedMergedFiles);
     }
     mgr.maybeRefreshBlocking();
     boolean result = setCurrentInfos(completedMergeFiles);
@@ -245,7 +245,7 @@ public abstract class PrimaryNode extends Node {
     // Serialize the SegmentInfos.
     ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
     try (ByteBuffersIndexOutput tmpIndexOutput = new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
-      infos.write(dir, tmpIndexOutput);
+      infos.write(tmpIndexOutput);
     }
     byte[] infosBytes = buffer.toArrayCopy();
 

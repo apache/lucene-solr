@@ -38,8 +38,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "dictionaryCompoundWord";
+
   private CharArraySet dictionary;
   private final String dictFile;
   private final int minWordSize;
@@ -60,6 +65,11 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public DictionaryCompoundWordTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     dictionary = super.getWordSet(loader, dictFile, false);

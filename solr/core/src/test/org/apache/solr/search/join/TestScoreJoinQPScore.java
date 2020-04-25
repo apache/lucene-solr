@@ -203,6 +203,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName()).getMetrics();
 
+    @SuppressWarnings("rawtypes")
     MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)metrics.get("CACHE.searcher.queryResultCache")).getGauge();
     {
       Map<String,Object> statPre = mm.getValue();
@@ -258,13 +259,14 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     // this queries are not overlap, with other in this test case. 
     // however it might be better to extract this method into the separate suite
     // for a while let's nuke a cache content, in case of repetitions
+    @SuppressWarnings("rawtypes")
     SolrCache cache = (SolrCache)h.getCore().getInfoRegistry().get("queryResultCache");
     cache.clear();
   }
 
   private ScoreMode not(ScoreMode s) {
     Random r = random();
-    final List<ScoreMode> l = new ArrayList(Arrays.asList(ScoreMode.values()));
+    final List<ScoreMode> l = new ArrayList<>(Arrays.asList(ScoreMode.values()));
     l.remove(s);
     return l.get(r.nextInt(l.size()));
   }

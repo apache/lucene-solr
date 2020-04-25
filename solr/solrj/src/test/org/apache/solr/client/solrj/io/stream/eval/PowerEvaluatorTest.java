@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class PowerEvaluatorTest extends LuceneTestCase {
+public class PowerEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -94,7 +94,7 @@ public class PowerEvaluatorTest extends LuceneTestCase {
     factory.constructEvaluator("pow(a)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void powTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("pow(a,b)");
     

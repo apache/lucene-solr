@@ -22,6 +22,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -135,6 +137,19 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
             "2.0 = frange(int(" + INT_FIELD_MV_MIN + ",MIN)):[2 TO 2]\n" +
             "  2.0 = int(" + INT_FIELD_MV_MIN + ",MIN)=2\n",
         explain.toString());
+  }
+
+  @Test
+  public void testTwoRangeQueries() throws IOException {
+    Query rq1 = new FunctionRangeQuery(INT_VALUESOURCE, 2, 4, true, true);
+    Query rq2 = new FunctionRangeQuery(INT_VALUESOURCE, 8, 10, true, true);
+    Query bq = new BooleanQuery.Builder()
+        .add(rq1, BooleanClause.Occur.SHOULD)
+        .add(rq2, BooleanClause.Occur.SHOULD)
+        .build();
+
+    ScoreDoc[] scoreDocs = indexSearcher.search(bq, N_DOCS).scoreDocs;
+    expectScores(scoreDocs, 10, 9, 8, 4, 3, 2);
   }
 
   private void expectScores(ScoreDoc[] scoreDocs, int... docScores) {

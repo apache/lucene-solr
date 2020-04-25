@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * </ul>
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class FixedShingleFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "fixedShingle";
 
   private final int shingleSize;
   private final String tokenSeparator;
@@ -45,6 +49,11 @@ public class FixedShingleFilterFactory extends TokenFilterFactory {
     this.shingleSize = getInt(args, "shingleSize", 2);
     this.tokenSeparator = get(args, "tokenSeparator", " ");
     this.fillerToken = get(args, "fillerToken", "_");
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public FixedShingleFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

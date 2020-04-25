@@ -58,7 +58,7 @@ public class HdfsUpdateLog extends UpdateLog {
   public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
 
   public HdfsUpdateLog() {
-    this.confDir = null;
+    this(null);
   }
   
   public HdfsUpdateLog(String confDir) {
@@ -75,12 +75,16 @@ public class HdfsUpdateLog extends UpdateLog {
     log.info("Initializing HdfsUpdateLog: tlogDfsReplication={}", tlogDfsReplication);
   }
 
-  private Configuration getConf() {
+  private Configuration getConf(Path path) {
     Configuration conf = new Configuration();
     if (confDir != null) {
       HdfsUtil.addHdfsResources(conf, confDir);
     }
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    String fsScheme = path.toUri().getScheme();
+    if(fsScheme != null) {
+      conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+    }
     return conf;
   }
   
@@ -112,14 +116,15 @@ public class HdfsUpdateLog extends UpdateLog {
         }
         
         try {
-          fs = FileSystem.get(new Path(dataDir).toUri(), getConf());
+          Path dataDirPath = new Path(dataDir);
+          fs = FileSystem.get(dataDirPath.toUri(), getConf(dataDirPath));
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       } else {
         if (debug) {
-          log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id,
-              " this is a reopen or double init ... nothing else to do.");
+          log.debug("UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do."
+              , tlogDir, id);
         }
         versionInfo.reload();
         return;
@@ -166,8 +171,8 @@ public class HdfsUpdateLog extends UpdateLog {
                              // next update
     
     if (debug) {
-      log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", existing tlogs="
-          + Arrays.asList(tlogFiles) + ", next id=" + id);
+      log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}"
+          , tlogDir, Arrays.asList(tlogFiles), id);
     }
     
     TransactionLog oldLog = null;
@@ -198,7 +203,7 @@ public class HdfsUpdateLog extends UpdateLog {
         newestLogsOnStartup.addFirst(ll);
       } else {
         // We're never going to modify old non-recovery logs - no need to hold their output open
-        log.info("Closing output for old non-recovery log " + ll);
+        log.info("Closing output for old non-recovery log {}", ll);
         ll.closeOutput();
       }
     }
@@ -206,7 +211,7 @@ public class HdfsUpdateLog extends UpdateLog {
     try {
       versionInfo = new VersionInfo(this, numVersionBuckets);
     } catch (SolrException e) {
-      log.error("Unable to use updateLog: " + e.getMessage(), e);
+      log.error("Unable to use updateLog: {}", e.getMessage(), e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to use updateLog: " + e.getMessage(), e);
     }
@@ -317,11 +322,11 @@ public class HdfsUpdateLog extends UpdateLog {
         try {
           boolean s = fs.delete(f, false);
           if (!s) {
-            log.error("Could not remove old buffer tlog file:" + f);
+            log.error("Could not remove old buffer tlog file:{}", f);
           }
         } catch (IOException e) {
           // No need to bubble up this exception, because it won't cause any problems on recovering
-          log.error("Could not remove old buffer tlog file:" + f, e);
+          log.error("Could not remove old buffer tlog file:{}", f, e);
         }
       }
     }
@@ -355,7 +360,7 @@ public class HdfsUpdateLog extends UpdateLog {
           Path f = new Path(tlogDir, file);
           boolean s = fs.delete(f, false);
           if (!s) {
-            log.error("Could not remove tlog file:" + f);
+            log.error("Could not remove tlog file:{}", f);
           }
         }
       }

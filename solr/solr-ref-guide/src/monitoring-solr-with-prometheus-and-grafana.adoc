@@ -103,7 +103,54 @@ The path to the configuration file that defines the Solr metrics to read. The de
 `-n`, `--num-threads`::
 The number of threads. The `solr-exporter` creates thread pools for requests to Solr. Request latency can be improved by increasing the number of threads. The default is `1`.
 
+`-s`, `--scrape-interval`::
+The number of seconds between collecting metrics from Solr. The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting. These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool. The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr. The default value is 60 seconds.
+
 The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:9983/solr/admin/metrics`.
+
+=== Environment Variable Options
+
+The start commands provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
+
+`JAVA_HEAP`::
+Sets the initial (`Xms`) and max (`Xmx`) Java heap size. The default is `512m`.
+
+`JAVA_MEM`::
+Custom java memory settings (e.g., `-Xms1g -Xmx2g`). This is ignored if `JAVA_HEAP` is provided.
+
+`GC_TUNE`::
+Custom Java garbage collection settings. The default is `-XX:+UseG1GC`.
+
+`JAVA_OPTS`::
+Extra JVM options.
+
+`CLASSPATH_PREFIX`::
+Location of extra libraries to load when starting the `solr-exporter`.
+
+=== Getting Metrics from a Secured SolrCloud
+
+Your SolrCloud might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>. The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>. This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
+
+Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>>, <<enabling-ssl.adoc#enabling-ssl,SSL>> and <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>:
+
+Suppose you have a file `basicauth.properties` with the Solr Basic-Auth credentials:
+
+----
+httpBasicAuthUser=myUser
+httpBasicAuthPassword=myPassword
+----
+
+Then you can start the Exporter as follows (Linux).
+
+[source,bash]
+----
+$ cd contrib/prometheus-exporter
+$ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
+$ export CLASSPATH_PREFIX="../../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
+$ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
+----
+
+Note: The Exporter needs the `commons-codec` library for SSL/BasicAuth, but does not bring it. Therefore the example reuses it from the Solr web app. Of course, you can use a different source.
 
 == Exporter Configuration
 The configuration for the `solr-exporter` defines the data to get from Solr. This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.

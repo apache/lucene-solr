@@ -152,7 +152,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
 
   public void testSeekZero() throws Exception {
-    for (int i = 0; i < 31; i++) {
+    int upto = TEST_NIGHTLY ? 31 : 3;
+    for (int i = 0; i < upto; i++) {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSeekZero"), 1<<i);
       IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random()));
       io.close();
@@ -164,7 +165,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
   
   public void testSeekSliceZero() throws Exception {
-    for (int i = 0; i < 31; i++) {
+    int upto = TEST_NIGHTLY ? 31 : 3;
+    for (int i = 0; i < 3; i++) {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSeekSliceZero"), 1<<i);
       IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random()));
       io.close();
@@ -269,7 +271,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
 
   public void testSliceOfSlice() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int upto = TEST_NIGHTLY ? 10 : 8;
+    for (int i = 0; i < upto; i++) {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSliceOfSlice"), 1<<i);
       IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
       byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
@@ -386,4 +389,24 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       mmapDir.close();
     }    
   }
+
+  public void testLittleEndianLongsCrossBoundary() throws Exception {
+    try (Directory dir = new MMapDirectory(createTempDir("testLittleEndianLongsCrossBoundary"), 16)) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeLong(Long.reverseBytes(3L));
+        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
+        out.writeLong(Long.reverseBytes(-3L));
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(25, input.length());
+        assertEquals(2, input.readByte());
+        long[] l = new long[4];
+        input.readLELongs(l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(25, input.getFilePointer());
+      }
+    }
+  }
+
 }

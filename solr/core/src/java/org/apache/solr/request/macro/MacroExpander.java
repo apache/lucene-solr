@@ -35,8 +35,7 @@ public class MacroExpander {
   private char escape = '\\';
   private int level;
   private final boolean failOnMissingParams;
-
-
+  
   public MacroExpander(Map<String,String[]> orig) {
     this(orig, false);
   }
@@ -58,8 +57,12 @@ public class MacroExpander {
     boolean changed = false;
     for (Map.Entry<String,String[]> entry : orig.entrySet()) {
       String k = entry.getKey();
-      String newK = expand(k);
       String[] values = entry.getValue();
+      if (!isExpandingExpr() && "expr".equals(k) ) {  // SOLR-12891
+        expanded.put(k,values);
+        continue;
+      }
+      String newK = expand(k);
       List<String> newValues = null;
       for (String v : values) {
         String newV = expand(v);
@@ -90,6 +93,10 @@ public class MacroExpander {
     }
 
     return changed;
+  }
+
+  private Boolean isExpandingExpr() {
+    return Boolean.valueOf(System.getProperty("StreamingExpressionMacros", "false"));
   }
 
   public String expand(String val) {

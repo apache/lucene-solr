@@ -38,12 +38,12 @@ import org.apache.lucene.util.fst.FST;
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.lkp</tt>: <a href="#Completiondictionary">Completion Dictionary</a></li>
- *   <li><tt>.cmp</tt>: <a href="#Completionindex">Completion Index</a></li>
+ *   <li><code>.lkp</code>: <a href="#Completiondictionary">Completion Dictionary</a></li>
+ *   <li><code>.cmp</code>: <a href="#Completionindex">Completion Index</a></li>
  * </ul>
  * <p>
- * <a name="Completionictionary"></a>
- * <h3>Completion Dictionary</h3>
+ * <a id="Completionictionary"></a>
+ * <h2>Completion Dictionary</h2>
  * <p>The .lkp file contains an FST for each suggest field
  * </p>
  * <ul>
@@ -59,8 +59,8 @@ import org.apache.lucene.util.fst.FST;
  *     for the Completion implementation.</li>
  *   <li>FST maps all analyzed forms to surface forms of a SuggestField</li>
  * </ul>
- * <a name="Completionindex"></a>
- * <h3>Completion Index</h3>
+ * <a id="Completionindex"></a>
+ * <h2>Completion Index</h2>
  * <p>The .cmp file contains an index into the completion dictionary, so that it can be
  * accessed randomly.</p>
  * <ul>
@@ -90,17 +90,48 @@ import org.apache.lucene.util.fst.FST;
  */
 public abstract class CompletionPostingsFormat extends PostingsFormat {
 
-  static final String CODEC_NAME = "completion";
   static final int COMPLETION_CODEC_VERSION = 1;
   static final int COMPLETION_VERSION_CURRENT = COMPLETION_CODEC_VERSION;
   static final String INDEX_EXTENSION = "cmp";
   static final String DICT_EXTENSION = "lkp";
 
   /**
+   * An enum that allows to control if suggester FSTs are loaded into memory or read off-heap
+   */
+  public enum FSTLoadMode {
+    /**
+     * Always read FSTs from disk.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     */
+    OFF_HEAP,
+    /**
+     * Never read FSTs from disk ie. all suggest fields FSTs are loaded into memory
+     */
+    ON_HEAP,
+    /**
+     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     */
+    AUTO
+  }
+
+  private final FSTLoadMode fstLoadMode;
+
+  /**
    * Used only by core Lucene at read-time via Service Provider instantiation
    */
-  public CompletionPostingsFormat() {
-    super(CODEC_NAME);
+  public CompletionPostingsFormat(String name) {
+    this(name, FSTLoadMode.ON_HEAP);
+  }
+
+  /**
+   * Creates a {@link CompletionPostingsFormat} that will
+   * use the provided <code>fstLoadMode</code> to determine
+   * if the completion FST should be loaded on or off heap.
+   */
+  public CompletionPostingsFormat(String name, FSTLoadMode fstLoadMode) {
+    super(name);
+    this.fstLoadMode = fstLoadMode;
   }
 
   /**
@@ -115,11 +146,11 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
       throw new UnsupportedOperationException("Error - " + getClass().getName()
           + " has been constructed without a choice of PostingsFormat");
     }
-    return new CompletionFieldsConsumer(delegatePostingsFormat, state);
+    return new CompletionFieldsConsumer(getName(), delegatePostingsFormat, state);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new CompletionFieldsProducer(state);
+    return new CompletionFieldsProducer(getName(), state, fstLoadMode);
   }
 }

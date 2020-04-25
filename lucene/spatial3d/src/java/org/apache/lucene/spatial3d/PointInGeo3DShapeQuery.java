@@ -25,14 +25,15 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -40,7 +41,9 @@ import org.apache.lucene.util.DocIdSetBuilder;
  *
  * @lucene.experimental */
 
-final class PointInGeo3DShapeQuery extends Query {
+final class PointInGeo3DShapeQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInGeo3DShapeQuery.class);
+
   final String field;
   final GeoShape shape;
   final XYZBounds shapeBounds;
@@ -51,12 +54,12 @@ final class PointInGeo3DShapeQuery extends Query {
     this.shape = shape;
     this.shapeBounds = new XYZBounds();
     shape.getBounds(shapeBounds);
+  }
 
-    if (shape instanceof BasePlanetObject) {
-      BasePlanetObject planetObject = (BasePlanetObject) shape;
-      if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
-        throw new IllegalArgumentException("this qurey requires PlanetModel.WGS84, but got: " + planetObject.getPlanetModel());
-      }
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
     }
   }
 
@@ -153,5 +156,13 @@ final class PointInGeo3DShapeQuery extends Query {
     sb.append(" Shape: ");
     sb.append(shape);
     return sb.toString();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(shape) +
+        RamUsageEstimator.sizeOfObject(shapeBounds);
   }
 }

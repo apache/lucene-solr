@@ -77,7 +77,7 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
       log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
@@ -116,6 +116,17 @@ public class CollectionMutator {
         }
         if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
           m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+        }
+      }
+    }
+    // other aux properties are also modifiable
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
+        hasAnyOps = true;
+        if (message.get(prop) == null) {
+          m.remove(prop);
+        } else {
+          m.put(prop, message.get(prop));
         }
       }
     }

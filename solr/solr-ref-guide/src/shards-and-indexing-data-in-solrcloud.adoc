@@ -32,7 +32,7 @@ SolrCloud addresses those limitations. There is support for distributing both th
 
 == Leaders and Replicas
 
-In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the ZooKeeper process described at http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection[http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection.].
+In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the ZooKeeper process described at http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/recipes.html#sc_leaderElection.
 
 If a leader goes down, one of the other replicas is automatically elected as the new leader.
 
@@ -46,7 +46,7 @@ These issues are not a problem for most users. However, some use cases would per
 
 Solr accomplishes this by allowing you to set the replica type when creating a new collection or when adding a replica. The available types are:
 
-* *NRT*: This is the default. A NRT replica (NRT = NearRealTime) maintains a transaction log and writes new documents to it's indexes locally. Any replica of this type is eligible to become a leader. Traditionally, this was the only type supported by Solr.
+* *NRT*: This is the default. A NRT replica (NRT = NearRealTime) maintains a transaction log and writes new documents to its indexes locally. Any replica of this type is eligible to become a leader. Traditionally, this was the only type supported by Solr.
 * *TLOG*: This type of replica maintains a transaction log but does not index document changes locally. This type helps speed up indexing since no commits need to occur in the replicas. When this type of replica needs to update its index, it does so by replicating the index from the leader. This type of replica is also eligible to become a shard leader; it would do so by first processing its transaction log. If it does become a leader, it will behave the same as if it was a NRT type of replica.
 * *PULL*: This type of replica does not maintain a transaction log nor index document changes locally. It only replicates the index from the shard leader. It is not eligible to become a shard leader and doesn't participate in shard leader election at all.
 
@@ -92,7 +92,7 @@ By default all replicas serve queries. See the section <<distributed-requests.ad
 
 == Document Routing
 
-Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collections-api.adoc#create,creating your collection>>.
+Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collection-management.adoc#create,creating your collection>>.
 
 If you use the `compositeId` router (the default), you can send documents with a prefix in the document ID which will be used to calculate the hash Solr uses to determine the shard a document is sent to for indexing. The prefix can be anything you'd like it to be (it doesn't have to be the shard name, for example), but it must be consistent so Solr behaves consistently.
 
@@ -112,11 +112,11 @@ If you created the collection and defined the "implicit" router at the time of c
 
 == Shard Splitting
 
-When you create a collection in SolrCloud, you decide on the initial number shards to be used. But it can be difficult to know in advance the number of shards that you need, particularly when organizational requirements can change at a moment's notice, and the cost of finding out later that you chose wrong can be high, involving creating new cores and re-indexing all of your data.
+When you create a collection in SolrCloud, you decide on the initial number shards to be used. But it can be difficult to know in advance the number of shards that you need, particularly when organizational requirements can change at a moment's notice, and the cost of finding out later that you chose wrong can be high, involving creating new cores and reindexing all of your data.
 
 The ability to split shards is in the Collections API. It currently allows splitting a shard into two pieces. The existing shard is left as-is, so the split action effectively makes two copies of the data as new shards. You can delete the old shard at a later time when you're ready.
 
-More details on how to use shard splitting is in the section on the Collection API's <<collections-api.adoc#splitshard,SPLITSHARD command>>.
+More details on how to use shard splitting is in the section on the Collection API's <<shard-management.adoc#splitshard,SPLITSHARD command>>.
 
 == Ignoring Commits from Client Applications in SolrCloud
 

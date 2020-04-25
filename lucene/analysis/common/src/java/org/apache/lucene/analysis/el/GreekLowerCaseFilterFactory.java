@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "greekLowercase";
  
   /** Creates a new GreekLowerCaseFilterFactory */
   public GreekLowerCaseFilterFactory(Map<String,String> args) {
@@ -42,6 +46,11 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public GreekLowerCaseFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

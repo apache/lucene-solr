@@ -418,8 +418,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     if (customFilter != null && !customFilter.equals("")) {
       try {
-        Class cf = Class.forName(customFilter);
-        Object obj = cf.newInstance();
+        Class<?> cf = Class.forName(customFilter);
+        Object obj = cf.getConstructor().newInstance();
         if (obj instanceof CustomFilter) {
           filters.add((CustomFilter) obj);
         }

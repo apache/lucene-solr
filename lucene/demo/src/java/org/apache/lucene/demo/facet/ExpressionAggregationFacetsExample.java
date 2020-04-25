@@ -43,15 +43,15 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 
 /** Shows facets aggregation by an expression. */
 public class ExpressionAggregationFacetsExample {
 
-  private final Directory indexDir = new RAMDirectory();
-  private final Directory taxoDir = new RAMDirectory();
+  private final Directory indexDir = new ByteBuffersDirectory();
+  private final Directory taxoDir = new ByteBuffersDirectory();
   private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */

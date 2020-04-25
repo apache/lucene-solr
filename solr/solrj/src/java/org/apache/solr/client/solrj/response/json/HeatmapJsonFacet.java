@@ -17,10 +17,13 @@
 
 package org.apache.solr.client.solrj.response.json;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents the result of a "heatmap" JSON facet.
@@ -29,6 +32,8 @@ import org.apache.solr.common.util.NamedList;
  * itself in one of two forms.
  */
 public class HeatmapJsonFacet {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private int gridLevel;
   private int columns;
   private int rows;
@@ -47,9 +52,9 @@ public class HeatmapJsonFacet {
     maxX = (double) heatmapNL.get("maxX");
     minY = (double) heatmapNL.get("minY");
     maxY = (double) heatmapNL.get("maxY");
-    System.out.println("Rows is: " + rows);
-    System.out.println("Cols is " + columns);
-    System.out.println("Whole deal is: " + heatmapNL);
+    log.debug("Rows is: {}", rows);
+    log.debug("Cols is {}", columns);
+    log.debug("Whole deal is: {}", heatmapNL);
 
     if (heatmapNL.get("counts_ints2D") == null) {
       countEncodedAsBase64PNG = (String) heatmapNL.get("counts_png");

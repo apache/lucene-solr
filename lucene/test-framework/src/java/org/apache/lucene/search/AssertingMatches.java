@@ -18,6 +18,8 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 class AssertingMatches implements Matches {
@@ -37,7 +39,19 @@ class AssertingMatches implements Matches {
   }
 
   @Override
+  public Collection<Matches> getSubMatches() {
+    return Collections.singleton(in);
+  }
+
+  @Override
   public Iterator<String> iterator() {
     return in.iterator();
+  }
+
+  public static Matches unWrap(Matches m) {
+    while (m instanceof AssertingMatches) {
+      m = (((AssertingMatches)m).in);
+    }
+    return m;
   }
 }

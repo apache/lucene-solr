@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class DivideEvaluatorTest extends LuceneTestCase {
+public class DivideEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -158,7 +158,6 @@ public class DivideEvaluatorTest extends LuceneTestCase {
     values.put("a", 0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    Assert.assertEquals(0D, result);
   }
 }

@@ -122,6 +122,11 @@ public class TestNeedsScores extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      in.visit(visitor);
+    }
+
+    @Override
     public int hashCode() {
       final int prime = 31;
       int result = classHash();

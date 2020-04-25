@@ -188,7 +188,7 @@ public class JdbcDataSource extends
             // the class loader of the class which is trying to make the connection.
             // This is a workaround for cases where the user puts the driver jar in the
             // solr.home/lib or solr.home/core/lib directories.
-            Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
+            Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).getConstructor().newInstance();
             c = d.connect(url, initProps);
           }
         }
@@ -534,18 +534,6 @@ public class JdbcDataSource extends
     } else {
       connLastUsed = currTime;
       return conn;
-    }
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(!isClosed){
-        log.error("JdbcDataSource was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
-        close();
-      }
-    } finally {
-      super.finalize();
     }
   }
 

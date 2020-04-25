@@ -311,15 +311,15 @@ final class Stemmer {
           int ch = word[i-1];
           if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
             break;
-          } else if (arc.output != NO_OUTPUT) {
-            output = fst.outputs.add(output, arc.output);
+          } else if (arc.output() != NO_OUTPUT) {
+            output = fst.outputs.add(output, arc.output());
           }
         }
         IntsRef prefixes = null;
         if (!arc.isFinal()) {
           continue;
         } else {
-          prefixes = fst.outputs.add(output, arc.nextFinalOutput);
+          prefixes = fst.outputs.add(output, arc.nextFinalOutput());
         }
         
         for (int j = 0; j < prefixes.length; j++) {
@@ -395,15 +395,15 @@ final class Stemmer {
           int ch = word[i];
           if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
             break;
-          } else if (arc.output != NO_OUTPUT) {
-            output = fst.outputs.add(output, arc.output);
+          } else if (arc.output() != NO_OUTPUT) {
+            output = fst.outputs.add(output, arc.output());
           }
         }
         IntsRef suffixes = null;
         if (!arc.isFinal()) {
           continue;
         } else {
-          suffixes = fst.outputs.add(output, arc.nextFinalOutput);
+          suffixes = fst.outputs.add(output, arc.nextFinalOutput());
         }
         
         for (int j = 0; j < suffixes.length; j++) {

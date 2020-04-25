@@ -93,10 +93,18 @@ Elevated query results can be configured in an external XML file specified in th
     <doc id="MA147LL/A" />  <!-- put the actual ipod at the top -->
     <doc id="IW-02" exclude="true" /> <!-- exclude this cable -->
   </query>
+
+  <query text="foo bill" match="subset">
+    <doc id="11" />
+  </query>
 </elevate>
 ----
 
 In this example, the query "foo bar" would first return documents 1, 2 and 3, then whatever normally appears for the same query. For the query "ipod", it would first return "MA147LL/A", and would make sure that "IW-02" is not in the result set.
+
+Notice the `match` parameter with the value `"subset"` for the third rule. A query "bill bar foo" would trigger this rule because the rule defines a subset of terms to appear in the query, in any order. This query would elevate document 11 on top.
+The `match` parameter accepts either `"exact"` (by default) or `"subset"` values.
+Subset matching is scalable, one can add many rules with the `match="subset"` parameter.
 
 If documents to be elevated are not defined in the `elevate.xml` file, they should be passed in at query time with the <<The elevateIds and excludeIds Parameters,`elevateIds` parameter>>.
 

@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.estimate;
 
-public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
+public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
   @Test
   public void testProcessor() throws IOException {
@@ -43,20 +43,16 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
 
     IgnoreLargeDocumentProcessorFactory factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
-    try {
-      UpdateRequestProcessor processor = factory.getInstance(null, null, null);
-      processor.processAdd(getUpdate(1024));
-      fail("Expected processor to ignore the update");
-    } catch (SolrException e) {
-      //expected
-    }
+
+    UpdateRequestProcessor processor = factory.getInstance(null, null, null);
+    expectThrows(SolrException.class, () -> processor.processAdd(getUpdate(1024)));
 
     args = new NamedList();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 2);
     factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
-    UpdateRequestProcessor processor = factory.getInstance(null, null, null);
-    processor.processAdd(getUpdate(1024));
+    UpdateRequestProcessor requestProcessor = factory.getInstance(null, null, null);
+    requestProcessor.processAdd(getUpdate(1024));
 
   }
 

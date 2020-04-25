@@ -54,36 +54,36 @@ import org.apache.solr.search.TermsQParserPlugin;
  * the value of this field is a document list, which is a result of executing subquery using 
  * document fields as an input.
  * 
- * <h3>Subquery Parameters Shift</h3>
+ * <h2>Subquery Parameters Shift</h2>
  * if subquery is declared as <code>fl=*,foo:[subquery]</code>, subquery parameters 
  * are prefixed with the given name and period. eg <br>
  * <code>q=*:*&amp;fl=*,foo:[subquery]&amp;foo.q=to be continued&amp;foo.rows=10&amp;foo.sort=id desc</code>
  * 
- * <h3>Document Field As An Input For Subquery Parameters</h3>
+ * <h2>Document Field As An Input For Subquery Parameters</h2>
  * 
  * It's necessary to pass some document field value as a parameter for subquery. It's supported via 
  * implicit <code>row.<i>fieldname</i></code> parameters, and can be (but might not only) referred via
  *  Local Parameters syntax.<br>
- * <code>q=namne:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
+ * <code>q=name:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
  * Here departments are retrieved per every employee in search result. We can say that it's like SQL
  * <code> join ON emp.dept_id=dept.id </code><br>
  * Note, when document field has multiple values they are concatenated with comma by default, it can be changed by
  * <code>foo:[subquery separator=' ']</code> local parameter, this mimics {@link TermsQParserPlugin} to work smoothly with.
  * 
- * <h3>Cores And Collections In SolrCloud</h3>
+ * <h2>Cores And Collections In SolrCloud</h2>
  * use <code>foo:[subquery fromIndex=departments]</code> invoke subquery on another core on the same node, it's like
  *  {@link JoinQParserPlugin} for non SolrCloud mode. <b>But for SolrCloud</b> just (and only) <b>explicitly specify</b> 
  * its' native parameters like <code>collection, shards</code> for subquery, eg<br>
  *  <code>q=*:*&amp;fl=*,foo:[subquery]&amp;foo.q=cloud&amp;foo.collection=departments</code>
  *
- * <h3>When used in Real Time Get</h3>
+ * <h2>When used in Real Time Get</h2>
  * <p>
  * When used in the context of a Real Time Get, the <i>values</i> from each document that are used 
- * in the qubquery are the "real time" values (possibly from the transaction log), but the query 
+ * in the subquery are the "real time" values (possibly from the transaction log), but the query
  * itself is still executed against the currently open searcher.  Note that this means if a 
  * document is updated but not yet committed, an RTG request for that document that uses 
  * <code>[subquery]</code> could include the older (committed) version of that document, 
- * with differnet field values, in the subquery results.
+ * with different field values, in the subquery results.
  * </p>
  */
 public class SubQueryAugmenterFactory extends TransformerFactory{
@@ -93,7 +93,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
 
     if (field.contains("[") || field.contains("]")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-          "please give an exlicit name for [subquery] column ie fl=relation:[subquery ..]");
+          "please give an explicit name for [subquery] column ie fl=relation:[subquery ..]");
     }
     
     checkThereIsNoDupe(field, req.getContext());
@@ -313,7 +313,7 @@ class SubQueryAugmenter extends DocTransformer {
   }
   
   /**
-   * Returns false -- this transformer does use an IndexSearcher, but it does not (neccessarily) need 
+   * Returns false -- this transformer does use an IndexSearcher, but it does not (necessarily) need
    * the searcher from the ResultContext of the document being returned.  Instead we use the current 
    * "live" searcher for the specified core.
    */

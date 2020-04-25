@@ -36,6 +36,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BaseDocValuesFormatTestCase;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -65,7 +66,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   
   @Override
   public void setUp() throws Exception {
-    codec = new RandomCodec(new Random(random().nextLong()), Collections.<String>emptySet());
+    codec = new RandomCodec(new Random(random().nextLong()), Collections.emptySet());
     super.setUp();
   }
   
@@ -89,7 +90,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     final DocValuesFormat fast = TestUtil.getDefaultDocValuesFormat();
-    final DocValuesFormat slow = DocValuesFormat.forName("Direct");
+    final DocValuesFormat slow = DocValuesFormat.forName("Asserting");
     iwc.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -186,6 +187,43 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     assertEquals(1, dvf2.nbMergeCalls);
     assertEquals(Collections.singletonList("dv3"), dvf2.fieldNames);
 
+    directory.close();
+  }
+
+  public void testDocValuesMergeWithIndexedFields() throws IOException {
+    MergeRecordingDocValueFormatWrapper docValuesFormat = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
+
+    IndexWriterConfig iwc = new IndexWriterConfig();
+    iwc.setCodec(new AssertingCodec() {
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
+        return docValuesFormat;
+      }
+    });
+
+    Directory directory = newDirectory();
+
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv1", 5));
+    doc.add(new TextField("normalField", "not a doc value", Field.Store.NO));
+    iwriter.addDocument(doc);
+    iwriter.commit();
+
+    doc = new Document();
+    doc.add(new TextField("anotherField", "again no doc values here", Field.Store.NO));
+    doc.add(new TextField("normalField", "my document without doc values", Field.Store.NO));
+    iwriter.addDocument(doc);
+    iwriter.commit();
+
+
+    iwriter.forceMerge(1, true);
+    iwriter.close();
+
+    // "normalField" and "anotherField" are ignored when merging doc values.
+    assertEquals(1, docValuesFormat.nbMergeCalls);
+    assertEquals(Collections.singletonList("dv1"), docValuesFormat.fieldNames);
     directory.close();
   }
 

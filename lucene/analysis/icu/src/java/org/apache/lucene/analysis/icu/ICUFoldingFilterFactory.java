@@ -35,8 +35,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class ICUFoldingFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuFolding";
+
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUFoldingFilterFactory */
@@ -56,6 +61,11 @@ public class ICUFoldingFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
     this.normalizer = normalizer;
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ICUFoldingFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

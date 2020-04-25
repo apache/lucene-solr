@@ -22,6 +22,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.IndexReader;
@@ -54,7 +57,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     switch (random().nextInt(3)) {
       case 0:
         System.setProperty("solr.tests.id.stored", "true");
@@ -69,7 +72,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         System.setProperty("solr.tests.id.docValues", "true");
         break;
       default:
-        fail("Bad random number generatged not between 0-2 iunclusive");
+        fail("Bad random number generated not between 0-2 inclusive");
         break;
     }
   }
@@ -88,7 +91,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
     File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(initCoreDataDir, "elevate-data.xml");
+    File elevateDataFile = new File(initAndGetDataDir(), "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
 
 
@@ -98,7 +101,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   //TODO should be @After ?
-  private void delete() throws Exception {
+  private void delete() {
     deleteCore();
   }
 
@@ -391,13 +394,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals(7, elevationProvider.size());
+      assertEquals(11, elevationProvider.size());
       assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
       assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
       assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
-      assertEquals(null, elevationProvider.getElevationForQuery("xxxx"));
-      assertEquals(null, elevationProvider.getElevationForQuery("yyyy"));
-      assertEquals(null, elevationProvider.getElevationForQuery("zzzz"));
+      assertNull(elevationProvider.getElevationForQuery("xxxx"));
+      assertNull(elevationProvider.getElevationForQuery("yyyy"));
+      assertNull(elevationProvider.getElevationForQuery("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();
@@ -408,7 +411,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp.init(args);
       comp.inform(core);
       elevationProvider = comp.getElevationProvider(reader, core);
-      assertEquals(7, elevationProvider.size());
+      assertEquals(11, elevationProvider.size());
       assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
       assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
       assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
@@ -605,7 +608,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       // Try normal sort by 'id'
       // default 'forceBoost' should be false
-      assertEquals(false, booster.forceElevation);
+      assertFalse(booster.forceElevation);
       assertQ(req(baseParams, "sort", "id asc")
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
@@ -685,8 +688,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  // write a test file to boost some docs
-  private void writeFile(File file, String query, String... ids) throws Exception {
+  // write an elevation config file to boost some docs
+  private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
     PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
     out.println("<elevate>");
@@ -708,7 +711,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       String testfile = "data-elevation.xml";
       File configFile = new File(h.getCore().getDataDir(), testfile);
-      writeFile(configFile, "aaa", "A");
+      writeElevationConfigFile(configFile, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
@@ -716,7 +719,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp.init(args);
       comp.inform(h.getCore());
 
-      QueryElevationComponent.ElevationProvider elevationProvider = null;
+      QueryElevationComponent.ElevationProvider elevationProvider;
 
       try (SolrQueryRequest req = req()) {
         elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
@@ -725,7 +728,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       }
 
       // now change the file
-      writeFile(configFile, "bbb", "B");
+      writeElevationConfigFile(configFile, "bbb", "B");
 
       // With no index change, we get the same index reader, so the elevationProviderCache returns the previous ElevationProvider without the change.
       try (SolrQueryRequest req = req()) {
@@ -746,7 +749,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       }
 
       // Now change the config file again.
-      writeFile(configFile, "ccc", "C");
+      writeElevationConfigFile(configFile, "ccc", "C");
 
       // Without index change, but calling a different method that clears the elevationProviderCache, so we should load a new ElevationProvider.
       int elevationRuleNumber = comp.loadElevationConfiguration(h.getCore());
@@ -794,4 +797,137 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testQuerySubsetMatching() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
+
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+
+      assertU(adoc("id", "10", "title", "RR", "str_s1", "r"));
+      assertU(adoc("id", "11", "title", "SS", "str_s1", "r"));
+      assertU(adoc("id", "12", "title", "TT", "str_s1", "r"));
+      assertU(adoc("id", "13", "title", "UU", "str_s1", "r"));
+      assertU(adoc("id", "14", "title", "VV", "str_s1", "r"));
+      assertU(commit());
+
+      // Exact matching.
+      assertQ("", req(CommonParams.Q, "XXXX", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='4']",
+          "//result/doc[3]/str[@name='id'][.='6']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='false']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // Exact matching.
+      assertQ("", req(CommonParams.Q, "QQQQ EE", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='0']"
+      );
+
+      // Subset matching.
+      assertQ("", req(CommonParams.Q, "BB DD CC VV", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='10']",
+          "//result/doc[2]/str[@name='id'][.='12']",
+          "//result/doc[3]/str[@name='id'][.='11']",
+          "//result/doc[4]/str[@name='id'][.='14']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[4]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // Subset + exact matching.
+      assertQ("", req(CommonParams.Q, "BB CC", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='13']",
+          "//result/doc[2]/str[@name='id'][.='10']",
+          "//result/doc[3]/str[@name='id'][.='12']",
+          "//result/doc[4]/str[@name='id'][.='11']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[4]/bool[@name='[elevated]'][.='true']"
+      );
+
+      // Subset matching.
+      assertQ("", req(CommonParams.Q, "AA BB DD CC AA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='10']",
+          "//result/doc[2]/str[@name='id'][.='12']",
+          "//result/doc[3]/str[@name='id'][.='11']",
+          "//result/doc[4]/str[@name='id'][.='14']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[4]/bool[@name='[elevated]'][.='true']"
+      );
+
+      // Subset matching.
+      assertQ("", req(CommonParams.Q, "AA RR BB DD AA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='12']",
+          "//result/doc[2]/str[@name='id'][.='14']",
+          "//result/doc[3]/str[@name='id'][.='10']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // Subset matching.
+      assertQ("", req(CommonParams.Q, "AA BB EE", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='0']"
+          );
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevatedIds() throws Exception {
+    try {
+      init("schema12.xml");
+      SolrCore core = h.getCore();
+
+      NamedList<String> args = new NamedList<>();
+      args.add(QueryElevationComponent.FIELD_TYPE, "text");
+      args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
+
+      QueryElevationComponent comp = new QueryElevationComponent();
+      comp.init(args);
+      comp.inform(core);
+
+      SolrQueryRequest req = req();
+      IndexReader reader = req.getSearcher().getIndexReader();
+      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+      req.close();
+
+      assertEquals(toIdSet("1"), elevationProvider.getElevationForQuery("xxxx").elevatedIds);
+      assertEquals(toIdSet("10", "11", "12"), elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
+      assertEquals(toIdSet("10", "11", "12", "13"), elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
+      assertEquals(toIdSet("10", "11", "12", "14"), elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
+    } finally {
+      delete();
+    }
+  }
+
+  private static Set<BytesRef> toIdSet(String... ids) {
+    return Arrays.stream(ids).map(BytesRef::new).collect(Collectors.toSet());
+  }
 }

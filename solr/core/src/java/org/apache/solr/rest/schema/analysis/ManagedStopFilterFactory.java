@@ -29,8 +29,12 @@ import org.apache.solr.rest.ManagedResource;
  * TokenFilterFactory that uses the ManagedWordSetResource implementation
  * for managing stop words using the REST API.
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "managedStop";
 
   // this only gets changed once during core initialization and not every
   // time an update is made to the underlying managed word set.
@@ -43,6 +47,11 @@ public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
     super(args);    
   }
   
+  /** Default ctor for compatibility with SPI */
+  public ManagedStopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * This analysis component knows the most logical "path"
    * for which to manage stop words from.

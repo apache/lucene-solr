@@ -49,7 +49,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
@@ -233,7 +233,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SignificantTermsStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SignificantTermsStream"));
   }
 
   public List<TupleStream> children() {
@@ -315,10 +315,10 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
         List<Map> maps = new ArrayList();
 
-        for(String term : mergeFreqs.keySet() ) {
-          int[] freqs = mergeFreqs.get(term);
+        for(Map.Entry<String, int[]> entry : mergeFreqs.entrySet()) {
+          int[] freqs = entry.getValue();
           Map map = new HashMap();
-          map.put("term", term);
+          map.put("term", entry.getKey());
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
 
@@ -389,8 +389,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add(DISTRIB, "false");
       params.add("fq","{!significantTerms}");
 
-      for(String key : paramsMap.keySet()) {
-        params.add(key, paramsMap.get(key));
+      for(Map.Entry<String, String> entry : paramsMap.entrySet()) {
+        params.add(entry.getKey(), entry.getValue());
       }
 
       params.add("minDocFreq", Float.toString(minDocFreq));
@@ -398,6 +398,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms*5));
+      if (streamContext.isLocal()) {
+        params.add("distrib", "false");
+      }
 
       QueryRequest request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);

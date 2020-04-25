@@ -33,17 +33,18 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
-  
+
   protected static final String COLLECTIONORALIAS = "collection1";
   protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
 
-  @Before
-  public void setupCollection() throws Exception {
+  @BeforeClass
+  public static void setupCollection() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-analytics"))
         .configure();
@@ -51,10 +52,9 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTIONORALIAS, 2, 2);
   }
-  
-  @After
-  public void teardownCollection() throws Exception {
-    cluster.deleteAllCollections();
+
+  @AfterClass
+  public static void teardownCollection() throws Exception {
     shutdownCluster();
   }
 
@@ -63,7 +63,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
 
   public static enum VAL_TYPE {
@@ -86,6 +86,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     }
   }
 
+  
   protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException, TimeoutException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
@@ -98,9 +99,25 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(10000);
     QueryRequest qreq = new QueryRequest(params);
     QueryResponse resp = qreq.process(cluster.getSolrClient(), COLLECTIONORALIAS);
-    return resp.getResponse();
+    final NamedList<Object> response = resp.getResponse();
+    assertRequestTimeout(params);
+    return response;
   }
-  
+
+  /** caveat: the given params are modified */
+  protected void assertRequestTimeout(ModifiableSolrParams params)
+      throws IOException, InterruptedException, TimeoutException, SolrServerException {
+    params.set("timeAllowed", 0);
+    cluster.waitForAllNodes(10000);
+    final QueryResponse maybeTimeout = new QueryRequest(params).process(cluster.getSolrClient(), COLLECTIONORALIAS);
+    assertEquals(maybeTimeout.getHeader() + "", 0, maybeTimeout.getStatus());
+    final Boolean partial = maybeTimeout.getHeader()
+        .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+    assertNotNull("No partial results header returned", partial);
+    assertTrue("The request " + params
+        + "was not stopped halfway through, the partial results header was false", partial);
+  }
+
   @SuppressWarnings("unchecked")
   protected <T> T getValue(NamedList<Object> response, String infoName, String exprName) {
     return (T)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,

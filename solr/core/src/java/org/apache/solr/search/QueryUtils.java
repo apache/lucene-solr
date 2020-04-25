@@ -16,15 +16,17 @@
  */
 package org.apache.solr.search;
 
+import java.util.Collection;
+
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
-
-import java.util.Collection;
 
 /**
  *
@@ -132,12 +134,39 @@ public class QueryUtils {
 
   /** @lucene.experimental throw exception if max boolean clauses are exceeded */
   public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
-    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : BooleanQuery.getMaxClauseCount();
+    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : IndexSearcher.getMaxClauseCount();
     BooleanQuery bq = builder.build();
     if (bq.clauses().size() > configuredMax) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Too many clauses in boolean query: encountered=" + bq.clauses().size() + " configured in solrconfig.xml via maxBooleanClauses=" + configuredMax);
     }
     return bq;
+  }
+
+  /**
+   * Combines a scoring query with a non-scoring (filter) query.
+   * If both parameters are null then return a {@link MatchAllDocsQuery}.
+   * If only {@code scoreQuery} is present then return it.
+   * If only {@code filterQuery} is present then return it wrapped with constant scoring.
+   * If neither are null then we combine with a BooleanQuery.
+   */
+  public static Query combineQueryAndFilter(Query scoreQuery, Query filterQuery) {
+    // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite optimizes this away
+    if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
+      if (filterQuery == null) {
+        return new MatchAllDocsQuery(); // default if nothing -- match everything
+      } else {
+        return new ConstantScoreQuery(filterQuery);
+      }
+    } else {
+      if (filterQuery == null || filterQuery instanceof MatchAllDocsQuery) {
+        return scoreQuery;
+      } else {
+        return new BooleanQuery.Builder()
+            .add(scoreQuery, Occur.MUST)
+            .add(filterQuery, Occur.FILTER)
+            .build();
+      }
+    }
   }
 }

@@ -132,6 +132,7 @@ public class HavingStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     this.stream.setStreamContext(context);
+    this.evaluator.setStreamContext(context);
   }
 
   public List<TupleStream> children() {

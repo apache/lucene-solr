@@ -622,9 +622,8 @@ public class TieredMergePolicy extends MergePolicy {
     };
   }
 
-
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxSegmentCount, Map<SegmentCommitInfo, Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
     if (verbose(mergeContext)) {
       message("findForcedMerges maxSegmentCount=" + maxSegmentCount + " infos=" + segString(mergeContext, infos) +
           " segmentsToMerge=" + segmentsToMerge, mergeContext);
@@ -639,6 +638,7 @@ public class TieredMergePolicy extends MergePolicy {
     // Trim the list down, remove if we're respecting max segment size and it's not original. Presumably it's been merged before and
     //   is close enough to the max segment size we shouldn't add it in again.
     Iterator<SegmentSizeAndDocs> iter = sortedSizeAndDocs.iterator();
+    boolean forceMergeRunning = false;
     while (iter.hasNext()) {
       SegmentSizeAndDocs segSizeDocs = iter.next();
       final Boolean isOriginal = segmentsToMerge.get(segSizeDocs.segInfo);
@@ -646,6 +646,7 @@ public class TieredMergePolicy extends MergePolicy {
         iter.remove();
       } else {
         if (merging.contains(segSizeDocs.segInfo)) {
+          forceMergeRunning = true;
           iter.remove();
         } else {
           totalMergeBytes += segSizeDocs.sizeInBytes;
@@ -707,6 +708,12 @@ public class TieredMergePolicy extends MergePolicy {
       message("eligible=" + sortedSizeAndDocs, mergeContext);
     }
 
+    final int startingSegmentCount = sortedSizeAndDocs.size();
+    final boolean finalMerge = startingSegmentCount < maxSegmentCount + maxMergeAtOnceExplicit - 1;
+    if (finalMerge && forceMergeRunning) {
+      return null;
+    }
+
     // This is the special case of merging down to one segment
     if (sortedSizeAndDocs.size() < maxMergeAtOnceExplicit && maxSegmentCount == 1 && totalMergeBytes < maxMergeBytes) {
       MergeSpecification spec = new MergeSpecification();
@@ -718,10 +725,50 @@ public class TieredMergePolicy extends MergePolicy {
       return spec;
     }
 
-    MergeSpecification spec = doFindMerges(sortedSizeAndDocs, maxMergeBytes, maxMergeAtOnceExplicit,
-        maxSegmentCount, 0, MERGE_TYPE.FORCE_MERGE, mergeContext, false);
+    MergeSpecification spec = null;
 
-    return spec;
+    int index = startingSegmentCount - 1;
+    int resultingSegments = startingSegmentCount;
+    while (true) {
+      List<SegmentCommitInfo> candidate = new ArrayList<>();
+      long currentCandidateBytes = 0L;
+      int mergesAllowed = maxMergeAtOnceExplicit;
+      while (index >= 0 && resultingSegments > maxSegmentCount && mergesAllowed > 0) {
+        final SegmentCommitInfo current = sortedSizeAndDocs.get(index).segInfo;
+        final int initialCandidateSize = candidate.size();
+        final long currentSegmentSize = current.sizeInBytes();
+        // We either add to the bin because there's space or because the it is the smallest possible bin since
+        // decrementing the index will move us to even larger segments.
+        if (currentCandidateBytes + currentSegmentSize <= maxMergeBytes || initialCandidateSize < 2) {
+          candidate.add(current);
+          --index;
+          currentCandidateBytes += currentSegmentSize;
+          --mergesAllowed;
+          if (initialCandidateSize > 0) {
+            // Any merge that handles two or more segments reduces the resulting number of segments
+            // by the number of segments handled - 1
+            --resultingSegments;
+          }
+        } else {
+          break;
+        }
+      }
+      final int candidateSize = candidate.size();
+      // While a force merge is running, only merges that cover the maximum allowed number of segments or that create a segment close to the
+      // maximum allowed segment sized are permitted
+      if (candidateSize > 1 && (forceMergeRunning == false || candidateSize == maxMergeAtOnceExplicit || candidateSize > 0.7 * maxMergeBytes)) {
+        final OneMerge merge = new OneMerge(candidate);
+        if (verbose(mergeContext)) {
+          message("add merge=" + segString(mergeContext, merge.segments), mergeContext);
+        }
+        if (spec == null) {
+          spec = new MergeSpecification();
+        }
+        spec.add(merge);
+      } else {
+        return spec;
+      }
+    }
   }
 
   @Override

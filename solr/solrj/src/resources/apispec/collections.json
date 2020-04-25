@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#list",
+  "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#list",
   "description": "List all available collections and their properties.",
   "methods": [
     "GET"

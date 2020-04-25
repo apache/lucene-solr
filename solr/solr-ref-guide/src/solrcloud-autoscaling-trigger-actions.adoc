@@ -69,10 +69,19 @@ The `ExecutePlanAction` executes the Collection API commands emitted by the `Com
 the cluster using SolrJ. It executes the commands serially, waiting for each of them to succeed before
 continuing with the next one.
 
-Currently, it has no configurable parameters.
+Currently, it has the following configurable parameters:
 
-If any one of the commands fail, then the complete chain of actions are
-executed again at the next run of the trigger. If the Overseer node fails while `ExecutePlanAction` is running,
+`taskTimeoutSeconds`::
+Default value of this parameter is 120 seconds. This value defines how long the action will wait for a
+command to complete its execution. If a timeout is reached while the command is still running then
+the command status is provisionally considered a success but a warning is logged, unless `taskTimeoutFail`
+is set to true.
+
+`taskTimeoutFail`::
+Boolean with a default value of false. If this value is true then a timeout in command processing will be
+marked as failure and an exception will be thrown.
+
+If the Overseer node fails while `ExecutePlanAction` is running,
 then the new Overseer node will run the chain of actions for the same event again after waiting for any
 running Collection API operations belonging to the event to complete.
 

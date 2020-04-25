@@ -22,10 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -89,11 +87,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
 
     protected FakeWeight() {
       super(new MatchNoDocsQuery());
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-
     }
 
     @Override

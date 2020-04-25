@@ -44,6 +44,11 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     assertU(adoc("id","9", "v_s","internal\"quote"));
     assertU(adoc("id","10","text_no_analyzer","should just work"));
 
+
+    assertU(adoc("id", "200", "subject_t", "Sony Netzteil"));
+    assertU(adoc("id", "201", "subject_t", "Other Netzteil"));
+    assertU(adoc("id", "202", "subject_t", "Other Product"));
+
     Object[] arr = new Object[] {
     "id",999
     ,"v_s","wow dude"
@@ -345,6 +350,17 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
                 ,"fl","*,score"
             )
             ,"//doc[./float[@name='v_f']='1.5' and ./float[@name='score']='2.25']"
+    );
+
+    // multiplicative boosts combine correctly
+    assertQ(
+        req("q", "{!boost b=$ymb}(+{!lucene v=$yq})",
+            "ymb", "product(query({!v=subject_t:Netzteil^=2.0},1),query({!v=subject_t:Sony^=3.0},1))",
+            "yq", "subject_t:*",
+            "fl", "*,score", "indent", "on"),
+        "//doc[str[@name='id'][.='200'] and float[@name='score'][.=6.0]]",
+        "//doc[str[@name='id'][.='202'] and float[@name='score'][.=1.0]]",
+        "//doc[str[@name='id'][.='201'] and float[@name='score'][.=2.0]]"
     );
 
     // switch queries

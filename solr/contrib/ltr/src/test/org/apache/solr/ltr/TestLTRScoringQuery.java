@@ -41,7 +41,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -53,7 +53,7 @@ import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.norm.NormalizerException;
 import org.junit.Test;
 
-public class TestLTRScoringQuery extends LuceneTestCase {
+public class TestLTRScoringQuery extends SolrTestCase {
 
   public final static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
 

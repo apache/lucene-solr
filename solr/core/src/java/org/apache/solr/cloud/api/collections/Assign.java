@@ -278,12 +278,12 @@ public class Assign {
   }
 
   private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    boolean useLegacyAssignment = false;
+    boolean useLegacyAssignment = true;
     Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
     if (clusterProperties.containsKey(CollectionAdminParams.DEFAULTS))  {
       Map<String, Object> defaults = (Map<String, Object>) clusterProperties.get(CollectionAdminParams.DEFAULTS);
       Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.CLUSTER, Collections.emptyMap());
-      useLegacyAssignment = (boolean) collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, false);
+      useLegacyAssignment = Boolean.parseBoolean(collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, "true").toString());
     }
 
     if (!useLegacyAssignment) {
@@ -298,7 +298,7 @@ public class Assign {
     // if no autoscaling configuration exists then obviously we cannot use the policy framework
     if (autoScalingConfig.getPolicy().isEmpty()) return false;
     // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
+    if (!autoScalingConfig.getPolicy().hasEmptyPreferences()) return true;
     // does a cluster policy exist
     if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
     // finally we check if the current collection has a policy

@@ -24,17 +24,19 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.common.params.SolrParams;
 
 /**
- *  The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
- *  The StreamContext is used to pass shared context to concentrically wrapped TupleStreams.
+ * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
+ * The StreamContext is used to pass shared context to concentrically wrapped TupleStreams.
  *
- *  Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for reuse
- *  across multiple TupleStreams.
+ * Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for reuse
+ * across multiple TupleStreams.
  **/
 
 
-public class StreamContext implements Serializable{
+public class StreamContext implements Serializable {
 
   private Map entries = new HashMap();
   private Map tupleContext = new HashMap();
@@ -45,6 +47,9 @@ public class StreamContext implements Serializable{
   private SolrClientCache clientCache;
   private ModelCache modelCache;
   private StreamFactory streamFactory;
+  private boolean local;
+  private SolrParams requestParams;
+  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
   public ConcurrentMap getObjectCache() {
     return this.objectCache;
@@ -54,7 +59,7 @@ public class StreamContext implements Serializable{
     this.objectCache = objectCache;
   }
 
-  public Map<String, Object> getLets(){
+  public Map<String, Object> getLets() {
     return lets;
   }
 
@@ -100,5 +105,29 @@ public class StreamContext implements Serializable{
 
   public StreamFactory getStreamFactory() {
     return this.streamFactory;
+  }
+
+  public void setLocal(boolean local) {
+    this.local = local;
+  }
+
+  public boolean isLocal() {
+    return local;
+  }
+
+  public void setRequestParams(SolrParams requestParams) {
+    this.requestParams = requestParams;
+  }
+
+  public SolrParams getRequestParams() {
+    return requestParams;
+  }
+
+  public void setRequestReplicaListTransformerGenerator(RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator) {
+    this.requestReplicaListTransformerGenerator = requestReplicaListTransformerGenerator;
+  }
+
+  public RequestReplicaListTransformerGenerator getRequestReplicaListTransformerGenerator() {
+    return requestReplicaListTransformerGenerator;
   }
 }

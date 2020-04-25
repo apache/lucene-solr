@@ -35,8 +35,13 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * &lt;/fieldType&gt;</pre>
  * 
  * @since Solr 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "patternReplace";
+
   private final Pattern pattern;
   private final String replacement;
 
@@ -48,6 +53,11 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public PatternReplaceCharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

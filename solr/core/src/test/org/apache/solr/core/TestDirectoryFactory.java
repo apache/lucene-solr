@@ -45,7 +45,6 @@ public class TestDirectoryFactory extends SolrTestCaseJ4 {
                     NRTCachingDirectoryFactory.class,
                     NIOFSDirectoryFactory.class,
                     RAMDirectoryFactory.class,
-                    SimpleFSDirectoryFactory.class,
                     StandardDirectoryFactory.class);
   
   /* Test that MockDirectoryFactory's exist method behaves consistent w/other impls */
@@ -62,7 +61,7 @@ public class TestDirectoryFactory extends SolrTestCaseJ4 {
     final String path = createTempDir().toString() + "/" + clazz + "_somedir";
     DirectoryFactory dirFac = null;
     try {
-      dirFac = clazz.newInstance();
+      dirFac = clazz.getConstructor().newInstance();
       dirFac.initCoreContainer(null); // greybox testing directly against path
       dirFac.init(new NamedList());
 

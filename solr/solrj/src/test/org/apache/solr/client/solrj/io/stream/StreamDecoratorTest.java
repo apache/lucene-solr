@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -56,8 +57,10 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Assume;
@@ -68,7 +71,6 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-//commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class StreamDecoratorTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -111,7 +113,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testUniqueStream() throws Exception {
 
     new UpdateRequest()
@@ -662,7 +663,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelHavingStream() throws Exception {
 
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -873,7 +873,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelFetchStream() throws Exception {
 
     new UpdateRequest()
@@ -1248,6 +1247,141 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testHashRollupStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("hashRollup", HashRollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("sort", SortStream.class);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      expression = StreamExpressionParser.parse("sort(hashRollup("
+          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
+          + "over=\"a_s\","
+          + "sum(a_i),"
+          + "sum(a_f),"
+          + "min(a_i),"
+          + "min(a_f),"
+          + "max(a_i),"
+          + "max(a_f),"
+          + "avg(a_i),"
+          + "avg(a_f),"
+          + "count(*),"
+          + "), by=\"avg(a_f) asc\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 3);
+
+      //Test Long and Double Sums
+
+      Tuple tuple = tuples.get(0);
+      String bucket = tuple.getString("a_s");
+      Double sumi = tuple.getDouble("sum(a_i)");
+      Double sumf = tuple.getDouble("sum(a_f)");
+      Double mini = tuple.getDouble("min(a_i)");
+      Double minf = tuple.getDouble("min(a_f)");
+      Double maxi = tuple.getDouble("max(a_i)");
+      Double maxf = tuple.getDouble("max(a_f)");
+      Double avgi = tuple.getDouble("avg(a_i)");
+      Double avgf = tuple.getDouble("avg(a_f)");
+      Double count = tuple.getDouble("count(*)");
+
+      assertTrue(bucket.equals("hello0"));
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
+
+      tuple = tuples.get(1);
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
+
+
+      System.out.println("################:bucket"+bucket);
+
+
+      assertTrue(bucket.equals("hello4"));
+      assertTrue(sumi.longValue() == 15);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
+
+      tuple = tuples.get(2);
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
+
+      assertTrue(bucket.equals("hello3"));
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
+
+
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
   public void testParallelUniqueStream() throws Exception {
 
     new UpdateRequest()
@@ -1385,7 +1519,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1518,7 +1651,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -1570,7 +1702,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testParallelRollupStream() throws Exception {
 
     new UpdateRequest()
@@ -1701,6 +1832,145 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertTrue(avgi.doubleValue() == 7.5D);
       assertTrue(avgf.doubleValue() == 5.5D);
       assertTrue(count.doubleValue() == 2);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testParallelHashRollupStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("hashRollup", HashRollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("sort", SortStream.class);
+
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    try {
+      expression = StreamExpressionParser.parse("sort(parallel(" + COLLECTIONORALIAS + ","
+          + "hashRollup("
+          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\", qt=\"/export\"),"
+          + "over=\"a_s\","
+          + "sum(a_i),"
+          + "sum(a_f),"
+          + "min(a_i),"
+          + "min(a_f),"
+          + "max(a_i),"
+          + "max(a_f),"
+          + "avg(a_i),"
+          + "avg(a_f),"
+          + "count(*)"
+          + "),"
+          + "workers=\"2\", zkHost=\"" + cluster.getZkServer().getZkAddress() + "\", sort=\"a_s asc\"), by=\"avg(a_f) asc\")"
+      );
+
+
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 3);
+
+      //Test Long and Double Sums
+
+      Tuple tuple = tuples.get(0);
+      String bucket = tuple.getString("a_s");
+      Double sumi = tuple.getDouble("sum(a_i)");
+      Double sumf = tuple.getDouble("sum(a_f)");
+      Double mini = tuple.getDouble("min(a_i)");
+      Double minf = tuple.getDouble("min(a_f)");
+      Double maxi = tuple.getDouble("max(a_i)");
+      Double maxf = tuple.getDouble("max(a_f)");
+      Double avgi = tuple.getDouble("avg(a_i)");
+      Double avgf = tuple.getDouble("avg(a_f)");
+      Double count = tuple.getDouble("count(*)");
+
+      assertTrue(bucket.equals("hello0"));
+      assertTrue(sumi.doubleValue() == 17.0D);
+      assertTrue(sumf.doubleValue() == 18.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 4.25D);
+      assertTrue(avgf.doubleValue() == 4.5D);
+      assertTrue(count.doubleValue() == 4);
+
+      tuple = tuples.get(1);
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
+
+      assertTrue(bucket.equals("hello4"));
+      assertTrue(sumi.longValue() == 15);
+      assertTrue(sumf.doubleValue() == 11.0D);
+      assertTrue(mini.doubleValue() == 4.0D);
+      assertTrue(minf.doubleValue() == 4.0D);
+      assertTrue(maxi.doubleValue() == 11.0D);
+      assertTrue(maxf.doubleValue() == 7.0D);
+      assertTrue(avgi.doubleValue() == 7.5D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 2);
+
+
+      tuple = tuples.get(2);
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
+
+
+      assertTrue(bucket.equals("hello3"));
+      assertTrue(sumi.doubleValue() == 38.0D);
+      assertTrue(sumf.doubleValue() == 26.0D);
+      assertTrue(mini.doubleValue() == 3.0D);
+      assertTrue(minf.doubleValue() == 3.0D);
+      assertTrue(maxi.doubleValue() == 13.0D);
+      assertTrue(maxf.doubleValue() == 9.0D);
+      assertTrue(avgi.doubleValue() == 9.5D);
+      assertTrue(avgf.doubleValue() == 6.5D);
+      assertTrue(count.doubleValue() == 4);
     } finally {
       solrClientCache.close();
     }
@@ -2326,7 +2596,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -2430,7 +2699,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     try {
       //Copy all docs to destinationCollection
-      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
+      // confirm update() stream defaults to ignoring _version_ field in tuples
+      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,_version_,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
       stream = new UpdateStream(expression, factory);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
@@ -2495,7 +2765,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2594,7 +2863,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2887,6 +3155,73 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testParseCSV() throws Exception {
+    String expr = "parseCSV(list(tuple(file=\"file1\", line=\"a,b,c\"), " +
+        "                        tuple(file=\"file1\", line=\"1,2,3\")," +
+        "                        tuple(file=\"file1\", line=\"\\\"hello, world\\\",9000,20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1,field_2,field_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8,9,\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertEquals(tuples.get(2).getString("field_2"), "9");
+    assertNull(tuples.get(2).get("field_3"));
+  }
+
+
+  @Test
+  public void testParseTSV() throws Exception {
+    String expr = "parseTSV(list(tuple(file=\"file1\", line=\"a\tb\tc\"), " +
+        "                        tuple(file=\"file1\", line=\"1\t2\t3\")," +
+        "                        tuple(file=\"file1\", line=\"hello, world\t9000\t20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1\tfield_2\tfield_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8\t\t9\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertNull(tuples.get(2).get("field_2"));
+    assertEquals(tuples.get(2).getString("field_3"), "9");
+
+  }
+
+
+
   @Test
   public void testCommitStream() throws Exception {
 
@@ -2981,7 +3316,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3296,7 +3630,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3349,10 +3682,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     // classify unknown documents
     String expr = "classify(" +
-        "model(modelCollection, id=\"model\", cacheMillis=5000)," +
-        "topic(checkpointCollection, uknownCollection, q=\"*:*\", fl=\"text_s, id\", id=\"1000000\", initialCheckpoint=\"0\")," +
-        "field=\"text_s\"," +
-        "analyzerField=\"tv_text\")";
+      // use cacheMillis=0 to prevent cached results. it doesn't matter on the first run,
+      // but we want to ensure that when we re-use this expression later after
+      // training another model, we'll still get accurate results.
+      "model(modelCollection, id=\"model\", cacheMillis=0)," +
+      "topic(checkpointCollection, uknownCollection, q=\"*:*\", fl=\"text_s, id\", id=\"1000000\", initialCheckpoint=\"0\")," +
+      "field=\"text_s\"," +
+      "analyzerField=\"tv_text\")";
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
@@ -3396,9 +3732,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(4), "text_s", "a b c c d");
     updateRequest.add(id, String.valueOf(5), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
-
-    //Sleep for 5 seconds to let model cache expire
-    Thread.sleep(5100);
 
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
@@ -3513,7 +3846,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("workQueue", 2, 2);
@@ -3580,7 +3912,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
 
@@ -3940,6 +4271,155 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  public void testDeleteStream() throws Exception {
+    final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    final SolrClient client = cluster.getSolrClient();
+    
+    { final UpdateRequest req = new UpdateRequest();
+      for (int i = 0; i < 20; i++) {
+        req.add(id, "doc_"+i, "deletable_s", "yup");
+      }
+      assertEquals(0, req.commit(cluster.getSolrClient(), COLLECTIONORALIAS).getStatus());
+    }
+
+    // fetch the _version_ param assigned each doc to test optimistic concurrency later...
+    final Map<String,Long> versions = new HashMap<>();  
+    { final QueryResponse allDocs = client.query(COLLECTIONORALIAS, params("q","deletable_s:yup",
+                                                                           "rows","100"));
+      assertEquals(20L, allDocs.getResults().getNumFound());
+      for (SolrDocument doc : allDocs.getResults()) {
+        versions.put(doc.getFirstValue("id").toString(), (Long) doc.getFirstValue("_version_"));
+      }
+    }
+                 
+    { // trivially delete 1 doc
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,     "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,   "
+        + "              tuple(id=doc_2)))                     "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+      
+      assertEquals(20L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // delete 5 docs, spread across 3 batches (2 + 2 + 1)
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,          "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=2,list(    " // NOTE: batch size
+        + "               tuple(id=doc_3),                          "
+        + "               tuple(id=doc_11),                         "
+        + "               tuple(id=doc_7),                          "
+        + "               tuple(id=doc_17),                         "
+        + "               tuple(id=doc_15),                         "
+        + "              ) ) )                                      "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(3, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+      assertEquals(4L, tuples.get(1).get("totalIndexed"));
+      assertEquals(5L, tuples.get(2).get("totalIndexed"));
+      
+      assertEquals(20L - 1L - 5L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // attempt to delete 2 docs, one with correct version, one with "stale" version that should fail
+      // but config uses TolerantUpdateProcessorFactory so batch should still be ok...
+      //
+      // It would be nice it there was a more explicit, targetted, option for update() and delete() to
+      // ensure that even if one "batch" fails it continues with other batches.
+      // See TODO in UpdateStream
+
+      final long v13_ok = versions.get("doc_13").longValue();
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,list(     "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "               tuple(id=doc_13,_version_="+v13_ok+"),      "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+
+      // should still be in the index due to version conflict...
+      assertEquals(1L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      // should not be in the index due to successful delete...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_13")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // by using pruneVersionField=true we should be able to ignore optimistic concurrency constraints,
+      // and delete docs even if the stream we are wrapping returns _version_ values that are no
+      // longer valid...
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,          "
+        + "              pruneVersionField=true, list(                "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+
+      // _version_should have been ignored and doc deleted anyway...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // now test a "realistic" DBQ type situation, confirm all (remaining) matching docs deleted...
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,                "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=99,              "
+        + "              search("+COLLECTIONORALIAS+",qt=\"/export\",     "
+        + "                     q=\"deletable_s:yup\",                    "
+        + "                     sort=\"id asc\",fl=\"id,_version_\"       "
+        + "              ) ) )                                            "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   tuples.get(0).get("totalIndexed"));
+
+      // shouldn't be anything left...
+      assertEquals(0L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+      
+    }
+    
+  }
+
+
+  
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     List<Tuple> tuples = new ArrayList<Tuple>();
 

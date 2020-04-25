@@ -69,6 +69,15 @@ public class TestSetOnce extends LuceneTestCase {
     assertEquals(5, set.get().intValue());
     set.set(7);
   }
+
+  @Test
+  public void testTrySet() {
+    SetOnce<Integer> set = new SetOnce<>();
+    assertTrue(set.trySet(5));
+    assertEquals(5, set.get().intValue());
+    assertFalse(set.trySet(7));
+    assertEquals(5, set.get().intValue());
+  }
   
   @Test
   public void testSetMultiThreaded() throws Exception {

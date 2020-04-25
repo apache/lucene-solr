@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,13 +34,20 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
+import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 
 /**
  * Trigger for the {@link TriggerEventType#NODEADDED} event
@@ -52,10 +60,11 @@ public class NodeAddedTrigger extends TriggerBase {
   private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
 
   private String preferredOp;
+  private Replica.Type replicaType = Replica.Type.NRT;
 
   public NodeAddedTrigger(String name) {
     super(TriggerEventType.NODEADDED, name);
-    TriggerUtils.validProperties(validProperties, PREFERRED_OP);
+    TriggerUtils.validProperties(validProperties, PREFERRED_OP, REPLICA_TYPE);
   }
 
   @Override
@@ -68,6 +77,16 @@ public class NodeAddedTrigger extends TriggerBase {
     try {
       List<String> added = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       added.forEach(n -> {
+        String markerPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + n;
+        try {
+          Map<String, Object> markerData = Utils.getJson(stateManager, markerPath);
+          // skip inactive markers
+          if (markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE)) {
+            return;
+          }
+        } catch (InterruptedException | IOException | KeeperException e) {
+          log.debug("-- ignoring marker " + markerPath + " state due to error", e);
+        }
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n) && !nodeNameVsTimeAdded.containsKey(n)) {
           // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeAdded for a node may also be restored
@@ -87,7 +106,14 @@ public class NodeAddedTrigger extends TriggerBase {
     super.configure(loader, cloudManager, properties);
     preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
     preferredOp = preferredOp.toLowerCase(Locale.ROOT);
+    String replicaTypeStr = (String) properties.getOrDefault(REPLICA_TYPE, Replica.Type.NRT.name());
     // verify
+    try {
+      replicaType = Replica.Type.valueOf(replicaTypeStr);
+    } catch (IllegalArgumentException | NullPointerException e) {
+      throw new TriggerValidationException("Unsupported replicaType=" + replicaTypeStr + " specified for node added trigger");
+    }
+
     CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
     switch (action) {
       case ADDREPLICA:
@@ -183,7 +209,7 @@ public class NodeAddedTrigger extends TriggerBase {
         if (processor != null) {
           log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
               nodeNames, times, cloudManager.getTimeSource().getTimeNs());
-          if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames, preferredOp))) {
+          if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames, preferredOp, replicaType))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
               log.debug("Removing new node from tracking: {}", n);
@@ -206,12 +232,13 @@ public class NodeAddedTrigger extends TriggerBase {
 
   public static class NodeAddedEvent extends TriggerEvent {
 
-    public NodeAddedEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames, String preferredOp) {
+    public NodeAddedEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames, String preferredOp, Replica.Type replicaType) {
       // use the oldest time as the time of the event
       super(eventType, source, times.get(0), null);
       properties.put(NODE_NAMES, nodeNames);
       properties.put(EVENT_TIMES, times);
       properties.put(PREFERRED_OP, preferredOp);
+      properties.put(REPLICA_TYPE, replicaType);
     }
   }
 }

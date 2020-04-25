@@ -26,8 +26,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
-public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
+public class StempelPolishStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "stempelPolishStem";
   
   /** Creates a new StempelPolishStemFilterFactory */
   public StempelPolishStemFilterFactory(Map<String,String> args) {
@@ -35,6 +39,11 @@ public class StempelPolishStemFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public StempelPolishStemFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

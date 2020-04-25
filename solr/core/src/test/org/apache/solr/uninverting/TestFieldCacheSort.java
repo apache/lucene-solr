@@ -53,13 +53,13 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /*
  * Tests sorting (but with fieldcache instead of docvalues)
  */
-public class TestFieldCacheSort extends LuceneTestCase {
+public class TestFieldCacheSort extends SolrTestCase {
 
   public void testString() throws IOException {
     testString(SortField.Type.STRING);

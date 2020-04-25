@@ -43,10 +43,11 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
+
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -664,12 +665,11 @@ public class TestAddIndexes extends LuceneTestCase {
     volatile boolean didClose;
     final DirectoryReader[] readers;
     final int NUM_COPY;
-    final static int NUM_THREADS = 5;
-    final Thread[] threads = new Thread[NUM_THREADS];
+    final Thread[] threads;
 
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
-      dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+      dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))
           .setMaxBufferedDocs(2));
       for (int i = 0; i < NUM_INIT_DOCS; i++)
@@ -684,11 +684,13 @@ public class TestAddIndexes extends LuceneTestCase {
       readers = new DirectoryReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
         readers[i] = DirectoryReader.open(dir);
+      int numThreads = TEST_NIGHTLY ? 5 : 2;
+      threads = new Thread[numThreads];
     }
 
     void launchThreads(final int numIter) {
 
-      for(int i=0;i<NUM_THREADS;i++) {
+      for(int i=0;i<threads.length;i++) {
         threads[i] = new Thread() {
             @Override
             public void run() {
@@ -713,13 +715,15 @@ public class TestAddIndexes extends LuceneTestCase {
           };
       }
 
-      for(int i=0;i<NUM_THREADS;i++)
-        threads[i].start();
+      for (Thread thread : threads) {
+        thread.start();
+      }
     }
 
     void joinThreads() throws Exception {
-      for(int i=0;i<NUM_THREADS;i++)
-        threads[i].join();
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
 
     void close(boolean doWait) throws Throwable {
@@ -814,7 +818,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     c.joinThreads();
 
-    int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS;
+    int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*c.threads.length*RunAddIndexesThreads.NUM_INIT_DOCS;
     assertEquals("expected num docs don't match - failures: " + c.failures, expectedNumDocs, c.writer2.getDocStats().numDocs);
 
     c.close(true);
@@ -1103,7 +1107,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testNonCFSLeftovers() throws Exception {
     Directory[] dirs = new Directory[2];
     for (int i = 0; i < dirs.length; i++) {
-      dirs[i] = new RAMDirectory();
+      dirs[i] = new ByteBuffersDirectory();
       IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(new MockAnalyzer(random())));
       Document d = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -1115,7 +1119,7 @@ public class TestAddIndexes extends LuceneTestCase {
     
     DirectoryReader[] readers = new DirectoryReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observer;
 import java.util.Set;
 
 import org.apache.solr.common.util.NamedList;
@@ -36,7 +35,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   private int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
 
-  protected Observer observer;
   protected CoreContainer coreContainer;
 
   protected final Map<String, CoreDescriptor> transientDescriptors = new LinkedHashMap<>();
@@ -49,8 +47,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   public TransientSolrCoreCacheDefault(final CoreContainer container) {
     this.coreContainer = container;
-    this.observer= coreContainer.solrCores;
-    
+
     NodeConfig cfg = container.getNodeConfig();
     if (cfg.getTransientCachePluginInfo() == null) {
       // Still handle just having transientCacheSize defined in the body of solr.xml  not in a transient handler clause.
@@ -79,22 +76,24 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       }
     }
 
-    log.info("Allocating transient cache for {} transient cores", cacheSize);
-    addObserver(this.observer);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
       cacheSize = Integer.MAX_VALUE;
     }
+
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
-    transientCores = new LinkedHashMap<String, SolrCore>(Math.min(cacheSize, 1000), 0.75f, true) {
+    int actualCacheSize = Math.min(cacheSize, 1000);
+    log.info("Allocating transient cache for {} transient cores", actualCacheSize);
+    transientCores = new LinkedHashMap<>(actualCacheSize, 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
-          setChanged();
-          notifyObservers(coreToClose);
-          log.info("Closing transient core [{}]", coreToClose.getName());
+          if (log.isInfoEnabled()) {
+            log.info("Closing transient core [{}]", coreToClose.getName());
+          }
+          coreContainer.queueCoreToClose(coreToClose);
           return true;
         }
         return false;
@@ -105,7 +104,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   
   @Override
   public Collection<SolrCore> prepareForShutdown() {
-    // Returna copy of the values
+    // Return a copy of the values
     List<SolrCore> ret = new ArrayList(transientCores.values());
     transientCores.clear();
     return ret;
@@ -178,15 +177,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     return ret;
   }
-
-  /**
-   * Must be called in order to free resources!
-   */
-  @Override
-  public void close() {
-    deleteObserver(this.observer);
-  }
-
 
   // For custom implementations to communicate arbitrary information as necessary.
   @Override

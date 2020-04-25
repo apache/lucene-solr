@@ -26,7 +26,7 @@ import java.io.IOException;
 
 /**
  * A TokenFilter which applies a Pattern to each token in the stream,
- * replacing match occurances with the specified replacement string.
+ * replacing match occurrences with the specified replacement string.
  *
  * <p>
  * <b>Note:</b> Depending on the input and the pattern used and the input
@@ -43,7 +43,7 @@ public final class PatternReplaceFilter extends TokenFilter {
   private final Matcher m;
 
   /**
-   * Constructs an instance to replace either the first, or all occurances
+   * Constructs an instance to replace either the first, or all occurrences
    *
    * @param in the TokenStream to process
    * @param p the patterm to apply to each Token

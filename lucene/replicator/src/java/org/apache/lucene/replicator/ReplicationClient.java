@@ -391,7 +391,7 @@ public class ReplicationClient implements Closeable {
   }
   
   /**
-   * Executes the update operation immediately, irregardess if an update thread
+   * Executes the update operation immediately, irregardless if an update thread
    * is running or not.
    */
   public void updateNow() throws IOException {

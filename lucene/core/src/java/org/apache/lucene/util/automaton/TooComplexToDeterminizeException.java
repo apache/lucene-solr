@@ -19,7 +19,7 @@ package org.apache.lucene.util.automaton;
 
 /**
  * This exception is thrown when determinizing an automaton would result in one
- * has too many states.
+ * which has too many states.
  */
 public class TooComplexToDeterminizeException extends RuntimeException {
   private transient final Automaton automaton;

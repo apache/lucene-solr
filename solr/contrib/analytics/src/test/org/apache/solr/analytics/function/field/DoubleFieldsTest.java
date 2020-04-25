@@ -25,7 +25,7 @@ import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
 public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
-  
+
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -40,7 +40,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedTrieDoubleTest() throws IOException {
     DoubleField valueField = new DoubleField("double_d_t");
     Map<String,Double> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       double value = valueField.getDouble();
       if (valueField.exists()) {
@@ -48,7 +48,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleDoubles, values, missing);
   }
 
@@ -56,7 +56,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedPointDoubleTest() throws IOException {
     DoubleField valueField = new DoubleField("double_d_p");
     Map<String,Double> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       double value = valueField.getDouble();
       if (valueField.exists()) {
@@ -64,7 +64,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleDoubles, values, missing);
   }
 
@@ -72,7 +72,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedTrieDoubleTest() throws IOException {
     DoubleMultiTrieField valueField = new DoubleMultiTrieField("double_dm_t");
     Map<String,Map<Double,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Double, Integer> doc = new HashMap<>();
       valueField.streamDoubles( value -> {
@@ -83,7 +83,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiDoubles, values, missing, true);
   }
 
@@ -91,7 +91,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedPointDoubleTest() throws IOException {
     DoubleMultiPointField valueField = new DoubleMultiPointField("double_dm_p");
     Map<String,Map<Double,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Double, Integer> doc = new HashMap<>();
       valueField.streamDoubles( value -> {
@@ -102,7 +102,7 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiDoubles, values, missing, false);
   }
 }

@@ -25,17 +25,17 @@ import java.util.function.IntConsumer;
  */
 public abstract class ReductionDataArrayReader<A> extends ReductionDataReader<A> {
   protected final IntConsumer signal;
-  
+
   public ReductionDataArrayReader(DataInput inputStream, A applier, IntConsumer signal) {
     super(inputStream, applier);
-    
+
     this.signal = signal;
   }
-  
+
   @Override
   /**
    * Read an array of data from the input stream and feed it to the applier, first signaling the size of the array.
-   * 
+   *
    * @throws IOException if an exception occurs while reading from the input stream
    */
   public void read() throws IOException {
@@ -43,10 +43,10 @@ public abstract class ReductionDataArrayReader<A> extends ReductionDataReader<A>
     signal.accept(size);
     read(size);
   }
-  
+
   /**
    * Read an array from the input stream, feeding each member to the applier.
-   * 
+   *
    * @param size length of the array to read
    * @throws IOException if an exception occurs while reading from the input stream
    */

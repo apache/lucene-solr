@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 import com.carrotsearch.hppc.IntByteHashMap;
@@ -26,7 +26,7 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 /**
  * Tests {@link HLL} of type {@link HLLType#SPARSE}.
  */
-public class SparseHLLTest extends LuceneTestCase {
+public class SparseHLLTest extends SolrTestCase {
     private static final int log2m = 11;
 
     /**

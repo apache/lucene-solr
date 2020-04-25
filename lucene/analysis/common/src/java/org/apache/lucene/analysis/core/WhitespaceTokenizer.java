@@ -17,6 +17,7 @@
 package org.apache.lucene.analysis.core;
 
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
@@ -45,6 +46,17 @@ public final class WhitespaceTokenizer extends CharTokenizer {
    */
   public WhitespaceTokenizer(AttributeFactory factory) {
     super(factory);
+  }
+
+  /**
+   * Construct a new WhitespaceTokenizer using a given max token length
+   *
+   * @param maxTokenLen maximum token length the tokenizer will emit.
+   *        Must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
+   * @throws IllegalArgumentException if maxTokenLen is invalid.
+   */
+  public WhitespaceTokenizer(int maxTokenLen) {
+    super(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, maxTokenLen);
   }
 
   /**

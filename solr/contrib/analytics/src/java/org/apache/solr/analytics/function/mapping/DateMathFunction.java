@@ -73,7 +73,7 @@ class DateMathValueFunction extends AbstractDateValue {
   public static final String name = DateMathFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateMathValueFunction(DateValue dateParam, ConstantStringValue mathParam) throws SolrException {
     this.dateParam = dateParam;
     this.mathParam = "NOW" + mathParam.getString();
@@ -82,7 +82,7 @@ class DateMathValueFunction extends AbstractDateValue {
   }
 
   private boolean exists = false;
-  
+
   @Override
   public long getLong() {
     Date date = getDate();
@@ -126,7 +126,7 @@ class DateMathStreamFunction extends AbstractDateValueStream {
   public static final String name = DateMathFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateMathStreamFunction(DateValueStream dateParam, ConstantStringValue mathParam) throws SolrException {
     this.dateParam = dateParam;
     this.mathParam = "NOW" + mathParam.getString();

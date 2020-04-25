@@ -42,9 +42,7 @@ import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
-import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
-import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -106,18 +104,16 @@ public class RandomCodec extends AssertingCodec {
           public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
             PointValues values = reader.getValues(fieldInfo.name);
-            boolean singleValuePerDoc = values.size() == values.getDocCount();
 
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
-                                                                   fieldInfo.getPointDataDimensionCount(),
+                                                                   fieldInfo.getPointDimensionCount(),
                                                                    fieldInfo.getPointIndexDimensionCount(),
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
                                                                    values.size(),
-                                                                   singleValuePerDoc,
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
                 values.intersect(new IntersectVisitor() {
                     @Override
@@ -191,7 +187,6 @@ public class RandomCodec extends AssertingCodec {
     add(avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new FSTPostingsFormat(),
-        new FSTOrdPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucenePostings to be constructed 
@@ -208,8 +203,7 @@ public class RandomCodec extends AssertingCodec {
     
     addDocValues(avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
-        new DirectDocValuesFormat(), // maybe not a great idea...
-        TestUtil.getDefaultDocValuesFormat(),
+
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);
@@ -262,12 +256,8 @@ public class RandomCodec extends AssertingCodec {
 
     public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims,
                                       int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
-                                      long totalPointCount, boolean singleValuePerDoc, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount,
-            getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed),
-            getRandomLongOrds(totalPointCount, singleValuePerDoc, randomSeed),
-            getRandomOfflineSorterBufferMB(randomSeed),
-            getRandomOfflineSorterMaxTempFiles(randomSeed));
+                                      long totalPointCount, int randomSeed) throws IOException {
+      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
 

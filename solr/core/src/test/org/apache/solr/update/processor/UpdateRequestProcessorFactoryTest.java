@@ -16,20 +16,20 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
  * 
@@ -87,7 +87,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals( custom, core.getUpdateProcessingChain( "custom" ) );
     
     // Make sure the NamedListArgs got through ok
-    assertEquals( "{name={n8=88,n9=99}}", link.args.toString() );
+    assertEquals( "{name={n8=88, n9=99}}", link.args.toString() );
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
@@ -114,16 +114,22 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       assertNotNull(name, chain);
 
       // either explicitly, or because of injection
-      assertEquals(name + " chain length: " + chain.toString(), EXPECTED_CHAIN_LENGTH,
+      assertEquals(name + " factory chain length: " + chain.toString(), EXPECTED_CHAIN_LENGTH,
                    chain.getProcessors().size());
 
       // test a basic (non distrib) chain
       proc = chain.createProcessor(req(), new SolrQueryResponse());
       procs = procToList(proc);
-      assertEquals(name + " procs size: " + procs.toString(),
-                   // -1 = NoOpDistributingUpdateProcessorFactory produces no processor
-                   EXPECTED_CHAIN_LENGTH - ("distrib-chain-noop".equals(name) ? 1 : 0),
-                   procs.size());
+
+      int expectedProcLen = EXPECTED_CHAIN_LENGTH;
+      if ("distrib-chain-noop".equals(name)) { // NoOpDistributingUpdateProcessorFactory produces no processor
+        expectedProcLen--;
+      }
+      if (procs.stream().anyMatch(p -> p.getClass().getSimpleName().equals("NestedUpdateProcessor"))) {
+        expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
+      }
+
+      assertEquals(name + " procs size: " + procs.toString(), expectedProcLen, procs.size());
       
       // Custom comes first in all three of our chains
       assertTrue(name + " first processor isn't a CustomUpdateRequestProcessor: " + procs.toString(),
@@ -159,12 +165,19 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                  procs.get(procs.size()-1) instanceof RunUpdateProcessor );
 
       // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
+
+      expectedProcLen = EXPECTED_CHAIN_LENGTH;
+      expectedProcLen--; // -1 = all chains lose CustomUpdateRequestProcessorFactory
+      if ("distrib-chain-explicit".equals(name) == false) {
+        // -1 = distrib-chain-noop: NoOpDistributingUpdateProcessorFactory produces no processor
+        // -1 = distrib-chain-implicit: does RemoveBlank before distrib
+        expectedProcLen--;
+      }
+      if (procs.stream().anyMatch(p -> p.getClass().getSimpleName().equals("NestedUpdateProcessor"))) {
+        expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
+      }
       assertEquals(name + " (distrib) chain has wrong length: " + procs.toString(),
-                   // -1 = all chains lose CustomUpdateRequestProcessorFactory
-                   // -1 = distrib-chain-noop: NoOpDistributingUpdateProcessorFactory produces no processor
-                   // -1 = distrib-chain-implicit: does RemoveBlank before distrib
-                   EXPECTED_CHAIN_LENGTH - ( "distrib-chain-explicit".equals(name) ? 1 : 2),
-                   procs.size());
+          expectedProcLen, procs.size());
     }
 
   }

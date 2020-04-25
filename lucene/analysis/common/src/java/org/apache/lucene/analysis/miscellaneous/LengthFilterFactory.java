@@ -33,8 +33,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class LengthFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "length";
+
   final int min;
   final int max;
   public static final String MIN_KEY = "min";
@@ -50,6 +55,11 @@ public class LengthFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public LengthFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public LengthFilter create(TokenStream input) {
     final LengthFilter filter = new LengthFilter(input,min,max);

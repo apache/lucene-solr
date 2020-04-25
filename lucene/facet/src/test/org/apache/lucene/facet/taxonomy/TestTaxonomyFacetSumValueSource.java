@@ -452,8 +452,10 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
         List<LabelAndValue> labelValues = new ArrayList<>();
         double totValue = 0;
         for(Map.Entry<String,Float> ent : expectedValues[i].entrySet()) {
-          labelValues.add(new LabelAndValue(ent.getKey(), ent.getValue()));
-          totValue += ent.getValue();
+          if (ent.getValue() > 0) {
+            labelValues.add(new LabelAndValue(ent.getKey(), ent.getValue()));
+            totValue += ent.getValue();
+          }
         }
         sortLabelValues(labelValues);
         if (totValue > 0) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -23,13 +24,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
@@ -39,7 +42,7 @@ import org.junit.Test;
  * @since solr 1.3
  */
 @Limit(bytes=20000)
-public class QueryResponseTest extends LuceneTestCase {
+public class QueryResponseTest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRangeFacets() throws Exception {
@@ -297,6 +300,30 @@ public class QueryResponseTest extends LuceneTestCase {
       
     }
     
+  }
+
+  @Test
+  public void testExplainMapResponse() throws IOException {
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> response;
+
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
+          assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+          response = parser.processResponse(in);
+      }
+    }
+
+    QueryResponse qr = new QueryResponse(response, null);
+    assertNotNull(qr);
+
+    Map<String, Object> explainMap = qr.getExplainMap();
+    assertNotNull(explainMap);
+    assertEquals(2, explainMap.size());
+    Object[] values = explainMap.values().toArray();
+    assertTrue(values[0] instanceof SimpleOrderedMap);
+    assertTrue(values[1] instanceof SimpleOrderedMap);
   }
 
 }

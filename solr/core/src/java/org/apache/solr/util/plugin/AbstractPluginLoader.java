@@ -19,6 +19,7 @@ package org.apache.solr.util.plugin;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -146,11 +147,17 @@ public abstract class AbstractPluginLoader<T>
         String name = null;
         try {
           name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
-          String className  = DOMUtil.getAttr(node,"class", type);
+          String className  = DOMUtil.getAttr(node,"class", null);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
-            
-          T plugin = create(loader, name, className, node );
-          log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
+
+          if (Objects.isNull(className) && Objects.isNull(name)) {
+            throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'name'");
+          }
+
+          T plugin = create(loader, name, className, node);
+          if (log.isDebugEnabled()) {
+            log.debug("created {}: {}", ((name != null) ? name : ""), plugin.getClass().getName());
+          }
           
           // Either initialize now or wait till everything has been registered
           if( preRegister ) {
@@ -226,7 +233,9 @@ public abstract class AbstractPluginLoader<T>
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
       plugin = create(loader, name, className, node);
-      log.debug("created " + name + ": " + plugin.getClass().getName());
+      if (log.isDebugEnabled()) {
+        log.debug("created {}: {}", name, plugin.getClass().getName());
+      }
 
       // Either initialize now or wait till everything has been registered
       if (preRegister) {

@@ -22,18 +22,18 @@ reHREF = re.compile('<a.*?>(.*?)</a>', re.IGNORECASE)
 reMarkup = re.compile('<.*?>')
 reDivBlock = re.compile('<div class="block">(.*?)</div>', re.IGNORECASE)
 reCaption = re.compile('<caption><span>(.*?)</span>', re.IGNORECASE)
-reJ8Caption = re.compile('<h3>(.*?) Summary</h3>')
+reJ8Caption = re.compile('<h[23]>(.*?) Summary</h[23]>')
 reTDLastNested = re.compile('^<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
-reTDLast = re.compile('^<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
+reMethod = re.compile('^<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 reColOne = re.compile('^<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 reMemberNameLink = re.compile('^<td class="colLast"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)"', re.IGNORECASE)
 reNestedClassMemberNameLink = re.compile('^<td class="colLast"><code><span class="memberNameLink"><a href="[^>]*?".*?>(.*?)</a>', re.IGNORECASE)
 reMemberNameOneLink = re.compile('^<td class="colOne"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)"', re.IGNORECASE)
 
 # the Method detail section at the end
-reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
-reMethodDetailAnchor = re.compile('^(?:</a>)?<a name="([^>]*?)">$', re.IGNORECASE)
-reMethodOverridden = re.compile('^<dt><strong>(Specified by:|Overrides:)</strong></dt>$', re.IGNORECASE)
+reMethodDetail = re.compile('^<h[23]>Method Details?</h[23]>$', re.IGNORECASE)
+reMethodDetailAnchor = re.compile('^(?:</a>)?<a id="([^>]*?)">$', re.IGNORECASE)
+reJ13MethodDetailAnchor = re.compile('^(?:<h3>|</a>)<a id="([^>]*?)">[^>]*</a></h3>$', re.IGNORECASE)
 
 reTag = re.compile("(?i)<(\/?\w+)((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
 
@@ -177,7 +177,7 @@ def checkClassSummaries(fullPath):
     # they should be specified elsewhere, if they are e.g. jdk or 
     # external classes we cannot inherit their docs anyway
     if foundMethodDetail:
-      m = reMethodDetailAnchor.search(line)
+      m = reMethodDetailAnchor.search(line) or reJ13MethodDetailAnchor.search(line)
       if m is not None:
         lastMethodAnchor = m.group(1)
         continue
@@ -201,7 +201,7 @@ def checkClassSummaries(fullPath):
 
     # Try to find the item in question (method/member name):
     for matcher in (reTDLastNested, # nested classes
-                    reTDLast, # methods etc.
+                    reMethod, # methods etc.
                     reColOne, # ctors etc.
                     reMemberNameLink, # java 8
                     reNestedClassMemberNameLink, # java 8, nested class
@@ -276,7 +276,7 @@ def checkSummary(fullPath):
       if lineLower.startswith('package ') or lineLower.startswith('<h1 title="package" '):
         sawPackage = True
       elif sawPackage:
-        if lineLower.startswith('<table ') or lineLower.startswith('<b>see: ') or lineLower.startswith('<p>see:'):
+        if lineLower.startswith('<table ') or lineLower.startswith('<b>see: ') or lineLower.startswith('<p>see:') or lineLower.startswith('</main>'):
           desc = ' '.join(desc)
           desc = reMarkup.sub(' ', desc)
           desc = desc.strip()
@@ -316,6 +316,8 @@ def checkSummary(fullPath):
 def unEscapeURL(s):
   # Not exhaustive!!
   s = s.replace('%20', ' ')
+  s = s.replace('%5B', '[')
+  s = s.replace('%5D', ']')
   return s
 
 def unescapeHTML(s):

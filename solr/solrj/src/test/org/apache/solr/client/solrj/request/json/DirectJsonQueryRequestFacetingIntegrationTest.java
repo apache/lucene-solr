@@ -545,8 +545,8 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   private void assertHasStatFacetWithValue(NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
     assertTrue("Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatFacetValue(expectedFacetName) != null);
-    assertEquals(expectedStatValue, response.getStatFacetValue(expectedFacetName));
+        response.getStatValue(expectedFacetName) != null);
+    assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 
   private void assertExpectedDocumentsFoundAndReturned(QueryResponse response, int expectedNumFound, int expectedReturned) {

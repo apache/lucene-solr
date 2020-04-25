@@ -20,7 +20,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * Stores a core's configuration in the form of a SolrConfig and IndexSchema
+ * Stores a core's configuration in the form of a SolrConfig and IndexSchema.
+ * Immutable.
+ * @see ConfigSetService
  */
 public class ConfigSet {
 

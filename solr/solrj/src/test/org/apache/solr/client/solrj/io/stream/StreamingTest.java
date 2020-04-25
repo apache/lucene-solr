@@ -48,8 +48,13 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Assume;
 import org.junit.Before;
@@ -68,6 +73,7 @@ import org.junit.Test;
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";
+public static final String MULTI_REPLICA_COLLECTIONORALIAS = "streams-multi-replica";
 
 private static final StreamFactory streamFactory = new StreamFactory()
     .withFunctionName("search", CloudSolrStream.class)
@@ -100,7 +106,8 @@ public static void configureCluster() throws Exception {
   } else {
     collection = COLLECTIONORALIAS;
   }
-  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
+      .process(cluster.getSolrClient());
   cluster.waitForActiveCollection(collection, numShards, numShards);
   if (useAlias) {
     CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
@@ -108,6 +115,20 @@ public static void configureCluster() throws Exception {
 
   zkHost = cluster.getZkServer().getZkAddress();
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+
+  // Set up multi-replica collection
+  if (useAlias) {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS + "_collection";
+  } else {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS;
+  }
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1, 1, 1)
+      .setMaxShardsPerNode(numShards * 3)
+      .process(cluster.getSolrClient());
+  cluster.waitForActiveCollection(collection, numShards, numShards * 3);
+  if (useAlias) {
+    CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  }
 }
 
 private static final String id = "id";
@@ -1739,58 +1760,69 @@ public void testParallelRankStream() throws Exception {
       daemonStream.setStreamContext(context);
 
       daemonStream.open();
+      CheckDaemonStream(context, daemonStream);
 
-      // Wait for the checkpoint
-      JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
+      // We should get an error if we try to open an already-open stream.
+      final IOException ex = expectThrows(IOException.class, () -> {
+        daemonStream.open();
+      });
+      assertEquals("Should have an intelligible exception message", ex.getMessage(), "There is already an open daemon named 'daemon1', no action taken.");
+      daemonStream.close();
 
-
-      SolrParams sParams1 = mapParams("qt", "/get", "ids", "50000000", "fl", "id");
-      int count = 0;
-      while (count == 0) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
-        solrStream.setStreamContext(context);
-        List<Tuple> tuples = getTuples(solrStream);
-        count = tuples.size();
-        if (count > 0) {
-          Tuple t = tuples.get(0);
-          assertTrue(t.getLong("id") == 50000000);
-        } else {
-          System.out.println("###### Waiting for checkpoint #######:" + count);
-        }
-      }
-
-      new UpdateRequest()
-          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-          .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-          .add(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3")
-          .add(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-      for (int i = 0; i < 5; i++) {
-        daemonStream.read();
-      }
-
-      new UpdateRequest()
-          .add(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .add(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-      for (int i = 0; i < 2; i++) {
-        daemonStream.read();
-      }
-
-      daemonStream.shutdown();
-
-      Tuple tuple = daemonStream.read();
-
-      assertTrue(tuple.EOF);
+      // We should be able to close then re-open the stream, then close it again, see SOLR-13408
+      daemonStream.open();
+      CheckDaemonStream(context, daemonStream);
       daemonStream.close();
     } finally {
       cache.close();
     }
+  }
 
+  private void CheckDaemonStream(StreamContext context, DaemonStream daemonStream) throws IOException, SolrServerException {
+    // Wait for the checkpoint
+    JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
 
+    SolrParams sParams1 = mapParams("qt", "/get", "ids", "50000000", "fl", "id");
+    int count = 0;
+    while (count == 0) {
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
+      solrStream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(solrStream);
+      count = tuples.size();
+      if (count > 0) {
+        Tuple t = tuples.get(0);
+        assertTrue(t.getLong("id") == 50000000);
+      } else {
+        System.out.println("###### Waiting for checkpoint #######:" + count);
+      }
+    }
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    for (int i = 0; i < 5; i++) {
+      daemonStream.read();
+    }
+
+    new UpdateRequest()
+        .add(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .add(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    for (int i = 0; i < 2; i++) {
+      daemonStream.read();
+    }
+
+    daemonStream.shutdown();
+
+    Tuple tuple = daemonStream.read();
+
+    assertTrue(tuple.EOF);
   }
 
   @Test
@@ -1970,7 +2002,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testZeroParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -2129,7 +2161,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -2286,6 +2318,122 @@ public void testParallelRankStream() throws Exception {
     }
   }
 
+  /**
+   * This test verifies that setting a core into the stream context entries and streamContext.local = true causes the
+   * streaming expression to only consider data found on the local node.
+   */
+  @Test
+  public void streamLocalTests() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamContext streamContext = new StreamContext();
+    streamContext.setLocal(true);
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(COLLECTIONORALIAS);
+    String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
+      zkStateReader.forceUpdateCollection(collName);
+    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
+    List<Replica> replicas = collection.getReplicas();
+    streamContext.getEntries().put("core",replicas.get(random().nextInt(replicas.size())).getCoreName());
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    //Basic CloudSolrStream Test with Descending Sort
+
+    try {
+      SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i desc");
+      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(stream);
+
+      // note if hashing algo changes this might break
+      switch (tuples.size()) {
+        case 5: // 1 shard
+          assertOrder(tuples, 4, 3, 2, 1, 0);
+          break;
+        case 3: // 2 shards case 1 (randomized)
+          assertOrder(tuples, 4, 1, 0);
+          break;
+        case 2: // 2 shards case 2 (randomized)
+          assertOrder(tuples,  3, 2);
+          break;
+        default: // nope, no way, no how, never good.
+          fail("should have 3, 5 or 2 tuples, has hashing algorithm changed?");
+      }
+
+      //With Ascending Sort
+      sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      // note if hashing algo changes this might break
+      switch (tuples.size()) {
+        case 5: // 1 shard
+          assertOrder(tuples, 0, 1, 2, 3, 4);
+          break;
+        case 3: // 2 shards case 1 (randomized)
+          assertOrder(tuples, 0, 1, 4);
+          break;
+        case 2: // 2 shards case 2 (randomized)
+          assertOrder(tuples, 2, 3);
+          break;
+        default: // nope, no way, no how, never good.
+          fail("should have 3, 5 or 2 tuples, has hashing algorithm changed?");
+      }
+
+      //Test compound sort
+      sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      // note if hashing algo changes this might break
+      switch (tuples.size()) {
+        case 5: // 1 shard
+          assertOrder(tuples, 2, 0, 1, 3, 4);
+          break;
+        case 3: // 2 shards case 1 (randomized)
+          assertOrder(tuples, 0, 1, 4);
+          break;
+        case 2: // 2 shards case 2 (randomized)
+          assertOrder(tuples, 2, 3);
+          break;
+        default: // nope, no way, no how, never good.
+          fail("should have 3, 5 or 2 tuples, has hashing algorithm changed?");
+      }
+
+      sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      // note if hashing algo changes this might break
+      switch (tuples.size()) {
+        case 5: // 1 shard
+          assertOrder(tuples, 0, 2, 1, 3, 4);
+          break;
+        case 3: // 2 shards case 1 (randomized)
+          assertOrder(tuples, 0, 1, 4);
+          break;
+        case 2: // 2 shards case 2 (randomized)
+          assertOrder(tuples, 2, 3);
+          break;
+        default: // nope, no way, no how, never good.
+          fail("should have 3, 5 or 2 tuples, has hashing algorithm changed?");
+      }
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
   @Test
   public void testDateBoolSorting() throws Exception {
 
@@ -2370,14 +2518,14 @@ public void testParallelRankStream() throws Exception {
     tryWithQt("/export");
     tryWithQt("/select");
   }
-  
+
   // We should be getting the exact same thing back with both the export and select handlers, so test
   private void tryWithQt(String which) throws IOException {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl", 
-        "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi", 
+    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl",
+        "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi",
         "sort", "i_sing asc");
     try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
 
@@ -2415,7 +2563,7 @@ public void testParallelRankStream() throws Exception {
       assertTrue("MV dates should be returned as Dates for dt_multi", tuple.getDates("dt_multi").get(0).equals(dt));
       dt = new Date(Instant.parse("1981-05-24T04:05:06.990Z").toEpochMilli());
       assertTrue("MV dates should be returned as Dates  for dt_multi", tuple.getDates("dt_multi").get(1).equals(dt));
-      
+
       assertTrue("Booleans should be returned", tuple.getBool("b_sing"));
       assertFalse("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(0));
       assertTrue("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(1));
@@ -2424,6 +2572,43 @@ public void testParallelRankStream() throws Exception {
     }
 
   }
+
+  @Test
+  public void testTupleStreamGetShardsPreference() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(new SolrClientCache());
+    streamContext.setRequestReplicaListTransformerGenerator(new RequestReplicaListTransformerGenerator(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null));
+
+    streamContext.setRequestParams(mapParams(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));
+
+    try {
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
+      String collName = strings.size() > 0 ? strings.get(0) : MULTI_REPLICA_COLLECTIONORALIAS;
+      Map<String, String> replicaTypeMap = mapReplicasToReplicaType(zkStateReader.getClusterState().getCollectionOrNull(collName));
+
+      // Test from extra params
+      SolrParams sParams = mapParams("q", "*:*", ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":pull");
+      testTupleStreamSorting(streamContext, sParams, "PULL", replicaTypeMap);
+
+      // Test defaults from streamContext.getParams()
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "NRT", replicaTypeMap);
+
+      // Test defaults from the RLTG
+      streamContext.setRequestParams(new ModifiableSolrParams());
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "TLOG", replicaTypeMap);
+    } finally {
+      streamContext.getSolrClientCache().close();
+    }
+  }
+
+  public void testTupleStreamSorting(StreamContext streamContext, SolrParams solrParams, String replicaType, Map<String, String> replicaTypeMap) throws Exception {
+    List<String> shards = TupleStream.getShards(cluster.getZkClient().getZkServerAddress(), MULTI_REPLICA_COLLECTIONORALIAS, streamContext, solrParams);
+    for (String shard : shards) {
+      assertEquals(shard, replicaType.toUpperCase(Locale.ROOT), replicaTypeMap.getOrDefault(shard, "").toUpperCase(Locale.ROOT));
+    }
+  }
+
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList();
@@ -2452,8 +2637,9 @@ public void testParallelRankStream() throws Exception {
     for(int val : ids) {
       Tuple t = tuples.get(i);
       String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
+      String valStr = Integer.toString(val);
+      if(!tip.equals(valStr)) {
+        assertEquals("Found value:"+tip+" expecting:"+valStr, val, tip);
       }
       ++i;
     }
@@ -2499,7 +2685,7 @@ public void testParallelRankStream() throws Exception {
 
     return true;
   }
-  
+
   private void attachStreamFactory(TupleStream tupleStream) {
     StreamContext streamContext = new StreamContext();
     streamContext.setStreamFactory(streamFactory);
@@ -2515,10 +2701,10 @@ public void testParallelRankStream() throws Exception {
     if(random().nextBoolean()) params.add("wt","javabin");
     return params;
   }
-  
+
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator) throws IOException {
     ParallelStream pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
     return pstream;
-  }  
+  }
 
 }

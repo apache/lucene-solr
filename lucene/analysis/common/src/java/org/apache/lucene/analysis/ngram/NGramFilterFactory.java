@@ -34,8 +34,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NGramFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "nGram";
+
   private final int maxGramSize;
   private final int minGramSize;
   private final boolean preserveOriginal;
@@ -45,10 +50,16 @@ public class NGramFilterFactory extends TokenFilterFactory {
     super(args);
     minGramSize = requireInt(args, "minGramSize");
     maxGramSize = requireInt(args, "maxGramSize");
-    preserveOriginal = getBoolean(args, "keepShortTerm", NGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
+
+    preserveOriginal = getBoolean(args, "preserveOriginal", NGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public NGramFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

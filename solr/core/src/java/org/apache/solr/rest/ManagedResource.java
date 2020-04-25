@@ -18,6 +18,7 @@ package org.apache.solr.rest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -79,7 +80,7 @@ public abstract class ManagedResource {
    * Called once during core initialization to get the managed
    * data loaded from storage and notify observers.
    */
-  public void loadManagedDataAndNotify(List<ManagedResourceObserver> observers) 
+  public void loadManagedDataAndNotify(Collection<ManagedResourceObserver> observers) 
       throws SolrException {
 
     // load managed data from storage
@@ -101,8 +102,7 @@ public abstract class ManagedResource {
    * reload the core to get updates applied to the analysis components that
    * depend on the ManagedResource data.
    */
-  @SuppressWarnings("unchecked")
-  protected void notifyObserversDuringInit(NamedList<?> args, List<ManagedResourceObserver> observers)
+  protected void notifyObserversDuringInit(NamedList<?> args, Collection<ManagedResourceObserver> observers)
       throws SolrException {
 
     if (observers == null || observers.isEmpty())
@@ -114,7 +114,9 @@ public abstract class ManagedResource {
       NamedList<?> clonedArgs = args.clone();
       observer.onManagedResourceInitialized(clonedArgs,this);
     }
-    log.info("Notified {} observers of {}", observers.size(), getResourceId());
+    if (log.isInfoEnabled()) {
+      log.info("Notified {} observers of {}", observers.size(), getResourceId());
+    }
   }  
   
   /**
@@ -265,7 +267,7 @@ public abstract class ManagedResource {
           // note: the data we're managing now remains in a dubious state
           // however the text analysis component remains unaffected 
           // (at least until core reload)
-          log.error("Failed to load data from storage due to: "+reloadExc);
+          log.error("Failed to load data from storage due to: {}", reloadExc);
         }
       }
       
@@ -360,8 +362,10 @@ public abstract class ManagedResource {
    */
   @SuppressWarnings("unchecked")
   public synchronized void doPut(BaseSolrResource endpoint, Representation entity, Object json) {
-    
-    log.info("Processing update to {}: {} is a "+json.getClass().getName(), getResourceId(), json);
+
+    if (log.isInfoEnabled()) {
+      log.info("Processing update to {}: {} is a {}", getResourceId(), json, json.getClass().getName());
+    }
     
     boolean updatedInitArgs = false;
     Object managedData = null;

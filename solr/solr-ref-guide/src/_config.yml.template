@@ -11,7 +11,7 @@ gems: [jekyll-asciidoc]
 
 destination: ../html-site
 
-# this property is useful for conditional filtering of content that is separate from the PDF.
+# this property is useful for conditional filtering of content that is separate from another format (if any).
 output: web
 
 # this appears on the top navigation bar next to the home button
@@ -34,7 +34,6 @@ port: 4015
 exclude:
   - .idea/
   - .gitignore
-  - pdf/
 
 # these are defaults used for the frontmatter for these file types
 defaults:
@@ -67,7 +66,7 @@ asciidoc: {}
 # (see https://github.com/asciidoctor/jekyll-asciidoc/issues/137)
 #
 # NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
-# them to the <asciidoctor:convert/> ant task for building the PDF as well.
+# them to the <asciidoctor:convert/> ant task for precommit validation as well.
 solr-attributes: &solr-attributes-ref
   solr-root-path: "../../../"
   solr-guide-draft-status: "${solr-guide-draft-status}"
@@ -84,8 +83,8 @@ solr-attributes: &solr-attributes-ref
   ivy-log4j-version: "${ivyversions.org.apache.logging.log4j.version}"
   ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
   ivy-tika-version: "${ivyversions.org.apache.tika.version}"
-  ivy-velocity-tools-version: "${ivyversions./org.apache.velocity/velocity-tools}"
-  ivy-zookeeper-version: "${ivyversions./org.apache.zookeeper/zookeeper}"
+  ivy-velocity-tools-version: "${ivyversions.org.apache.velocity.tools.version}"
+  ivy-zookeeper-version: "${ivyversions.org.apache.zookeeper.version}"
 
 asciidoctor:
   safe: 0
@@ -94,7 +93,7 @@ asciidoctor:
     <<: *solr-attributes-ref
     attribute-missing: "warn"
     icons: "font"
-    source-highlighter: "pygments"
-    pygments-css: "style"
+    source-highlighter: "rouge"
+    rouge-theme: "thankful-eyes"
     # NOTE: do *NOT* use an self-empty div tag (ie: <div/>) here - it will break jquery
     section-toc: "<div class=\"toc section-toc\"></div>"

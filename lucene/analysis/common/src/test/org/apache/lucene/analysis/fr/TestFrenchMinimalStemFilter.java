@@ -67,7 +67,24 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "barons", "baron");
     checkOneTerm(analyzer, "baron", "baron");
   }
-  
+
+  public void testIntergerWithLastCharactersEqual() throws IOException {
+    // Trailing repeated char elision :
+    checkOneTerm(analyzer, "1234555", "1234555");
+    // Repeated char within numbers with more than 6 characters :
+    checkOneTerm(analyzer, "12333345", "12333345");
+    // Short numbers weren't affected already:
+    checkOneTerm(analyzer, "1234", "1234");
+    // Ensure behaviour is preserved for words!
+    // Trailing repeated char elision :
+    checkOneTerm(analyzer, "abcdeff", "abcdef");
+    // Repeated char within words with more than 6 characters :
+    checkOneTerm(analyzer, "abcccddeef", "abcccddeef");
+    checkOneTerm(analyzer, "créées", "cré");
+    // Combined letter and digit repetition
+    checkOneTerm(analyzer, "22hh00", "22hh00"); // 10:00pm
+  }
+
   public void testKeyword() throws IOException {
     final CharArraySet exclusionSet = new CharArraySet( asSet("chevaux"), false);
     Analyzer a = new Analyzer() {
@@ -89,7 +106,7 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

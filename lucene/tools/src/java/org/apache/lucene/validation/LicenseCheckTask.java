@@ -46,8 +46,8 @@ import org.apache.tools.ant.types.resources.Resources;
 import org.apache.tools.ant.util.FileNameMapper;
 
 /**
- * An ANT task that verifies if JAR file have associated <tt>LICENSE</tt>,
- * <tt>NOTICE</tt>, and <tt>sha1</tt> files. 
+ * An ANT task that verifies if JAR file have associated <code>LICENSE</code>,
+ * <code>NOTICE</code>, and <code>sha1</code> files. 
  */
 public class LicenseCheckTask extends Task {
 
@@ -304,9 +304,7 @@ outer:
     if (foundLicenses.isEmpty()) {
       this.failures = true;
       StringBuilder message = new StringBuilder();
-      message.append(
-          "MISSING LICENSE for the following file:\n  " + jarFile.getAbsolutePath()
-          + "\n  Expected locations below:\n");
+      message.append("MISSING LICENSE for the following file:\n  ").append(jarFile.getAbsolutePath()).append("\n  Expected locations below:\n");
       for (File location : expectedLocations) {
         message.append("  => ").append(location.getAbsolutePath()).append("\n");
       }

@@ -98,10 +98,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterClient.close();
-    masterClient  = null;
-    masterJetty.stop();
-    masterJetty = null;
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient  = null;
+    }
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
     master = null;
   }
 
@@ -110,7 +114,10 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     int nDocs = usually() ? BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed) : 0;
 
-    String snapshotName;
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+    final String oldBackupDir = backupStatus.checkBackupSuccess();
+    String snapshotName = null;
     String location;
     String params = "";
     String baseUrl = masterJetty.getBaseUrl().toString();
@@ -129,13 +136,11 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
+    if (null == snapshotName) {
+      backupStatus.waitForDifferentBackupDir(oldBackupDir, 30);
+    } else {
+      backupStatus.waitForBackupSuccess(snapshotName, 30);
     }
-
-
 
     int numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
 
@@ -187,15 +192,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
-    }
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+    final String backupDirName = backupStatus.waitForBackupSuccess(snapshotName, 30);
 
     //Remove the segments_n file so that the backup index is corrupted.
     //Restore should fail and it should automatically rollback to the original index.
-    Path restoreIndexPath = Paths.get(location).resolve("snapshot." + snapshotName);
+    final Path restoreIndexPath = Paths.get(location, backupDirName);
+    assertTrue("Does not exist: " + restoreIndexPath, Files.exists(restoreIndexPath));
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(restoreIndexPath, IndexFileNames.SEGMENTS + "*")) {
       Path segmentFileName = stream.iterator().next();
       Files.delete(segmentFileName);
@@ -203,14 +207,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
-    try {
-      while (!fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
-        Thread.sleep(1000);
-      }
-      fail("Should have thrown an error because restore could not have been successful");
-    } catch (AssertionError e) {
-      //supposed to happen
-    }
+    expectThrows(AssertionError.class, () -> {
+        for (int i = 0; i < 10; i++) {
+          // this will throw an assertion once we get what we expect
+          fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
+          Thread.sleep(50);
+        }
+        // if we never got an assertion let expectThrows complain
+      });
 
     BackupRestoreUtils.verifyDocs(nDocs, masterClient, DEFAULT_TEST_CORENAME);
 

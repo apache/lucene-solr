@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 /**
  * Configuration for currency. Provides currency exchange rates.
  */
-class FileExchangeRateProvider implements ExchangeRateProvider {
+public class FileExchangeRateProvider implements ExchangeRateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final String PARAM_CURRENCY_CONFIG       = "currencyConfig";
@@ -148,9 +148,9 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public Set<String> listAvailableCurrencies() {
     Set<String> currencies = new HashSet<>();
-    for(String from : rates.keySet()) {
-      currencies.add(from);
-      for(String to : rates.get(from).keySet()) {
+    for(Map.Entry<String, Map<String, Double>> entry : rates.entrySet()) {
+      currencies.add(entry.getKey());
+      for(String to : entry.getValue().keySet()) {
         currencies.add(to);
       }
     }

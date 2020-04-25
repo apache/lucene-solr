@@ -70,7 +70,6 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
     System.clearProperty("solr.retries.to.followers");
-    TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
   
@@ -196,14 +195,14 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
     Thread.sleep(2000);
 
-    waitForThingsToLevelOut(180000);
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
     
     // even if things were leveled out, a jetty may have just been stopped or something
     // we wait again and wait to level out again to make sure the system is not still in flux
     
     Thread.sleep(3000);
 
-    waitForThingsToLevelOut(180000);
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
     
     log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     

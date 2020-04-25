@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
+
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 
 class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
 
@@ -32,6 +34,12 @@ class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return srndQuery.getSpanNearQuery(reader, fieldName, qf);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    // TODO implement this
+    visitor.visitLeaf(this);
   }
 }
 

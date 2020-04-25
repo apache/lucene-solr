@@ -62,7 +62,10 @@ public class NormalizeSumEvaluator extends RecursiveObjectEvaluator implements M
         unitData[i] = unitRow;
       }
 
-      return new Matrix(unitData);
+      Matrix m = new Matrix(unitData);
+      m.setRowLabels(matrix.getRowLabels());
+      m.setColumnLabels(matrix.getColumnLabels());
+      return m;
     } else if(value instanceof List) {
       List<Number> vals = (List<Number>)value;
       double[] doubles = new double[vals.size()];

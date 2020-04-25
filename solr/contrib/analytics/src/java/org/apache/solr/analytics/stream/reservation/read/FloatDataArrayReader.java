@@ -23,7 +23,7 @@ import java.util.function.IntConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 
 public class FloatDataArrayReader extends ReductionDataArrayReader<FloatConsumer> {
-  
+
   public FloatDataArrayReader(DataInput inputStream, FloatConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }

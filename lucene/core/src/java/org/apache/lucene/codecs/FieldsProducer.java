@@ -48,10 +48,11 @@ public abstract class FieldsProducer extends Fields implements Closeable, Accoun
   public abstract void checkIntegrity() throws IOException;
   
   /** 
-   * Returns an instance optimized for merging.
+   * Returns an instance optimized for merging. This instance may only be
+   * consumed in the thread that called {@link #getMergeInstance()}.
    * <p>
    * The default implementation returns {@code this} */
-  public FieldsProducer getMergeInstance() throws IOException {
+  public FieldsProducer getMergeInstance() {
     return this;
   }
 }

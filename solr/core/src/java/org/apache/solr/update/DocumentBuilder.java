@@ -159,7 +159,9 @@ public class DocumentBuilder {
       // load each field value
       boolean hasField = false;
       try {
-        for( Object v : field ) {
+        Iterator it = field.iterator();
+        while (it.hasNext()) {
+          Object v = it.next();
           if( v == null ) {
             continue;
           }
@@ -194,8 +196,8 @@ public class DocumentBuilder {
 
                 // Perhaps trim the length of a copy field
                 Object val = v;
-                if( val instanceof String && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue((String)val);
+                if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
+                    val = cf.getLimitedValue(val.toString());
                 }
 
                 addField(out, destinationField, val,
@@ -229,8 +231,8 @@ public class DocumentBuilder {
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
 
-    // Note: We don't need to add default fields if this document is to be used for
-    // in-place updates, since this validation and population of default fields would've happened
+    // Note: We don't need to add required fields if this document is to be used for
+    // in-place updates, since this validation and population of required fields would've happened
     // during the full indexing initially.
     if (!forInPlaceUpdate) {
       for (SchemaField field : schema.getRequiredFields()) {

@@ -21,8 +21,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -94,6 +95,20 @@ public abstract class FacetRequest {
     private final int multiplier;
     private SortDirection(int multiplier) {
       this.multiplier = multiplier;
+    }
+
+    public static SortDirection fromObj(Object direction) {
+      if (direction == null) {
+        // should we just default either to desc/asc??
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing Sort direction");
+      }
+
+      switch (direction.toString()) {
+        case "asc": return asc;
+        case "desc": return desc;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown Sort direction '" + direction + "'");
+      }
     }
 
     // asc==-1, desc==1
@@ -367,12 +382,12 @@ public abstract class FacetRequest {
   @Override
   public String toString() {
     Map<String, Object> descr = getFacetDescription();
-    String s = "facet request: { ";
-    for (String key : descr.keySet()) {
-      s += key + ":" + descr.get(key) + ",";
+    StringBuilder s = new StringBuilder("facet request: { ");
+    for (Map.Entry<String, Object> entry : descr.entrySet()) {
+      s.append(entry.getKey()).append(':').append(entry.getValue()).append(',');
     }
-    s += "}";
-    return s;
+    s.append('}');
+    return s.toString();
   }
 
   /**
@@ -407,11 +422,14 @@ public abstract class FacetRequest {
       debugInfo.setProcessor(facetProcessor.getClass().getSimpleName());
       debugInfo.putInfoItem("domainSize", (long) fcontext.base.size());
       RTimer timer = new RTimer();
-      facetProcessor.process();
-      debugInfo.setElapse((long) timer.getTime());
+      try {
+        facetProcessor.process();
+      }finally {
+        debugInfo.setElapse((long) timer.getTime());
+      }
     }
 
-    return facetProcessor.getResponse(); // note: not captured in elapsed time above; good/bad?
+    return facetProcessor.getResponse(); 
   }
 
   public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);
@@ -640,8 +658,9 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         getDomain().excludeTags = excludeTags;
       }
 
-      Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
-      if (domainMap != null) {
+      Object domainObj =  m.get("domain");
+      if (domainObj instanceof Map) {
+        Map<String, Object> domainMap = (Map<String, Object>)domainObj;
         FacetRequest.Domain domain = getDomain();
 
         excludeTags = getStringList(domainMap, "excludeTags");
@@ -659,9 +678,9 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
                                     "'query' domain can not be combined with 'excludeTags'");
           }
         }
-        
-        String blockParent = (String)domainMap.get("blockParent");
-        String blockChildren = (String)domainMap.get("blockChildren");
+
+        String blockParent = getString(domainMap, "blockParent", null);
+        String blockChildren = getString(domainMap, "blockChildren", null);
 
         if (blockParent != null) {
           domain.toParent = true;
@@ -680,7 +699,9 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
           domain.filters = parseJSONQueryStruct(filterOrList);
         }
 
-      } // end "domain"
+      } else if (domainObj != null) {
+        throw err("Expected Map for 'domain', received " + domainObj.getClass().getSimpleName() + "=" + domainObj);
+      }
     }
   }
 
@@ -774,6 +795,16 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return (Boolean)o;
   }
 
+  public Boolean getBooleanOrNull(Map<String, Object> args, String paramName) {
+    Object o = args.get(paramName);
+
+    if (o != null && !(o instanceof Boolean)) {
+      throw err("Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+    }
+    return (Boolean) o;
+  }
+
+
   public String getString(Map<String,Object> args, String paramName, String defVal) {
     Object o = args.get(paramName);
     if (o == null) {
@@ -786,7 +817,19 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return (String)o;
   }
 
+  public Object getVal(Map<String, Object> args, String paramName, boolean required) {
+    Object o = args.get(paramName);
+    if (o == null && required) {
+      throw err("Missing required parameter: '" + paramName + "'");
+    }
+    return o;
+  }
+
   public List<String> getStringList(Map<String,Object> args, String paramName) {
+    return getStringList(args, paramName, true);
+  }
+
+  public List<String> getStringList(Map<String, Object> args, String paramName, boolean decode) {
     Object o = args.get(paramName);
     if (o == null) {
       return null;
@@ -795,10 +838,12 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
       return (List<String>)o;
     }
     if (o instanceof String) {
-      return StrUtils.splitSmart((String)o, ",", true);
+      // TODO: SOLR-12539 handle spaces in b/w comma & value ie, should the values be trimmed before returning??
+      return StrUtils.splitSmart((String)o, ",", decode);
     }
 
-    throw err("Expected list of string or comma separated string values.");
+    throw err("Expected list of string or comma separated string values for '" + paramName +
+        "', received " + o.getClass().getSimpleName() + "=" + o);
   }
 
   public IndexSchema getSchema() {
@@ -873,6 +918,9 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
       // OK to parse subs before we have parsed our own query?
       // as long as subs don't need to know about it.
       parseSubs( m.get("facet") );
+    } else if (arg != null) {
+      // something lke json.facet.facet.query=2
+      throw err("Expected string/map for facet query, received " + arg.getClass().getSimpleName() + "=" + arg);
     }
 
     // TODO: substats that are from defaults!!!
@@ -946,16 +994,18 @@ class FacetFieldParser extends FacetParser<FacetField> {
       // TODO: pull up to higher level?
       facet.refine = FacetField.RefineMethod.fromObj(m.get("refine"));
 
-      facet.perSeg = (Boolean)m.get("perSeg");
+      facet.perSeg = getBooleanOrNull(m, "perSeg");
 
       // facet.sort may depend on a facet stat...
       // should we be parsing / validating this here, or in the execution environment?
       Object o = m.get("facet");
       parseSubs(o);
 
-      // TODO: SOLR-13022 ... validate the sortVariabls against the subs.
-      facet.sort = parseSort( m.get(SORT) );
-      facet.prelim_sort = parseSort( m.get("prelim_sort") );
+      facet.sort = parseAndValidateSort(facet, m, SORT);
+      facet.prelim_sort = parseAndValidateSort(facet, m, "prelim_sort");
+    } else if (arg != null) {
+      // something like json.facet.facet.field=2
+      throw err("Expected string/map for facet field, received " + arg.getClass().getSimpleName() + "=" + arg);
     }
 
     if (null == facet.sort) {
@@ -965,39 +1015,69 @@ class FacetFieldParser extends FacetParser<FacetField> {
     return facet;
   }
 
-
-  // Sort specification is currently
-  // sort : 'mystat desc'
-  // OR
-  // sort : { mystat : 'desc' }
-  private static FacetRequest.FacetSort parseSort(Object sort) {
+  /**
+   * Parses, validates and returns the {@link FacetRequest.FacetSort} for given sortParam
+   * and facet field
+   * <p>
+   *   Currently, supported sort specifications are 'mystat desc' OR {mystat: 'desc'}
+   *   index - This is equivalent to 'index asc'
+   *   count - This is equivalent to 'count desc'
+   * </p>
+   *
+   * @param facet {@link FacetField} for which sort needs to be parsed and validated
+   * @param args map containing the sortVal for given sortParam
+   * @param sortParam parameter for which sort needs to parsed and validated
+   * @return parsed facet sort
+   */
+  private static FacetRequest.FacetSort parseAndValidateSort(FacetField facet, Map<String, Object> args, String sortParam) {
+    Object sort = args.get(sortParam);
     if (sort == null) {
       return null;
-    } else if (sort instanceof String) {
+    }
+
+    FacetRequest.FacetSort facetSort = null;
+
+    if (sort instanceof String) {
       String sortStr = (String)sort;
       if (sortStr.endsWith(" asc")) {
-        return new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
-                                          FacetRequest.SortDirection.asc);
+        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
+            FacetRequest.SortDirection.asc);
       } else if (sortStr.endsWith(" desc")) {
-        return new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
-                                          FacetRequest.SortDirection.desc);
+        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
+            FacetRequest.SortDirection.desc);
       } else {
-        return new FacetRequest.FacetSort(sortStr,
-                                          // default direction for "index" is ascending
-                                          ("index".equals(sortStr)
-                                           ? FacetRequest.SortDirection.asc
-                                           : FacetRequest.SortDirection.desc));
+        facetSort =  new FacetRequest.FacetSort(sortStr,
+            // default direction for "index" is ascending
+            ("index".equals(sortStr)
+                ? FacetRequest.SortDirection.asc
+                : FacetRequest.SortDirection.desc));
+      }
+    } else if (sort instanceof Map) {
+      // { myvar : 'desc' }
+      Optional<Map.Entry<String,Object>> optional = ((Map<String,Object>)sort).entrySet().stream().findFirst();
+      if (optional.isPresent()) {
+        Map.Entry<String, Object> entry = optional.get();
+        facetSort = new FacetRequest.FacetSort(entry.getKey(), FacetRequest.SortDirection.fromObj(entry.getValue()));
       }
     } else {
-     // sort : { myvar : 'desc' }
-      Map<String,Object> map = (Map<String,Object>)sort;
-      // TODO: validate
-      Map.Entry<String,Object> entry = map.entrySet().iterator().next();
-      String k = entry.getKey();
-      Object v = entry.getValue();
-      return new FacetRequest.FacetSort(k, FacetRequest.SortDirection.valueOf(v.toString()));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected string/map for '" + sortParam +"', received "+ sort.getClass().getSimpleName() + "=" + sort);
     }
+
+    Map<String, AggValueSource> facetStats = facet.facetStats;
+    // validate facet sort
+    boolean isValidSort = facetSort == null ||
+        "index".equals(facetSort.sortVariable) ||
+        "count".equals(facetSort.sortVariable) ||
+        (facetStats != null && facetStats.containsKey(facetSort.sortVariable));
+
+    if (!isValidSort) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid " + sortParam + " option '" + sort + "' for field '" + facet.field + "'");
+    }
+    return facetSort;
   }
+
 }
 
 
@@ -1018,47 +1098,31 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     Map<String, Object> m = (Map<String, Object>) arg;
 
     facet.field = getString(m, "field", null);
+    facet.ranges = getVal(m, "ranges", false);
 
-    facet.start = m.get("start");
-    facet.end = m.get("end");
-    facet.gap = m.get("gap");
+    boolean required = facet.ranges == null;
+    facet.start = getVal(m, "start", required);
+    facet.end = getVal(m, "end", required);
+    facet.gap = getVal(m, "gap", required);
     facet.hardend = getBoolean(m, "hardend", facet.hardend);
     facet.mincount = getLong(m, "mincount", 0);
 
     // TODO: refactor list-of-options code
 
-    Object o = m.get("include");
+    List<String> list = getStringList(m, "include", false);
     String[] includeList = null;
-    if (o != null) {
-      List lst = null;
-
-      if (o instanceof List) {
-        lst = (List)o;
-      } else if (o instanceof String) {
-        lst = StrUtils.splitSmart((String)o, ',');
-      }
-
-      includeList = (String[])lst.toArray(new String[lst.size()]);
+    if (list != null) {
+      includeList = list.toArray(new String[list.size()]);
     }
     facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
-
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);
 
-    o = m.get("other");
-    if (o != null) {
-      List<String> lst = null;
-
-      if (o instanceof List) {
-        lst = (List)o;
-      } else if (o instanceof String) {
-        lst = StrUtils.splitSmart((String)o, ',');
-      }
-
-      for (String otherStr : lst) {
+    List<String> other = getStringList(m, "other", false);
+    if (other != null) {
+      for (String otherStr : other) {
         facet.others.add( FacetParams.FacetRangeOther.get(otherStr) );
       }
     }
-
 
     Object facetObj = m.get("facet");
     parseSubs(facetObj);

@@ -32,7 +32,6 @@
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
-    <!--<echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />-->
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -49,6 +48,7 @@
     </ant>
     <jar destfile="${example}/exampledocs/post.jar">
       <fileset dir="${dest}/solr-core/classes/java">
+        <include name="org/apache/solr/util/CLIO.class"/>
         <include name="org/apache/solr/util/SimplePostTool*.class"/>
         <include name="org/apache/solr/util/RTimer.class"/>
         <include name="org/apache/solr/util/RTimer$*.class"/>
@@ -92,41 +92,6 @@
     <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
   </target>
 
-  <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
-  when it comes to incompatible changes.  Update when Luke has updated.
-  <target name="compile-xml-query-parser">
-    <ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <property  name="luke.version" value="1.0.1"/>
-  <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
-  <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup,compile-xml-query-parser">
-    <mkdir dir="luke"/>
-    <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
-         dest="luke/luke-${luke.version}.jar"/>
-  </target>
-  <path id="luke.classpath">
-    <pathelement location="${common.dir}/build/core/classes/java" />
-    <pathelement location="${common.dir}/queryparser/build/classes/java" />
-  </path>
-  <target name="luke" depends="luke-download">
-    <java fork="true"
-          classname="org.getopt.luke.Luke"
-          logError="true"
-          failonerror="true">
-      <classpath>
-        <fileset dir="luke">
-          <include name="luke-${luke.version}.jar"/>
-        </fileset>
-        <path refid="classpath"/>
-        <path refid="luke.classpath"/>
-        <path refid="test.classpath"/>
-      </classpath>
-    </java>
-  </target>-->
-  
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->
   <!-- ========================================================================= -->
@@ -368,7 +333,7 @@
         <exclude name="package/**"/>
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="^jetty([^/]+)$" replace="jetty" flags="gi" />
         <!-- start.jar comes from jetty, .jar already stripped by checker defaults --> 
         <replaceregex pattern="^start$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
@@ -494,7 +459,7 @@
                   fullpath="${fullnamever}/solr/LUCENE_CHANGES.txt" />
       <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
-                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
+                  excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/** gradle/wrapper/gradle-wrapper.jar"/>
       <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
                   filemode="755"
@@ -663,12 +628,6 @@
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
   <target name="-documentation-lint" depends="documentation">
-    <jtidy-macro>
-       <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
-            javadocs generates invalid XML if you deprecate a method that takes a parameter
-            with a generic type -->
-      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
-    </jtidy-macro>
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
     <echo message="Checking for malformed docs..."/>

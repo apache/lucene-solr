@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.SolrJettyTestBase;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -25,16 +30,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  *
  * @since solr 1.3
  */
-public abstract class LargeVolumeTestBase extends SolrJettyTestBase
+public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

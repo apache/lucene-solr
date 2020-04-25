@@ -33,8 +33,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class EdgeNGramTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "edgeNGram";
+
   private final int maxGramSize;
   private final int minGramSize;
 
@@ -48,6 +53,11 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public EdgeNGramTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Tokenizer create(AttributeFactory factory) {
     return new EdgeNGramTokenizer(factory, minGramSize, maxGramSize);

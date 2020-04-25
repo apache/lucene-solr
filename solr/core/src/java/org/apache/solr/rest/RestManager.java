@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +41,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.noggit.ObjectBuilder;
 import org.restlet.Request;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
@@ -49,6 +50,8 @@ import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Supports runtime mapping of REST API endpoints to ManagedResource 
@@ -74,7 +77,7 @@ public class RestManager {
   private static class ManagedResourceRegistration {
     String resourceId;
     Class<? extends ManagedResource> implClass;
-    List<ManagedResourceObserver> observers = new ArrayList<>();
+    Set<ManagedResourceObserver> observers = new LinkedHashSet<>();
 
     private ManagedResourceRegistration(String resourceId,
                                         Class<? extends ManagedResource> implClass, 
@@ -216,18 +219,21 @@ public class RestManager {
         
         if (observer != null) {
           reg.observers.add(observer);
-          log.info("Added observer of type {} to existing ManagedResource {}", 
-              observer.getClass().getName(), resourceId);
+          if (log.isInfoEnabled()) {
+            log.info("Added observer of type {} to existing ManagedResource {}",
+                observer.getClass().getName(), resourceId);
+          }
         }
       } else {
         registered.put(resourceId, 
             new ManagedResourceRegistration(resourceId, implClass, observer));
-        log.info("Registered ManagedResource impl {} for path {}", 
-            implClass.getName(), resourceId);
+        if (log.isInfoEnabled()) {
+          log.info("Registered ManagedResource impl {} for path {}", implClass.getName(), resourceId);
+        }
       }
       
       // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
-      if (initializedRestManager != null) {
+      if (initializedRestManager != null && initializedRestManager.getManagedResourceOrNull(resourceId) == null) {
         initializedRestManager.addRegisteredResource(registered.get(resourceId));
       }
     }    
@@ -331,7 +337,7 @@ public class RestManager {
         }
       }
       
-      log.info("Found ManagedResource ["+managedResource+"] for "+resourceId);      
+      log.info("Found ManagedResource [{}] for {}", managedResource, resourceId);
     }    
     
     @Override
@@ -422,8 +428,8 @@ public class RestManager {
 
       Object parsedJson = null;
       try {
-        parsedJson = ObjectBuilder.fromJSON(text);
-      } catch (IOException ioExc) {
+        parsedJson = fromJSONString(text);
+      } catch (Exception ioExc) {
         String errMsg = String.format(Locale.ROOT,
             "Failed to parse request [%s] into JSON due to: %s",
             text, ioExc.toString());
@@ -611,7 +617,7 @@ public class RestManager {
                    StorageIO storageIO) 
       throws SolrException
   {
-    log.debug("Initializing RestManager with initArgs: "+initArgs);
+    log.debug("Initializing RestManager with initArgs: {}", initArgs);
 
     if (storageIO == null)
       throw new IllegalArgumentException(
@@ -630,7 +636,9 @@ public class RestManager {
     managed.put(SCHEMA_BASE_PATH+MANAGED_ENDPOINT, endpoint);
             
     // init registered managed resources
-    log.debug("Initializing {} registered ManagedResources", registry.registered.size());
+    if (log.isDebugEnabled()) {
+      log.debug("Initializing {} registered ManagedResources", registry.registered.size());
+    }
     for (ManagedResourceRegistration reg : registry.registered.values()) {
       // keep track of this for lookups during request processing
       managed.put(reg.resourceId, createManagedResource(reg));
@@ -748,7 +756,7 @@ public class RestManager {
       res.onResourceDeleted();
     } catch (IOException e) {
       // the resource is already deleted so just log this
-      log.error("Error when trying to clean-up after deleting "+resourceId, e);
+      log.error("Error when trying to clean-up after deleting {}",resourceId, e);
     }
   }
       
@@ -765,11 +773,12 @@ public class RestManager {
     }      
     
     int numAttached = 0;
-    for (String resourceId : managed.keySet()) {
+    for (Map.Entry<String, ManagedResource> entry : managed.entrySet()) {
+      String resourceId = entry.getKey();
       if (resourceId.startsWith(routerPath)) {
         // the way restlet works is you attach a path w/o the routerPath
         String path = resourceId.substring(routerPath.length());
-        attachManagedResource(managed.get(resourceId), path, router);
+        attachManagedResource(entry.getValue(), path, router);
         ++numAttached;
       }
     }

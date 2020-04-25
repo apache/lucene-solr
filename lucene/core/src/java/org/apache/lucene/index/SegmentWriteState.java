@@ -114,7 +114,7 @@ public class SegmentWriteState {
   }
   
   // currently only used by assert? clean up and make real check?
-  // either it's a segment suffix (_X_Y) or it's a parseable generation
+  // either it's a segment suffix (_X_Y) or it's a parsable generation
   // TODO: this is very confusing how ReadersAndUpdates passes generations via
   // this mechanism, maybe add 'generation' explicitly to ctor create the 'actual suffix' here?
   private boolean assertSegmentSuffix(String segmentSuffix) {

@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  **/
 
-public class StreamExpressionToExplanationTest extends LuceneTestCase {
+public class StreamExpressionToExplanationTest extends SolrTestCase {
 
   private StreamFactory factory;
   

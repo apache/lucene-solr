@@ -23,7 +23,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -34,14 +33,14 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestNumericRangeQuery32 extends LuceneTestCase {
+public class TestNumericRangeQuery32 extends SolrTestCase {
   // distance of entries
   private static int distance;
   // shift the starting of the values to the left, to also have negative values:
@@ -128,10 +127,14 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
-    reader.close();
-    reader = null;
-    directory.close();
-    directory = null;
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
   
   @Override
@@ -139,7 +142,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     super.setUp();
     // set the theoretical maximum term count for 8bit (see docs for the number)
     // super.tearDown will restore the default
-    BooleanQuery.setMaxClauseCount(3*255*2 + 255);
+    IndexSearcher.setMaxClauseCount(3*255*2 + 255);
   }
   
   /** test for both constant score and boolean query, the other tests only use the constant score mode */

@@ -35,8 +35,13 @@ import java.util.regex.Pattern;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class HTMLStripCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "htmlStrip";
+
   final Set<String> escapedTags;
   static final Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
   
@@ -47,6 +52,11 @@ public class HTMLStripCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public HTMLStripCharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

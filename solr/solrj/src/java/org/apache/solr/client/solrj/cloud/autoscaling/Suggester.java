@@ -177,7 +177,7 @@ public abstract class Suggester implements MapWriter {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
           if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode))) {
-            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
+            session.matrix.add(new Row(srcNode, session.getPolicy().getParams(), session.getPolicy().getPerReplicaAttributes(), session));
           }
         }
       }
@@ -224,11 +224,11 @@ public abstract class Suggester implements MapWriter {
   }
 
   public static class SuggestionInfo implements MapWriter {
-    String type;
+    Suggestion.Type type;
     Violation violation;
     SolrRequest operation;
 
-    public SuggestionInfo(Violation violation, SolrRequest op, String type) {
+    public SuggestionInfo(Violation violation, SolrRequest op, Suggestion.Type type) {
       this.violation = violation;
       this.operation = op;
       this.type = type;
@@ -244,7 +244,7 @@ public abstract class Suggester implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("type", type);
+      ew.put("type", type.name());
       if(violation!= null) ew.put("violation",
           new ConditionalMapWriter(violation,
               (k, v) -> !"violatingReplicas".equals(k)));
@@ -324,7 +324,7 @@ public abstract class Suggester implements MapWriter {
   List<Violation> testChangedMatrix(boolean executeInStrictMode, Policy.Session session) {
     if (this.deviations != null) this.lastBestDeviation = this.deviations;
     this.deviations = null;
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().getClusterPreferences(), session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;

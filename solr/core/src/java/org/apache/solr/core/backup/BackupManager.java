@@ -62,6 +62,7 @@ public class BackupManager {
 
   // Backup properties
   public static final String COLLECTION_NAME_PROP = "collection";
+  public static final String COLLECTION_ALIAS_PROP = "collectionAlias";
   public static final String BACKUP_NAME_PROP = "backupName";
   public static final String INDEX_VERSION_PROP = "index.version";
   public static final String START_TIME_PROP = "startTime";

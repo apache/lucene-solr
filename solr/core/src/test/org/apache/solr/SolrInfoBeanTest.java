@@ -24,7 +24,8 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.search.LRUCache;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
 import java.io.File;
 import java.net.URI;
@@ -53,34 +54,35 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     classes.addAll(getClassesForPackage(SearchComponent.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(LukeRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(DefaultSolrHighlighter.class.getPackage().getName()));
-    classes.addAll(getClassesForPackage(LRUCache.class.getPackage().getName()));
+    classes.addAll(getClassesForPackage(CaffeineCache.class.getPackage().getName()));
    // System.out.println(classes);
     
     int checked = 0;
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     for( Class clazz : classes ) {
       if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoBean info = (SolrInfoBean)clazz.newInstance();
+          SolrInfoBean info = (SolrInfoBean)clazz.getConstructor().newInstance();
           if (info instanceof SolrMetricProducer) {
-            ((SolrMetricProducer)info).initializeMetrics(metricManager, registry, "foo", scope);
+            ((SolrMetricProducer)info).initializeMetrics(solrMetricsContext, scope);
           }
           
           //System.out.println( info.getClass() );
-          assertNotNull( info.getName() );
-          assertNotNull( info.getDescription() );
-          assertNotNull( info.getCategory() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getName() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getCategory() );
           
-          if( info instanceof LRUCache ) {
+          if( info instanceof CaffeineCache ) {
             continue;
           }
           
           assertNotNull( info.toString() );
           checked++;
         }
-        catch( InstantiationException ex ) {
+        catch( ReflectiveOperationException ex ) {
           // expected...
           //System.out.println( "unable to initialize: "+clazz );
         }

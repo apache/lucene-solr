@@ -90,15 +90,17 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startZkServer() throws Exception {
-    zkServer = new ZkTestServer(createTempDir().toString());
+    zkServer = new ZkTestServer(createTempDir());
     zkServer.run();
     loaderPath = createTempDir();
   }
 
   @AfterClass
   public static void stopZkServer() throws Exception {
-    zkServer.shutdown();
-    zkServer = null;
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     loaderPath = null;
   }
 
@@ -172,8 +174,8 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
   private Runnable indexSchemaLoader(String configsetName, final ZkController zkController) {
     return () -> {
       try {
-        SolrResourceLoader loader = new ZkSolrResourceLoader(loaderPath, configsetName, zkController);
-        SolrConfig solrConfig = SolrConfig.readFromResourceLoader(loader, "solrconfig.xml");
+        SolrResourceLoader loader = new ZkSolrResourceLoader(loaderPath, configsetName, null, zkController);
+        SolrConfig solrConfig = SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", true, null);
 
         ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
         factory.init(new NamedList());

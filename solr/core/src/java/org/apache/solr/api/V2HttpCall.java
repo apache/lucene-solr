@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -42,10 +43,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -55,14 +54,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.common.util.PathTrie.getPathSegments;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
+@SolrThreadSafe
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
@@ -134,7 +132,7 @@ public class V2HttpCall extends HttpSolrCall {
         core = cores.getCore(origCorename);
       }
       if (core == null) {
-        log.error(">> path: '" + path + "'");
+        log.error(">> path: '{}'", path);
         if (path.endsWith(CommonParams.INTROSPECT)) {
           initAdminRequest(path);
           return;
@@ -150,7 +148,6 @@ public class V2HttpCall extends HttpSolrCall {
       } else {
         api = apiInfo == null ? api : apiInfo;
       }
-      MDCLoggingContext.setCore(core);
       parseRequest();
 
       addCollectionParamIfNeeded(getCollectionsList());
@@ -197,6 +194,11 @@ public class V2HttpCall extends HttpSolrCall {
 
     Supplier<DocCollection> logic = () -> {
       this.collectionsList = resolveCollectionListOrAlias(collectionStr); // side-effect
+      if (collectionsList.size() > 1) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request must be sent to a single collection " +
+            "or an alias that points to a single collection," +
+            " but '" + collectionStr + "' resolves to " + this.collectionsList);
+      }
       String collectionName = collectionsList.get(0); // first
       //TODO an option to choose another collection in the list if can't find a local replica of the first?
 
@@ -364,13 +366,6 @@ public class V2HttpCall extends HttpSolrCall {
 
   public Map<String,String> getUrlParts(){
     return parts;
-  }
-
-  @Override
-  protected QueryResponseWriter getResponseWriter() {
-    String wt = solrReq.getParams().get(WT, JSON);
-    if (core != null) return core.getResponseWriters().get(wt);
-    return SolrCore.DEFAULT_RESPONSE_WRITERS.get(wt);
   }
 
   @Override

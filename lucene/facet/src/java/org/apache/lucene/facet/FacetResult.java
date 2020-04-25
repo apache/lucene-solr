@@ -60,7 +60,7 @@ public final class FacetResult {
     sb.append(childCount);
     sb.append('\n');
     for(LabelAndValue labelValue : labelValues) {
-      sb.append("  " + labelValue + "\n");
+      sb.append("  ").append(labelValue).append("\n");
     }
     return sb.toString();
   }

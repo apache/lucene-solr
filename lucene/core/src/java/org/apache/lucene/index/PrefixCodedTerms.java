@@ -149,11 +149,17 @@ public class PrefixCodedTerms implements Accountable {
       builder.setLength(prefix + suffix);
     }
 
+    // Copied from parent-class because javadoc doesn't do it for some reason
+    /** Returns current field.  This method should not be called
+     *  after iteration is done.  Note that you may use == to
+     *  detect a change in field. */
     @Override
     public String field() {
       return field;
     }
 
+    // Copied from parent-class because javadoc doesn't do it for some reason
+    /** Del gen of the current term. */
     @Override
     public long delGen() {
       return delGen;

@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,46 +40,38 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.IdUtils;
-import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // used by MoveReplicaHDFSTest
   protected boolean inPlaceMove = true;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-
-  }
-
-  protected String getSolrXml() {
-    return "solr.xml";
+  protected String getConfigSet() {
+    return "cloud-dynamic";
   }
 
   @Before
   public void beforeTest() throws Exception {
     inPlaceMove = true;
+
     configureCluster(4)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig("conf1", configset(getConfigSet()))
+        .addConfig("conf2", configset(getConfigSet()))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     JettySolrRunner overseerJetty = null;
     String overseerLeader = (String) overSeerStatus.get("leader");
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (jetty.getNodeName().equals(overseerLeader)) {
         overseerJetty = jetty;
         break;
@@ -90,14 +81,18 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       fail("no overseer leader!");
     }
   }
-  
+
   @After
   public void afterTest() throws Exception {
-    cluster.shutdown();
+    try {
+      shutdownCluster();
+    } finally {
+      super.tearDown();
+    }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
     log.info("total_jettys: " + cluster.getJettySolrRunners().size());
@@ -105,7 +100,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
+    // random create tlog or pull type replicas with nrt
+    boolean isTlog = random().nextBoolean();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     create.setMaxShardsPerNode(2);
     create.setAutoAddReplicas(false);
     cloudClient.request(create);
@@ -131,8 +128,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
 
-    int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll);
-    int targetNumCores = getNumOfCores(cloudClient, targetNode, coll);
+    int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name());
+    int targetNumCores = getNumOfCores(cloudClient, targetNode, coll, replica.getType().name());
 
     CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.setInPlaceMove(inPlaceMove);
@@ -147,12 +144,12 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertNotSame(rsp.getRequestStatus(), RequestStatusState.FAILED);
       Thread.sleep(500);
     }
     assertTrue(success);
-    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll));
-    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll));
+    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
+    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
     // wait for recovery
     boolean recovered = false;
     for (int i = 0; i < 300; i++) {
@@ -235,19 +232,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
+
   //Commented out 5-Dec-2017
   // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
   //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
+    // random create tlog or pull type replicas with nrt
+    boolean isTlog = random().nextBoolean();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
@@ -292,7 +292,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     boolean success = true;
     for (int i = 0; i < 200; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      assertTrue(rsp.getRequestStatus().toString(), rsp.getRequestStatus() != RequestStatusState.COMPLETED);
+      assertNotSame(rsp.getRequestStatus().toString(), rsp.getRequestStatus(), RequestStatusState.COMPLETED);
       if (rsp.getRequestStatus() == RequestStatusState.FAILED) {
         success = false;
         break;
@@ -306,46 +306,11 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode, String shardId) {
-    if (random().nextBoolean()) {
-      return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
-    } else  {
-      // for backcompat testing of SOLR-11068
-      // todo remove in solr 8.0
-      return new BackCompatMoveReplicaRequest(coll, shardId, targetNode, replica.getNodeName());
-    }
+    return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
   }
 
   private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode) {
-    if (random().nextBoolean()) {
-      return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
-    } else  {
-      // for backcompat testing of SOLR-11068
-      // todo remove in solr 8.0
-      return new BackCompatMoveReplicaRequest(coll, replica.getName(), targetNode);
-    }
-  }
-
-  /**
-   * Added for backcompat testing
-   * todo remove in solr 8.0
-   */
-  static class BackCompatMoveReplicaRequest extends CollectionAdminRequest.MoveReplica {
-    public BackCompatMoveReplicaRequest(String collection, String replica, String targetNode) {
-      super(collection, replica, targetNode);
-    }
-
-    public BackCompatMoveReplicaRequest(String collection, String shard, String sourceNode, String targetNode) {
-      super(collection, shard, sourceNode, targetNode);
-    }
-
-    @Override
-    public SolrParams getParams() {
-      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      if (randomlyMoveReplica) {
-        params.set(CollectionParams.FROM_NODE, sourceNode);
-      }
-      return params;
-    }
+    return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {
@@ -355,29 +320,40 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private void checkNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
-    assertEquals(nodeName + " does not have expected number of cores",expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
+    assertEquals(nodeName + " does not have expected number of cores", expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
   }
 
   private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {
+    return getNumOfCores(cloudClient, nodeName, collectionName, null);
+  }
+
+  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;
       }
-      // filter size by collection name
-      if (collectionName == null) {
+      if (collectionName == null && replicaType == null) {
         return status.getCoreStatus().size();
-      } else {
-        int size = 0;
-        Iterator<Map.Entry<String, NamedList<Object>>> it = status.getCoreStatus().iterator();
-        while (it.hasNext()) {
-          String coll = (String)it.next().getValue().findRecursive("cloud", "collection");
-          if (collectionName.equals(coll)) {
-            size++;
+      }
+      // filter size by collection name
+      int size = 0;
+      for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
+        if (collectionName != null) {
+          String coll = (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
+          if (!collectionName.equals(coll)) {
+            continue;
           }
         }
-        return size;
+        if (replicaType != null) {
+          String type = (String) stringNamedListEntry.getValue().findRecursive("cloud", "replicaType");
+          if (!replicaType.equals(type)) {
+            continue;
+          }
+        }
+        size++;
       }
+      return size;
     }
   }
 

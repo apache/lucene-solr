@@ -35,7 +35,7 @@ public class BooleanMultiField extends AnalyticsField implements CastingBooleanV
   private SortedSetDocValues docValues;
   private int count;
   private boolean[] values;
-  
+
   private int trueOrd;
 
   public BooleanMultiField(String fieldName) {
@@ -43,7 +43,7 @@ public class BooleanMultiField extends AnalyticsField implements CastingBooleanV
     count = 0;
     values = new boolean[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
@@ -75,7 +75,7 @@ public class BooleanMultiField extends AnalyticsField implements CastingBooleanV
       }
     }
   }
-  
+
   private void resizeValues() {
     boolean[] newValues = new boolean[values.length*2];
     for (int i = 0; i < count; ++i) {
@@ -83,7 +83,7 @@ public class BooleanMultiField extends AnalyticsField implements CastingBooleanV
     }
     values = newValues;
   }
-  
+
   @Override
   public void streamBooleans(BooleanConsumer cons) {
     for (int i = 0; i < count; ++i) {

@@ -34,8 +34,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;
  * </pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "japaneseKatakanaStem";
+
   private static final String MINIMUM_LENGTH_PARAM = "minimumLength";
   private final int minimumLength;
   
@@ -49,6 +54,11 @@ public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public JapaneseKatakanaStemFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

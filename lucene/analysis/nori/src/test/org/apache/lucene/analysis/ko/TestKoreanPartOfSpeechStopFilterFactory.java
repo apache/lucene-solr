@@ -32,7 +32,7 @@ import org.apache.lucene.util.Version;
  */
 public class TestKoreanPartOfSpeechStopFilterFactory extends BaseTokenStreamTestCase {
   public void testStopTags() throws IOException {
-    KoreanTokenizerFactory tokenizerFactory = new KoreanTokenizerFactory(new HashMap<String,String>());
+    KoreanTokenizerFactory tokenizerFactory = new KoreanTokenizerFactory(new HashMap<>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create();
     ((Tokenizer)ts).setReader(new StringReader(" 한국은 대단한 나라입니다."));
@@ -47,13 +47,13 @@ public class TestKoreanPartOfSpeechStopFilterFactory extends BaseTokenStreamTest
   }
 
   /** Test that bogus arguments result in exception */
-  public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new KoreanPartOfSpeechStopFilterFactory(new HashMap<String,String>() {{
-        put("luceneMatchVersion", Version.LATEST.toString());
-        put("bogusArg", "bogusValue");
-      }});
-    });
+  public void testBogusArguments() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
+        new KoreanPartOfSpeechStopFilterFactory(new HashMap<>() {{
+          put("luceneMatchVersion", Version.LATEST.toString());
+          put("bogusArg", "bogusValue");
+        }})
+    );
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

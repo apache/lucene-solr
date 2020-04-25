@@ -18,9 +18,23 @@ package org.apache.solr.common.util;
 
 import java.io.DataInput;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * An abstract DataInput that extends InputStream
  */
 public abstract class DataInputInputStream extends InputStream implements DataInput {
+
+  /**If possible, read UTF8 bytes directly from the underlying buffer
+   *
+   * @param utf8 the utf8 ubject to read into
+   * @param len length of the utf8 stream
+   * @return whether it is possible to do a direct read or not
+   */
+  boolean readDirectUtf8(ByteArrayUtf8CharSequence utf8, int len){return false;}
+
+  /**If possible, read ByteBuffer directly from the underlying buffer
+   * @param sz the size of the buffer to be read
+   */
+  public ByteBuffer readDirectByteBuffer(int sz){return null;};
 }

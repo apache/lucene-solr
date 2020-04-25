@@ -178,6 +178,35 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             return cmd.meta().getParamNamesIterator(co);
           }
 
+          @Override
+          public Map toMap(Map<String, Object> suppliedMap) {
+            for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
+              final String param = it.next();
+              String key = cmd.meta().getParamSubstitute(param);
+              Object o = key.indexOf('.') > 0 ?
+                  Utils.getObjectByPath(map, true, splitSmart(key, '.')) :
+                  map.get(key);
+              if (o == null) o = pathValues.get(key);
+              if (o == null && useRequestParams) o = origParams.getParams(key);
+              // make strings out of as many things as we can now to minimize differences from
+              // the standard impls that pass through a NamedList/SimpleOrderedMap...
+              Class<?> oClass = o.getClass();
+              if (oClass.isPrimitive() ||
+                  Number.class.isAssignableFrom(oClass) ||
+                  Character.class.isAssignableFrom(oClass) ||
+                  Boolean.class.isAssignableFrom(oClass)) {
+                suppliedMap.put(param,String.valueOf(o));
+              } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
+                List<String> l = (List<String>) o;
+                suppliedMap.put( param, l.toArray(new String[0]));
+              } else {
+                // Lists pass through but will require special handling downstream
+                // if they contain non-string elements.
+                suppliedMap.put(param, o);
+              }
+            }
+            return suppliedMap;
+          }
         });
 
   }

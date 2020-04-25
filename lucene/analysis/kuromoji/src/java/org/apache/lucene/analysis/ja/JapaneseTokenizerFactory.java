@@ -45,6 +45,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  *       userDictionary="user.txt"
  *       userDictionaryEncoding="UTF-8"
  *       discardPunctuation="true"
+ *       discardCompoundToken="false"
  *     /&gt;
  *     &lt;filter class="solr.JapaneseBaseFormFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
@@ -78,8 +79,13 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * modes, but it makes the most sense to use them with NORMAL mode.
  *
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "japanese";
+
   private static final String MODE = "mode";
 
   private static final String USER_DICT_PATH = "userDictionary";
@@ -87,6 +93,8 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   private static final String USER_DICT_ENCODING = "userDictionaryEncoding";
 
   private static final String DISCARD_PUNCTUATION = "discardPunctuation"; // Expert option
+
+  private static final String DISCARD_COMPOUND_TOKEN = "discardCompoundToken"; // Expert option
 
   private static final String NBEST_COST = "nBestCost";
 
@@ -96,6 +104,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
 
   private final Mode mode;
   private final boolean discardPunctuation;
+  private final boolean discardCompoundToken;
   private final String userDictionaryPath;
   private final String userDictionaryEncoding;
 
@@ -119,11 +128,17 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     userDictionaryPath = args.remove(USER_DICT_PATH);
     userDictionaryEncoding = args.remove(USER_DICT_ENCODING);
     discardPunctuation = getBoolean(args, DISCARD_PUNCTUATION, true);
+    discardCompoundToken = getBoolean(args, DISCARD_COMPOUND_TOKEN, true);
     nbestCost = getInt(args, NBEST_COST, 0);
     nbestExamples = args.remove(NBEST_EXAMPLES);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public JapaneseTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override
@@ -147,7 +162,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
 
   @Override
   public JapaneseTokenizer create(AttributeFactory factory) {
-    JapaneseTokenizer t = new JapaneseTokenizer(factory, userDictionary, discardPunctuation, mode);
+    JapaneseTokenizer t = new JapaneseTokenizer(factory, userDictionary, discardPunctuation, discardCompoundToken, mode);
     if (nbestExamples != null) {
       nbestCost = Math.max(nbestCost, t.calcNBestCost(nbestExamples));
     }

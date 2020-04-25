@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -136,6 +137,11 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   @Override
   public int hashCode() {
     return 31 * classHash() + filter.hashCode();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
 }

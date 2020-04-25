@@ -43,8 +43,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -164,7 +166,10 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
-  // Handle additional arguments...
+  /**
+   * Initializes the field type.  Subclasses should usually override {@link #init(IndexSchema, Map)}
+   * which is called by this method.
+   */
   protected void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
@@ -277,7 +282,7 @@ public abstract class FieldType extends FieldProperties {
   public IndexableField createField(SchemaField field, Object value) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+        log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     
@@ -454,11 +459,13 @@ public abstract class FieldType extends FieldProperties {
    *
    * @param parser       the {@link org.apache.solr.search.QParser} calling the method
    * @param sf           the schema field
-   * @param termStr      the term string for prefix query
+   * @param termStr      the term string for prefix query, if blank then this query should match all docs with this field
    * @return a Query instance to perform prefix search
-   *
    */
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    if ("".equals(termStr)) {
+      return getExistenceQuery(parser, sf);
+    }
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
@@ -843,17 +850,53 @@ public abstract class FieldType extends FieldProperties {
     // trivial base case
     return null;
   }
-  
-  
-  
+
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
-   * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
+   * currently passes <code>part1</code> and <code>part2</code> as null if they are '*' respectively. <code>minInclusive</code> and <code>maxInclusive</code> are both true
+   * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
+   * different semantics.
+   * <p>
+   * By default range queries with '*'s or nulls on either side are treated as existence queries and are created with {@link #getExistenceQuery}.
+   * If unbounded range queries should not be treated as existence queries for a certain fieldType, then {@link #treatUnboundedRangeAsExistence} should be overriden.
+   * <p>
+   * Sub-classes should override the {@link #getSpecializedRangeQuery} method to provide their own range query implementation.
+   *
+   * @param parser       the {@link org.apache.solr.search.QParser} calling the method
+   * @param field        the schema field
+   * @param part1        the lower boundary of the range, nulls are allowed.
+   * @param part2        the upper boundary of the range, nulls are allowe
+   * @param minInclusive whether the minimum of the range is inclusive or not
+   * @param maxInclusive whether the maximum of the range is inclusive or not
+   * @return a Query instance to perform range search according to given parameters
+   */
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    if (part1 == null && part2 == null && treatUnboundedRangeAsExistence(field)) {
+      return getExistenceQuery(parser, field);
+    }
+    return getSpecializedRangeQuery(parser, field, part1, part2, minInclusive, maxInclusive);
+  }
+
+  /**
+   * Returns whether an unbounded range query should be treated the same as an existence query for the given field type.
+   *
+   * @param field the schema field
+   * @return whether unbounded range and existence are equivalent for the given field type.
+   */
+  protected boolean treatUnboundedRangeAsExistence(SchemaField field) {
+    return true;
+  }
+
+  /**
+   * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
+   * currently passes <code>part1</code> and <code>part2</code> as null if they are '*' respectively. <code>minInclusive</code> and <code>maxInclusive</code> are both true
    * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
    * different semantics.
    * <p>
    * Sub-classes should override this method to provide their own range query implementation. They should strive to
-   * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
+   * handle nulls in <code>part1</code> and/or <code>part2</code> as well as unequal <code>minInclusive</code> and <code>maxInclusive</code> parameters gracefully.
+   * <p>
+   * This method does not, and should not, check for or handle existence queries, please look at {@link #getRangeQuery} for that logic.
    *
    * @param parser       the {@link org.apache.solr.search.QParser} calling the method
    * @param field        the schema field
@@ -864,22 +907,59 @@ public abstract class FieldType extends FieldProperties {
    *  @return a Query instance to perform range search according to given parameters
    *
    */
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // TODO: change these all to use readableToIndexed/bytes instead (e.g. for unicode collation)
     final BytesRef miValue = part1 == null ? null : new BytesRef(toInternal(part1));
     final BytesRef maxValue = part2 == null ? null : new BytesRef(toInternal(part2));
+
     if (field.hasDocValues() && !field.indexed()) {
       return SortedSetDocValuesField.newSlowRangeQuery(
-            field.getName(),
-            miValue, maxValue,
-            minInclusive, maxInclusive);
+          field.getName(),
+          miValue, maxValue,
+          minInclusive, maxInclusive);
     } else {
       SolrRangeQuery rangeQuery = new SolrRangeQuery(
-            field.getName(),
-            miValue, maxValue,
-            minInclusive, maxInclusive);
+          field.getName(),
+          miValue, maxValue,
+          minInclusive, maxInclusive);
       return rangeQuery;
     }
+  }
+
+  /**
+   * Returns a Query instance for doing existence searches for a field.
+   * If the field does not have docValues or norms, this method will call {@link #getSpecializedExistenceQuery}, which defaults to an unbounded rangeQuery.
+   * <p>
+   * This method should only be overriden whenever a fieldType does not support {@link org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link org.apache.lucene.search.NormsFieldExistsQuery}.
+   * If a fieldType does not support an unbounded rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields), {@link #getSpecializedExistenceQuery} should be overriden.
+   *
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @return The {@link org.apache.lucene.search.Query} instance.
+   */
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    if (field.hasDocValues()) {
+      return new DocValuesFieldExistsQuery(field.getName());
+    } else if (!field.omitNorms() && !isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
+      return new NormsFieldExistsQuery(field.getName());
+    } else {
+      // Default to an unbounded range query
+      return getSpecializedExistenceQuery(parser, field);
+    }
+  }
+
+  /**
+   * Returns a Query instance for doing existence searches for a field without certain options, such as docValues or norms.
+   * <p>
+   * This method can be overriden to implement specialized existence logic for fieldTypes.
+   * The default query returned is an unbounded range query.
+   *
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @return The {@link org.apache.lucene.search.Query} instance.
+   */
+  protected Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
+    return getSpecializedRangeQuery(parser, field, null, null, true, true);
   }
 
   /**
@@ -888,7 +968,6 @@ public abstract class FieldType extends FieldProperties {
    * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
    * @param externalVal The String representation of the value to search
    * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
-   * 
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     BytesRefBuilder br = new BytesRefBuilder();
@@ -982,8 +1061,6 @@ public abstract class FieldType extends FieldProperties {
   public static final String FILTER = "filter";
   public static final String FILTERS = "filters";
 
-  private static final String POSTINGS_FORMAT = "postingsFormat";
-  private static final String DOC_VALUES_FORMAT = "docValuesFormat";
   protected static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
@@ -1001,9 +1078,10 @@ public abstract class FieldType extends FieldProperties {
     if (showDefaults) {
       Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
       if (null != fieldTypeArgs) {
-        for (String key : fieldTypeArgs.keySet()) {
-        if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
-            namedPropertyValues.add(key, fieldTypeArgs.get(key));
+        for (Map.Entry<String, String> entry : fieldTypeArgs.entrySet()) {
+          String key = entry.getKey();
+          if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
+            namedPropertyValues.add(key, entry.getValue());
           }
         }
       }
@@ -1045,11 +1123,12 @@ public abstract class FieldType extends FieldProperties {
         fieldProperties.add(propertyName);
       }
 
-      for (String key : args.keySet()) {
+      for (Map.Entry<String, String> entry : args.entrySet()) {
+        String key = entry.getKey();
         if (fieldProperties.contains(key)) {
-          namedPropertyValues.add(key, StrUtils.parseBool(args.get(key)));
+          namedPropertyValues.add(key, StrUtils.parseBool(entry.getValue()));
         } else if (!CLASS_NAME.equals(key) && !TYPE_NAME.equals(key)) {
-          namedPropertyValues.add(key, args.get(key));
+          namedPropertyValues.add(key, entry.getValue());
         }
       }
     }
@@ -1106,17 +1185,20 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, charFilterFactory.getClassArg());
           factoryArgs = charFilterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey(TYPE_NAME)) {
+            props.add(CLASS_NAME, charFilterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
-            for (String key : factoryArgs.keySet()) {
+            for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+              String key = entry.getKey();
               if ( ! CLASS_NAME.equals(key)) {
                 if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
                   if (charFilterFactory.isExplicitLuceneMatchVersion()) {
-                    props.add(key, factoryArgs.get(key));
+                    props.add(key, entry.getValue());
                   }
                 } else {
-                   props.add(key, factoryArgs.get(key));
+                   props.add(key, entry.getValue());
                 }
               }
             }
@@ -1128,17 +1210,20 @@ public abstract class FieldType extends FieldProperties {
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
-      tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       factoryArgs = tokenizerFactory.getOriginalArgs();
+      if (!factoryArgs.containsKey(TYPE_NAME)) {
+        tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
+      }
       if (null != factoryArgs) {
-        for (String key : factoryArgs.keySet()) {
+        for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+          String key = entry.getKey();
           if ( ! CLASS_NAME.equals(key)) {
             if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
               if (tokenizerFactory.isExplicitLuceneMatchVersion()) {
-                tokenizerProps.add(key, factoryArgs.get(key));
+                tokenizerProps.add(key, entry.getValue());
               }
             } else {
-              tokenizerProps.add(key, factoryArgs.get(key));
+              tokenizerProps.add(key, entry.getValue());
             }
           }
         }
@@ -1150,17 +1235,20 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, filterFactory.getClassArg());
           factoryArgs = filterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey(TYPE_NAME)) {
+            props.add(CLASS_NAME, filterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
-            for (String key : factoryArgs.keySet()) {
+            for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+              String key = entry.getKey();
               if ( ! CLASS_NAME.equals(key)) {
                 if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
                   if (filterFactory.isExplicitLuceneMatchVersion()) {
-                    props.add(key, factoryArgs.get(key));
+                    props.add(key, entry.getValue());
                   }
                 } else {
-                  props.add(key, factoryArgs.get(key));
+                  props.add(key, entry.getValue());
                 }
               }
             }
@@ -1181,6 +1269,9 @@ public abstract class FieldType extends FieldProperties {
   /**Converts any Object to a java Object native to this field type
    */
   public Object toNativeType(Object val) {
+    if (val instanceof CharSequence) {
+      return ((CharSequence) val).toString();
+    }
     return val;
   }
   

@@ -149,11 +149,11 @@ public class ClusterProperties {
    * This method sets a cluster property.
    *
    * @param propertyName  The property name to be set.
-   * @param propertyValue The value of the property.
+   * @param propertyValue The value of the property, could also be a nested structure.
    * @throws IOException if there is an error writing data to the cluster
    */
   @SuppressWarnings("unchecked")
-  public void setClusterProperty(String propertyName, String propertyValue) throws IOException {
+  public void setClusterProperty(String propertyName, Object propertyValue) throws IOException {
 
     validatePropertyName(propertyName);
 

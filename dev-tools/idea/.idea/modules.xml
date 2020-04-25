@@ -30,13 +30,14 @@
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/grouping/grouping.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/join/join.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/luke/luke.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/monitor/monitor.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/memory/memory.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/misc/misc.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queries/queries.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queryparser/queryparser.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/replicator/replicator.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/sandbox/sandbox.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial/spatial.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial-extras/spatial-extras.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial3d/spatial3d.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/suggest/suggest.iml" />
@@ -58,6 +59,7 @@
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/ltr.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/prometheus-exporter/prometheus-exporter.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/jaegertracer-configurator/jaegertracer-configurator.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
     </modules>
   </component>

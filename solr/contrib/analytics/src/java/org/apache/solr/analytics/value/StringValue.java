@@ -32,13 +32,13 @@ public interface StringValue extends StringValueStream, AnalyticsValue {
    * Get the String representation of the current value.
    * <p>
    * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
-   * 
+   *
    * @return the current value
    */
   String getString();
 
   /**
-   * An interface that represents all of the types a {@link StringValue} should be able to cast to. 
+   * An interface that represents all of the types a {@link StringValue} should be able to cast to.
    */
   public static interface CastingStringValue extends StringValue, ComparableValue {}
 

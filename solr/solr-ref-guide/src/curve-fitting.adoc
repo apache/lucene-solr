@@ -238,7 +238,7 @@ There are also three helper functions that can be used to retrieve the estimated
 * `getAngularFrequency`: Returns the angular frequency of the sine wave.
 * `getPhase`: Returns the phase of the sine wave.
 
-NOTE: The `harmfit` function works best when run on a single oscillation rather then a long sequence of
+NOTE: The `harmfit` function works best when run on a single oscillation rather than a long sequence of
 oscillations. This is particularly true if the sine wave has noise. After the curve has been fit it can be
 extrapolated to any point in time in the past or future.
 

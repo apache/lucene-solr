@@ -39,7 +39,7 @@ public interface OldAnalyticsParams {
   public static final String OLD_PREFIX = "o|olap";
 
   public static final String OLD_EXPRESSION = "s|stat|statistic";
-  
+
   public static class OldRequest {
     public String name;
     public Map<String,String> expressions = new HashMap<>();
@@ -48,15 +48,15 @@ public interface OldAnalyticsParams {
     public Map<String,OldQueryFacet> queryFacets = new HashMap<>();
   }
 
-  public static final String FIELD_FACET = "ff|fieldfacet";
-  public static final String VALUE_FACET = "vf|valuefacet";
-  public static final String LIMIT = "l|limit";
-  public static final String OFFSET = "off|offset";
-  public static final String SHOW_MISSING = "sm|showmissing";
-  public static final String SORT_EXPRESSION ="se|sortexpr|sortexpression";
-  public static final String OLAP_SORT_EXPRESSION ="ss|sortstat|sortstatistic";
-  public static final String SORT_DIRECTION ="sd|sortdirection";
-  
+  public static final String FIELD_FACET = "(?:ff|fieldfacet)";
+  public static final String VALUE_FACET = "(?:vf|valuefacet)";
+  public static final String LIMIT = "(?:l|limit)";
+  public static final String OFFSET = "(?:off|offset)";
+  public static final String SHOW_MISSING = "(?:sm|showmissing)";
+  public static final String SORT_EXPRESSION ="(?:se|sortexpr|sortexpression)";
+  public static final String OLAP_SORT_EXPRESSION ="(?:ss|sortstat|sortstatistic)";
+  public static final String SORT_DIRECTION ="(?:sd|sortdirection)";
+
   public static class OldFieldFacet {
     public String field;
     public String showMissing;
@@ -65,7 +65,7 @@ public interface OldAnalyticsParams {
     public String sortExpr;
     public String sortDir;
   }
-  
+
   public static class FieldFacetParamParser {
     public static String regexParamList = LIMIT + "|" + OFFSET + "|" + SHOW_MISSING + "|" + OLAP_SORT_EXPRESSION + "|" + SORT_DIRECTION;
 
@@ -74,7 +74,7 @@ public interface OldAnalyticsParams {
     private static Predicate<String> isShowMissing = Pattern.compile("^" + SHOW_MISSING + "$", Pattern.CASE_INSENSITIVE).asPredicate();
     private static Predicate<String> isSortExpr = Pattern.compile("^" + OLAP_SORT_EXPRESSION + "$", Pattern.CASE_INSENSITIVE).asPredicate();
     private static Predicate<String> isSortDir = Pattern.compile("^" + SORT_DIRECTION + "$", Pattern.CASE_INSENSITIVE).asPredicate();
-    
+
     public static void applyParam(AnalyticsValueFacetRequest facet, String param, String value) {
       if (isLimit.test(param)) {
         getSort(facet).limit = Integer.parseInt(value);
@@ -104,7 +104,7 @@ public interface OldAnalyticsParams {
         criterion.direction = value;
       }
     }
-    
+
     public static AnalyticsSortRequest getSort(AnalyticsValueFacetRequest facet) {
       if (facet.sort == null) {
         facet.sort = new AnalyticsSortRequest();
@@ -113,15 +113,15 @@ public interface OldAnalyticsParams {
       return facet.sort;
     }
   }
-  
-  public static final String RANGE_FACET = "rf|rangefacet";
-  public static final String START = "st|start";
-  public static final String END = "e|end";
-  public static final String GAP = "g|gap";
-  public static final String HARDEND = "he|hardend";
-  public static final String INCLUDE_BOUNDARY = "ib|includebound";
-  public static final String OTHER_RANGE = "or|otherrange";
-  
+
+  public static final String RANGE_FACET = "(?:rf|rangefacet)";
+  public static final String START = "(?:st|start)";
+  public static final String END = "(?:e|end)";
+  public static final String GAP = "(?:g|gap)";
+  public static final String HARDEND = "(?:he|hardend)";
+  public static final String INCLUDE_BOUNDARY = "(?:ib|includebound)";
+  public static final String OTHER_RANGE = "(?:or|otherrange)";
+
   public static class OldRangeFacet {
     public String field;
     public String start;
@@ -131,7 +131,7 @@ public interface OldAnalyticsParams {
     public String[] include;
     public String[] others;
   }
-  
+
   public static class RangeFacetParamParser {
     public static String regexParamList = START + "|" + END + "|" + GAP + "|" + HARDEND + "|" + INCLUDE_BOUNDARY + "|" + OTHER_RANGE;
 
@@ -143,7 +143,7 @@ public interface OldAnalyticsParams {
     private static Predicate<String> isFalse = Pattern.compile("^f|false$", Pattern.CASE_INSENSITIVE).asPredicate();
     private static Predicate<String> isInclude = Pattern.compile("^" + INCLUDE_BOUNDARY + "$", Pattern.CASE_INSENSITIVE).asPredicate();
     private static Predicate<String> isOther = Pattern.compile("^" + OTHER_RANGE + "$", Pattern.CASE_INSENSITIVE).asPredicate();
-    
+
     public static void applyParam(AnalyticsRangeFacetRequest facet, String param, String[] values) {
       if (isStart.test(param)) {
         facet.start = values[0];
@@ -164,15 +164,15 @@ public interface OldAnalyticsParams {
       }
     }
   }
-  
+
   public static class OldQueryFacet {
     public String name;
     public String[] queries;
   }
-  
-  public static final String QUERY_FACET = "qf|queryfacet";
-  public static final String QUERY = "q|query";
-  
+
+  public static final String QUERY_FACET = "(?:qf|queryfacet)";
+  public static final String QUERY = "(?:q|query)";
+
   //Defaults
   public static final boolean DEFAULT_ABBREVIATE_PREFIX = true;
 }

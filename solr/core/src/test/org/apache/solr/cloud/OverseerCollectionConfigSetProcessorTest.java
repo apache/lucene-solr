@@ -67,6 +67,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
@@ -203,6 +204,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkControllerMock = null;
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
+    stateManagerMock = null;;
     cloudManagerMock = null;
     distribStateManagerMock = null;
     coreContainerMock = null;
@@ -308,12 +310,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         String slice = replica.getStr(ZkStateReader.SHARD_ID_PROP);
         if (!slices.containsKey(slice)) slices.put(slice, new HashMap<>());
         String replicaName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties()));
+        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties(), docCollection.getName(), slice));
       }
 
       Map<String, Slice> slicesMap = new HashMap<>();
       for (Map.Entry<String, Map<String, Replica>> entry : slices.entrySet()) {
-        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null));
+        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null,docCollection.getName()));
       }
 
       return docCollection.copyWithSlices(slicesMap);
@@ -398,7 +400,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (data == null || data.length == 0) {
         return null;
       }
-      return new VersionedData(-1, data, "");
+      return new VersionedData(-1, data, CreateMode.PERSISTENT, "");
         
     });
     
@@ -478,7 +480,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (data == null || data.length == 0) {
         return null;
       }
-      return new VersionedData(-1, data, "");
+      return new VersionedData(-1, data, CreateMode.PERSISTENT, "");
         
     });
     
@@ -529,9 +531,15 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void stopComponentUnderTest() throws Exception {
-    underTest.close();
-    thread.interrupt();
-    thread.join();
+    if (null != underTest) {
+      underTest.close();
+      underTest = null;
+    }
+    if (null != thread) {
+      thread.interrupt();
+      thread.join();
+      thread = null;
+    }
   }
 
   protected void issueCreateJob(Integer numberOfSlices,
@@ -556,7 +564,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     QueueEvent qe = new QueueEvent("id", Utils.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
-        lastProcessMessageResult = SolrResponse.deserialize( bytes);
+        lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
       }
     };
     queue.add(qe);

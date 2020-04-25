@@ -44,6 +44,13 @@ public class FastInputStream extends DataInputInputStream {
     this.end = end;
   }
 
+  @Override
+  boolean readDirectUtf8(ByteArrayUtf8CharSequence utf8, int len) {
+    if (in != null || end < pos + len) return false;
+    utf8.reset(buf, pos, len, null);
+    pos = pos + len;
+    return true;
+  }
 
   public static FastInputStream wrap(InputStream in) {
     return (in instanceof FastInputStream) ? (FastInputStream)in : new FastInputStream(in);

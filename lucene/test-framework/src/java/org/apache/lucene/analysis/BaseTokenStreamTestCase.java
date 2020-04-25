@@ -45,7 +45,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
@@ -373,26 +372,26 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), graphOffsetsAreCorrect);
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input, graphOffsetsAreCorrect);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), graphOffsetsAreCorrect);
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect, byte[][] payloads) throws IOException {
-    checkResetException(a, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), null, null, graphOffsetsAreCorrect, payloads);
+    checkResetException(a, input);
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
@@ -549,7 +548,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     Directory dir = null;
     RandomIndexWriter iw = null;
     final String postingsFormat =  TestUtil.getPostingsFormat("dummy");
-    boolean codecOk = iterations * maxWordLength < 100000 || !(postingsFormat.equals("SimpleText"));
+    boolean codecOk = iterations * maxWordLength < 100000 && !(postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
       dir = newFSDirectory(createTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);
@@ -596,7 +595,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean graphOffsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
-    final LineFileDocs docs = new LineFileDocs(random);
     Document doc = null;
     Field field = null, currentField = null;
     StringReader bogus = new StringReader("");
@@ -625,61 +623,33 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       doc.add(currentField);
     }
     
-    try {
-      for (int i = 0; i < iterations; i++) {
-        String text;
+    for (int i = 0; i < iterations; i++) {
+      String text = TestUtil.randomAnalysisString(random, maxWordLength, simple);
 
-        if (random.nextInt(10) == 7) {
-          // real data from linedocs
-          text = docs.nextDoc().get("body");
-          if (text.length() > maxWordLength) {
-            
-            // Take a random slice from the text...:
-            int startPos = random.nextInt(text.length() - maxWordLength);
-            if (startPos > 0 && Character.isLowSurrogate(text.charAt(startPos))) {
-              // Take care not to split up a surrogate pair:
-              startPos--;
-              assert Character.isHighSurrogate(text.charAt(startPos));
-            }
-            int endPos = startPos + maxWordLength - 1;
-            if (Character.isHighSurrogate(text.charAt(endPos))) {
-              // Take care not to split up a surrogate pair:
-              endPos--;
-            }
-            text = text.substring(startPos, 1+endPos);
-          }
-        } else {
-          // synthetic
-          text = TestUtil.randomAnalysisString(random, maxWordLength, simple);
-        }
-
-        try {
-          checkAnalysisConsistency(random, a, useCharFilter, text, graphOffsetsAreCorrect, currentField);
-          if (iw != null) {
-            if (random.nextInt(7) == 0) {
-              // pile up a multivalued field
-              IndexableFieldType ft = field.fieldType();
-              currentField = new Field("dummy", bogus, ft);
+      try {
+        checkAnalysisConsistency(random, a, useCharFilter, text, graphOffsetsAreCorrect, currentField);
+        if (iw != null) {
+          if (random.nextInt(7) == 0) {
+            // pile up a multivalued field
+            IndexableFieldType ft = field.fieldType();
+            currentField = new Field("dummy", bogus, ft);
+            doc.add(currentField);
+          } else {
+            iw.addDocument(doc);
+            if (doc.getFields().size() > 1) {
+              // back to 1 field
+              currentField = field;
+              doc.removeFields("dummy");
               doc.add(currentField);
-            } else {
-              iw.addDocument(doc);
-              if (doc.getFields().size() > 1) {
-                // back to 1 field
-                currentField = field;
-                doc.removeFields("dummy");
-                doc.add(currentField);
-              }
             }
           }
-        } catch (Throwable t) {
-          // TODO: really we should pass a random seed to
-          // checkAnalysisConsistency then print it here too:
-          System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
-          Rethrow.rethrow(t);
         }
+      } catch (Throwable t) {
+        // TODO: really we should pass a random seed to
+        // checkAnalysisConsistency then print it here too:
+        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
+        Rethrow.rethrow(t);
       }
-    } finally {
-      IOUtils.closeWhileHandlingException(docs);
     }
   }
 
@@ -948,13 +918,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     w.close();
   }
   
-  static int[] toIntArray(List<Integer> list) {
-    int ret[] = new int[list.size()];
-    int offset = 0;
-    for (Integer i : list) {
-      ret[offset++] = i;
-    }
-    return ret;
+  private static int[] toIntArray(List<Integer> list) {
+    return list.stream().mapToInt(Integer::intValue).toArray();
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {

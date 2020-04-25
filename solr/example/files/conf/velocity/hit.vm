@@ -30,7 +30,7 @@
 #end
 
 ## Sort out Mime-Type
-#set($ct = $list.get($doc.getFirstValue('content_type').split(";"),0))
+#set($ct = $doc.getFirstValue('content_type').split(";").get(0))
 #set($filename = $doc.getFirstValue('resourcename'))
 #set($filetype = false)
 #set($filetype = $mimeExtensionsMap.get($ct))

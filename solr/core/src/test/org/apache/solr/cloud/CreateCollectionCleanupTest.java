@@ -17,11 +17,17 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Properties;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,17 +72,51 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   @Test
   public void testCreateCollectionCleanup() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
+    String collectionName = "foo";
+    assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     // Create a collection that would fail
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("foo","conf1",1,1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
 
     Properties properties = new Properties();
-    properties.put(CoreAdminParams.DATA_DIR, "/some_invalid_dir/foo");
+    Path tmpDir = createTempDir();
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
+    properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
-    CollectionAdminResponse rsp = create.process(cloudClient);
-    assertFalse(rsp.isSuccess());
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+      create.process(cloudClient);
+    });
 
     // Confirm using LIST that the collection does not exist
-    assertFalse(CollectionAdminRequest.listCollections(cloudClient).contains("foo"));
+    assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName), 
+        CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
 
   }
+  
+  @Test
+  public void testAsyncCreateCollectionCleanup() throws Exception {
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    String collectionName = "foo2";
+    assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
+    
+    // Create a collection that would fail
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
+
+    Properties properties = new Properties();
+    Path tmpDir = createTempDir();
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
+    properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
+    create.setProperties(properties);
+    create.setAsyncId("testAsyncCreateCollectionCleanup");
+    create.process(cloudClient);
+    RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion("testAsyncCreateCollectionCleanup", 30, cloudClient);
+    assertThat(state.getKey(), is("failed"));
+
+    // Confirm using LIST that the collection does not exist
+    assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName), 
+        CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
+
+  }
+  
 }

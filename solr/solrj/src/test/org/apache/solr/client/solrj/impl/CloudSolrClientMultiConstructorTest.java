@@ -23,11 +23,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
+public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
   
   /*
    * NOTE: If you only include one String argument, it will NOT use the

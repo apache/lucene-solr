@@ -37,11 +37,11 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class TestSolrCoreParser extends LuceneTestCase {
+public class TestSolrCoreParser extends SolrTestCase {
 
   private SolrCoreParser solrCoreParser;
 

@@ -54,6 +54,15 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     assertFalse(policy.shouldCache(q));
   }
 
+  public void testNeverCacheDocValuesFieldExistsFilter() throws IOException {
+    Query q = new DocValuesFieldExistsQuery("foo");
+    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
+    for (int i = 0; i < 1000; ++i) {
+      policy.onUse(q);
+    }
+    assertFalse(policy.shouldCache(q));
+  }
+
   public void testBooleanQueries() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -63,7 +72,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     
     IndexSearcher searcher = new IndexSearcher(reader);
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
-    LRUQueryCache cache = new LRUQueryCache(10, Long.MAX_VALUE, new LRUQueryCache.MinSegmentSizePredicate(1, 0f));
+    LRUQueryCache cache = new LRUQueryCache(10, Long.MAX_VALUE, new LRUQueryCache.MinSegmentSizePredicate(1, 0f), Float.POSITIVE_INFINITY);
     searcher.setQueryCache(cache);
     searcher.setQueryCachingPolicy(policy);
 
@@ -130,6 +139,11 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
   }

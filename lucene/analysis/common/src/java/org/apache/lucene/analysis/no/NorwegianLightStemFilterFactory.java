@@ -36,8 +36,12 @@ import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "norwegianLightStem";
   
   private final int flags;
   
@@ -59,6 +63,11 @@ public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public NorwegianLightStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new NorwegianLightStemFilter(input, flags);

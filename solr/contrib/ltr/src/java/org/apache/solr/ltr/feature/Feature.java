@@ -19,16 +19,18 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,11 +59,13 @@ import org.apache.solr.util.SolrPluginUtils;
  * the {@link #validate()} function, and must implement the {@link #paramsToMap()}
  * and createWeight() methods.
  */
-public abstract class Feature extends Query {
+public abstract class Feature extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(Feature.class);
 
   final protected String name;
   private int index = -1;
   private float defaultValue = 0.0f;
+  private Object defaultValueObject = null;
 
   final private Map<String,Object> params;
 
@@ -114,8 +118,21 @@ public abstract class Feature extends Query {
     return defaultValue;
   }
 
-  public void setDefaultValue(String value){
-    defaultValue = Float.parseFloat(value);
+  public void setDefaultValue(Object obj){
+    this.defaultValueObject = obj;
+    if (obj instanceof String) {
+      defaultValue = Float.parseFloat((String)obj);
+    } else if (obj instanceof Double) {
+      defaultValue = ((Double) obj).floatValue();
+    } else if (obj instanceof Float) {
+      defaultValue = ((Float) obj).floatValue();
+    } else if (obj instanceof Integer) {
+      defaultValue = ((Integer) obj).floatValue();
+    } else if (obj instanceof Long) {
+      defaultValue = ((Long) obj).floatValue();
+    } else {
+      throw new FeatureException("Invalid type for 'defaultValue' in params for " + this);
+    }
   }
 
 
@@ -132,6 +149,18 @@ public abstract class Feature extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(name) +
+        RamUsageEstimator.sizeOfObject(params);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private boolean equalsTo(Feature other) {
@@ -180,6 +209,15 @@ public abstract class Feature extends Query {
   }
 
   public abstract LinkedHashMap<String,Object> paramsToMap();
+
+  protected LinkedHashMap<String,Object> defaultParamsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+    if (defaultValueObject != null) {
+      params.put("defaultValue", defaultValueObject);
+    }
+    return params;
+  }
+
   /**
    * Weight for a feature
    **/
@@ -261,11 +299,6 @@ public abstract class Feature extends Query {
       return Feature.this.toString();
     }
 
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      // no-op
-    }
-
     /**
      * A 'recipe' for computing a feature
      */
@@ -306,6 +339,46 @@ public abstract class Feature extends Query {
       public DocIdSetIterator iterator() {
         return itr;
       }
+    }
+
+    /**
+     * A <code>FeatureScorer</code> that contains a <code>Scorer</code>,
+     * which it delegates to where appropriate.
+     */
+    public abstract class FilterFeatureScorer extends FeatureScorer {
+
+      final protected Scorer in;
+
+      public FilterFeatureScorer(Feature.FeatureWeight weight, Scorer scorer) {
+        super(weight, null);
+        this.in = scorer;
+      }
+
+      @Override
+      public int docID() {
+        return in.docID();
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        return in.iterator();
+      }
+
+      @Override
+      public TwoPhaseIterator twoPhaseIterator() {
+        return in.twoPhaseIterator();
+      }
+
+      @Override
+      public int advanceShallow(int target) throws IOException {
+        return in.advanceShallow(target);
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return in.getMaxScore(upTo);
+      }
+
     }
 
     /**

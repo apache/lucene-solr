@@ -104,12 +104,13 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     System.setProperty("enable.update.log", "false");
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome.getPath());
+
+    assertQ("sanity check", req("q", "*:*"), "//*[@numFound='0']");
   }
 
   @After
   private void afterTest() throws Exception {
     clearIndex();
-    assertU(commit());
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");

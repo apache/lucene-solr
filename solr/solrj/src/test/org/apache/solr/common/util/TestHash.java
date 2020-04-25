@@ -16,13 +16,13 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 import java.util.Random;
 
 /** Tests for lookup3ycs hash functions
  */
-public class TestHash extends LuceneTestCase {
+public class TestHash extends SolrTestCase {
 
   // Test that the java version produces the same output as the C version
   public void testEqualsLOOKUP3() {

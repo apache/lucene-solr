@@ -60,10 +60,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * An if-else mapping function. 
+ * An if-else mapping function.
  * <p>
  * Three arguments are required. The first, the conditional parameter, must be a {@link BooleanValue} and
- * the later two, the if and else parameters, can be any type of {@link AnalyticsValueStream}. 
+ * the later two, the if and else parameters, can be any type of {@link AnalyticsValueStream}.
  * For each document, if the conditional value is true then the if-value is used otherwise the else-value is used.
  * <p>
  * The resulting Value or ValueStream will be typed with the closest super-type of the two non-conditional parameters.
@@ -83,10 +83,10 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 3 paramaters, " + params.length + " found.");
     }
     if (!(params[0] instanceof BooleanValue)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires single-valued numeric parameters. " + 
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires single-valued numeric parameters. " +
                       "Incorrect parameter: "+params[0].getExpressionStr());
     }
-    
+
     BooleanValue castedIf = (BooleanValue) params[0];
     AnalyticsValueStream thenExpr = params[1];
     AnalyticsValueStream elseExpr = params[2];
@@ -138,7 +138,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     }
     return new IfFunction(castedIf,thenExpr,elseExpr);
   });
-  
+
   public IfFunction(BooleanValue ifExpr, AnalyticsValueStream thenExpr, AnalyticsValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -180,7 +180,7 @@ class ValueIfFunction extends AbstractAnalyticsValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public ValueIfFunction(BooleanValue ifExpr, AnalyticsValue thenExpr, AnalyticsValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -233,7 +233,7 @@ class BooleanStreamIfFunction extends AbstractBooleanValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamIfFunction(BooleanValue ifExpr, BooleanValueStream thenExpr, BooleanValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -275,7 +275,7 @@ class BooleanIfFunction extends AbstractBooleanValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanIfFunction(BooleanValue ifExpr, BooleanValue thenExpr, BooleanValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -328,7 +328,7 @@ class IntStreamIfFunction extends AbstractIntValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntStreamIfFunction(BooleanValue ifExpr, IntValueStream thenExpr, IntValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -370,7 +370,7 @@ class IntIfFunction extends AbstractIntValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntIfFunction(BooleanValue ifExpr, IntValue thenExpr, IntValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -423,7 +423,7 @@ class LongStreamIfFunction extends AbstractLongValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamIfFunction(BooleanValue ifExpr, LongValueStream thenExpr, LongValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -465,7 +465,7 @@ class LongIfFunction extends AbstractLongValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongIfFunction(BooleanValue ifExpr, LongValue thenExpr, LongValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -518,7 +518,7 @@ class FloatStreamIfFunction extends AbstractFloatValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatStreamIfFunction(BooleanValue ifExpr, FloatValueStream thenExpr, FloatValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -560,7 +560,7 @@ class FloatIfFunction extends AbstractFloatValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatIfFunction(BooleanValue ifExpr, FloatValue thenExpr, FloatValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -613,7 +613,7 @@ class DoubleStreamIfFunction extends AbstractDoubleValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleStreamIfFunction(BooleanValue ifExpr, DoubleValueStream thenExpr, DoubleValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -655,7 +655,7 @@ class DoubleIfFunction extends AbstractDoubleValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleIfFunction(BooleanValue ifExpr, DoubleValue thenExpr, DoubleValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -708,7 +708,7 @@ class DateStreamIfFunction extends AbstractDateValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateStreamIfFunction(BooleanValue ifExpr, DateValueStream thenExpr, DateValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -750,7 +750,7 @@ class DateIfFunction extends AbstractDateValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateIfFunction(BooleanValue ifExpr, DateValue thenExpr, DateValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -803,7 +803,7 @@ class StringStreamIfFunction extends AbstractStringValueStream {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamIfFunction(BooleanValue ifExpr, StringValueStream thenExpr, StringValueStream elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
@@ -824,7 +824,7 @@ class StringStreamIfFunction extends AbstractStringValueStream {
       }
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -845,7 +845,7 @@ class StringIfFunction extends AbstractStringValue {
   public static final String name = IfFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringIfFunction(BooleanValue ifExpr, StringValue thenExpr, StringValue elseExpr) throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;

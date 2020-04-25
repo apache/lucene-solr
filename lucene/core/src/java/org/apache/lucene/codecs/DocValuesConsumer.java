@@ -29,14 +29,18 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
@@ -450,6 +454,102 @@ public abstract class DocValuesConsumer implements Closeable {
                           });
   }
 
+  /**
+   * A merged {@link TermsEnum}. This helps avoid relying on the default terms enum,
+   * which calls {@link SortedDocValues#lookupOrd(int)} or
+   * {@link SortedSetDocValues#lookupOrd(long)} on every call to {@link TermsEnum#next()}.
+   */
+  private static class MergedTermsEnum extends TermsEnum {
+
+    private final TermsEnum[] subs;
+    private final OrdinalMap ordinalMap;
+    private final long valueCount;
+    private long ord = -1;
+    private BytesRef term;
+
+    MergedTermsEnum(OrdinalMap ordinalMap, TermsEnum[] subs) {
+      this.ordinalMap = ordinalMap;
+      this.subs = subs;
+      this.valueCount = ordinalMap.getValueCount();
+    }
+
+    @Override
+    public BytesRef term() throws IOException {
+      return term;
+    }
+
+    @Override
+    public long ord() throws IOException {
+      return ord;
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      if (++ord >= valueCount) {
+        return null;
+      }
+      final int subNum = ordinalMap.getFirstSegmentNumber(ord);
+      final TermsEnum sub = subs[subNum];
+      final long subOrd = ordinalMap.getFirstSegmentOrd(ord);
+      do {
+        term = sub.next();
+      } while (sub.ord() < subOrd);
+      assert sub.ord() == subOrd;
+      return term;
+    }
+
+    @Override
+    public AttributeSource attributes() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void seekExact(long ord) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void seekExact(BytesRef term, TermState state) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long totalTermFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ImpactsEnum impacts(int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TermState termState() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+  }
+
   /** Tracks state of one sorted sub-reader that we are merging */
   private static class SortedDocValuesSub extends DocIDMerger.Sub {
 
@@ -609,6 +709,15 @@ public abstract class DocValuesConsumer implements Closeable {
                            int segmentNumber = map.getFirstSegmentNumber(ord);
                            int segmentOrd = (int) map.getFirstSegmentOrd(ord);
                            return dvs[segmentNumber].lookupOrd(segmentOrd);
+                         }
+
+                         @Override
+                         public TermsEnum termsEnum() throws IOException {
+                           TermsEnum[] subs = new TermsEnum[toMerge.size()];
+                           for (int sub = 0; sub < subs.length; ++sub) {
+                             subs[sub] = toMerge.get(sub).termsEnum();
+                           }
+                           return new MergedTermsEnum(map, subs);
                          }
                        };
                      }
@@ -780,6 +889,15 @@ public abstract class DocValuesConsumer implements Closeable {
                             @Override
                             public long getValueCount() {
                               return map.getValueCount();
+                            }
+
+                            @Override
+                            public TermsEnum termsEnum() throws IOException {
+                              TermsEnum[] subs = new TermsEnum[toMerge.size()];
+                              for (int sub = 0; sub < subs.length; ++sub) {
+                                subs[sub] = toMerge.get(sub).termsEnum();
+                              }
+                              return new MergedTermsEnum(map, subs);
                             }
                           };
                         }

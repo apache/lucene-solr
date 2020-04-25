@@ -150,11 +150,9 @@ public class ClusterStatus {
         String configName = zkStateReader.readConfigName(name);
         collectionStatus.put("configName", configName);
         collectionProps.add(name, collectionStatus);
-      } catch (SolrException e) {
-        if (e.getCause() instanceof KeeperException.NoNodeException)  {
-          // skip this collection because the collection's znode has been deleted
-          // which can happen during aggressive collection removal, see SOLR-10720
-        } else throw e;
+      } catch (KeeperException.NoNodeException ex) {
+        // skip this collection because the configset's znode has been deleted
+        // which can happen during aggressive collection removal, see SOLR-10720
       }
     }
 

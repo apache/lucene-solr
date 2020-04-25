@@ -22,6 +22,25 @@ A filter may also do more complex analysis by looking ahead to consider multiple
 
 Because filters consume one `TokenStream` and produce a new `TokenStream`, they can be chained one after another indefinitely. Each filter in the chain in turn processes the tokens produced by its predecessor. The order in which you specify the filters is therefore significant. Typically, the most general filtering is done first, and later filtering stages are more specialized.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filterexample]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text" class="solr.TextField">
+  <analyzer>
+    <tokenizer name="standard"/>
+    <filter name="lowercase"/>
+    <filter name="englishPorter"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-filterexample]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
@@ -32,6 +51,8 @@ Because filters consume one `TokenStream` and produce a new `TokenStream`, they 
   </analyzer>
 </fieldType>
 ----
+====
+--
 
 This example starts with Solr's standard tokenizer, which breaks the field's text into tokens. All the tokens are then set to lowercase, which will facilitate case-insensitive matching at query time.
 

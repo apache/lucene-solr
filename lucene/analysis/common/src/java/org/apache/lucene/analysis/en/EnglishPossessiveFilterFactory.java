@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "englishPossessive";
   
   /** Creates a new EnglishPossessiveFilterFactory */
   public EnglishPossessiveFilterFactory(Map<String,String> args) {
@@ -44,6 +48,11 @@ public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public EnglishPossessiveFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new EnglishPossessiveFilter(input);

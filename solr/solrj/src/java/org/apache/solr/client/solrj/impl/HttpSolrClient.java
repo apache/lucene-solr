@@ -22,7 +22,9 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Arrays;
@@ -32,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -66,7 +69,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -80,7 +82,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +93,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
-public class HttpSolrClient extends SolrClient {
+public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
@@ -184,6 +186,7 @@ public class HttpSolrClient extends SolrClient {
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     }
+    
     if (baseUrl.indexOf('?') >= 0) {
       throw new RuntimeException(
           "Invalid base url for solrj.  The base URL must not contain parameters: "
@@ -253,6 +256,12 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
+    if (request.getHeaders() != null) {
+      Map<String, String> headers = request.getHeaders();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        method.setHeader(entry.getKey(), entry.getValue());
+      }
+    }
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
@@ -294,7 +303,7 @@ public class HttpSolrClient extends SolrClient {
   public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request, null);
-    ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
+    ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
       mrr.future = pool.submit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)));
@@ -323,6 +332,12 @@ public class HttpSolrClient extends SolrClient {
       }
     }
     return queryModParams;
+  }
+  
+  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
   protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
@@ -358,7 +373,7 @@ public class HttpSolrClient extends SolrClient {
       basePath += "/" + collection;
 
     if (request instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
+      if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
         basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";
@@ -560,7 +575,7 @@ public class HttpSolrClient extends SolrClient {
       } else {
         contentType = "";
       }
-      
+
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
         case HttpStatus.SC_OK:
@@ -657,11 +672,11 @@ public class HttpSolrClient extends SolrClient {
           + getBaseURL(), e);
     } catch (SocketTimeoutException e) {
       throw new SolrServerException(
-          "Timeout occured while waiting response from server at: "
+          "Timeout occurred while waiting response from server at: "
               + getBaseURL(), e);
     } catch (IOException e) {
       throw new SolrServerException(
-          "IOException occured when talking to server at: " + getBaseURL(), e);
+          "IOException occurred when talking to server at: " + getBaseURL(), e);
     } finally {
       if (shouldClose) {
         Utils.consumeFully(entity);
@@ -796,56 +811,6 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
    */
   public void setUseMultiPartPost(boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
-  }
-
-  /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP
-   * status code that may have been returned by the remote server or a 
-   * proxy along the way.
-   */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
-    }
-  }
-
-  /**
-   * This should be thrown when a server has an error in executing the request and
-   * it sends a proper payload back to the client
-   */
-  public static class RemoteExecutionException extends RemoteSolrException {
-    private NamedList meta;
-
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, null);
-      this.meta = meta;
-    }
-
-
-    public static RemoteExecutionException create(String host, NamedList errResponse) {
-      Object errObj = errResponse.get("error");
-      if (errObj != null) {
-        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
-        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
-
-      } else {
-        throw new RuntimeException("No error");
-      }
-
-    }
-
-    public NamedList getMetaData() {
-
-      return meta;
-    }
   }
 
   /**

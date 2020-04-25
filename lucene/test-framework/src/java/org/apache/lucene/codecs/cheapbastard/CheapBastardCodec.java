@@ -25,7 +25,6 @@ import org.apache.lucene.util.TestUtil;
 // but if we named it "LowMemory" in codecs/ package, it would be irresistible like optimize()!
 public class CheapBastardCodec extends FilterCodec {
   
-  // TODO: would be better to have no terms index at all and bsearch a terms dict
   private final PostingsFormat postings = TestUtil.getDefaultPostingsFormat(100, 200);
 
   public CheapBastardCodec() {

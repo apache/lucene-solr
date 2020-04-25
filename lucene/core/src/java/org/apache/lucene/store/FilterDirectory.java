@@ -117,6 +117,6 @@ public abstract class FilterDirectory extends Directory {
 
   @Override
   public Set<String> getPendingDeletions() throws IOException {
-    return super.getPendingDeletions();
+    return in.getPendingDeletions();
   }
 }

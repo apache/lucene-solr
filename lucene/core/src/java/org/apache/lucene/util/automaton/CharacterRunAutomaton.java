@@ -31,7 +31,7 @@ public class CharacterRunAutomaton extends RunAutomaton {
   /**
    * Construct specifying maxDeterminizedStates.
    * @param a Automaton to match
-   * @param maxDeterminizedStates maximum number of states that the automataon
+   * @param maxDeterminizedStates maximum number of states that the automaton
    *   can have once determinized.  If more states are required to determinize
    *   it then a TooComplexToDeterminizeException is thrown.
    */ 
@@ -49,7 +49,7 @@ public class CharacterRunAutomaton extends RunAutomaton {
       p = step(p, cp = s.codePointAt(i));
       if (p == -1) return false;
     }
-    return accept[p];
+    return accept.get(p);
   }
   
   /**
@@ -62,6 +62,6 @@ public class CharacterRunAutomaton extends RunAutomaton {
       p = step(p, cp = Character.codePointAt(s, i, l));
       if (p == -1) return false;
     }
-    return accept[p];
+    return accept.get(p);
   }
 }

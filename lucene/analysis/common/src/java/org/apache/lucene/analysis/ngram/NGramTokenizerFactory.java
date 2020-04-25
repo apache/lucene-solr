@@ -35,8 +35,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NGramTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "nGram";
+
   private final int maxGramSize;
   private final int minGramSize;
 
@@ -50,6 +55,11 @@ public class NGramTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public NGramTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   /** Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link AttributeFactory}. */
   @Override
   public Tokenizer create(AttributeFactory factory) {

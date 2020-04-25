@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.hll.HLL;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
+@LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -92,7 +95,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                     "long_l", ""+longValue, 
                     "long_l_prehashed_l", ""+HASHER.hashLong(longValue).asLong(),
                     "string_s", strValue,
-                    "string_s_prehashed_l", ""+HASHER.hashString(strValue).asLong()));
+                    "string_s_prehashed_l", ""+HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
 
       longValue -= BIG_PRIME;
     }
@@ -101,7 +104,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     
   }
 
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
     buildIndex();
     

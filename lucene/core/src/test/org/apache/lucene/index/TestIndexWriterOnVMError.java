@@ -238,14 +238,7 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
         if (r.nextInt(3000) == 0) {
-          StackTraceElement stack[] = Thread.currentThread().getStackTrace();
-          boolean ok = false;
-          for (int i = 0; i < stack.length; i++) {
-            if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
-              ok = true;
-            }
-          }
-          if (ok) {
+          if (callStackContains(IndexWriter.class)) {
             throw new OutOfMemoryError("Fake OutOfMemoryError");
           }
         }
@@ -259,14 +252,7 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
         if (r.nextInt(3000) == 0) {
-          StackTraceElement stack[] = Thread.currentThread().getStackTrace();
-          boolean ok = false;
-          for (int i = 0; i < stack.length; i++) {
-            if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
-              ok = true;
-            }
-          }
-          if (ok) {
+          if (callStackContains(IndexWriter.class)) {
             throw new UnknownError("Fake UnknownError");
           }
         }
@@ -275,21 +261,16 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
   }
   
   @Nightly
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 01-Apr-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testCheckpoint() throws Exception {
     final Random r = new Random(random().nextLong());
     doTest(new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
-        boolean ok = false;
-        for (int i = 0; i < stack.length; i++) {
-          if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("checkpoint")) {
-            ok = true;
+        if (r.nextInt(4) == 0) {
+          if (callStackContains(IndexFileDeleter.class, "checkpoint")) {
+            throw new OutOfMemoryError("Fake OutOfMemoryError");
           }
-        }
-        if (ok && r.nextInt(4) == 0) {
-          throw new OutOfMemoryError("Fake OutOfMemoryError");
         }
       }
     });

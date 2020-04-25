@@ -41,35 +41,32 @@ import org.apache.lucene.search.BooleanClause.Occur;
   */
 public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
-  private static int maxClauseCount = 1024;
-
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. This typically happens if
-   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery 
-   * is expanded to many terms during search. 
+   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery
+   * is expanded to many terms during search.
+   * @deprecated use {@link IndexSearcher.TooManyClauses}
    */
-  public static class TooManyClauses extends RuntimeException {
-    public TooManyClauses() {
-      super("maxClauseCount is set to " + maxClauseCount);
-    }
-  }
+  @Deprecated // Remove in Lucene 10
+  public static class TooManyClauses extends IndexSearcher.TooManyClauses { }
 
   /** Return the maximum number of clauses permitted, 1024 by default.
    * Attempts to add more than the permitted number of clauses cause {@link
    * TooManyClauses} to be thrown.
-   * @see #setMaxClauseCount(int)
+   * @see IndexSearcher#setMaxClauseCount(int)
+   * @deprecated use {@link IndexSearcher#getMaxClauseCount()}
    */
-  public static int getMaxClauseCount() { return maxClauseCount; }
+  @Deprecated // Remove in Lucene 10
+  public static int getMaxClauseCount() { return IndexSearcher.getMaxClauseCount(); }
 
-  /** 
+  /**
    * Set the maximum number of clauses permitted per BooleanQuery.
    * Default value is 1024.
+   * @deprecated use {@link IndexSearcher#setMaxClauseCount(int)}
    */
+  @Deprecated // Remove in Lucene 10
   public static void setMaxClauseCount(int maxClauseCount) {
-    if (maxClauseCount < 1) {
-      throw new IllegalArgumentException("maxClauseCount must be >= 1");
-    }
-    BooleanQuery.maxClauseCount = maxClauseCount;
+    IndexSearcher.setMaxClauseCount(maxClauseCount);
   }
 
   /** A builder for boolean queries. */
@@ -107,11 +104,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * Add a new clause to this {@link Builder}. Note that the order in which
      * clauses are added does not have any impact on matching documents or query
      * performance.
-     * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(BooleanClause clause) {
-      if (clauses.size() >= maxClauseCount) {
-        throw new TooManyClauses();
+      // We do the final deep check for max clauses count limit during
+      //<code>IndexSearcher.rewrite</code> but do this check to short
+      // circuit in case a single query holds more than numClauses
+      if (clauses.size() >= IndexSearcher.maxClauseCount) {
+        throw new IndexSearcher.TooManyClauses();
       }
       clauses.add(clause);
       return this;
@@ -121,7 +121,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * Add a new clause to this {@link Builder}. Note that the order in which
      * clauses are added does not have any impact on matching documents or query
      * performance.
-     * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(Query query, Occur occur) {
       return add(new BooleanClause(query, occur));
@@ -173,6 +173,15 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return clauseSets.get(occur);
   }
 
+  /**
+   * Whether this query is a pure disjunction, ie. it only has SHOULD clauses
+   * and it is enough for a single clause to match for this boolean query to match.
+   */
+  boolean isPureDisjunction() {
+    return clauses.size() == getClauses(Occur.SHOULD).size()
+        && minimumNumberShouldMatch <= 1;
+  }
+
   /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
    * make it possible to do:
    * <pre class="prettyprint">for (BooleanClause clause : booleanQuery) {}</pre>
@@ -183,18 +192,33 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
-    if (clauseSets.get(Occur.MUST).size() == 0) {
+    boolean keepShould = getMinimumNumberShouldMatch() > 0
+        || (clauseSets.get(Occur.MUST).size() + clauseSets.get(Occur.FILTER).size() == 0);
+
+    if (clauseSets.get(Occur.MUST).size() == 0 && keepShould) {
       return this;
     }
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
+
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
-      if (clause.getOccur() == Occur.MUST) {
-        newQuery.add(clause.getQuery(), Occur.FILTER);
-      } else {
-        newQuery.add(clause);
+      switch (clause.getOccur()) {
+        case MUST: {
+          newQuery.add(clause.getQuery(), Occur.FILTER);
+          break;
+        }
+        case SHOULD: {
+          if (keepShould) {
+            newQuery.add(clause);
+          }
+          break;
+        }
+        default: {
+          newQuery.add(clause);
+        }
       }
     }
+
     return newQuery.build();
   }
 
@@ -245,9 +269,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         Query query = clause.getQuery();
         Query rewritten = query.rewrite(reader);
         if (rewritten != query) {
+          // rewrite clause
           actuallyRewritten = true;
+          builder.add(rewritten, clause.getOccur());
+        } else {
+          // leave as-is
+          builder.add(clause);
         }
-        builder.add(rewritten, clause.getOccur());
       }
       if (actuallyRewritten) {
         return builder.build();
@@ -448,7 +476,52 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
+    // Flatten nested disjunctions, this is important for block-max WAND to perform well
+    if (minimumNumberShouldMatch <= 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+      boolean actuallyRewritten = false;
+      for (BooleanClause clause : clauses) {
+        if (clause.getOccur() == Occur.SHOULD && clause.getQuery() instanceof BooleanQuery) {
+          BooleanQuery innerQuery = (BooleanQuery) clause.getQuery();
+          if (innerQuery.isPureDisjunction()) {
+            actuallyRewritten = true;
+            for (BooleanClause innerClause : innerQuery.clauses()) {
+              builder.add(innerClause);
+            }
+          } else {
+            builder.add(clause);
+          }
+        } else {
+          builder.add(clause);
+        }
+      }
+      if (actuallyRewritten) {
+        return builder.build();
+      }
+    }
+
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor sub = visitor.getSubVisitor(Occur.MUST, this);
+    for (BooleanClause.Occur occur : clauseSets.keySet()) {
+      if (clauseSets.get(occur).size() > 0) {
+        if (occur == Occur.MUST) {
+          for (Query q : clauseSets.get(occur)) {
+            q.visit(sub);
+          }
+        }
+        else {
+          QueryVisitor v = sub.getSubVisitor(occur, this);
+          for (Query q : clauseSets.get(occur)) {
+            q.visit(v);
+          }
+        }
+      }
+    }
   }
 
   /** Prints a user-readable version of this query. */

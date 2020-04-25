@@ -84,8 +84,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   // give plenty of time for replicas to recover when running in slow Jenkins test envs
   protected static final int maxWaitSecsToSeeAllActive = 90;
 
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
-
   @BeforeClass
   public static void setupSysProps() {
     System.setProperty("socketTimeout", "10000");
@@ -99,11 +97,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     super();
     sliceCount = 2;
     fixShardCount(3);
-  }
-
-  @Override
-  protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
 
   /**
@@ -134,14 +127,14 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     testDoRecoveryOnRestart();
 
     // test a 1x2 collection
     testRf2();
 
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // now do similar for a 1x3 collection while taking 2 replicas on-and-off
     if (TEST_NIGHTLY) {
@@ -149,12 +142,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       testRf3();
     }
 
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // have the leader lose its Zk session temporarily
     testLeaderZkSessionLoss();
 
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     log.info("HttpPartitionTest succeeded ... shutting down now!");
   }
@@ -489,8 +482,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.addAll(activeReplicas.values());
     return replicas;
-  }  
+  }
 
+  /**
+   * Assert docs exists in {@code notLeaders} replicas, docs must also exist in the shard1 leader as well.
+   * This method uses RTG for validation therefore it must work for asserting both TLOG and NRT replicas.
+   */
   protected void assertDocsExistInAllReplicas(List<Replica> notLeaders,
       String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {

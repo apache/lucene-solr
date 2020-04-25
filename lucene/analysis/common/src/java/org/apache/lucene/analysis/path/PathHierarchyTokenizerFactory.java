@@ -68,8 +68,13 @@ import org.apache.lucene.util.AttributeFactory;
  * </pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PathHierarchyTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "pathHierarchy";
+
   private final char delimiter;
   private final char replacement;
   private final boolean reverse;
@@ -87,7 +92,12 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     }
   }
   
-  @Override
+  /** Default ctor for compatibility with SPI */
+  public PathHierarchyTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
+@Override
   public Tokenizer create(AttributeFactory factory) {
     if (reverse) {
       return new ReversePathHierarchyTokenizer(factory, delimiter, replacement, skip);

@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,6 +54,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrPaths;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -60,6 +67,7 @@ import org.junit.Test;
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
+  private static final String FILESTREAM_COLLECTION = "filestream_collection";
   private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
@@ -85,6 +93,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
+
+    // Create a collection for use by the filestream() expression, and place some files there for it to read.
+    CollectionAdminRequest.createCollection(FILESTREAM_COLLECTION, "conf", 1, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(FILESTREAM_COLLECTION, 1, 1);
+    final String dataDir = findUserFilesDataDir();
+    populateFileStreamData(dataDir);
   }
 
   @Before
@@ -412,51 +426,56 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testParameterSubstitution() throws Exception {
+    String oldVal = System.getProperty("StreamingExpressionMacros", "false");
+    System.setProperty("StreamingExpressionMacros", "true");
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+          .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+          .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+          .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+          .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+      String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+      List<Tuple> tuples;
+      TupleStream stream;
 
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    List<Tuple> tuples;
-    TupleStream stream;
+      // Basic test
+      ModifiableSolrParams sParams = new ModifiableSolrParams();
+      sParams.set("expr", "merge("
+          + "${q1},"
+          + "${q2},"
+          + "on=${mySort})");
+      sParams.set(CommonParams.QT, "/stream");
+      sParams.set("q1", "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("mySort", "a_f asc");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic test
-    ModifiableSolrParams sParams = new ModifiableSolrParams();
-    sParams.set("expr", "merge("
-        + "${q1},"
-        + "${q2},"
-        + "on=${mySort})");
-    sParams.set(CommonParams.QT, "/stream");
-    sParams.set("q1", "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("mySort", "a_f asc");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 0, 1, 3, 4);
 
-    assertEquals(4, tuples.size());
-    assertOrder(tuples, 0,1,3,4);
+      // Basic test desc
+      sParams.set("mySort", "a_f desc");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic test desc
-    sParams.set("mySort", "a_f desc");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 4, 3, 1, 0);
 
-    assertEquals(4, tuples.size());
-    assertOrder(tuples, 4, 3, 1, 0);
+      // Basic w/ multi comp
+      sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("mySort", "\"a_f asc, a_s asc\"");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic w/ multi comp
-    sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("mySort", "\"a_f asc, a_s asc\"");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
-
-    assertEquals(5, tuples.size());
-    assertOrder(tuples, 0, 2, 1, 3, 4);
+      assertEquals(5, tuples.size());
+      assertOrder(tuples, 0, 2, 1, 3, 4);
+    } finally {
+      System.setProperty("StreamingExpressionMacros", oldVal);
+    }
   }
 
 
@@ -547,7 +566,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
-        .withFunctionName("random", RandomStream.class);
+        .withFunctionName("random", RandomFacadeStream.class);
 
 
     StreamContext context = new StreamContext();
@@ -566,6 +585,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
       assert (tuples2.size() == 1000);
+
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
@@ -596,6 +616,44 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       List<Tuple> tuples3 = getTuples(stream);
       assert (tuples3.size() == 1);
 
+      //Exercise the DeepRandomStream with higher rows
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples10 = getTuples(stream);
+      assert (tuples10.size() == 1000);
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples11 = getTuples(stream);
+      assert (tuples11.size() == 1000);
+
+      different = false;
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          different = true;
+          break;
+        }
+      }
+
+      assertTrue(different);
+
+      Collections.sort(tuples10, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      Collections.sort(tuples11, new FieldComparator("id", ComparatorOrder.ASCENDING));
+
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          assert(tuple1.getLong("id").equals(tuple2.get("a_i")));
+        }
+      }
+
+
 
       //Exercise the /stream handler
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
@@ -604,6 +662,25 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assert (tuples4.size() == 1);
+      //Assert no x-axis
+      assertNull(tuples4.get(0).get("x"));
+
+
+      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
+      jetty = cluster.getJettySolrRunner(0);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      tuples4 = getTuples(solrStream);
+      assert(tuples4.size() == 500);
+      Map fields = tuples4.get(0).fields;
+      assert(fields.containsKey("id"));
+      assert(fields.containsKey("a_f"));
+      assert(fields.containsKey("a_i"));
+      assert(fields.containsKey("a_s"));
+      //Assert the x-axis:
+      for(int i=0; i<tuples4.size(); i++) {
+        assertEquals(tuples4.get(i).getLong("x").longValue(), i);
+      }
 
     } finally {
       cache.close();
@@ -662,14 +739,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
-
-
-
-
-
-
-
-
   @Test
   public void testStatsStream() throws Exception {
 
@@ -693,8 +762,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     .withFunctionName("min", MinMetric.class)
     .withFunctionName("max", MaxMetric.class)
     .withFunctionName("avg", MeanMetric.class)
-    .withFunctionName("count", CountMetric.class);     
-  
+    .withFunctionName("count", CountMetric.class);
+
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
@@ -724,6 +793,41 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
       Double count = tuple.getDouble("count(*)");
+
+      assertTrue(sumi.longValue() == 70);
+      assertTrue(sumf.doubleValue() == 55.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 7.0D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 10);
+
+      //Test without query
+
+      expr = "stats(" + COLLECTIONORALIAS + ", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
+      expression = StreamExpressionParser.parse(expr);
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 1);
+
+      //Test Long and Double Sums
+
+      tuple = tuples.get(0);
+
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
 
       assertTrue(sumi.longValue() == 70);
       assertTrue(sumf.doubleValue() == 55.0D);
@@ -833,6 +937,178 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFacet2DStream() throws Exception {
+    new UpdateRequest()
+        .add(id, "0",  "diseases_s",  "stroke", "symptoms_s", "confusion", "cases_i", "10")
+        .add(id, "1",  "diseases_s",  "cancer", "symptoms_s", "indigestion","cases_i", "5" )
+        .add(id, "2",  "diseases_s",  "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .add(id, "3",  "diseases_s",  "stroke", "symptoms_s", "confusion", "cases_i", "10")
+        .add(id, "4",  "diseases_s",  "bronchus", "symptoms_s", "nausea", "cases_i", "25")
+        .add(id, "5",  "diseases_s",  "bronchus", "symptoms_s", "cough", "cases_i", "10")
+        .add(id, "6",  "diseases_s",  "bronchus", "symptoms_s", "cough", "cases_i", "10")
+        .add(id, "7",  "diseases_s",  "heart attack", "symptoms_s", "indigestion", "cases_i", "5")
+        .add(id, "8",  "diseases_s",  "diabetes", "symptoms_s", "urination", "cases_i", "10")
+        .add(id, "9",  "diseases_s",  "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .add(id, "10", "diseases_s", "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", count(*))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    Tuple tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("count(*)").longValue(), 3);
+
+    Tuple tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "cough");
+    assertEquals(tuple2.getLong("count(*)").longValue(), 2);
+
+    Tuple tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("count(*)").longValue(), 2);
+
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getString("count(*)"), "3");
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "cough");
+    assertEquals(tuple2.getString("count(*)"), "2");
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getString("count(*)"), "2");
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", sum(cases_i))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("sum(cases_i)").longValue(), 60L);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "nausea");
+    assertEquals(tuple2.getLong("sum(cases_i)").longValue(), 25L);
+
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("sum(cases_i)").longValue(), 20L);
+
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", avg(cases_i))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("avg(cases_i)").longValue(), 20);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "nausea");
+    assertEquals(tuple2.getLong("avg(cases_i)").longValue(), 25);
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("avg(cases_i)").longValue(), 10);
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"2,2\")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 4);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("count(*)").longValue(), 3);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "diabetes");
+    assertEquals(tuple2.getString("symptoms_s"), "urination");
+    assertEquals(tuple2.getLong("count(*)").longValue(), 1);
+
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "bronchus");
+    assertEquals(tuple3.getString("symptoms_s"), "cough");
+    assertEquals(tuple3.getLong("count(*)").longValue(), 2);
+
+    Tuple tuple4 = tuples.get(3);
+    assertEquals(tuple4.getString("diseases_s"), "bronchus");
+    assertEquals(tuple4.getString("symptoms_s"), "nausea");
+    assertEquals(tuple4.getLong("count(*)").longValue(), 1);
+  }
+
+
+  @Test
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
@@ -847,11 +1123,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    
+
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
@@ -860,7 +1136,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("count", CountMetric.class);
-    
+
     // Basic test
     clause = "facet("
               +   "collection1, "
@@ -876,7 +1152,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               +   "avg(a_i), avg(a_f), "
               +   "count(*)"
               + ")";
-    
+
     stream = factory.constructStream(clause);
     tuples = getTuples(stream);
 
@@ -1526,7 +1802,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
@@ -1535,7 +1811,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("count", CountMetric.class);
-    
+
     // Basic test
     clause = "facet("
               +   "collection1, "
@@ -1545,7 +1821,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               +   "bucketSizeLimit=100, "
               +   "sum(a_i), count(*)"
               + ")";
-    
+
     stream = factory.constructStream(clause);
     tuples = getTuples(stream);
 
@@ -2349,7 +2625,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     updateRequest.add(id, "hello1", "test_t", "l b c d c");
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
+    String expr = "search("+COLLECTIONORALIAS+", q=\"`c d c`\", fl=\"id,test_t\", sort=\"id desc\")";
 
     //Add a Stream and an Evaluator to the Tuple.
     String cat = "tuple(results="+expr+", sum=add(1,1))";
@@ -2373,6 +2649,32 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(0).getLong("sum").equals(2L));
 
   }
+
+  @Test
+  public void testSearchBacktick() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c");
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"`c d c e`\", fl=\"id,test_t\", sort=\"id desc\")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    assertTrue(tuple.get("id").equals("hello"));
+    assertTrue(tuple.get("test_t").equals("l b c d c e"));
+  }
+
 
 
   private Map<String,Double> getIdToLabel(TupleStream stream, String outField) throws IOException {
@@ -2551,7 +2853,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(tuples.get(3).get("term_s").equals("f"));
 
       // update
-      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, " + featuresExpression + ")");
+      expression = StreamExpressionParser.parse("update(destinationCollection, " + featuresExpression + ")");
       stream = new UpdateStream(expression, factory);
       stream.setStreamContext(streamContext);
       getTuples(stream);
@@ -2795,8 +3097,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
-    String longQuery = "\"id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + ")\"";
-        
+    // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored) BooleanQuery
+    // so we don't trip too many boolean clauses
+    String longQuery = "\"filter(id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + "))\"";
+
     try {
       assertSuccess("significantTerms("+COLLECTIONORALIAS+", q="+longQuery+", field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")", streamContext);
       String expr = "timeseries("+COLLECTIONORALIAS+", q="+longQuery+", start=\"2013-01-01T01:00:00.000Z\", " +
@@ -2821,7 +3125,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
                     +   "count(*)"
                     + ")";
       assertSuccess(expr, streamContext);
-      expr = "stats(" + COLLECTIONORALIAS + ", q="+longQuery+", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))"; 
+      expr = "stats(" + COLLECTIONORALIAS + ", q="+longQuery+", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
       assertSuccess(expr, streamContext);
       expr = "search(" + COLLECTIONORALIAS + ", q="+longQuery+", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")";
       assertSuccess(expr, streamContext);
@@ -2829,6 +3133,149 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertSuccess(expr, streamContext);
     } finally {
       cache.close();
+    }
+  }
+
+  @Test
+  public void testCatStreamSingleFile() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+  }
+
+  @Test
+  public void testCatStreamEmptyFile() throws Exception {
+    final String catStream = "cat(\"topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(0, tuples.size());
+  }
+
+  @Test
+  public void testCatStreamMultipleFilesOneEmpty() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt,topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+  }
+
+  @Test
+  public void testCatStreamMaxLines() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt\", maxLines=2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(2, tuples.size());
+
+    for (int i = 0; i < 2; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+  }
+
+  @Test
+  public void testCatStreamDirectoryCrawl() throws Exception {
+    final String catStream = "cat(\"directory1\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(8, tuples.size());
+
+    final String expectedSecondLevel1Path = "directory1" + File.separator + "secondLevel1.txt";
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("secondLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals(expectedSecondLevel1Path, t.get("file"));
+    }
+
+    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
+    for (int i = 4; i < 8; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("secondLevel2.txt line " + String.valueOf(i - 3), t.get("line"));
+      assertEquals(expectedSecondLevel2Path, t.get("file"));
+    }
+  }
+
+  @Test
+  public void testCatStreamMultipleExplicitFiles() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt,directory1" + File.separator + "secondLevel2.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(8, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+
+    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
+    for (int i = 4; i < 8; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("secondLevel2.txt line " + String.valueOf(i - 3), t.get("line"));
+      assertEquals(expectedSecondLevel2Path, t.get("file"));
     }
   }
 
@@ -2841,6 +3288,63 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     TupleStream solrStream = new SolrStream(url, paramsLoc);
     solrStream.setStreamContext(streamContext);
     getTuples(solrStream);
+  }
+
+
+  private static String findUserFilesDataDir() {
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
+      for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
+        if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
+          return Paths.get(jetty.getSolrHome(), SolrPaths.USER_FILES_DIRECTORY).toAbsolutePath().toString();
+        }
+      }
+    }
+
+    throw new IllegalStateException("Unable to determine data-dir for: "+ FILESTREAM_COLLECTION);
+  }
+
+  /**
+   * Creates a tree of files underneath a provided data-directory.
+   *
+   * The filetree created looks like:
+   *
+   * dataDir
+   *   |- topLevel1.txt
+   *   |- topLevel2.txt
+   *   |- topLevel-empty.txt
+   *   |- directory1
+   *        |- secondLevel1.txt
+   *        |- secondLevel2.txt
+   *
+   * Each file contains 4 lines.  Each line looks like: "<filename> line <linenumber>"
+   */
+  private static void populateFileStreamData(String dataDir) throws Exception {
+    final File baseDataDir = new File(dataDir);
+    if (! baseDataDir.exists()) baseDataDir.mkdir();
+    final File directory1 = new File(Paths.get(dataDir, "directory1").toString());
+    directory1.mkdir();
+
+    final File topLevel1 = new File(Paths.get(dataDir, "topLevel1.txt").toString());
+    final File topLevel2 = new File(Paths.get(dataDir, "topLevel2.txt").toString());
+    final File topLevelEmpty = new File(Paths.get(dataDir, "topLevel-empty.txt").toString());
+    final File secondLevel1 = new File(Paths.get(dataDir, "directory1", "secondLevel1.txt").toString());
+    final File secondLevel2 = new File(Paths.get(dataDir, "directory1", "secondLevel2.txt").toString());
+    populateFileWithData(topLevel1);
+    populateFileWithData(topLevel2);
+    topLevelEmpty.createNewFile();
+    populateFileWithData(secondLevel1);
+    populateFileWithData(secondLevel2);
+  }
+
+  private static void populateFileWithData(File dataFile) throws Exception {
+    dataFile.createNewFile();
+    try (final BufferedWriter writer = Files.newBufferedWriter(Paths.get(dataFile.toURI()), StandardCharsets.UTF_8)) {
+      for (int i = 1; i <=4; i++) {
+        writer.write(dataFile.getName() + " line " + String.valueOf(i));
+        writer.newLine();
+      }
+    }
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
@@ -2880,10 +3384,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     return true;
   }
-  
+
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String)tuple.get(fieldName);
-    
+
     if( (null == expected && null != actual) ||
         (null != expected && null == actual) ||
         (null != expected && !expected.equals(actual))){
@@ -2901,7 +3405,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     return true;
   }
-  
+
   protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());

@@ -31,9 +31,8 @@ import org.apache.lucene.analysis.TokenStream;
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenFilterFactory> loader =
-      new AnalysisSPILoader<>(TokenFilterFactory.class,
-          new String[] { "TokenFilterFactory", "FilterFactory" });
-  
+      new AnalysisSPILoader<>(TokenFilterFactory.class);
+
   /** looks up a tokenfilter by name from context classpath */
   public static TokenFilterFactory forName(String name, Map<String,String> args) {
     return loader.newInstance(name, args);
@@ -48,7 +47,16 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
   public static Set<String> availableTokenFilters() {
     return loader.availableServices();
   }
-  
+
+  /** looks up a SPI name for the specified token filter factory */
+  public static String findSPIName(Class<? extends TokenFilterFactory> serviceClass) {
+    try {
+      return AnalysisSPILoader.lookupSPIName(serviceClass);
+    } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all
@@ -64,6 +72,11 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
   
+  /** Default ctor for compatibility with SPI */
+  protected TokenFilterFactory() {
+    super();
+  }
+
   /**
    * Initialize this factory via a set of key-value pairs.
    */

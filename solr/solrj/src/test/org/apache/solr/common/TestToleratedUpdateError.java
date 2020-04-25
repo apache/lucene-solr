@@ -18,15 +18,15 @@ package org.apache.solr.common;
 
 import java.util.EnumSet;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /** Basic testing of the serialization/encapsulation code in ToleratedUpdateError */
-public class TestToleratedUpdateError extends LuceneTestCase {
+public class TestToleratedUpdateError extends SolrTestCase {
   
   private final static CmdType[] ALL_TYPES = EnumSet.allOf(CmdType.class).toArray(new CmdType[0]);
   
@@ -53,30 +53,18 @@ public class TestToleratedUpdateError extends LuceneTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testParseMapErrorChecking() {
-    SimpleOrderedMap<String> bogus = new SimpleOrderedMap<String>();
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("map should not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError") );
-    }
+    SimpleOrderedMap<String> bogus = new SimpleOrderedMap<>();
+    SolrException e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
 
     bogus.add("id", "some id");
     bogus.add("message", "some message");
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("map should still not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError") );
-    }
+    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
     
     bogus.add("type", "not a real type");
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("invalid type should not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Invalid type")); 
-    }
+    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Invalid type"));
   }
   
   public void testParseMap() {

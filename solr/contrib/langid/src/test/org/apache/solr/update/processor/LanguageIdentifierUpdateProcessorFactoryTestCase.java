@@ -18,15 +18,16 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.SolrRequestParsers;
 
 public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 

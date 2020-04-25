@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -557,7 +558,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         @Override
         public void setMergeInfo(SegmentCommitInfo info) {
           // Record that this merged segment is current as of this schemaGen:
-          info.info.getDiagnostics().put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
+          Map<String, String> copy = new HashMap<>(info.info.getDiagnostics());
+          copy.put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
+          info.info.setDiagnostics(copy);
           super.setMergeInfo(info);
         }
 
@@ -949,7 +952,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1034,7 +1037,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1212,7 +1215,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 200);
     int maxID = 0;
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;

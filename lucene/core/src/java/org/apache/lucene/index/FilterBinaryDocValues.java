@@ -18,6 +18,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
 
@@ -31,6 +32,7 @@ public abstract class FilterBinaryDocValues extends BinaryDocValues {
   
   /** Sole constructor */
   protected FilterBinaryDocValues(BinaryDocValues in) {
+    Objects.requireNonNull(in);
     this.in = in;
   }
 

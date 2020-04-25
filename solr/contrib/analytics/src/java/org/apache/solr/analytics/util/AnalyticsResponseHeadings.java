@@ -27,7 +27,7 @@ public class AnalyticsResponseHeadings {
   public static final String FACET_VALUE = "value";
   public static final String PIVOT_NAME = "pivot";
   public static final String PIVOT_CHILDREN = "children";
-  
+
   // Old Olap-style
   public static final String COMPLETED_OLD_HEADER = "stats";
   public static final String FIELD_FACETS = "fieldFacets";

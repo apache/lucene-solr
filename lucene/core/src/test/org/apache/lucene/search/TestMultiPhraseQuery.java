@@ -33,8 +33,8 @@ import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
@@ -337,7 +337,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
 
   public void testZeroPosIncr() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     final Token[] tokens = new Token[3];
     tokens[0] = new Token();
     tokens[0].append("a");

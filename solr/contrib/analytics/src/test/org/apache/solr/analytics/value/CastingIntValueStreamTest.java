@@ -28,10 +28,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void longStreamCastingTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     assertTrue(val instanceof LongValueStream);
     LongValueStream casted = (LongValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamLongs( value -> {
@@ -51,10 +51,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void floatStreamCastingTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     assertTrue(val instanceof FloatValueStream);
     FloatValueStream casted = (FloatValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamFloats( value -> {
@@ -74,10 +74,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void doubleStreamCastingTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     assertTrue(val instanceof DoubleValueStream);
     DoubleValueStream casted = (DoubleValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamDoubles( value -> {
@@ -97,10 +97,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamStrings( value -> {
@@ -120,10 +120,10 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void objectStreamCastingTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamObjects( value -> {
@@ -139,7 +139,7 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     AnalyticsValueStream val = new TestIntValueStream();

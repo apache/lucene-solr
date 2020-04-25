@@ -32,8 +32,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 5.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class DecimalDigitFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "decimalDigit";
   
   /** Creates a new DecimalDigitFilterFactory */
   public DecimalDigitFilterFactory(Map<String,String> args) {
@@ -41,6 +45,11 @@ public class DecimalDigitFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public DecimalDigitFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

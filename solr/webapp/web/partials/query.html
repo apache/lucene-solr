@@ -92,9 +92,21 @@ limitations under the License.
           indent off
         </label>
 
-        <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
-          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" title="Show timing and diagnostics." ng-true-value="'on'" ng-false-value="''">
-          debugQuery
+        </div>
+      </fieldset>
+
+      <fieldset class="debugQuery optional">
+        <legend>
+          <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
+            <input type="checkbox" ng-model="isDebugQuery" name="debugQuery" id="debugQuery" value="true">
+            debugQuery
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isDebugQuery">
+
+        <label for="debug_explain_structured" class="checkbox" title="Show Score explanations as nested structures.">
+          <input type="checkbox" ng-model="debugQuery['debug.explain.structured']" name="debug.explain.structured" id="debug_explain_structured" value="true">
+          debug.explain.structured
         </label>
 
         </div>
@@ -235,7 +247,7 @@ limitations under the License.
         </label>
 
         <label for="hl_highlightMultiTerm" class="checkbox">
-          <input type="checkbox" ng-model="hl['hightlightMultiTerm']" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
+          <input type="checkbox" ng-model="hl['highlightMultiTerm']" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
           hl.highlightMultiTerm
         </label>
 

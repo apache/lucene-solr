@@ -21,8 +21,10 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -34,14 +36,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -61,7 +65,7 @@ public final class CryptoKeys {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
 
     }
-    this.keys = m;
+    this.keys = ImmutableMap.copyOf(m);
   }
 
   /**
@@ -73,11 +77,29 @@ public final class CryptoKeys {
       boolean verified;
       try {
         verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
-        log.info("verified {} ", verified);
+        log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
         exception = e;
-        log.info("NOT verified  ");
+        log.debug("NOT verified  ");
+      }
+
+    }
+
+    return null;
+  }
+
+  public String verify(String sig, InputStream is) {
+    exception = null;
+    for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
+      boolean verified;
+      try {
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        log.debug("verified {} ", verified);
+        if (verified) return entry.getKey();
+      } catch (Exception e) {
+        exception = e;
+        log.debug("NOT verified  ");
       }
 
     }
@@ -86,14 +108,20 @@ public final class CryptoKeys {
   }
 
 
+
+
   /**
    * Create PublicKey from a .DER file
    */
   public static PublicKey getX509PublicKey(byte[] buf)
-      throws Exception {
+      throws InvalidKeySpecException {
     X509EncodedKeySpec spec = new X509EncodedKeySpec(buf);
-    KeyFactory kf = KeyFactory.getInstance("RSA");
-    return kf.generatePublic(spec);
+    try {
+      KeyFactory kf = KeyFactory.getInstance("RSA");
+      return kf.generatePublic(spec);
+    } catch (NoSuchAlgorithmException e) {
+      throw new AssertionError("JVM spec is required to support RSA", e);
+    }
   }
 
   /**
@@ -104,23 +132,42 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
-    int oldPos = data.position();
-    Signature signature = null;
+    data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
     try {
-      signature = Signature.getInstance("SHA1withRSA");
+      Signature signature = Signature.getInstance("SHA1withRSA");
       signature.initVerify(publicKey);
       signature.update(data);
-      boolean verify = signature.verify(sig);
-      return verify;
+      return signature.verify(sig);
+    } catch (NoSuchAlgorithmException e) {
+      //wil not happen
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
 
+  }
+
+  public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
+      throws InvalidKeyException, SignatureException, IOException {
+    try {
+      Signature signature = Signature.getInstance("SHA1withRSA");
+      signature.initVerify(publicKey);
+      byte[] buf = new byte[1024];
+      while (true) {
+        int sz = is.read(buf);
+        if (sz == -1) break;
+        signature.update(buf, 0, sz);
+      }
+      try {
+        return signature.verify(sig);
+      } catch (SignatureException e) {
+        return false;
+      }
     } catch (NoSuchAlgorithmException e) {
       //will not happen
-    } finally {
-      //Signature.update resets the position. set it back to old
-      data.position(oldPos);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    return false;
+
   }
+
 
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
                                         byte[] salt, byte[] data, int count) {
@@ -202,7 +249,7 @@ public final class CryptoKeys {
 
 
   public static String decodeAES(String base64CipherTxt, String pwd, final int keySizeBits) {
-    final Charset ASCII = Charset.forName("ASCII");
+    final Charset ASCII = StandardCharsets.US_ASCII;
     final int INDEX_KEY = 0;
     final int INDEX_IV = 1;
     final int ITERATIONS = 1;
@@ -268,7 +315,7 @@ public final class CryptoKeys {
   }
 
   public static byte[] decryptRSA(byte[] buffer, PublicKey pubKey) throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-    Cipher rsaCipher = null;
+    Cipher rsaCipher;
     try {
       rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
     } catch (Exception e) {
@@ -276,36 +323,59 @@ public final class CryptoKeys {
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
     return rsaCipher.doFinal(buffer, 0, buffer.length);
-
   }
 
   public static class RSAKeyPair {
     private final String pubKeyStr;
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
-    private final SecureRandom random = new SecureRandom();
 
     // If this ever comes back to haunt us see the discussion at
     // SOLR-9609 for background and code allowing this to go
     // into security.json. Also see SOLR-12103.
     private static final int DEFAULT_KEYPAIR_LENGTH = 2048;
 
+    /**
+     * Create an RSA key pair with newly generated keys.
+     */
     public RSAKeyPair() {
-      KeyPairGenerator keyGen = null;
+      KeyPairGenerator keyGen;
       try {
         keyGen = KeyPairGenerator.getInstance("RSA");
       } catch (NoSuchAlgorithmException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        throw new AssertionError("JVM spec is required to support RSA", e);
       }
       keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();
+      pubKeyStr = Base64.byteArrayToBase64(publicKey.getEncoded());
+    }
 
-      X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
-          publicKey.getEncoded());
+    /**
+     * Initialize an RSA key pair from previously saved keys. The formats listed below have been tested, other formats may
+     * also be acceptable but are not guaranteed to work.
+     * @param privateKeyResourceName path to private key file, encoded as a PKCS#8 in a PEM file
+     * @param publicKeyResourceName path to public key file, encoded as X509 in a DER file
+     * @throws IOException if an I/O error occurs reading either key file
+     * @throws InvalidKeySpecException if either key file is inappropriate for an RSA key
+     */
+    public RSAKeyPair(URL privateKeyResourceName, URL publicKeyResourceName) throws IOException, InvalidKeySpecException {
+      try (InputStream inPrivate = privateKeyResourceName.openStream()) {
+        String privateString = new String(inPrivate.readAllBytes(), StandardCharsets.UTF_8)
+            .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "");
 
-      pubKeyStr = Base64.byteArrayToBase64(x509EncodedKeySpec.getEncoded());
+        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(java.util.Base64.getMimeDecoder().decode(privateString));
+        KeyFactory rsaFactory = KeyFactory.getInstance("RSA");
+        privateKey = rsaFactory.generatePrivate(privateSpec);
+      } catch (NoSuchAlgorithmException e) {
+        throw new AssertionError("JVM spec is required to support RSA", e);
+      }
+
+      try (InputStream inPublic = publicKeyResourceName.openStream()) {
+        publicKey = getX509PublicKey(inPublic.readAllBytes());
+        pubKeyStr = Base64.byteArrayToBase64(publicKey.getEncoded());
+      }
     }
 
     public String getPublicKeyStr() {
@@ -318,6 +388,8 @@ public final class CryptoKeys {
 
     public byte[] encrypt(ByteBuffer buffer) {
       try {
+        // This is better than nothing, but still not very secure
+        // See: https://crypto.stackexchange.com/questions/20085/which-attacks-are-possible-against-raw-textbook-rsa
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
         return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
@@ -339,17 +411,4 @@ public final class CryptoKeys {
     }
 
   }
-
-  public static void main(String[] args) throws Exception {
-    RSAKeyPair keyPair = new RSAKeyPair();
-    System.out.println(keyPair.getPublicKeyStr());
-    PublicKey pk = deserializeX509PublicKey(keyPair.getPublicKeyStr());
-    byte[] payload = "Hello World!".getBytes(StandardCharsets.UTF_8);
-    byte[] encrypted = keyPair.encrypt(ByteBuffer.wrap(payload));
-    String cipherBase64 = Base64.byteArrayToBase64(encrypted);
-    System.out.println("encrypted: "+ cipherBase64);
-    System.out.println("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
-    System.out.println("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
-  }
-
 }

@@ -92,7 +92,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public int pointDataDimensionCount() {
+      public int pointDimensionCount() {
         return 0;
       }
 
@@ -372,12 +372,7 @@ public class TestIndexableField extends LuceneTestCase {
   public void testNotIndexedTermVectors() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    try {
-      w.addDocument(Collections.<IndexableField>singletonList(new CustomField()));
-      fail("didn't hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    expectThrows(IllegalArgumentException.class, () -> w.addDocument(Collections.singletonList(new CustomField())));
     w.close();
     dir.close();
   }

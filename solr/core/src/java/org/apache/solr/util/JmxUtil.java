@@ -23,6 +23,7 @@ import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.List;
 
 /**
@@ -31,12 +32,16 @@ import java.util.List;
 public final class JmxUtil {
 
   /**
-   * Retrieve the first MBeanServer found.
+   * Retrieve the first MBeanServer found and if not found return the platform mbean server
    *
    * @return the first MBeanServer found
    */
   public static MBeanServer findFirstMBeanServer() {
-    return findMBeanServerForAgentId(null);
+    MBeanServer mBeanServer = findMBeanServerForAgentId(null);
+    if (mBeanServer == null)  {
+      return ManagementFactory.getPlatformMBeanServer();
+    }
+    return mBeanServer;
   }
 
   /**

@@ -151,5 +151,24 @@
 
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
+  
+  <updateRequestProcessorChain name="tombstone-config">
+    <!-- process the external version constraint, ignoring any updates that
+         don't satisfy the constraint -->
+    <processor class="solr.DocBasedVersionConstraintsProcessorFactory">
+      <str name="versionField">my_version_l</str>
+      <str name="deleteVersionParam">del_version</str>
+      <lst name="tombstoneConfig">
+          <bool name="foo_b">true</bool>
+          <int name="foo_i">1</int>
+          <long name="foo_l">1</long>
+          <float name="foo_f">1.5</float>
+          <str name="foo_s">bar</str>
+          <str name="foo_ss">bar1</str>
+          <str name="foo_ss">bar2</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
 </config>

@@ -74,7 +74,6 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
    */
   static MatchesIterator fromTermsEnum(LeafReaderContext context, int doc, Query query, String field, BytesRefIterator terms) throws IOException {
     Objects.requireNonNull(field);
-    List<MatchesIterator> mis = new ArrayList<>();
     Terms t = context.reader().terms(field);
     if (t == null)
       return null;
@@ -84,15 +83,92 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
       if (te.seekExact(term)) {
         PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
         if (pe.advance(doc) == doc) {
-          mis.add(new TermMatchesIterator(query, pe));
-          reuse = null;
+          return new TermsEnumDisjunctionMatchesIterator(new TermMatchesIterator(query, pe), terms, te, doc, query);
         }
         else {
           reuse = pe;
         }
       }
     }
-    return fromSubIterators(mis);
+    return null;
+  }
+
+  // MatchesIterator over a set of terms that only loads the first matching term at construction,
+  // waiting until the iterator is actually used before it loads all other matching terms.
+  private static class TermsEnumDisjunctionMatchesIterator implements MatchesIterator {
+
+    private final MatchesIterator first;
+    private final BytesRefIterator terms;
+    private final TermsEnum te;
+    private final int doc;
+    private final Query query;
+
+    private MatchesIterator it = null;
+
+    TermsEnumDisjunctionMatchesIterator(MatchesIterator first, BytesRefIterator terms, TermsEnum te, int doc, Query query) {
+      this.first = first;
+      this.terms = terms;
+      this.te = te;
+      this.doc = doc;
+      this.query = query;
+    }
+
+    private void init() throws IOException {
+      List<MatchesIterator> mis = new ArrayList<>();
+      mis.add(first);
+      PostingsEnum reuse = null;
+      for (BytesRef term = terms.next(); term != null; term = terms.next()) {
+        if (te.seekExact(term)) {
+          PostingsEnum pe = te.postings(reuse, PostingsEnum.OFFSETS);
+          if (pe.advance(doc) == doc) {
+            mis.add(new TermMatchesIterator(query, pe));
+            reuse = null;
+          } else {
+            reuse = pe;
+          }
+        }
+      }
+      it = fromSubIterators(mis);
+    }
+
+    @Override
+    public boolean next() throws IOException {
+      if (it == null) {
+        init();
+      }
+      assert it != null;
+      return it.next();
+    }
+
+    @Override
+    public int startPosition() {
+      return it.startPosition();
+    }
+
+    @Override
+    public int endPosition() {
+      return it.endPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return it.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return it.endOffset();
+    }
+
+    @Override
+    public MatchesIterator getSubMatches() throws IOException {
+      return it.getSubMatches();
+    }
+
+    @Override
+    public Query getQuery() {
+      return it.getQuery();
+    }
   }
 
   static MatchesIterator fromSubIterators(List<MatchesIterator> mis) throws IOException {

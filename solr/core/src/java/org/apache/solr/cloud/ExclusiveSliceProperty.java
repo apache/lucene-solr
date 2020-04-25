@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -296,7 +296,7 @@ class ExclusiveSliceProperty {
     if (newSlice != null) {
       replica = newSlice.getReplica(replicaName);
     } else {
-      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy());
+      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy(), origSlice.collection);
       changedSlices.put(origSlice.getName(), newSlice);
       replica = newSlice.getReplica(replicaName);
     }

@@ -58,7 +58,10 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   @Override
   @After
   public void tearDown() throws Exception {
-    jetty.stop();
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
     super.tearDown();
   }
 
@@ -106,7 +109,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         Thread.sleep(500);
       }
     }
-    fail("Commit should have occured but it did not");
+    fail("Commit should have occurred but it did not");
   }
   
   private static class SolrInstance {

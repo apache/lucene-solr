@@ -81,7 +81,8 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
-          log.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
+          log.warn("Invalid stage name '{}' for '{}' in listener config, skipping it in: {}",
+              stageName, name, properties);
         }
       }
       listenerClass = (String)this.properties.get(AutoScalingParams.CLASS);

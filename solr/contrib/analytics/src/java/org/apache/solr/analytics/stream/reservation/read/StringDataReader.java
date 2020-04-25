@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 public class StringDataReader extends ReductionDataReader<Consumer<String>> {
-  
+
   public StringDataReader(DataInput inputStream, Consumer<String> applier) {
     super(inputStream, applier);
   }

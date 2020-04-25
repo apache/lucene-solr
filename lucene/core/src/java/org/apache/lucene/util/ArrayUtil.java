@@ -479,12 +479,23 @@ public final class ArrayUtil {
     timSort(a, 0, a.length);
   }
 
-  /** Reorganize {@code arr[from:to[} so that the element at offset k is at the
-   *  same position as if {@code arr[from:to[} was sorted, and all elements on
-   *  its left are less than or equal to it, and all elements on its right are
-   *  greater than or equal to it.
-   *  This runs in linear time on average and in {@code n log(n)} time in the
-   *  worst case.*/
+  /**
+   * Reorganize {@code arr[from:to[} so that the element at offset k is at the
+   * same position as if {@code arr[from:to]} was sorted, and all elements on
+   * its left are less than or equal to it, and all elements on its right are
+   * greater than or equal to it.
+   *
+   * This runs in linear time on average and in {@code n log(n)} time in the
+   * worst case.
+   *
+   * @param arr Array to be re-organized.
+   * @param from Starting index for re-organization. Elements before this index
+   *             will be left as is.
+   * @param to Ending index. Elements after this index will be left as is.
+   * @param k Index of element to sort from. Value must be less than 'to' and greater than or equal to 'from'.
+   * @param comparator Comparator to use for sorting
+   *
+   */
   public static <T> void select(T[] arr, int from, int to, int k, Comparator<? super T> comparator) {
     new IntroSelector() {
 

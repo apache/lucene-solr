@@ -181,10 +181,10 @@ public final class GeoEncodingUtils {
   /** Create a predicate that checks whether points are within a polygon.
    *  It works the same way as {@link #createDistancePredicate}.
    *  @lucene.internal */
-  public static PolygonPredicate createPolygonPredicate(Polygon[] polygons, Polygon2D tree) {
-    final Rectangle boundingBox = Rectangle.fromPolygon(polygons);
+  public static PolygonPredicate createComponentPredicate(Component2D tree) {
+    final Rectangle boundingBox = new Rectangle(tree.getMinY(), tree.getMaxY(), tree.getMinX(), tree.getMaxX());
     final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
-        box.minLat, box.maxLat, box.minLon, box.maxLon);
+        box.minLon, box.maxLon, box.minLat, box.maxLat);
     final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
 
     return new PolygonPredicate(
@@ -238,8 +238,9 @@ public final class GeoEncodingUtils {
         final int boxMaxLon = boxMinLon + (1 << lonShift) - 1;
 
         relations[i * maxLonDelta + j] = (byte) boxToRelation.apply(new Rectangle(
-            decodeLatitude(boxMinLat), decodeLatitude(boxMaxLat),
-            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon))).ordinal();
+                decodeLatitude(boxMinLat), decodeLatitude(boxMaxLat),
+            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon))
+            ).ordinal();
       }
     }
 
@@ -344,14 +345,14 @@ public final class GeoEncodingUtils {
   /** A predicate that checks whether a given point is within a polygon. */
   public static class PolygonPredicate extends Grid {
 
-    private final Polygon2D tree;
+    private final Component2D tree;
 
     private PolygonPredicate(
         int latShift, int lonShift,
         int latBase, int lonBase,
         int maxLatDelta, int maxLonDelta,
         byte[] relations,
-        Polygon2D tree) {
+        Component2D tree) {
       super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
       this.tree = tree;
     }
@@ -375,7 +376,7 @@ public final class GeoEncodingUtils {
 
       final int relation = relations[(lat2 - latBase) * maxLonDelta + (lon2 - lonBase)];
       if (relation == Relation.CELL_CROSSES_QUERY.ordinal()) {
-        return tree.contains(decodeLatitude(lat), decodeLongitude(lon));
+        return tree.contains(decodeLongitude(lon), decodeLatitude(lat));
       } else {
         return relation == Relation.CELL_INSIDE_QUERY.ordinal();
       }

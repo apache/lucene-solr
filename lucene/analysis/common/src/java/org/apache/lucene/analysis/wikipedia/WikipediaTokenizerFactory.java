@@ -33,8 +33,13 @@ import org.apache.lucene.util.AttributeFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "wikipedia";
+
   public static final String TOKEN_OUTPUT = "tokenOutput";
   public static final String UNTOKENIZED_TYPES = "untokenizedTypes";
 
@@ -53,6 +58,11 @@ public class WikipediaTokenizerFactory extends TokenizerFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public WikipediaTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

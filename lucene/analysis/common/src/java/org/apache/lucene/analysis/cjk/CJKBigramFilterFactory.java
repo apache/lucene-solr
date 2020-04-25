@@ -36,8 +36,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class CJKBigramFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "cjkBigram";
+
   final int flags;
   final boolean outputUnigrams;
 
@@ -64,6 +69,11 @@ public class CJKBigramFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public CJKBigramFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new CJKBigramFilter(input, flags, outputUnigrams);

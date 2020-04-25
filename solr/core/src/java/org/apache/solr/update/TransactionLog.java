@@ -102,6 +102,7 @@ public class TransactionLog implements Closeable {
   };
 
   public class LogCodec extends JavaBinCodec {
+
     public LogCodec(JavaBinCodec.ObjectResolver resolver) {
       super(resolver);
     }
@@ -128,7 +129,7 @@ public class TransactionLog implements Closeable {
     public CharSequence readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
-      // no need to synchronize globalStringList - it's only updated before the first record is written to the log
+        // no need to synchronize globalStringList - it's only updated before the first record is written to the log
         return globalStringList.get(idx - 1);
       } else {// idx == 0 means it has a string value
         // this shouldn't happen with this codec subclass.
@@ -136,6 +137,25 @@ public class TransactionLog implements Closeable {
       }
     }
 
+    @Override
+    protected Object readObject(DataInputInputStream dis) throws IOException {
+      if (UUID == tagByte) {
+        return new java.util.UUID(dis.readLong(), dis.readLong());
+      }
+      return super.readObject(dis);
+    }
+
+    @Override
+    public boolean writePrimitive(Object val) throws IOException {
+      if (val instanceof java.util.UUID) {
+        java.util.UUID uuid = (java.util.UUID) val;
+        daos.writeByte(UUID);
+        daos.writeLong(uuid.getMostSignificantBits());
+        daos.writeLong(uuid.getLeastSignificantBits());
+        return true;
+      }
+      return super.writePrimitive(val);
+    }
   }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {
@@ -146,7 +166,8 @@ public class TransactionLog implements Closeable {
     boolean success = false;
     try {
       if (debug) {
-        log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
+        log.debug("New TransactionLog file= {}, exists={}, size={} openExisting={}"
+            , tlogFile, tlogFile.exists(), tlogFile.length(), openExisting);
       }
 
       // Parse tlog id from the filename
@@ -173,7 +194,7 @@ public class TransactionLog implements Closeable {
         }
       } else {
         if (start > 0) {
-          log.warn("New transaction log already exists:" + tlogFile + " size=" + raf.length());
+          log.warn("New transaction log already exists:{} size={}", tlogFile, raf.length());
           return;
         }
        
@@ -560,7 +581,7 @@ public class TransactionLog implements Closeable {
   public void close() {
     try {
       if (debug) {
-        log.debug("Closing tlog" + this);
+        log.debug("Closing tlog {}", this);
       }
 
       synchronized (this) {
@@ -585,7 +606,7 @@ public class TransactionLog implements Closeable {
 
   public void forceClose() {
     if (refcount.get() > 0) {
-      log.error("Error: Forcing close of " + this);
+      log.error("Error: Forcing close of {}", this);
       refcount.set(0);
       close();
     }
@@ -648,7 +669,7 @@ public class TransactionLog implements Closeable {
 
       synchronized (TransactionLog.this) {
         if (trace) {
-          log.trace("Reading log record.  pos="+pos+" currentSize="+fos.size());
+          log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
         }
 
         if (pos >= fos.size()) {

@@ -34,7 +34,7 @@ import org.apache.solr.schema.TrieDateField;
  * An analytics wrapper for a single-valued {@link TrieDateField} or {@link DatePointField} with DocValues enabled.
  */
 public class DateField extends AnalyticsField implements CastingDateValue {
-  private NumericDocValues docValues; 
+  private NumericDocValues docValues;
   private long value;
   private boolean exists;
 
@@ -75,7 +75,7 @@ public class DateField extends AnalyticsField implements CastingDateValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamLongs(LongConsumer cons) {
     if (exists) {

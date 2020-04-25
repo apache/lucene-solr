@@ -103,17 +103,17 @@ import org.apache.solr.common.SolrException.ErrorCode;
  */
 public class LambdaFunction {
   private static final boolean defaultMultiExistsMethod = true;
-  
+
   /* *********************
-   * 
+   *
    *  Boolean Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued boolean expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (boolean) -> boolean}
    * @param param the expression to apply the lambda to
@@ -128,8 +128,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued boolean expression and returns a single-valued boolean expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param param the expression to be reduced per-document
@@ -149,7 +149,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (boolean,boolean) -> boolean}
    * @param param1 the first parameter in the lambda
@@ -171,7 +171,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createBooleanLambdaFunction(String, TwoBoolInBoolOutLambda, BooleanValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -186,7 +186,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -200,17 +200,17 @@ public class LambdaFunction {
       return new MultiBooleanValueInBooleanValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  Integer Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued integer expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (integer) -> integer}
    * @param param the expression to apply the lambda to
@@ -225,8 +225,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued integer expression and returns a single-valued integer expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (integer, integer) -> integer}
    * @param param the expression to be reduced per-document
@@ -246,7 +246,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (integer,integer) -> integer}
    * @param param1 the first parameter in the lambda
@@ -268,7 +268,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createIntLambdaFunction(String, TwoIntInIntOutLambda, IntValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -283,7 +283,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (integer, integer) -> integer}
    * @param params the expressions to reduce
@@ -297,17 +297,17 @@ public class LambdaFunction {
       return new MultiIntValueInIntValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  Long Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued long expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (long) -> long}
    * @param param the expression to apply the lambda to
@@ -322,8 +322,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued long expression and returns a single-valued long expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param param the expression to be reduced per-document
@@ -343,7 +343,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (long,long) -> long}
    * @param param1 the first parameter in the lambda
@@ -365,7 +365,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createLongLambdaFunction(String, TwoLongInLongOutLambda, LongValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -380,7 +380,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (long, long) -> long}
    * @param params the expressions to reduce
@@ -394,17 +394,17 @@ public class LambdaFunction {
       return new MultiLongValueInLongValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  Float Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued float expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (float) -> float}
    * @param param the expression to apply the lambda to
@@ -419,8 +419,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued float expression and returns a single-valued float expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (float, float) -> float}
    * @param param the expression to be reduced per-document
@@ -440,7 +440,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (float,float) -> float}
    * @param param1 the first parameter in the lambda
@@ -462,7 +462,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createFloatLambdaFunction(String, TwoFloatInFloatOutLambda, FloatValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -477,7 +477,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (float, float) -> float}
    * @param params the expressions to reduce
@@ -491,17 +491,17 @@ public class LambdaFunction {
       return new MultiFloatValueInFloatValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  Double Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued double expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (double) -> double}
    * @param param the expression to apply the lambda to
@@ -516,8 +516,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued double expression and returns a single-valued double expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (double, double) -> double}
    * @param param the expression to be reduced per-document
@@ -537,7 +537,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (double,double) -> double}
    * @param param1 the first parameter in the lambda
@@ -559,7 +559,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createDoubleLambdaFunction(String, TwoDoubleInDoubleOutLambda, DoubleValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -574,7 +574,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (double, double) -> double}
    * @param params the expressions to reduce
@@ -588,20 +588,20 @@ public class LambdaFunction {
       return new MultiDoubleValueInDoubleValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  Date Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued date expression and returns the same type of expression with
-   * the given lambda function applied to every value. 
-   * 
+   * the given lambda function applied to every value.
+   *
    * <p>
    * NOTE: The lambda must work on longs, not Date objects
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (long) -> long}
    * @param param the expression to apply the lambda to
@@ -616,11 +616,11 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued date expression and returns a single-valued date expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * <p>
    * NOTE: The lambda must work on longs, not Date objects
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (long, long) -> long}
    * @param param the expression to be reduced per-document
@@ -639,10 +639,10 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * 
+   *
    * <p>
    * NOTE: The lambda must work on longs, not Date objects
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (long,long) -> long}
    * @param param1 the first parameter in the lambda
@@ -664,7 +664,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createDateLambdaFunction(String, TwoLongInLongOutLambda, DateValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -679,10 +679,10 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * <p>
    * NOTE: The lambda must work on longs, not Date objects
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (long, long) -> long}
    * @param params the expressions to reduce
@@ -696,17 +696,17 @@ public class LambdaFunction {
       return new MultiDateValueInDateValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
   /* *********************
-   * 
+   *
    *  String Functions
-   * 
+   *
    * *********************/
-  
+
   /**
    * Creates a function that takes in either a single or multi valued string expression and returns the same type of expression with
    * the given lambda function applied to every value.
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (String) -> String}
    * @param param the expression to apply the lambda to
@@ -721,8 +721,8 @@ public class LambdaFunction {
   }
   /**
    * Creates a function that takes in a multi-valued string expression and returns a single-valued string expression.
-   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value. 
-   * 
+   * The given lambda is used to associatively (order not guaranteed) reduce all values for a document down to a single value.
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (String, String) -> String}
    * @param param the expression to be reduced per-document
@@ -742,7 +742,7 @@ public class LambdaFunction {
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
    * <p>
-   * 
+   *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (String,String) -> String}
    * @param param1 the first parameter in the lambda
@@ -764,7 +764,7 @@ public class LambdaFunction {
   /**
    * Forwards the creation of the function to {@link #createStringLambdaFunction(String, TwoStringInStringOutLambda, StringValue[], boolean)},
    * using {@value #defaultMultiExistsMethod} for the last argument ({@code allMustExist}).
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (boolean, boolean) -> boolean}
    * @param params the expressions to reduce
@@ -779,7 +779,7 @@ public class LambdaFunction {
    * <br>
    * For a document, every parameter's value must exist for the resulting value to exist if {@code allMustExist} is true.
    * If {@code allMustExist} is false, only one of the parameters' values must exist.
-   * 
+   *
    * @param name name for the function
    * @param lambda the associative function used to reduce the values: {@code (String, String) -> String}
    * @param params the expressions to reduce
@@ -793,7 +793,7 @@ public class LambdaFunction {
       return new MultiStringValueInStringValueOutRequireOneFunction(name,lambda,params);
     }
   }
-  
+
 
   /*
    * Single Parameter
@@ -876,7 +876,7 @@ public class LambdaFunction {
   public static interface DoubleInStringOutLambda { String apply(double  a); }
   @FunctionalInterface
   public static interface StringInStringOutLambda { String apply(String  a); }
-  
+
   /*
    * Two Parameters
    */
@@ -958,14 +958,14 @@ public class LambdaFunction {
   public static interface TwoDoubleInStringOutLambda { String apply(double  a, double  b); }
   @FunctionalInterface
   public static interface TwoStringInStringOutLambda { String apply(String  a, String  b); }
-} 
+}
 class BooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
   private final BooleanValue param;
   private final BoolInBoolOutLambda lambda;
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanValueInBooleanValueOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -986,7 +986,7 @@ class BooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1006,7 +1006,7 @@ class BooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamInBooleanStreamOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1019,7 +1019,7 @@ class BooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream
   public void streamBooleans(BooleanConsumer cons) {
     param.streamBooleans(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1039,7 +1039,7 @@ class BooleanStreamInBooleanValueOutFunction extends AbstractBooleanValue implem
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1069,7 +1069,7 @@ class BooleanStreamInBooleanValueOutFunction extends AbstractBooleanValue implem
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1090,7 +1090,7 @@ class TwoBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1099,7 +1099,7 @@ class TwoBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -1112,7 +1112,7 @@ class TwoBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1133,7 +1133,7 @@ class BooleanValueBooleanStreamInBooleanStreamOutFunction extends AbstractBoolea
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanValueBooleanStreamInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1171,7 +1171,7 @@ class BooleanStreamBooleanValueInBooleanStreamOutFunction extends AbstractBoolea
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamBooleanValueInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param1, BooleanValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1208,7 +1208,7 @@ abstract class MultiBooleanValueInBooleanValueOutFunction extends AbstractBoolea
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -1216,14 +1216,14 @@ abstract class MultiBooleanValueInBooleanValueOutFunction extends AbstractBoolea
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected boolean temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1238,11 +1238,11 @@ abstract class MultiBooleanValueInBooleanValueOutFunction extends AbstractBoolea
   }
 }
 class MultiBooleanValueInBooleanValueOutRequireAllFunction extends MultiBooleanValueInBooleanValueOutFunction {
-  
+
   public MultiBooleanValueInBooleanValueOutRequireAllFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public boolean getBoolean() {
     boolean value = params[0].getBoolean();
@@ -1255,11 +1255,11 @@ class MultiBooleanValueInBooleanValueOutRequireAllFunction extends MultiBooleanV
   }
 }
 class MultiBooleanValueInBooleanValueOutRequireOneFunction extends MultiBooleanValueInBooleanValueOutFunction {
-  
+
   public MultiBooleanValueInBooleanValueOutRequireOneFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public boolean getBoolean() {
     int i = -1;
@@ -1287,7 +1287,7 @@ class IntValueInIntValueOutFunction extends AbstractIntValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntValueInIntValueOutFunction(String name, IntInIntOutLambda lambda, IntValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -1308,7 +1308,7 @@ class IntValueInIntValueOutFunction extends AbstractIntValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1328,7 +1328,7 @@ class IntStreamInIntStreamOutFunction extends AbstractIntValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntStreamInIntStreamOutFunction(String name, IntInIntOutLambda lambda, IntValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1341,7 +1341,7 @@ class IntStreamInIntStreamOutFunction extends AbstractIntValueStream {
   public void streamInts(IntConsumer cons) {
     param.streamInts(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1361,7 +1361,7 @@ class IntStreamInIntValueOutFunction extends AbstractIntValue implements IntCons
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntStreamInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1391,7 +1391,7 @@ class IntStreamInIntValueOutFunction extends AbstractIntValue implements IntCons
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1412,7 +1412,7 @@ class TwoIntValueInIntValueOutFunction extends AbstractIntValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1421,7 +1421,7 @@ class TwoIntValueInIntValueOutFunction extends AbstractIntValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -1434,7 +1434,7 @@ class TwoIntValueInIntValueOutFunction extends AbstractIntValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1455,7 +1455,7 @@ class IntValueIntStreamInIntStreamOutFunction extends AbstractIntValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntValueIntStreamInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1493,7 +1493,7 @@ class IntStreamIntValueInIntStreamOutFunction extends AbstractIntValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntStreamIntValueInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param1, IntValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1530,7 +1530,7 @@ abstract class MultiIntValueInIntValueOutFunction extends AbstractIntValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -1538,14 +1538,14 @@ abstract class MultiIntValueInIntValueOutFunction extends AbstractIntValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected int temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1560,11 +1560,11 @@ abstract class MultiIntValueInIntValueOutFunction extends AbstractIntValue {
   }
 }
 class MultiIntValueInIntValueOutRequireAllFunction extends MultiIntValueInIntValueOutFunction {
-  
+
   public MultiIntValueInIntValueOutRequireAllFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public int getInt() {
     int value = params[0].getInt();
@@ -1577,11 +1577,11 @@ class MultiIntValueInIntValueOutRequireAllFunction extends MultiIntValueInIntVal
   }
 }
 class MultiIntValueInIntValueOutRequireOneFunction extends MultiIntValueInIntValueOutFunction {
-  
+
   public MultiIntValueInIntValueOutRequireOneFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public int getInt() {
     int i = -1;
@@ -1609,7 +1609,7 @@ class LongValueInLongValueOutFunction extends AbstractLongValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongValueInLongValueOutFunction(String name, LongInLongOutLambda lambda, LongValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -1630,7 +1630,7 @@ class LongValueInLongValueOutFunction extends AbstractLongValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1650,7 +1650,7 @@ class LongStreamInLongStreamOutFunction extends AbstractLongValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamInLongStreamOutFunction(String name, LongInLongOutLambda lambda, LongValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1663,7 +1663,7 @@ class LongStreamInLongStreamOutFunction extends AbstractLongValueStream {
   public void streamLongs(LongConsumer cons) {
     param.streamLongs(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1683,7 +1683,7 @@ class LongStreamInLongValueOutFunction extends AbstractLongValue implements Long
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1713,7 +1713,7 @@ class LongStreamInLongValueOutFunction extends AbstractLongValue implements Long
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1734,7 +1734,7 @@ class TwoLongValueInLongValueOutFunction extends AbstractLongValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1743,7 +1743,7 @@ class TwoLongValueInLongValueOutFunction extends AbstractLongValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -1756,7 +1756,7 @@ class TwoLongValueInLongValueOutFunction extends AbstractLongValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1777,7 +1777,7 @@ class LongValueLongStreamInLongStreamOutFunction extends AbstractLongValueStream
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongValueLongStreamInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1815,7 +1815,7 @@ class LongStreamLongValueInLongStreamOutFunction extends AbstractLongValueStream
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamLongValueInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param1, LongValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -1852,7 +1852,7 @@ abstract class MultiLongValueInLongValueOutFunction extends AbstractLongValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -1860,14 +1860,14 @@ abstract class MultiLongValueInLongValueOutFunction extends AbstractLongValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected long temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1882,11 +1882,11 @@ abstract class MultiLongValueInLongValueOutFunction extends AbstractLongValue {
   }
 }
 class MultiLongValueInLongValueOutRequireAllFunction extends MultiLongValueInLongValueOutFunction {
-  
+
   public MultiLongValueInLongValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public long getLong() {
     long value = params[0].getLong();
@@ -1899,11 +1899,11 @@ class MultiLongValueInLongValueOutRequireAllFunction extends MultiLongValueInLon
   }
 }
 class MultiLongValueInLongValueOutRequireOneFunction extends MultiLongValueInLongValueOutFunction {
-  
+
   public MultiLongValueInLongValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public long getLong() {
     int i = -1;
@@ -1931,7 +1931,7 @@ class FloatValueInFloatValueOutFunction extends AbstractFloatValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatValueInFloatValueOutFunction(String name, FloatInFloatOutLambda lambda, FloatValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -1952,7 +1952,7 @@ class FloatValueInFloatValueOutFunction extends AbstractFloatValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -1972,7 +1972,7 @@ class FloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatStreamInFloatStreamOutFunction(String name, FloatInFloatOutLambda lambda, FloatValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -1985,7 +1985,7 @@ class FloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
   public void streamFloats(FloatConsumer cons) {
     param.streamFloats(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2005,7 +2005,7 @@ class FloatStreamInFloatValueOutFunction extends AbstractFloatValue implements F
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatStreamInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2035,7 +2035,7 @@ class FloatStreamInFloatValueOutFunction extends AbstractFloatValue implements F
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2056,7 +2056,7 @@ class TwoFloatValueInFloatValueOutFunction extends AbstractFloatValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2065,7 +2065,7 @@ class TwoFloatValueInFloatValueOutFunction extends AbstractFloatValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -2078,7 +2078,7 @@ class TwoFloatValueInFloatValueOutFunction extends AbstractFloatValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2099,7 +2099,7 @@ class FloatValueFloatStreamInFloatStreamOutFunction extends AbstractFloatValueSt
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatValueFloatStreamInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2137,7 +2137,7 @@ class FloatStreamFloatValueInFloatStreamOutFunction extends AbstractFloatValueSt
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatStreamFloatValueInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param1, FloatValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2174,7 +2174,7 @@ abstract class MultiFloatValueInFloatValueOutFunction extends AbstractFloatValue
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -2182,14 +2182,14 @@ abstract class MultiFloatValueInFloatValueOutFunction extends AbstractFloatValue
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected float temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2204,11 +2204,11 @@ abstract class MultiFloatValueInFloatValueOutFunction extends AbstractFloatValue
   }
 }
 class MultiFloatValueInFloatValueOutRequireAllFunction extends MultiFloatValueInFloatValueOutFunction {
-  
+
   public MultiFloatValueInFloatValueOutRequireAllFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public float getFloat() {
     float value = params[0].getFloat();
@@ -2221,11 +2221,11 @@ class MultiFloatValueInFloatValueOutRequireAllFunction extends MultiFloatValueIn
   }
 }
 class MultiFloatValueInFloatValueOutRequireOneFunction extends MultiFloatValueInFloatValueOutFunction {
-  
+
   public MultiFloatValueInFloatValueOutRequireOneFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public float getFloat() {
     int i = -1;
@@ -2253,7 +2253,7 @@ class DoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleValueInDoubleValueOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -2274,7 +2274,7 @@ class DoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2294,7 +2294,7 @@ class DoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleStreamInDoubleStreamOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2307,7 +2307,7 @@ class DoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
   public void streamDoubles(DoubleConsumer cons) {
     param.streamDoubles(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2327,7 +2327,7 @@ class DoubleStreamInDoubleValueOutFunction extends AbstractDoubleValue implement
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleStreamInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2357,7 +2357,7 @@ class DoubleStreamInDoubleValueOutFunction extends AbstractDoubleValue implement
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2378,7 +2378,7 @@ class TwoDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2387,7 +2387,7 @@ class TwoDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -2400,7 +2400,7 @@ class TwoDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2421,7 +2421,7 @@ class DoubleValueDoubleStreamInDoubleStreamOutFunction extends AbstractDoubleVal
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleValueDoubleStreamInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2459,7 +2459,7 @@ class DoubleStreamDoubleValueInDoubleStreamOutFunction extends AbstractDoubleVal
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleStreamDoubleValueInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param1, DoubleValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2496,7 +2496,7 @@ abstract class MultiDoubleValueInDoubleValueOutFunction extends AbstractDoubleVa
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -2504,14 +2504,14 @@ abstract class MultiDoubleValueInDoubleValueOutFunction extends AbstractDoubleVa
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected double temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2526,11 +2526,11 @@ abstract class MultiDoubleValueInDoubleValueOutFunction extends AbstractDoubleVa
   }
 }
 class MultiDoubleValueInDoubleValueOutRequireAllFunction extends MultiDoubleValueInDoubleValueOutFunction {
-  
+
   public MultiDoubleValueInDoubleValueOutRequireAllFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public double getDouble() {
     double value = params[0].getDouble();
@@ -2543,11 +2543,11 @@ class MultiDoubleValueInDoubleValueOutRequireAllFunction extends MultiDoubleValu
   }
 }
 class MultiDoubleValueInDoubleValueOutRequireOneFunction extends MultiDoubleValueInDoubleValueOutFunction {
-  
+
   public MultiDoubleValueInDoubleValueOutRequireOneFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public double getDouble() {
     int i = -1;
@@ -2575,7 +2575,7 @@ class DateValueInDateValueOutFunction extends AbstractDateValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateValueInDateValueOutFunction(String name, LongInLongOutLambda lambda, DateValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -2596,7 +2596,7 @@ class DateValueInDateValueOutFunction extends AbstractDateValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2616,7 +2616,7 @@ class DateStreamInDateStreamOutFunction extends AbstractDateValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateStreamInDateStreamOutFunction(String name, LongInLongOutLambda lambda, DateValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2629,7 +2629,7 @@ class DateStreamInDateStreamOutFunction extends AbstractDateValueStream {
   public void streamLongs(LongConsumer cons) {
     param.streamLongs(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2649,7 +2649,7 @@ class DateStreamInDateValueOutFunction extends AbstractDateValue implements Long
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateStreamInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2679,7 +2679,7 @@ class DateStreamInDateValueOutFunction extends AbstractDateValue implements Long
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2700,7 +2700,7 @@ class TwoDateValueInDateValueOutFunction extends AbstractDateValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2709,7 +2709,7 @@ class TwoDateValueInDateValueOutFunction extends AbstractDateValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -2722,7 +2722,7 @@ class TwoDateValueInDateValueOutFunction extends AbstractDateValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2743,7 +2743,7 @@ class DateValueDateStreamInDateStreamOutFunction extends AbstractDateValueStream
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateValueDateStreamInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2781,7 +2781,7 @@ class DateStreamDateValueInDateStreamOutFunction extends AbstractDateValueStream
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateStreamDateValueInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param1, DateValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -2818,7 +2818,7 @@ abstract class MultiDateValueInDateValueOutFunction extends AbstractDateValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -2826,14 +2826,14 @@ abstract class MultiDateValueInDateValueOutFunction extends AbstractDateValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected long temp;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2848,11 +2848,11 @@ abstract class MultiDateValueInDateValueOutFunction extends AbstractDateValue {
   }
 }
 class MultiDateValueInDateValueOutRequireAllFunction extends MultiDateValueInDateValueOutFunction {
-  
+
   public MultiDateValueInDateValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public long getLong() {
     long value = params[0].getLong();
@@ -2865,11 +2865,11 @@ class MultiDateValueInDateValueOutRequireAllFunction extends MultiDateValueInDat
   }
 }
 class MultiDateValueInDateValueOutRequireOneFunction extends MultiDateValueInDateValueOutFunction {
-  
+
   public MultiDateValueInDateValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public long getLong() {
     int i = -1;
@@ -2897,7 +2897,7 @@ class StringValueInStringValueOutFunction extends AbstractStringValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringValueInStringValueOutFunction(String name, StringInStringOutLambda lambda, StringValue param) {
     this.name = name;
     this.lambda = lambda;
@@ -2918,7 +2918,7 @@ class StringValueInStringValueOutFunction extends AbstractStringValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2938,7 +2938,7 @@ class StringStreamInStringStreamOutFunction extends AbstractStringValueStream {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamInStringStreamOutFunction(String name, StringInStringOutLambda lambda, StringValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -2951,7 +2951,7 @@ class StringStreamInStringStreamOutFunction extends AbstractStringValueStream {
   public void streamStrings(Consumer<String> cons) {
     param.streamStrings(value -> cons.accept(lambda.apply(value)));
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -2971,7 +2971,7 @@ class StringStreamInStringValueOutFunction extends AbstractStringValue implement
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param) {
     this.name = name;
     this.lambda = lambda;
@@ -3001,7 +3001,7 @@ class StringStreamInStringValueOutFunction extends AbstractStringValue implement
       value = lambda.apply(value, paramValue);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -3022,7 +3022,7 @@ class TwoStringValueInStringValueOutFunction extends AbstractStringValue {
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public TwoStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -3031,7 +3031,7 @@ class TwoStringValueInStringValueOutFunction extends AbstractStringValue {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
   }
-  
+
   private boolean exists = false;
 
   @Override
@@ -3044,7 +3044,7 @@ class TwoStringValueInStringValueOutFunction extends AbstractStringValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -3065,7 +3065,7 @@ class StringValueStringStreamInStringStreamOutFunction extends AbstractStringVal
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringValueStringStreamInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValueStream param2) {
     this.name = name;
     this.lambda = lambda;
@@ -3103,7 +3103,7 @@ class StringStreamStringValueInStringStreamOutFunction extends AbstractStringVal
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamStringValueInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param1, StringValue param2) {
     this.name = name;
     this.lambda = lambda;
@@ -3140,7 +3140,7 @@ abstract class MultiStringValueInStringValueOutFunction extends AbstractStringVa
   private final String name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public MultiStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
     this.name = name;
     this.lambda = lambda;
@@ -3148,14 +3148,14 @@ abstract class MultiStringValueInStringValueOutFunction extends AbstractStringVa
     this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
   }
-  
+
   protected boolean exists = false;
   protected String temp = null;
   @Override
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -3170,11 +3170,11 @@ abstract class MultiStringValueInStringValueOutFunction extends AbstractStringVa
   }
 }
 class MultiStringValueInStringValueOutRequireAllFunction extends MultiStringValueInStringValueOutFunction {
-  
+
   public MultiStringValueInStringValueOutRequireAllFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public String getString() {
     String value = params[0].getString();
@@ -3192,11 +3192,11 @@ class MultiStringValueInStringValueOutRequireAllFunction extends MultiStringValu
   }
 }
 class MultiStringValueInStringValueOutRequireOneFunction extends MultiStringValueInStringValueOutFunction {
-  
+
   public MultiStringValueInStringValueOutRequireOneFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
     super(name, lambda, params);
   }
-  
+
   @Override
   public String getString() {
     int i = -1;

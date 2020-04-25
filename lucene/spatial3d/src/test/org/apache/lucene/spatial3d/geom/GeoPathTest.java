@@ -18,12 +18,9 @@ package org.apache.lucene.spatial3d.geom;
 
 import org.junit.Test;
 
-import static org.apache.lucene.util.SloppyMath.toRadians;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class GeoPathTest {
+public class GeoPathTest extends LuceneTestCase {
 
   @Test
   public void testPathDistance() {
@@ -207,7 +204,7 @@ public class GeoPathTest {
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     assertTrue(area.isWithin(point));
     // No longer true due to fixed GeoStandardPath waypoints.
-    //assertTrue(c.isWithin(point));
+    //assertTrue(zScaling.isWithin(point));
     
     c = new GeoStandardPath(PlanetModel.WGS84, 0.6894050545377601);
     c.addPoint(-0.0788176065762948, 0.9431251741731624);
@@ -265,9 +262,9 @@ public class GeoPathTest {
   public void testCoLinear() {
     // p1: (12,-90), p2: (11, -55), (129, -90)
     GeoStandardPath p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
-    p.addPoint(toRadians(-90), toRadians(12));//south pole
-    p.addPoint(toRadians(-55), toRadians(11));
-    p.addPoint(toRadians(-90), toRadians(129));//south pole again
+    p.addPoint(Math.toRadians(-90), Math.toRadians(12));//south pole
+    p.addPoint(Math.toRadians(-55), Math.toRadians(11));
+    p.addPoint(Math.toRadians(-90), Math.toRadians(129));//south pole again
     p.done();//at least test this doesn't bomb like it used too -- LUCENE-6520
   }
 
@@ -314,11 +311,11 @@ public class GeoPathTest {
     final double[] pathLons = new double[] {13.3634,13.3704,13.3307,13.3076,13.2806,13.2484,13.2406,13.241,13.1926};
 
     // Set up a point in the right way
-    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, toRadians(lat), toRadians(lon));
+    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat), Math.toRadians(lon));
     // Create the path, but use a tiny width (e.g. zero)
     final GeoPoint[] pathPoints = new GeoPoint[pathLats.length];
     for (int i = 0; i < pathPoints.length; i++) {
-      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, toRadians(pathLats[i]), toRadians(pathLons[i]));
+      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(pathLats[i]), Math.toRadians(pathLons[i]));
     }
     // Construct a path with no width
     final GeoPath thisPath = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 0.0, pathPoints);
@@ -348,10 +345,10 @@ public class GeoPathTest {
     final double[] pathLats = new double[] {52.5355,52.54,52.5626,52.5665,52.6007,52.6135,52.6303,52.6651,52.7074};
     final double[] pathLons = new double[] {13.3634,13.3704,13.3307,13.3076,13.2806,13.2484,13.2406,13.241,13.1926};
 
-    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, toRadians(lat), toRadians(lon));
+    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat), Math.toRadians(lon));
     final GeoPoint[] pathPoints = new GeoPoint[pathLats.length];
     for (int i = 0; i < pathPoints.length; i++) {
-      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, toRadians(pathLats[i]), toRadians(pathLons[i]));
+      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(pathLats[i]), Math.toRadians(pathLons[i]));
     }
     
     // Construct a path with no width
@@ -400,6 +397,39 @@ public class GeoPathTest {
     path = GeoPathFactory.makeGeoPath(planetModel, 0, new GeoPoint[] {point4, point5, point6});
     path = GeoPathFactory.makeGeoPath(planetModel, 0.5, new GeoPoint[] {point4, point5, point6});
 
+  }
+
+  @Test
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
+  public void testLUCENE8696() {
+    GeoPoint[] points = new GeoPoint[4];
+    points[0] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.017453291479645996);
+    points[1] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.8952476719156919);
+    points[2] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.6491968536639036);
+    points[3] = new GeoPoint(PlanetModel.WGS84, -0.7718789008737459, 0.9236607495528212);
+    GeoPath path  = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, 1.3439035240356338, points);
+    GeoPoint check = new GeoPoint(0.02071783020158524, 0.9523290535474472, 0.30699177256064203);
+    // Map to surface point, to remove that source of confusion
+    GeoPoint surfaceCheck = PlanetModel.WGS84.createSurfacePoint(check);
+    /*
+   [junit4]   1>   cycle: cell=12502 parentCellID=12500 x: -1658490249 TO 2147483041, y: 2042111310 TO 2147483041, z: -2140282940 TO 2140277970, splits: 1 queue.size()=1
+   [junit4]   1>     minx=-0.7731590077686981 maxx=1.0011188539924791 miny=0.9519964046486451 maxy=1.0011188539924791 minz=-0.9977622932859775 maxz=0.9977599768255027
+   [junit4]   1>     GeoArea.CONTAINS: now addAll
+    */
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      -0.7731590077686981, 1.0011188539924791,
+      0.9519964046486451, 1.0011188539924791,
+      -0.9977622932859775, 0.9977599768255027);
+    // Verify that the point is within it
+    assertTrue(solid.isWithin(surfaceCheck));
+    // Check the (surface) relationship
+    int relationship = solid.getRelationship(path);
+    if (relationship == GeoArea.CONTAINS) {
+      // If relationship is CONTAINS then any point in the solid must also be within the path
+      // If point is within solid, it must be within shape
+      assertTrue(path.isWithin(surfaceCheck));
+    }
+    
   }
 
 }

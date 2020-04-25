@@ -33,7 +33,8 @@ import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /** tests for classicanalyzer */
@@ -269,7 +270,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
    * Make sure we skip wicked long terms.
   */
   public void testWickedLongTerm() throws IOException {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     Analyzer analyzer = new ClassicAnalyzer();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
 
@@ -333,14 +334,14 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new ClassicAnalyzer();
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Analyzer analyzer = new ClassicAnalyzer();
-    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), analyzer, 10 * RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
 }

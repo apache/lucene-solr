@@ -21,7 +21,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -206,7 +206,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
       result.add(EMPTY);
     } else {
       for (ByteBuffer bb : blocks) {
-        bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
+        bb = bb.asReadOnlyBuffer().flip();
         result.add(bb);
       }
     }
@@ -231,7 +231,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
       result.add(EMPTY);
     } else {
       for (ByteBuffer bb : blocks) {
-        bb = (ByteBuffer) bb.duplicate().flip(); // cast for jdk8 (covariant in jdk9+) 
+        bb = bb.duplicate().flip();
         result.add(bb);
       }
     }
@@ -279,11 +279,12 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * Copy the current content of this object into another {@link DataOutput}.
    */
   public void copyTo(DataOutput output) throws IOException {
-    for (ByteBuffer bb : toBufferList()) {
+    for (ByteBuffer bb : blocks) {
       if (bb.hasArray()) {
-        output.writeBytes(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
+        output.writeBytes(bb.array(), bb.arrayOffset(), bb.position());
       } else {
-        output.copyBytes(new ByteBuffersDataInput(Arrays.asList(bb)), bb.remaining());
+        bb = bb.asReadOnlyBuffer().flip();
+        output.copyBytes(new ByteBuffersDataInput(Collections.singletonList(bb)), bb.remaining());
       }
     }
   }
@@ -412,7 +413,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * lead to hard-to-debug issues, use with great care.
    */
   public void reset() {
-    blocks.stream().forEach(blockReuse);
+    if (blockReuse != NO_REUSE) {
+      blocks.forEach(blockReuse);
+    }
     blocks.clear();
     currentBlock = EMPTY;
   }

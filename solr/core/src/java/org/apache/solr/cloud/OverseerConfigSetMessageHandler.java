@@ -16,18 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -41,12 +29,23 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
+import static org.apache.solr.common.util.Utils.toJSONString;
 import static org.apache.solr.handler.admin.ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME;
 
 /**
@@ -90,7 +89,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  public SolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     NamedList results = new NamedList();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
@@ -269,7 +268,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
   private byte[] getPropertyData(Map<String, Object> newProps) {
     if (newProps != null) {
-      String propertyDataStr = JSONUtil.toJSON(newProps);
+      String propertyDataStr = toJSONString(newProps);
       if (propertyDataStr == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid property specification");
       }
@@ -358,7 +357,14 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
 
     for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
-      if (configSetName.equals(zkStateReader.readConfigName(entry.getKey())))
+      String configName = null;
+      try {
+        configName = zkStateReader.readConfigName(entry.getKey());
+      } catch (KeeperException ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
+      }
+      if (configSetName.equals(configName))
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
     }

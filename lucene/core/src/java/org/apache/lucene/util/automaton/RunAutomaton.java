@@ -31,16 +31,22 @@ package org.apache.lucene.util.automaton;
 
 import java.util.Arrays;
 
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
  * Finite-state automaton with fast run operation.  The initial state is always 0.
  * 
  * @lucene.experimental
  */
-public abstract class RunAutomaton {
+public abstract class RunAutomaton implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(RunAutomaton.class);
+
   final Automaton automaton;
   final int alphabetSize;
   final int size;
-  final boolean[] accept;
+  final FixedBitSet accept;
   final int[] transitions; // delta(state,c) = transitions[state*points.length +
                      // getCharClass(c)]
   final int[] points; // char interval start points
@@ -70,13 +76,18 @@ public abstract class RunAutomaton {
     this.automaton = a;
     points = a.getStartPoints();
     size = Math.max(1,a.getNumStates());
-    accept = new boolean[size];
+    accept = new FixedBitSet(size);
     transitions = new int[size * points.length];
     Arrays.fill(transitions, -1);
+    Transition transition = new Transition();
     for (int n=0;n<size;n++) {
-      accept[n] = a.isAccept(n);
+      if (a.isAccept(n)) {
+        accept.set(n);
+      }
+      transition.source = n;
+      transition.transitionUpto = -1;
       for (int c = 0; c < points.length; c++) {
-        int dest = a.step(n, points[c]);
+        int dest = a.next(transition, points[c]);
         assert dest == -1 || dest < size;
         transitions[n * points.length + c] = dest;
       }
@@ -103,8 +114,8 @@ public abstract class RunAutomaton {
     StringBuilder b = new StringBuilder();
     b.append("initial state: 0\n");
     for (int i = 0; i < size; i++) {
-      b.append("state " + i);
-      if (accept[i]) b.append(" [accept]:\n");
+      b.append("state ").append(i);
+      if (accept.get(i)) b.append(" [accept]:\n");
       else b.append(" [reject]:\n");
       for (int j = 0; j < points.length; j++) {
         int k = transitions[i * points.length + j];
@@ -137,7 +148,7 @@ public abstract class RunAutomaton {
    * Returns acceptance status for given state.
    */
   public final boolean isAccept(int state) {
-    return accept[state];
+    return accept.get(state);
   }
   
   /**
@@ -200,8 +211,18 @@ public abstract class RunAutomaton {
     if (alphabetSize != other.alphabetSize) return false;
     if (size != other.size) return false;
     if (!Arrays.equals(points, other.points)) return false;
-    if (!Arrays.equals(accept, other.accept)) return false;
+    if (!accept.equals(other.accept)) return false;
     if (!Arrays.equals(transitions, other.transitions)) return false;
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        accept.ramBytesUsed() +
+        RamUsageEstimator.sizeOfObject(automaton) +
+        RamUsageEstimator.sizeOfObject(classmap) +
+        RamUsageEstimator.sizeOfObject(points) +
+        RamUsageEstimator.sizeOfObject(transitions);
   }
 }

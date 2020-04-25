@@ -23,9 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 
-
-public class DirectSolrConnectionTest extends SolrTestCaseJ4
-{
+public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   
   @BeforeClass
@@ -52,13 +50,8 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4
     
     assertTrue( got.indexOf( "<str name=\"echoParams\">explicit</str>" ) > 5 );
     
-    
     // It should throw an exception for unknown handler
-    try {
-      direct.request( "/path to nonexistang thingy!!", null );
-      fail( "should throw an exception" );
-    }
-    catch( Exception ex ){}
+    expectThrows(Exception.class, () -> direct.request( "/path to nonexistang thingy!!", null ));
   }
   
 

@@ -26,14 +26,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
@@ -59,6 +58,7 @@ import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -438,16 +438,9 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      Query q = query;
-      if (luceneFilter != null) {
-        q = new BooleanQuery.Builder()
-            .add(q, Occur.MUST)
-            .add(luceneFilter, Occur.FILTER)
-            .build();
-      }
-      searcher.search(q, collector);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; {}", query, x.getMessage());
       qr.setPartialResults(true);
     }
   }
@@ -813,9 +806,17 @@ public class Grouping {
         if (group.groupValue != null) {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
-          String readableValue = fieldType.indexedToReadable(group.groupValue.utf8ToString());
-          IndexableField field = schemaField.createField(readableValue);
-          nl.add("groupValue", fieldType.toObject(field));
+          // use createFields so that fields having doc values are also supported
+          // TODO: currently, this path is called only for string field, so
+          // should we just use fieldType.toObject(schemaField, group.groupValue) here?
+          List<IndexableField> fields = schemaField.createFields(group.groupValue.utf8ToString());
+          if (CollectionUtils.isNotEmpty(fields)) {
+            nl.add("groupValue", fieldType.toObject(fields.get(0)));
+          } else {
+            throw new SolrException(ErrorCode.INVALID_STATE,
+                "Couldn't create schema field for grouping, group value: " + group.groupValue.utf8ToString()
+                + ", field: " + schemaField);
+          }
         } else {
           nl.add("groupValue", null);
         }
@@ -877,12 +878,13 @@ public class Grouping {
 
     @Override
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
-      TopDocs topDocs = topDocsCollector.topDocs();
+      TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
+        // use top-level query to populate the scores
+        TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {
         maxScore = Float.NaN;

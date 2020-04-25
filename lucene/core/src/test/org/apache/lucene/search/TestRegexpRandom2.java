@@ -40,9 +40,9 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
@@ -139,6 +139,11 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object obj) {
       if (super.equals(obj) == false) {
         return false;
@@ -150,7 +155,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-    int num = atLeast(1000);
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       if (VERBOSE) {

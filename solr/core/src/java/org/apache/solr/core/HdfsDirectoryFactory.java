@@ -53,8 +53,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
@@ -141,6 +141,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
     tmpFsCache.invalidateAll();
     tmpFsCache.cleanUp();
+    try {
+      SolrMetricProducer.super.close();
+      MetricsHolder.metrics.close();
+      LocalityHolder.reporter.close();
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
   }
 
   private final static class LocalityHolder {
@@ -155,13 +162,14 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
       this.hdfsDataDir = null;
     } else {
-      log.info(HDFS_HOME + "=" + this.hdfsDataDir);
+      log.info("{}={}", HDFS_HOME, this.hdfsDataDir);
     }
     cacheMerges = getConfig(CACHE_MERGES, false);
     cacheReadOnce = getConfig(CACHE_READONCE, false);
     boolean kerberosEnabled = getConfig(KERBEROS_ENABLED, false);
-    log.info("Solr Kerberos Authentication "
-        + (kerberosEnabled ? "enabled" : "disabled"));
+    if (log.isInfoEnabled()) {
+      log.info("Solr Kerberos Authentication {}", (kerberosEnabled ? "enabled" : "disabled"));
+    }
     if (kerberosEnabled) {
       initKerberos();
     }
@@ -171,7 +179,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       rawLockType = DirectoryFactory.LOCK_TYPE_HDFS;
-      log.warn("No lockType configured, assuming '"+rawLockType+"'.");
+      log.warn("No lockType configured, assuming '{}'.", rawLockType);
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
@@ -192,7 +200,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     assert params != null : "init must be called before create";
     log.info("creating directory factory for path {}", path);
-    Configuration conf = getConf();
+    Configuration conf = getConf(new Path(path));
     
     if (metrics == null) {
       metrics = MetricsHolder.metrics;
@@ -218,10 +226,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       log.info(
           "Number of slabs of block cache [{}] with direct memory allocation set to [{}]",
           bankCount, directAllocation);
-      log.info(
-          "Block cache target memory usage, slab size of [{}] will allocate [{}] slabs and use ~[{}] bytes",
-          new Object[] {slabSize, bankCount,
-              ((long) bankCount * (long) slabSize)});
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Block cache target memory usage, slab size of [{}] will allocate [{}] slabs and use ~[{}] bytes",
+            new Object[]{slabSize, bankCount,
+                ((long) bankCount * (long) slabSize)});
+      }
       
       int bsBufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", blockSize);
       int bsBufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 0); // this is actually total size
@@ -333,16 +343,21 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
   
-  public Configuration getConf() {
+  public Configuration getConf(Path path) {
     Configuration conf = new Configuration();
     confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    if(path != null) {
+      String fsScheme = path.toUri().getScheme();
+      if(fsScheme != null) {
+        conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+      }
+    }
     return conf;
   }
   
-  protected synchronized void removeDirectory(final CacheValue cacheValue)
-      throws IOException {
+  protected synchronized void removeDirectory(final CacheValue cacheValue) {
     FileSystem fileSystem = getCachedFileSystem(cacheValue.path);
 
     try {
@@ -359,7 +374,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   @Override
   public boolean isAbsolute(String path) {
-    return path.startsWith("hdfs:/");
+    if(path.startsWith("/")) {
+      return false;
+    }
+    return new Path(path).isAbsolute();
   }
   
   @Override
@@ -397,7 +415,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       path = cd.getName();
     }
     
-    return normalize(SolrResourceLoader.normalizeDir(ZkController
+    return normalize(SolrPaths.normalizeDir(ZkController
         .trimLeadingAndTrailingSlashes(hdfsDataDir)
         + "/"
         + path
@@ -435,10 +453,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
 
-  private FileSystem getCachedFileSystem(String path) {
+  private FileSystem getCachedFileSystem(String pathStr) {
     try {
       // no need to close the fs, the cache will do it
-      return tmpFsCache.get(path, () -> FileSystem.get(new Path(path).toUri(), getConf()));
+      Path path = new Path(pathStr);
+      return tmpFsCache.get(pathStr, () -> FileSystem.get(path.toUri(), getConf(path)));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -462,7 +481,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     synchronized (HdfsDirectoryFactory.class) {
       if (kerberosInit == null) {
         kerberosInit = Boolean.TRUE;
-        final Configuration conf = getConf();
+        final Configuration conf = getConf(null);
         final String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
         final String kerberos = "kerberos";
         if (authVal != null && !authVal.equals(kerberos)) {
@@ -471,7 +490,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
               + " connect to HDFS via kerberos");
         }
         // let's avoid modifying the supplied configuration, just to be conservative
-        final Configuration ugiConf = new Configuration(getConf());
+        final Configuration ugiConf = new Configuration(getConf(null));
         ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, kerberos);
         UserGroupInformation.setConfiguration(ugiConf);
         log.info(
@@ -488,9 +507,14 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    MetricsHolder.metrics.initializeMetrics(manager, registry, tag, scope);
-    LocalityHolder.reporter.initializeMetrics(manager, registry, tag, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    MetricsHolder.metrics.initializeMetrics(parentContext, scope);
+    LocalityHolder.reporter.initializeMetrics(parentContext, scope);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return null;
   }
 
   @Override
@@ -514,7 +538,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     try {
       pathExists = fileSystem.exists(dataDirPath);
     } catch (IOException e) {
-      log.error("Error checking if hdfs path "+dataDir+" exists", e);
+      log.error("Error checking if hdfs path exists {}", dataDir, e);
     }
     if (!pathExists) {
       log.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDir);
@@ -531,7 +555,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           boolean accept = false;
           String pathName = path.getName();
           try {
-            accept = fs.isDirectory(path) && !path.equals(currentIndexDirPath) &&
+            accept = fs.getFileStatus(path).isDirectory() && !path.equals(currentIndexDirPath) &&
                 (pathName.equals("index") || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
           } catch (IOException e) {
             log.error("Error checking if path {} is an old index directory, caused by: {}", path, e);
@@ -585,8 +609,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   // perform an atomic rename if possible
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
     String hdfsDirPath = getPath(dir);
-    FileContext fileContext = FileContext.getFileContext(getConf());
-    fileContext.rename(new Path(hdfsDirPath + "/" + fileName), new Path(hdfsDirPath + "/" + toName), Options.Rename.OVERWRITE);
+    FileContext fileContext = FileContext.getFileContext(getConf(new Path(hdfsDirPath)));
+    fileContext.rename(new Path(hdfsDirPath, fileName), new Path(hdfsDirPath, toName), Options.Rename.OVERWRITE);
   }
   
   @Override
@@ -600,7 +624,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       Path dir2 = ((HdfsDirectory) baseToDir).getHdfsDirPath();
       Path file1 = new Path(dir1, fileName);
       Path file2 = new Path(dir2, fileName);
-      FileContext fileContext = FileContext.getFileContext(getConf());
+      FileContext fileContext = FileContext.getFileContext(getConf(dir1));
       fileContext.rename(file1, file2);
       return;
     }

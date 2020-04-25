@@ -82,9 +82,6 @@ public class HdfsTransactionLog extends TransactionLog {
     this.fs = fs;
 
     try {
-      if (debug) {
-        //log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
-      }
       this.tlogFile = tlogFile;
       
       if (fs.exists(tlogFile) && openExisting) {
@@ -121,7 +118,7 @@ public class HdfsTransactionLog extends TransactionLog {
         }
       } else {
         if (start > 0) {
-          log.error("New transaction log already exists:" + tlogFile + " size=" + tlogOutStream.size());
+          log.error("New transaction log already exists:{} size={}", tlogFile, tlogOutStream.size());
         }
 
         addGlobalStrings(globalStrings);
@@ -270,7 +267,7 @@ public class HdfsTransactionLog extends TransactionLog {
     synchronized (this) {
       if (fos == null) return;
       if (debug) {
-        log.debug("Closing output for " + tlogFile);
+        log.debug("Closing output for {}", tlogFile);
       }
       fos.flushBuffer();
       finalLogSize = fos.size();
@@ -405,7 +402,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
       synchronized (HdfsTransactionLog.this) {
         if (trace) {
-          log.trace("Reading log record.  pos="+pos+" currentSize="+getLogSize());
+          log.trace("Reading log record.  pos={} currentSize={}", pos, getLogSize());
         }
 
         if (pos >= getLogSize()) {

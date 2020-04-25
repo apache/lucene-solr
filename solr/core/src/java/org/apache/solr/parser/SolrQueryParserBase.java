@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,13 +38,16 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -61,7 +66,7 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.*;
+import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
@@ -128,7 +133,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   String defaultField;
   int phraseSlop = 0;     // default slop for phrase queries
-  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
   boolean autoGeneratePhraseQueries = false;
@@ -201,6 +206,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
+    @Override
     public boolean equals(Object obj) {
       return false;
     }
@@ -257,7 +267,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
     catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
-    } catch (BooleanQuery.TooManyClauses tmc) {
+    } catch (IndexSearcher.TooManyClauses tmc) {
       throw new SyntaxError("Cannot parse '" +query+ "': too many boolean clauses", tmc);
     }
   }
@@ -593,19 +603,35 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(Term terms[]) {
+  protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
+    switch (synonymQueryStyle) {
+      case PICK_BEST: {
+        List<Query> sidePathSynonymQueries = new LinkedList<>();
+        sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
+        return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
+      }
+      case AS_SAME_TERM:
+      case AS_DISTINCT_TERMS:{
+        return super.newGraphSynonymQuery(sidePathQueriesIterator);}
+      default:
+        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+    }
+  }
+
+  @Override
+  protected Query newSynonymQuery(TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
-        for (Term term : terms) {
-          currPosnClauses.add(newTermQuery(term));
+        for (TermAndBoost term : terms) {
+          currPosnClauses.add(newTermQuery(term.term, term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Term term : terms) {
-          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+        for (TermAndBoost term : terms) {
+          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
@@ -990,8 +1016,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     SchemaField sf = schema.getFieldOrNull((field));
     if (sf == null || ! (fieldType instanceof TextField)) return part;
-    String out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer()).utf8ToString();
-    return out;
+    BytesRef out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer());
+    return out == null ? part : out.utf8ToString();
   }
 
 
@@ -1176,14 +1202,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+  // called from parser
+  protected Query getExistenceQuery(String field) {
+    checkNullField(field);
+    SchemaField sf = schema.getField(field);
+    return sf.getType().getExistenceQuery(parser, sf);
+  }
 
   // called from parser
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
-    // *:* -> MatchAllDocsQuery
+
     if ("*".equals(termStr)) {
       if ("*".equals(field) || getExplicitField() == null) {
+        // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
+      } else {
+        // 'foo:*' -> existenceQuery
+        return getExistenceQuery(field);
       }
     }
 

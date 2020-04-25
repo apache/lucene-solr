@@ -112,7 +112,7 @@ final class SegmentMerger {
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.mergeFieldInfos, null, context);
     final SegmentReadState segmentReadState = new SegmentReadState(directory, mergeState.segmentInfo, mergeState.mergeFieldInfos,
-                                                                   IOContext.READ, segmentWriteState.segmentSuffix);
+        IOContext.READ, segmentWriteState.segmentSuffix);
 
     if (mergeState.mergeFieldInfos.hasNorms()) {
       if (mergeState.infoStream.isEnabled("SM")) {
@@ -208,7 +208,7 @@ final class SegmentMerger {
     }
   }
   
-  public void mergeFieldInfos() throws IOException {
+  public void mergeFieldInfos() {
     for (FieldInfos readerFieldInfos : mergeState.fieldInfos) {
       for (FieldInfo fi : readerFieldInfos) {
         fieldInfosBuilder.add(fi);

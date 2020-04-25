@@ -35,8 +35,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @see TrimFilter
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class TrimFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "trim";
   
   /** Creates a new TrimFilterFactory */
   public TrimFilterFactory(Map<String,String> args) {
@@ -46,6 +50,11 @@ public class TrimFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public TrimFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new TrimFilter(input);

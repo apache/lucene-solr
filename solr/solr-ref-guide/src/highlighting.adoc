@@ -87,7 +87,7 @@ The default is `<em>`.
 The default is `</em>`.
 
 `hl.encoder`::
-If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
+If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HTML/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
 
 `hl.maxAnalyzedChars`::
 The character limit to look for highlights, after which no highlighting will be done. This is mostly only a performance concern for an _analysis_ based offset source since it's the slowest. See <<Schema Options and Performance Considerations>>.
@@ -156,20 +156,24 @@ We recommend that you try this highlighter even though it isn't the default (yet
 +
 The UH highlights a query very _accurately_ and thus is true to what the underlying Lucene query actually matches.
 Other highlighters highlight terms more liberally (over-highlight).
+For esoteric/custom queries, this highlighter has a greater likelihood of supporting it than the others.
++
 A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis.
 There is little or no such flexibility of offset sources for the other highlighters.
 More on this below.
 +
-There are some reasons not to choose this highlighter: The `surround` query parser doesn't yet work here -- SOLR-12895.
+There are some reasons not to choose this highlighter:
 Passage scoring does not consider boosts in the query.
-Some people want more/better passage breaking flexibility.
+Some users want more/better passage breaking flexibility.
+The "alternate" fallback options are more primitive.
 
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
 The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options.
-It's query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
+Its query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
 +
 The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available.
+If the text isn't "stored" but is in doc values (`docValues="true"`), this highlighter can work with it.
 +
 Where this highlighter falls short is performance; it's often twice as slow as the Unified Highlighter. And despite being the most customizable, it doesn't have a BreakIterator based fragmenter (all the others do), which could pose a challenge for some languages.
 
@@ -181,8 +185,8 @@ The FastVector Highlighter _requires_ full term vector options (`termVectors`, `
 This highlighter notably supports multi-colored highlighting such that different query words can be denoted in the fragment with different marking, usually expressed as an HTML tag with a unique color.
 +
 This highlighter's query-representation is less advanced than the Original or Unified Highlighters: for example it will not work well with the `surround` parser, and there are multiple reported bugs pertaining to queries with stop-words.
-+
-Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
+
+Both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the Unified Highlighter can only be chosen exclusively.
 
 
 The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
@@ -221,6 +225,14 @@ The Unified Highlighter supports these following additional parameters to the on
 By default, the Unified Highlighter will usually pick the right offset source (see above). However it may be ambiguous such as during a migration from one offset source to another that hasn't completed.
 +
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
+
+`hl.fragAlignRatio`::
+Fragment alignment can influence where the match in a passage is positioned. This floating point value is used to break the `hl.fragsize` around the match. The default value of `0.5` means to align the match to the middle. A value of `0.0` would mean to align the match to the left, while `1.0` to align it to the right. _Note: there are situations where the requested alignment is not plausible. This depends on the length of the match, the used breakiterator and the text content around the match._
+
+`hl.fragsizeIsMinimum`::
+By default this parameter is `false`. In this case the highlighter will accept a shorter fragment than `hl.fragsize`, if that is closer to the target than what the next longer choice would be.
++
+When treating `hl.fragsize` as a strict minimum length is acceptable, turning this on has some performance benefits to consider.
 
 `hl.tag.ellipsis`::
 By default, each snippet is returned as a separate value (as is done with the other highlighters). Set this parameter to instead return one string with this text as the delimiter. _Note: this is likely to be removed in the future._

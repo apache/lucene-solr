@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  * Unit tests for {@link Builder}.
  */
-public class HttpSolrClientBuilderTest extends LuceneTestCase {
+public class HttpSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_BASE_SOLR_URL = "ANY_BASE_SOLR_URL";
   private static final HttpClient ANY_HTTP_CLIENT = HttpClientBuilder.create().build();
   private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser();

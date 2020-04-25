@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "removeDuplicates";
   
   /** Creates a new RemoveDuplicatesTokenFilterFactory */
   public RemoveDuplicatesTokenFilterFactory(Map<String,String> args) {
@@ -44,6 +48,11 @@ public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public RemoveDuplicatesTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public RemoveDuplicatesTokenFilter create(TokenStream input) {
     return new RemoveDuplicatesTokenFilter(input);

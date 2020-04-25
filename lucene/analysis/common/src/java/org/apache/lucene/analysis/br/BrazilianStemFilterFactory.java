@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class BrazilianStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "brazilianStem";
   
   /** Creates a new BrazilianStemFilterFactory */
   public BrazilianStemFilterFactory(Map<String,String> args) {
@@ -45,6 +49,11 @@ public class BrazilianStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BrazilianStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public BrazilianStemFilter create(TokenStream in) {
     return new BrazilianStemFilter(in);

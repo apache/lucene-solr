@@ -52,8 +52,8 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static CountDownLatch triggerFiredLatch;
-  private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  private static AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
+  private static final Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
+  private static final AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
 
   @Before
   public void setupCluster() throws Exception {
@@ -71,11 +71,13 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   @After
   public void afterTest() throws Exception {
     shutdownCluster();
+    events.clear();
+    actionContextPropertiesRef.set(null);
   }
 
   @Test
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testScheduledTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 

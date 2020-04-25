@@ -32,13 +32,22 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * Abstract parent class for analysis factories that create {@link ConditionalTokenFilter} instances
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "conditional";
 
   private List<TokenFilterFactory> innerFilters;
 
   protected ConditionalTokenFilterFactory(Map<String, String> args) {
     super(args);
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ConditionalTokenFilterFactory() {
+    throw defaultCtorException();
   }
 
   /**

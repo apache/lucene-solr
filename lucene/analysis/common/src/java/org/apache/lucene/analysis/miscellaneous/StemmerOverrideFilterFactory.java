@@ -37,8 +37,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "stemmerOverride";
+
   private StemmerOverrideMap dictionary;
   private final String dictionaryFiles;
   private final boolean ignoreCase;
@@ -51,6 +56,11 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public StemmerOverrideFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

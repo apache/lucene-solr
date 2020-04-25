@@ -41,25 +41,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Directory implementations that store index
  * files in the file system.  
- * <a name="subclasses"></a>
+ * <a id="subclasses"></a>
  * There are currently three core
  * subclasses:
  *
  * <ul>
- *
- *  <li>{@link SimpleFSDirectory} is a straightforward
- *       implementation using Files.newByteChannel.
- *       However, it has poor concurrent performance
- *       (multiple threads will bottleneck) as it
- *       synchronizes when multiple threads read from the
- *       same file.
  *
  *  <li>{@link NIOFSDirectory} uses java.nio's
  *       FileChannel's positional io when reading to avoid
@@ -144,7 +136,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
@@ -168,14 +160,12 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    *
    *  <p>Currently this returns {@link MMapDirectory} for Linux, MacOSX, Solaris,
-   *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other
-   *  non-Windows JREs, and {@link SimpleFSDirectory} for other
-   *  JREs on Windows. It is highly recommended that you consult the
-   *  implementation's documentation for your platform before
-   *  using this method.
+   *  and Windows 64-bit JREs, and {@link NIOFSDirectory} for other JREs.
+   *  It is highly recommended that you consult the implementation's documentation
+   *  for your platform before using this method.
    *
    * <p><b>NOTE</b>: this method may suddenly change which
    * implementation is returned from release to release, in
@@ -195,8 +185,6 @@ public abstract class FSDirectory extends BaseDirectory {
   public static FSDirectory open(Path path, LockFactory lockFactory) throws IOException {
     if (Constants.JRE_IS_64BIT && MMapDirectory.UNMAP_SUPPORTED) {
       return new MMapDirectory(path, lockFactory);
-    } else if (Constants.WINDOWS) {
-      return new SimpleFSDirectory(path, lockFactory);
     } else {
       return new NIOFSDirectory(path, lockFactory);
     }
@@ -261,7 +249,7 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
     while (true) {
       try {
-        String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
+        String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
         if (pendingDeletes.contains(name)) {
           continue;
         }
@@ -429,7 +417,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.isEmpty()) {
       return Collections.emptySet();
     } else {
-      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
+      return Set.copyOf(pendingDeletes);
     }
   }
 }

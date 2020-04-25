@@ -87,7 +87,7 @@ public class TestContextSuggestField extends LuceneTestCase {
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
         iw.addDocument(document);
-        iw.commit();
+        iw.commit(false);
       });
       assertTrue(expected.getMessage().contains("[0x1d]"));
     }
@@ -139,7 +139,7 @@ public class TestContextSuggestField extends LuceneTestCase {
       // mixing suggest field types for same field name should error out
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         iw.addDocument(document);
-        iw.commit();
+        iw.commit(false);
       });
       assertTrue(expected.getMessage().contains("mixed types"));
     }

@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public class StringCheckedDataWriter extends ReductionCheckedDataWriter<Supplier<String>> {
-  
+
   public StringCheckedDataWriter(DataOutput output, Supplier<String> extractor, BooleanSupplier existsSupplier) {
     super(output, extractor, existsSupplier);
   }

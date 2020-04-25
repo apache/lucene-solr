@@ -56,6 +56,7 @@ import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestTermAutomatonQuery extends LuceneTestCase {
   // "comes * sun"
   public void testBasic1() throws Exception {
@@ -406,10 +407,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numDocs = atLeast(100);
+    int numDocs = atLeast(50);
     Directory dir = newDirectory();
 
-    // Adds occassional random synonyms:
+    // Adds occasional random synonyms:
     Analyzer analyzer = new Analyzer() {
         @Override
         public TokenStreamComponents createComponents(String fieldName) {
@@ -606,6 +607,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "RandomFilter(seed=" + seed + ",density=" + density + ")";
     }
@@ -742,12 +748,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     TermAutomatonQuery q = new TermAutomatonQuery("field");
     int initState = q.createState();
     q.setAccept(initState, true);
-    try {
-      q.finish();
-      fail("did not hit exc");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    expectThrows(IllegalStateException.class, q::finish);
   }
 
   public void testRewriteNoMatch() throws Exception {

@@ -24,6 +24,6 @@ import org.junit.BeforeClass;
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    initCore();
   }
 }

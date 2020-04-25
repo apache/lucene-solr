@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class ArrayEvaluatorTest extends LuceneTestCase {
+public class ArrayEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -60,9 +60,9 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
     Assert.assertTrue(result instanceof List<?>);
     
     Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(1L, ((List<?>)result).get(0));
-    Assert.assertEquals(2L, ((List<?>)result).get(1));
-    Assert.assertEquals(3L, ((List<?>)result).get(2));
+    Assert.assertEquals(1D, ((List<?>)result).get(0));
+    Assert.assertEquals(2D, ((List<?>)result).get(1));
+    Assert.assertEquals(3D, ((List<?>)result).get(2));
   }
 
   @Test
@@ -81,9 +81,9 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
     Assert.assertTrue(result instanceof List<?>);
     
     Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(3L, ((List<?>)result).get(0));
-    Assert.assertEquals(2L, ((List<?>)result).get(1));
-    Assert.assertEquals(1L, ((List<?>)result).get(2));
+    Assert.assertEquals(3D, ((List<?>)result).get(0));
+    Assert.assertEquals(2D, ((List<?>)result).get(1));
+    Assert.assertEquals(1D, ((List<?>)result).get(2));
   }
   
   @Test

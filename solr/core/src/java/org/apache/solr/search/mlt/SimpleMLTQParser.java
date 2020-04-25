@@ -100,10 +100,10 @@ public class SimpleMLTQParser extends QParser {
       } else {
         Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
         ArrayList<String> fields = new ArrayList();
-        for (String fieldName : fieldDefinitions.keySet()) {
-          if (fieldDefinitions.get(fieldName).indexed() && fieldDefinitions.get(fieldName).stored())
-            if (fieldDefinitions.get(fieldName).getType().getNumberType() == null)
-              fields.add(fieldName);
+        for (Map.Entry<String, SchemaField> entry : fieldDefinitions.entrySet()) {
+          if (entry.getValue().indexed() && entry.getValue().stored())
+            if (entry.getValue().getType().getNumberType() == null)
+              fields.add(entry.getKey());
         }
         fieldNames = fields.toArray(new String[0]);
       }

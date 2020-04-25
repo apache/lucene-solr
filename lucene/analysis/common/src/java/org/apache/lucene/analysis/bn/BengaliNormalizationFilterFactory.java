@@ -32,8 +32,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 7.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class BengaliNormalizationFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "bengaliNormalization";
 
   public BengaliNormalizationFilterFactory(Map<String,String> args) {
     super(args);
@@ -42,6 +46,11 @@ public class BengaliNormalizationFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BengaliNormalizationFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new BengaliNormalizationFilter(input);

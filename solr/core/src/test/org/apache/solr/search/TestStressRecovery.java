@@ -17,9 +17,6 @@
 package org.apache.solr.search;
 
 
-import static org.apache.solr.core.SolrCore.verbose;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
@@ -43,7 +41,9 @@ import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.core.SolrCore.verbose;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
 // can fail due to NPE uncaught exception in stress thread, probably because of null core
@@ -314,7 +314,7 @@ public class TestStressRecovery extends TestRTGBase {
               }
 
               String response = h.query(sreq);
-              Map rsp = (Map)ObjectBuilder.fromJSON(response);
+              Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization

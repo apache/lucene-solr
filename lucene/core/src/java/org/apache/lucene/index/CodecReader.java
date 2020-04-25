@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -31,7 +32,6 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.FutureObjects;
 
 /**
  * LeafReader implemented by codec APIs.
@@ -95,7 +95,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   private void checkBounds(int docID) {
-    FutureObjects.checkIndex(docID, maxDoc());
+    Objects.checkIndex(docID, maxDoc());
   }
 
   @Override
@@ -194,7 +194,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   public final PointValues getPointValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);
-    if (fi == null || fi.getPointDataDimensionCount() == 0) {
+    if (fi == null || fi.getPointDimensionCount() == 0) {
       // Field does not exist or does not index points
       return null;
     }

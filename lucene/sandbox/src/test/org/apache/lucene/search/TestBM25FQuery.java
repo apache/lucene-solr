@@ -54,8 +54,10 @@ public class TestBM25FQuery extends LuceneTestCase {
     assertEquals(actual, new TermQuery(new Term("field", "foo")));
     builder.addTerm(new BytesRef("bar"));
     actual = searcher.rewrite(builder.build());
-    assertEquals(actual, new SynonymQuery(new Term("field", "foo"),
-        new Term("field", "bar")));
+    assertEquals(actual, new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "foo"))
+        .addTerm(new Term("field", "bar"))
+        .build());
     builder.addField("another_field", 1f);
     Query query = builder.build();
     actual = searcher.rewrite(query);
@@ -99,8 +101,7 @@ public class TestBM25FQuery extends LuceneTestCase {
     TopScoreDocCollector collector = TopScoreDocCollector.create(Math.min(reader.numDocs(), Integer.MAX_VALUE), null, Integer.MAX_VALUE);
     searcher.search(query, collector);
     TopDocs topDocs = collector.topDocs();
-    assertEquals(TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
-    assertEquals(11, topDocs.totalHits.value);
+    assertEquals(new TotalHits(11, TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
     // All docs must have the same score
     for (int i = 0; i < topDocs.scoreDocs.length; ++i) {
       assertEquals(topDocs.scoreDocs[0].score, topDocs.scoreDocs[i].score, 0.0f);

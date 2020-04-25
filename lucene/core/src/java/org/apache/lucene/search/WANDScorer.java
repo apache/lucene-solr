@@ -52,7 +52,7 @@ final class WANDScorer extends Scorer {
    */
   static int scalingFactor(float f) {
     if (f < 0) {
-      throw new IllegalArgumentException("");
+      throw new IllegalArgumentException("Scores must be positive or null");
     } else if (f == 0) {
       return scalingFactor(Float.MIN_VALUE) - 1;
     } else if (Float.isInfinite(f)) {
@@ -76,14 +76,18 @@ final class WANDScorer extends Scorer {
     assert Float.isNaN(maxScore) == false;
     assert maxScore >= 0;
 
-    if (Float.isInfinite(maxScore)) {
-      return (1L << 32) - 1; // means +Infinity in practice for this scorer
-    }
-
     // NOTE: because doubles have more amplitude than floats for the
     // exponent, the scalb call produces an accurate value.
     double scaled = Math.scalb((double) maxScore, scalingFactor);
-    assert scaled <= 1 << 16 : scaled + " " + maxScore; // regular values of max_score go into 0..2^16
+
+    if (scaled > 1 << 16) {
+      // This happens if either maxScore is +Infty, or we have a scorer that
+      // returned +Infty as its maximum score over the whole range of doc IDs
+      // when computing the scaling factor in the constructor, and now returned
+      // a finite maximum score for a smaller range of doc IDs.
+      return (1L << 32) - 1; // means +Infinity in practice for this scorer
+    }
+
     return (long) Math.ceil(scaled); // round up, cast is accurate since value is <= 2^16
   }
 
@@ -181,6 +185,7 @@ final class WANDScorer extends Scorer {
     }
 
     assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
+    assert doc <= upTo;
 
     return true;
   }
@@ -370,17 +375,34 @@ final class WANDScorer extends Scorer {
     }
   }
 
+  /**
+   * Update {@code upTo} and maximum scores of sub scorers so that {@code upTo}
+   * is greater than or equal to the next candidate after {@code target}, i.e.
+   * the top of `head`.
+   */
   private void updateMaxScoresIfNecessary(int target) throws IOException {
     assert lead == null;
 
-    if (head.size() == 0) { // no matches in the current block
-      if (upTo != DocIdSetIterator.NO_MORE_DOCS) {
-        updateMaxScores(Math.max(target, upTo + 1));
+    while (upTo < DocIdSetIterator.NO_MORE_DOCS) {
+      if (head.size() == 0) {
+        // All clauses could fit in the tail, which means that the sum of the
+        // maximum scores of sub clauses is less than the minimum competitive score.
+        // Move to the next block until this condition becomes false.
+        target = Math.max(target, upTo + 1);
+        updateMaxScores(target);
+      } else if (head.top().doc > upTo) {
+        // We have a next candidate but it's not in the current block. We need to
+        // move to the next block in order to not miss any potential hits between
+        // `target` and `head.top().doc`.
+        assert head.top().doc >= target;
+        updateMaxScores(target);
+        break;
+      } else {
+        break;
       }
-    } else if (head.top().doc > upTo) { // the next candidate is in a different block
-      assert head.top().doc >= target;
-      updateMaxScores(target);
     }
+
+    assert upTo == DocIdSetIterator.NO_MORE_DOCS || (head.size() > 0 && head.top().doc <= upTo);
   }
 
   /** Set 'doc' to the next potential match, and move all disis of 'head' that
@@ -390,14 +412,12 @@ final class WANDScorer extends Scorer {
     updateMaxScoresIfNecessary(target);
     assert upTo >= target;
 
-    // If the head is empty, it means that the sum of all max scores is not
-    // enough to produce a competitive score. So we jump to the next block.
-    while (head.size() == 0) {
-      if (upTo == DocIdSetIterator.NO_MORE_DOCS) {
-        doc = DocIdSetIterator.NO_MORE_DOCS;
-        return;
-      }
-      updateMaxScores(upTo + 1);
+    // updateMaxScores tries to move forward until a block with matches is found
+    // so if the head is empty it means there are no matches at all anymore
+    if (head.size() == 0) {
+      assert upTo == DocIdSetIterator.NO_MORE_DOCS;
+      doc = DocIdSetIterator.NO_MORE_DOCS;
+      return;
     }
 
     // The top of `head` defines the next potential match

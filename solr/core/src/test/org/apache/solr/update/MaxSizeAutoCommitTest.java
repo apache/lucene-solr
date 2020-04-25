@@ -96,8 +96,10 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @After
   public void tearDown() throws Exception {
-    monitor.assertSaneOffers();
-    monitor.clear();
+    if (null != monitor) {
+      monitor.assertSaneOffers();
+      monitor.clear();
+    }
     super.tearDown();
     System.clearProperty("solr.ulog");
     deleteCore();

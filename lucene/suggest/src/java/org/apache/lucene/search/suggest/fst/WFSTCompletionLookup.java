@@ -40,7 +40,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -116,7 +116,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     BytesRefBuilder previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     while ((scratch = iter.next()) != null) {
       long cost = iter.weight();
       
@@ -127,11 +127,11 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
                   // added
       }
       Util.toIntsRef(scratch, scratchInts);
-      builder.add(scratchInts.get(), cost);
+      fstCompiler.add(scratchInts.get(), cost);
       previous.copyBytes(scratch);
       count++;
     }
-    fst = builder.finish();
+    fst = fstCompiler.compile();
   }
 
   
@@ -186,7 +186,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     CharsRefBuilder spare = new CharsRefBuilder();
     if (exactFirst && arc.isFinal()) {
       spare.copyUTF8Bytes(scratch.get());
-      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput())));
       if (--num == 0) {
         return results; // that was quick
       }
@@ -227,7 +227,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
       if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader) == null) {
         return null;
       } else {
-        output += arc.output.longValue();
+        output += arc.output().longValue();
       }
     }
     
@@ -250,7 +250,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     if (result == null || !arc.isFinal()) {
       return null;
     } else {
-      return Integer.valueOf(decodeWeight(result + arc.nextFinalOutput));
+      return Integer.valueOf(decodeWeight(result + arc.nextFinalOutput()));
     }
   }
   

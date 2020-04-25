@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -103,10 +102,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "createOutput".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("createOutput")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -138,10 +135,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "close".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("close")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -173,10 +168,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "openInput".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("openInput")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -209,10 +202,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "close".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("close")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -338,7 +329,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
     Version minVersion = random().nextBoolean() ? null : Version.LATEST;
-    return new SegmentInfo(dir, Version.LATEST, minVersion, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    return new SegmentInfo(dir, Version.LATEST, minVersion, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
   }
   
   @Override

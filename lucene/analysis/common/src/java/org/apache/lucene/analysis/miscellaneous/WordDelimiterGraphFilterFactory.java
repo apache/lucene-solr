@@ -49,8 +49,13 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.*;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 6.5.0
+ * @lucene.spi {@value #NAME}
  */
 public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "wordDelimiterGraph";
+
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
   public static final String OFFSETS = "adjustOffsets";
@@ -102,6 +107,11 @@ public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implemen
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public WordDelimiterGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (wordFiles != null) {  

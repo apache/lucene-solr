@@ -29,8 +29,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
@@ -135,7 +138,7 @@ public final class FeatureField extends Field {
     }
     if (featureValue < Float.MIN_NORMAL) {
       throw new IllegalArgumentException("featureValue must be a positive normal float, got: " +
-          featureValue + "for feature " + fieldsData + " on field " + name +
+          featureValue + " for feature " + fieldsData + " on field " + name +
           " which is less than the minimum positive normal float: " + Float.MIN_NORMAL);
     }
     this.featureValue = featureValue;
@@ -194,9 +197,9 @@ public final class FeatureField extends Field {
     }
   }
 
-  private static final int MAX_FREQ = Float.floatToIntBits(Float.MAX_VALUE) >>> 15;
+  static final int MAX_FREQ = Float.floatToIntBits(Float.MAX_VALUE) >>> 15;
 
-  private static float decodeFeatureValue(float freq) {
+  static float decodeFeatureValue(float freq) {
     if (freq > MAX_FREQ) {
       // This is never used in practice but callers of the SimScorer API might
       // occasionally call it on eg. Float.MAX_VALUE to compute the max score
@@ -517,5 +520,36 @@ public final class FeatureField extends Field {
     }
     float avgFreq = (float) ((double) states.totalTermFreq() / states.docFreq());
     return decodeFeatureValue(avgFreq);
+  }
+
+  /**
+   * Creates a SortField for sorting by the value of a feature.
+   * <p>
+   * This sort orders documents by descending value of a feature. The value returned in {@link FieldDoc} for
+   * the hits contains a Float instance with the feature value.
+   * <p>
+   * If a document is missing the field, then it is treated as having a vaue of <code>0.0f</code>.
+   * <p>
+   * 
+   * @param field field name. Must not be null.
+   * @param featureName feature name. Must not be null.
+   * @return SortField ordering documents by the value of the feature
+   * @throws NullPointerException if {@code field} or {@code featureName} is null.
+   */
+  public static SortField newFeatureSort(String field, String featureName) {
+    return new FeatureSortField(field, featureName);
+  }
+  
+  /**
+   * Creates a {@link DoubleValuesSource} instance which can be used to read the values of a feature from the a 
+   * {@link FeatureField} for documents.
+   * 
+   * @param field field name. Must not be null.
+   * @param featureName feature name. Must not be null.
+   * @return a {@link DoubleValuesSource} which can be used to access the values of the feature for documents
+   * @throws NullPointerException if {@code field} or {@code featureName} is null.
+   */
+  public static DoubleValuesSource newDoubleValues(String field, String featureName) {
+    return new FeatureDoubleValuesSource(field, featureName);
   }
 }

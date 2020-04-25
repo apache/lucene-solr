@@ -22,12 +22,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
 
-public class TestDocumentBuilder extends LuceneTestCase {
+public class TestDocumentBuilder extends SolrTestCase {
 
   @Test
   public void testDeepCopy() throws IOException {

@@ -80,8 +80,12 @@ public class CacheConfig implements MapSerializable{
     if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
     for (int i = 0; i < nodes.getLength(); i++) {
-      CacheConfig config = getConfig(solrConfig, nodes.item(i).getNodeName(), DOMUtil.toMap(nodes.item(i).getAttributes()), configPath);
-      result.put(config.args.get(NAME), config);
+      Node node = nodes.item(i);
+      if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
+                                       DOMUtil.toMap(node.getAttributes()), configPath);
+        result.put(config.args.get(NAME), config);
+      }
     }
     return result;
   }
@@ -124,7 +128,7 @@ public class CacheConfig implements MapSerializable{
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.LRUCache";
+    if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
     config.regenImpl = config.args.get("regenerator");
     config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
     if (config.regenImpl != null) {
@@ -136,7 +140,7 @@ public class CacheConfig implements MapSerializable{
 
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.newInstance();
+      SolrCache cache = clazz.getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {

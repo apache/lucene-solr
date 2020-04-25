@@ -77,10 +77,10 @@ public class OrdinalFunction {
       return new DoubleOrdinalFunction((DoubleValueStream)param, ord);
     } else if (param instanceof StringValueStream) {
       return new StringOrdinalFunction((StringValueStream)param, ord);
-    } 
+    }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter.");
   });
-  
+
   protected static String createOrdinalExpressionString(AnalyticsValueStream param, double ord) {
     return String.format(Locale.ROOT, "%s(%s,%s)",
                          name,
@@ -93,7 +93,7 @@ class IntOrdinalFunction extends AbstractIntValue implements ReductionFunction {
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public IntOrdinalFunction(IntValueStream param, int ordinal) {
     this.collector = new SortedIntListCollector(param);
     this.ordinal = ordinal;
@@ -138,7 +138,7 @@ class LongOrdinalFunction extends AbstractLongValue implements ReductionFunction
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public LongOrdinalFunction(LongValueStream param, int ordinal) {
     this.collector = new SortedLongListCollector(param);
     this.ordinal = ordinal;
@@ -183,7 +183,7 @@ class FloatOrdinalFunction extends AbstractFloatValue implements ReductionFuncti
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public FloatOrdinalFunction(FloatValueStream param, int ordinal) {
     this.collector = new SortedFloatListCollector(param);
     this.ordinal = ordinal;
@@ -228,7 +228,7 @@ class DoubleOrdinalFunction extends AbstractDoubleValue implements ReductionFunc
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public DoubleOrdinalFunction(DoubleValueStream param, int ordinal) {
     this.collector = new SortedDoubleListCollector(param);
     this.ordinal = ordinal;
@@ -273,7 +273,7 @@ class DateOrdinalFunction extends AbstractDateValue implements ReductionFunction
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public DateOrdinalFunction(LongValueStream param, int ordinal) {
     this.collector = new SortedLongListCollector(param);
     this.ordinal = ordinal;
@@ -318,7 +318,7 @@ class StringOrdinalFunction extends AbstractStringValue implements ReductionFunc
   private int ordinal;
   public static final String name = OrdinalFunction.name;
   private final String exprStr;
-  
+
   public StringOrdinalFunction(StringValueStream param, int ordinal) {
     this.collector = new SortedStringListCollector(param);
     this.ordinal = ordinal;

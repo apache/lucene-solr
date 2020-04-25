@@ -103,7 +103,10 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   
   @After
   public void after() {
-    req.close();
+    if (null != req) {
+      req.close();
+      req = null;
+    }
     MockDataSource.clearCache();
   }
 

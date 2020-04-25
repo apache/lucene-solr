@@ -17,8 +17,9 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrRequestInfo;
 
 /**
@@ -77,4 +78,9 @@ public abstract class AnalyticsQuery extends ExtendedQueryBase implements PostFi
   }
 
   public abstract DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher);
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
 }

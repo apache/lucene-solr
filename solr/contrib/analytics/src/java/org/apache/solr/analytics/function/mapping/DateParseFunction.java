@@ -57,7 +57,7 @@ public class DateParseFunction {
       return new StringStreamToDateParseFunction((StringValueStream)params[0]);
     }
     else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a string or long parameter. " + 
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a string or long parameter. " +
           "Incorrect parameter: "+params[0].getExpressionStr());
     }
   });
@@ -67,7 +67,7 @@ class LongToDateParseFunction extends AbstractDateValue {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongToDateParseFunction(LongValue param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -101,7 +101,7 @@ class LongStreamToDateParseFunction extends AbstractDateValueStream {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamToDateParseFunction(LongValueStream param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -131,7 +131,7 @@ class StringToDateParseFunction extends AbstractDateValue {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringToDateParseFunction(StringValue param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -176,7 +176,7 @@ class StringStreamToDateParseFunction extends AbstractDateValueStream {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamToDateParseFunction(StringValueStream param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

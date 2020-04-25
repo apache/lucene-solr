@@ -26,13 +26,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,7 +70,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
 
   @Test
   public void test() throws Exception {
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
     UpdateLog.testing_logReplayHook = () -> {
@@ -118,7 +118,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       assertU(commit());
       assertJQ(req("q", "*:*"), "/response/numFound==2");
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
+      TestInjection.reset();
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
       req().close();
@@ -145,7 +145,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       UpdateRequestProcessor processor = chainUpToDUP.createProcessor(req, rsp);
       processor.processAdd(cmd);
       if (cmd.solrDoc.get("f_dt").getValue() instanceof Date) {
-        // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this is fixed in 
+        // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this is fixed in
         // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call obj.toString(), 
         // Date::toString produces a Date representation that Solr doesn't like, so we convert using Instant::toString
         cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());

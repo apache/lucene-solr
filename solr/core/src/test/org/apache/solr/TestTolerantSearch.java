@@ -16,6 +16,10 @@
  */
 package org.apache.solr;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -32,10 +36,6 @@ import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 
 public class TestTolerantSearch extends SolrJettyTestBase {
   
@@ -99,12 +99,18 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   
   @AfterClass
   public static void destroyThings() throws Exception {
-    collection1.close();
-    collection2.close();
-    collection1 = null;
-    collection2 = null;
-    jetty.stop();
-    jetty=null;
+    if (null != collection1) {
+      collection1.close();
+      collection1 = null;
+    }
+    if (null != collection2) {
+      collection2.close();
+      collection2 = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty=null;
+    }
     resetExceptionIgnores();
     systemClearPropertySolrDisableShardsWhitelist();
   }
@@ -194,7 +200,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       }
     }
     assertTrue(foundError);
-    
+    assertFalse(""+response, response.getResults().isEmpty());
     assertEquals("1", response.getResults().get(0).getFieldValue("id"));
     assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
     unIgnoreException("Dummy exception in BadResponseWriter");

@@ -17,16 +17,15 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -93,9 +92,6 @@ public abstract class Filter extends Query {
     return new Weight(this) {
 
       @Override
-      public void extractTerms(Set<Term> terms) {}
-
-      @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         final Scorer scorer = scorer(context);
         final boolean match = (scorer != null && scorer.iterator().advance(doc) == doc);
@@ -141,5 +137,10 @@ public abstract class Filter extends Query {
         return false;
       }
     };
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }

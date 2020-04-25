@@ -38,6 +38,7 @@ import org.apache.lucene.util.TestUtil;
  */
 @SuppressFileSystems("ExtrasFS")
 public class TestSwappedIndexFiles extends LuceneTestCase {
+
   public void test() throws Exception {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
@@ -107,21 +108,15 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
         dirCopy.sync(Collections.singleton(name));
       }
 
-      try {
-        // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-        DirectoryReader.open(dirCopy).close();
-        fail("wrong file " + victim + " not detected");
-      } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
-        // expected
-      }
+      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> DirectoryReader.open(dirCopy).close()
+      );
 
       // CheckIndex should also fail:
-      try {
-        TestUtil.checkIndex(dirCopy, true, true, null);
-        fail("wrong file " + victim + " not detected");
-      } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
-        // expected
-      }
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, null)
+      );
     }
   }
 }

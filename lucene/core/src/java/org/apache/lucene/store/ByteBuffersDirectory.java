@@ -23,9 +23,11 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -157,6 +159,12 @@ public final class ByteBuffersDirectory extends BaseDirectory {
     return file.length();
   }
 
+  public boolean fileExists(String name) {
+    ensureOpen();
+    FileEntry file = files.get(name);
+    return file != null;
+  }
+
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
@@ -221,6 +229,11 @@ public final class ByteBuffersDirectory extends BaseDirectory {
   public void close() throws IOException {
     isOpen = false;
     files.clear();
+  }
+
+  @Override
+  public Set<String> getPendingDeletions() {
+    return Collections.emptySet();
   }
 
   private final class FileEntry {

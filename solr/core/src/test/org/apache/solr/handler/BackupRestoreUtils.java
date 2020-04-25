@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -37,7 +37,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BackupRestoreUtils extends LuceneTestCase {
+public class BackupRestoreUtils extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

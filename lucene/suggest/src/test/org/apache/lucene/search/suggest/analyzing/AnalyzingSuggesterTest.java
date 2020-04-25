@@ -669,9 +669,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   private static char SEP = '\u001F';
 
+  @Slow
   public void testRandom() throws Exception {
 
-    int numQueries = atLeast(1000);
+    int numQueries = atLeast(200);
     
     final List<TermFreq2> slowCompletor = new ArrayList<>();
     final TreeSet<String> allPrefixes = new TreeSet<>();
@@ -1212,14 +1213,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     Directory tempDir = getDirectory();
     AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a);
     String bigString = TestUtil.randomSimpleString(random(), 30000, 30000);
-    try {
+    IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> {
       suggester.build(new InputArrayIterator(new Input[] {
-            new Input(bigString, 7)}));
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertTrue(iae.getMessage().contains("input automaton is too large"));
-    }
+          new Input(bigString, 7)}));
+    });
+    assertTrue(ex.getMessage().contains("input automaton is too large"));
     IOUtils.close(a, tempDir);
   }
 

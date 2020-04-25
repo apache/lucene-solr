@@ -18,10 +18,7 @@ package org.apache.solr.security;
 
 import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
@@ -62,7 +59,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
-  private boolean blockUnknown = false;
+  private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
 
   public boolean authenticate(String username, String pwd) {
@@ -124,11 +121,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   }
 
   @Override
-  public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-
-    HttpServletRequest request = (HttpServletRequest) servletRequest;
-    HttpServletResponse response = (HttpServletResponse) servletResponse;
-
+  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     String authHeader = request.getHeader("Authorization");
     boolean isAjaxRequest = isAjaxRequest(request);
     
@@ -140,7 +133,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         if (basic.equalsIgnoreCase("Basic")) {
           if (st.hasMoreTokens()) {
             try {
-              String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+              String credentials = new String(Base64.decodeBase64(st.nextToken()), StandardCharsets.UTF_8);
               int p = credentials.indexOf(":");
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
@@ -151,14 +144,10 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   authenticationFailure(response, isAjaxRequest, "Bad credentials");
                   return false;
                 } else {
-                  HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-                    @Override
-                    public Principal getUserPrincipal() {
-                      return new BasicAuthUserPrincipal(username, pwd);
-                    }
-                  };
+                  Principal principal = new BasicAuthUserPrincipal(username, pwd);
+                  request = wrapWithPrincipal(request, principal);
                   numAuthenticated.inc();
-                  filterChain.doFilter(wrapper, response);
+                  filterChain.doFilter(request, response);
                   return true;
                 }
               } else {

@@ -20,7 +20,7 @@
  * 
  * <h2>Query Configuration Interfaces</h2>
  * <p>
- * The package <tt>org.apache.lucene.queryparser.flexible.config</tt> contains query configuration handler
+ * The package <code>org.apache.lucene.queryparser.flexible.config</code> contains query configuration handler
  * abstract class that all config handlers should extend.
  * <p>
  * See {@link org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler} for a reference

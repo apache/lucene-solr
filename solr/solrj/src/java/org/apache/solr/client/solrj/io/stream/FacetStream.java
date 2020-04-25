@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -148,6 +149,10 @@ public class FacetStream extends TupleStream implements Expressible  {
       }
     }
 
+    if(params.get("q") == null) {
+      params.set("q", "*:*");
+    }
+
     // buckets, required - comma separated
     Bucket[] buckets = null;
     if(null != bucketExpression){
@@ -166,12 +171,31 @@ public class FacetStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one bucket expected. eg. 'buckets=\"name\"'",expression,collectionName));
     }
 
+
+    // Construct the metrics
+    Metric[] metrics = new Metric[metricExpressions.size()];
+    for(int idx = 0; idx < metricExpressions.size(); ++idx) {
+      metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
+    }
+
+    if(metrics.length == 0) {
+      metrics = new Metric[1];
+      metrics[0] = new CountMetric();
+    }
+
     String bucketSortString = null;
 
     if(bucketSortExpression == null) {
-      throw new IOException("The bucketSorts parameter is required for the facet function.");
+      bucketSortString = metrics[0].getIdentifier()+" desc";
     } else {
       bucketSortString = ((StreamExpressionValue)bucketSortExpression.getParameter()).getValue();
+      if(bucketSortString.contains("(") &&
+          metricExpressions.size() == 0 &&
+          (!bucketSortExpression.equals("count(*) desc") &&
+           !bucketSortExpression.equals("count(*) asc"))) {
+      //Attempting bucket sort on a metric that is not going to be calculated.
+        throw new IOException(String.format(Locale.ROOT,"invalid expression %s - the bucketSort is being performed on a metric that is not being calculated.",expression,collectionName));
+      }
     }
 
     FieldComparator[] bucketSorts = parseBucketSorts(bucketSortString, buckets);
@@ -180,15 +204,7 @@ public class FacetStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one bucket sort expected. eg. 'bucketSorts=\"name asc\"'",expression,collectionName));
     }
 
-    // Construct the metrics
-    Metric[] metrics = new Metric[metricExpressions.size()];
-    for(int idx = 0; idx < metricExpressions.size(); ++idx) {
-      metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
-    }
 
-    if(0 == metrics.length) {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one metric expected.",expression,collectionName));
-    }
 
     boolean refine = false;
 
@@ -210,7 +226,7 @@ public class FacetStream extends TupleStream implements Expressible  {
       methodStr = ((StreamExpressionValue) methodExpression.getParameter()).getValue();
     }
 
-    int overfetchInt = 150;
+    int overfetchInt = 250;
     if(overfetchExpression != null) {
       String overfetchStr = ((StreamExpressionValue) overfetchExpression.getParameter()).getValue();
       overfetchInt = Integer.parseInt(overfetchStr);
@@ -644,20 +660,20 @@ public class FacetStream extends TupleStream implements Expressible  {
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"terms\"");
-    buf.append(",\"field\":\""+_buckets[level].toString()+"\"");
-    buf.append(",\"limit\":"+_limit);
+    buf.append(",\"field\":\"").append(_buckets[level].toString()).append('"');
+    buf.append(",\"limit\":").append(_limit);
 
     if(refine) {
       buf.append(",\"refine\":true");
     }
 
     if(method != null) {
-      buf.append(",\"method\":\""+method+"\"");
+      buf.append(",\"method\":\"").append(method).append('"');
     }
 
     String fsort = getFacetSort(_sorts[level].getLeftFieldName(), _metrics);
 
-    buf.append(",\"sort\":{\""+fsort+"\":\""+_sorts[level].getOrder()+"\"}");
+    buf.append(",\"sort\":{\"").append(fsort).append("\":\"").append(_sorts[level].getOrder()).append("\"}");
 
     buf.append(",\"facet\":{");
     int metricCount = 0;
@@ -673,7 +689,7 @@ public class FacetStream extends TupleStream implements Expressible  {
           if (metricCount > 0) {
             buf.append(",");
           }
-          buf.append("\""+ facetKey + "\":\"" + identifier + "\"");
+          buf.append('"').append(facetKey).append("\":\"").append(identifier).append('"');
           ++metricCount;
         }
       }

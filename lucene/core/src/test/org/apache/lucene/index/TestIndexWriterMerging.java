@@ -310,7 +310,7 @@ public class TestIndexWriterMerging extends LuceneTestCase {
   // merging a segment with >= 20 (maxMergeDocs) docs
   private static class MyMergeScheduler extends MergeScheduler {
     @Override
-    synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+    synchronized public void merge(IndexWriter writer, MergeTrigger trigger) throws IOException {
 
       while(true) {
         MergePolicy.OneMerge merge = writer.getNextMerge();
@@ -383,7 +383,7 @@ public class TestIndexWriterMerging extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(directory, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
 
-      for(int iter=0;iter<10;iter++) {
+      for(int iter=0;iter<atLeast(3);iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter);
         }

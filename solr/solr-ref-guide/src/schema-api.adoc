@@ -33,14 +33,16 @@ The reason that this is discouraged is because hand-edits of the schema may be l
 
 The API allows two output modes for all calls: JSON or XML. When requesting the complete schema, there is another output mode which is XML modeled after the managed-schema file itself, which is in XML format.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically updated - they *must* be re-indexed if existing index data uses schema elements that you changed.
+When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically updated - they *must* be reindexed if existing index data uses schema elements that you changed.
 
-.Re-index after schema modifications!
+.Reindex after schema modifications!
 [IMPORTANT]
 ====
-If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
+If you modify your schema, you will likely need to reindex all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
 
-Modifying your schema will never modify any documents that are already indexed. You must re-index documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
+Modifying your schema will never modify any documents that are already indexed. You must reindex documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
+
+See the section <<reindexing.adoc#reindexing,Reindexing>> for more information about reindexing.
 ====
 
 ////
@@ -71,7 +73,7 @@ bin/solr -e cloud -noprompt
 
 == Modify the Schema
 
-To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/collection/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
+To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/<collections|cores>/<name>/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
 
 * `add-field`: add a new field with parameters you provide.
 * `delete-field`: delete a field.
@@ -89,7 +91,7 @@ These commands can be issued in separate POST requests or in the same POST reque
 
 In each case, the response will include the status and the time to process the request, but will not include the entire schema.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically handled - they *must* be re-indexed if they used schema elements that you changed.
+When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically handled - they *must* be reindexed if they used schema elements that you changed.
 
 === Add a New Field
 
@@ -125,7 +127,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"pdate",
      "stored":true }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -156,7 +158,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -195,7 +197,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"date",
      "stored":false }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -234,7 +236,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"string",
      "stored":true }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -265,7 +267,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -331,13 +333,13 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer" : {
         "charFilters":[{
-           "class":"solr.PatternReplaceCharFilterFactory",
+           "name":"patternReplace",
            "replacement":"$1$1",
            "pattern":"([a-zA-Z])\\\\1+" }],
         "tokenizer":{
-           "class":"solr.WhitespaceTokenizerFactory" },
+           "name":"whitespace" },
         "filters":[{
-           "class":"solr.WordDelimiterFilterFactory",
+           "name":"wordDelimiter",
            "preserveOriginal":"0" }]}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
@@ -359,11 +361,11 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "class":"solr.TextField",
      "indexAnalyzer":{
         "tokenizer":{
-           "class":"solr.PathHierarchyTokenizerFactory",
+           "name":"pathHierarchy",
            "delimiter":"/" }},
      "queryAnalyzer":{
         "tokenizer":{
-           "class":"solr.KeywordTokenizerFactory" }}}
+           "name":"keyword" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 ====
@@ -381,12 +383,12 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "class":"solr.TextField",
      "indexAnalyzer":{
         "tokenizer":{
-           "class":"solr.PathHierarchyTokenizerFactory",
+           "name":"pathHierarchy",
            "delimiter":"/" }},
      "queryAnalyzer":{
         "tokenizer":{
-           "class":"solr.KeywordTokenizerFactory" }}}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+           "name":"keyword" }}}
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -417,7 +419,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -444,7 +446,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "tokenizer":{
-           "class":"solr.StandardTokenizerFactory" }}}
+           "name":"standard" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 ====
@@ -461,8 +463,8 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "tokenizer":{
-           "class":"solr.StandardTokenizerFactory" }}}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+           "name":"standard" }}}
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -508,7 +510,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -536,12 +538,12 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 [example.tab-pane#v2delete-copyfield]
 ====
-[tab-label]*V1 API*
+[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -563,13 +565,13 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "charFilters":[{
-           "class":"solr.PatternReplaceCharFilterFactory",
+           "name":"patternReplace",
            "replacement":"$1$1",
            "pattern":"([a-zA-Z])\\\\1+" }],
         "tokenizer":{
-           "class":"solr.WhitespaceTokenizerFactory" },
+           "name":"whitespace" },
         "filters":[{
-           "class":"solr.WordDelimiterFilterFactory",
+           "name":"wordDelimiter",
            "preserveOriginal":"0" }]}},
    "add-field" : {
       "name":"sell_by",

@@ -21,24 +21,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -204,6 +204,18 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    for (Term[] terms : termArrays) {
+      QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      sv.consumeTerms(this, terms);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Map<Term,TermStates> termStates = new HashMap<>();
     return new PhraseWeight(this, field, searcher, scoreMode) {
@@ -221,11 +233,8 @@ public class MultiPhraseQuery extends Query {
               ts = TermStates.build(context, term, scoreMode.needsScores());
               termStates.put(term, ts);
             }
-            if (scoreMode.needsScores()) {
-              TermStatistics termStatistics = searcher.termStatistics(term, ts);
-              if (termStatistics != null) {
-                allTermStats.add(termStatistics);
-              }
+            if (scoreMode.needsScores() && ts.docFreq() > 0) {
+              allTermStats.add(searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
             }
           }
         }
@@ -240,7 +249,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       @Override
-      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, boolean exposeOffsets) throws IOException {
+      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException {
         assert termArrays.length != 0;
         final LeafReader reader = context.reader();
 
@@ -285,25 +294,18 @@ public class MultiPhraseQuery extends Query {
             postingsEnum = exposeOffsets ? new UnionFullPostingsEnum(postings) : new UnionPostingsEnum(postings);
           }
 
-          postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, positions[pos], terms);
+          postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, new SlowImpactsEnum(postingsEnum), positions[pos], terms);
         }
 
         // sort by increasing docFreq order
         if (slop == 0) {
           ArrayUtil.timSort(postingsFreqs);
-          return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
+          return new ExactPhraseMatcher(postingsFreqs, scoreMode, scorer, totalMatchCost);
         }
         else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
+          return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
 
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        for (final Term[] arr : termArrays) {
-          Collections.addAll(terms, arr);
-        }
       }
     };
   }

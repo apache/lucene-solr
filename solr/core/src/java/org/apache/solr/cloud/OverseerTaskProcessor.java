@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.AlreadyClosedException;
@@ -46,7 +45,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -197,7 +196,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     this.tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, MAX_PARALLEL_TASKS, 0L, TimeUnit.MILLISECONDS,
         new SynchronousQueue<Runnable>(),
-        new DefaultSolrThreadFactory("OverseerThreadFactory"));
+        new SolrNamedThreadFactory("OverseerThreadFactory"));
     try {
       while (!this.isClosed) {
         try {
@@ -305,7 +304,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               continue;
             } catch (InterruptedException e) {
               lock.unlock();
-              log.error("Thread interrupted while trying to pick task for execution.", head.getId());
+              log.error("Thread interrupted while trying to pick task {} for execution.", head.getId());
               Thread.currentThread().interrupt();
               continue;
             }
@@ -321,6 +320,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             return;
           }
           SolrException.log(log, "", e);
+          
+          // Prevent free-spinning this loop.
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
@@ -343,10 +351,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private void cleanUpWorkQueue() throws KeeperException, InterruptedException {
     synchronized (completedTasks) {
-      for (String id : completedTasks.keySet()) {
-        workQueue.remove(completedTasks.get(id));
+      for (Map.Entry<String, QueueEvent> entry : completedTasks.entrySet()) {
+        workQueue.remove(entry.getValue());
         synchronized (runningZKTasks) {
-          runningZKTasks.remove(id);
+          runningZKTasks.remove(entry.getKey());
         }
       }
       completedTasks.clear();
@@ -467,7 +475,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   protected class Runner implements Runnable {
     ZkNodeProps message;
     String operation;
-    SolrResponse response;
+    OverseerSolrResponse response;
     QueueEvent head;
     OverseerMessageHandler messageHandler;
     private final OverseerMessageHandler.Lock lock;
@@ -502,14 +510,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (asyncId != null) {
           if (response != null && (response.getResponse().get("failure") != null 
               || response.getResponse().get("exception") != null)) {
-            failureMap.put(asyncId, SolrResponse.serializable(response));
+            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             log.debug("Updated failed map for task with zkid:[{}]", head.getId());
           } else {
-            completedMap.put(asyncId, SolrResponse.serializable(response));
+            completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             log.debug("Updated completed map for task with zkid:[{}]", head.getId());
           }
         } else {
-          head.setBytes(SolrResponse.serializable(response));
+          head.setBytes(OverseerSolrResponseSerializer.serialize(response));
           log.debug("Completed task:[{}]", head.getId());
         }
 

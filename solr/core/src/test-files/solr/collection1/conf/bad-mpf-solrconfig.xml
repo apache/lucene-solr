@@ -24,7 +24,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <indexConfig>
-    <mergePolicyFactory class="org.apache.solr.update.DummyMergePolicyFactory">
+    <mergePolicyFactory class="org.apache.solr.index.DummyMergePolicyFactory">
       <int name="mergeFactor">8</int>
     </mergePolicyFactory>
   </indexConfig>

@@ -43,7 +43,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -143,11 +143,10 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     public final Pair<BytesRef,Long> rootCode;
     public final long numTerms;
     public final long indexStartFP;
-    private final int longsSize;
     public final BytesRef minTerm;
     public final BytesRef maxTerm;
 
-    public FieldMetaData(FieldInfo fieldInfo, Pair<BytesRef,Long> rootCode, long numTerms, long indexStartFP, int longsSize,
+    public FieldMetaData(FieldInfo fieldInfo, Pair<BytesRef,Long> rootCode, long numTerms, long indexStartFP,
                          BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
@@ -155,7 +154,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       this.rootCode = rootCode;
       this.indexStartFP = indexStartFP;
       this.numTerms = numTerms;
-      this.longsSize = longsSize;
       this.minTerm = minTerm;
       this.maxTerm = maxTerm;
     }
@@ -350,29 +348,28 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final Builder<Pair<BytesRef,Long>> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                                                      0, 0, true, false, Integer.MAX_VALUE,
-                                                                      FST_OUTPUTS, true, 15);
+      final FSTCompiler<Pair<BytesRef,Long>> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
+          .shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
       //indexBuilder.DEBUG = false;
       final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
+      fstCompiler.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
       for(PendingBlock block : blocks) {
         if (block.subIndices != null) {
           for(FST<Pair<BytesRef,Long>> subIndex : block.subIndices) {
-            append(indexBuilder, subIndex, scratchIntsRef);
+            append(fstCompiler, subIndex, scratchIntsRef);
           }
           block.subIndices = null;
         }
       }
 
-      index = indexBuilder.finish();
+      index = fstCompiler.compile();
 
       assert subIndices == null;
 
@@ -387,14 +384,14 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Pair<BytesRef,Long>> builder, FST<Pair<BytesRef,Long>> subIndex, IntsRefBuilder scratchIntsRef) throws IOException {
+    private void append(FSTCompiler<Pair<BytesRef,Long>> fstCompiler, FST<Pair<BytesRef,Long>> subIndex, IntsRefBuilder scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Pair<BytesRef,Long>> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Pair<BytesRef,Long>> indexEnt;
       while((indexEnt = subIndexEnum.next()) != null) {
         //if (DEBUG) {
         //  System.out.println("      add sub=" + indexEnt.input + " " + indexEnt.input + " output=" + indexEnt.output);
         //}
-        builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
+        fstCompiler.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
       }
     }
   }
@@ -404,7 +401,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter {
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
     final FixedBitSet docsSeen;
     long indexStartFP;
@@ -416,8 +412,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // to write a new block:
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private int[] prefixStarts = new int[8];
-
-    private final long[] longs;
 
     // Pending stack of terms and blocks.  As terms arrive (in sorted order)
     // we append to this stack, and once the top of the stack has enough
@@ -606,13 +600,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term meta data
-          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-          for (int pos = 0; pos < longsSize; pos++) {
-            assert longs[pos] >= 0;
-            metaWriter.writeVLong(longs[pos]);
-          }
-          bytesWriter.copyTo(metaWriter);
-          bytesWriter.reset();
+          postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
           absolute = false;
         }
       } else {
@@ -649,13 +637,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
-            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-            for (int pos = 0; pos < longsSize; pos++) {
-              assert longs[pos] >= 0;
-              metaWriter.writeVLong(longs[pos]);
-            }
-            bytesWriter.copyTo(metaWriter);
-            bytesWriter.reset();
+            postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
             absolute = false;
           } else {
             PendingBlock block = (PendingBlock) ent;
@@ -721,8 +703,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       docsSeen = new FixedBitSet(maxDoc);
 
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.longs = new long[longsSize];
+      postingsWriter.setField(fieldInfo);
     }
     
     /** Writes one term's worth of postings. */
@@ -819,7 +800,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
                                      numTerms,
                                      indexStartFP,
-                                     longsSize,
                                      minTerm, maxTerm));
       } else {
         // cannot assert this: we skip deleted docIDs in the postings:
@@ -829,7 +809,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
     private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
   }
 
   private boolean closed;
@@ -857,7 +836,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         out.writeVInt(field.rootCode.output1.length);
         out.writeBytes(field.rootCode.output1.bytes, field.rootCode.output1.offset, field.rootCode.output1.length);
         out.writeVLong(field.rootCode.output2);
-        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
         writeBytesRef(out, field.minTerm);
         writeBytesRef(out, field.maxTerm);

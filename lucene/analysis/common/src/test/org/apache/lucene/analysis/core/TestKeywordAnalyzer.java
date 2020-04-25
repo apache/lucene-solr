@@ -33,8 +33,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -84,7 +84,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   */
 
   public void testMutipleDocument() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     Analyzer analyzer = new KeywordAnalyzer();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
@@ -130,7 +130,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new KeywordAnalyzer();
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
 }

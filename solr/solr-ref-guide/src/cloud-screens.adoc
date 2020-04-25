@@ -43,7 +43,7 @@ image::images/cloud-screens/cloud-tree.png[image,width=487,height=250]
 As an aid to debugging, the data shown in the "Tree" view can be exported locally using the following command `bin/solr zk ls -r /`
 
 == ZK Status View
-The "ZK Status" view gives an overview over the ZooKeeper servers or ensemble used by Solr. It lists whether running in `standalone` or `ensemble` mode, shows how many zookeepers are configured, and then displays a table listing detailed monitoring status for each of the zookeepers, including who is the leader, configuration parameters and more.
+The "ZK Status" view gives an overview over the ZooKeeper servers or ensemble used by Solr. It lists whether running in `standalone` or `ensemble` mode, shows how many ZooKeeper nodes are configured, and then displays a table listing detailed monitoring status for each node, including who is the leader, configuration parameters, and more.
 
 image::images/cloud-screens/cloud-zkstatus.png[image,width=512,height=509]
 

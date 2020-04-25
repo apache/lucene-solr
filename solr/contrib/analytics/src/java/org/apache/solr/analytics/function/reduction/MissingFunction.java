@@ -40,7 +40,7 @@ public class MissingFunction extends AbstractLongValue implements ReductionFunct
     }
     return new MissingFunction(params[0]);
   });
-  
+
   public MissingFunction(AnalyticsValueStream param) {
     this.collector = new ExpressionCountCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

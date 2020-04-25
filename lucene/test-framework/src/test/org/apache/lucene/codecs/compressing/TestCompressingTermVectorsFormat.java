@@ -43,7 +43,11 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
 
   @Override
   protected Codec getCodec() {
-    return CompressingCodec.randomInstance(random());
+    if (TEST_NIGHTLY) {
+      return CompressingCodec.randomInstance(random());
+    } else {
+      return CompressingCodec.reasonableInstance(random());
+    }
   }
   
   // https://issues.apache.org/jira/browse/LUCENE-5156
@@ -60,19 +64,10 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("this")));
-    try {
-      termsEnum.ord();
-      fail();
-    } catch (UnsupportedOperationException expected) {
-      // expected exception
-    }
-    
-    try {
-      termsEnum.seekExact(0);
-      fail();
-    } catch (UnsupportedOperationException expected) {
-      // expected exception
-    }
+
+    expectThrows(UnsupportedOperationException.class, termsEnum::ord);
+    expectThrows(UnsupportedOperationException.class, () -> termsEnum.seekExact(0));
+
     ir.close();
     iw.close();
     dir.close();

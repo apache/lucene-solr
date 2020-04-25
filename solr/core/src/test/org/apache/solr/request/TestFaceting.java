@@ -900,5 +900,36 @@ public class TestFaceting extends SolrTestCaseJ4 {
       return null;
     });
   }
+
+  @Test
+  public void testListedTermCounts() throws Exception {
+    assertU(adoc("id", "1", "title_ws", "Book1"));
+    assertU(adoc("id", "2", "title_ws", "Book2"));
+    assertU(adoc("id", "3", "title_ws", "Book3"));
+    assertU(adoc("id", "4", "title_ws", "Book2"));
+    assertU(adoc("id", "5", "title_ws", "Book1"));
+    assertU(adoc("id", "6", "title_ws", "Book2"));
+    assertU(commit());
+
+    // order is the same as in facet.field, when no facet.sort specified
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "{!terms=Book3,Book2,Book1}title_ws"),
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book3']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[2][@name='Book2']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[3][@name='Book1']");
+
+    // order is by counts, when facet.sort by count specified
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "{!terms=Book3,Book2,Book1}title_ws",
+            "facet.sort", FacetParams.FACET_SORT_COUNT),
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book2']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[2][@name='Book1']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[3][@name='Book3']");
+
+    // order is by index, when facet.sort by index specified
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "{!terms=Book3,Book2,Book1}title_ws",
+            "facet.sort", FacetParams.FACET_SORT_INDEX),
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[2][@name='Book2']",
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[3][@name='Book3']");
+  }
 }
 

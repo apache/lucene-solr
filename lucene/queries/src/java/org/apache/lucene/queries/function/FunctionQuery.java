@@ -18,15 +18,14 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -68,9 +67,6 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {}
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       return new AllScorer(context, this, boost);
     }
@@ -84,6 +80,11 @@ public class FunctionQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context)).explain(doc);
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   protected class AllScorer extends Scorer {
@@ -149,7 +150,6 @@ public class FunctionQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
-
 
   /** Prints a user-readable version of this query. */
   @Override

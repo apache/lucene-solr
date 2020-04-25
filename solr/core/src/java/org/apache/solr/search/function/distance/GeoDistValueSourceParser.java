@@ -26,6 +26,7 @@ import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.spatial.SpatialStrategy;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.FieldType;
@@ -51,7 +52,19 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
 
     //note: parseValueSourceList can't handle a field reference to an AbstractSpatialFieldType,
     // so those fields are expressly handled via sfield=
-    List<ValueSource> sources = fp.parseValueSourceList();
+    List<ValueSource> sources;
+    try {
+      sources = fp.parseValueSourceList();
+    } catch (SolrException e) {
+      if (e.getMessage().equals("A ValueSource isn't directly available from this field. " +
+          "Instead try a query using the distance as the score.")) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "geodist() does not support field names in its arguments " +
+            "when stated fields are solr.LatLonPointSpatialField spatial type, requires sfield param instead");
+      }
+      else {
+        throw e;
+      }
+    }
 
     // "m" is a multi-value source, "x" is a single-value source
     // allow (m,m) (m,x,x) (x,x,m) (x,x,x,x)

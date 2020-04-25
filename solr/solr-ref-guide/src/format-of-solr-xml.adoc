@@ -22,24 +22,32 @@ This section will describe the default `solr.xml` file included with Solr and ho
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in ZooKeeper when using SolrCloud. The default `solr.xml` file looks like this:
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. The default `solr.xml` file looks like this:
 
 [source,xml]
 ----
 <solr>
 
+  <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
+  <str name="sharedLib">${solr.sharedLib:}</str>
+
   <solrcloud>
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
     <str name="hostContext">${hostContext:solr}</str>
-    <int name="zkClientTimeout">${zkClientTimeout:15000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
+    <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
+    <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
+    <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
+    <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
+    <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
     class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:0}</int>
-    <int name="connTimeout">${connTimeout:0}</int>
+    <int name="socketTimeout">${socketTimeout:600000}</int>
+    <int name="connTimeout">${connTimeout:60000}</int>
+    <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
 </solr>
@@ -81,7 +89,7 @@ The root of the core discovery tree, defaults to `$SOLR_HOME` (by default, `serv
 Currently non-operational.
 
 `sharedLib`::
-Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. This path is relative to `$SOLR_HOME`. Custom handlers may be placed in this directory.
+Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. If the specified path is not absolute, it will be relative to `$SOLR_HOME`. Custom handlers may be placed in this directory. Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's class path.
 
 `shareSchema`::
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.
@@ -90,8 +98,20 @@ This attribute, when set to `true`, ensures that the multiple cores pointing to 
 Defines how many cores with `transient=true` that can be loaded before swapping the least recently used core for a new core.
 
 `configSetBaseDir`::
-The directory under which configSets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
+The directory under which configsets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 
+[[global-maxbooleanclauses]]
+`maxBooleanClauses`::
+Sets the maximum number of clauses allowed in any boolean query.
++
+This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
++
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the `_default` configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
++
+[source,xml]
+----
+<maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+----
 
 === The <solrcloud> Element
 
@@ -189,6 +209,25 @@ If the threadpool uses a backing queue, what is its maximum size to use direct h
 `fairnessPolicy`::
 A boolean to configure if the threadpool favors fairness over throughput. Default is false to favor throughput.
 
+`shardsWhitelist`::
+When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can also be configured in `solr.in.sh`.
+
+`replicaRouting`::
+A NamedList specifying replica routing preference configuration. This may be used to select and configure replica routing preferences. `default=true` may be used to set the default base replica routing preference. Only positive default status assertions are respected; i.e., `default=false` has no effect. If no explicit default base replica routing preference is configured, the implicit default will be `random`.
+----
+<shardHandlerFactory class="HttpShardHandlerFactory">
+  <lst name="replicaRouting">
+    <lst name="stable">
+      <bool name="default">true</bool>
+      <str name="dividend">routingDividend</str>
+      <str name="hash">q</str>
+    </lst>
+  </lst>
+</shardHandlerFactory>
+----
+Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter. If a request contains both `dividend` and `hash`, `dividend` takes priority for routing. For configuring `stable` routing, the `hash` parameter implicitly defaults to a hash of the String value of the main query parameter (i.e., `q`).
++
+The `dividend` parameter must be configured explicitly; there is no implicit default. If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
 === The <metrics> Element
 
@@ -202,15 +241,15 @@ Solr supports variable substitution of JVM system property values in `solr.xml`,
 
 Any JVM system properties usually specified using the `-D` flag when starting the JVM, can be used as variables in the `solr.xml` file.
 
-For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "0". However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "0".
+For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "60000". However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
 
 [source,xml]
 ----
 <solr>
   <shardHandlerFactory name="shardHandlerFactory"
                        class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:0}</int>
-    <int name="connTimeout">${connTimeout:0}</int>
+    <int name="socketTimeout">${socketTimeout:60000}</int>
+    <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 </solr>
 ----

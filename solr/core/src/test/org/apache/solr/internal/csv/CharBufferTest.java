@@ -17,18 +17,13 @@
 package org.apache.solr.internal.csv;
 
 import junit.framework.TestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
 public class CharBufferTest extends TestCase {
     public void testCreate() {
         CharBuffer cb = new CharBuffer();
         assertEquals(0, cb.length());
-        try {
-            cb = new CharBuffer(0);
-            fail("Should not be possible");
-        } catch(IllegalArgumentException e) {
-            // expected
-        }
-        
+        SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> new CharBuffer(0));
         cb = new CharBuffer(128);
         assertEquals(0, cb.length());
     }

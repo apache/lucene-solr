@@ -113,8 +113,8 @@ public class DocBuilder {
       VariableResolver resolver = null;
       String epoch = propWriter.convertDateToString(EPOCH);
       if(dataImporter != null && dataImporter.getCore() != null
-          && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
-        resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
+          && dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties() != null){
+        resolver =  new VariableResolver(dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties());
       } else {
         resolver = new VariableResolver();
       }
@@ -157,7 +157,7 @@ public class DocBuilder {
 
   private void invokeEventListener(String className, Exception lastException) {
     try {
-      EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
+      EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).getConstructor().newInstance();
       notifyListener(listener, lastException);
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e, "Unable to load class : " + className);
@@ -721,7 +721,7 @@ public class DocBuilder {
     } else {
       try {
         entityProcessor = (EntityProcessor) loadClass(entity.getProcessorName(), dataImporter.getCore())
-                .newInstance();
+            .getConstructor().newInstance();
       } catch (Exception e) {
         wrapAndThrow (SEVERE,e,
                 "Unable to load EntityProcessor implementation for entity:" + entity.getName());

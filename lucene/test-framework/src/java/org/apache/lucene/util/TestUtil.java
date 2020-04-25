@@ -52,9 +52,9 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80Codec;
+import org.apache.lucene.codecs.lucene84.Lucene84Codec;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -63,7 +63,29 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
@@ -71,12 +93,12 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
@@ -897,14 +919,14 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene80Codec();
+    return new Lucene84Codec();
   }
   
   /** 
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    */
   public static PostingsFormat getDefaultPostingsFormat() {
-    return new Lucene50PostingsFormat();
+    return new Lucene84PostingsFormat();
   }
   
   /** 
@@ -912,7 +934,7 @@ public final class TestUtil {
    * @lucene.internal this may disappear at any time
    */
   public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
-    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
+    return new Lucene84PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
   }
   
   /** Returns a random postings format that supports term ordinals */
@@ -1065,7 +1087,7 @@ public final class TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
-      final int dimCount = field1.fieldType().pointDataDimensionCount();
+      final int dimCount = field1.fieldType().pointDimensionCount();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
@@ -1281,9 +1303,12 @@ public final class TestUtil {
     }
   }
   
-  /** Returns a copy of directory, entirely in RAM */
-  public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
-    RAMDirectory ram = new RAMDirectory();
+  /**
+   * Returns a copy of the source directory, with file contents stored
+   * in RAM.
+   */
+  public static Directory ramCopyOf(Directory dir) throws IOException {
+    Directory ram = new ByteBuffersDirectory();
     for (String file : dir.listAll()) {
       if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         ram.copyFrom(dir, file, file, IOContext.DEFAULT);

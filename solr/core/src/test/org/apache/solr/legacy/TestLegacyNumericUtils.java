@@ -25,10 +25,10 @@ import java.util.Random;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.solr.SolrTestCase;
 
-public class TestLegacyNumericUtils extends LuceneTestCase {
+public class TestLegacyNumericUtils extends SolrTestCase {
 
   public void testLongConversionAndOrdering() throws Exception {
     // generate a series of encoded longs, each numerical one bigger than the one before

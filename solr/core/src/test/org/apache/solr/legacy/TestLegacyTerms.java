@@ -24,10 +24,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.solr.SolrTestCase;
 
-public class TestLegacyTerms extends LuceneTestCase {
+public class TestLegacyTerms extends SolrTestCase {
 
   public void testEmptyIntFieldMinMax() throws Exception {
     assertNull(LegacyNumericUtils.getMinInt(EMPTY_TERMS));

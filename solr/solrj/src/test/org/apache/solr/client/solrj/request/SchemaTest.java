@@ -29,7 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -62,7 +62,7 @@ public class SchemaTest extends RestTestBase {
   }
   
   private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    HttpSolrClient.RemoteExecutionException e = expectThrows(HttpSolrClient.RemoteExecutionException.class, runnable);
+    BaseHttpSolrClient.RemoteExecutionException e = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
     SimpleOrderedMap errorMap = (SimpleOrderedMap)e.getMetaData().get("error");
     assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
         ((NamedList)errorMap.get("metadata")).get("error-class"));
@@ -329,12 +329,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteFieldResponse);
 
-    try {
-      fieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the field %s shouldn't be anymore available over Schema API", fieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> fieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test
@@ -454,13 +449,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteDynamicFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteDynamicFieldResponse);
 
-    try {
-      dynamicFieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the dynamic field %s shouldn't be anymore available over Schema API",
-          dynamicFieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test

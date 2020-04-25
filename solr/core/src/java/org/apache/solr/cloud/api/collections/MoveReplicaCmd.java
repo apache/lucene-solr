@@ -48,6 +48,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
@@ -72,13 +73,21 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private void moveReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     log.debug("moveReplica() : {}", Utils.toJSONString(message));
     ocmh.checkRequired(message, COLLECTION_PROP, CollectionParams.TARGET_NODE);
-    String collection = message.getStr(COLLECTION_PROP);
+    String extCollection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean inPlaceMove = message.getBool(IN_PLACE_MOVE, true);
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
 
     String async = message.getStr(ASYNC);
+
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collection;
+    if (followAliases) {
+      collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {
@@ -209,7 +218,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         WAIT_FOR_FINAL_STATE, String.valueOf(waitForFinalState),
         SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, skipCreateReplicaInClusterState,
         CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
-        CoreAdminParams.DATA_DIR, dataDir);
+        CoreAdminParams.DATA_DIR, dataDir,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     try {
@@ -263,7 +274,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
-        CoreAdminParams.NAME, newCoreName);
+        CoreAdminParams.NAME, newCoreName,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);

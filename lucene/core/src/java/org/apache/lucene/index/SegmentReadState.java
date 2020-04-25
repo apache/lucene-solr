@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
 import org.apache.lucene.store.Directory;
@@ -51,8 +50,8 @@ public class SegmentReadState {
 
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(Directory dir, SegmentInfo info,
-      FieldInfos fieldInfos, IOContext context) {
-    this(dir, info, fieldInfos,  context, "");
+                          FieldInfos fieldInfos, IOContext context) {
+    this(dir, info, fieldInfos, context, "");
   }
   
   /** Create a {@code SegmentReadState}. */

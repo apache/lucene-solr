@@ -58,7 +58,7 @@ import org.apache.solr.analytics.value.FillableTestValue.TestStringValueStream;
 import org.junit.Test;
 
 public class RemoveFunctionTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void castingTest() {
     assertTrue(RemoveFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestBooleanValue(), new TestStringValue()}) instanceof StringValue);
@@ -103,22 +103,22 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(false).setExists(true);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(true).setExists(true);
     remover.setValue(true).setExists(true);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val.setValue(false).setExists(true);
     remover.setValue(true).setExists(true);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(false).setExists(true);
     remover.setValue(false).setExists(true);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val.setValue(false).setExists(true);
     remover.setExists(false);
     assertEquals(false, func.getBoolean());
@@ -144,18 +144,18 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(-234).setExists(true);
     func.getInt();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(21).setExists(true);
     remover.setValue(234).setExists(true);
     assertEquals(21, func.getInt());
     assertTrue(func.exists());
-    
+
     val.setValue(-154).setExists(true);
     remover.setValue(-154).setExists(true);
     func.getInt();
     assertFalse(func.exists());
-    
+
     val.setValue(52334).setExists(true);
     remover.setExists(false);
     assertEquals(52334, func.getInt());
@@ -181,7 +181,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(234L).setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(21L).setExists(true);
     remover.setValue(234L).setExists(true);
@@ -192,7 +192,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(3421L).setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setValue(-52334L).setExists(true);
     remover.setExists(false);
     assertEquals(-52334L, func.getLong());
@@ -218,7 +218,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(3124123.32F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(-21.324F).setExists(true);
     remover.setValue(23423.423342F).setExists(true);
@@ -229,7 +229,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(84353.452F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
-    
+
     val.setValue(2345.345543F).setExists(true);
     remover.setExists(false);
     assertEquals(2345.345543F, func.getFloat(), .00000001);
@@ -255,18 +255,18 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(3124123.32).setExists(true);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(-21.324).setExists(true);
     remover.setValue(23423.423342).setExists(true);
     assertEquals(-21.324, func.getDouble(), .00000001);
     assertTrue(func.exists());
-    
+
     val.setValue(84353.452).setExists(true);
     remover.setValue(84353.452).setExists(true);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     val.setValue(2345.345543).setExists(true);
     remover.setExists(false);
     assertEquals(2345.345543, func.getDouble(), .00000001);
@@ -278,7 +278,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1950-02-23T14:54:34Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValue val = new TestDateValue();
     TestDateValue remover = new TestDateValue();
 
@@ -296,7 +296,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue("1950-02-23T14:54:34Z").setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("1810-12-02T10:30:15Z").setExists(true);
     remover.setValue("2023-11-01T20:30:15Z").setExists(true);
@@ -307,7 +307,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue("1950-02-23T14:54:34Z").setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setValue("2023-11-01T20:30:15Z").setExists(true);
     remover.setExists(false);
     assertEquals(date3.getTime(), func.getLong());
@@ -333,7 +333,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue("abc456").setExists(true);
     func.getString();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("abc123").setExists(true);
     remover.setValue("def456").setExists(true);
@@ -344,7 +344,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue("this will be removed").setExists(true);
     func.getString();
     assertFalse(func.exists());
-    
+
     val.setValue("def123").setExists(true);
     remover.setExists(false);
     assertEquals("def123", func.getString());
@@ -370,7 +370,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(Boolean.TRUE).setExists(true);
     func.getObject();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("abc123").setExists(true);
     remover.setValue(new Date(123)).setExists(true);
@@ -381,7 +381,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     remover.setValue(23423.0d).setExists(true);
     func.getObject();
     assertFalse(func.exists());
-    
+
     val.setValue(234L).setExists(true);
     remover.setExists(false);
     assertEquals(234L, func.getObject());
@@ -403,13 +403,13 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     val.setValues();
     remover.setValue(true).setExists(true);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(false, true, false, true, true);
     remover.setValue(true).setExists(true);
@@ -437,7 +437,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values3.next(), value);
     });
     assertFalse(values3.hasNext());
-    
+
     val.setValues(false, false, false);
     remover.setValue(false).setExists(true);
     func.streamBooleans( value -> {
@@ -466,7 +466,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(1, 234, -234, 4439, -234, -3245);
     remover.setValue(-234).setExists(true);
@@ -523,7 +523,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323L, -9423L, -1234L, 23423L, -1234L, -1234L);
     remover.setValue(-1234L).setExists(true);
@@ -580,7 +580,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(-1234.9478F, -9423.5F, -1234.9478F, 23423.324F, 942.0F);
     remover.setValue(-1234.9478F).setExists(true);
@@ -637,7 +637,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323.213, -9423.5, 124544.42);
     remover.setValue(124544.42).setExists(true);
@@ -656,7 +656,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values2.next(), value, .00000001);
     });
     assertFalse(values2.hasNext());
-    
+
 
     val.setValues(323.213, -9423.5, 124544.42);
     remover.setValue(345.34).setExists(true);
@@ -679,7 +679,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1931-03-16T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValueStream val = new TestDateValueStream();
     TestDateValue remover = new TestDateValue();
 
@@ -699,7 +699,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
     remover.setValue("1931-03-16T18:15:45Z").setExists(true);
@@ -756,7 +756,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("abc", "123", "456", "abc");
     remover.setValue("abc").setExists(true);
@@ -811,7 +811,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     remover.setValue(new Date(12312)).setExists(true);

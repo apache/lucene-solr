@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  
  * See {@link LimitTokenPositionFilter} for an explanation of its use.
  * @since 4.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "limitTokenPosition";
 
   public static final String MAX_TOKEN_POSITION_KEY = "maxTokenPosition";
   public static final String CONSUME_ALL_TOKENS_KEY = "consumeAllTokens";
@@ -50,6 +54,11 @@ public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public LimitTokenPositionFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

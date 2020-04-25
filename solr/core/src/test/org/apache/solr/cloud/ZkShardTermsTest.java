@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -52,7 +53,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
@@ -126,6 +127,28 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.doneRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 
+    }
+  }
+
+  @Test
+  public void testCoreRemovalWhileRecovering() {
+    String collection = "recoveringFlagRemoval";
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
+      zkShardTerms.registerTerm("replica1_rem");
+      zkShardTerms.registerTerm("replica2_rem");
+
+      // normal case when leader failed to send an update to replica
+      zkShardTerms.ensureTermsIsHigher("replica1_rem", Collections.singleton("replica2_rem"));
+      zkShardTerms.startRecovering("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), 0);
+
+      // Remove core, and check if the correct core was removed as well as the recovering term for that core
+      zkShardTerms.removeTerm("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica1_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), -1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), -1);
     }
   }
 
@@ -245,7 +268,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   public void testEnsureTermsIsHigher() {
     Map<String, Long> map = new HashMap<>();
     map.put("leader", 0L);
-    ZkShardTerms.Terms terms = new ZkShardTerms.Terms(map, 0);
+    ShardTerms terms = new ShardTerms(map, 0);
     terms = terms.increaseTerms("leader", Collections.singleton("replica"));
     assertEquals(1L, terms.getTerm("leader").longValue());
   }

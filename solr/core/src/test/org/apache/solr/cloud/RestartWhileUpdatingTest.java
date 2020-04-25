@@ -19,12 +19,12 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,8 +62,8 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     System.setProperty("leaderVoteWait", "300000");
     System.setProperty("solr.autoCommit.maxTime", "30000");
     System.setProperty("solr.autoSoftCommit.maxTime", "3000");
-    TestInjection.nonGracefullClose = "true:60";
-    TestInjection.failReplicaRequests = "true:03";
+    // SOLR-13212 // TestInjection.nonGracefullClose = "true:60";
+    // SOLR-13189 // TestInjection.failReplicaRequests = "true:03";
   }
   
   @AfterClass
@@ -74,8 +74,6 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -141,11 +139,11 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(1000);
   
-    waitForThingsToLevelOut(320);
+    waitForThingsToLevelOut(320, TimeUnit.SECONDS);
     
     Thread.sleep(2000);
     
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     
     Thread.sleep(5000);
     

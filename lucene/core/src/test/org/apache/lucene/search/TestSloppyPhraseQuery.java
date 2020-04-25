@@ -28,9 +28,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
@@ -144,7 +144,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     builder.setSlop(slop);
     query = builder.build();
 
-    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     writer.addDocument(doc);
 

@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ja.dict;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
@@ -35,28 +36,35 @@ public final class ConnectionCosts {
   public static final String HEADER = "kuromoji_cc";
   public static final int VERSION = 1;
   
-  private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
+  private final ByteBuffer buffer;
+  private final int forwardSize;
   
-  private ConnectionCosts() throws IOException {
+  /**
+   * @param scheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param path - where to load resources from, without the ".dat" suffix
+   */
+  public ConnectionCosts(BinaryDictionary.ResourceScheme scheme, String path) throws IOException {
     InputStream is = null;
-    short[][] costs = null;
     boolean success = false;
     try {
-      is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
+      is = BinaryDictionary.getResource(scheme, path.replace('.', '/') + FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      int forwardSize = in.readVInt();
+      forwardSize = in.readVInt();
       int backwardSize = in.readVInt();
-      costs = new short[backwardSize][forwardSize];
+      int size = forwardSize * backwardSize;
+
+      // copy the matrix into a direct byte buffer
+      final ByteBuffer tmpBuffer = ByteBuffer.allocateDirect(size*2);
       int accum = 0;
-      for (int j = 0; j < costs.length; j++) {
-        final short[] a = costs[j];
-        for (int i = 0; i < a.length; i++) {
+      for (int j = 0; j < backwardSize; j++) {
+        for (int i = 0; i < forwardSize; i++) {
           accum += in.readZInt();
-          a[i] = (short)accum;
+          tmpBuffer.putShort((short) accum);
         }
       }
+      buffer = tmpBuffer.asReadOnlyBuffer();
       success = true;
     } finally {
       if (success) {
@@ -65,12 +73,16 @@ public final class ConnectionCosts {
         IOUtils.closeWhileHandlingException(is);
       }
     }
-    
-    this.costs = costs;
   }
-  
+
+  private ConnectionCosts() throws IOException {
+    this(BinaryDictionary.ResourceScheme.CLASSPATH, ConnectionCosts.class.getName());
+  }
+
   public int get(int forwardId, int backwardId) {
-    return costs[backwardId][forwardId];
+    // map 2d matrix into a single dimension short array
+    int offset = (backwardId * forwardSize + forwardId) * 2;
+    return buffer.getShort(offset);
   }
   
   public static ConnectionCosts getInstance() {

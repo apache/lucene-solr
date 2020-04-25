@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -28,11 +33,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * Extend SolrJettyTestBase because the SOLR-2535 bug only manifested itself when
  * the {@link org.apache.solr.servlet.SolrDispatchFilter} is used, which isn't for embedded Solr use.
@@ -44,17 +44,13 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
-  public void test404ViaHttp() throws SolrServerException, IOException {
+  public void test404ViaHttp() throws Exception {
     SolrClient client = getSolrClient();
     QueryRequest request = new QueryRequest(params("file",
                                                    "does-not-exist-404.txt"));
     request.setPath("/admin/file");
-    try {
-      QueryResponse resp = request.process(client);
-      fail("didn't get 404 exception");
-    } catch (SolrException e) {
-      assertEquals(404, e.code());
-    }
+    SolrException e = expectThrows(SolrException.class, () -> request.process(client));
+    assertEquals(404, e.code());
   }
 
   public void test404Locally() throws Exception {
@@ -62,21 +58,17 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     // we need to test that executing the handler directly does not 
     // throw an exception, just sets the exception on the response.
     initCore("solrconfig.xml", "schema.xml");
-    try {
-      // bypass TestHarness since it will throw any exception found in the
-      // response.
-      SolrCore core = h.getCore();
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      core.execute(core.getRequestHandler("/admin/file"),
-                   req("file", "does-not-exist-404.txt"), rsp);
-      assertNotNull("no exception in response", rsp.getException());
-      assertTrue("wrong type of exception: " + rsp.getException().getClass(),
-                 rsp.getException() instanceof SolrException);
-      assertEquals(404, ((SolrException)rsp.getException()).code());
 
-    } catch (Exception e) {
-      assertNull("Should not have caught an exception", e);
-    }
+    // bypass TestHarness since it will throw any exception found in the
+    // response.
+    SolrCore core = h.getCore();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    core.execute(core.getRequestHandler("/admin/file"),
+        req("file", "does-not-exist-404.txt"), rsp);
+    assertNotNull("no exception in response", rsp.getException());
+    assertTrue("wrong type of exception: " + rsp.getException().getClass(),
+        rsp.getException() instanceof SolrException);
+    assertEquals(404, ((SolrException)rsp.getException()).code());
   }
 
   public void testDirList() throws SolrServerException, IOException {

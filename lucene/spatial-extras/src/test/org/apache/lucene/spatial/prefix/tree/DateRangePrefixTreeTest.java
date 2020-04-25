@@ -17,8 +17,11 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -29,6 +32,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
+
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
 public class DateRangePrefixTreeTest extends LuceneTestCase {
 
@@ -94,7 +99,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     roundTrip(cal);
   }
 
-  public void testToStringISO8601() {
+  public void testToStringISO8601() throws ParseException {
     Calendar cal = tree.newCal();
     cal.setTimeInMillis(random().nextLong());
     //  create ZonedDateTime from the calendar, then get toInstant.toString which is the ISO8601 we emulate
@@ -110,6 +115,30 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
             .toInstant().toString();
     String resultToString = tree.toString(cal) + 'Z';
     assertEquals(expectedISO8601, resultToString);
+    assertEquals(cal, tree.parseCalendar(expectedISO8601));
+  }
+
+  public void testParseCalendar() throws ParseException {
+    Instant expected = OffsetDateTime.of(1984, 12, 18, 12, 34, 56, 100000000, ZoneOffset.UTC).toInstant();
+
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1Z").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 10), tree.parseCalendar("1984-12-18T12:34:56.01Z").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 1), tree.parseCalendar("1984-12-18T12:34:56.001Z").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1000Z").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.100000000Z").toInstant());
+    assertEquals(expected.with(ChronoField.NANO_OF_SECOND, 0), tree.parseCalendar("1984-12-18T12:34:56Z").toInstant());
+    // decimal places are simply cut off as rounding may affect the "seconds" part of the calender which was set before
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 999), tree.parseCalendar("1984-12-18T12:34:56.9999Z").toInstant());
+
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 10), tree.parseCalendar("1984-12-18T12:34:56.01").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 1), tree.parseCalendar("1984-12-18T12:34:56.001").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1000").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.100000000").toInstant());
+    assertEquals(expected.with(ChronoField.NANO_OF_SECOND, 0), tree.parseCalendar("1984-12-18T12:34:56").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 999), tree.parseCalendar("1984-12-18T12:34:56.9999").toInstant());
+    
+    assertEquals(OffsetDateTime.parse("1984-12-18T12:34:56.01Z", ISO_DATE_TIME).get(ChronoField.MILLI_OF_SECOND), 10);
   }
 
   //copies from DateRangePrefixTree
@@ -208,6 +237,53 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     assertEquals("[2014 TO 2014-09-15]", tree.parseShape("[2014 TO 2014-09-15]").toString());
 
     assertEquals("[* TO 2014-09-15]", tree.parseShape("[* TO 2014-09-15]").toString());
+  }
+
+  public void testInvalidDateException() throws ParseException {
+    {
+      Calendar jurasic = tree.parseCalendar("-187183959-07-06T11:00:57.156");
+      assertEquals(187183960, jurasic.get(Calendar.YEAR));
+      assertEquals(0, jurasic.get(Calendar.ERA));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-10T13-1");
+    });
+    {
+        String causeMessage = expectThrows(ParseException.class, () -> {
+          tree.parseCalendar("2000-11-10T13Z1");
+        }).getCause().getMessage();
+        assertTrue(causeMessage +" has actual delimeter", causeMessage.contains("Z"));
+        assertTrue(causeMessage +" has expected delimeter",causeMessage.contains(":"));
+        assertFalse(causeMessage +" has no input",causeMessage.contains("2000-11-10"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13Z");
+    });
+    {
+      String causeMessage = expectThrows(ParseException.class, () -> {
+        tree.parseCalendar("2000-13-12");
+      }).getCause().getMessage();
+      assertTrue(causeMessage +" has actual value",causeMessage.contains("13"));
+      assertFalse(causeMessage +" has no input",causeMessage.contains("2000-13-12"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-13-41T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:61Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:14:61Z");
+    });
   }
 
 }

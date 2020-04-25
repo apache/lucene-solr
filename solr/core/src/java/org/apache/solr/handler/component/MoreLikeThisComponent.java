@@ -86,8 +86,9 @@ public class MoreLikeThisComponent extends SearchComponent {
   
       rb.setFieldFlags(flags);
 
-      log.debug("Starting MoreLikeThis.Process.  isShard: "
-          + params.getBool(ShardParams.IS_SHARD));
+      if (log.isDebugEnabled()) {
+        log.debug("Starting MoreLikeThis.Process.  isShard: {}", params.getBool(ShardParams.IS_SHARD));
+      }
       SolrIndexSearcher searcher = rb.req.getSearcher();
 
       if (params.getBool(ShardParams.IS_SHARD, false)) {
@@ -112,7 +113,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             Entry<String,BooleanQuery> idToQuery = idToQueryIt.next();
             String s = idToQuery.getValue().toString();
 
-            log.debug("MLT Query:" + s);
+            log.debug("MLT Query:{}", s);
             temp.add(idToQuery.getKey(), idToQuery.getValue().toString());
           }
 
@@ -135,7 +136,9 @@ public class MoreLikeThisComponent extends SearchComponent {
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
-      log.debug("ShardRequest.response.size: " + sreq.responses.size());
+      if (log.isDebugEnabled()) {
+        log.debug("ShardRequest.response.size: {}", sreq.responses.size());
+      }
       for (ShardResponse r : sreq.responses) {
         if (r.getException() != null) {
           // This should only happen in case of using shards.tolerant=true. Omit this ShardResponse
@@ -143,11 +146,14 @@ public class MoreLikeThisComponent extends SearchComponent {
         }
         NamedList<?> moreLikeThisReponse = (NamedList<?>) r.getSolrResponse()
             .getResponse().get("moreLikeThis");
-        log.debug("ShardRequest.response.shard: " + r.getShard());
+        if (log.isDebugEnabled()) {
+          log.debug("ShardRequest.response.shard: {}", r.getShard());
+        }
         if (moreLikeThisReponse != null) {
           for (Entry<String,?> entry : moreLikeThisReponse) {
-            log.debug("id: \"" + entry.getKey() + "\" Query: \""
-                + entry.getValue() + "\"");
+            if (log.isDebugEnabled()) {
+              log.debug("id: '{}' Query: '{}'", entry.getKey(), entry.getValue());
+            }
             ShardRequest s = buildShardQuery(rb, (String) entry.getValue(),
                 entry.getKey());
             rb.addRequest(this, s);
@@ -158,8 +164,9 @@ public class MoreLikeThisComponent extends SearchComponent {
     
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0) {
       for (ShardResponse r : sreq.responses) {
-        log.debug("MLT Query returned: "
-            + r.getSolrResponse().getResponse().toString());
+        if (log.isDebugEnabled()) {
+          log.debug("MLT Query returned: {}", r.getSolrResponse().getResponse());
+        }
       }
     }
   }
@@ -180,7 +187,9 @@ public class MoreLikeThisComponent extends SearchComponent {
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0) {
           for (ShardResponse r : sreq.responses) {
-            log.debug("ShardRequest.response.shard: " + r.getShard());
+            if (log.isDebugEnabled()) {
+              log.debug("ShardRequest.response.shard: {}", r.getShard());
+            }
             String key = r.getShardRequest().params
                 .get(MoreLikeThisComponent.DIST_DOC_ID);
             SolrDocumentList shardDocList =  (SolrDocumentList) r.getSolrResponse().getResponse().get("response");
@@ -188,14 +197,8 @@ public class MoreLikeThisComponent extends SearchComponent {
             if (shardDocList == null) {
               continue;
             }
- 
-            log.info("MLT: results added for key: " + key + " documents: "
-                + shardDocList.toString());
-//            if (log.isDebugEnabled()) {
-//              for (SolrDocument doc : shardDocList) {
-//                doc.addField("shard", "=" + r.getShard());
-//              }
-//            }
+
+            log.info("MLT: results added for key: {} documents: {}", key, shardDocList);
             SolrDocumentList mergedDocList = tempResults.get(key);
  
             if (mergedDocList == null) {
@@ -208,7 +211,7 @@ public class MoreLikeThisComponent extends SearchComponent {
               mergedDocList = mergeSolrDocumentList(mergedDocList,
                   shardDocList, mltcount, keyName);
             }
-            log.debug("Adding docs for key: " + key);
+            log.debug("Adding docs for key: {}", key);
             tempResults.put(key, mergedDocList);
           }
         }
@@ -370,21 +373,31 @@ public class MoreLikeThisComponent extends SearchComponent {
     IndexSchema schema = searcher.getSchema();
     MoreLikeThisHandler.MoreLikeThisHelper mltHelper = new MoreLikeThisHandler.MoreLikeThisHelper(
         p, searcher);
-    NamedList<DocList> mlt = new SimpleOrderedMap<>();
+    NamedList<DocList> mltResponse = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     
     SimpleOrderedMap<Object> dbg = null;
     if (rb.isDebug()) {
       dbg = new SimpleOrderedMap<>();
     }
+
+    SimpleOrderedMap<Object> interestingTermsResponse = null;
+    MoreLikeThisParams.TermStyle interestingTermsConfig = MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
+    List<MoreLikeThisHandler.InterestingTerm> interestingTerms = (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
+        ? null : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
+
+    if (interestingTerms != null) {
+      interestingTermsResponse = new SimpleOrderedMap<>();
+    }
     
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
-      DocListAndSet sim = mltHelper.getMoreLikeThis(id, 0, rows, null, null,
+
+      DocListAndSet similarDocuments = mltHelper.getMoreLikeThis(id, 0, rows, null, interestingTerms,
           flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
-      mlt.add(name, sim.docList);
+      mltResponse.add(name, similarDocuments.docList);
       
       if (dbg != null) {
         SimpleOrderedMap<Object> docDbg = new SimpleOrderedMap<>();
@@ -393,9 +406,9 @@ public class MoreLikeThisComponent extends SearchComponent {
             .add("boostedMLTQuery", mltHelper.getBoostedMLTQuery().toString());
         docDbg.add("realMLTQuery", mltHelper.getRealMLTQuery().toString());
         SimpleOrderedMap<Object> explains = new SimpleOrderedMap<>();
-        DocIterator mltIte = sim.docList.iterator();
-        while (mltIte.hasNext()) {
-          int mltid = mltIte.nextDoc();
+        DocIterator similarDocumentsIterator = similarDocuments.docList.iterator();
+        while (similarDocumentsIterator.hasNext()) {
+          int mltid = similarDocumentsIterator.nextDoc();
           String key = schema.printableUniqueKey(searcher.doc(mltid));
           explains.add(key,
               searcher.explain(mltHelper.getRealMLTQuery(), mltid));
@@ -403,13 +416,32 @@ public class MoreLikeThisComponent extends SearchComponent {
         docDbg.add("explain", explains);
         dbg.add(name, docDbg);
       }
+
+      if (interestingTermsResponse != null) {
+        if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
+          SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
+          for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
+            interestingTermsWithScore.add(interestingTerm.term.toString(), interestingTerm.boost);
+          }
+          interestingTermsResponse.add(name, interestingTermsWithScore);
+        } else {
+          List<String> interestingTermsString = new ArrayList<>(interestingTerms.size());
+          for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
+            interestingTermsString.add(interestingTerm.term.toString());
+          }
+          interestingTermsResponse.add(name, interestingTermsString);
+        }
+      }
     }
-    
     // add debug information
     if (dbg != null) {
       rb.addDebugInfo("moreLikeThis", dbg);
     }
-    return mlt;
+    // add Interesting Terms
+    if (interestingTermsResponse != null) {
+      rb.rsp.add("interestingTerms", interestingTermsResponse);
+    }
+    return mltResponse;
   }
   
   // ///////////////////////////////////////////

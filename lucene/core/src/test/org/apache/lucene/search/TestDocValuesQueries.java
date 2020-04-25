@@ -267,5 +267,4 @@ public class TestDocValuesQueries extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-   
 }

@@ -53,23 +53,21 @@ import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassI
  * A general-purpose Analyzer that can be created with a builder-style API.
  * Under the hood it uses the factory classes {@link TokenizerFactory},
  * {@link TokenFilterFactory}, and {@link CharFilterFactory}.
- * <p>You can create an instance of this Analyzer using the builder:
+ * <p>You can create an instance of this Analyzer using the builder by passing the SPI names (as defined by {@link java.util.ServiceLoader} interface) to it:
  * <pre class="prettyprint">
  * Analyzer ana = CustomAnalyzer.builder(Paths.get(&quot;/path/to/config/dir&quot;))
- *   .withTokenizer(StandardTokenizerFactory.class)
- *   .addTokenFilter(StandardFilterFactory.class)
- *   .addTokenFilter(LowerCaseFilterFactory.class)
- *   .addTokenFilter(StopFilterFactory.class, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
+ *   .withTokenizer(StandardTokenizerFactory.NAME)
+ *   .addTokenFilter(LowerCaseFilterFactory.NAME)
+ *   .addTokenFilter(StopFilterFactory.NAME, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
  *   .build();
  * </pre>
  * The parameters passed to components are also used by Apache Solr and are documented
  * on their corresponding factory classes. Refer to documentation of subclasses
  * of {@link TokenizerFactory}, {@link TokenFilterFactory}, and {@link CharFilterFactory}.
- * <p>You can also use the SPI names (as defined by {@link java.util.ServiceLoader} interface):
+ * <p>This is the same as the above:
  * <pre class="prettyprint">
  * Analyzer ana = CustomAnalyzer.builder(Paths.get(&quot;/path/to/config/dir&quot;))
  *   .withTokenizer(&quot;standard&quot;)
- *   .addTokenFilter(&quot;standard&quot;)
  *   .addTokenFilter(&quot;lowercase&quot;)
  *   .addTokenFilter(&quot;stop&quot;, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
  *   .build();

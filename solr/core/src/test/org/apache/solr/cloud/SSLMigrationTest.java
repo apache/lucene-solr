@@ -17,7 +17,7 @@
 package org.apache.solr.cloud;
 
   
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -71,7 +71,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       runner.stop();
     }
     
-    HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
     for(int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config = JettyConfig.builder()

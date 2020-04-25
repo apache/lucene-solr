@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -58,6 +59,14 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
     }
+  }
+
+  private static void serialize(SolrQueryResponse response,Resolver resolver, String f) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec(resolver); FileOutputStream fos = new FileOutputStream(f)) {
+      jbc.setWritableDocFields(resolver).marshal(response.getValues(), fos);
+      fos.flush();
+    }
+
   }
 
   @Override
@@ -128,7 +137,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {
-          log.warn("Error reading a field : " + o, e);
+          log.warn("Error reading a field : {}", o, e);
         }
       }
       return o;

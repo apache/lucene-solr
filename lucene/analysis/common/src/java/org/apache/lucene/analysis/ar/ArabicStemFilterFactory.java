@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class ArabicStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "arabicStem";
 
   /** Creates a new ArabicStemFilterFactory */
   public ArabicStemFilterFactory(Map<String,String> args) {
@@ -43,6 +47,11 @@ public class ArabicStemFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ArabicStemFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

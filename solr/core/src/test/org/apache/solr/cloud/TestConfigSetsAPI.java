@@ -24,16 +24,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -60,6 +54,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -83,20 +78,22 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.security.BasicAuthIntegrationTest;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
@@ -116,7 +113,10 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    solrCluster.shutdown();
+    if (null != solrCluster) {
+      solrCluster.shutdown();
+      solrCluster = null;
+    }
     super.tearDown();
   }
 
@@ -344,29 +344,57 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
-    for (boolean withAuthorization: Arrays.asList(false, true)) {
-      String suffix;
-      if (withAuthorization) {
-        suffix = "-trusted";
-        protectConfigsHandler();
-        uploadConfigSetWithAssertions("with-script-processor", suffix, "solr", "SolrRocks");
-      } else {
-        suffix = "-untrusted";
-        uploadConfigSetWithAssertions("with-script-processor", suffix, null, null);
-      }
+      // Authorization off
+      // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
+      final String untrustedSuffix = "-untrusted";
+      uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor"+suffix,
+      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+        createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
+      1, 1, solrCluster.getSolrClient());
+      });
+
+    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+
+    // Authorization on
+    final String trustedSuffix = "-trusted";
+    protectConfigsHandler();
+    uploadConfigSetWithAssertions("with-script-processor", trustedSuffix, "solr", "SolrRocks");
+    // try to create a collection with the uploaded configset
+    CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor" + trustedSuffix,
+    1, 1, solrCluster.getSolrClient());
+    scriptRequest("newcollection2");
+
+  }
+
+  @Test
+  @Ignore // enable this back when the sleep is removed from protectConfigsHandler() call
+  public void testUploadWithLibDirective() throws Exception {
+    // Authorization off
+    unprotectConfigsHandler();
+    final String untrustedSuffix = "-untrusted";
+    uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
+    // try to create a collection with the uploaded configset
+    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+      createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
           1, 1, solrCluster.getSolrClient());
-      
-      if (withAuthorization) {
-        scriptRequest("newcollection2");
-      } else {
-        log.info("Client saw errors: "+resp.getErrorMessages());
-        assertTrue(resp.getErrorMessages() != null && resp.getErrorMessages().size() > 0);
-        assertTrue(resp.getErrorMessages().getVal(0).
-            contains("The configset for this collection was uploaded without any authentication"));
-      }
-    }
+    });
+
+    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+
+    // Authorization on
+    final String trustedSuffix = "-trusted";
+    protectConfigsHandler();
+    uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr", "SolrRocks");
+    // try to create a collection with the uploaded configset
+    CollectionAdminResponse resp = createCollection("newcollection3", "with-lib-directive" + trustedSuffix,
+        1, 1, solrCluster.getSolrClient());
+    
+    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
+    solrCluster.getSolrClient().add("newcollection3", doc);
+    solrCluster.getSolrClient().commit("newcollection3");
+    assertEquals("4055", solrCluster.getSolrClient().query("newcollection3",
+        params("q", "*:*")).getResults().get(0).get("id"));
   }
 
   protected SolrZkClient zkClient() {
@@ -376,6 +404,19 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return solrCluster.getSolrClient().getZkStateReader().getZkClient();
   }
 
+  private void unprotectConfigsHandler() throws Exception {
+    HttpClient cl = null;
+    try {
+      cl = HttpClientUtil.createClient(null);
+      zkClient().setData("/security.json", "{}".getBytes(UTF_8), true);
+    } finally {
+      if (cl != null) {
+        HttpClientUtil.close(cl);
+      }
+    }
+    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
+  }
+  
   private void protectConfigsHandler() throws Exception {
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
@@ -383,6 +424,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     String securityJson = "{\n" +
         "  'authentication':{\n" +
         "    'class':'solr.BasicAuthPlugin',\n" +
+        "    'blockUnknown': false,\n" +
         "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +
         "  'authorization':{\n" +
         "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
@@ -403,7 +445,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         HttpClientUtil.close(cl);
       }
     }
-    Thread.sleep(5000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
+    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username, String password) throws Exception {
@@ -558,8 +600,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
           .getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        m = (Map) ObjectBuilder.getVal(new JSONParser(
-            new StringReader(response)));
+        m = (Map) Utils.fromJSONString(response);
       } catch (JSONParser.ParseException e) {
         System.err.println("err response: " + response);
         throw new AssertionError(e);
@@ -690,50 +731,34 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
     solrClient.close();
   }
-  
+
+  /**
+   * A simple sanity check that the test-framework hueristic logic for setting 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET} is working as it should 
+   * in the current test env, and finding the real directory which matches what {@link ZkController}
+   * finds and uses to bootstrap ZK in cloud based tests.
+   *
+   * <p>
+   * This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property 
+   * has not been externally set in the environment where this test is being run -- which should 
+   * <b>never</b> be the case, since it would prevent the test-framework from using 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET}
+   *
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see #setDefaultConfigDirSysPropIfNotSet
+   * @see ZkController#getDefaultConfigDirPath
+   */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
-    File testDefaultConf = configset("_default").toFile();
-    log.info("Test _default path: " + testDefaultConf);
+    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
+    assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
     
-    File userDefaultConf = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    log.info("User _default path: " + userDefaultConf);
-    
-    compareDirectories(userDefaultConf, testDefaultConf);
+    final String zkBootStrap = ZkController.getDefaultConfigDirPath();
+    assertEquals("extPath _default configset dir vs zk bootstrap path",
+                 ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
   }
 
-  private static void compareDirectories(File userDefault, File testDefault) throws IOException {
-    assertTrue("Test _default doesn't exist: " + testDefault.getAbsolutePath(), testDefault.exists());
-    assertTrue("Test _default not a directory: " + testDefault.getAbsolutePath(),testDefault.isDirectory());
-    assertTrue("User _default doesn't exist: " + userDefault.getAbsolutePath(), userDefault.exists());
-    assertTrue("User _default not a directory: " + userDefault.getAbsolutePath(),userDefault.isDirectory());
-
-    Files.walkFileTree(userDefault.toPath(), new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.preVisitDirectory(dir, attrs);
-        Path relativePath = userDefault.toPath().relativize(dir);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String[] listOne = dir.toFile().list();
-        String[] listTwo = testDefaultFile.list();
-        Arrays.sort(listOne);
-        Arrays.sort(listTwo);
-        assertEquals("Mismatch in files", Arrays.toString(listOne), Arrays.toString(listTwo));
-        return result;
-      }
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.visitFile(file, attrs);
-        Path relativePath = userDefault.toPath().relativize(file);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String userDefaultContents = FileUtils.readFileToString(file.toFile(), "UTF-8");
-        String testDefaultContents = FileUtils.readFileToString(testDefaultFile, "UTF-8");
-        assertEquals(testDefaultFile+" contents doesn't match expected ("+file+")", userDefaultContents, testDefaultContents);                    
-        return result;
-      }
-    });
-  }
-  
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), StandardCharsets.UTF_8));
   }

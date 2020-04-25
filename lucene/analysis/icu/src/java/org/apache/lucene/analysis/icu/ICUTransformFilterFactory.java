@@ -34,8 +34,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * </ul>
  * @see Transliterator
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuTransform";
+
   private final Transliterator transliterator;
   
   // TODO: add support for custom rules
@@ -49,6 +54,11 @@ public class ICUTransformFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ICUTransformFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

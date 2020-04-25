@@ -89,4 +89,9 @@ public final class MatchAllDocsQuery extends Query {
   public int hashCode() {
     return classHash();
   }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
 }

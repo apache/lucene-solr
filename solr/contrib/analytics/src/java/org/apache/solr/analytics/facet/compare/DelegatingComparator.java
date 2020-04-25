@@ -27,17 +27,17 @@ import org.apache.solr.common.SolrException.ErrorCode;
  */
 public class DelegatingComparator extends FacetResultsComparator {
   private final Iterable<FacetResultsComparator> comparators;
-  
+
   /**
    * Create a delegating results comparator. This comparator will in succession use the given comparators, continuing if the values are equal.
    * Two buckets are considered equal if and only if all comparators find them equal
-   * 
+   *
    * @param comparators the comparators to use in succession
    */
   private DelegatingComparator(Iterable<FacetResultsComparator> comparators) {
     this.comparators = comparators;
   }
-  
+
   public static FacetResultsComparator joinComparators(Collection<FacetResultsComparator> comparators) throws SolrException {
     if (comparators.size() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"A sort must have at least 1 comparator criteria.");

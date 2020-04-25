@@ -42,7 +42,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
   final SegmentInfos segmentInfos;
   private final boolean applyAllDeletes;
   private final boolean writeAllDeletes;
-  
+
   /** called only from static open() methods */
   StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
                           SegmentInfos sis, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {

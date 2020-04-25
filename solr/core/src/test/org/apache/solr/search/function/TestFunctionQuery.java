@@ -51,10 +51,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
-    try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
+
+    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
       out.write(contents);
-      out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -423,6 +422,57 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/str[.='120']"
            ,"*//doc[2]/str[.='121']"
     );
+
+    // test a query that doesn't specify nested query val
+    assertQEx("Should fail because of missing qq",
+        "Missing param qq while parsing function 'query($qq)'",
+        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query($qq)"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail because of missing sortfunc in sort",
+        "Can't determine a Sort Order (asc or desc) in sort spec '{!func v=$sortfunc} desc'",
+        req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail because of missing qq in boost",
+        "Nested local params must have value in v parameter.  got 'query({!dismax v=$qq})",
+        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query({!dismax v=$qq})"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as empty value is specified for v",
+        "Nested function query returned null for 'query({!v=})'",
+        req("q", "*:*", "defType","edismax", "boost","query({!v=})"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as v's value contains only spaces",
+        "Nested function query returned null for 'query({!v=   })'",
+        req("q", "*:*", "defType","edismax", "boost","query({!v=   })"), SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    // no field specified in ord()
+    assertQEx("Should fail as no field is specified in ord func",
+        "Expected identifier instead of 'null' for function 'ord()'",
+        req("q", "*:*", "defType","edismax","boost","ord()"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as no field is specified in rord func",
+        "Expected identifier instead of 'null' for function 'rord()'",
+        req("q", "*:*", "defType","edismax","boost","rord()"), SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    // test parseFloat
+    assertQEx("Should fail as less args are specified for recip func",
+        "Expected float instead of 'null' for function 'recip(1,2)'",
+        req("q", "*:*","defType","edismax", "boost","recip(1,2)"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as invalid value is specified for recip func",
+        "Expected float instead of 'f' for function 'recip(1,2,3,f)'",
+        req("q", "*:*","defType","edismax", "boost","recip(1,2,3,f)"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    // this should pass
+    assertQ(req("q", "*:*","defType","edismax", "boost","recip(1, 2, 3, 4)"));
+
+    // for undefined field NPE shouldn't be thrown
+    assertQEx("Should Fail as the field is undefined", "undefined field a",
+        req("q", "*:*", "fl", "x:payload(a,b)"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
@@ -987,6 +1037,38 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest("number_of_atoms_in_universe_l", "if(lt(number_of_atoms_in_universe_l," + Long.toString(Long.MAX_VALUE) + "),5,2)",
                /*id*/2, /*score*/5,
                /*id*/1, /*score*/2);
+  }
+
+  @Test
+  public void testQueryAsFlParam() {
+    clearIndex();
+
+    assertU(adoc("id", "1", "age_i", "35"));
+    assertU(adoc("id", "2", "age_i", "25"));
+    assertU(commit());
+
+    // some docs match the query func but some doesn't
+    // if doc doesn't match, it should use default value
+    assertQ(req("q", "*:*", "fl", "*,score,bleh:query($qq,5.0)", "qq", "id:2"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[1]/float[@name='bleh'][.='5.0']",
+        "count(//result/doc[2]/float[@name='bleh'][.='5.0'])=0",
+        "//result/doc[2]/float[@name='bleh']" // since score can't be known, doing existing match
+        );
+
+    // when the doc match the query func condition default value shouldn't be used
+    // when no def val is passed in query func, 0.0 would be used
+    assertQ(req("q", "*:*", "fl", "*,score,bleh:query($qq)", "qq", "id:*"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "count(//result/doc[1]/float[@name='bleh'][.='0.0'])=0",
+        "count(//result/doc[2]/float[@name='bleh'][.='0.0'])=0",
+        "//result/doc[1]/float[@name='bleh']",
+        "//result/doc[2]/float[@name='bleh']"
+    );
   }
 
   @Test

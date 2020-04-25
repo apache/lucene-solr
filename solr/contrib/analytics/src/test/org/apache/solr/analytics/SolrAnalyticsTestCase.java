@@ -41,19 +41,19 @@ import org.junit.BeforeClass;
 
 public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   private static final double DEFAULT_DELTA = .0000001;
-  
+
   protected static final String COLLECTIONORALIAS = "collection1";
   protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
 
   private static UpdateRequest cloudReq;
-  
+
   @BeforeClass
-  public static void setupCollection() throws Exception {    
+  public static void setupCollection() throws Exception {
     // Single-sharded core
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
-    
+
     // Solr Cloud
     configureCluster(4)
         .addConfig("conf", configset("cloud-analytics"))
@@ -72,17 +72,17 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
 
   protected static void cleanIndex() throws Exception {
     h.update("<delete><query>*:*</query></delete>");
-    
+
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   protected static void addDoc(List<String> fieldsAndValues) {
     assertU(adoc(fieldsAndValues.toArray(new String[0])));
     cloudReq.add(fieldsAndValues.toArray(new String[0]));
   }
-  
+
   protected static void commitDocs() {
     assertU(commit());
     try {
@@ -92,11 +92,11 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     }
     cloudReq = new UpdateRequest();
   }
-  
+
   private void testResults(SolrParams params, String analyticsRequest, String... tests) {
     String coreJson = queryCoreJson(params);
     Object cloudObj = queryCloudObject(params);
-    
+
     for (String test : tests) {
       if (test == null || test.length()==0) continue;
       // Single-Sharded
@@ -112,7 +112,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
             "\n response = " + coreJson +
             "\n analyticsRequest = " + analyticsRequest, err);
       }
-      
+
       // Cloud
       err = null;
       try {
@@ -128,7 +128,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       }
     }
   }
-  
+
   private String queryCoreJson(SolrParams params) {
     try {
       return JQ(req(params));
@@ -136,7 +136,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       throw new RuntimeException(e);
     }
   }
-  
+
   private Object queryCloudObject(SolrParams params) {
     QueryResponse resp;
     try {
@@ -148,16 +148,16 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     }
     return convertDatesToStrings(resp.getResponse().asShallowMap());
   }
-  
+
   protected void testAnalytics(String analyticsRequest, String... tests) throws IOException, InterruptedException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
     params.set("indent", "true");
     params.set("rows", "0");
     params.set("wt", "json");
-    
+
     params.set("analytics", analyticsRequest);
-    
+
     String[] revisedTests = Arrays.stream(tests).map( test -> "analytics_response/" + test).toArray( size -> new String[size]);
     testResults(params, analyticsRequest, revisedTests);
   }
@@ -177,7 +177,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
         .map( entry -> '"' + entry.getKey() + "\":" + entry.getValue().expectedResultStr())
         .reduce((a,b) -> a + ',' + b)
         .orElseGet(() -> "");
-    
+
     testAnalytics(analyticsRequest.toString(), "results=={"+results+", \"_UNORDERED_\":true}");
   }
 
@@ -205,7 +205,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     testGroupingSorted(grouping,
         expressions,
         facets,
-        results, 
+        results,
         ", 'sort': { 'criteria' : [{'type': 'expression', 'expression': '" + sortExpression + "', 'direction': '" + (sortAscending ? "ascending" : "descending") + "'}]}",
         (fvp1, fvp2) -> fvp1.expectedResults.get(sortExpression).compareTo(fvp2.expectedResults.get(sortExpression)),
         sortAscending);
@@ -218,12 +218,12 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     testGroupingSorted(grouping,
         expressions,
         facets,
-        results, 
+        results,
         "",
         (fvp1, fvp2) -> fvp1.compareTo(fvp2),
         true);
   }
-  
+
   private void testGroupingSorted(String grouping,
                                     Map<String, String> expressions,
                                     Map<String, String> facets,
@@ -256,29 +256,29 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
           return '"' + facet.getKey() + "\" : [ " + resultList + " ]";
         })
         .collect(Collectors.joining(" , "));
-    
+
     testAnalytics(analyticsRequest.toString(), "groupings/" + grouping + "=={"+groupingResults+", \"_UNORDERED_\":true}");
   }
-  
+
   private static String resultToJson(Object result) {
     if (result instanceof String) {
       return '"' + result.toString() + '"';
     }
     return result.toString();
   }
-  
+
   /*
    * Expression Test Pair, contains the expression and the expected result
    */
   protected static class ETP {
     final String expression;
     final Object expectedResult;
-    
+
     public ETP(String expression, Object expectedResult) {
       this.expression = expression;
       this.expectedResult = expectedResult;
     }
-    
+
     public String expectedResultStr() {
       if (expectedResult instanceof String) {
         return '"' + expectedResult.toString() + '"';
@@ -286,7 +286,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       return expectedResult.toString();
     }
   }
-  
+
   /*
    * FacetValuePair, contains the expression and the expected result
    */
@@ -295,13 +295,13 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     final private int order;
     final public String facetValue;
     final public Map<String, Comparable> expectedResults;
-    
+
     public FVP(int order, String facetValue, Map<String, Comparable> expectedResults) {
       this.order = order;
       this.facetValue = facetValue;
       this.expectedResults = expectedResults;
     }
-    
+
     public String toJsonResults() {
       String valueResults = expectedResults.entrySet()
           .stream()
@@ -315,7 +315,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       return Integer.compare(order, other.order);
     }
   }
-  
+
   /*
    * FacetValuePair, contains the expression and the expected result
    */
@@ -323,18 +323,18 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   protected static class PivotFVP extends FVP {
     final public String pivot;
     final public List<FVP> children;
-    
+
     public PivotFVP(int order, String pivot, String facetValue, Map<String, Comparable> expectedResults) {
       super(order, facetValue, expectedResults);
       this.pivot = pivot;
       children = new ArrayList<>();
     }
-    
+
     public void addChild(FVP child) {
       children.add(child);
     }
   }
-  
+
   @SuppressWarnings("unchecked")
   protected static Object convertDatesToStrings(Object value) {
     if (value instanceof Date) {

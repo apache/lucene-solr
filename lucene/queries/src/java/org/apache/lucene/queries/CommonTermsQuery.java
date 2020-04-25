@@ -33,6 +33,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -129,7 +130,16 @@ public class CommonTermsQuery extends Query {
     collectTermStates(reader, leaves, contextArray, queryTerms);
     return buildQuery(maxDoc, contextArray, queryTerms);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    Term[] selectedTerms = terms.stream().filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    if (selectedTerms.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+      v.consumeTerms(this, selectedTerms);
+    }
+  }
+
   protected int calcLowFreqMinimumNumberShouldMatch(int numOptional) {
     return minNrShouldMatch(lowFreqMinNrShouldMatch, numOptional);
   }
@@ -246,7 +256,7 @@ public class CommonTermsQuery extends Query {
    * satisfied in order to produce a match on the low frequency terms query
    * part. This method accepts a float value in the range [0..1) as a fraction
    * of the actual query terms in the low frequent clause or a number
-   * <tt>&gt;=1</tt> as an absolut number of clauses that need to match.
+   * <code>&gt;=1</code> as an absolut number of clauses that need to match.
    * 
    * <p>
    * By default no optional clauses are necessary for a match (unless there are
@@ -274,7 +284,7 @@ public class CommonTermsQuery extends Query {
    * satisfied in order to produce a match on the low frequency terms query
    * part. This method accepts a float value in the range [0..1) as a fraction
    * of the actual query terms in the low frequent clause or a number
-   * <tt>&gt;=1</tt> as an absolut number of clauses that need to match.
+   * <code>&gt;=1</code> as an absolut number of clauses that need to match.
    * 
    * <p>
    * By default no optional clauses are necessary for a match (unless there are

@@ -29,15 +29,15 @@ public class LegacyFacetSortingTest extends LegacyAbstractAnalyticsTest {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 
-    // The data set below is so generated that in bucket corresponding fieldFacet B, double_dd column has null values 
-    // and in bucket C corresponding to fieldFacet C has null values for column long_ld. 
+    // The data set below is so generated that in bucket corresponding fieldFacet B, double_dd column has null values
+    // and in bucket C corresponding to fieldFacet C has null values for column long_ld.
     // FieldFaceting occurs on string_sd field
     assertU(adoc("id", "1001", "string_sd", "A", "double_dd", "" + 3, "long_ld", "" + 1));
     assertU(adoc("id", "1002", "string_sd", "A", "double_dd", "" + 25, "long_ld", "" + 2));
     assertU(adoc("id", "1003", "string_sd", "B", "long_ld", "" + 3));
     assertU(adoc("id", "1004", "string_sd", "B", "long_ld", "" + 4));
     assertU(adoc("id", "1005", "string_sd", "C",                       "double_dd", "" + 17));
-    
+
     assertU(commit());
     String response = h.query(request(fileToStringArr(LegacyExpressionTest.class, fileName)));
     setResponse(response);

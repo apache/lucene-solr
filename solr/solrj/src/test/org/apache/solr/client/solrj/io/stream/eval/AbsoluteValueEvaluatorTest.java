@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
+public class AbsoluteValueEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -53,8 +53,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -78,8 +77,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     
     context.getLets().put("a", 1);
     result = evaluator.evaluate(new Tuple());
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
     
     context.getLets().put("a", 1.1);
     result = evaluator.evaluate(new Tuple());
@@ -93,8 +91,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     
     context.getLets().put("a", factory.constructEvaluator("add(4,-6,34,-56)"));
     result = evaluator.evaluate(new Tuple());
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(24L, result);
+    Assert.assertEquals(24D, result);
   }
 
   @Test(expected = IOException.class)
@@ -107,7 +104,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     factory.constructEvaluator("abs(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     
@@ -116,7 +113,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     

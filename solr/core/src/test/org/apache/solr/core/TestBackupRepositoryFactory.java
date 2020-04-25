@@ -17,6 +17,8 @@
 package org.apache.solr.core;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
+import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.AfterClass;
@@ -119,7 +122,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
   @Test
   public void testRepositoryConfig() {
-    PluginInfo[] plugins = new PluginInfo[1];
+    PluginInfo[] plugins = new PluginInfo[2];
 
     {
       Map<String, Object> attrs = new HashMap<>();
@@ -129,6 +132,14 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       attrs.put("location", "/tmp");
       plugins[0] = new PluginInfo("repository", attrs);
     }
+    {
+      Map<String, Object> attrs = new HashMap<>();
+      attrs.put(CoreAdminParams.NAME, "boom");
+      attrs.put(FieldType.CLASS_NAME, HdfsBackupRepository.class.getName());
+      attrs.put("location", "/tmp");
+      plugins[1] = new PluginInfo("repository", attrs);
+    }
+    Collections.shuffle(Arrays.asList(plugins), random());
 
     BackupRepositoryFactory f = new BackupRepositoryFactory(plugins);
 
@@ -144,6 +155,14 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
       assertTrue(repo instanceof LocalFileSystemRepository);
       assertEquals("/tmp", repo.getConfigProperty("location"));
+    }
+    
+    {
+      try {
+        BackupRepository repo = f.newInstance(loader, "boom");
+        fail();
+      } catch (Exception e) {
+      }
     }
   }
 }

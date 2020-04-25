@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AscEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class AscEvaluatorTest extends LuceneTestCase {
+public class AscEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -53,7 +53,7 @@ public class AscEvaluatorTest extends LuceneTestCase {
       result = evaluator.evaluate(new Tuple(values));
       Assert.assertTrue(result instanceof List<?>);
       Assert.assertEquals(7, ((List<?>)result).size());
-      checkOrder(Arrays.asList(1L,2L,3L,4L,5L,7L,8L), (List<Object>)result);
+      checkOrder(Arrays.asList(1D,2D,3D,4D,5D,7D,8D), (List<Object>)result);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class AscEvaluatorTest extends LuceneTestCase {
       result = evaluator.evaluate(new Tuple(values));
       Assert.assertTrue(result instanceof List<?>);
       Assert.assertEquals(7, ((List<?>)result).size());
-      checkOrder(Arrays.asList(2L, 2.1, 2.3, 2.5, 2.6, 2.7, 3L), (List<Object>)result);
+      checkOrder(Arrays.asList(2D, 2.1, 2.3, 2.5, 2.6, 2.7, 3D), (List<Object>)result);
     }
 
     @Test

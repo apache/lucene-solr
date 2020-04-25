@@ -60,7 +60,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A mapping function to filter a Value or ValueStream. For each document, the value exists if the second parameter 
+ * A mapping function to filter a Value or ValueStream. For each document, the value exists if the second parameter
  * is true and it doesn't exist otherwise.
  * <p>
  * The first parameter can be any type of analytics expression. (Required)
@@ -135,7 +135,7 @@ class StreamFilterFunction extends AbstractAnalyticsValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StreamFilterFunction(AnalyticsValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -149,7 +149,7 @@ class StreamFilterFunction extends AbstractAnalyticsValueStream {
       baseExpr.streamObjects(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -169,14 +169,14 @@ class ValueFilterFunction extends AbstractAnalyticsValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public ValueFilterFunction(AnalyticsValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -189,7 +189,7 @@ class ValueFilterFunction extends AbstractAnalyticsValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -209,7 +209,7 @@ class BooleanStreamFilterFunction extends AbstractBooleanValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamFilterFunction(BooleanValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -223,7 +223,7 @@ class BooleanStreamFilterFunction extends AbstractBooleanValueStream {
       baseExpr.streamBooleans(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -243,14 +243,14 @@ class BooleanFilterFunction extends AbstractBooleanValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public BooleanFilterFunction(BooleanValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -263,7 +263,7 @@ class BooleanFilterFunction extends AbstractBooleanValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -283,7 +283,7 @@ class IntStreamFilterFunction extends AbstractIntValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntStreamFilterFunction(IntValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -297,7 +297,7 @@ class IntStreamFilterFunction extends AbstractIntValueStream {
       baseExpr.streamInts(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -317,14 +317,14 @@ class IntFilterFunction extends AbstractIntValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public IntFilterFunction(IntValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -337,7 +337,7 @@ class IntFilterFunction extends AbstractIntValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -357,7 +357,7 @@ class LongStreamFilterFunction extends AbstractLongValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongStreamFilterFunction(LongValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -371,7 +371,7 @@ class LongStreamFilterFunction extends AbstractLongValueStream {
       baseExpr.streamLongs(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -391,14 +391,14 @@ class LongFilterFunction extends AbstractLongValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public LongFilterFunction(LongValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -411,7 +411,7 @@ class LongFilterFunction extends AbstractLongValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -431,7 +431,7 @@ class FloatStreamFilterFunction extends AbstractFloatValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatStreamFilterFunction(FloatValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -445,7 +445,7 @@ class FloatStreamFilterFunction extends AbstractFloatValueStream {
       baseExpr.streamFloats(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -465,14 +465,14 @@ class FloatFilterFunction extends AbstractFloatValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public FloatFilterFunction(FloatValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -485,7 +485,7 @@ class FloatFilterFunction extends AbstractFloatValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -505,7 +505,7 @@ class DoubleStreamFilterFunction extends AbstractDoubleValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleStreamFilterFunction(DoubleValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -519,7 +519,7 @@ class DoubleStreamFilterFunction extends AbstractDoubleValueStream {
       baseExpr.streamDoubles(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -539,14 +539,14 @@ class DoubleFilterFunction extends AbstractDoubleValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DoubleFilterFunction(DoubleValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -559,7 +559,7 @@ class DoubleFilterFunction extends AbstractDoubleValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -579,7 +579,7 @@ class DateStreamFilterFunction extends AbstractDateValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateStreamFilterFunction(DateValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -593,7 +593,7 @@ class DateStreamFilterFunction extends AbstractDateValueStream {
       baseExpr.streamLongs(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -613,14 +613,14 @@ class DateFilterFunction extends AbstractDateValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public DateFilterFunction(DateValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -633,7 +633,7 @@ class DateFilterFunction extends AbstractDateValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -653,7 +653,7 @@ class StringStreamFilterFunction extends AbstractStringValueStream {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringStreamFilterFunction(StringValueStream baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
@@ -667,7 +667,7 @@ class StringStreamFilterFunction extends AbstractStringValueStream {
       baseExpr.streamStrings(cons);
     }
   }
-  
+
   @Override
   public String getName() {
     return name;
@@ -687,14 +687,14 @@ class StringFilterFunction extends AbstractStringValue {
   public static final String name = FilterFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public StringFilterFunction(StringValue baseExpr, BooleanValue filterExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.filterExpr = filterExpr;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,filterExpr);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,filterExpr);
   }
-  
+
   boolean exists = false;
 
   @Override
@@ -707,7 +707,7 @@ class StringFilterFunction extends AbstractStringValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public String getName() {
     return name;

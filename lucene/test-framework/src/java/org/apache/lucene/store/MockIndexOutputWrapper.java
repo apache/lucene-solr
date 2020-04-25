@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Used by MockRAMDirectory to create an output stream that
+ * Used to create an output stream that
  * will throw an IOException on fake disk full, track max
  * disk space actually used, and maybe throw random
  * IOExceptions.
@@ -45,9 +45,9 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   private void checkCrashed() throws IOException {
-    // If MockRAMDir crashed since we were opened, then don't write anything
+    // If crashed since we were opened, then don't write anything
     if (dir.crashed) {
-      throw new IOException("MockRAMDirectory was crashed; cannot write to " + name);
+      throw new IOException(dir.getClass().getSimpleName() + " has crashed; cannot write to " + name);
     }
   }
   

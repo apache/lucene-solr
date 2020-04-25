@@ -112,7 +112,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       try {
         Class clazz = DocBuilder.loadClass(trans, context.getSolrCore());
         if (Transformer.class.isAssignableFrom(clazz)) {
-          transformers.add((Transformer) clazz.newInstance());
+          transformers.add((Transformer) clazz.getConstructor().newInstance());
         } else {
           Method meth = clazz.getMethod(TRANSFORM_ROW, Map.class);
           transformers.add(new ReflectionTransformer(meth, clazz, trans));
@@ -164,7 +164,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       this.meth = meth;
       this.clazz = clazz;
       this.trans = trans;
-      o = clazz.newInstance();
+      o = clazz.getConstructor().newInstance();
     }
 
     @Override

@@ -1,5 +1,4 @@
 = Faceting
-:page-children: blockjoin-faceting
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -79,7 +78,7 @@ There are two options for this parameter.
 `index`::: Return the constraints sorted in their index order (lexicographic by indexed term). For terms in the ASCII range, this will be alphabetically sorted.
 --
 +
-The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`.
+The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`. Note that the default logic is changed when <<#limiting-facet-with-certain-terms>>
 
 `facet.limit`::
 This parameter specifies the maximum number of constraint counts (essentially, the number of facets for a field that are returned) that should be returned for the facet fields. A negative value means that Solr will return unlimited number of constraint counts.
@@ -585,7 +584,7 @@ Consider the following example query with faceting:
 
 Because everything is already constrained by the filter `doctype:pdf`, the `facet.field=doctype` facet command is currently redundant and will return 0 counts for everything except `doctype:pdf`.
 
-To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the http://doctypepdf[`doctype:pdf`] constraint had not yet been applied. For example:
+To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the `doctype:pdf` constraint had not yet been applied. For example:
 
 [source,text]
 ----
@@ -616,7 +615,7 @@ To limit field facet with certain terms specify them comma separated with `terms
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 
-This parameter disables sorting, facet values are returned in the given order. 
+This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.   
 
 == Related Topics
 

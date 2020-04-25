@@ -17,6 +17,8 @@
 package org.apache.solr.metrics;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Clock;
@@ -58,7 +60,17 @@ public class MetricSuppliers {
     }
   }
 
-  private static final Clock CPU_CLOCK = new Clock.CpuTimeClock();
+  // back-compat implementation, no longer present in metrics-4
+  private static final class CpuTimeClock extends Clock {
+    private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();
+
+    @Override
+    public long getTick() {
+      return THREAD_MX_BEAN.getCurrentThreadCpuTime();
+    }
+  }
+
+  private static final Clock CPU_CLOCK = new CpuTimeClock();
   private static final Clock USER_CLOCK = new Clock.UserTimeClock();
 
   /** Clock type parameter. */
@@ -73,7 +85,7 @@ public class MetricSuppliers {
    * or initArgs:
    * <ul>
    *   <li>clock - (string) can be set to {@link #CLOCK_USER} for {@link com.codahale.metrics.Clock.UserTimeClock} or
-   *   {@link #CLOCK_CPU} for {@link com.codahale.metrics.Clock.CpuTimeClock}. If not set then the value of
+   *   {@link #CLOCK_CPU} for {@link CpuTimeClock}. If not set then the value of
    *   {@link Clock#defaultClock()} will be used.</li>
    * </ul>
    */
@@ -193,7 +205,7 @@ public class MetricSuppliers {
         }
         return reservoir;
       } catch (Exception e) {
-        log.warn("Error initializing custom Reservoir implementation (will use default): " + info, e);
+        log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
         return new ExponentiallyDecayingReservoir(size, alpha, clk);
       }
     }
@@ -273,7 +285,7 @@ public class MetricSuppliers {
     try {
       supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
     } catch (Exception e) {
-      log.warn("Error creating custom Counter supplier (will use default): " + info, e);
+      log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
       supplier = new DefaultCounterSupplier();
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -298,7 +310,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Meter supplier (will use default): " + info, e);
+        log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
         supplier = new DefaultMeterSupplier();
       }
     }
@@ -324,7 +336,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Timer supplier (will use default): " + info, e);
+        log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
         supplier = new DefaultTimerSupplier(loader);
       }
     }
@@ -349,7 +361,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Histogram supplier (will use default): " + info, e);
+        log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
         supplier = new DefaultHistogramSupplier(loader);
       }
     }

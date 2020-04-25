@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.ko;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -41,7 +41,7 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopTags() throws IOException {
-    Set<POS.Tag> stopTags = Arrays.asList(POS.Tag.NNP, POS.Tag.NNG).stream().collect(Collectors.toSet());
+    Set<POS.Tag> stopTags = new HashSet<>(Arrays.asList(POS.Tag.NNP, POS.Tag.NNG));
     Analyzer a = new KoreanAnalyzer(null, KoreanTokenizer.DecompoundMode.DISCARD, stopTags, false);
     assertAnalyzesTo(a, "한국은 대단한 나라입니다.",
         new String[]{"은", "대단", "하", "ᆫ", "이", "ᄇ니다"},
@@ -80,7 +80,7 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   public void testRandom() throws IOException {
     Random random = random();
     final Analyzer a = new KoreanAnalyzer();
-    checkRandomData(random, a, atLeast(1000));
+    checkRandomData(random, a, atLeast(200));
     a.close();
   }
 
@@ -90,7 +90,15 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     final Analyzer a = new KoreanAnalyzer();
-    checkRandomData(random, a, 2 * RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, RANDOM_MULTIPLIER, 4096);
+    a.close();
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    final Analyzer a = new KoreanAnalyzer();
+    checkRandomData(random, a, 3 * RANDOM_MULTIPLIER, 8192);
     a.close();
   }
 

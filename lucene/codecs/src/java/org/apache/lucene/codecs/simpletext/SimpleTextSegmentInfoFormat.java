@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -305,8 +304,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, minVersion, segmentName, docCount,
-                                         isCompoundFile, null, Collections.unmodifiableMap(diagnostics),
-                                         id, Collections.unmodifiableMap(attributes), indexSort);
+                                         isCompoundFile, null, diagnostics, id, attributes, indexSort);
       info.setFiles(files);
       return info;
     }

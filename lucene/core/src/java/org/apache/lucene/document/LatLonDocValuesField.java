@@ -21,6 +21,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.FieldDoc;
@@ -177,5 +178,20 @@ public class LatLonDocValuesField extends Field {
    */
   public static Query newSlowDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     return new LatLonDocValuesDistanceQuery(field, latitude, longitude, radiusMeters);
+  }
+
+  /**
+   * Create a query for matching points within the supplied polygons.
+   * This query is usually slow as it does not use an index structure and needs
+   * to verify documents one-by-one in order to know whether they match. It is
+   * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
+   * {@link LatLonPoint#newPolygonQuery(String, Polygon...)}.
+   * @param field field name. must not be null.
+   * @param polygons array of polygons. must not be null or empty.
+   * @return query matching points within the given polygons.
+   * @throws IllegalArgumentException if {@code field} is null or polygons is empty or contain a null polygon.
+   */
+  public static Query newSlowPolygonQuery(String field, Polygon... polygons) {
+    return new LatLonDocValuesPointInPolygonQuery(field, polygons);
   }
 }

@@ -34,23 +34,23 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
   public void twoSingleValueParametersTest() {
     TestIntValue minuend = new TestIntValue();
     TestFloatValue subtrahend = new TestFloatValue();
-    
+
     AnalyticsValueStream uncasted = SubtractFunction.creatorFunction.apply(new AnalyticsValueStream[] {minuend, subtrahend});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
-    
+
     // Neither exists
     minuend.setExists(false);
     subtrahend.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // One exists
     minuend.setValue(30).setExists(true);
     subtrahend.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Both exist
     minuend.setValue(60).setExists(true);
     subtrahend.setValue(23.56F).setExists(true);
@@ -62,7 +62,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterTest() {
     TestLongValueStream minuend = new TestLongValueStream();
     TestDoubleValue subtrahend = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = SubtractFunction.creatorFunction.apply(new AnalyticsValueStream[] {minuend, subtrahend});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -73,14 +73,14 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     minuend.setValues(4L, 10023L);
     subtrahend.setExists(false);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     minuend.setValues(20L, 5L, 234L);
     subtrahend.setValue(44.56F).setExists(true);
@@ -96,7 +96,7 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueParameterTest() {
     TestDoubleValue minuend = new TestDoubleValue();
     TestLongValueStream subtrahend = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = SubtractFunction.creatorFunction.apply(new AnalyticsValueStream[] {minuend, subtrahend});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -107,14 +107,14 @@ public class SubtractFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     minuend.setExists(false);
     subtrahend.setValues(4L, 10023L);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     minuend.setValue(44.56F).setExists(true);
     subtrahend.setValues(20L, 5L, 234L);

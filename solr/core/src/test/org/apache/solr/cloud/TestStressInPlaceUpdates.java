@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.math3.primes.Primes;
@@ -93,7 +94,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 3)
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void stressTest() throws Exception {
     waitForRecoveriesToFinish(true);
 
@@ -470,7 +471,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       // what we can do however, is commit all completed updates, and *then* compare solr search results
       // against the (new) committed model....
       
-      waitForThingsToLevelOut(30); // NOTE: this does an automatic commit for us & ensures replicas are up to date
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS); // NOTE: this does an automatic commit for us & ensures replicas are up to date
       committedModel = new HashMap<>(model);
 
       // first, prune the model of any docs that have negative versions

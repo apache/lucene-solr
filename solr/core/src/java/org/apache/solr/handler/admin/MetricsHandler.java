@@ -38,6 +38,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -69,6 +70,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private CoreContainer cc;
+  private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
 
   public MetricsHandler() {
     this.metricManager = null;
@@ -157,6 +159,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         propertyFilter = (name) -> name.equals(propertyName);
         // use escaped versions
         key = parts[0] + ":" + parts[1];
+      }
+      if (injectedSysProps != null
+          && SolrMetricManager.JVM_REGISTRY.equals(registryName)
+          && "system.properties".equals(metricName) && injectedSysProps.containsKey(propertyName)) {
+        result.add(registryName+":"+metricName+":"+propertyName, injectedSysProps.get(propertyName));
+        continue;
       }
       MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
         if ((v instanceof Map) && propertyName != null) {

@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 /**
@@ -46,7 +45,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<>();
-    config = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), testConfHome + "solrconfig.xml", null);
+    config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml");
   }
   
   @Override
@@ -76,7 +75,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
 
 
     for (Class<? extends FieldType> clazz : types) {
-      FieldType ft = clazz.newInstance();
+      FieldType ft = clazz.getConstructor().newInstance();
       ft.init(schema, initMap);
       assertFalse(ft.getClass().getName(), ft.hasProperty(FieldType.OMIT_NORMS));
     }
@@ -87,7 +86,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
 
     for (Class<? extends FieldType> clazz : types) {
-      FieldType ft = clazz.newInstance();
+      FieldType ft = clazz.getConstructor().newInstance();
       ft.init(schema, initMap);
       assertEquals(ft.getClass().getName(),
                    ft instanceof PrimitiveFieldType,

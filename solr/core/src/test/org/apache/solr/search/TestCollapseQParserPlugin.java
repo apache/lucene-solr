@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,6 +32,8 @@ import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
@@ -207,7 +208,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11974")
   public void testStringCollapse() throws Exception {
     for (final String hint : new String[] {"", " hint="+CollapsingQParserPlugin.HINT_TOP_FC}) {
       testCollapseQueries("group_s", hint, false);
@@ -341,6 +341,69 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     } else {
       throw new Exception("boosted results do not match control results, boostedResults size:"+boostedResults.toString()+", controlResults size:"+controlResults.toString());
     }
+  }
+
+  @Test
+  public void testDoubleCollapse() {
+    testDoubleCollapse("group_s", "");
+    testDoubleCollapse("group_i", "");
+  }
+
+
+  /*
+  * SOLR-14073
+  * The double collapse causes a look ahead in the second collapse to a segment that was not visited by
+  * the by finally method of the first collapse. This specific test is meant to confirm that any feature
+  * that causes searches to not visit each segment (such as early query termination) doesn't break collapse.
+  */
+  private void testDoubleCollapse(String group, String hint) {
+    String[] doc = {"id","1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id","2", "term_s","YYYY", group, "2", "test_i", "50", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc1));
+
+
+
+    String[] doc2 = {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"};
+    assertU(adoc(doc3));
+
+
+    String[] doc4 = {"id","5", "term_s", "YYYN", group, "2", "test_i", "4", "test_l", "10", "test_f", "2000"};
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {"id","6", "term_s","YYYY", group, "2", "test_i", "10", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    String[] doc6 = {"id","7", "term_s", "YYYY", group, "1", "test_i", "8", "test_l", "50", "test_f", "300"};
+    assertU(adoc(doc6));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "id:(1 2 5)");
+    params.add("fq", "{!collapse cost=200 field=term_s "+hint+"}");
+    params.add("fq", "{!collapse cost=400 field="+group+""+hint+"}");
+
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    assertQ(req(params, "indent", "on"), "*[count(//doc)=1]",
+        "//result/doc[1]/str[@name='id'][.='2']"
+    );
+
+    params = new ModifiableSolrParams();
+    params.add("q", "id:(1 2 5)");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s "+hint+"}");
+    params.add("fq", "{!collapse cost=400 max=test_i field="+group+""+hint+"}");
+
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    assertQ(req(params, "indent", "on"), "*[count(//doc)=1]",
+        "//result/doc[1]/str[@name='id'][.='2']"
+    );
   }
 
 
@@ -760,14 +823,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("facet.mincount", "1");
     assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_i']/int)=2]");
 
-    // SOLR-5230 - ensure CollapsingFieldValueCollector.finish() is called
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
-    params.add("group", "true");
-    params.add("group.field", "id");
-    assertQ(req(params), "*[count(//doc)=2]");
-
+    // SOLR-13970
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params("q", "*:*", "fq", "{!collapse field="+group+hint+"}", "group", "true", "group.field", "id")));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));
@@ -784,7 +845,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                          "//result/doc[1]/str[@name='id'][.='3']",
                          "//result/doc[2]/str[@name='id'][.='6']",
                          "//result/doc[3]/str[@name='id'][.='7']");
-
 
   }
 
@@ -814,8 +874,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // this is currently ok on fields that don't exist on any docs in the index
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       for (String hint : Arrays.asList("", " hint=top_fc")) {
-        assertQ(req(params("q", "*:*", "fq", "{!collapse field="+f+hint+"}"))
-                , "*[count(//doc)=0]");
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f + hint +"}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
     }
   }
@@ -941,18 +1005,24 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
 
     // if a field is uninvertible=false, it should behave the same as a field that is indexed=false ...
+    // this also tests docValues=false along with indexed=false or univertible=false
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
-      { // this currently propogates up the low level DocValues error in the common case...
-        Exception e = expectThrows(RuntimeException.class, IllegalStateException.class,
+      {
+        SolrException e = expectThrows(SolrException.class,
                                     () -> h.query(req(params("q", "*:*",
                                                              "fq", "{!collapse field="+f+"}"))));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
-                   e.getMessage().contains("Re-index with correct docvalues type"));
+                   e.getMessage().contains("Collapsing field '" + f + "' " +
+                       "should be either docValues enabled or indexed with uninvertible enabled"));
       }
-      { // ... but in the case of hint=top_fc a bare NPE gets propogated up (SOLR-12979)...
-        expectThrows(RuntimeException.class, NullPointerException.class, 
-                     () -> h.query(req(params("q", "*:*",
-                                              "fq", "{!collapse field="+f+" hint=top_fc}"))));
+      {
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f+" hint=top_fc}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
       
     }
@@ -960,19 +1030,13 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test64BitCollapseFieldException() {
-    ModifiableSolrParams doubleParams = new ModifiableSolrParams();
-    doubleParams.add("q", "*:*");
-    doubleParams.add("fq", "{!collapse field=group_d}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(doubleParams)));
+    assertQEx("Should Fail For collapsing on Long fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_l}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams dateParams = new ModifiableSolrParams();
-    dateParams.add("q", "*:*");
-    dateParams.add("fq", "{!collapse field=group_dt}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(dateParams)));
+    assertQEx("Should Fail For collapsing on Double fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_d}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams longParams = new ModifiableSolrParams();
-    longParams.add("q", "*:*");
-    longParams.add("fq", "{!collapse field=group_l}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(longParams)));
+    assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
   }
 }

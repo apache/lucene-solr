@@ -33,14 +33,23 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 public class ApostropheFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "apostrophe";
 
   public ApostropheFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameter(s): " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ApostropheFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

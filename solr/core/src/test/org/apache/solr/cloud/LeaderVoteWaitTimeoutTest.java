@@ -100,8 +100,10 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   
   @After
   public void tearDown() throws Exception {
-    for (SocketProxy proxy:proxies.values()) {
-      proxy.close();
+    if (null != proxies) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
     }
     shutdownCluster();
     super.tearDown();

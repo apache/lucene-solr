@@ -310,9 +310,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private void accumIntervalWithMultipleValues(SortedNumericDocValues longs) throws IOException {
     // longs should be already positioned to the correct doc
     assert longs.docID() != -1;
-    assert longs.docValueCount() > 0: "Should have at least one value for this document";
+    final int docValueCount = longs.docValueCount();
+    assert docValueCount > 0: "Should have at least one value for this document";
     int currentInterval = 0;
-    for (int i = 0; i < longs.docValueCount(); i++) {
+    for (int i = 0; i < docValueCount; i++) {
       boolean evaluateNextInterval = true;
       long value = longs.nextValue();
       while (evaluateNextInterval && currentInterval < intervals.length) {
@@ -557,7 +558,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       } else if (intervalStr.charAt(lastNdx) == ']') {
         endOpen = false;
       } else {
-        throw new SyntaxError("Invalid end character " + intervalStr.charAt(0) + " in facet interval " + intervalStr);
+        throw new SyntaxError("Invalid end character " + intervalStr.charAt(lastNdx) + " in facet interval " + intervalStr);
       }
 
       StringBuilder startStr = new StringBuilder(lastNdx);

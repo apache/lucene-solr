@@ -36,12 +36,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
@@ -239,6 +238,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     
     assertQ("blank q",
         req("q"," ",
+            "q.alt",allq,
+            "defType","edismax")
+        ,allr);
+
+    assertQ("ideographic space should be considered whitespace",
+        req("q","\u3000",
             "q.alt",allq,
             "defType","edismax")
         ,allr);
@@ -520,6 +525,57 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//doc[2]/str[@name='id'][.='52']",
         "//doc[3]/str[@name='id'][.='54']"
      );
+  }
+
+  @Test
+  public void testBf() {
+    assertQ(
+        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bf", "ord(id)", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='54']",
+        "//doc[2]/str[@name='id'][.='53']",
+        "//doc[3]/str[@name='id'][.='52']"
+    );
+
+    assertQ(req("q", "tekna", "qf", "text_sw", "defType", "edismax",
+        "bf", "if(and(query({!v='id:53'})),120,if(query({!v='id:52'}),10,0))", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='53']",
+        "//doc[2]/str[@name='id'][.='52']",
+        "//doc[3]/str[@name='id'][.='54']");
+
+    // adding value from a field
+    // 0 would be returned for negative values or docs w/o a value
+    assertQ(req("q", "*:*", "qf", "text_sw", "defType", "edismax",
+                "bf", "foo_i", "fq", "id:[47 TO 49]", "fl", "id,score"),
+            "//doc[1]/str[@name='id'][.='48']",
+            // these should have identical score, in non-deterministic order
+            "//doc[str[@name='id'][.='47'] and float[@name='score'][.='1.0']]",
+            "//doc[str[@name='id'][.='49'] and float[@name='score'][.='1.0']]");
+  }
+
+  @Test
+  public void testBoost() {
+    assertQ(
+        req("q", "*:*", "qf", "text_sw", "defType", "edismax", "boost", "exists(foo_i)", "fq", "id:[47 TO 49]",
+            "fl", "id,score", "boost", "if(not(query({!v=id:49})),10,1)"),
+        "//doc[1]/str[@name='id'][.='48']",
+        "//doc[2]/str[@name='id'][.='49']",
+        "//doc[3]/str[@name='id'][.='47']"
+    );
+
+    assertQ(req("q", "tekna", "qf", "text_sw", "defType", "edismax",
+        "boost", "if(and(query({!v='id:53'})),120,if(query({!v='id:52'}),0.0002,1))", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='53']",
+        "//doc[2]/str[@name='id'][.='54']",
+        "//doc[3]/str[@name='id'][.='52']");
+
+    // adding value from a field
+    // using sum to verify the order
+    // 0 would be returned for negative values or if the field value is not present
+    assertQ(req("q", "*:*", "qf", "text_sw", "defType", "edismax",
+        "boost", "sum(foo_i,1)", "fq", "id:[48 TO 50]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='48']",
+        "//doc[2]/str[@name='id'][.='50']",
+        "//doc[3]/str[@name='id'][.='49']");
   }
 
   public void testUserFields() {
@@ -1716,7 +1772,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
@@ -1830,7 +1886,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req(sowTrueParams)) {
       QParser qParser = QParser.getParser("text:grackle", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      assertEquals("+(text:\"crow blackbird\" text:grackl)", q.toString());
     }
     for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
       try (SolrQueryRequest req = req(params)) {
@@ -1861,13 +1917,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req(sowTrueParams)) {
       QParser qParser = QParser.getParser("grackle", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+(spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+      assertEquals("+((text:\"crow blackbird\" text:grackl)"
               + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl)))",
           q.toString());
 
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
-      assertEquals("+((spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+      assertEquals("+(((text:\"crow blackbird\" text:grackl)"
               + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl))) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
           q.toString());
     }
@@ -2078,9 +2134,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-11512 */
-  @Test(expected=SolrException.class)
+  @Test
   public void killInfiniteRecursionParse() throws Exception {
-    assertJQ(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+    SolrException exception = expectThrows(SolrException.class, () -> {
+      h.query(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
   }
 
   /** SOLR-5163 */
@@ -2095,19 +2155,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("debugQuery", "true");
 
     // test valid field names
-    try (SolrQueryRequest req = req(params)) {
-      String response = h.query(req);
-      response.contains("+DisjunctionMaxQuery((title:olive | (subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))");
-    }
+    String response = h.query(req(params));
+    assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " +
+        "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
 
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
-    try (SolrQueryRequest req = req(params)) {
-      h.query(req);
-    } catch (Exception e) {
-      Assert.assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name", e.getMessage());
-    }
-
+    SolrException exception = expectThrows(SolrException.class, () -> h.query(req(params)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
+        exception.getMessage());
   }
 
 }

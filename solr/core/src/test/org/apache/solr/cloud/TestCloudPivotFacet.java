@@ -25,8 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -115,7 +115,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
-    waitForThingsToLevelOut(30000); // TODO: why would we have to wait?
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS); // TODO: why would we have to wait?
     // 
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -496,7 +496,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       // makes it a robust test (especially for multi-valued fields)
       fields[i] = fieldNames[TestUtil.nextInt(random(),0,fieldNames.length-1)];
     }
-    return StringUtils.join(fields, ",");
+    return String.join(",", fields);
   }
 
   /**

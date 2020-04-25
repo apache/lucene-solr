@@ -44,7 +44,7 @@ import java.util.List;
    type: MultiPolygon (union of polygons) is also accepted.
 */
 
-/** Does minimal parsing of a GeoJSON object, to extract either Polygon or MultiPolygon, either directly as a the top-level type, or if
+/** Does minimal parsing of a GeoJSON object, to extract either Polygon or MultiPolygon, either directly as the top-level type, or if
  *  the top-level type is Feature, as the geometry of that feature. */
 
 @SuppressWarnings("unchecked")
@@ -193,7 +193,7 @@ class SimpleGeoJSONPolygonParser {
           // OK, we recurse
         } else {
           upto = uptoStart;
-          throw newParseException("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MutiPolygon, but got " + type);
+          throw newParseException("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MultiPolygon, but got " + type);
         }
       } else if (key.equals("coordinates") && isValidGeometryPath(path)) {
         if (o instanceof List == false) {
@@ -295,6 +295,8 @@ class SimpleGeoJSONPolygonParser {
         o = null;
       } else if (ch == '-' || ch == '.' || (ch >= '0' && ch <= '9')) {
         o = parseNumber();
+      } else if (ch == '"') {
+        o = parseString();
       } else {
         throw newParseException("expected another array or number while parsing array, not '" + ch + "'");
       }

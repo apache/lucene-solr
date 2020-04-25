@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 public class DoubleCheckedDataWriter extends ReductionCheckedDataWriter<DoubleSupplier> {
-  
+
   public DoubleCheckedDataWriter(DataOutput output, DoubleSupplier extractor, BooleanSupplier existsSupplier) {
     super(output, extractor, existsSupplier);
   }

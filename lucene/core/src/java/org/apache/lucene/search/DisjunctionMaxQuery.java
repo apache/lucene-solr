@@ -24,11 +24,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -109,13 +107,6 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         weights.add(searcher.createWeight(disjunctQuery, scoreMode, boost));
       }
       this.scoreMode = scoreMode;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (Weight weight : weights) {
-        weight.extractTerms(terms);
-      }
     }
 
     @Override
@@ -237,6 +228,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     return super.rewrite(reader);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (Query q : disjuncts) {
+      q.visit(v);
+    }
+  }
+
   /** Prettyprint us.
    * @param field the field to which we are applied
    * @return a string that shows what we do, of the form "(disjunct1 | disjunct2 | ... | disjunctn)^boost"
@@ -263,9 +262,9 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     return buffer.toString();
   }
 
-  /** Return true iff we represent the same query as o
+  /** Return true if we represent the same query as other
    * @param other another object
-   * @return true iff o is a DisjunctionMaxQuery with the same boost and the same subqueries, in the same order, as us
+   * @return true if other is a DisjunctionMaxQuery with the same boost and the same subqueries, in the same order, as us
    */
   @Override
   public boolean equals(Object other) {

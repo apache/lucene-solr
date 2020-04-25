@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,30 +34,38 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   private static final int DATE = 12;
   private static final int STRING = 7;
   private static final int NUM_LOOPS = 100;
-  
-  private static ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
+
+  private static final ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
+
+  @After
+  public void afterTest() throws Exception {
+    int1TestStart.clear();
+    int2TestStart.clear();
+    longTestStart.clear();
+    floatTestStart.clear();
+  }
 
   @Before
   public void beforeTest() throws Exception {
-    
+
     //INT
     int1TestStart.add(new ArrayList<Integer>());
     int2TestStart.add(new ArrayList<Integer>());
-    
+
     //LONG
     longTestStart.add(new ArrayList<Long>());
     longTestStart.add(new ArrayList<Long>());
-    
+
     //FLOAT
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
 
     UpdateRequest req = new UpdateRequest();
-    
+
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
@@ -64,7 +73,7 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
       double d = j%DOUBLE;
       int dt = j%DATE;
       int s = j%STRING;
-      
+
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
       fields.add("int_id"); fields.add("" + i);
@@ -74,7 +83,7 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
       fields.add("date_dtd"); fields.add((1000+dt) + "-01-01T23:59:59Z");
       fields.add("string_sd"); fields.add("abc" + s);
       req.add(fields.toArray(new String[0]));
-      
+
       if (f<=50) {
         int1TestStart.get(0).add(i);
       }
@@ -103,7 +112,7 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void queryTest() throws Exception { 
+  public void queryTest() throws Exception {
     String[] params = new String[] {
         "o.ir.s.sum", "sum(int_id)",
         "o.ir.s.mean", "mean(int_id)",
@@ -121,7 +130,7 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
         "o.lr.qf", "string",
         "o.lr.qf.string.q", "string_sd:abc1",
         "o.lr.qf.string.q", "string_sd:abc2",
-        
+
         "o.fr.s.sum", "sum(float_fd)",
         "o.fr.s.mean", "mean(float_fd)",
         "o.fr.s.median", "median(float_fd)",
@@ -131,10 +140,10 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
         "o.fr.qf.lad.q", "long_ld:[30 TO *]",
         "o.fr.qf.lad.q", "double_dd:[* TO 50]"
     };
-    
+
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int One
     ArrayList<Double> int1 = getValueList(response, "ir", "queryFacets", "float1", "sum", false);
     ArrayList<Double> int1Test = calculateFacetedNumberStat(int1TestStart, "sum");

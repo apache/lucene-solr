@@ -34,8 +34,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class ShingleFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "shingle";
+
   private final int minShingleSize;
   private final int maxShingleSize;
   private final boolean outputUnigrams;
@@ -65,6 +70,11 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ShingleFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

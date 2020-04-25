@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.icu;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,6 +35,17 @@ public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });
+  }
+
+  /** Test nfkc form */
+  public void testFormArgument() throws Exception {
+    Reader reader = new StringReader("This is a Ｔｅｓｔ");
+    Map<String, String> args = new HashMap<>();
+    args.put("form", "nfkc");
+    ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory(args);
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = factory.create(stream);
+    assertTokenStreamContents(stream, new String[] { "This", "is", "a", "Test" });
   }
   
   /** Test that bogus arguments result in exception */

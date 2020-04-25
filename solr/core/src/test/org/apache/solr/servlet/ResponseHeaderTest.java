@@ -51,7 +51,9 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   
   @AfterClass
   public static void afterTest() throws Exception {
-    cleanUpJettyHome(solrHomeDirectory);
+    if (null != solrHomeDirectory) {
+      cleanUpJettyHome(solrHomeDirectory);
+    }
   }
   
   @Test

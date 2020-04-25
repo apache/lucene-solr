@@ -38,10 +38,8 @@ import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
-import org.apache.lucene.codecs.memory.FSTOrdTermsReader;
-import org.apache.lucene.codecs.memory.FSTOrdTermsWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.codecs.memory.FSTTermsReader;
 import org.apache.lucene.codecs.memory.FSTTermsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -118,10 +116,10 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     
     random.nextInt(); // consume a random for buffersize
 
-    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
 
     final FieldsConsumer fields;
-    final int t1 = random.nextInt(5);
+    final int t1 = random.nextInt(4);
 
     if (t1 == 0) {
       boolean success = false;
@@ -134,16 +132,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         }
       }
     } else if (t1 == 1) {
-      boolean success = false;
-      try {
-        fields = new FSTOrdTermsWriter(state, postingsWriter);
-        success = true;
-      } finally {
-        if (!success) {
-          postingsWriter.close();
-        }
-      }
-    } else if (t1 == 2) {
       // Use BlockTree terms dict
 
       if (LuceneTestCase.VERBOSE) {
@@ -164,7 +152,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsWriter.close();
         }
       }
-    } else if (t1 == 3) {
+    } else if (t1 == 2) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Block terms dict");
@@ -234,7 +222,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
-    } else if (t1 == 4) {
+    } else if (t1 == 3) {
       // Use OrdsBlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing OrdsBlockTree");
@@ -283,10 +271,10 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
     }
 
-    PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
+    PostingsReaderBase postingsReader = new Lucene84PostingsReader(state);
 
     final FieldsProducer fields;
-    final int t1 = random.nextInt(5);
+    final int t1 = random.nextInt(4);
     if (t1 == 0) {
       boolean success = false;
       try {
@@ -298,16 +286,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         }
       }
     } else if (t1 == 1) {
-      boolean success = false;
-      try {
-        fields = new FSTOrdTermsReader(state, postingsReader);
-        success = true;
-      } finally {
-        if (!success) {
-          postingsReader.close();
-        }
-      }
-    } else if (t1 == 2) {
       // Use BlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading BlockTree terms dict");
@@ -322,7 +300,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsReader.close();
         }
       }
-    } else if (t1 == 3) {
+    } else if (t1 == 2) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Block terms dict");
@@ -373,7 +351,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
-    } else if (t1 == 4) {
+    } else if (t1 == 3) {
       // Use OrdsBlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading OrdsBlockTree terms dict");

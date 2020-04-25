@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockSynonymFilter;
@@ -32,15 +33,14 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -138,7 +138,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   
   /** simple synonyms test */
   public void testSynonyms() throws Exception {
-    SynonymQuery expected = new SynonymQuery(new Term("field", "dogs"), new Term("field", "dog"));
+    SynonymQuery expected = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "dogs"))
+        .addTerm(new Term("field", "dog"))
+        .build();
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
@@ -156,18 +159,14 @@ public class TestQueryBuilder extends LuceneTestCase {
   }
 
   /** forms graph query */
-  public void testMultiWordSynonymsPhrase() throws Exception {
-    SpanNearQuery expectedNear = SpanNearQuery.newOrderedNearQuery("field")
-        .addClause(new SpanTermQuery(new Term("field", "guinea")))
-        .addClause(new SpanTermQuery(new Term("field", "pig")))
-        .setSlop(0)
+  public void testMultiWordSynonymsPhrase() {
+    Query expected = new BooleanQuery.Builder()
+        .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("field", "cavy")), BooleanClause.Occur.SHOULD)
         .build();
 
-    SpanTermQuery expectedTerm = new SpanTermQuery(new Term("field", "cavy"));
-
     QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
-    assertEquals(new SpanOrQuery(new SpanQuery[]{expectedNear, expectedTerm}),
-        queryBuilder.createPhraseQuery("field", "guinea pig"));
+    assertEquals(expected, queryBuilder.createPhraseQuery("field", "guinea pig"));
   }
 
   public void testMultiWordSynonymsPhraseWithSlop() throws Exception {
@@ -366,7 +365,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
-    SynonymQuery expected = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery expected = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "国"));
     assertEquals(expected, builder.createPhraseQuery("field", "国"));
@@ -377,7 +379,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testCJKSynonymsOR() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner, BooleanClause.Occur.SHOULD);
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国"));
@@ -387,9 +392,15 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testCJKSynonymsOR2() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner, BooleanClause.Occur.SHOULD);
-    SynonymQuery inner2 = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner2 = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner2, BooleanClause.Occur.SHOULD);
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国国"));
@@ -399,7 +410,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testCJKSynonymsAND() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    SynonymQuery inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner, BooleanClause.Occur.MUST);
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国", BooleanClause.Occur.MUST));
@@ -409,9 +423,15 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testCJKSynonymsAND2() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    SynonymQuery inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner, BooleanClause.Occur.MUST);
-    SynonymQuery inner2 = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner2 = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "国"))
+        .addTerm(new Term("field", "國"))
+        .build();
     expected.add(inner2, BooleanClause.Occur.MUST);
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国国", BooleanClause.Occur.MUST));
@@ -473,13 +493,60 @@ public class TestQueryBuilder extends LuceneTestCase {
     }
     QueryBuilder qb = new QueryBuilder(null);
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
-      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.MUST));
+      expectThrows(IndexSearcher.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.MUST));
     }
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
-      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.SHOULD));
+      expectThrows(IndexSearcher.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.SHOULD));
     }
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
-      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphPhrase(ts, "", 0));
+      expectThrows(IndexSearcher.TooManyClauses.class, () -> qb.analyzeGraphPhrase(ts, "", 0));
     }
+  }
+
+  private static final class MockBoostTokenFilter extends TokenFilter {
+
+    final BoostAttribute boostAtt = addAttribute(BoostAttribute.class);
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    protected MockBoostTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken() == false) {
+        return false;
+      }
+      if (termAtt.length() == 3) {
+        boostAtt.setBoost(0.5f);
+      }
+      return true;
+    }
+  }
+
+  public void testTokenStreamBoosts() {
+    Analyzer msa = new MockSynonymAnalyzer();
+    Analyzer a = new AnalyzerWrapper(msa.getReuseStrategy()) {
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        return msa;
+      }
+      @Override
+      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+        return new TokenStreamComponents(components.getSource(), new MockBoostTokenFilter(components.getTokenStream()));
+      }
+    };
+
+    QueryBuilder builder = new QueryBuilder(a);
+    Query q = builder.createBooleanQuery("field", "hot dogs");
+    Query expected = new BooleanQuery.Builder()
+        .add(new BoostQuery(new TermQuery(new Term("field", "hot")), 0.5f), BooleanClause.Occur.SHOULD)
+        .add(new SynonymQuery.Builder("field")
+            .addTerm(new Term("field", "dogs"))
+            .addTerm(new Term("field", "dog"), 0.5f)
+            .build(), BooleanClause.Occur.SHOULD)
+        .build();
+
+    assertEquals(expected, q);
   }
 }

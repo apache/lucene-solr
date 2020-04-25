@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -24,9 +25,8 @@ import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
-
-import javax.net.ssl.SSLContext;
-
+import java.util.regex.Pattern;
+  
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -36,21 +36,22 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
-import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+
 /**
- * An SSLConfig that provides {@link SSLConfig} and {@link SchemaRegistryProvider} for both clients and servers
+ * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both clients and servers
  * that supports reading key/trust store information directly from resource files provided with the
  * Solr test-framework classes
  */
 public class SSLTestConfig {
-
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_PASSWORD = "secret";
@@ -58,8 +59,8 @@ public class SSLTestConfig {
   private final boolean checkPeerName;
   private final Resource keyStore;
   private final Resource trustStore;
-  private boolean useSsl;
-  private boolean clientAuth;
+  private final boolean useSsl;
+  private final boolean clientAuth;
   
   /** Creates an SSLTestConfig that does not use SSL or client authentication */
   public SSLTestConfig() {
@@ -101,15 +102,14 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
-    if (Constants.JRE_IS_MINIMUM_JAVA11) {
-      this.useSsl = false;
-    } else {
-      this.useSsl = useSSL;
-    }
+    this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
+    if (useSsl) {
+      assumeSslIsSafeToTest();
+    }
+    
     final String resourceName = checkPeerName
       ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);
@@ -134,17 +134,17 @@ public class SSLTestConfig {
   }
   
   /**
-   * Creates a {@link SchemaRegistryProvider} for HTTP <b>clients</b> to use when communicating with servers 
+   * Creates a {@link SocketFactoryRegistryProvider} for HTTP <b>clients</b> to use when communicating with servers 
    * which have been configured based on the settings of this object.  When {@link #isSSLMode} is true, this 
-   * <code>SchemaRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
+   * <code>SocketFactoryRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
    * appropriate certs.  When {@link #isSSLMode} is false, <i>only</i> HTTP (no HTTPS scheme) will be 
    * supported.
    */
-  public SchemaRegistryProvider buildClientSchemaRegistryProvider() {
+  public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
     if (isSSLMode()) {
       SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
       assert null != sslConnectionFactory;
-      return new SSLSchemaRegistryProvider(sslConnectionFactory);
+      return new SSLSocketFactoryRegistryProvider(sslConnectionFactory);
     } else {
       return HTTP_ONLY_SCHEMA_PROVIDER;
     }
@@ -184,11 +184,10 @@ public class SSLTestConfig {
 
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
-      public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+      public SslContextFactory.Client createClientContextFactory() {
+        SslContextFactory.Client factory = new SslContextFactory.Client(!checkPeerName);
         try {
           factory.setSslContext(buildClientSSLContext());
-          factory.setNeedClientAuth(checkPeerName);
         } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
           throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
         }
@@ -213,8 +212,8 @@ public class SSLTestConfig {
 
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
-      public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+      public SslContextFactory.Server createContextFactory() {
+        SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();
           builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
@@ -269,23 +268,23 @@ public class SSLTestConfig {
     return sslConnectionFactory;
   }
 
-  /** A SchemaRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
-  private static class SSLSchemaRegistryProvider extends SchemaRegistryProvider {
+  /** A SocketFactoryRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
+  private static class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
     private final SSLConnectionSocketFactory sslConnectionFactory;
-    public SSLSchemaRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
+    public SSLSocketFactoryRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
       this.sslConnectionFactory = sslConnectionFactory;
     }
     @Override
-    public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
       return RegistryBuilder.<ConnectionSocketFactory>create()
         .register("https", sslConnectionFactory).build();
     }
   }
 
-  /** A SchemaRegistryProvider that only knows about HTTP */
-  private static final SchemaRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER = new SchemaRegistryProvider() {
+  /** A SocketFactoryRegistryProvider that only knows about HTTP */
+  private static final SocketFactoryRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER = new SocketFactoryRegistryProvider() {
     @Override
-    public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
       return RegistryBuilder.<ConnectionSocketFactory>create()
         .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
     }
@@ -342,4 +341,44 @@ public class SSLTestConfig {
     synchronized public void setSeed(long seed) { /* NOOP */ }
     
   }
+
+  /**
+   * Helper method for sanity checking if it's safe to use SSL on this JVM
+   *
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-12988">SOLR-12988</a>
+   * @throws org.junit.internal.AssumptionViolatedException if this JVM is known to have SSL problems
+   */
+  public static void assumeSslIsSafeToTest() {
+    if (Constants.JVM_NAME.startsWith("OpenJDK") ||
+        Constants.JVM_NAME.startsWith("Java HotSpot(TM)")) {
+      RandomizedTest.assumeFalse("Test (or randomization for this seed) wants to use SSL, " +
+                                 "but SSL is known to fail on your JVM: " +
+                                 Constants.JVM_NAME + " / " + Constants.JVM_VERSION, 
+                                 isOpenJdkJvmVersionKnownToHaveProblems(Constants.JVM_VERSION));
+    }
+  }
+  
+  /** 
+   * package visibility for tests
+   * @see Constants#JVM_VERSION
+   * @lucene.internal
+   */
+  static boolean isOpenJdkJvmVersionKnownToHaveProblems(final String jvmVersion) {
+    // TODO: would be nice to replace with Runtime.Version once we don't have to
+    // worry about java8 support when backporting to branch_8x
+    return KNOWN_BAD_OPENJDK_JVMS.matcher(jvmVersion).matches();
+
+  }
+  private static final Pattern KNOWN_BAD_OPENJDK_JVMS
+    = Pattern.compile(// 11 to 11.0.2 were all definitely problematic
+                      // - https://bugs.openjdk.java.net/browse/JDK-8212885
+                      // - https://bugs.openjdk.java.net/browse/JDK-8213202
+                      "(^11(\\.0(\\.0|\\.1|\\.2)?)?($|(\\_|\\+|\\-).*$))|" +
+                      // early (pre-ea) "testing" builds of 11, 12, and 13 were also buggy
+                      // - https://bugs.openjdk.java.net/browse/JDK-8224829
+                      "(^(11|12|13).*-testing.*$)|" +
+                      // So far, all 13-ea builds (up to 13-ea-26) have been buggy
+                      // - https://bugs.openjdk.java.net/browse/JDK-8226338
+                      "(^13-ea.*$)"
+                      );
 }

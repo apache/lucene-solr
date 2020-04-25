@@ -61,11 +61,9 @@ To get request times, specifically, you can send an API request such as:
 |p95_ms |Request processing time in milliseconds for the request which belongs to the 95^th^ Percentile. E.g., if 100 requests are received, then the 95^th^ fastest request time will be reported in this statistic.
 |p999_ms |Request processing time in milliseconds for the request which belongs to the 99.9^th^ Percentile. E.g., if 1000 requests are received, then the 999^th^ fastest request time will be reported in this statistic.
 |p99_ms |Request processing time in milliseconds for the request which belongs to the 99^th^ Percentile. E.g., if 100 requests are received, then the 99^th^ fastest request time will be reported in this statistic.
-|count |Total number of requests made since the Solr process was started.
+|count |Total number of requests made since the Solr core was first created.
 |median_ms |Median of all the request processing time.
-
-|avgRequestsPerSecond |Average number of requests received per second.
-|avgTimePerRequest |Average time taken for processing the requests. This parameter will decay over time, with a bias toward activity in the last 5 minutes.
+|meanRate |Average number of requests received per second since the Solr core was first created.
 |===
 
 *Errors and Other Times*
@@ -84,6 +82,8 @@ The table below shows the metric names and attributes to request:
 `UPDATE./update.errors` |Number of errors encountered by handler. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
 |`QUERY./select.clientErrors`
 `UPDATE./update.clientErrors` |Number of syntax or parse errors made by a client while making requests. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
+|`QUERY./select.requests`
+`UPDATE./update.requests` |Number of requests received by this handler.
 |`QUERY./select.serverErrors`
 `UPDATE./update.serverErrors` |Number of errors thrown by the server while executing the request. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
 |`QUERY./select.timeouts`
@@ -93,6 +93,20 @@ The table below shows the metric names and attributes to request:
 |`QUERY./select.handlerStart`
 `UPDATE./update.handlerStart` |Epoch time when the handler was registered.
 |===
+
+*Distributed vs. Local Request Times*
+
+Processing of a single distributed request in SolrCloud usually requires making several requests to
+other nodes and other replicas. The common statistics listed above lump these timings together, even though
+they are very different in nature, thus making it difficult to measure the latency of distributed and
+local requests separately. Solr 8.4 introduced additional statistics that help to do this.
+
+These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use
+different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
+The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed
+request to complete all remote calls plus any local processing, and return the result to the caller.
+The metrics under the `local` path correspond to the time it takes for a local call (non-distributed,
+i.e., being processed only by the Solr core where the handler operates) to complete.
 
 == Update Handler
 
@@ -193,7 +207,7 @@ The following statistics are available for each of the caches mentioned above:
 |inserts |Number of inserts into the cache.
 |lookups |Number of lookups against the cache.
 |size |Number of entries in the cache at that particular instance.
-|warmupTime |Warm-up time for the registered index searcher. This time is taken in account for the “auto-warming” of caches.
+|warmupTime |Warm-up time for the registered index searcher in milliseconds. This time is taken in account for the “auto-warming” of caches.
 |===
 
 When eviction by heap usage is enabled, the following additional statistics are available for the Query Result Cache:

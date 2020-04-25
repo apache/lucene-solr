@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html",
   "description": "General information about the cluster, including defined collections (with the 'cluster' endpoint), status of the overseer (with the 'cluster/overseer' endpoint), and available nodes (with the 'cluster/nodes' endpoint).",
   "methods": [
     "GET"

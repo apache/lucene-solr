@@ -20,10 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
@@ -145,21 +142,17 @@ public class DemoHTMLParser implements HTMLParser {
       // assign body text
       this.body = body.toString();
     }
-    
-    private static final Set<String> createElementNameSet(String... names) {
-      return Collections.unmodifiableSet(new HashSet<>(Arrays.asList(names)));
-    }
-    
+
     /** HTML elements that cause a line break (they are block-elements) */
-    static final Set<String> ENDLINE_ELEMENTS = createElementNameSet(
-      "p", "h1", "h2", "h3", "h4", "h5", "h6", "div", "ul", "ol", "dl",
-      "pre", "hr", "blockquote", "address", "fieldset", "table", "form",
-      "noscript", "li", "dt", "dd", "noframes", "br", "tr", "select", "option"
+    static final Set<String> ENDLINE_ELEMENTS = Set.of(
+        "p", "h1", "h2", "h3", "h4", "h5", "h6", "div", "ul", "ol", "dl",
+        "pre", "hr", "blockquote", "address", "fieldset", "table", "form",
+        "noscript", "li", "dt", "dd", "noframes", "br", "tr", "select", "option"
     );
 
     /** HTML elements with contents that are ignored */
-    static final Set<String> SUPPRESS_ELEMENTS = createElementNameSet(
-      "style", "script"
+    static final Set<String> SUPPRESS_ELEMENTS = Set.of(
+        "style", "script"
     );
   }
 

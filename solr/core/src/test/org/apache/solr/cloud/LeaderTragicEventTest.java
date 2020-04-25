@@ -17,20 +17,20 @@
 
 package org.apache.solr.cloud;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -48,6 +48,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
+
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13237")
 public class LeaderTragicEventTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -132,7 +136,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
           try {
             mockDir.corruptFiles(Collections.singleton(file));
-          } catch (RuntimeException | FileNotFoundException e) {
+          } catch (RuntimeException | FileNotFoundException | NoSuchFileException e) {
             // merges can lead to this exception
           }
         }

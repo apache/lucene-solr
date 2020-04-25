@@ -33,7 +33,7 @@ public class DateMultiTrieField extends LongMultiTrieField implements CastingDat
   public DateMultiTrieField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void streamDates(Consumer<Date> cons) {
     streamLongs(value -> cons.accept(new Date(value)));

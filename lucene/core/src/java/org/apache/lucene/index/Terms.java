@@ -209,11 +209,11 @@ public abstract class Terms {
    */
   public Object getStats() throws IOException {
     StringBuilder sb = new StringBuilder();
-    sb.append("impl=" + getClass().getSimpleName());
-    sb.append(",size=" + size());
-    sb.append(",docCount=" + getDocCount());
-    sb.append(",sumTotalTermFreq=" + getSumTotalTermFreq());
-    sb.append(",sumDocFreq=" + getSumDocFreq());
+    sb.append("impl=").append(getClass().getSimpleName());
+    sb.append(",size=").append(size());
+    sb.append(",docCount=").append(getDocCount());
+    sb.append(",sumTotalTermFreq=").append(getSumTotalTermFreq());
+    sb.append(",sumDocFreq=").append(getSumDocFreq());
     return sb.toString();
   }
 }

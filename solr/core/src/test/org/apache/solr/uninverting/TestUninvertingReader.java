@@ -47,12 +47,12 @@ import org.apache.solr.legacy.LegacyLongField;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-public class TestUninvertingReader extends LuceneTestCase {
+public class TestUninvertingReader extends SolrTestCase {
   
   public void testSortedSetInteger() throws IOException {
     Directory dir = newDirectory();
@@ -379,13 +379,13 @@ public class TestUninvertingReader extends LuceneTestCase {
 
     FieldInfo intFInfo = fieldInfos.fieldInfo("int");
     assertEquals(DocValuesType.NUMERIC, intFInfo.getDocValuesType());
-    assertEquals(0, intFInfo.getPointDataDimensionCount());
+    assertEquals(0, intFInfo.getPointDimensionCount());
     assertEquals(0, intFInfo.getPointIndexDimensionCount());
     assertEquals(0, intFInfo.getPointNumBytes());
 
     FieldInfo dintFInfo = fieldInfos.fieldInfo("dint");
     assertEquals(DocValuesType.NUMERIC, dintFInfo.getDocValuesType());
-    assertEquals(1, dintFInfo.getPointDataDimensionCount());
+    assertEquals(1, dintFInfo.getPointDimensionCount());
     assertEquals(1, dintFInfo.getPointIndexDimensionCount());
     assertEquals(4, dintFInfo.getPointNumBytes());
 

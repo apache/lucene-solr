@@ -50,9 +50,9 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
-    Sort groupSort = rb.getGroupingSpec().getGroupSort();
+    Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
     final String[] fields = rb.getGroupingSpec().getFields();
-    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    Sort withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort();
     assert withinGroupSort != null;
 
     final Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>(fields.length, 1.0f);
@@ -100,16 +100,15 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         shardInfo.add(srsp.getShard(), nl);
       }
       if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-          rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-        }
+        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         continue; // continue if there was an error and we're tolerant.
       }
       maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
       @SuppressWarnings("unchecked")
       NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
       final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, withinGroupSort, srsp.getShard());
-      for (String field : commandSearchGroups.keySet()) {
+      for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {
+        String field = entry.getKey();
         final SearchGroupsFieldCommandResult firstPhaseCommandResult = result.get(field);
 
         final Integer groupCount = firstPhaseCommandResult.getGroupCount();
@@ -124,7 +123,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
           continue;
         }
 
-        commandSearchGroups.get(field).add(searchGroups);
+        entry.getValue().add(searchGroups);
         for (SearchGroup<BytesRef> searchGroup : searchGroups) {
           Map<SearchGroup<BytesRef>, Set<String>> map = tempSearchGroupToShards.get(field);
           Set<String> shards = map.get(searchGroup);
@@ -139,8 +138,9 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     }
     rb.totalHitCount = hitCountDuringFirstPhase;
     rb.firstPhaseElapsedTime = maxElapsedTime;
-    for (String groupField : commandSearchGroups.keySet()) {
-      List<Collection<SearchGroup<BytesRef>>> topGroups = commandSearchGroups.get(groupField);
+    for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {
+      String groupField = entry.getKey();
+      List<Collection<SearchGroup<BytesRef>>> topGroups = entry.getValue();
       Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
       if (mergedTopGroups == null) {
         continue;

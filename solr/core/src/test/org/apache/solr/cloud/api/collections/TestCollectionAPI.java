@@ -28,18 +28,22 @@ import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -92,11 +96,42 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusZNodeVersion();
     testClusterStateMigration();
     testCollectionCreationCollectionNameValidation();
+    testCollectionCreationTooManyShards();
     testReplicationFactorValidaton();
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
+    testNoConfigset();
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
+  }
+
+  private void testCollectionCreationTooManyShards() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "collection_too_many");
+      params.set("router.name", "implicit");
+      params.set("numShards", "10");
+      params.set("maxShardsPerNode", 1);
+      params.set("shards", "b0,b1,b2,b3,b4,b5,b6,b7,b8,b9");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail("A collection creation request with too many shards than allowed by maxShardsPerNode should not have succeeded");
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Cannot create collection"));
+        assertTrue(errorMessage.contains("This requires 10 shards to be created (higher than the allowed number)"));
+        assertMissingCollection(client, "collection_too_many");
+      }
+    }
+  }
+
+  private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
+    ClusterState clusterState = client.getZkStateReader().getClusterState();
+    assertNull(clusterState.getCollectionOrNull(collectionName));
   }
 
   private void testModifyCollection() throws Exception {
@@ -150,7 +185,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail("Trying to unset an unknown property should have failed");
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         // expected
         assertTrue(e.getMessage().contains("no supported values provided"));
       }
@@ -172,7 +207,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Cannot specify both replicationFactor and nrtReplicas as they mean the same thing"));
       }
@@ -197,6 +232,51 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
     }
+  }
+
+  // See  SOLR-12013. We should report something back if the configset has mysteriously disappeared.
+  private void testNoConfigset() throws Exception {
+    String configSet = "delete_config";
+
+    final String collection = "deleted_collection";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collection);
+      params.set("numShards", "1");
+      params.set("replicationFactor", "1");
+      params.set("collection.configName", configSet);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+
+      waitForCollection(cloudClient.getZkStateReader(), collection, 1);
+      waitForRecoveriesToFinish(collection, false);
+
+      // Now try deleting the configset and doing a clusterstatus.
+      String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
+      deleteThemAll(client.getZkStateReader().getZkClient(), parent);
+      client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+
+      final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
+      NamedList<Object> rsp = client.request(req);
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull("Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
+    }
+  }
+
+  private void deleteThemAll(SolrZkClient zkClient, String node) throws KeeperException, InterruptedException {
+    List<String> kids = zkClient.getChildren(node, null, true);
+    for (String kid : kids) {
+      deleteThemAll(zkClient, node + "/" + kid);
+    }
+    zkClient.delete(node, -1, true);
   }
 
   private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {
@@ -854,7 +934,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -877,7 +957,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -898,7 +978,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -931,7 +1011,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (RemoteSolrException e) {
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -969,6 +1049,36 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     } catch (SolrException se) {
       assertTrue("Should have gotten a specific message back mentioning 'missing required parameter'. Got: " + se.getMessage(),
           se.getMessage().toLowerCase(Locale.ROOT).contains("missing required parameter:"));
+    }
+  }
+
+  /**
+   * After a failed attempt to create a collection (due to bad configs), assert that
+   * the collection can be created with a good collection.
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testRecreateCollectionAfterFailure() throws Exception {
+    // Upload a bad configset
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT,
+        ZkTestServer.TIMEOUT, null);
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "bad-error-solrconfig.xml", "solrconfig.xml");
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "schema-minimal.xml", "schema.xml");
+    zkClient.close();
+
+    try (CloudSolrClient client = createCloudClient(null)) {
+      // first, try creating a collection with badconf
+      BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+          CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+              ("testcollection", "badconf", 1, 2).process(client);
+      });
+      assertNotNull(rse.getMessage());
+      assertNotSame(0, rse.code());
+
+      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+          ("testcollection", "conf1", 1, 2).process(client);
+      assertNull(rsp.getErrorMessages());
+      assertSame(0, rsp.getStatus());
     }
   }
 }

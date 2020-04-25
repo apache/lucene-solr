@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -80,19 +81,19 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // test a 1x3 collection
     log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
 
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
         
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     log.info("replication factor testing complete! final clusterState is: "+
         cloudClient.getZkStateReader().getClusterState());    
   }
@@ -271,12 +272,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void testRf3() throws Exception {
-    int numShards = 1;
-    int replicationFactor = 3;
-    int maxShardsPerNode = 1;
-    String testCollectionName = "repfacttest_c8n_1x3";
-    String shardId = "shard1";
-    int minRf = 2;
+    final int numShards = 1;
+    final int replicationFactor = 3;
+    final int maxShardsPerNode = 1;
+    final String testCollectionName = "repfacttest_c8n_1x3";
+    final String shardId = "shard1";
+    final int minRf = 2;
 
     createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
     cloudClient.setDefaultCollection(testCollectionName);
@@ -285,6 +286,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
+    log.info("Indexing docId=1");
     int rf = sendDoc(1, minRf);
     assertRf(3, "all replicas should be active", rf);
 
@@ -292,9 +294,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
     doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
 
-
+    log.info("Closing one proxy port");
     getProxyForReplica(replicas.get(0)).close();
     
+    log.info("Indexing docId=2");
     rf = sendDoc(2, minRf);
     assertRf(2, "one replica should be down", rf);
 
@@ -303,8 +306,22 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
 
+    // SOLR-13599 sanity check if problem is related to sending a batch
+    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    for (int i=30; i < 45; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(id, String.valueOf(i));
+      doc.addField("a_t", "hello" + i);
+      batch.add(doc);
+    }
+    log.info("Indexing batch of documents (30-45)");
+    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
+    
+    log.info("Closing second proxy port");
     getProxyForReplica(replicas.get(1)).close();    
 
+    log.info("Indexing docId=3");
     rf = sendDoc(3, minRf);
     assertRf(1, "both replicas should be down", rf);
 
@@ -312,6 +329,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
 
     // heal the partitions
+    log.info("Re-opening closed proxy ports");
     getProxyForReplica(replicas.get(0)).reopen();    
     getProxyForReplica(replicas.get(1)).reopen();
     
@@ -319,14 +337,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
+    log.info("Indexing docId=4");
     rf = sendDoc(4, minRf);
-    assertRf(3, "partitions to replicas have been healed", rf);
+    assertRf(3, "all replicas have been healed", rf);
 
-    doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
-    doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
+    doDBQWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
+    doDBIdWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
 
     // now send a batch
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    batch = new ArrayList<SolrInputDocument>(10);
     for (int i=5; i < 15; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -334,16 +353,24 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
     
-    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(3, "batch should have succeeded on all replicas", batchRf);
+    log.info("Indexing batch of documents (5-14)");
+    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    assertRf(3, "batch add should have succeeded on all replicas", batchRf);
 
-    doDBQWithRetry(3, 5, "deletes should have propagated to only 1 replica", 15);
-    doDBIdWithRetry(3, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBQWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
+    doDBIdWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
 
     // add some chaos to the batch
+    log.info("Closing one proxy port (again)");
     getProxyForReplica(replicas.get(0)).close();
+
+    // send a single doc (again)
+    // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
+    log.info("Indexing docId=5");
+    rf = sendDoc(5, minRf);
+    assertRf(2, "doc should have succeded, only one replica should be down", rf);
     
-    // now send a batch
+    // now send a batch (again)
     batch = new ArrayList<SolrInputDocument>(10);
     for (int i=15; i < 30; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -351,14 +378,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + i);
       batch.add(doc);
     }
-
+    log.info("Indexing batch of documents (15-29)");
     batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(2, "batch should have succeeded on 2 replicas (only one replica should be down)", batchRf);
+    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
 
     doDBQWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
     doDBIdWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
 
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
+    log.info("Closing second proxy port (again)");
     getProxyForReplica(replicas.get(1)).close();
     
     batch = new ArrayList<SolrInputDocument>(10);

@@ -30,7 +30,7 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * Extension of {@link PostingsWriterBase}, adding a push
  * API for writing each element of the postings.  This API
- * is somewhat analagous to an XML SAX API, while {@link
+ * is somewhat analogous to an XML SAX API, while {@link
  * PostingsWriterBase} is more like an XML DOM API.
  * 
  * @see PostingsReaderBase
@@ -87,7 +87,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
    * fixed length of long[] metadata (which is fixed per
    * field), called when the writing switches to another field. */
   @Override
-  public int setField(FieldInfo fieldInfo) {
+  public void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.getIndexOptions();
 
@@ -113,8 +113,6 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
         enumFlags = PostingsEnum.OFFSETS;
       }
     }
-
-    return 0;
   }
 
   @Override

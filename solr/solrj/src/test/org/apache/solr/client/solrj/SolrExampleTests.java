@@ -17,11 +17,14 @@
 package org.apache.solr.client.solrj;
 
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,7 +35,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.common.collect.Maps;
-import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -40,7 +42,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -68,8 +70,11 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.RTimer;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -77,8 +82,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.hamcrest.core.StringContains.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * This should include tests against the example solr config
@@ -104,6 +109,44 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.deleteByQuery("*:*");
     client.commit();
   }
+
+  @Test
+  @Monster("Only useful to verify the performance of serialization+ deserialization")
+  // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
+  public void testQueryPerf() throws Exception {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    int id = 0;
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "apple", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "a", "inStock", false, "popularity", 13, "price", 16.04));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "samsung", "cat", "a", "inStock", true, "popularity", 14, "price", 12.34));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "b", "inStock", false, "popularity", 24, "price", 51.39));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "nokia", "cat", "b", "inStock", true, "popularity", 28, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "a", "inStock", false, "popularity", 32));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "htc", "cat", "a", "inStock", true, "popularity", 31, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "apple", "cat", "b", "inStock", false, "popularity", 36));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "lg", "cat", "b", "inStock", true, "popularity", 37, "price", 1.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", true, "popularity", -38));
+    docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
+    client.add(docs);
+    client.commit();
+    //this sets the cache
+    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+
+    RTimer timer = new RTimer();
+    int count = 10000;
+    log.info("Started perf test....");
+    for(int i=0;i< count; i++){
+      rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+    }
+
+    log.info("time taken to execute {} queries is {} ms",count, timer.getTime());
+
+  }
+
 
   /**
    * query the example
@@ -305,9 +348,52 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
- 
+  @Test
+  public void testFailOnVersionConflicts() throws Exception {
+    SolrClient client = getSolrClient();
 
- /**
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+
+    client.request(new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v1"));
+    client.commit();
+
+    QueryResponse rsp = null;
+    assertResponseValues(client.query(new SolrQuery("id:id1")), "response[0]/name", "doc1.v1");
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v1"
+    );
+
+    client.request(
+        new UpdateRequest()
+            .add("id", "id1", "name", "doc1.v2")
+            .add("id", "id2", "name", "doc2.v1"));
+    client.commit();
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2",
+        "response[1]/name", "doc2.v1"
+    );
+
+    UpdateRequest add = new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v3")
+        .add("id", "id3", "name", "doc3.v1");
+    add.setParam(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    add.setParam(CommonParams.VERSION_FIELD, "-1");
+    client.request(add);
+    client.commit();
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2" ,
+        "response[1]/name", "doc2.v1" ,
+        "response[2]/name", "doc3.v1");
+
+  }
+
+
+  /**
   * Get empty results
   */
   @Test
@@ -433,50 +519,25 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    try {
-      client.query( query );
-      Assert.fail("should have a number format exception");
-    }
-    catch(SolrException ex) {
-      assertEquals(400, ex.code());
-      assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
-    }
-    catch(Throwable t) {
-      t.printStackTrace();
-      Assert.fail("should have thrown a SolrException! not: "+t);
-    }
-    
-    try {
-      //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
-      // alternatively, the resulting assertion could be modified to assert that no default field is specified.
-      client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ); // query syntax error
-      Assert.fail("should have a number format exception");
-    }
-    catch(SolrException ex) {
-      assertEquals(400, ex.code());
-      assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
-    }
-    catch(Throwable t) {
-      t.printStackTrace();
-      Assert.fail("should have thrown a SolrException! not: "+t);
+    SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
+    assertEquals(400, ex.code());
+    assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
-    }
+    //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
+    // alternatively, the resulting assertion could be modified to assert that no default field is specified.
+    ex = expectThrows(SolrException.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
+    assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
+    assertEquals(400, ex.code());
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "DOCID");
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
-      try {
-        client.add(doc);
-        fail("Should throw exception!");
-      } catch (SolrException ex) {
-        assertEquals(400, ex.code());
-        assertTrue(ex.getMessage().indexOf(
-            "contains multiple values for uniqueKey") > 0); // The reason should get passed through
-      } catch (Throwable t) {
-        Assert.fail("should have thrown a SolrException! not: " + t);
-      }
+      ex = expectThrows(SolrException.class, () -> client.add(doc));
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
     } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
       //XXX concurrentupdatesolrserver reports errors differently
       ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
@@ -667,13 +728,45 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("solrj/books.csv"), "application/csv");
+    File file = getFile("solrj/books.csv");
+    final int opened[] =  new int[] {0};
+    final int closed[] =  new int[] {0};
+
+    boolean assertClosed = random().nextBoolean();
+    if (assertClosed) {
+      byte[] allBytes = Files.readAllBytes(file.toPath());
+
+      ContentStreamBase.ByteArrayStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+        @Override
+        public InputStream getStream() throws IOException {
+          opened [0]++;
+          return new ByteArrayInputStream( allBytes ) {
+            @Override
+            public void close() throws IOException {
+              super.close();
+              closed[0]++;
+            }
+          };
+        }
+      };
+      up.addContentStream(contentStreamMock);
+    } else {
+      up.addFile(file, "application/csv");
+    }
+    
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
+    
+    if (assertClosed) {
+      assertEquals("open only once",1, opened[0]);
+      assertEquals("close exactly once",1, closed[0]);
+    }
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+ 
+ 
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();
@@ -1118,47 +1211,35 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetPivotField("{!stats=s1}features,manu");
     query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
-      assertTrue(e.getMessage().contains("is not currently supported"));
-      assertTrue(e.getMessage().contains("boolean"));
-    }
+
+    SolrException e = expectThrows(SolrException.class, () -> client.query(query));
+    assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
+    assertTrue(e.getMessage().contains("is not currently supported"));
+    assertTrue(e.getMessage().contains("boolean"));
 
     // asking for multiple stat tags -- see SOLR-6663
-    query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=tag1,tag2}features,manu");
-    query.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
-    query.setFacetMinCount(0);
-    query.setRows(0);
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals(400, e.code());
-      assertTrue(e.getMessage().contains("stats"));
-      assertTrue(e.getMessage().contains("comma"));
-      assertTrue(e.getMessage().contains("tag"));
-    }
+    SolrQuery query2 = new SolrQuery("*:*");
+    query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
+    query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
+    query2.setFacetMinCount(0);
+    query2.setRows(0);
+
+    e = expectThrows(SolrException.class, () -> client.query(query2));
+    assertEquals(400, e.code());
+    assertTrue(e.getMessage().contains("stats"));
+    assertTrue(e.getMessage().contains("comma"));
+    assertTrue(e.getMessage().contains("tag"));
 
     // text field
-    query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=s1}features,manu");
-    query.addGetFieldStatistics("{!tag=s1}features");
-    query.setFacetMinCount(0);
-    query.setRows(0);
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
-      assertTrue(e.getMessage().contains("is not currently supported"));
-      assertTrue(e.getMessage().contains("text_general"));
-    }
-    
-
+    SolrQuery query3 = new SolrQuery("*:*");
+    query3.addFacetPivotField("{!stats=s1}features,manu");
+    query3.addGetFieldStatistics("{!tag=s1}features");
+    query3.setFacetMinCount(0);
+    query3.setRows(0);
+    e = expectThrows(SolrException.class, () -> client.query(query3));
+    assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
+    assertTrue(e.getMessage().contains("is not currently supported"));
+    assertTrue(e.getMessage().contains("text_general"));
   }
 
   @Test

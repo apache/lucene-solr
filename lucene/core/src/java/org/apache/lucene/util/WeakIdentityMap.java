@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * on the values and not-GCed keys. Lucene's implementation also supports {@code null}
  * keys, but those are never weak!
  * 
- * <p><a name="reapInfo"></a>The map supports two modes of operation:
+ * <p><a id="reapInfo"></a>The map supports two modes of operation:
  * <ul>
  *  <li>{@code reapOnRead = true}: This behaves identical to a {@link java.util.WeakHashMap}
  *  where it also cleans up the reference queue on every read operation ({@link #get(Object)},

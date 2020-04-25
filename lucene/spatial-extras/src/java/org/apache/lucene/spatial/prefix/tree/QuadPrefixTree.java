@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.util.Version;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
@@ -43,17 +44,17 @@ public class QuadPrefixTree extends LegacyPrefixTree {
    * Factory for creating {@link QuadPrefixTree} instances with useful defaults
    */
   public static class Factory extends SpatialPrefixTreeFactory {
-
     @Override
     protected int getLevelForDistance(double degrees) {
-      QuadPrefixTree grid = new QuadPrefixTree(ctx, MAX_LEVELS_POSSIBLE);
-      return grid.getLevelForDistance(degrees);
+      return newSPT().getLevelForDistance(degrees);
     }
 
     @Override
     protected SpatialPrefixTree newSPT() {
-      return new QuadPrefixTree(ctx,
+      QuadPrefixTree tree = new QuadPrefixTree(ctx,
           maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
+      tree.robust = getVersion().onOrAfter(Version.LUCENE_8_3_0);
+      return tree;
     }
   }
 
@@ -72,8 +73,8 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
   final double[] levelW;
   final double[] levelH;
-  final int[]    levelS; // side
-  final int[]    levelN; // number
+
+  protected boolean robust = true; // for backward compatibility, use the old method if user specified old version.
 
   public QuadPrefixTree(
       SpatialContext ctx, Rectangle bounds, int maxLevels) {
@@ -83,10 +84,8 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     this.ymin = bounds.getMinY();
     this.ymax = bounds.getMaxY();
 
-    levelW = new double[maxLevels];
-    levelH = new double[maxLevels];
-    levelS = new int[maxLevels];
-    levelN = new int[maxLevels];
+    levelW = new double[maxLevels + 1];
+    levelH = new double[maxLevels + 1];
 
     gridW = xmax - xmin;
     gridH = ymax - ymin;
@@ -94,14 +93,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     this.ymid = ymin + gridH/2.0;
     levelW[0] = gridW/2.0;
     levelH[0] = gridH/2.0;
-    levelS[0] = 2;
-    levelN[0] = 4;
 
     for (int i = 1; i < levelW.length; i++) {
       levelW[i] = levelW[i - 1] / 2.0;
       levelH[i] = levelH[i - 1] / 2.0;
-      levelS[i] = levelS[i - 1] * 2;
-      levelN[i] = levelN[i - 1] * 4;
     }
   }
 
@@ -126,8 +121,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     nf.setMinimumIntegerDigits(3);
 
     for (int i = 0; i < maxLevels; i++) {
-      out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]) + "\t" +
-          levelS[i] + "\t" + (levelS[i] * levelS[i]));
+      out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]));
     }
   }
 
@@ -146,12 +140,50 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
   @Override
   public Cell getCell(Point p, int level) {
-    List<Cell> cells = new ArrayList<>(1);
-    build(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.makePoint(p.getX(),p.getY()), level);
-    return cells.get(0);//note cells could be longer if p on edge
+    if (!robust) { // old method
+      List<Cell> cells = new ArrayList<>(1);
+      buildNotRobustly(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.makePoint(p.getX(),p.getY()), level);
+      if (!cells.isEmpty()) {
+        return cells.get(0);//note cells could be longer if p on edge
+      }
+    }
+
+    double currentXmid = xmid;
+    double currentYmid = ymid;
+    double xp = p.getX();
+    double yp = p.getY();
+    BytesRef str = new BytesRef(maxLevels+1);
+    int levelLimit = level > maxLevels ? maxLevels : level;
+    SpatialRelation rel = SpatialRelation.CONTAINS;
+    for (int lvl = 0; lvl < levelLimit; lvl++){
+      int c = battenberg(currentXmid, currentYmid, xp, yp);
+      double halfWidth = levelW[lvl + 1];
+      double halfHeight = levelH[lvl + 1];
+      switch(c){
+        case 0:
+          currentXmid -= halfWidth;
+          currentYmid += halfHeight;
+          break;
+        case 1:
+          currentXmid += halfWidth;
+          currentYmid += halfHeight;
+          break;
+        case 2:
+          currentXmid -= halfWidth;
+          currentYmid -= halfHeight;
+          break;
+        case 3:
+          currentXmid += halfWidth;
+          currentYmid -= halfHeight;
+          break;
+        default:
+      }
+      str.bytes[str.length++] = (byte)('A' + c);
+    }
+    return new QuadCell(str, rel);
   }
 
-  private void build(
+  private void buildNotRobustly(
       double x,
       double y,
       int level,
@@ -165,10 +197,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     // Z-Order
     // http://en.wikipedia.org/wiki/Z-order_%28curve%29
-    checkBattenberg('A', x - w, y + h, level, matches, str, shape, maxLevel);
-    checkBattenberg('B', x + w, y + h, level, matches, str, shape, maxLevel);
-    checkBattenberg('C', x - w, y - h, level, matches, str, shape, maxLevel);
-    checkBattenberg('D', x + w, y - h, level, matches, str, shape, maxLevel);
+    checkBattenbergNotRobustly('A', x - w, y + h, level, matches, str, shape, maxLevel);
+    checkBattenbergNotRobustly('B', x + w, y + h, level, matches, str, shape, maxLevel);
+    checkBattenbergNotRobustly('C', x - w, y - h, level, matches, str, shape, maxLevel);
+    checkBattenbergNotRobustly('D', x + w, y - h, level, matches, str, shape, maxLevel);
 
     // possibly consider hilbert curve
     // http://en.wikipedia.org/wiki/Hilbert_curve
@@ -176,7 +208,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     // if we actually use the range property in the query, this could be useful
   }
 
-  protected void checkBattenberg(
+  protected void checkBattenbergNotRobustly(
       char c,
       double cx,
       double cy,
@@ -207,10 +239,30 @@ public class QuadPrefixTree extends LegacyPrefixTree {
         //str.append(SpatialPrefixGrid.INTERSECTS);
         matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
       } else {
-        build(cx, cy, nextLevel, matches, str, shape, maxLevel);
+        buildNotRobustly(cx, cy, nextLevel, matches, str, shape, maxLevel);
       }
     }
     str.length = strlen;
+  }
+
+  /** Returns a Z-Order quadrant [0-3]. */
+  protected int battenberg(double xmid, double ymid, double xp, double yp){
+    // http://en.wikipedia.org/wiki/Z-order_%28curve%29
+    if (ymid <= yp) {
+      if (xmid >= xp) {
+        return 0;
+      }
+      return 1;
+    } else {
+      if (xmid >= xp) {
+        return 2;
+      }
+      return 3;
+    }
+    // possibly consider hilbert curve
+    // http://en.wikipedia.org/wiki/Hilbert_curve
+    // http://blog.notdot.net/2009/11/Damn-Cool-Algorithms-Spatial-indexing-with-Quadtrees-and-Hilbert-Curves
+    // if we actually use the range property in the query, this could be useful
   }
 
   protected class QuadCell extends LegacyCell {

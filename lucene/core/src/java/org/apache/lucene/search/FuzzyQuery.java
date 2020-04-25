@@ -23,7 +23,10 @@ import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
@@ -50,7 +53,9 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * not match an indexed term "ab", and FuzzyQuery on term "a" with maxEdits=2 will not
  * match an indexed term "abc".
  */
-public class FuzzyQuery extends MultiTermQuery {
+public class FuzzyQuery extends MultiTermQuery implements Accountable {
+
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(AutomatonQuery.class);
   
   public final static int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   public final static int defaultPrefixLength = 0;
@@ -62,6 +67,10 @@ public class FuzzyQuery extends MultiTermQuery {
   private final boolean transpositions;
   private final int prefixLength;
   private final Term term;
+  private final int termLength;
+  private final CompiledAutomaton[] automata;
+
+  private final long ramBytesUsed;
   
   /**
    * Create a new FuzzyQuery that will match terms with an edit distance 
@@ -73,7 +82,7 @@ public class FuzzyQuery extends MultiTermQuery {
    * @param maxEdits must be {@code >= 0} and {@code <=} {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
    * @param prefixLength length of common (non-fuzzy) prefix
    * @param maxExpansions the maximum number of terms to match. If this number is
-   *  greater than {@link BooleanQuery#getMaxClauseCount} when the query is rewritten, 
+   *  greater than {@link IndexSearcher#getMaxClauseCount} when the query is rewritten,
    *  then the maxClauseCount will be used instead.
    * @param transpositions true if transpositions should be treated as a primitive
    *        edit operation. If this is false, comparisons will implement the classic
@@ -97,7 +106,22 @@ public class FuzzyQuery extends MultiTermQuery {
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
+    int[] codePoints = FuzzyTermsEnum.stringToUTF32(term.text());
+    this.termLength = codePoints.length;
+    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits);
     setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
+    this.ramBytesUsed = calculateRamBytesUsed(term, this.automata);
+  }
+
+  private static long calculateRamBytesUsed(Term term, CompiledAutomaton[] automata) {
+    long bytes = BASE_RAM_BYTES + term.ramBytesUsed();
+    for (CompiledAutomaton a : automata) {
+      bytes += a.ramBytesUsed();
+    }
+    bytes += 4 * Integer.BYTES;
+    bytes += Long.BYTES;
+    bytes += 1;
+    return bytes;
   }
   
   /**
@@ -146,14 +170,32 @@ public class FuzzyQuery extends MultiTermQuery {
     return transpositions;
   }
 
+  /**
+   * Returns the compiled automata used to match terms
+   */
+  public CompiledAutomaton[] getAutomata() {
+    return automata;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      if (maxEdits == 0 || prefixLength >= term.text().length()) {
+        visitor.consumeTerms(this, term);
+      } else {
+        automata[automata.length - 1].visit(visitor, this, field);
+      }
+    }
+  }
+
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
-    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), termLength, maxEdits, automata);
   }
-  
+
   /**
    * Returns the pattern term.
    */
@@ -170,10 +212,10 @@ public class FuzzyQuery extends MultiTermQuery {
     }
     buffer.append(term.text());
     buffer.append('~');
-    buffer.append(Integer.toString(maxEdits));
+    buffer.append(maxEdits);
     return buffer.toString();
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -195,6 +237,8 @@ public class FuzzyQuery extends MultiTermQuery {
     if (getClass() != obj.getClass())
       return false;
     FuzzyQuery other = (FuzzyQuery) obj;
+    // Note that we don't need to compare termLength or automata because they
+    // are entirely determined by the other fields
     if (maxEdits != other.maxEdits)
       return false;
     if (prefixLength != other.prefixLength)
@@ -210,23 +254,15 @@ public class FuzzyQuery extends MultiTermQuery {
       return false;
     return true;
   }
-  
-  /**
-   * @deprecated pass integer edit distances instead.
-   */
-  @Deprecated
-  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
 
   /**
-   * Helper function to convert from deprecated "minimumSimilarity" fractions
+   * Helper function to convert from "minimumSimilarity" fractions
    * to raw edit distances.
    * 
    * @param minimumSimilarity scaled similarity
    * @param termLen length (in unicode codepoints) of the term.
    * @return equivalent number of maxEdits
-   * @deprecated pass integer edit distances instead.
    */
-  @Deprecated
   public static int floatToEdits(float minimumSimilarity, int termLen) {
     if (minimumSimilarity >= 1f) {
       return (int) Math.min(minimumSimilarity, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
@@ -236,5 +272,10 @@ public class FuzzyQuery extends MultiTermQuery {
       return Math.min((int) ((1D-minimumSimilarity) * termLen), 
         LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
   }
 }

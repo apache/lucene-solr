@@ -44,8 +44,7 @@ public enum FieldFlag {
 
   FieldFlag(char abbreviation, String display) {
     this.abbreviation = abbreviation;
-    this.display = display;
-    this.display.intern();//QUESTION:  Need we bother here?
+    this.display = display.intern();//QUESTION:  Need we bother here?
   }
 
   public static FieldFlag getFlag(char abbrev){
@@ -66,5 +65,9 @@ public enum FieldFlag {
 
   public String getDisplay() {
     return display;
+  }
+
+  public String toString() {
+    return abbreviation + " - " + display;
   }
 }

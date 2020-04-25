@@ -213,7 +213,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
       }
     };
     
-    int numRounds = RANDOM_MULTIPLIER * 10000;
+    int numRounds = RANDOM_MULTIPLIER * 1000;
     checkRandomData(random(), analyzer, numRounds);
     analyzer.close();
   }

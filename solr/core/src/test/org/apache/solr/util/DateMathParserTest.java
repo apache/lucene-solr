@@ -319,14 +319,9 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
     badCommands.put("?SECONDS", 0);
 
     for (String command : badCommands.keySet()) {
-      try {
-        Date out = p.parseMath(command);
-        fail("Didn't generate SyntaxError for: " + command);
-      } catch (ParseException e) {
-        assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
-                     badCommands.get(command).intValue(), e.getErrorOffset());
-
-      }
+      ParseException e = expectThrows(ParseException.class, () -> p.parseMath(command));
+      assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
+          badCommands.get(command).intValue(), e.getErrorOffset());
     }
     
   }

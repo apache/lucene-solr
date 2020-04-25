@@ -77,7 +77,10 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
+    if (null != dir) {
+      org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
+      dir = null;
+    }
   }
   
   @Test
@@ -118,6 +121,20 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRelativePath() throws Exception {
+    
+    // NOTE...
+    //
+    // some filesystems have coarse granularity for last modified attribute (ie: multiple milliseconds)
+    // which means if the test runs very quickly after the creation / setLastMod of these file,
+    // then "setLastMod(X days ago)" may be equal to (or even greater that) "now - X days" causing
+    // "-remove_old_solr_logs X" to ignore them.
+    // so make sure we use at least "setLastMod(X+1 days ago)"
+    
+    Files.setLastModifiedTime(dir.resolve("solr_log_20160102"),
+                              FileTime.from(Instant.now().minus(Period.ofDays(1))));
+    Files.setLastModifiedTime(dir.resolve("solr_log_20160304"),
+                              FileTime.from(Instant.now().minus(Period.ofDays(2))));
+    
     String[] args = {"utils", "-remove_old_solr_logs", "0", "-l", dir.getFileName().toString(), "-s", dir.getParent().toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));

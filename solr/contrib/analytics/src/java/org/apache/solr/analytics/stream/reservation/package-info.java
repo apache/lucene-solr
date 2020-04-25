@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Reservation classes for a single type of data being stored by one Reduction Data Collector.
  * These reservations are imported/exported between shards during the streaming process.
  */

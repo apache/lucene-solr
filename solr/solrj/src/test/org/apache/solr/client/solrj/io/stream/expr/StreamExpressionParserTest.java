@@ -16,13 +16,14 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
+
 import org.junit.Test;
 
 /**
  **/
 
-public class StreamExpressionParserTest extends LuceneTestCase {
+public class StreamExpressionParserTest extends SolrTestCase {
 
   public StreamExpressionParserTest() {
     super();

@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import com.codahale.metrics.Counter;
@@ -24,7 +25,17 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,14 +49,24 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
 
-    // manually register some metrics in solr.jvm and solr.jetty - TestHarness doesn't init them
-    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "foo");
+    // manually register & seed some metrics in solr.jvm and solr.jetty for testing via handler
+    // (use "solrtest_" prefix just in case the jvm or jetty ads a "foo" metric at some point)
+    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "solrtest_foo");
     c.inc();
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo");
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo");
     c.inc(2);
     // test escapes
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo:bar");
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
     c.inc(3);
+  }
+
+  @AfterClass
+  public static void cleanupMetrics() throws Exception {
+    if (null != h) {
+      h.getCoreContainer().getMetricManager().registry("solr.jvm").remove("solrtest_foo");
+      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
+      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo:bar");
+    }
   }
 
   @Test
@@ -134,7 +155,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
     assertEquals(1, values.size());
-    assertEquals(11, ((NamedList)values.get("solr.node")).size());
+    assertEquals(13, ((NamedList) values.get("solr.node")).size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList) values.get("solr.node");
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
@@ -160,7 +181,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.core.collection1"));
     values = (NamedList) values.get("solr.core.collection1");
     assertEquals(1, values.size());
-    Map m = (Map)values.get("CACHE.core.fieldCache");
+    Map m = (Map) values.get("CACHE.core.fieldCache");
     assertNotNull(m);
     assertNotNull(m.get("entries_count"));
 
@@ -212,7 +233,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertTrue(nl.size() > 0);
     nl.forEach((k, v) -> {
       assertTrue(v instanceof Map);
-      Map map = (Map)v;
+      Map map = (Map) v;
       assertTrue(map.size() > 2);
     });
 
@@ -227,7 +248,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertTrue(nl.size() > 0);
     nl.forEach((k, v) -> {
       assertTrue(v instanceof Map);
-      Map map = (Map)v;
+      Map map = (Map) v;
       assertEquals(2, map.size());
       assertNotNull(map.get("inserts"));
       assertNotNull(map.get("size"));
@@ -246,7 +267,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Object val = values.findRecursive("metrics", key1);
     assertNotNull(val);
     assertTrue(val instanceof Map);
-    assertTrue(((Map)val).size() >= 2);
+    assertTrue(((Map) val).size() >= 2);
 
     String key2 = "solr.core.collection1:CACHE.core.fieldCache:entries_count";
     resp = new SolrQueryResponse();
@@ -257,7 +278,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
-    String key3 = "solr.jetty:foo\\:bar";
+    String key3 = "solr.jetty:solrtest_foo\\:bar";
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key3), resp);
@@ -265,7 +286,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     val = values.findRecursive("metrics", key3);
     assertNotNull(val);
     assertTrue(val instanceof Number);
-    assertEquals(3, ((Number)val).intValue());
+    assertEquals(3, ((Number) val).intValue());
 
     // test multiple keys
     resp = new SolrQueryResponse();
@@ -295,7 +316,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, "foo", MetricsHandler.KEY_PARAM, "foo:bar:baz:xyz"), resp);
     values = resp.getValues();
-    NamedList metrics = (NamedList)values.get("metrics");
+    NamedList metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "foo"));
     assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
@@ -305,7 +326,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, "foo:bar:baz"), resp);
     values = resp.getValues();
-    metrics = (NamedList)values.get("metrics");
+    metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
 
@@ -314,8 +335,122 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, "solr.jetty:unknown:baz"), resp);
     values = resp.getValues();
-    metrics = (NamedList)values.get("metrics");
+    metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
+  }
+
+  @Test
+  public void testMetricsUnload() throws Exception {
+
+    SolrCore core = h.getCoreContainer().getCore("collection1");//;.getRequestHandlers().put("/dumphandler", new DumpRequestHandler());
+    RefreshablePluginHolder pluginHolder =null;
+    try {
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, Utils.makeMap("name", "/dumphandler", "class", DumpRequestHandler.class.getName()));
+      DumpRequestHandler requestHandler = new DumpRequestHandler();
+      requestHandler.gaugevals =  Utils.makeMap("d_k1","v1", "d_k2","v2");
+      pluginHolder = new RefreshablePluginHolder(info, requestHandler);
+      core.getRequestHandlers().put("/dumphandler",
+
+          pluginHolder);
+    } finally {
+      core.close();
+    }
+
+
+
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
+        resp);
+
+    assertEquals("v1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
+    assertEquals("v2", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
+    pluginHolder.closeHandler();
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
+        resp);
+
+    assertEquals(null, resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
+    assertEquals(null, resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
+
+    DumpRequestHandler requestHandler = new DumpRequestHandler();
+    requestHandler.gaugevals =  Utils.makeMap("d_k1","v1.1", "d_k2","v2.1");
+    pluginHolder.reset(requestHandler);
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
+        resp);
+
+    assertEquals("v1.1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
+    assertEquals("v2.1", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
+
+    handler.close();
+  }
+
+  static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
+
+    private DumpRequestHandler rh;
+    private SolrMetricsContext metricsInfo;
+
+    public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
+      super(info);
+      this.rh = rh;
+    }
+
+    @Override
+    public boolean isLoaded() {
+      return true;
+    }
+
+    void closeHandler() throws Exception {
+      this.metricsInfo = rh.getSolrMetricsContext();
+//      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
+//        //this created a new child metrics
+//        metricsInfo = metricsInfo.getParent();
+//      }
+      this.rh.close();
+    }
+
+    void reset(DumpRequestHandler rh) throws Exception {
+        this.rh = rh;
+        if(metricsInfo != null)
+        this.rh.initializeMetrics(metricsInfo, "/dumphandler");
+    }
+
+
+    @Override
+    public SolrRequestHandler get() {
+      return rh;
+    }
+  }
+
+  public static class DumpRequestHandler extends RequestHandlerBase {
+
+    static String key = DumpRequestHandler.class.getName();
+    Map<String, Object> gaugevals ;
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+      rsp.add("key", key);
+    }
+
+    @Override
+    public String getDescription() {
+      return "DO nothing";
+    }
+
+    @Override
+    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      super.initializeMetrics(parentContext, scope);
+      MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
+      solrMetricsContext.gauge(
+           metrics,  true, "dumphandlergauge", getCategory().toString(), scope);
+
+    }
+
+    @Override
+    public Boolean registerV2() {
+      return Boolean.FALSE;
+    }
   }
 }

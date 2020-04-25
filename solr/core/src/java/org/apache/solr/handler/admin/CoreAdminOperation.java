@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -55,6 +55,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.*;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
@@ -320,7 +321,7 @@ enum CoreAdminOperation implements CoreAdminOp {
         try (SolrCore core = cores.getCore(cname)) {
           if (core != null) {
             info.add(NAME, core.getName());
-            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("instanceDir", core.getInstancePath().toString());
             info.add("dataDir", normalizePath(core.getDataDir()));
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());
@@ -333,6 +334,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              cloudInfo.add(REPLICA_TYPE, core.getCoreDescriptor().getCloudDescriptor().getReplicaType().name());
               info.add("cloud", cloudInfo);
             }
             if (isIndexInfoNeeded) {

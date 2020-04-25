@@ -16,8 +16,8 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
-public class TestNamedListCodec  extends LuceneTestCase {
+public class TestNamedListCodec  extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimple() throws Exception{

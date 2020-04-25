@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
@@ -48,12 +49,12 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   protected volatile static ZkTestServer zkServer;
 
-  protected volatile static String zkDir;
+  protected volatile static Path zkDir;
 
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
-    zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     

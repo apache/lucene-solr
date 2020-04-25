@@ -52,7 +52,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Implementation for transforming {@link TopGroups} and {@link TopDocs} into a {@link NamedList} structure and
- * visa versa.
+ * vice versa.
  */
 public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, ?>> {
 
@@ -218,7 +218,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         Object[] convertedSortValues  = new Object[fieldDoc.fields.length];
         for (int j = 0; j < fieldDoc.fields.length; j++) {
           Object sortValue  = fieldDoc.fields[j];
-          Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+          Sort withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort();
           SchemaField field = withinGroupSort.getSort()[j].getField() != null ? schema.getFieldOrNull(withinGroupSort.getSort()[j].getField()) : null;
           if (field != null) {
             FieldType fieldType = field.getType();
@@ -271,7 +271,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       Object[] convertedSortValues  = new Object[fieldDoc.fields.length];
       for (int j = 0; j < fieldDoc.fields.length; j++) {
         Object sortValue  = fieldDoc.fields[j];
-        Sort groupSort = rb.getGroupingSpec().getGroupSort();
+        Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
         SchemaField field = groupSort.getSort()[j].getField() != null
                           ? schema.getFieldOrNull(groupSort.getSort()[j].getField()) : null;
         convertedSortValues[j] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);

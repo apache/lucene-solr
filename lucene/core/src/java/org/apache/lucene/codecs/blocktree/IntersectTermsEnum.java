@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  Likewise, in next it scans until it finds a term that matches the
  *  current automaton transition. */
 
-final class IntersectTermsEnum extends TermsEnum {
+final class IntersectTermsEnum extends BaseTermsEnum {
 
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -111,7 +111,7 @@ final class IntersectTermsEnum extends TermsEnum {
     f.prefix = 0;
     f.setState(0);
     f.arc = arc;
-    f.outputPrefix = arc.output;
+    f.outputPrefix = arc.output();
     f.load(fr.rootCode);
 
     // for assert:
@@ -186,14 +186,14 @@ final class IntersectTermsEnum extends TermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = fstOutputs.add(output, arc.output);
+      output = fstOutputs.add(output, arc.output());
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(fstOutputs.add(output, arc.nextFinalOutput));
+    f.load(fstOutputs.add(output, arc.nextFinalOutput()));
     return f;
   }
 
@@ -252,6 +252,7 @@ final class IntersectTermsEnum extends TermsEnum {
       while (true) {
         final int savNextEnt = currentFrame.nextEnt;
         final int savePos = currentFrame.suffixesReader.getPosition();
+        final int saveLengthPos = currentFrame.suffixLengthsReader.getPosition();
         final int saveStartBytePos = currentFrame.startBytePos;
         final int saveSuffix = currentFrame.suffix;
         final long saveLastSubFP = currentFrame.lastSubFP;
@@ -294,6 +295,7 @@ final class IntersectTermsEnum extends TermsEnum {
             currentFrame.startBytePos = saveStartBytePos;
             currentFrame.suffix = saveSuffix;
             currentFrame.suffixesReader.setPosition(savePos);
+            currentFrame.suffixLengthsReader.setPosition(saveLengthPos);
             currentFrame.termState.termBlockOrd = saveTermBlockOrd;
             System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
@@ -515,7 +517,7 @@ final class IntersectTermsEnum extends TermsEnum {
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
-        // This term is a prefix of a term accepted by the automaton, but is not itself acceptd
+        // This term is a prefix of a term accepted by the automaton, but is not itself accepted
       }
 
       isSubBlock = popPushNext();

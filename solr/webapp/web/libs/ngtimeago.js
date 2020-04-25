@@ -42,7 +42,7 @@ catalyst.filter('timeago', function() {
                 //refreshMillis= 6e4, //A minute
                 allowFuture = p_allowFuture || false,
                 strings= {
-                    prefixAgo: '',
+                    prefixAgo: ' ',
                     prefixFromNow: '',
                     suffixAgo: "ago",
                     suffixFromNow: "from now",
@@ -89,12 +89,10 @@ catalyst.filter('timeago', function() {
             days < 365 && substitute(strings.months, Math.round(days / 30), strings) ||
             years < 1.5 && substitute(strings.year, 1, strings) ||
             substitute(strings.years, Math.round(years), strings);
-            console.log(prefix+words+suffix+separator);
-            prefix.replace(/ /g, '')
-            words.replace(/ /g, '')
-            suffix.replace(/ /g, '')
-            return (prefix+' '+words+' '+suffix+' '+separator);
-            
+            prefix.replace(/ /g, '');
+            words.replace(/ /g, '');
+            suffix.replace(/ /g, '');
+            return (prefix+' '+words+' '+suffix+' '+separator); 
         };
     });
 

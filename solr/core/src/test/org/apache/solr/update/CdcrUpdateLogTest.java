@@ -31,10 +31,12 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 @Nightly
 public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
@@ -92,8 +94,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   }
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
-    String response = JQ(req);
-    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Map rsp = (Map) fromJSONString(JQ(req));
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map) rsp.get("doc");
@@ -415,7 +416,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   public void testClosingOutputStreamAfterLogReplay() throws Exception {
     this.clearCore();
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -464,7 +465,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
       assertTrue(ulog.logs.peekLast().endsWithCommit());
       ulog.logs.peekLast().decref();
     } finally {
-      DirectUpdateHandler2.commitOnClose = true; // reset
+      TestInjection.skipIndexWriterCommitOnClose = false; // reset
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -641,7 +642,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   @Test
   public void testGetNumberOfRemainingRecords() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplayFinish = new Semaphore(0);
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
@@ -685,7 +686,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
       addDocs(10, start, versions);
       assertEquals(10, reader.getNumberOfRemainingRecords());
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
+      TestInjection.skipIndexWriterCommitOnClose = false; // reset
       UpdateLog.testing_logReplayFinishHook = null;
     }
   }

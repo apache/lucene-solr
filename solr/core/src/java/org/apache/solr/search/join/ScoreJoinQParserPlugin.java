@@ -17,12 +17,12 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
@@ -195,6 +195,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
              Objects.equals(scoreMode, other.scoreMode) &&
              Objects.equals(toField, other.toField);
     }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
   }
 
 
@@ -288,14 +293,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   private static String resolveAlias(String fromIndex, ZkController zkController) {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
-    List<String> collections = aliases.resolveAliases(fromIndex); // if not an alias, returns input
-    if (collections.size() != 1) {
+    try {
+      return aliases.resolveSimpleAlias(fromIndex); // if not an alias, returns input
+    } catch (IllegalArgumentException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "SolrCloud join: Collection alias '" + fromIndex +
-              "' maps to multiple collections (" + collections +
-              "), which is not currently supported for joins.");
+              "' maps to multiple collectiions, which is not currently supported for joins.", e);
     }
-    return collections.get(0);
   }
 
   private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {

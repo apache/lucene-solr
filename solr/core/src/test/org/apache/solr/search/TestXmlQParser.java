@@ -16,12 +16,25 @@
  */
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.queryparser.xml.CoreParser;
+
 import org.apache.lucene.queryparser.xml.TestCoreParser;
+import org.apache.solr.util.StartupLoggingUtils;
+import org.junit.AfterClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestXmlQParser extends TestCoreParser {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreParser solrCoreParser;
+
+  @AfterClass
+  public static void shutdownLogger() throws Exception {
+    StartupLoggingUtils.shutdown();
+  }
 
   @Override
   protected CoreParser coreParser() {

@@ -74,10 +74,11 @@ public abstract class DocValuesProducer implements Closeable, Accountable {
   public abstract void checkIntegrity() throws IOException;
   
   /** 
-   * Returns an instance optimized for merging.
+   * Returns an instance optimized for merging. This instance may only be
+   * consumed in the thread that called {@link #getMergeInstance()}.
    * <p>
    * The default implementation returns {@code this} */
-  public DocValuesProducer getMergeInstance() throws IOException {
+  public DocValuesProducer getMergeInstance() {
     return this;
   }
 }

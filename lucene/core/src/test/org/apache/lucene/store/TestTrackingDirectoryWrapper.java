@@ -25,22 +25,22 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new TrackingDirectoryWrapper(new RAMDirectory());
+    return new TrackingDirectoryWrapper(new ByteBuffersDirectory());
   }
   
   public void testTrackEmpty() throws IOException {
-    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new RAMDirectory());
+    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     assertEquals(Collections.emptySet(), dir.getCreatedFiles());
   }
 
   public void testTrackCreate() throws IOException {
-    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new RAMDirectory());
+    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), dir.getCreatedFiles());
   }
   
   public void testTrackDelete() throws IOException {
-    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new RAMDirectory());
+    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), dir.getCreatedFiles());
     dir.deleteFile("foo");
@@ -48,7 +48,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
   }
   
   public void testTrackRename() throws IOException {
-    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new RAMDirectory());
+    TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), dir.getCreatedFiles());
     dir.rename("foo", "bar");
@@ -56,8 +56,8 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
   }
   
   public void testTrackCopyFrom() throws IOException {
-    TrackingDirectoryWrapper source = new TrackingDirectoryWrapper(new RAMDirectory());
-    TrackingDirectoryWrapper dest = new TrackingDirectoryWrapper(new RAMDirectory());
+    TrackingDirectoryWrapper source = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
+    TrackingDirectoryWrapper dest = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     source.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), source.getCreatedFiles());
     dest.copyFrom(source, "foo", "bar", newIOContext(random()));

@@ -34,45 +34,35 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
-  private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
+  private final CharArrayMatcher[] combinedAutomata;
 
   public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
-    super(new UHComponents(
-            components.getField(),
-            components.getFieldMatcher(),
-            components.getQuery(),
-            ZERO_LEN_BYTES_REF_ARRAY,
-            components.getPhraseHelper(),
-            convertTermsToAutomata(components.getTerms(), components.getAutomata()),
-            components.getHighlightFlags()),
-        indexAnalyzer);
+    super(components, indexAnalyzer);
     assert components.getPhraseHelper().hasPositionSensitivity() == false;
+    combinedAutomata = convertTermsToMatchers(components.getTerms(), components.getAutomata());
   }
 
-  private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
-    CharacterRunAutomaton[] newAutomata = new CharacterRunAutomaton[terms.length + automata.length];
+  //TODO this is inefficient; instead build a union automata just for terms part.
+  private static CharArrayMatcher[] convertTermsToMatchers(BytesRef[] terms, CharArrayMatcher[] matchers) {
+    CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + matchers.length];
     for (int i = 0; i < terms.length; i++) {
       String termString = terms[i].utf8ToString();
-      newAutomata[i] = new CharacterRunAutomaton(Automata.makeString(termString)) {
-        @Override
-        public String toString() {
-          return termString;
-        }
-      };
+      CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeString(termString));
+      newAutomata[i] = LabelledCharArrayMatcher.wrap(termString, a::run);
     }
     // Append existing automata (that which is used for MTQs)
-    System.arraycopy(automata, 0, newAutomata, terms.length, automata.length);
+    System.arraycopy(matchers, 0, newAutomata, terms.length, matchers.length);
     return newAutomata;
   }
 
   @Override
   public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
-    return new TokenStreamOffsetsEnum(tokenStream(content), components.getAutomata());
+    return new TokenStreamOffsetsEnum(tokenStream(content), combinedAutomata);
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {
     TokenStream stream; // becomes null when closed
-    final CharacterRunAutomaton[] matchers;
+    final CharArrayMatcher[] matchers;
     final CharTermAttribute charTermAtt;
     final OffsetAttribute offsetAtt;
 
@@ -80,7 +70,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
     final BytesRef matchDescriptions[];
 
-    TokenStreamOffsetsEnum(TokenStream ts, CharacterRunAutomaton[] matchers) throws IOException {
+    TokenStreamOffsetsEnum(TokenStream ts, CharArrayMatcher[] matchers) throws IOException {
       this.stream = ts;
       this.matchers = matchers;
       matchDescriptions = new BytesRef[matchers.length];
@@ -94,7 +84,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
       if (stream != null) {
         while (stream.incrementToken()) {
           for (int i = 0; i < matchers.length; i++) {
-            if (matchers[i].run(charTermAtt.buffer(), 0, charTermAtt.length())) {
+            if (matchers[i].match(charTermAtt.buffer(), 0, charTermAtt.length())) {
               currentMatch = i;
               return true;
             }
