@@ -180,7 +180,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         writer.commit();
       } catch (AlreadyClosedException ace) {
         // OK: abort closes the writer
-        assertTrue(writer.deleter.isClosed());
+        assertTrue(writer.isDeleterClosed());
       } finally {
         writer.close();
       }
@@ -317,7 +317,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         success = true;
       } catch (AlreadyClosedException ace) {
         // OK: abort closes the writer
-        assertTrue(writer.deleter.isClosed());
+        assertTrue(writer.isDeleterClosed());
       } catch (IOException ioe) {
         writer.rollback();
         failure.clearDoFail();
@@ -388,7 +388,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       writer.close();
     });
 
-    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isDeleterClosed());
     dir.close();
   }
 
