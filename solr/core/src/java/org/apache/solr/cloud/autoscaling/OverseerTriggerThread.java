@@ -167,8 +167,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       catch (IOException | KeeperException e) {
         if (e instanceof KeeperException.SessionExpiredException ||
             (e.getCause()!=null && e.getCause() instanceof KeeperException.SessionExpiredException)) {
-          log.warn("Solr cannot talk to ZK, exiting " + 
-              getClass().getSimpleName() + " main queue loop", e);
+          log.warn("Solr cannot talk to ZK, exiting {} main queue loop"
+              , getClass().getSimpleName(), e);
           return;
         } else {
           log.error("A ZK error has occurred", e);
@@ -250,7 +250,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           } catch (AlreadyClosedException e) {
 
           } catch (Exception e) {
-            log.warn("Exception initializing trigger " + entry.getKey() + ", configuration ignored", e);
+            log.warn("Exception initializing trigger {}, configuration ignored", entry.getKey(), e);
           }
         }
       } catch (AlreadyClosedException e) {
@@ -319,7 +319,9 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         return;
       }
       AutoScalingConfig currentConfig = cloudManager.getDistribStateManager().getAutoScalingConfig(watcher);
-      log.debug("Refreshing {} with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, currentConfig.getZkVersion());
+      if (log.isDebugEnabled()) {
+        log.debug("Refreshing {} with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, currentConfig.getZkVersion());
+      }
       if (znodeVersion >= currentConfig.getZkVersion()) {
         // protect against reordered watcher fires by ensuring that we only move forward
         return;
@@ -400,7 +402,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       try {
         triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
       } catch (TriggerValidationException e) {
-        log.warn("Error in trigger '" + triggerName + "' configuration, trigger config ignored: " + cfg, e);
+        log.warn("Error in trigger '{}' configuration, trigger config ignored: {}", triggerName, cfg, e);
       }
     }
     return triggerMap;

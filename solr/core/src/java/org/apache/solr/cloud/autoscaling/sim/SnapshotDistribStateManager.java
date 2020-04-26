@@ -63,7 +63,9 @@ public class SnapshotDistribStateManager implements DistribStateManager {
    */
   public SnapshotDistribStateManager(DistribStateManager other, AutoScalingConfig config) throws Exception {
     List<String> tree = other.listTree("/");
-    log.debug("- copying {} resources from {}", tree.size(), other.getClass().getSimpleName());
+    if (log.isDebugEnabled()) {
+      log.debug("- copying {} resources from {}", tree.size(), other.getClass().getSimpleName());
+    }
     for (String path : tree) {
       dataMap.put(path, other.getData(path));
     }
@@ -102,7 +104,9 @@ public class SnapshotDistribStateManager implements DistribStateManager {
       VersionedData vd = new VersionedData(config.getZkVersion(), Utils.toJSON(config), CreateMode.PERSISTENT, "0");
       dataMap.put(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, vd);
     }
-    log.debug("- loaded snapshot of {} resources", dataMap.size());
+    if (log.isDebugEnabled()) {
+      log.debug("- loaded snapshot of {} resources", dataMap.size());
+    }
   }
 
   // content of these nodes is a UTF-8 String and it needs to be redacted

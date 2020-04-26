@@ -371,13 +371,13 @@ public class SearchRateTrigger extends TriggerBase {
       }
       Map<String, Object> rates = cloudManager.getNodeStateProvider().getNodeValues(node, metricTags.keySet());
       if (log.isDebugEnabled()) {
-        log.debug("### rates for node " + node);
-        rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate));
+        log.debug("### rates for node {}", node);
+        rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate)); // logOk
       }
       rates.forEach((tag, rate) -> {
         ReplicaInfo info = metricTags.get(tag);
         if (info == null) {
-          log.warn("Missing replica info for response tag " + tag);
+          log.warn("Missing replica info for response tag {}", tag);
         } else {
           Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
           List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
@@ -395,7 +395,7 @@ public class SearchRateTrigger extends TriggerBase {
         log.debug("## Collection: {}", coll);
         collRates.forEach((s, replicas) -> {
           log.debug("##  - {}", s);
-          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE)));
+          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE))); //logOk
         });
       });
     }
@@ -464,7 +464,9 @@ public class SearchRateTrigger extends TriggerBase {
               if (log.isDebugEnabled()) {
                 Long lastTime = lastShardEvent.computeIfAbsent(elapsedKey, s -> now);
                 long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-                log.debug("-- waitFor didn't elapse for {}, waitFor={}, elapsed={}", elapsedKey, getWaitForSecond(), elapsed);
+                if (log.isDebugEnabled()) {
+                  log.debug("-- waitFor didn't elapse for {}, waitFor={}, elapsed={}", elapsedKey, getWaitForSecond(), elapsed);
+                }
               }
             }
           } else {
@@ -763,7 +765,9 @@ public class SearchRateTrigger extends TriggerBase {
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {
     Long lastTime = lastEventMap.computeIfAbsent(name, s -> now);
     long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-    log.trace("name={}, lastTime={}, elapsed={}, waitFor={}", name, lastTime, elapsed, getWaitForSecond());
+    if (log.isTraceEnabled()) {
+      log.trace("name={}, lastTime={}, elapsed={}, waitFor={}", name, lastTime, elapsed, getWaitForSecond());
+    }
     if (TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS) < getWaitForSecond()) {
       return false;
     }
