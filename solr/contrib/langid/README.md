@@ -1,5 +1,5 @@
 Apache Solr Language Identifier
-
+===============================
 
 Introduction
 ------------

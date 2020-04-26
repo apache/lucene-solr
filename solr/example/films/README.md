@@ -12,37 +12,48 @@ This data consists of the following fields:
 
  Steps:
    * Start Solr:
-       bin/solr start
+     ```
+     bin/solr start
+     ```
 
    * Create a "films" core:
-       bin/solr create -c films
+   
+     ```
+     bin/solr create -c films
+     ```
 
    * Set the schema on a couple of fields that Solr would otherwise guess differently (than we'd like) about:
-curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
-    "add-field" : {
-        "name":"name",
-        "type":"text_general",
-        "multiValued":false,
-        "stored":true
-    },
-    "add-field" : {
-        "name":"initial_release_date",
-        "type":"pdate",
-        "stored":true
-    }
-}'
+   
+      ```
+      curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+        "add-field" : {
+          "name":"name",
+          "type":"text_general",
+          "multiValued":false,
+          "stored":true
+        },
+        "add-field" : {
+          "name":"initial_release_date",
+          "type":"pdate",
+          "stored":true
+        }
+      }'
+      ```
 
    * Now let's index the data, using one of these three commands:
 
-     - JSON: bin/post -c films example/films/films.json
-     - XML: bin/post -c films example/films/films.xml
-     - CSV: bin/post \
+     - JSON: `bin/post -c films example/films/films.json`
+     - XML: `bin/post -c films example/films/films.xml`
+     - CSV: 
+     ```
+         bin/post \
                   -c films \
                   example/films/films.csv \
                   -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
-
+     ```
    * Let's get searching!
      - Search for 'Batman':
+     
        http://localhost:8983/solr/films/query?q=name:batman
 
        * If you get an error about the name field not existing, you haven't yet indexed the data
@@ -51,27 +62,34 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
          It's easiest to simply reset the environment and try again, ensuring that each step successfully executes.
 
      - Show me all 'Super hero' movies:
+     
        http://localhost:8983/solr/films/query?q=*:*&fq=genre:%22Superhero%20movie%22
 
      - Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
+     
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
 
      - Browse the indexed films in a traditional browser search interface:
+     
        http://localhost:8983/solr/films/browse
 
        Now browse including the genre field as a facet:
+       
        http://localhost:8983/solr/films/browse?facet.field=genre
 
        If you want to set a facet for /browse to keep around for every request add the facet.field into the "facets"
        param set (which the /browse handler is already configured to use):
-curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
-"update" : {
-  "facets": {
-    "facet.field":"genre"
-    }
-  }
-}'
 
+        ```
+        curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
+          "update" : {
+            "facets": {
+              "facet.field":"genre"
+            }
+          }
+        }'
+        ```
+       
         And now http://localhost:8983/solr/films/browse will display the _genre_ facet automatically.
 
 Exploring the data further - 
@@ -93,6 +111,7 @@ FAQ:
 
   Is there an easy to copy/paste script to do all of the above?
 
+```
     Here ya go << END_OF_SCRIPT
 
 bin/solr stop
@@ -123,9 +142,11 @@ curl http://localhost:8983/solr/films/config/params -H 'Content-type:application
 }'
 
 # END_OF_SCRIPT
+```
 
 Additional fun -
 
+```
 Add highlighting:
 curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
 "set" : {
@@ -135,4 +156,6 @@ curl http://localhost:8983/solr/films/config/params -H 'Content-type:application
     }
   }
 }'
+```
+
 try http://localhost:8983/solr/films/browse?q=batman now, and you'll see "batman" highlighted in the results

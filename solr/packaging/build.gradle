@@ -72,7 +72,7 @@ task toDir(type: Sync) {
     include "CHANGES.txt"
     include "LICENSE.txt"
     include "NOTICE.txt"
-    include "README.txt"
+    include "README.md"
   })
 
   from(project(":lucene").projectDir, {
