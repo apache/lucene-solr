@@ -376,7 +376,11 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   @Test
   public void testMultivalueLatLonField() throws SolrServerException, IOException {
-    runTestForFieldWithQuery("latLonRemove", new String[] {"1.0,-1.0", "2.0,-2.0", "3.0,-3.0", "4.0,-4.0"});
+    String[] values = {"1.0,-1.0", "2.0,-2.0", "3.0,-3.0", "4.0,-4.0"};
+    String[] queries = Arrays.stream(values)
+        .map(v -> v.substring(v.indexOf(',') + 1) + " " + v.substring(0, v.indexOf(','))) // map "lat,lon" to "lon lat"
+        .map(v -> "\"Intersects(BUFFER(POINT(" + v + "),0.001))\"").toArray(String[]::new);
+    runTestForFieldWithQuery("latLonRemove", values, queries);
   }
 
   @Test

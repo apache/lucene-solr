@@ -457,6 +457,8 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
+
   <!-- 
     Example of using PathHierarchyTokenizerFactory at index time, so
     queries for paths match documents at that path, or in descendent paths
@@ -654,6 +656,8 @@
 
   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
 
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+
   <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
@@ -742,6 +746,9 @@
   <dynamicField name="*_ignored" type="text" indexed="false" stored="false"/>
 
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
+
+  <!-- Type used to index the  components for the "point" FieldType -->
+  <dynamicField name="*_coordinate" type="double" indexed="true" stored="false" omitNorms="true" docValues="false"/>
 
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"

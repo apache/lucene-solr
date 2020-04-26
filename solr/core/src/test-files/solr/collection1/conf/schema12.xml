@@ -553,6 +553,8 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
+
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
 
   <fieldType name="shingle23" class="solr.TextField" enableGraphQueries="false" multiValued="true">
@@ -649,12 +651,7 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
-  <field name="store_rpt" type="location_rpt" indexed="true" stored="false"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
 
   <!-- Test currency field -->
   <field name="amount_c" type="currency" indexed="true" stored="true" multiValued="false"/>
@@ -793,6 +790,5 @@
   <copyField source="subject" dest="text"/>
 
   <copyField source="foo_copysource_*" dest="bar_copydest_*"/>
-  <copyField source="store" dest="store_rpt"/>
 
 </schema>

@@ -306,12 +306,6 @@
    <copyField source="id" dest="id_i" />
    <field name="text" type="text" indexed="true" stored="false" />
 
-   <!-- Test a point field for distances -->
-   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-   <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-
-   <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-
    <field name="signatureField" type="string" indexed="true" stored="false"/>
 
    <field name="eff_trie" type="eff_tfloat" />

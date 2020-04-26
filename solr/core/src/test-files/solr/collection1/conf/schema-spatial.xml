@@ -33,6 +33,8 @@
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <fieldType name="point2D" class="solr.PointType" dimension="2" subFieldType="tdouble"/>
+
   <fieldType name="srpt_geohash" class="solr.SpatialRecursivePrefixTreeFieldType"
              prefixTree="geohash" distanceUnits="degrees"
   />
@@ -93,6 +95,15 @@
   <dynamicField name="bboxD_*" type="bbox" indexed="true"/>
   <dynamicField name="str_*" type="string" indexed="true" stored="true"/>
 
+  <!-- for DistanceFunctionTest -->
+  <fieldType name="llp_km" class="solr.LatLonPointSpatialField" distanceUnits="kilometers" />
+  <fieldType name="srpt_geohash_km" class="solr.SpatialRecursivePrefixTreeFieldType"
+             geo="true" prefixTree="geohash" distanceUnits="kilometers"
+  />
+  <field name="srpt_geohash_km" type="srpt_geohash_km"/>
+  <field name="llp_km" type="llp_km" docValues="true"/>
+  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
+  <field name="point" type="point2D" indexed="true" stored="true" multiValued="false"/>
 
   <uniqueKey>id</uniqueKey>
 

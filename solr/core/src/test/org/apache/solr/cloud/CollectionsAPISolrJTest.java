@@ -630,8 +630,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       doc.addField("number_tl", i);
       doc.addField("number_tf", i);
       doc.addField("number_td", i);
-      doc.addField("point", i + "," + i);
-      doc.addField("pointD", i + "," + i);
       doc.addField("store", (i * 5) + "," + (i * 5));
       doc.addField("boolean_b", true);
       doc.addField("multi_int_with_docvals", i);

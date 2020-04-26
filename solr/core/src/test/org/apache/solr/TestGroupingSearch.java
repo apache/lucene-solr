@@ -327,7 +327,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
 
     assertJQ(
-        req("q", "*:*", "sort", "geodist(45.18014,-93.87742,store) asc", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
+        req("q", "*:*", "sort", "geodist(45.18014,-93.87742) asc", "sfield", "store", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
         "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':1,'start':0,'docs':[{'id':'1'}]}}]}}"
     );
   }

@@ -61,25 +61,10 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     //large distance
     checkHits(fieldName, "33.0,-80.0", 5000, 13);
   }
-  
-  @Test
-  public void testGeoHash() throws Exception {
-    String fieldName = "home_gh";
-    setupDocs(fieldName);
-    //try some normal cases
-    checkHits(fieldName, "33.0,-80.0", 300, 2, 1, 2);
-    //large distance
-    checkHits(fieldName, "33.0,-80.0", 5000, 2, 1, 2);
-    //Try some edge cases
-    checkHits(fieldName, "0,179.8", 200, 2);
-    checkHits(fieldName, "1,1", 180, 3, 5, 6, 7);
-    checkHits(fieldName, "89.8, 50", 200, 2);
-    checkHits(fieldName, "-89.8, 50", 200, 2);//this goes over the south pole
-  }
 
   @Test
   public void testLatLonType() throws Exception {
-    String fieldName = "home_ll";
+    String fieldName = "store";
     setupDocs(fieldName);
     //Try some edge cases
     checkHits(fieldName, "1,1", 175, 3, 5, 6, 7);
@@ -118,8 +103,8 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     
     
     // Tests SOLR-2829
-    String fieldNameHome = "home_ll";
-    String fieldNameWork = "work_ll";
+    String fieldNameHome = "home";
+    String fieldNameWork = "work";
 
     clearIndex();
     assertU(adoc("id", "1", fieldNameHome, "52.67,7.30", fieldNameWork,"48.60,11.61"));

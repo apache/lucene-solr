@@ -15,8 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
-import java.io.IOException;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
@@ -73,17 +78,14 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testGetAllFieldsIncludeDynamic() throws Exception {
-    assertJQ("/schema/fields?includeDynamic=true",
-             "/fields/[0]/name=='HTMLstandardtok'",
-             "/fields/[1]/name=='HTMLwhitetok'",
-             "/fields/[2]/name=='_version_'",
-             "/fields/[107]/name=='*_d'",
-             "/fields/[106]/name=='*_f'",
-             "/fields/[105]/name=='*_b'",
-             "/fields/[104]/name=='*_t'",
-             "/fields/[103]/name=='*_l'"
+    List<Map<String, Object>> fields = new SchemaRequest.Fields(params("includeDynamic", "true"))
+        .process(getSolrClient())
+        .getFields();
 
-    );
+    Set<String> lookingForNames = asSet("HTMLstandardtok", "HTMLwhitetok", "_version_", // static
+        "*_d", "*_f", "*_b", "*_t", "*_l"); // dynamic
+    fields.stream().map(f -> f.get("name")).forEach(lookingForNames::remove);
+    assertTrue(lookingForNames.toString(), lookingForNames.isEmpty());
   }
 
 }

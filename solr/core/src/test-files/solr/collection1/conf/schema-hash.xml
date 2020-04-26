@@ -428,21 +428,6 @@
   <field name="shouldbestored" type="unstored" stored="true"/>
   <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
 
-  <!-- Test points -->
-  <!-- Test points -->
-  <field name="home" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="x" type="x" indexed="true" stored="true" multiValued="false"/>
-  <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
-  <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
-
-  <field name="home_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
-  <field name="home_gh" type="geohash" indexed="true" stored="true" multiValued="false"/>
-
-
-  <field name="point10" type="tenD" indexed="true" stored="true" multiValued="false"/>
-
-
   <!-- test different combinations of indexed and stored -->
   <field name="bind" type="boolean" indexed="true" stored="false"/>
   <field name="bsto" type="boolean" indexed="false" stored="true"/>
@@ -557,8 +542,6 @@
                 termVectors="true" termPositions="true" termOffsets="true"/>
   <dynamicField name="tv_mv_*" type="text" indexed="true" stored="true" multiValued="true"
                 termVectors="true" termPositions="true" termOffsets="true"/>
-
-  <dynamicField name="*_p" type="xyd" indexed="true" stored="true" multiValued="false"/>
 
   <!-- special fields for dynamic copyField test -->
   <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>

@@ -277,11 +277,11 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsAllFields());
     assertNull(rf.getTransformer());
 
-    // Don't return 'store_rpt' just because it is required by the transformer
-    rf = new SolrReturnFields( req("fl", "[geo f=store_rpt]") );
+    // Don't return 'store' just because it is required by the transformer
+    rf = new SolrReturnFields( req("fl", "[geo f=store]") );
     assertFalse( rf.wantsScore() );
     assertTrue(rf.wantsField("[geo]"));
-    assertFalse( rf.wantsField( "store_rpt" ) );
+    assertFalse( rf.wantsField( "store" ) );
     assertFalse(rf.wantsAllFields());
     assertNotNull(rf.getTransformer());
   }
@@ -395,8 +395,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     final StringBuilder allFieldNames = new StringBuilder();
     docIn.add(new StringField("id","bar",Store.YES));
     allFieldNames.append("id");
-    docIn.add(new StringField("store_rpt","42",Store.YES));
-    allFieldNames.append(",store_rpt");
+    docIn.add(new StringField("store","42",Store.YES));
+    allFieldNames.append(",store");
     docIn.add(new StringField("subword","bar",Store.YES)); // single value in multi-value field
     allFieldNames.append(",subword");
     docIn.add(new StringField("uniq","xxx",Store.YES)); 
@@ -420,17 +420,17 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     // behavior should be ultimately be consistent for all of these ReturnField instances
     // (aliasing, extra requested by transformer, or otherwise)
     for (ReturnFields rf : Arrays.asList
-           (new SolrReturnFields(req("fl","id,subword,store_rpt,uniq,foo_2_s1")),
-            new SolrReturnFields(req("fl","id,xxx:[geo f=store_rpt],uniq,foo_2_s1,subword")),
-            new SolrReturnFields(req("fl","id,xxx:subword,uniq,yyy:foo_2_s1,[geo f=store_rpt]")))) {
+           (new SolrReturnFields(req("fl","id,subword,store,uniq,foo_2_s1")),
+            new SolrReturnFields(req("fl","id,xxx:[geo f=store],uniq,foo_2_s1,subword")),
+            new SolrReturnFields(req("fl","id,xxx:subword,uniq,yyy:foo_2_s1,[geo f=store]")))) {
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
       final String debug = rf.toString() + " => " +docOut.toString();
       assertEquals(debug, 5, docOut.size());
       assertEquals(debug,
-                   new HashSet<String>(Arrays.asList("id","subword","uniq","foo_2_s1","store_rpt")),
+                   new HashSet<String>(Arrays.asList("id","subword","uniq","foo_2_s1","store")),
                    docOut.getFieldNames());
       assertTrue(debug, docOut.get("id") instanceof StringField);
-      assertTrue(debug, docOut.get("store_rpt") instanceof StringField);
+      assertTrue(debug, docOut.get("store") instanceof StringField);
       assertTrue(debug, docOut.get("foo_2_s1") instanceof StringField);
       assertTrue(debug, docOut.get("subword") instanceof List);
       assertTrue(debug, docOut.get("uniq") instanceof List);
@@ -451,7 +451,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       final String debug = rf.toString() + " => " +docOut.toString();
       assertEquals(debug, 24, docOut.size());
       assertTrue(debug, docOut.get("id") instanceof StringField);
-      assertTrue(debug, docOut.get("store_rpt") instanceof StringField);
+      assertTrue(debug, docOut.get("store") instanceof StringField);
       assertTrue(debug, docOut.get("subword") instanceof List);
       assertTrue(debug, docOut.get("uniq") instanceof List);
       for (int i = 0; i < 20; i++) {

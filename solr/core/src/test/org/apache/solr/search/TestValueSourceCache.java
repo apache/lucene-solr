@@ -47,9 +47,9 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   // This is actually also tested by the tests for val_d1 below, but the bug was reported against geodist()...
   @Test
   public void testGeodistSource() throws SyntaxError {
-    Query q_home = getQuery("geodist(home_ll, 45.0, 43.0)");
-    Query q_work = getQuery("geodist(work_ll, 45.0, 43.0)");
-    Query q_home2 = getQuery("geodist(home_ll, 45.0, 43.0)");
+    Query q_home = getQuery("geodist(home, 45.0, 43.0)");
+    Query q_work = getQuery("geodist(work, 45.0, 43.0)");
+    Query q_home2 = getQuery("geodist(home, 45.0, 43.0)");
     QueryUtils.checkUnequal(q_work, q_home);
     QueryUtils.checkEqual(q_home, q_home2);
   }

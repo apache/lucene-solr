@@ -161,6 +161,11 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
+  <!-- Poly field -->
+  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
+
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
+
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
@@ -208,11 +213,9 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
+
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
 
   <!-- to test uniq fields -->
   <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>

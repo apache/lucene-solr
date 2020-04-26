@@ -748,6 +748,8 @@
        any data added to them will be ignored outright.  -->
   <fieldtype name="ignored" stored="false" indexed="false" docValues="false" multiValued="true" class="solr.StrField"/>
 
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
+
   <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
        Parameters:
          defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
