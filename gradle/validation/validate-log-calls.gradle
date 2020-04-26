@@ -34,6 +34,7 @@ configure(rootProject) {
         if (project.hasProperty('srcDir')) {
           srcDir = project.getProperty('srcDir')
         } else { // Remove this later, make it optional
+          //nocommit
           throw new BuildException(String.format(Locale.ENGLISH,
               '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
             "-PsrcDir=solr/core/src/java/org/apache/solr/core". This task will recursively check all
@@ -58,8 +59,8 @@ class ValidateLogCallsTask extends DefaultTask {
                              , "solr/core/src/java/org/apache/solr/api"
                              , "solr/core/src/java/org/apache/solr/client"
 //  , "solr/core/src/java/org/apache/solr/cloud" // 120
-                             , "solr/core/src/java/org/apache/solr/cloud/api" // 107
-//                             , "solr/core/src/java/org/apache/solr/cloud/autoscaling" // 120
+                             , "solr/core/src/java/org/apache/solr/cloud/api"
+                             , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
                              , "solr/core/src/java/org/apache/solr/cloud/cdcr"
                              , "solr/core/src/java/org/apache/solr/cloud/hdfs"
                              , "solr/core/src/java/org/apache/solr/cloud/overseer"
@@ -95,6 +96,26 @@ class ValidateLogCallsTask extends DefaultTask {
                              , "solr/core/src/java/org/apache/solr/util"
   ]
 
+  //nocommit REMOVE ME! Really! and the check for bare parens. Several times I've put in () when I meant {} and only
+  // caught it by chance. So for this mass edit, I created a check with a a lot of false positives. This is a list of
+  // them and we won't report them.
+
+  Map<String, List<Integer>> parenHack = [
+      "AddReplicaCmd.java"              : [99]
+      , "Assign.java"                   : [329]
+      , "CommitTracker.java"            : [135]
+      , "DeleteReplicaCmd.java"         : [75]
+      , "DirectUpdateHandler2.java"     : [838, 859]
+      , "ManagedIndexSchemaFactory.java": [284]
+      , "MoveReplicaCmd.java"           : [75]
+      , "PeerSync.java"                 : [704]
+      , "RecordingJSONParser.java"      : [76]
+      , "SliceMutator.java"             : [61]
+      , "SolrDispatchFilter.java"       : [150, 205, 242]
+      , "Suggester.java"                : [147, 181]
+      , "UpdateLog.java"                : [1976]
+      , "V2HttpCall.java"               : [158]
+  ]
   def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
 
   def errsFound = 0;
@@ -105,8 +126,21 @@ class ValidateLogCallsTask extends DefaultTask {
     errsFound++;
   }
 
-  // We have a log.someting line, check for patterns we're not fond of.
+  // We have a log.something line, check for patterns we're not fond of.
   def checkLogLine(File file, String line, int lineNumber, String previous) {
+
+    boolean violation = false
+
+    def bareParens = (line =~ /".*?"/).findAll()
+    bareParens.each({ part ->
+      if (part.contains("()")) {
+        List<Integer> hack = parenHack.get(file.name)
+        if (hack == null || hack.contains(lineNumber) == false) {
+          violation = true
+        }
+      }
+    })
+
     // If the line has been explicitly checked, skip it.
     if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
       return
@@ -134,7 +168,7 @@ class ValidateLogCallsTask extends DefaultTask {
     // Check that previous line isn't an if statement for always-reported log levels. Arbitrary decision: we don't
     // really care about checking for awkward constructions for WARN and above, so report a violation if the previous
     // line contains an if for those levels.
-    boolean violation = false
+
     boolean dontReportLevels = level.equals("fatal") || level.equals("error") || level.equals("warn")
 
     // There's a convention to declare a member variable for whether a level is enabled and check that rather than
@@ -167,9 +201,11 @@ class ValidateLogCallsTask extends DefaultTask {
     if (violation) {
       reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s'"
           , file.name
-          , lineNumber, line
+          , lineNumber
+          , line
           , file.getParentFile().getAbsolutePath()
-          , stripped))
+          , stripped
+      ))
     }
   }
 
