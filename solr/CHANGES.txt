@@ -55,6 +55,8 @@ Improvements
   themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
   are not computed at all. (ab, shalin)
 
+* SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
