@@ -84,6 +84,11 @@ public class MorfologikFilterFactory extends TokenFilterFactory implements Resou
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public MorfologikFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (resourceName == null) {

@@ -106,9 +106,9 @@ public class SystemInfoHandler extends RequestHandlerBase
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
-      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. " +
-               "Set the '"+PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP+"' sysprop to true on startup to " +
-               "prevent future lookups if DNS can not be fixed.", e);
+      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
+          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
+          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
       hostname = null;
       return;
     }
@@ -116,10 +116,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     
     if (15000D < timer.getTime()) {
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
-      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. " +
-               "Set the '{}' sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
-               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
-    
+      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' {}"
+          , readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
+          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.");
     }
   }
 
@@ -188,7 +187,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
-    dirs.add("instance", core.getResourceLoader().getInstancePath().toString());
+    dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {

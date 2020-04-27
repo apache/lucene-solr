@@ -205,10 +205,29 @@ to add replicas on the live nodes to maintain the expected replication factor).
 
 Refer to the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas, Autoscaling Automatically Adding Replicas>> to learn more about how the `.autoAddReplicas` trigger works.
 
-In addition to the parameters described at <<Trigger Configuration>>, this trigger supports one parameter, which is defined in the `<solrcloud>` section of `solr.xml`:
+If you would like to change the value of `.autoAddReplicas` trigger, you need to call the autoscaling API and use the `set-trigger` command to add a value for `waitFor`.
 
-`autoReplicaFailoverWaitAfterExpiration`::
-The minimum time in milliseconds to wait for initiating replacement of a replica after first noticing it not being live. This is important to prevent false positives while stopping or starting the cluster. The default is `120000` (2 minutes). The value provided for this parameter is used as the value for the `waitFor` parameter in the `.auto_add_replicas` trigger.
+.Example: Updating Trigger with wait for 5 seconds
+----
+{
+  "set-trigger": {
+    "name": ".auto_add_replicas",
+    "event": "nodeLost,
+    "waitFor": "5s",
+    "enabled": true,
+    "actions": [
+      {
+        "name": "auto_add_replicas_plan",
+        "class": "solr.AutoAddReplicasPlanAction"
+      },
+      {
+       "name": "auto_add_replicas_plan",
+       "class": "solr.ExecutePlanAction"
+      }
+    ]
+  }
+}
+----
 
 TIP: See <<format-of-solr-xml.adoc#the-solrcloud-element,The <solrcloud> Element>> for more details about how to work with `solr.xml`.
 

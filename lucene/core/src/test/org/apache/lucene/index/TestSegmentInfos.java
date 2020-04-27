@@ -64,7 +64,7 @@ public class TestSegmentInfos extends LuceneTestCase {
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
 
     sis.add(commitInfo);
     sis.commit(dir);
@@ -86,20 +86,24 @@ public class TestSegmentInfos extends LuceneTestCase {
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
     info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_1", 1, false, Codec.getDefault(),
                            Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    commitInfo = new SegmentCommitInfo(info, 0, 0,-1, -1, -1);
+    commitInfo = new SegmentCommitInfo(info, 0, 0,-1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
     sis.commit(dir);
+    byte[] commitInfoId0 = sis.info(0).getId();
+    byte[] commitInfoId1 = sis.info(1).getId();
     sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(Version.LUCENE_9_0_0, sis.getMinSegmentLuceneVersion());
     assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
+    assertEquals(StringHelper.idToString(commitInfoId0), StringHelper.idToString(sis.info(0).getId()));
+    assertEquals(StringHelper.idToString(commitInfoId1), StringHelper.idToString(sis.info(1).getId()));
     dir.close();
   }
 
@@ -144,6 +148,35 @@ public class TestSegmentInfos extends LuceneTestCase {
         ":[attributes=" + attributes + "]", si.toString());
 
     dir.close();
+  }
+
+  public void testIDChangesOnAdvance() throws IOException {
+    try (BaseDirectoryWrapper dir = newDirectory()) {
+      dir.setCheckIndexOnClose(false);
+      byte id[] = StringHelper.randomId();
+      SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
+          Collections.<String, String>emptyMap(), StringHelper.randomId(), Collections.<String, String>emptyMap(), null);
+      SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, id);
+      assertEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+      commitInfo.advanceDelGen();
+      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+
+      id = commitInfo.getId();
+      commitInfo.advanceDocValuesGen();
+      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+
+      id = commitInfo.getId();
+      commitInfo.advanceFieldInfosGen();
+      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+      SegmentCommitInfo clone = commitInfo.clone();
+      id = commitInfo.getId();
+      assertEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+      assertEquals(StringHelper.idToString(id), StringHelper.idToString(clone.getId()));
+
+      commitInfo.advanceFieldInfosGen();
+      assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
+      assertEquals("clone changed but shouldn't", StringHelper.idToString(id), StringHelper.idToString(clone.getId()));
+    }
   }
 }
 

@@ -122,7 +122,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
 
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
     //
     // we want to walk up the fcontext and inherit the queries from any ancestor SKGAgg

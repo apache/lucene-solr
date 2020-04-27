@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -53,7 +54,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     createCollection(COLLECTION, "conf1", 4, 1, 4);
     final int numRuns = 10;

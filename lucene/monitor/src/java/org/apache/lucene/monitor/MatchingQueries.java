@@ -67,7 +67,7 @@ public class MatchingQueries<T extends QueryMatch> {
   }
 
   /**
-   * @return how long (in ms) it took to build the Presearcher query for the matcher run
+   * @return how long (in ns) it took to build the Presearcher query for the matcher run
    */
   public long getQueryBuildTime() {
     return queryBuildTime;

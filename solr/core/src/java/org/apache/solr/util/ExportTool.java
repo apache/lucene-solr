@@ -73,6 +73,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -399,9 +400,9 @@ public class ExportTool extends SolrCLI.ToolBase {
       DocCollection coll = stateProvider.getCollection(this.coll);
       Map<String, Slice> m = coll.getSlicesMap();
       producerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(m.size(),
-          new DefaultSolrThreadFactory("solrcli-exporter-producers"));
+          new SolrNamedThreadFactory("solrcli-exporter-producers"));
       consumerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(1,
-          new DefaultSolrThreadFactory("solrcli-exporter-consumer"));
+          new SolrNamedThreadFactory("solrcli-exporter-consumer"));
       sink.start();
       CountDownLatch consumerlatch = new CountDownLatch(1);
       try {

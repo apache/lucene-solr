@@ -40,10 +40,13 @@ configure(rootProject) {
           "javadoc",
           "rat",
           "ecjLint",
-          // FIXME: enable this line once Javadocs are correctly generated
-          // "checkMissingDocs"
+          "checkMissingDocs"
       ]}
     }
   }
+
+  // Each validation task should be attached to check but make sure
+  // precommit() as a whole is a dependency on rootProject.check
+  check.dependsOn precommit
 }
 

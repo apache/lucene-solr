@@ -424,6 +424,28 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
   private final Map<SegmentCoreReaders,Boolean> warmed = Collections.synchronizedMap(new WeakHashMap<SegmentCoreReaders,Boolean>());
 
+  protected static IndexWriterConfig ensureSaneIWCOnNigtly(IndexWriterConfig conf) {
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      // newIWConfig makes smallish max seg size, which
+      // results in tons and tons of segments for this test
+      // when run nightly:
+      MergePolicy mp = conf.getMergePolicy();
+      if (mp instanceof TieredMergePolicy) {
+        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
+      } else if (mp instanceof LogByteSizeMergePolicy) {
+        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
+      } else if (mp instanceof LogMergePolicy) {
+        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
+      }
+      // when running nightly, merging can still have crazy parameters,
+      // and might use many per-field codecs. turn on CFS for IW flushes
+      // and ensure CFS ratio is reasonable to keep it contained.
+      conf.setUseCompoundFile(true);
+      mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
+    }
+    return conf;
+  }
+
   public void runTest(String testName) throws Exception {
 
     failed.set(false);
@@ -448,24 +470,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
     }
 
-    if (LuceneTestCase.TEST_NIGHTLY) {
-      // newIWConfig makes smallish max seg size, which
-      // results in tons and tons of segments for this test
-      // when run nightly:
-      MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof TieredMergePolicy) {
-        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
-      } else if (mp instanceof LogByteSizeMergePolicy) {
-        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
-      } else if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
-      }
-      // when running nightly, merging can still have crazy parameters, 
-      // and might use many per-field codecs. turn on CFS for IW flushes
-      // and ensure CFS ratio is reasonable to keep it contained.
-      conf.setUseCompoundFile(true);
-      mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
-    }
+    ensureSaneIWCOnNigtly(conf);
 
     conf.setMergedSegmentWarmer((reader) -> {
       if (VERBOSE) {

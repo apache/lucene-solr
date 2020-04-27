@@ -147,13 +147,17 @@ public class RequestParams implements MapSerializable {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
         Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
-        log.debug("latest version of {} in ZK  is : {}", resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
+        if (log.isDebugEnabled()) {
+          log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
+        }
         if (stat == null) {
           requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
           requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
-          log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+          if (log.isInfoEnabled()) {
+            log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+          }
         }
       } catch (KeeperException | InterruptedException e) {
         SolrZkClient.checkInterrupted(e);

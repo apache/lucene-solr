@@ -208,7 +208,7 @@ final class SegmentMerger {
     }
   }
   
-  public void mergeFieldInfos() throws IOException {
+  public void mergeFieldInfos() {
     for (FieldInfos readerFieldInfos : mergeState.fieldInfos) {
       for (FieldInfo fi : readerFieldInfos) {
         fieldInfosBuilder.add(fi);

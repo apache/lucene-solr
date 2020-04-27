@@ -60,7 +60,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   public void init(NamedList n) {
     final SolrParams p = n.toSolrParams();
       xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.info("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
+      log.info("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
   }
 
   
