@@ -20,10 +20,10 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -59,93 +59,87 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 public class ZookeeperReadAPI {
   private final CoreContainer coreContainer;
-  public final ReadNode readNode = new ReadNode();
-  public final ListNode listNode = new ListNode();
 
   public ZookeeperReadAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
-
   @EndPoint(path = "/cluster/zk/data/*",
       method = SolrRequest.METHOD.GET,
       permission = COLL_READ_PERM)
-  public class ReadNode {
-    @Command
-    public void get(SolrQueryRequest req, SolrQueryResponse rsp) {
-      String path = req.getPathTemplateValues().get("*");
-      if (path == null || path.isEmpty()) path = "/";
-      byte[] d = null;
-      try {
-        d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
-      } catch (KeeperException.NoNodeException e) {
-        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: "+ path);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected error", e);
-      }
-      if (d == null || d.length == 0) {
-        rsp.add(path, null);
-        return;
-      }
-
-      Map<String, String> map = new HashMap<>(1);
-      map.put(WT, "raw");
-      map.put(OMIT_HEADER, "true");
-      req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
-
-      String mime = BinaryResponseParser.BINARY_CONTENT_TYPE;
-
-      if (d[0] == '{') mime = CommonParams.JSON_MIME;
-      if (d[0] == '<' || d[1] == '?') mime = XMLResponseParser.XML_CONTENT_TYPE;
-      rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, mime));
-
+  public void readNode(SolrQueryRequest req, SolrQueryResponse rsp) {
+    String path = req.getPathTemplateValues().get("*");
+    if (path == null || path.isEmpty()) path = "/";
+    byte[] d = null;
+    try {
+      d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
+    } catch (KeeperException.NoNodeException e) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + path);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected error", e);
     }
+    if (d == null || d.length == 0) {
+      rsp.add(path, null);
+      return;
+    }
+
+    Map<String, String> map = new HashMap<>(1);
+    map.put(WT, "raw");
+    map.put(OMIT_HEADER, "true");
+    req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
+
+    String mime = BinaryResponseParser.BINARY_CONTENT_TYPE;
+
+    if (d[0] == '{') mime = CommonParams.JSON_MIME;
+    if (d[0] == '<' || d[1] == '?') mime = XMLResponseParser.XML_CONTENT_TYPE;
+    rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, mime));
   }
 
   @EndPoint(path = "/cluster/zk/ls/*",
       method = SolrRequest.METHOD.GET,
       permission = ZK_READ_PERM)
-  public class ListNode {
-    @Command
-    public void list(SolrQueryRequest req, SolrQueryResponse rsp) {
-      String path = req.getPathTemplateValues().get("*");
-      if (path == null || path.isEmpty()) path = "/";
-      try {
-        List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
-        String prefix = path.endsWith("/") ? path : path + "/";
-        rsp.add(path, (MapWriter) ew -> {
-          for (String s : l) {
-            Stat stat = null;
-            try {
-              stat = coreContainer.getZkController().getZkClient().exists(prefix + s, null, false);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-            printStat(ew, s, stat);
-          }
-        });
-      } catch (KeeperException.NoNodeException e) {
-        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node :"+ path);
-      } catch (Exception e) {
-        rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
-      } finally {
-        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-      }
-    }
+  public void listNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
+    String path = req.getPathTemplateValues().get("*");
+    if (path == null || path.isEmpty()) path = "/";
+    try {
+      List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
+      String prefix = path.endsWith("/") ? path : path + "/";
 
-    private void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
-      ew.put(s, (MapWriter) ew1 -> {
-        ew1.put("version", stat.getVersion());
-        ew1.put("aversion", stat.getAversion());
-        ew1.put("children", stat.getNumChildren());
-        ew1.put("ctime", stat.getCtime());
-        ew1.put("cversion", stat.getCversion());
-        ew1.put("czxid", stat.getCzxid());
-        ew1.put("ephemeralOwner", stat.getEphemeralOwner());
-        ew1.put("mtime", stat.getMtime());
-        ew1.put("mzxid", stat.getMzxid());
-        ew1.put("pzxid", stat.getPzxid());
-        ew1.put("dataLength", stat.getDataLength());
+      Map<String , Stat> stats = new LinkedHashMap<>();
+      for (String s : l) {
+        try {
+          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null, false));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+      rsp.add(path, (MapWriter) ew -> {
+        for (Map.Entry<String, Stat> e : stats.entrySet()) {
+          printStat(ew, e.getKey(), e.getValue());
+        }
       });
+    } catch (KeeperException.NoNodeException e) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node :"+ path);
+    } catch (Exception e) {
+      rsp.add(CONTENT, new ContentStreamBase.StringStream(Utils.toJSONString(Collections.singletonMap("error", e.getMessage()))));
+    } finally {
+      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
   }
+
+  private void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
+    ew.put(s, (MapWriter) ew1 -> {
+      ew1.put("version", stat.getVersion());
+      ew1.put("aversion", stat.getAversion());
+      ew1.put("children", stat.getNumChildren());
+      ew1.put("ctime", stat.getCtime());
+      ew1.put("cversion", stat.getCversion());
+      ew1.put("czxid", stat.getCzxid());
+      ew1.put("ephemeralOwner", stat.getEphemeralOwner());
+      ew1.put("mtime", stat.getMtime());
+      ew1.put("mzxid", stat.getMzxid());
+      ew1.put("pzxid", stat.getPzxid());
+      ew1.put("dataLength", stat.getDataLength());
+    });
+  }
+
 }

@@ -66,6 +66,16 @@ public class ApiBag {
     this.isCoreSpecific = isCoreSpecific;
   }
 
+  /**Register a POJO annotated with {@link EndPoint}
+   * @param o the instance to be used for invocations
+   */
+  public synchronized List<Api> registerObject(Object o) {
+    List<Api> l = AnnotatedApi.getApis(o);
+    for (Api api : l) {
+      register(api, Collections.EMPTY_MAP);
+    }
+    return l;
+  }
   public synchronized void register(Api api) {
     register(api, Collections.EMPTY_MAP);
   }
