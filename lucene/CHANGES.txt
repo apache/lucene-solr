@@ -210,6 +210,9 @@ Bug Fixes
   finishing threads fail to pick up pending merges causing potential thread starvation on
   forceMerge calls. (Simon Willnauer)
 
+* LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
+  implementation. (Pierre-Luc Perron, Alan Woodward)
+
 Other
 ---------------------
 
