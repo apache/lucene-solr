@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -1031,7 +1032,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     assertQ("Match all docs, but count only until certain value. Return an approximate count",
             req("q", "val_s:foo", "minExactHits", "2", "rows", "2")
-            ,"//*[@isExactHitCount='false']"
+            ,"//*[@hitCountRelation='" + HitCountRelation.GREATER_THAN_OR_EQUAL_TO + "']"
             );
   }
 
