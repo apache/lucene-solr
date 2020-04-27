@@ -73,6 +73,8 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |BinaryDocValuesStringField |String (UTF-8 encoded string or Unicode) variant that supports storage and retrieval of arbitrarily large values, serialized as binary docValues. A maximum supported length (in bytes) may be configured via the `maxLength` option; the implicit default is `Integer.MAX_VALUE`. Similar to `StrField`, this field is _not_ tokenized or analyzed in any way. May be used to support large string values in <<exporting-result-sets.adoc#exporting-result-sets,/export handler>> and <<streaming-expressions.adoc#streaming-expressions,streaming expressions>>; also supports `useDocValuesAsStored=true` if the field is requested in the `fl` parameter. Single-valued only. Does not support faceting or sorting.
 
+|CompressedBinaryDocValuesStringField |Subclass of `BinaryDocValuesStringField` that adds support for per-value compression. May be optionally configured with a `dictionaryFile` to prime compression with references to common binary patterns; `tryCompressThreshold`, an input value threshold number of bytes below which values will be stored uncompressed; and `compressionThreshold`, a `double` minimum threshold ratio of compressed to uncompressed size, above which values will be stored uncompressed.
+
 |TextField |Text, usually multiple words or tokens.
 
 |TrieDateField |*Deprecated*. Use DatePointField instead.

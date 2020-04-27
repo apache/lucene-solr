@@ -26,6 +26,7 @@
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <fieldType name="string_bdv" class="solr.BinaryDocValuesStringField" maxLength="196606"/> <!-- 196606 = 32768 * MAX_CHARS_PER_CODEPOINT(2) * MAX_UTF8_BYTES_PER_CHAR(3) -->
+  <fieldType name="string_bdvz" class="solr.CompressedBinaryDocValuesStringField"/>
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
   <fieldType name="enumField" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
@@ -46,6 +47,7 @@
 
   <!--  single valued fields -->
   <field name="enum_dvo" type="enumField" indexed="true" stored="false" multiValued="false" docValues="true"/>
+  <dynamicField name="*_s_dvobz" multiValued="false" type="string_bdvz" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_s_dvob" multiValued="false" type="string_bdv" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_s_dvo2" multiValued="false" type="string" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_s_dv" multiValued="false" type="string" docValues="true" indexed="true" stored="true"/>

@@ -224,7 +224,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     return STORED_FIELD_NAME_PATTERN.matcher(fieldName).find();
   }
 
-  private static enum BinaryStringType { UTF8, NONE }
+  private static enum BinaryStringType { UTF8, COMPRESSED, NONE }
   private static final BinaryStringType[] BINARY_STRING_TYPES = BinaryStringType.values();
 
   private String dvStringFieldName(int arity, boolean indexed, boolean stored) {
@@ -242,6 +242,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
           break;
         case UTF8:
           suffix = "_dvob";
+          break;
+        case COMPRESSED:
+          suffix = "_dvobz";
           break;
       }
     } else assertTrue("unsupported dv string field combination: stored and not indexed", false);
