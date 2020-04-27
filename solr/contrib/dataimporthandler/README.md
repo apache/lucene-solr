@@ -1,4 +1,5 @@
-                    Apache Solr - DataImportHandler
+Apache Solr - DataImportHandler
+================================
 
 Introduction
 ------------

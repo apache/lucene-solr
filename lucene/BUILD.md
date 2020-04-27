@@ -1,17 +1,17 @@
-Lucene Build Instructions
+# Lucene Build Instructions
 
-Basic steps:
-  0) Install OpenJDK 11 (or greater), Ant 1.8.2+, Ivy 2.2.0
-  1) Download Lucene from Apache and unpack it
-  2) Connect to the top-level of your Lucene installation
-  3) Install JavaCC (optional)
-  4) Run ant
+## Basic steps:
+  
+  0. Install OpenJDK 11 (or greater), Ant 1.8.2+, Ivy 2.2.0
+  1. Download Lucene from Apache and unpack it
+  2. Connect to the top-level of your Lucene installation
+  3. Install JavaCC (optional)
+  4. Run ant
 
-Step 0) Set up your development environment (OpenJDK 11 or greater,
-Ant 1.8.2+, Ivy 2.2.0)
+## Step 0) Set up your development environment (OpenJDK 11 or greater, Ant 1.8.2+, Ivy 2.2.0)
 
 We'll assume that you know how to get and set up the JDK - if you
-don't, then we suggest starting at http://www.oracle.com/java/ and learning
+don't, then we suggest starting at https://www.oracle.com/java/ and learning
 more about Java, before returning to this README. Lucene runs with
 Java 11 and later.
 
@@ -22,31 +22,31 @@ Ant is "kind of like make without make's wrinkles".  Ant is
 implemented in java and uses XML-based configuration files.  You can
 get it at:
 
-  http://ant.apache.org
+  https://ant.apache.org
 
 You'll need to download the Ant binary distribution.  Install it
 according to the instructions at:
 
-  http://ant.apache.org/manual
+  https://ant.apache.org/manual
 
 Finally, you'll need to install ivy into your ant lib folder
 (~/.ant/lib). You can get it from http://ant.apache.org/ivy/.
 If you skip this step, the Lucene build system will offer to do it 
 for you.
 
-Step 1) Download Lucene from Apache
+## Step 1) Download Lucene from Apache
 
 We'll assume you already did this, or you wouldn't be reading this
 file.  However, you might have received this file by some alternate
 route, or you might have an incomplete copy of the Lucene, so: Lucene
 releases are available for download at:
 
-  http://www.apache.org/dyn/closer.cgi/lucene/java/
+  https://www.apache.org/dyn/closer.cgi/lucene/java/
 
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
 
-Step 2) From the command line, change (cd) into the top-level directory of your Lucene installation
+## Step 2) From the command line, change (cd) into the top-level directory of your Lucene installation
 
 Lucene's top-level directory contains the build.xml file. By default,
 you do not need to change any of the settings in this file, but you do
@@ -66,7 +66,7 @@ system.
 
 NOTE: the ~ character represents your user account home directory.
 
-Step 3) Run ant
+## Step 4) Run ant
 
 Assuming you have ant in your PATH and have set ANT_HOME to the
 location of your ant installation, typing "ant" at the shell prompt
@@ -76,10 +76,12 @@ and command prompt should run ant.  Ant will by default look for the
 If you want to build the documentation, type "ant documentation".
 
 For further information on Lucene, go to:
-  http://lucene.apache.org/
+
+  https://lucene.apache.org/
 
 Please join the Lucene-User mailing list by visiting this site:
-  http://lucene.apache.org/core/discussion.html
+
+  https://lucene.apache.org/core/discussion.html
 
 Please post suggestions, questions, corrections or additions to this
 document to the lucene-user mailing list.
@@ -87,4 +89,4 @@ document to the lucene-user mailing list.
 This file was originally written by Steven J. Owens <puff@darksleep.com>.
 This file was modified by Jon S. Stevens <jon@latchkey.com>.
 
-Copyright (c) 2001-2005 The Apache Software Foundation.  All rights reserved.
+Copyright (c) 2001-2020 The Apache Software Foundation.  All rights reserved.

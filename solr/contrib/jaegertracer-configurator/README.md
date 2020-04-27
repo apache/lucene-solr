@@ -18,6 +18,7 @@ Note that all library of solr-jaegertracer must be included in the classpath of 
 ```
 
 List of parameters for JaegerTracerConfigurator include:
+
 |Parameter|Type|Required|Default|Description|
 |---------|----|--------|-------|-----------|
 |agentHost|string|Yes||The host of Jaeger backend|
