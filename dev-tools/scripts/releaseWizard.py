@@ -1976,7 +1976,7 @@ def load_lines(file, from_line=0):
         with open(file, 'r') as fp:
             return fp.readlines()[from_line:]
     else:
-        return ['* foo', '* bar']
+        return ["<Please paste the announcement text here>\n"]
 
 
 if __name__ == '__main__':
