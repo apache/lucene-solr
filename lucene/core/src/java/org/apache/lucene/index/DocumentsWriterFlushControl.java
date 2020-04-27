@@ -51,7 +51,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   private volatile long flushBytes = 0;
   private volatile int numPending = 0;
   private int numDocsSinceStalled = 0; // only with assert
-  final AtomicBoolean flushDeletes = new AtomicBoolean(false);
+  private final AtomicBoolean flushDeletes = new AtomicBoolean(false);
   private boolean fullFlush = false;
   private boolean fullFlushMarkDone = false; // only for assertion that we don't get stale DWPTs from the pool
   // The flushQueue is used to concurrently distribute DWPTs that are ready to be flushed ie. when a full flush is in
@@ -66,13 +66,13 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   // polling the flushQueue
   private final List<DocumentsWriterPerThread> flushingWriters = new ArrayList<>();
 
-  double maxConfiguredRamBuffer = 0;
-  long peakActiveBytes = 0;// only with assert
-  long peakFlushBytes = 0;// only with assert
-  long peakNetBytes = 0;// only with assert
-  long peakDelta = 0; // only with assert
-  boolean flushByRAMWasDisabled; // only with assert
-  final DocumentsWriterStallControl stallControl;
+  private double maxConfiguredRamBuffer = 0;
+  private long peakActiveBytes = 0;// only with assert
+  private long peakFlushBytes = 0;// only with assert
+  private long peakNetBytes = 0;// only with assert
+  private long peakDelta = 0; // only with assert
+  private boolean flushByRAMWasDisabled; // only with assert
+  final DocumentsWriterStallControl stallControl = new DocumentsWriterStallControl();
   private final DocumentsWriterPerThreadPool perThreadPool;
   private final FlushPolicy flushPolicy;
   private boolean closed = false;
@@ -82,9 +82,8 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
 
   DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config) {
     this.infoStream = config.getInfoStream();
-    this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
-    this.flushPolicy = documentsWriter.flushPolicy;
+    this.flushPolicy = config.getFlushPolicy();
     this.config = config;
     this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
@@ -711,5 +710,13 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
       }
     }
     return null;
+  }
+
+  long getPeakActiveBytes() {
+    return peakActiveBytes;
+  }
+
+  long getPeakNetBytes() {
+    return peakNetBytes;
   }
 }
