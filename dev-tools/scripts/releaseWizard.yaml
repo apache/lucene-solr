@@ -1116,7 +1116,7 @@ groups:
         comment: Edit the for Lucene announcement news
         stdout: true
       - !Command
-        cmd: git commit -am "Adding Lucene news for release {{ release_version }}"
+        cmd: git add . && git commit -m "Adding Lucene news for release {{ release_version }}"
         logfile: commit.log
         stdout: true
     post_description: |
@@ -1141,7 +1141,7 @@ groups:
           comment: Edit the Solr announcement news
           stdout: true
         - !Command
-          cmd: git commit -am "Adding Solr news for release {{ release_version }}"
+          cmd: git add . && git commit -m "Adding Solr news for release {{ release_version }}"
           logfile: commit.log
           stdout: true
     post_description: |
