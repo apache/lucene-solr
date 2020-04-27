@@ -347,7 +347,7 @@ class ReleaseState:
           if Version.parse(state.release_version).major == Version.parse(state.get_latest_version()).major:
             to_keep = [self.release_version, self.get_latest_lts_version()]
           elif Version.parse(state.release_version).major == Version.parse(state.get_latest_lts_version()).major:
-            to_keep = [self.get_latest_version(), self.release_version()]
+            to_keep = [self.get_latest_version(), self.release_version]
           else:
             raise Exception("Release version %s must have same major version as current minor or lts release")
         return [ver for ver in versions if ver not in to_keep]
