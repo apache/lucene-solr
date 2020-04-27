@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.solr.common.HitCountRelation;
 
 /**
  * <code>DocList</code> represents the result of a query: an ordered list of document ids with optional score.
@@ -47,7 +47,7 @@ public interface DocList {
    */
   public long matches();
   
-  public Relation matchesRelation();
+  public HitCountRelation hitCountRelation();
 
 
   /***

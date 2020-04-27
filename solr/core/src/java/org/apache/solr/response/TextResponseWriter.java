@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -157,12 +157,12 @@ public abstract class TextResponseWriter implements TextWriter {
   // types of formats, including those where the name may come after the value (like
   // some XML formats).
 
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, boolean isExactHitCount) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
     writeStartDocumentList(name, start, size, numFound, maxScore);
   }
   
   /**
-   * @deprecated Use {@link #writeStartDocumentList(String, long, int, long, Float, boolean)}
+   * @deprecated Use {@link #writeStartDocumentList(String, long, int, long, Float, HitCountRelation)}
    */
   @Deprecated
   public abstract void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException;
@@ -174,7 +174,7 @@ public abstract class TextResponseWriter implements TextWriter {
   // Assume each SolrDocument is already transformed
   public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields) throws IOException
   {
-    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.isExactHitCount());
+    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getExactHitRelation());
     for( int i=0; i<docs.size(); i++ ) {
       writeSolrDocument( null, docs.get(i), fields, i );
     }
@@ -186,7 +186,7 @@ public abstract class TextResponseWriter implements TextWriter {
     DocList ids = res.getDocList();
     Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        res.wantsScores() ? ids.maxScore() : null, ids.matchesRelation() == Relation.EQUAL_TO);
+        res.wantsScores() ? ids.maxScore() : null, ids.hitCountRelation());
 
     int idx = 0;
     while (docsStreamer.hasNext()) {

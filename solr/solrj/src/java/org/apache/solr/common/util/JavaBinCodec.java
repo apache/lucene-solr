@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
 import org.apache.solr.common.MapSerializable;
@@ -594,7 +595,7 @@ public class JavaBinCodec implements PushWriter {
     solrDocs.setStart((Long) list.get(1));
     solrDocs.setMaxScore((Float) list.get(2));
     if (list.size() > 3) { //needed for back compatibility
-      solrDocs.setExactHitCount((Boolean) list.get(3));
+      solrDocs.setHitCountRelation(HitCountRelation.forOrdinal((Integer)list.get(3)));
     }
 
     @SuppressWarnings("unchecked")
@@ -610,7 +611,7 @@ public class JavaBinCodec implements PushWriter {
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
-    l.add(docs.isExactHitCount());
+    l.add(docs.getExactHitRelation().ordinal());
     writeArray(l);
     writeArray(docs);
   }

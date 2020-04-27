@@ -31,15 +31,19 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   private long numFound = 0;
   private long start = 0;
   private Float maxScore = null;
-  private boolean exactHitCount = true;
+  private HitCountRelation exactHitRelation = HitCountRelation.EQUAL_TO;
   
   
-  public boolean isExactHitCount() {
-    return exactHitCount;
+  public HitCountRelation getExactHitRelation() {
+    return exactHitRelation;
   }
 
-  public void setExactHitCount(boolean exactHitCount) {
-    this.exactHitCount = exactHitCount;
+  public void setHitCountRelation(HitCountRelation exactHitRelation) {
+    this.exactHitRelation = exactHitRelation;
+  }
+
+  public boolean isExactHitCount() {
+    return exactHitRelation == HitCountRelation.EQUAL_TO;
   }
 
   public Float getMaxScore() {
@@ -69,7 +73,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   @Override
   public String toString() {
     return "{numFound="+numFound
-            +",exactHitCount="+exactHitCount
+            +",exactHitRelation="+exactHitRelation
             +",start="+start
             + (maxScore!=null ? ",maxScore="+maxScore : "")
             +",docs="+super.toString()

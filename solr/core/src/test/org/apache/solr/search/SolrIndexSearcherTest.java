@@ -18,8 +18,8 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.HitCountRelation;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -50,26 +50,26 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
-            ,"//*[@isExactHitCount='false']"
+            ,"//*[@hitCountRelation='" + HitCountRelation.GREATER_THAN_OR_EQUAL_TO + "']"
             );
     assertQ("test query on empty index",
         req("q", "field1_s:foo", 
             "minExactHits", "200",
             "rows", "2")
-        ,"//*[@isExactHitCount='true']"
+        ,"//*[@hitCountRelation='" + HitCountRelation.EQUAL_TO + "']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
   
   private void assertMatchesEqual(int expectedCount, QueryResult qr) {
     assertEquals(expectedCount, qr.getDocList().matches());
-    assertEquals(Relation.EQUAL_TO, qr.getDocList().matchesRelation());
+    assertEquals(HitCountRelation.EQUAL_TO, qr.getDocList().hitCountRelation());
   }
   
   private void assertMatchesGraterThan(int expectedCount, QueryResult qr) {
     assertTrue("Expecting returned matches to be greater than " + expectedCount + " but got " + qr.getDocList().matches(),
         expectedCount >= qr.getDocList().matches());
-    assertEquals(Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().matchesRelation());
+    assertEquals(HitCountRelation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
   }
   
   public void testLowMinExactHitsGeneratesApproximation() throws IOException {

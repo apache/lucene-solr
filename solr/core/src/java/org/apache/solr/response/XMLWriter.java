@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -167,7 +168,7 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, boolean isExactHitCount) throws IOException
+      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
   {
     if (doIndent) indent();
 
@@ -175,10 +176,12 @@ public class XMLWriter extends TextResponseWriter {
     writeAttr(NAME, name);
     writeAttr("numFound",Long.toString(numFound));
     writeAttr("start",Long.toString(start));
-    if(maxScore!=null) {
+    if (maxScore != null) {
       writeAttr("maxScore",Float.toString(maxScore));
     }
-    writeAttr("isExactHitCount", Boolean.toString(isExactHitCount));
+    if (hitCountRelation != null) {
+      writeAttr("hitCountRelation", hitCountRelation.name());
+    }
     writer.write(">");
 
     incLevel();
@@ -198,7 +201,6 @@ public class XMLWriter extends TextResponseWriter {
     if(maxScore!=null) {
       writeAttr("maxScore",Float.toString(maxScore));
     }
-    writeAttr("isExactHitCount",Long.toString(numFound));
     writer.write(">");
 
     incLevel();

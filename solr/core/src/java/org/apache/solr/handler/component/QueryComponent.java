@@ -44,7 +44,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -52,6 +51,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -850,7 +850,7 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
-      boolean isExactHitCount = true;
+      HitCountRelation hitCountRelation = HitCountRelation.EQUAL_TO;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -882,7 +882,7 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
-            nl.add("exactHitCount", docs.isExactHitCount());
+            nl.add("hitCountRelation", docs.getExactHitRelation());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -924,7 +924,10 @@ public class QueryComponent extends SearchComponent
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());
         }
         numFound += docs.getNumFound();
-        isExactHitCount = isExactHitCount && docs.isExactHitCount();
+        
+        if (hitCountRelation == HitCountRelation.EQUAL_TO && docs.getExactHitRelation() == HitCountRelation.GREATER_THAN_OR_EQUAL_TO) {
+          hitCountRelation = HitCountRelation.GREATER_THAN_OR_EQUAL_TO;
+        }
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
         if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
@@ -996,7 +999,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
-      responseDocs.setExactHitCount(isExactHitCount);
+      responseDocs.setHitCountRelation(hitCountRelation);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);
@@ -1288,7 +1291,7 @@ public class QueryComponent extends SearchComponent
     }
 
     DocListAndSet res = new DocListAndSet();
-    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, TotalHits.Relation.EQUAL_TO);
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, HitCountRelation.EQUAL_TO);
     if (rb.isNeedDocSet()) {
       // TODO: create a cache for this!
       List<Query> queries = new ArrayList<>();

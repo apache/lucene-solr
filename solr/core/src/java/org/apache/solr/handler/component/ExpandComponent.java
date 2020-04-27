@@ -60,6 +60,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
@@ -439,13 +440,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             scores[i] = scoreDoc.score;
           }
           assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-          DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN, topDocs.totalHits.relation);
+          DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN, HitCountRelation.EQUAL_TO);
           addGroupSliceToOutputMap(fieldType, ordBytes, outMap, charsRef, groupValue, slice);
         }
       } else {
         int totalHits = ((TotalHitCountCollector) cursor.value).getTotalHits();
         if (totalHits > 0) {
-          DocSlice slice = new DocSlice(0, 0, null, null, totalHits, 0, TotalHits.Relation.EQUAL_TO);
+          DocSlice slice = new DocSlice(0, 0, null, null, totalHits, 0, HitCountRelation.EQUAL_TO);
           addGroupSliceToOutputMap(fieldType, ordBytes, outMap, charsRef, groupValue, slice);
         }
       }

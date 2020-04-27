@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -239,7 +238,7 @@ public class EmbeddedSolrServer extends SolrClient {
                   // write an empty list...
                   SolrDocumentList docs = new SolrDocumentList();
                   docs.setNumFound(ctx.getDocList().matches());
-                  docs.setExactHitCount(ctx.getDocList().matchesRelation() == Relation.EQUAL_TO);
+                  docs.setHitCountRelation(ctx.getDocList().hitCountRelation());
                   docs.setStart(ctx.getDocList().offset());
                   docs.setMaxScore(ctx.getDocList().maxScore());
                   codec.writeSolrDocumentList(docs);

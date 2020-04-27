@@ -24,7 +24,6 @@ import java.util.concurrent.Callable;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -179,7 +178,7 @@ class SubQueryAugmenter extends DocTransformer {
           docList.size(), new int[0], new float[docList.size()],
           (int) docList.getNumFound(), 
           docList.getMaxScore() == null ?  Float.NaN : docList.getMaxScore(),
-              docList.isExactHitCount() ? Relation.EQUAL_TO : Relation.GREATER_THAN_OR_EQUAL_TO);
+              docList.getExactHitRelation());
     }
 
     @Override

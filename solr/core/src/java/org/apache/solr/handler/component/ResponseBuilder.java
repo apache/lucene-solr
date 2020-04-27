@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -451,7 +451,7 @@ public class ResponseBuilder
       rsp.getResponseHeader().asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       if(getResults() != null && getResults().docList==null) {
-        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
+        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, HitCountRelation.EQUAL_TO);
       }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();

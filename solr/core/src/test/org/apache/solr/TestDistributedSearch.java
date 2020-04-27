@@ -1091,12 +1091,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   private void testMinExactHits() throws Exception {
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","200", "rows", "2", "sort", "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","-1", "rows", "2", "sort", "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","1", "rows", "200", "sort", "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, "minExactHits","1", "rows", "200", "sort", "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}id:1", "minExactHits","1", "rows", "1");
-    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","2", "rows", "2", "sort", "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "200", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "-1", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}id:1", CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "1");
+    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS,"2", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
   }
   
   private void assertIsExactHitCount(Object... requestParams) throws Exception {
