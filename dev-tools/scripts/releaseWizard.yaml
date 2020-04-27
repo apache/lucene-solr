@@ -1189,7 +1189,7 @@ groups:
         You have to exit the editor after review to continue.
       commands:
       - !Command
-        cmd: git status
+        cmd: git checkout master && git status
         stdout: true
       - !Command
         cmd: git diff
@@ -1225,7 +1225,7 @@ groups:
       root_folder: '{{ git_website_folder }}'
       commands:
         - !Command
-          cmd: git checkout production
+          cmd: git checkout production && git pull
           stdout: true
         - !Command
           cmd: git merge master
