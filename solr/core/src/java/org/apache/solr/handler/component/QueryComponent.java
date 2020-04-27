@@ -404,7 +404,7 @@ public class QueryComponent extends SearchComponent
   }
 
   private int getMinExactHits(SolrParams params) {
-    long minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
+    long minExactHits = params.getLong(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
     if (minExactHits < 0 || minExactHits > Integer.MAX_VALUE) {
       minExactHits = Integer.MAX_VALUE;
     }

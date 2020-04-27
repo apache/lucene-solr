@@ -45,12 +45,23 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     super.setUp();
   }
   
+  public void testMinExactHitsLongValue() {
+    assertQ("test query on empty index",
+        req("q", "field1_s:foo", 
+            "minExactHits", Long.toString(10L * Integer.MAX_VALUE),
+            "rows", "2")
+        ,"//*[@hitCountRelation='" + HitCountRelation.EQUAL_TO + "']"
+        ,"//*[@numFound='" + NUM_DOCS + "']"
+        );
+  }
+  
   public void testMinExactHits() {
     assertQ("test query on empty index",
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
             ,"//*[@hitCountRelation='" + HitCountRelation.GREATER_THAN_OR_EQUAL_TO + "']"
+            ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
     assertQ("test query on empty index",
         req("q", "field1_s:foo", 
