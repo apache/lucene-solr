@@ -156,7 +156,14 @@ def getScriptVersion():
 
 
 def get_editor():
-    return os.environ['EDITOR'] if 'EDITOR' in os.environ else 'notepad.exe' if is_windows() else 'vi'
+    if 'EDITOR' in os.environ:
+      return os.environ['EDITOR']
+    if is_windows():
+      return 'notepad.exe'
+    if is_mac():
+      return 'open -a TextEdit'
+    else:
+      sys.exit("On Linux you have to set EDITOR variable to a command that will start an editor in its own window")
 
 
 def check_prerequisites(todo=None):
@@ -1566,6 +1573,11 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
 def is_windows():
     return platform.system().startswith("Win")
 
+def is_mac():
+    return platform.system().startswith("Darwin")
+
+def is_linux():
+    return platform.system().startswith("Linux")
 
 class Commands(SecretYamlObject):
     yaml_tag = u'!Commands'
