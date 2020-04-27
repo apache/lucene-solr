@@ -51,7 +51,7 @@ API Changes
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom analysis factories
-  must now also implement the default constructor (see MIGRATE.txt).
+  must now also implement the default constructor (see MIGRATE.md).
   (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
