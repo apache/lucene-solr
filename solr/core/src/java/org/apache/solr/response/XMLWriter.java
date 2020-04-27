@@ -167,6 +167,26 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name,
+      long start, int size, long numFound, Float maxScore, boolean isExactHitCount) throws IOException
+  {
+    if (doIndent) indent();
+
+    writer.write("<result");
+    writeAttr(NAME, name);
+    writeAttr("numFound",Long.toString(numFound));
+    writeAttr("start",Long.toString(start));
+    if(maxScore!=null) {
+      writeAttr("maxScore",Float.toString(maxScore));
+    }
+    writeAttr("isExactHitCount", Boolean.toString(isExactHitCount));
+    writer.write(">");
+
+    incLevel();
+  }
+  
+  @Override
+  @Deprecated
+  public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
     if (doIndent) indent();
@@ -178,6 +198,7 @@ public class XMLWriter extends TextResponseWriter {
     if(maxScore!=null) {
       writeAttr("maxScore",Float.toString(maxScore));
     }
+    writeAttr("isExactHitCount",Long.toString(numFound));
     writer.write(">");
 
     incLevel();

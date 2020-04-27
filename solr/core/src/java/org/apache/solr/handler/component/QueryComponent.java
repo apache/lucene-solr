@@ -364,14 +364,9 @@ public class QueryComponent extends SearchComponent
                               CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
-    int minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
-    if (minExactHits < 0) {
-      minExactHits = Integer.MAX_VALUE;
-    }
-
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
-    cmd.setMinExactHits(minExactHits);
+    cmd.setMinExactHits(getMinExactHits(params));
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -406,6 +401,14 @@ public class QueryComponent extends SearchComponent
 
     // normal search result
     doProcessUngroupedSearch(rb, cmd, result);
+  }
+
+  private int getMinExactHits(SolrParams params) {
+    long minExactHits = params.getInt(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
+    if (minExactHits < 0 || minExactHits > Integer.MAX_VALUE) {
+      minExactHits = Integer.MAX_VALUE;
+    }
+    return (int)minExactHits;
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
@@ -847,6 +850,7 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
+      boolean isExactHitCount = true;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -878,6 +882,7 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
+            nl.add("exactHitCount", docs.isExactHitCount());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -919,6 +924,7 @@ public class QueryComponent extends SearchComponent
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());
         }
         numFound += docs.getNumFound();
+        isExactHitCount = isExactHitCount && docs.isExactHitCount();
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
         if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
@@ -990,6 +996,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
+      responseDocs.setExactHitCount(isExactHitCount);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);

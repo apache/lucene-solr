@@ -16,6 +16,20 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.util.ConcurrentLRUCache;
+import org.apache.solr.util.RTimer;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.noggit.CharArr;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,19 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.EnumFieldValue;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.util.ConcurrentLRUCache;
-import org.apache.solr.util.RTimer;
-import org.junit.Test;
-import org.noggit.CharArr;
 
 public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
@@ -242,6 +243,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore("This test compares binaries, which change due to SOLR-13289")
   public void testForwardCompat() throws IOException {
     try (JavaBinCodec javabin = new JavaBinCodec(); ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 

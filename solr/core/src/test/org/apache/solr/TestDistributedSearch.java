@@ -209,7 +209,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort","n_tl1 asc", "fl","*,score"); 
     query("q","*:*", "sort","n_tl1 desc");
+    
     handle.put("maxScore", SKIPVAL);
+    testMinExactHits();
+    
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
     handle.remove("maxScore");
@@ -1082,9 +1085,30 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals(new EnumFieldValue(11, "Critical"),
                  rsp.getFieldStatsInfo().get(fieldName).getMax());
 
-    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
+    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't guarantee order
     query("q", "*:*", "stats", "true", "stats.field", fieldName, 
           "stats.facet", fieldName);
+  }
+
+  private void testMinExactHits() throws Exception {
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","200", "rows", "2", "sort", "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","-1", "rows", "2", "sort", "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","1", "rows", "200", "sort", "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, "minExactHits","1", "rows", "200", "sort", "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}id:1", "minExactHits","1", "rows", "1");
+    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "minExactHits","2", "rows", "2", "sort", "score desc, id asc");
+  }
+  
+  private void assertIsExactHitCount(Object... requestParams) throws Exception {
+    QueryResponse response = query(requestParams);
+    assertTrue(response.toString(), response.getResults().isExactHitCount());
+  }
+  
+  private void assertApproximatedHitCount(Object...requestParams) throws Exception {
+    handle.put("numFound", SKIPVAL);
+    QueryResponse response = query(requestParams);
+    assertFalse(response.toString(), response.getResults().isExactHitCount());
+    handle.remove("numFound", SKIPVAL);
   }
 
   /** comparing results with facet.method=uif */

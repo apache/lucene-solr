@@ -1017,6 +1017,23 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                  e.getMessage().contains(f));
     }
   }
+  
+  @Test
+  public void testMinExactHits() throws Exception {
+    assertU("adding doc with ignored field",
+            adoc("id", "50"));
+    for (int i = 0; i < 20; i++) {
+      assertU("adding doc#" + i,
+          adoc("id", String.valueOf(i), "val_s", "foo"));
+    }
+    assertU("commit",
+            commit());
+    
+    assertQ("Match all docs, but count only until certain value. Return an approximate count",
+            req("q", "val_s:foo", "minExactHits", "2", "rows", "2")
+            ,"//*[@isExactHitCount='false']"
+            );
+  }
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {

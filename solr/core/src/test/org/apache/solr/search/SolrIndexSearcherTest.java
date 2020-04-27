@@ -45,6 +45,22 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     super.setUp();
   }
   
+  public void testMinExactHits() {
+    assertQ("test query on empty index",
+            req("q", "field1_s:foo", 
+                "minExactHits", "2",
+                "rows", "2")
+            ,"//*[@isExactHitCount='false']"
+            );
+    assertQ("test query on empty index",
+        req("q", "field1_s:foo", 
+            "minExactHits", "200",
+            "rows", "2")
+        ,"//*[@isExactHitCount='true']"
+        ,"//*[@numFound='" + NUM_DOCS + "']"
+        );
+  }
+  
   private void assertMatchesEqual(int expectedCount, QueryResult qr) {
     assertEquals(expectedCount, qr.getDocList().matches());
     assertEquals(Relation.EQUAL_TO, qr.getDocList().matchesRelation());
@@ -55,7 +71,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         expectedCount >= qr.getDocList().matches());
     assertEquals(Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().matchesRelation());
   }
-
+  
   public void testLowMinExactHitsGeneratesApproximation() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = new QueryCommand();
@@ -71,6 +87,8 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       QueryCommand cmd = new QueryCommand();
       cmd.setMinExactHits(1);
       cmd.setLen(1);
+      // We need to disable cache, otherwise the search will be done for 20 docs (cache window size) which brings up the minExactHits
+      cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       cmd.setQuery(new TermQuery(new Term("field2_s", "1")));
       QueryResult qr = new QueryResult();
       searcher.search(qr, cmd);
