@@ -384,7 +384,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     if (ms instanceof ConcurrentMergeScheduler) {
       iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
           @Override
-          protected void handleMergeException(Directory dir, Throwable exc) {
+          protected void handleMergeException(Throwable exc) {
             assertTrue(exc instanceof IllegalArgumentException);
           }
         });

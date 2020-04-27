@@ -249,7 +249,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
       CollectionOperation operation = CollectionOperation.get(action);
-      log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue);
+      if (log.isInfoEnabled()) {
+        log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
+            , action.toLower(), req.getParamString(), operation.sendToOCPQueue);
+      }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
     } else {
@@ -1357,7 +1360,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           success = true;
           break;
         }
-        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice);
+        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice); //logok
       }
 
       if (success) {
@@ -1378,7 +1381,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     if (createCollResponse.getResponse().get("exception") != null) {
       // the main called failed, don't wait
-      log.info("Not waiting for active collection due to exception: " + createCollResponse.getResponse().get("exception"));
+      if (log.isInfoEnabled()) {
+        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception"));
+      }
       return;
     }
 
@@ -1392,8 +1397,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CloudConfig ccfg = cc.getConfig().getCloudConfig();
     Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
-    log.info("Wait for new collection to be active for at most " + seconds + " seconds. Check all shard "
-        + (checkLeaderOnly ? "leaders" : "replicas"));
+    if (log.isInfoEnabled()) {
+      log.info("Wait for new collection to be active for at most {} seconds. Check all shard {}"
+          , seconds, (checkLeaderOnly ? "leaders" : "replicas"));
+    }
 
     try {
       cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c) -> {
@@ -1415,8 +1422,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             }
             for (Replica replica : replicas) {
               String state = replica.getStr(ZkStateReader.STATE_PROP);
-              log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
-                  replica.getCoreUrl(), state);
+              if (log.isDebugEnabled()) {
+                log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
+                    replica.getCoreUrl(), state);
+              }
               if (!n.contains(replica.getNodeName())
                   || !state.equals(Replica.State.ACTIVE.toString())) {
                 replicaNotAliveCnt++;

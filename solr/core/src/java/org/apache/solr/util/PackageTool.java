@@ -75,10 +75,10 @@ public class PackageTool extends SolrCLI.ToolBase {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
-      log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
+      log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
 
-      log.info("ZK: "+zkHost);
+      log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
       try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
@@ -202,7 +202,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           }
         }
       }
-      log.info("Finished: "+cmd);
+      log.info("Finished: {}", cmd);
 
     } catch (Exception ex) {
       ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour of brevity. Package tool should surely print full stacktraces!

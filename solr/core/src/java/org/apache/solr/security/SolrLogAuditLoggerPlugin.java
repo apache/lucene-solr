@@ -64,7 +64,9 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
   public void audit(AuditEvent event) {
     switch (event.getLevel()) {
       case INFO:
-        log.info(formatter.formatEvent(event));
+        if (log.isInfoEnabled()) {
+          log.info(formatter.formatEvent(event));
+        }
         break;
 
       case WARN:

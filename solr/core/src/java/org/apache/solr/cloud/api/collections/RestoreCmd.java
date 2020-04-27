@@ -239,7 +239,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
-        log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        if (log.isInfoEnabled()) {
+          log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        }
         HashMap<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
         propMap.put(COLLECTION_PROP, restoreCollectionName);
@@ -329,8 +331,10 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             String coreNodeName = r.getCoreName();
             Replica.State stateRep = r.getState();
 
-            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
-                stateRep.name());
+            if (log.isDebugEnabled()) {
+              log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+                  stateRep.name());
+            }
 
             ModifiableSolrParams params = new ModifiableSolrParams();
             params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
@@ -356,7 +360,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (totalReplicasPerShard > 1) {
-        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Adding replicas to restored collection={}", restoreCollection.getName());
+        }
         for (Slice slice : restoreCollection.getSlices()) {
 
           //Add the remaining replicas for each shard, considering it's type
@@ -383,7 +389,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
               assert createdPullReplicas <= numPullReplicas: "Unexpected number of replicas";
             }
 
-            log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
+            if (log.isDebugEnabled()) {
+              log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
+            }
             HashMap<String, Object> propMap = new HashMap<>();
             propMap.put(COLLECTION_PROP, restoreCollectionName);
             propMap.put(SHARD_ID_PROP, slice.getName());

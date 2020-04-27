@@ -288,7 +288,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void mockOperation(ClusterState state, ZkNodeProps message, NamedList results) throws InterruptedException {
     //only for test purposes
     Thread.sleep(message.getInt("sleep", 1));
-    log.info("MOCK_TASK_EXECUTED time {} data {}", System.currentTimeMillis(), Utils.toJSONString(message));
+    if (log.isInfoEnabled()) {
+      log.info("MOCK_TASK_EXECUTED time {} data {}", System.currentTimeMillis(), Utils.toJSONString(message));
+    }
     results.add("MOCK_FINISHED", System.currentTimeMillis());
   }
 
@@ -566,8 +568,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       }
       Slice slice = collection.getSlice(sliceName);
       if (slice != null) {
-        log.debug("Waited for {}ms for slice {} of collection {} to be available",
-            timer.getTime(), sliceName, collectionName);
+        if (log.isDebugEnabled()) {
+          log.debug("Waited for {}ms for slice {} of collection {} to be available",
+              timer.getTime(), sliceName, collectionName);
+        }
         return clusterState;
       }
       Thread.sleep(1000);
@@ -664,7 +668,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   void cleanupCollection(String collectionName, NamedList results) throws Exception {
-    log.error("Cleaning up collection [" + collectionName + "]." );
+    log.error("Cleaning up collection [{}].", collectionName);
     Map<String, Object> props = makeMap(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
         NAME, collectionName);
@@ -784,7 +788,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
-      log.error("Error from shard: " + shard, e);
+      log.error("Error from shard: {}", shard, e);
       addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
       addSuccess(results, nodeName, solrResponse.getResponse());

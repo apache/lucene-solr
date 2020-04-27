@@ -143,7 +143,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      log.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      log.warn("Exception checking ZK path {}", ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
       throw e;
     }
     for (TriggerAction action : actions) {
@@ -268,7 +268,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       
     } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
-      log.warn("Exception updating trigger state '" + path + "'", e);
+      log.warn("Exception updating trigger state '{}'", path, e);
     }
   }
 
@@ -284,7 +284,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyClosedException e) {
      
     } catch (Exception e) {
-      log.warn("Exception getting trigger state '" + path + "'", e);
+      log.warn("Exception getting trigger state '{}'", path, e);
     }
     if (data != null) {
       Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);

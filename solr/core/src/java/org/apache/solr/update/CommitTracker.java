@@ -87,7 +87,7 @@ public final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
-    log.info(name + " AutoCommit: " + this);
+    log.info("{} AutoCommit: {}", name, this);
   }
 
   public boolean getOpenSearcher() {
@@ -132,7 +132,7 @@ public final class CommitTracker implements Runnable {
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
-        // log.info("###returning since getDelay()==" + pending.getDelay(TimeUnit.MILLISECONDS) + " less than " + commitMaxTime);
+        // log.info("###returning since getDelay()=={} less than {}", pending.getDelay(TimeUnit.MILLISECONDS), commitMaxTime);
 
         return;
       }

@@ -21,13 +21,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -36,6 +40,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -819,6 +824,43 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     si.setFiles(Collections.singletonList(subFile));
     Exception e = expectThrows(CorruptIndexException.class, () -> si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT));
     assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    dir.close();
+  }
+
+  public void testCheckIntegrity() throws IOException {
+    Directory dir = newDirectory();
+    String subFile = "_123.xyz";
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    try (IndexOutput os = dir.createOutput(subFile, newIOContext(random()))) {
+      CodecUtil.writeIndexHeader(os, "Foo", 0, si.getId(), "suffix");
+      for (int i = 0; i < 1024; i++) {
+        os.writeByte((byte) i);
+      }
+      os.writeInt(CodecUtil.FOOTER_MAGIC);
+      os.writeInt(0);
+      long checksum = os.getChecksum();
+      os.writeLong(checksum);
+    }
+
+    si.setFiles(Collections.singletonList(subFile));
+    
+    FileTrackingDirectoryWrapper writeTrackingDir = new FileTrackingDirectoryWrapper(dir);
+    si.getCodec().compoundFormat().write(writeTrackingDir, si, IOContext.DEFAULT);
+    final Set<String> createdFiles = writeTrackingDir.getFiles();
+
+    ReadBytesDirectoryWrapper readTrackingDir = new ReadBytesDirectoryWrapper(dir);
+    CompoundDirectory compoundDir = si.getCodec().compoundFormat().getCompoundReader(readTrackingDir, si, IOContext.READ);
+    compoundDir.checkIntegrity();
+    Map<String,FixedBitSet> readBytes = readTrackingDir.getReadBytes();
+    assertEquals(createdFiles, readBytes.keySet());
+    for (Map.Entry<String, FixedBitSet> entry : readBytes.entrySet()) {
+      final String file = entry.getKey();
+      final FixedBitSet set = entry.getValue().clone();
+      set.flip(0, set.length());
+      final int next = set.nextSetBit(0);
+      assertEquals("Byte at offset " + next + " of " + file + " was not read", DocIdSetIterator.NO_MORE_DOCS, next);
+    }
+    compoundDir.close();
     dir.close();
   }
 }

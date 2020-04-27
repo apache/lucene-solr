@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -180,7 +181,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param node node id
    */
   public void simRemoveNodeValues(String node) throws InterruptedException {
-    log.debug("--removing value for " + node);
+    log.debug("--removing value for {}", node);
     lock.lockInterruptibly();
     try {
       Map<String, Object> values = nodeValues.remove(node);
@@ -203,7 +204,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     try {
       AtomicBoolean updateRoles = new AtomicBoolean(false);
       myNodes.forEach(n -> {
-        log.debug("- removing dead node values: " + n);
+        log.debug("- removing dead node values: {}", n);
         Map<String, Object> vals = nodeValues.remove(n);
         if (vals.containsKey("nodeRole")) {
           updateRoles.set(true);
@@ -231,6 +232,11 @@ public class SimNodeStateProvider implements NodeStateProvider {
    */
   public Map<String, Map<String, Object>> simGetAllNodeValues() {
     return nodeValues;
+  }
+
+  /** Get all values for a selected node. */
+  public Map<String, Object> simGetNodeValues(String node) {
+    return nodeValues.getOrDefault(node, Collections.emptyMap());
   }
 
   private void saveRoles() {
@@ -266,7 +272,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     for (String tag : tags) {
       Matcher m = METRIC_KEY_PATTERN.matcher(tag);
       if (!m.matches() || m.groupCount() < 2) {
-        log.warn("Invalid metrics: tag: " + tag);
+        log.warn("Invalid metrics: tag: {}", tag);
         continue;
       }
       String registryName = m.group(1);
@@ -278,7 +284,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
       m = REGISTRY_PATTERN.matcher(registryName);
 
       if (!m.matches()) {
-        log.warn("Invalid registry name: " + registryName);
+        log.warn("Invalid registry name: {}", registryName);
         continue;
       }
       String collection = m.group(1);
@@ -306,7 +312,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-    log.trace("-- requested values for " + node + ": " + tags);
+    log.trace("-- requested values for {}: {}", node, tags);
     if (!liveNodesSet.contains(node)) {
       throw new RuntimeException("non-live node " + node);
     }
@@ -319,7 +325,10 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (values == null) {
       return result;
     }
-    result.putAll(values.entrySet().stream().filter(e -> tags.contains(e.getKey())).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+    result.putAll(values.entrySet().stream()
+        .filter(e -> tags.contains(e.getKey()))
+        .filter(e -> e.getValue() != null)
+        .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
     return result;
   }
 

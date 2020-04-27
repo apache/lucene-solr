@@ -30,6 +30,7 @@ It's nice in this context because change to the templates
 are immediately visible in browser on the next visit.
 
 Links:
+
 	http://velocity.apache.org
 	http://wiki.apache.org/velocity/
 	http://velocity.apache.org/engine/releases/velocity-1.7/user-guide.html
@@ -39,14 +40,18 @@ File List
 ---------
 
 System and Misc:
+```
   VM_global_library.vm    - Macros used other templates,
                             exact filename is important for Velocity to see it
   error.vm                - shows errors, if any
   debug.vm                - includes toggle links for "explain" and "all fields"
                             activated by debug link in footer.vm
-  README.txt              - this file
+  README.md              - this file
+```
 
 Overall Page Composition:
+
+```
   browse.vm               - Main entry point into templates
   layout.vm               - overall HTML page layout
   head.vm                 - elements in the <head> section of the HTML document
@@ -55,22 +60,30 @@ Overall Page Composition:
                             includes debug and help links
   main.css                - CSS style for overall pages
                             see also jquery.autocomplete.css
+```
 
 Query Form and Options:
+
+```
   query_form.vm           - renders query form
   query_group.vm          - group by fields
                             e.g.: Manufacturer or Poplularity
   query_spatial.vm        - select box for location based Geospacial search
+```
 
 Spelling Suggestions:
+
+```
   did_you_mean.vm         - hyperlinked spelling suggestions in results
   suggest.vm              - dynamic spelling suggestions
                             as you type in the search form
   jquery.autocomplete.js  - supporting files for dynamic suggestions
   jquery.autocomplete.css - Most CSS is defined in main.css
-
+```
 
 Search Results, General:
+
+```
   (see also browse.vm)
   tabs.vm                 - provides navigation to advanced search options
   pagination_top.vm       - paging and staticis at top of results
@@ -84,9 +97,10 @@ Search Results, General:
   richtext_doc.vm         - display a complex/misc. document
   hit_plain.vm            - basic display of all fields,
                             edit results_list.vm to enable this
-
+```
 
 Search Results, Facets & Clusters:
+```
   facets.vm               - calls the 4 facet and 1 cluster template
   facet_fields.vm         - display facets based on field values
                             e.g.: fields specified by &facet.field=
@@ -99,3 +113,4 @@ Search Results, Facets & Clusters:
   cluster.vm              - if clustering is available
                             then call cluster_results.vm
   cluster_results.vm      - actual rendering of clusters
+```

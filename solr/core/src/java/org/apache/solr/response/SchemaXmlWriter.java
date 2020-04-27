@@ -135,7 +135,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
           closeStartTag(true);
         }
       } else {
-        log.warn("Unknown schema component '" + schemaPropName + "'");
+        log.warn("Unknown schema component '{}'", schemaPropName);
       }
     }
     decLevel();

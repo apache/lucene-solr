@@ -308,7 +308,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     if (ignoreOldUpdates) {
       if (log.isDebugEnabled()) {
         log.debug("Dropping update since user version is not high enough: {}; old user version={}",
-            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions));
+            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions)); // logok
       }
       return false;
     } else {
@@ -408,7 +408,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private static void logOverlyFailedRetries(int i, UpdateCommand cmd) {
     // Log a warning every 256 retries.... even a few retries should normally be very unusual.
     if ((i&0xff) == 0xff) {
-      log.warn("Unusual number of optimistic concurrency retries: retries=" + i + " cmd=" + cmd);
+      log.warn("Unusual number of optimistic concurrency retries: retries={} cmd={}", i, cmd);
     }
   }
 

@@ -438,10 +438,9 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      Query q = QueryUtils.combineQueryAndFilter(query, luceneFilter);
-      searcher.search(q, collector);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; {}", query, x.getMessage());
       qr.setPartialResults(true);
     }
   }

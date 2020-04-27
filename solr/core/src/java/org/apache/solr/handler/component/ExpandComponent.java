@@ -176,7 +176,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       sort = SortSpecParsing.parseSortSpec(sortParam, rb.req).getSort();
     }
 
-    Query query;
+    final Query query;
     List<Query> newFilters = new ArrayList<>();
     try {
       if (qs == null) {
@@ -415,8 +415,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    query = QueryUtils.combineQueryAndFilter(query, pfilter.filter);
-    searcher.search(query, collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
 
     ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();

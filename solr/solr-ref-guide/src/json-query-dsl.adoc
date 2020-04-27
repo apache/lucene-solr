@@ -358,7 +358,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 
-Overall this example doesn't make much sense, but just demonstrates the syntax. This feature is useful in <<json-faceting-domain-changes.adoc#adding-domain-filters,filtering domain>> in JSON Facet API <<json-facet-api.adoc#changing-the-domain,domain changes>>.
+Overall this example doesn't make much sense, but just demonstrates the syntax. This feature is useful in <<json-faceting-domain-changes.adoc#adding-domain-filters,filtering domain>> in JSON Facet API <<json-facet-api.adoc#changing-the-domain,domain changes>>. Note that these declarations add request parameters underneath, so using same names with other parameters might cause unexpected behavior. 
 
 == Tagging in JSON Query DSL
 Query and filter clauses can also be individually "tagged".  Tags serve as handles for query clauses, allowing them to be referenced from elsewhere in the request.  This is most commonly used by the filter-exclusion functionality offered by both <<faceting.adoc#tagging-and-excluding-filters,traditional>> and <<json-faceting-domain-changes.adoc#filter-exclusions,JSON>> faceting.
