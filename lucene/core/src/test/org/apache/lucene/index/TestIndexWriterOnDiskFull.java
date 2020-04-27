@@ -550,7 +550,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     expectThrows(IOException.class, () -> {
       writer.addDocument(doc);
     });
-    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isDeleterClosed());
     assertTrue(writer.isClosed());
 
     dir.close();
