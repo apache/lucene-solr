@@ -68,7 +68,7 @@ from scriptutil import BranchType, Version, check_ant, download, run
 
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
-
+editor = None
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -156,14 +156,19 @@ def getScriptVersion():
 
 
 def get_editor():
-    if 'EDITOR' in os.environ:
-      return os.environ['EDITOR']
-    if is_windows():
-      return 'notepad.exe'
-    if is_mac():
-      return 'open -a TextEdit'
-    else:
-      sys.exit("On Linux you have to set EDITOR variable to a command that will start an editor in its own window")
+    global editor
+    if editor is None:
+      if 'EDITOR' in os.environ:
+          if os.environ['EDITOR'] in ['vi', 'vim', 'nano', 'pico', 'emacs']:
+              print("WARNING: You have EDITOR set to %s, which will not work when launched from this tool. Please use an editor that launches a separate window/process" % os.environ['EDITOR'])
+          editor = os.environ['EDITOR']
+      elif is_windows():
+          editpr = 'notepad.exe'
+      elif is_mac():
+          editor = 'open -a TextEdit'
+      else:
+          sys.exit("On Linux you have to set EDITOR variable to a command that will start an editor in its own window")
+    return editor
 
 
 def check_prerequisites(todo=None):

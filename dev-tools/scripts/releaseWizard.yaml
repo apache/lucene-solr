@@ -1089,6 +1089,7 @@ groups:
         - !Command
           cmd: "{{ editor }} pelicanconf.py"
           comment: Edit the pelicanconf.file
+          stdout: true
         - !Command
           cmd: git commit -am "Update version variables for release {{ release_version }}"
           logfile: commit.log
@@ -1113,6 +1114,7 @@ groups:
       - !Command
         cmd: "{{ editor }} {{ lucene_news_file }}"
         comment: Edit the for Lucene announcement news
+        stdout: true
       - !Command
         cmd: git commit -am "Adding Lucene news for release {{ release_version }}"
         logfile: commit.log
@@ -1137,6 +1139,7 @@ groups:
         - !Command
           cmd: "{{ editor }} {{ solr_news_file }}"
           comment: Edit the Solr announcement news
+          stdout: true
         - !Command
           cmd: git commit -am "Adding Solr news for release {{ release_version }}"
           logfile: commit.log
@@ -1160,14 +1163,15 @@ groups:
         We'll open an editor on the root folder of the site checkout
         You have to exit the editor after edit to continue.
       commands:
-      - !Command
-        cmd: "{{ editor }} ."
-        comment: Open an editor on the root folder
-      - !Command
-        cmd: git commit -am "Other website changes for release {{ release_version }}"
-        comment: Commit the other changes
-        logfile: commit.log
-        stdout: true
+        - !Command
+          cmd: "{{ editor }} ."
+          comment: Open an editor on the root folder
+          stdout: true
+        - !Command
+          cmd: git commit -am "Other website changes for release {{ release_version }}"
+          comment: Commit the other changes
+          logfile: commit.log
+          stdout: true
   - !Todo
     id: stage_website
     title: Stage the website changes
@@ -1194,6 +1198,7 @@ groups:
       - !Command
         cmd: "{{ editor }} {{ [release_folder, 'website.diff'] | path_join }}"
         comment: View the diff of the website changes. Abort if you need to do changes.
+        stdout: true
       - !Command
         cmd: git push origin
         comment: Push all changes
@@ -1260,9 +1265,11 @@ groups:
       - !Command
         cmd: "{{ editor }} dev-tools/doap/lucene.rdf"
         comment: Edit Lucene DOAP, add version {{ release_version }}
+        stdout: true
       - !Command
         cmd: "{{ editor }} dev-tools/doap/solr.rdf"
         comment: Edit Solr DOAP, add version {{ release_version }}
+        stdout: true
       - !Command
         cmd: git add dev-tools/doap/lucene.rdf dev-tools/doap/solr.rdf  && git commit -m "DOAP changes for release {{ release_version }}"
         logfile: commit.log
@@ -1402,9 +1409,11 @@ groups:
       - !Command
         cmd: "{{ editor }} solr/CHANGES.txt"
         comment: Edit Solr CHANGES, do necessary changes
+        stdout: true
       - !Command
         cmd: "{{ editor }} lucene/CHANGES.txt"
         comment: Edit Lucene CHANGES, do necessary changes
+        stdout: true
       - !Command
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
         logfile: commit-master.log
@@ -1415,9 +1424,11 @@ groups:
       - !Command
         cmd: "{{ editor }} solr/CHANGES.txt"
         comment: Edit Solr CHANGES, do necessary changes
+        stdout: true
       - !Command
         cmd: "{{ editor }} lucene/CHANGES.txt"
         comment: Edit Lucene CHANGES, do necessary changes
+        stdout: true
       - !Command
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
         logfile: commit-stable.log
