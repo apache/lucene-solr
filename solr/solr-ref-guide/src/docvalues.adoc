@@ -45,6 +45,8 @@ DocValues are only available for specific field types. The types chosen determin
 * `StrField`, and `UUIDField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
 ** If the field is multi-valued, Lucene will use the `SORTED_SET` type. Entries are kept in sorted order and duplicates are removed.
+* `BinaryDocValuesStringField` ^<<fpbuc_1,1>>^:
+** single-valued only; always uses the Lucene `BINARY` type.
 * `BoolField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
 ** If the field is multi-valued, Lucene will use the `SORTED_SET` type. Entries are kept in sorted order and duplicates are removed.
@@ -87,3 +89,7 @@ When retrieving fields from their docValues form (such as when using the <<expor
 
 1.  Order is _not_ preserved. When retrieving stored fields, the insertion order is the return order. For docValues, it is the _sorted_ order.
 2.  For field types using `SORTED_SET` (see above), multiple identical entries are collapsed into a single value. Thus if values 4, 5, 2, 4, 1 are inserted, the values returned will be 1, 2, 4, 5.
+
+Notes:
+
+1. [[fpbuc_1,1]] `BinaryDocValuesStringField` is intended for retrieval of large string values (e.g., for `/export` handler, streaming expressions, or `fl` param). Use for faceting and sorting is not supported.

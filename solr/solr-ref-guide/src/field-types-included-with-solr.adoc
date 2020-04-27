@@ -71,6 +71,8 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
 
+|BinaryDocValuesStringField |String (UTF-8 encoded string or Unicode) variant that supports storage and retrieval of arbitrarily large values, serialized as binary docValues. A maximum supported length (in bytes) may be configured via the `maxLength` option; the implicit default is `Integer.MAX_VALUE`. Similar to `StrField`, this field is _not_ tokenized or analyzed in any way. May be used to support large string values in <<exporting-result-sets.adoc#exporting-result-sets,/export handler>> and <<streaming-expressions.adoc#streaming-expressions,streaming expressions>>; also supports `useDocValuesAsStored=true` if the field is requested in the `fl` parameter. Single-valued only. Does not support faceting or sorting.
+
 |TextField |Text, usually multiple words or tokens.
 
 |TrieDateField |*Deprecated*. Use DatePointField instead.

@@ -31,11 +31,13 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
@@ -63,9 +65,10 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   private static final String[] SEVERITY;
 
   // http://www.w3.org/TR/2006/REC-xml-20060816/#charsets
-  private static final String NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF";
+  private static final String LOW_NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F";
+  private static final String HIGH_NON_XML_CHARS = "\uFFFE\uFFFF";
   // Avoid single quotes (problematic in XPath literals) and carriage returns (XML roundtripping fails)
-  private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + NON_XML_CHARS + "]");
+  private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + LOW_NON_XML_CHARS + "]|([" + HIGH_NON_XML_CHARS + "])");
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
 
   static {
@@ -192,7 +195,25 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
       doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
       doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+
+      // binary dv string types are useful in particular for large values (exceeding the limit of 32766 UTF8 bytes for StrField), so test these.
+      // The maxLength specified below is the number of *codepoints*, some (or even all) of which may resolve to surrogate pairs, so the range
+      // of returned values will include values whose UTF8 encoding exceeds the 32766 StrField byte limit. Multi-valued fields not supported.
+      BinaryStringType testType = BINARY_STRING_TYPES[random().nextInt(BINARY_STRING_TYPES.length - 1)];
+      doTest("check non-stored and non-indexed binary is accessible", dvStringFieldName(1, false, false, testType), "str", nextValues(1, "str", 32766));
     }
+  }
+
+  @Test
+  public void testExcessiveBinaryLength() throws Exception {
+      clearIndex();
+      doTest("check binary maxLength limit", dvStringFieldName(1, false, false, BinaryStringType.UTF8), "str", nextValues(1, "str", ~196606));
+      try {
+        doTest("check binary maxLength limit enforced", dvStringFieldName(1, false, false, BinaryStringType.UTF8), "str", nextValues(1, "str", ~196607));
+        assertFalse(true);
+      } catch (SolrException ex) {
+        assertTrue(ex.getCause().getCause().getMessage().contains("length of field (196607) exceeds effective maxLength of 196606"));
+      }
   }
 
   private String plural(int arity) {
@@ -203,17 +224,35 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     return STORED_FIELD_NAME_PATTERN.matcher(fieldName).find();
   }
 
+  private static enum BinaryStringType { UTF8, NONE }
+  private static final BinaryStringType[] BINARY_STRING_TYPES = BinaryStringType.values();
+
   private String dvStringFieldName(int arity, boolean indexed, boolean stored) {
+    return dvStringFieldName(arity, indexed, stored, BinaryStringType.NONE);
+  }
+  private String dvStringFieldName(int arity, boolean indexed, boolean stored, BinaryStringType binaryType) {
     String base = "test_s" + (arity > 1 ? "s": "");
     String suffix = "";
     if (indexed && stored) suffix = "_dv";
     else if (indexed && ! stored) suffix = "_dvo";
-    else if ( ! indexed && ! stored) suffix = "_dvo2";
-    else assertTrue("unsupported dv string field combination: stored and not indexed", false);
+    else if ( ! indexed && ! stored) {
+      switch (binaryType) {
+        case NONE:
+          suffix = "_dvo2";
+          break;
+        case UTF8:
+          suffix = "_dvob";
+          break;
+      }
+    } else assertTrue("unsupported dv string field combination: stored and not indexed", false);
     return base + suffix;
   }
 
   private String[] nextValues(int arity, String valueType) throws Exception {
+    return nextValues(arity, valueType, 0);
+  }
+
+  private String[] nextValues(int arity, String valueType, int maxLength) throws Exception {
     String[] values = new String[arity];
     for (int i = 0 ; i < arity ; ++i) {
       switch (valueType) {
@@ -223,8 +262,20 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         case "float": values[i] = String.valueOf(Float.intBitsToFloat(random().nextInt())); break;
         case "enum": values[i] = SEVERITY[TestUtil.nextInt(random(), 0, SEVERITY.length - 1)]; break;
         case "str": {
-          String str = TestUtil.randomRealisticUnicodeString(random());
-          values[i] = BAD_CHAR_PATTERN.matcher(str).replaceAll("\uFFFD");
+          final String str;
+          if (maxLength < 0) {
+            final String tmp = TestUtil.randomFixedByteLengthUnicodeString(random(), ~maxLength);
+            str = replaceWithStableUnicodeLength(tmp);
+          } else {
+            final String tmp;
+            if (maxLength == 0) {
+              tmp = TestUtil.randomRealisticUnicodeString(random());
+            } else {
+              tmp = TestUtil.randomRealisticUnicodeString(random(), maxLength);
+            }
+            str = BAD_CHAR_PATTERN.matcher(tmp).replaceAll("\uFFFD");
+          }
+          values[i] = str;
           break;
         }
         case "date": {
@@ -236,6 +287,20 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       }
     }
     return values;
+  }
+
+  private static String replaceWithStableUnicodeLength(String input) {
+    final Matcher m = BAD_CHAR_PATTERN.matcher(input);
+    if (!m.find()) {
+      return input;
+    } else {
+      final StringBuilder sb = new StringBuilder(input.length());
+      do {
+        m.appendReplacement(sb, m.group(1) == null ? "?" : "\uFFFD");
+      } while (m.find());
+      m.appendTail(sb);
+      return sb.toString();
+    }
   }
 
   @Test
