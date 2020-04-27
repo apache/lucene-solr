@@ -238,6 +238,10 @@ Other
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
 
+Build
+
+* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
+
 ======================= Lucene 8.5.1 =======================
 
 Bug Fixes
