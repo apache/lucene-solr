@@ -95,7 +95,7 @@ public class CloudConfigSetService extends ConfigSetService {
     try {
       stat = zkController.getZkClient().exists(zkPath, null, true);
     } catch (KeeperException e) {
-      log.warn("Unexpected exception when getting modification time of " + zkPath, e);
+      log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
       return null; // debatable; we'll see an error soon if there's a real problem
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

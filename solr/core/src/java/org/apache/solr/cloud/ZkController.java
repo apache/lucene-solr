@@ -265,7 +265,9 @@ public class ZkController implements Closeable {
     }
 
     public Object call() throws Exception {
-      log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
+      if (log.isInfoEnabled()) {
+        log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
+      }
       register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration, false);
       return descriptor;
     }
@@ -423,7 +425,7 @@ public class ZkController implements Closeable {
                   }
                 } catch (Exception exc) {
                   // not much we can do here other than warn in the log
-                  log.warn("Error when notifying OnReconnect listener " + listener + " after session re-connected.", exc);
+                  log.warn("Error when notifying OnReconnect listener {} after session re-connected.", listener, exc);
                 }
               }
             } catch (InterruptedException e) {
@@ -762,7 +764,7 @@ public class ZkController implements Closeable {
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
     byte[] bytes = zkClient.getData(zkPath, null, null, true);
     if (bytes == null) {
-      log.error("Config file contains no data:" + zkPath);
+      log.error("Config file contains no data:{}", zkPath);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "Config file contains no data:" + zkPath);
     }
@@ -863,8 +865,9 @@ public class ZkController implements Closeable {
     if (zkClient.exists("/configs/_default", true) == false) {
       String configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
-        log.warn("The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset" +
-            " intended to be the default. Current 'solr.default.confdir' value: {}", System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+        log.warn("The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {}"
+            , "intended to be the default. Current 'solr.default.confdir' value: {}"
+            , System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         ZkMaintenanceUtils.upConfig(zkClient, Paths.get(configDirPath), ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
       }
@@ -1015,7 +1018,7 @@ public class ZkController implements Closeable {
           } catch (KeeperException.NodeExistsException e) {
             // someone else already created this node - ignore
           } catch (KeeperException | InterruptedException e1) {
-            log.warn("Unable to register nodeLost path for " + n, e1);
+            log.warn("Unable to register nodeLost path for {}", n, e1);
           }
         }
       }
@@ -1105,7 +1108,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
-    log.info("Register node as live in ZooKeeper:" + nodePath);
+    log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
     // if there are nodeAdded triggers don't create nodeAdded markers
@@ -1126,7 +1129,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
-    log.info("Remove node as live in ZooKeeper:" + nodePath);
+    log.info("Remove node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));
     ops.add(Op.delete(nodeAddedPath, -1));
@@ -1226,7 +1229,7 @@ public class ZkController implements Closeable {
       String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are " + ourUrl + " and leader is " + leaderUrl);
+      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
@@ -1257,13 +1260,15 @@ public class ZkController implements Closeable {
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
-              log.info("Replaying tlog for " + ourUrl + " during startup... NOTE: This can take a while.");
+              log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", ourUrl);
               recoveryFuture.get(); // NOTE: this could potentially block for
               // minutes or more!
               // TODO: public as recovering in the mean time?
               // TODO: in the future we could do peersync in parallel with recoverFromLog
             } else {
-              log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+              if (log.isDebugEnabled()) {
+                log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+              }
             }
           }
         }
@@ -1486,14 +1491,18 @@ public class ZkController implements Closeable {
       }
 
       if (doRecovery) {
-        log.info("Core needs to recover:" + core.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Core needs to recover:{}", core.getName());
+        }
         core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
         return true;
       }
 
       ZkShardTerms zkShardTerms = getShardTerms(collection, shardId);
       if (zkShardTerms.registered(coreZkNodeName) && !zkShardTerms.canBecomeLeader(coreZkNodeName)) {
-        log.info("Leader's term larger than core " + core.getName() + "; starting recovery process");
+        if (log.isInfoEnabled()) {
+          log.info("Leader's term larger than core {}; starting recovery process", core.getName());
+        }
         core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
         return true;
       }
@@ -1528,7 +1537,7 @@ public class ZkController implements Closeable {
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
 
-      log.debug("publishing state={}", state.toString());
+      log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
       if (numShards == null) { // XXX sys prop hack
@@ -1577,7 +1586,9 @@ public class ZkController implements Closeable {
         }
       } catch (SolrCoreInitializationException ex) {
         // The core had failed to initialize (in a previous request, not this one), hence nothing to do here.
-        log.info("The core '{}' had failed to initialize before.", cd.getName());
+        if (log.isInfoEnabled()) {
+          log.info("The core '{}' had failed to initialize before.", cd.getName());
+        }
       }
 
       // pull replicas are excluded because their terms are not considered
@@ -1720,7 +1731,9 @@ public class ZkController implements Closeable {
   }
 
   private void waitForShardId(CoreDescriptor cd) {
-    log.debug("waiting to find shard id in clusterstate for " + cd.getName());
+    if (log.isDebugEnabled()) {
+      log.debug("waiting to find shard id in clusterstate for {}", cd.getName());
+    }
     int retryCount = 320;
     while (retryCount-- > 0) {
       final String shardId = zkStateReader.getClusterState().getShardId(cd.getCollectionName(), getNodeName(), cd.getName());
@@ -1909,11 +1922,13 @@ public class ZkController implements Closeable {
     boolean isLeader = leaderProps.getCoreUrl().equals(ourUrl);
     if (!isLeader && !SKIP_AUTO_RECOVERY) {
       if (!getShardTerms(collection, shard).canBecomeLeader(myCoreNodeName)) {
-        log.debug("Term of replica " + myCoreNodeName +
-            " is already less than leader, so not waiting for leader to see down state.");
+        log.debug("Term of replica {} is already less than leader, so not waiting for leader to see down state."
+            , myCoreNodeName);
       } else {
 
-        log.info("replica={} is making a best effort attempt to wait for leader={} to see it's DOWN state.", myCoreNodeName, leaderProps.getCoreUrl());
+        if (log.isInfoEnabled()) {
+          log.info("replica={} is making a best effort attempt to wait for leader={} to see it's DOWN state.", myCoreNodeName, leaderProps.getCoreUrl());
+        }
 
         try (HttpSolrClient client = new Builder(leaderBaseUrl)
             .withConnectionTimeout(8000) // short timeouts, we may be in a storm and this is best effort and maybe we should be the leader now
@@ -1976,7 +1991,7 @@ public class ZkController implements Closeable {
 
   public static void linkConfSet(SolrZkClient zkClient, String collection, String confSetName) throws KeeperException, InterruptedException {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Load collection config from:" + path);
+    log.debug("Load collection config from:{}", path);
     byte[] data;
     try {
       data = zkClient.getData(path, null, null, true);
@@ -2025,7 +2040,9 @@ public class ZkController implements Closeable {
     //List<String> allCoreNames = cfg.getAllCoreNames();
     List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
 
-    log.info("bootstrapping config for " + cds.size() + " cores into ZooKeeper using solr.xml from " + cc.getSolrHome());
+    if (log.isInfoEnabled()) {
+      log.info("bootstrapping config for {} cores into ZooKeeper using solr.xml from {}", cds.size(), cc.getSolrHome());
+    }
 
     for (CoreDescriptor cd : cds) {
       String coreName = cd.getName();
@@ -2033,7 +2050,7 @@ public class ZkController implements Closeable {
       if (StringUtils.isEmpty(confName))
         confName = coreName;
       Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + coreName);
+      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
       configManager.uploadConfigDir(udir, confName);
     }
   }
@@ -2079,7 +2096,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.putIfAbsent(asyncId, new byte[0]);
     } catch (InterruptedException e) {
-      log.error("Could not claim asyncId=" + asyncId, e);
+      log.error("Could not claim asyncId={}", asyncId, e);
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
@@ -2095,7 +2112,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.remove(asyncId);
     } catch (InterruptedException e) {
-      log.error("Could not release asyncId=" + asyncId, e);
+      log.error("Could not release asyncId={}", asyncId, e);
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
@@ -2267,7 +2284,7 @@ public class ZkController implements Closeable {
     if (listener != null) {
       synchronized (reconnectListeners) {
         reconnectListeners.add(listener);
-        log.debug("Added new OnReconnect listener "+listener);
+        log.debug("Added new OnReconnect listener {}", listener);
       }
     }
   }
@@ -2282,10 +2299,11 @@ public class ZkController implements Closeable {
         wasRemoved = reconnectListeners.remove(listener);
       }
       if (wasRemoved) {
-        log.debug("Removed OnReconnect listener "+listener);
+        log.debug("Removed OnReconnect listener {}", listener);
       } else {
-        log.warn("Was asked to remove OnReconnect listener "+listener+
-            ", but remove operation did not find it in the list of registered listeners.");
+        log.warn("Was asked to remove OnReconnect listener {}{}"
+            , listener
+            , ", but remove operation did not find it in the list of registered listeners.");
       }
     }
   }
@@ -2326,12 +2344,16 @@ public class ZkController implements Closeable {
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
-              log.debug("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(), znodeVersion);
+              if (log.isDebugEnabled()) {
+                log.debug("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(), znodeVersion);
+              }
             } catch (Exception e1) {
               log.warn("could not get stat");
             }
 
-            log.info(StrUtils.formatString(errMsg, resourceLocation, znodeVersion));
+            if (log.isInfoEnabled()) {
+              log.info(StrUtils.formatString(errMsg, resourceLocation, znodeVersion));
+            }
             throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, StrUtils.formatString(errMsg, resourceLocation, znodeVersion) + ", retry.");
           }
         }
@@ -2346,7 +2368,9 @@ public class ZkController implements Closeable {
         log.error(e.getMessage());
 
       }
-      log.info(StrUtils.formatString(errMsg + " zkVersion= " + v, resourceLocation, znodeVersion));
+      if (log.isInfoEnabled()) {
+        log.info(StrUtils.formatString("%s zkVersion= %d %s %d", errMsg, resourceLocation, znodeVersion));
+      }
       throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, StrUtils.formatString(errMsg, resourceLocation, znodeVersion) + ", retry.");
     } catch (ResourceModifiedInZkException e) {
       throw e;
@@ -2386,7 +2410,7 @@ public class ZkController implements Closeable {
     synchronized (confDirectoryListeners) {
       final Set<Runnable> listeners = confDirectoryListeners.get(confDir);
       if (listeners == null) {
-        log.warn(confDir + " has no more registered listeners, but a live one attempted to unregister!");
+        log.warn("{} has no more registered listeners, but a live one attempted to unregister!", confDir);
         return;
       }
       if (listeners.remove(listener)) {
@@ -2629,7 +2653,7 @@ public class ZkController implements Closeable {
       Thread.currentThread().interrupt();
       log.debug("Publish node as down was interrupted.");
     } catch (KeeperException e) {
-      log.warn("Could not publish node as down: " + e.getMessage());
+      log.warn("Could not publish node as down: {}", e.getMessage());
     }
   }
 
@@ -2640,31 +2664,41 @@ public class ZkController implements Closeable {
     if (!core.getSolrConfig().useColdSearcher) {
       RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
       if (registeredSearcher != null) {
-        log.debug("Found a registered searcher: {} for core: {}", registeredSearcher.get(), core);
+        if (log.isDebugEnabled()) {
+          log.debug("Found a registered searcher: {} for core: {}", registeredSearcher.get(), core);
+        }
         registeredSearcher.decref();
       } else  {
         Future[] waitSearcher = new Future[1];
-        log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
+        if (log.isInfoEnabled()) {
+          log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
+        }
         final RTimer timer = new RTimer();
         RefCounted<SolrIndexSearcher> searcher = null;
         try {
           searcher = core.getSearcher(false, true, waitSearcher, true);
           boolean success = true;
           if (waitSearcher[0] != null)  {
-            log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
+            if (log.isDebugEnabled()) {
+              log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
+            }
             try {
               waitSearcher[0].get();
             } catch (ExecutionException e) {
-              log.warn("Wait for a searcher to be registered for core " + core.getName() + ",id: " + core + " failed due to: " + e, e);
+              log.warn("Wait for a searcher to be registered for core {}, id: {} failed due to: {}", core.getName(), core, e, e);
               success = false;
             }
           }
           if (success)  {
             if (searcher == null) {
               // should never happen
-              log.debug("Did not find a searcher even after the future callback for core: {}, id: {}!!!", core.getName(), core);
+              if (log.isDebugEnabled()) {
+                log.debug("Did not find a searcher even after the future callback for core: {}, id: {}!!!", core.getName(), core);
+              }
             } else  {
-              log.info("Found a registered searcher: {}, took: {} ms for core: {}, id: {}", searcher.get(), timer.getTime(), core.getName(), core);
+              if (log.isInfoEnabled()) {
+                log.info("Found a registered searcher: {}, took: {} ms for core: {}, id: {}", searcher.get(), timer.getTime(), core.getName(), core);
+              }
             }
           }
         } finally {
@@ -2675,7 +2709,9 @@ public class ZkController implements Closeable {
       }
       RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
       if (newestSearcher != null) {
-        log.debug("Found newest searcher: {} for core: {}, id: {}", newestSearcher.get(), core.getName(), core);
+        if (log.isDebugEnabled()) {
+          log.debug("Found newest searcher: {} for core: {}, id: {}", newestSearcher.get(), core.getName(), core);
+        }
         newestSearcher.decref();
       }
     }

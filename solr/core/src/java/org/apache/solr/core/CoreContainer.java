@@ -1095,7 +1095,7 @@ public class CoreContainer {
   protected void finalize() throws Throwable {
     try {
       if(!isShutDown){
-        log.error("CoreContainer was not close prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
+        log.error("CoreContainer was not close prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance={}", System.identityHashCode(this));
       }
     } finally {
       super.finalize();

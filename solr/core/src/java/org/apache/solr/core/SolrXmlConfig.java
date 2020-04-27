@@ -394,7 +394,7 @@ public class SolrXmlConfig {
           break;
         case "autoReplicaFailoverBadNodeExpiration": case "autoReplicaFailoverWorkLoopDelay":
           //TODO remove this in Solr 8.0
-          log.info("Configuration parameter " + name + " is ignored");
+          log.info("Configuration parameter {} is ignored", name);
           break;
         case "autoReplicaFailoverWaitAfterExpiration":
           builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
