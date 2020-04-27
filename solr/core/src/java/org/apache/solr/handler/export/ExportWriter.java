@@ -24,8 +24,12 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -318,6 +322,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   protected FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
+    final FieldInfos fieldInfos = searcher.getFieldInfos();
     FieldWriter[] writers = new FieldWriter[fields.length];
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
@@ -331,6 +336,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
+      }
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      if (fieldInfo == null) {
+        writers[i] = EMPTY_FIELD_WRITER;
+        continue;
       }
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
@@ -363,11 +373,19 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           writers[i] = new DoubleFieldWriter(field);
         }
-      } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
-        if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
-        } else {
-          writers[i] = new StringFieldWriter(field, fieldType);
+      } else if (fieldType.isUtf8Field()) {
+        switch (fieldInfo.getDocValuesType()) {
+          case SORTED_SET:
+            writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
+            break;
+          case SORTED:
+            writers[i] = new StringFieldWriter(field, fieldType);
+            break;
+          case BINARY:
+            writers[i] = new BinaryStringFieldWriter(field, schemaField, fieldType);
+            break;
+          default:
+            throw new IOException("Utf8 export fields support DocValuesTypes "+EnumSet.of(DocValuesType.SORTED,DocValuesType.SORTED_SET,DocValuesType.BINARY)+"; found: "+fieldInfo.getDocValuesType());
         }
       } else if (fieldType instanceof DateValueFieldType) {
         if (multiValued) {
@@ -387,6 +405,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     return writers;
   }
+
+  private static final FieldWriter EMPTY_FIELD_WRITER = new FieldWriter() {
+    @Override
+    public boolean write(SortDoc sortDoc, LeafReader reader, EntryWriter out, int fieldIndex) throws IOException {
+      return false;
+    }
+  };
 
   private SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];

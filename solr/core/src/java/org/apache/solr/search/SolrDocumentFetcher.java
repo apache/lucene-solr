@@ -554,7 +554,11 @@ public class SolrDocumentFetcher {
       case BINARY:
         BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
         if (bdv != null && bdv.advanceExact(localId)) {
-          return BytesRef.deepCopyOf(bdv.binaryValue());
+          if (schemaField.getType().isUtf8Field()) {
+            return schemaField.getType().toObject(schemaField, bdv.binaryValue());
+          } else {
+            return BytesRef.deepCopyOf(bdv.binaryValue());
+          }
         }
         return null;
       case SORTED:
