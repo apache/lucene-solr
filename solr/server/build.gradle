@@ -100,7 +100,7 @@ task assemblePackaging(type: Sync) {
     include "resources/**"
     include "scripts/**"
     include "solr/**"
-    include "README.txt"
+    include "README.md"
   })
 
   from(configurations.compileClasspath, {

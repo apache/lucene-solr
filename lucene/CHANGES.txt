@@ -51,7 +51,7 @@ API Changes
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom analysis factories
-  must now also implement the default constructor (see MIGRATE.txt).
+  must now also implement the default constructor (see MIGRATE.md).
   (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
@@ -210,6 +210,9 @@ Bug Fixes
   finishing threads fail to pick up pending merges causing potential thread starvation on
   forceMerge calls. (Simon Willnauer)
 
+* LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
+  implementation. (Pierre-Luc Perron, Alan Woodward)
+
 Other
 ---------------------
 
@@ -234,6 +237,10 @@ Other
 
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
+
+Build
+
+* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
 
 ======================= Lucene 8.5.1 =======================
 

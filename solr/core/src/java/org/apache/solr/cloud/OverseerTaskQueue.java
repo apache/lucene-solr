@@ -88,7 +88,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
-              log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+              if (log.isDebugEnabled()) {
+                log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+              }
               if(message.get(requestIdKey).equals(requestId)) return true;
             }
           }
@@ -116,8 +118,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         zookeeper.setData(responsePath, event.getBytes(), true);
       } catch (KeeperException.NoNodeException ignored) {
         // we must handle the race case where the node no longer exists
-        log.info("Response ZK path: " + responsePath + " doesn't exist."
-            + "  Requestor may have disconnected from ZooKeeper");
+        log.info("Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper", responsePath);
       }
       try {
         zookeeper.delete(path, -1, true);
@@ -156,7 +157,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         return;
       }
       // If latchEventType is not null, only fire if the type matches
-      log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      if (log.isDebugEnabled()) {
+        log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      }
       if (latchEventType == null || event.getType() == latchEventType) {
         lock.lock();
         try {
@@ -283,7 +286,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         sb.append(queueEvent.getId()).append(", ");
       }
       sb.append("]");
-      log.debug("Returning topN elements: {}", sb.toString());
+      log.debug("Returning topN elements: {}", sb);
     }
   }
 

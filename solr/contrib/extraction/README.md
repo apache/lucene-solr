@@ -1,4 +1,5 @@
 Apache Solr Content Extraction Library (Solr Cell)
+==================================================
 
 Introduction
 ------------

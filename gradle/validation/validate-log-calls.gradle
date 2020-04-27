@@ -58,7 +58,7 @@ class ValidateLogCallsTask extends DefaultTask {
   Set<String> dirsToCheck = ["solr/core/src/java/org/apache/solr/analysis"
                              , "solr/core/src/java/org/apache/solr/api"
                              , "solr/core/src/java/org/apache/solr/client"
-//  , "solr/core/src/java/org/apache/solr/cloud" // 120
+                             , "solr/core/src/java/org/apache/solr/cloud" // 120
                              , "solr/core/src/java/org/apache/solr/cloud/api"
                              , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
                              , "solr/core/src/java/org/apache/solr/cloud/cdcr"
@@ -115,11 +115,19 @@ class ValidateLogCallsTask extends DefaultTask {
       , "Suggester.java"                : [147, 181]
       , "UpdateLog.java"                : [1976]
       , "V2HttpCall.java"               : [158]
+      // checking against 8x in master, take these out usually.
+//      , "CoreContainer.java" : [1096]
+//      , "ConcurrentLFUCache.java" : [700, 911]
+//      , "ConcurrentLRUCache.java" : [911]
+//      , "DirectUpdateHandler2.java" : [844, 865]
+//      , "PeerSync.java" : [697]
+//      , "SolrIndexWriter.java" : [356]
+//      , "UpdateLog.java" : [1973]
   ]
   def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
 
   def errsFound = 0;
-  def violations = new TreeSet();
+  def violations = new ArrayList();
 
   def reportViolation(String msg) {
     violations.add(System.lineSeparator + msg);
@@ -143,7 +151,7 @@ class ValidateLogCallsTask extends DefaultTask {
 
     // If the line has been explicitly checked, skip it.
     if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
-      return
+      return violation
     }
     // Strip all of the comments, things in quotes and the like.
     def level = ""
@@ -199,14 +207,18 @@ class ValidateLogCallsTask extends DefaultTask {
       violation = true
     }
     if (violation) {
-      reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s'"
-          , file.name
-          , lineNumber
-          , line
-          , file.getParentFile().getAbsolutePath()
-          , stripped
-      ))
+      reportViolation(String.format("Suspicious logging call, Parameterize or surround with 'if (log.is*Enabled) {..%s    %s:%d"
+      , System.lineSeparator, file.getAbsolutePath(), lineNumber))
+//      reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s'"
+//          , file.name
+//          , lineNumber
+//          , line
+//          , file.getParentFile().getAbsolutePath()
+//          , stripped
+//      ))
+//      reportViolation(String.format("%s:%d", file.getAbsolutePath(), lineNumber))
     }
+    return violation
   }
 
 
@@ -235,6 +247,7 @@ class ValidateLogCallsTask extends DefaultTask {
     int state = 0 // 0 == not collecting a log line, 1 == collecting a log line, 2 == just collected the last.
     int lineNumber = 0
     StringBuilder sb = new StringBuilder();
+    boolean foundViolation = false
 
     // We have to assemble line-by-line to get the full log statement. We require that all loggers (except requestLog
     // and slowLog) be exactly "log". That will be checked as well.
@@ -275,26 +288,44 @@ class ValidateLogCallsTask extends DefaultTask {
         case 1:
           break;
         case 2:
-          checkLogLine(file, sb.toString(), lineNumber, prevLine)
+          foundViolation = (checkLogLine(file, sb.toString(), lineNumber, prevLine)) ? true : foundViolation
           state = 0
           break;
         default:
           break;
       }
     }
+    return foundViolation
   }
 
   @TaskAction
   def checkLogLines() {
     dirsToCheck.add(srcDir)
+
+    //nocommit. This is here to check 8x on another branch since I can't run Gradle
+    // over 8x. Used periodically as a sanity check.
+//    new File("/Users/Erick/apache/solrJiras/master").traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.java/) { File it ->
+//      if (dirsToCheck.any { dir ->
+//        it.getCanonicalPath().contains(dir)
+//      }) {
+//        if (checkFile(it)) {
+//          println(it.getAbsolutePath())
+//          // nocommit. This just makes it much easier to get to the files during this mass migration!
+//        }
+//      }
+
     project.sourceSets.each { srcSet ->
       srcSet.java.each { f ->
         if (dirsToCheck.any {
           f.getCanonicalPath().contains(it)
         }) {
-          checkFile(f)
+          if (checkFile(f)) {
+            // nocommit. This just makes it much easier to get to the files during this mass migration!
+            println(f.getAbsolutePath())
+          }
         }
-        //nocommit move this to project based whenever
+//        nocommit move
+//        this to project based whenever
 //        if (srcDir != null && f.getCanonicalPath().contains(srcDir)) {
 //          checkFile(f)
 //        }
