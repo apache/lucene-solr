@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -215,11 +216,19 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
     super.writeSolrDocument(name, doc, returnFields, idx);
   }
 
+  @Deprecated
   @Override
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
     ifNeededWriteTypeAndValueKey("doclist");
     super.writeStartDocumentList(name, start, size, numFound, maxScore);
   }
+  
+  @Override
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
+    ifNeededWriteTypeAndValueKey("doclist");
+    super.writeStartDocumentList(name, start, size, numFound, maxScore, hitCountRelation);
+  }
+
 
   @Override
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -132,11 +133,16 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   //       that the size could not be reliably determined.
   //
 
+  /**
+   * This method will be removed in Solr 9
+   * @deprecated Use {{@link #writeStartDocumentList(String, long, int, long, Float, HitCountRelation)}.
+   */
   @Override
+  @Deprecated
   public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+    writeMapOpener(headerSize(maxScore, null));
     incLevel();
     writeKey("numFound",false);
     writeLong(null,numFound);
@@ -155,6 +161,42 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     writeArrayOpener(size);
 
     incLevel();
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name,
+      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
+    writeMapOpener(headerSize(maxScore, hitCountRelation));
+    incLevel();
+    writeKey("numFound",false);
+    writeLong(null,numFound);
+    writeMapSeparator();
+    writeKey("start",false);
+    writeLong(null,start);
+
+    if (maxScore != null) {
+      writeMapSeparator();
+      writeKey("maxScore",false);
+      writeFloat(null,maxScore);
+    }
+    
+    if (hitCountRelation != null) {
+      writeMapSeparator();
+      writeKey("hitCountRelation",false);
+      writeStr(null, hitCountRelation.name(), false);
+    }
+    writeMapSeparator();
+    writeKey("docs",false);
+    writeArrayOpener(size);
+
+    incLevel();
+  } 
+
+  private int headerSize(Float maxScore, HitCountRelation hitCountRelation) {
+    int headerSize = 3;
+    if (maxScore != null) headerSize++;
+    if (hitCountRelation != null) headerSize++;
+    return headerSize;
   }
 
   @Override
