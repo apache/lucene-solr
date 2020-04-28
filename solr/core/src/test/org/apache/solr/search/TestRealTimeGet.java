@@ -71,7 +71,7 @@ public class TestRealTimeGet extends TestRTGBase {
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
-        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "  'response':{'numFound':1,'start':0,'hitCountRelation':'EQUAL_TO','docs':[" +
         "      {" +
         "        'id':'1'}]" +
         "  }}}"

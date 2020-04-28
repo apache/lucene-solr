@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -464,6 +465,11 @@ public class SchemaXmlWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
+    // no-op
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
     // no-op
   }
 

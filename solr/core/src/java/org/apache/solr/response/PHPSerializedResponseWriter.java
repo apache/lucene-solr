@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -89,13 +90,19 @@ class PHPSerializedWriter extends JSONWriter {
     writeNamedListAsMapMangled(name,val);
   }
   
-  
-
+  @Deprecated
   @Override
   public void writeStartDocumentList(String name, 
       long start, int size, long numFound, Float maxScore) throws IOException
   {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
+  {
+    writeMapOpener(headerSize(maxScore, hitCountRelation));
     writeKey("numFound",false);
     writeLong(null,numFound);
     writeKey("start",false);
@@ -104,6 +111,10 @@ class PHPSerializedWriter extends JSONWriter {
     if (maxScore!=null) {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
+    }
+    if (hitCountRelation != null) {
+      writeKey("hitCountRelation",false);
+      writeStr(null, hitCountRelation.name(), false);
     }
     writeKey("docs",false);
     writeArrayOpener(size);

@@ -29,6 +29,7 @@ import java.util.Set;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -124,6 +125,13 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   @Override
   public void writeStartDocumentList(String name,
                                      long start, int size, long numFound, Float maxScore) throws IOException
+  {
+    // nothing
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name,
+                                     long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
   {
     // nothing
   }

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -292,11 +293,18 @@ class GeoJSONWriter extends JSONWriter {
     }
   }
 
+  @Deprecated
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore) throws IOException
+      long start, int size, long numFound, Float maxScore) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
   {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+    writeMapOpener(headerSize(maxScore, hitCountRelation));
     incLevel();
     writeKey("type",false);
     writeStr(null, "FeatureCollection", false);
@@ -312,6 +320,13 @@ class GeoJSONWriter extends JSONWriter {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
     }
+    
+    if (hitCountRelation != null) {
+      writeMapSeparator();
+      writeKey("hitCountRelation",false);
+      writeStr(null, hitCountRelation.name(), false);
+    }
+    
     writeMapSeparator();
     
     // if can we get bbox of all results, we should write it here
