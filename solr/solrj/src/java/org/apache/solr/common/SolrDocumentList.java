@@ -42,10 +42,6 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
     this.exactHitRelation = exactHitRelation;
   }
 
-  public boolean isExactHitCount() {
-    return exactHitRelation == HitCountRelation.EQUAL_TO;
-  }
-
   public Float getMaxScore() {
     return maxScore;
   }

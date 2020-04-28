@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -1101,13 +1102,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   
   private void assertIsExactHitCount(Object... requestParams) throws Exception {
     QueryResponse response = query(requestParams);
-    assertTrue(response.toString(), response.getResults().isExactHitCount());
+    assertEquals(HitCountRelation.EQUAL_TO, response.getResults().getExactHitRelation());
   }
   
   private void assertApproximatedHitCount(Object...requestParams) throws Exception {
     handle.put("numFound", SKIPVAL);
     QueryResponse response = query(requestParams);
-    assertFalse(response.toString(), response.getResults().isExactHitCount());
+    assertEquals(HitCountRelation.GREATER_THAN_OR_EQUAL_TO, response.getResults().getExactHitRelation());
     handle.remove("numFound", SKIPVAL);
   }
 
