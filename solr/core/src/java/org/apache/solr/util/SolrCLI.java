@@ -1309,7 +1309,7 @@ public class SolrCLI {
           }
         }
       }
-      throw new TimeoutException("Did not see Solr at "+solrUrl+" come online within "+maxWaitSecs);
+      throw new TimeoutException("Did not see Solr at "+solrUrl+" come online within "+maxWaitSecs+" seconds!");
     }
 
     public Map<String,Object> getStatus(String solrUrl) throws Exception {
