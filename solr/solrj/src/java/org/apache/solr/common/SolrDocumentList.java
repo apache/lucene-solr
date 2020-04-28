@@ -69,7 +69,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   @Override
   public String toString() {
     return "{numFound="+numFound
-            +",exactHitRelation="+hitCountRelation
+            +",hitCountRelation="+hitCountRelation
             +",start="+start
             + (maxScore!=null ? ",maxScore="+maxScore : "")
             +",docs="+super.toString()

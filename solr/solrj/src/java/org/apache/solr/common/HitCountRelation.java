@@ -16,9 +16,19 @@
  */
 package org.apache.solr.common;
 
+/**
+ * Used to express the relation between the value returned as "numFound" and the actual
+ * number of hits for a query
+ */
 public enum HitCountRelation {
   // Ordinals are used for serialization, don't move without compatibility considerations
+  /**
+   * The number of hits for the query are equal to the number reported in "numFound"
+   */
   EQUAL_TO,
+  /**
+   * The number of hits for the query are greater than or equal to the number reported in "numFound"
+   */
   GREATER_THAN_OR_EQUAL_TO;
   
   @Override
