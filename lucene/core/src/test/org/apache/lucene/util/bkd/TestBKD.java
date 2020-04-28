@@ -1310,7 +1310,7 @@ public class TestBKD extends LuceneTestCase {
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
     int numLeaves = numValues / maxPointsInLeafNode;
-    if (numLeaves % maxPointsInLeafNode != 0) {
+    if (numValues % maxPointsInLeafNode != 0) {
       numLeaves++;
     }
     assertEquals(numLeaves * maxPointsInLeafNode,

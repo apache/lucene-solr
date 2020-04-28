@@ -1440,24 +1440,26 @@ public class BKDWriter implements Closeable {
         splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       }
 
-      int countAtLevel = 1;
-      final int leftHalf;
-      while (true) {
-        final int countLeft = numLeaves - countAtLevel;
-        if (countLeft <= countAtLevel) {
-          // This is the last level, possibly partially filled:
-          final int lastLeftCount = Math.min(countAtLevel/2, countLeft);
-          assert lastLeftCount >= 0;
-          leftHalf = (countAtLevel + 1)/2 + lastLeftCount;
-
-          break;
-        }
-        countAtLevel *= 2;
-      }
-      // we should aways place unbalance nodes on the left
-      assert leftHalf >= numLeaves - leftHalf;
       // How many points will be in the left tree:
-      final int mid = from + (leftHalf) * maxPointsInLeafNode;
+
+      // return the max level for this number of leaves. If level is full it returns the next level
+      int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
+      // how many leaves are in the previous level
+      int leavesPreviousLevel = 1 << maxLevel - 1;
+      // nodes that do not fit in previous level
+      int unbalancedLeaves = numLeaves - leavesPreviousLevel;
+      int numLeftLeafNodes = leavesPreviousLevel / 2;
+      // distribute unbalanced nodes
+      if (numLeftLeafNodes > unbalancedLeaves) {
+        numLeftLeafNodes += unbalancedLeaves;
+      } else {
+        numLeftLeafNodes *= 2;
+      }
+      // we should always place unbalance nodes on the left
+      assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
+
+      // How many points will be in the left tree:
+      final int mid = from + (numLeftLeafNodes) * maxPointsInLeafNode;
 
       int commonPrefixLen = Arrays.mismatch(minPackedValue, splitDim * bytesPerDim,
           splitDim * bytesPerDim + bytesPerDim, maxPackedValue, splitDim * bytesPerDim,
@@ -1484,10 +1486,10 @@ public class BKDWriter implements Closeable {
 
       // recurse
       parentSplits[splitDim]++;
-      build(nodeID * 2, leavesOffset, leftHalf, reader, from, mid, out,
+      build(nodeID * 2, leavesOffset, numLeftLeafNodes, reader, from, mid, out,
           minPackedValue, maxSplitPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs, spareDocIds);
-      build(nodeID * 2 + 1, leavesOffset + leftHalf, numLeaves - leftHalf, reader, mid, to, out,
+      build(nodeID * 2 + 1, leavesOffset + numLeftLeafNodes, numLeaves - numLeftLeafNodes, reader, mid, to, out,
           minSplitPackedValue, maxPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs, spareDocIds);
       parentSplits[splitDim]--;
@@ -1639,22 +1641,23 @@ public class BKDWriter implements Closeable {
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
       // How many points will be in the left tree:
-      int countAtLevel = 1;
-      final int leftHalf;
-      while (true) {
-        int countLeft = numLeaves - countAtLevel;
-        if (countLeft <= countAtLevel) {
-          // This is the last level, possibly partially filled:
-          final int lastLeftCount = Math.min(countAtLevel/2, countLeft);
-          assert lastLeftCount >= 0;
-          leftHalf = (countAtLevel + 1)/2 + lastLeftCount;
-          break;
-        }
-        countAtLevel *= 2;
+
+      // return the max level for this number of leaves. If level is full it returns the next level
+      int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
+      // how many leaves are in the previous level
+      int leavesPreviousLevel = 1 << maxLevel - 1;
+      // nodes that do not fit in previous level
+      int unbalancedLeaves = numLeaves - leavesPreviousLevel;
+      int numLeftLeafNodes = leavesPreviousLevel / 2;
+      // distribute unbalanced nodes
+      if (numLeftLeafNodes > unbalancedLeaves) {
+        numLeftLeafNodes += unbalancedLeaves;
+      } else {
+        numLeftLeafNodes *= 2;
       }
-      // unbalance nodes should be on the left
-      assert leftHalf >=  numLeaves - leftHalf;
-      final long leftCount = leftHalf * maxPointsInLeafNode;
+      assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
+
+      final long leftCount = numLeftLeafNodes * maxPointsInLeafNode;
 
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
 
@@ -1682,12 +1685,12 @@ public class BKDWriter implements Closeable {
 
       parentSplits[splitDim]++;
       // Recurse on left tree:
-      build(2 * nodeID, leavesOffset, leftHalf, slices[0],
+      build(2 * nodeID, leavesOffset, numLeftLeafNodes, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
           parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       // Recurse on right tree:
-      build(2 * nodeID + 1, leavesOffset + leftHalf, numLeaves - leftHalf, slices[1],
+      build(2 * nodeID + 1, leavesOffset + numLeftLeafNodes, numLeaves - numLeftLeafNodes, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
           , parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
