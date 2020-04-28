@@ -882,7 +882,7 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
-            nl.add("hitCountRelation", docs.getExactHitRelation());
+            nl.add("hitCountRelation", docs.getHitCountRelation());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -925,7 +925,7 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountRelation == HitCountRelation.EQUAL_TO && docs.getExactHitRelation() == HitCountRelation.GREATER_THAN_OR_EQUAL_TO) {
+        if (hitCountRelation == HitCountRelation.EQUAL_TO && docs.getHitCountRelation() == HitCountRelation.GREATER_THAN_OR_EQUAL_TO) {
           hitCountRelation = HitCountRelation.GREATER_THAN_OR_EQUAL_TO;
         }
 

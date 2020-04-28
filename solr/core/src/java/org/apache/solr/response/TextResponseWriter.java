@@ -174,7 +174,7 @@ public abstract class TextResponseWriter implements TextWriter {
   // Assume each SolrDocument is already transformed
   public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields) throws IOException
   {
-    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getExactHitRelation());
+    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getHitCountRelation());
     for( int i=0; i<docs.size(); i++ ) {
       writeSolrDocument( null, docs.get(i), fields, i );
     }

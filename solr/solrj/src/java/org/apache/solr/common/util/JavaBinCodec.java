@@ -611,7 +611,7 @@ public class JavaBinCodec implements PushWriter {
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
-    l.add(docs.getExactHitRelation().ordinal());
+    l.add(docs.getHitCountRelation().ordinal());
     writeArray(l);
     writeArray(docs);
   }
