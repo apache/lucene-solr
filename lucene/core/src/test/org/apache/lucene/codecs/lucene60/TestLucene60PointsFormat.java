@@ -239,12 +239,6 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     final LeafReader lr = getOnlyLeafReader(r);
     PointValues points = lr.getPointValues("f");
 
-    // With >1 dims, the tree is balanced
-    long actualMaxPointsInLeafNode = points.size();
-    while (actualMaxPointsInLeafNode > maxPointsInLeafNode) {
-      actualMaxPointsInLeafNode = (actualMaxPointsInLeafNode + 1) / 2;
-    }
-
     IntersectVisitor allPointsVisitor = new IntersectVisitor() {
       @Override
       public void visit(int docID, byte[] packedValue) throws IOException {}
@@ -259,9 +253,10 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     };
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Math.max(Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1, 1);
+    // If all points match, then the point count is numLeaves * maxPointsInLeafNode
+    final int numLeaves = (int) Math.ceil((double) points.size() / maxPointsInLeafNode);
 
-    assertEquals(numLeaves * actualMaxPointsInLeafNode, points.estimatePointCount(allPointsVisitor));
+    assertEquals(numLeaves * maxPointsInLeafNode, points.estimatePointCount(allPointsVisitor));
     assertEquals(numDocs, points.estimateDocCount(allPointsVisitor));
 
     IntersectVisitor noPointsVisitor = new IntersectVisitor() {
@@ -302,7 +297,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
 
     final long pointCount = points.estimatePointCount(onePointMatchVisitor);
     // The number of matches needs to be multiple of count per leaf
-    final long countPerLeaf = (actualMaxPointsInLeafNode + 1) / 2;
+    final long countPerLeaf = (maxPointsInLeafNode + 1) / 2;
     assertTrue(""+pointCount, pointCount % countPerLeaf == 0);
     // in extreme cases, a point can be be shared by 4 leaves
     assertTrue(""+pointCount, pointCount / countPerLeaf <= 4 && pointCount / countPerLeaf >= 1);
