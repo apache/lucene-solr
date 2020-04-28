@@ -16,20 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -49,6 +35,20 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
@@ -939,6 +939,31 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       } // end query iter
     } // end index iter
 
+  }
+  
+  @Test
+  public void testGroupWithMinExactHitCount() throws Exception {
+    final int NUM_DOCS = 20;
+    for (int i = 0; i < NUM_DOCS ; i++) {
+      assertU(adoc("id", String.valueOf(i), FOO_STRING_FIELD, "Book1"));
+      assertU(commit());
+    }
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", FOO_STRING_FIELD + ":Book1");
+    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+        ,"/response/result[@hitCountRelation='GREATER_THAN_OR_EQUAL_TO']"
+    );
+    params.set("group", true);
+    params.set("group.field", FOO_STRING_FIELD);
+    assertQ(req(params)
+        ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@hitCountRelation='EQUAL_TO']"
+    );
+    
+    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+        ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@hitCountRelation='EQUAL_TO']"
+    );
+    
+    
   }
 
   public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit, boolean includeNGroups) {

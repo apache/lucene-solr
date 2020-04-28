@@ -99,7 +99,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       cmd.setMinExactHits(1);
       cmd.setLen(1);
       // We need to disable cache, otherwise the search will be done for 20 docs (cache window size) which brings up the minExactHits
-      cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       cmd.setQuery(new TermQuery(new Term("field2_s", "1")));
       QueryResult qr = new QueryResult();
       searcher.search(qr, cmd);
@@ -187,7 +187,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = new QueryCommand();
       cmd.setMinExactHits(2);
-      cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.GET_SCORES);
+      cmd.setFlags(SolrIndexSearcher.GET_SCORES);
       cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
       searcher.search(new QueryResult(), cmd);
       QueryResult qr = new QueryResult();
