@@ -88,7 +88,7 @@ public class BKDWriter implements Closeable {
   private final int bytesPerDoc;
 
   /** Default maximum number of point in each leaf block */
-  public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
+  public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 512;
 
   /** Default maximum heap to use, before spilling to (slower) disk */
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
