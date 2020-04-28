@@ -1442,12 +1442,8 @@ public class BKDWriter implements Closeable {
       // nodes that do not fit in previous level
       int unbalancedLeaves = numLeaves - leavesPreviousLevel;
       // distribute unbalanced nodes
-      if (numLeftLeafNodes > unbalancedLeaves) {
-        numLeftLeafNodes += unbalancedLeaves;
-      } else {
-        numLeftLeafNodes *= 2;
-      }
-      // we should always place unbalance nodes on the left
+      numLeftLeafNodes += Math.min(unbalancedLeaves, numLeftLeafNodes);
+      // we should always place unbalanced nodes on the left
       assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
 
       // How many points will be in the left tree:
@@ -1642,11 +1638,8 @@ public class BKDWriter implements Closeable {
       // nodes that do not fit in previous level
       int unbalancedLeaves = numLeaves - leavesPreviousLevel;
       // distribute unbalanced nodes
-      if (numLeftLeafNodes > unbalancedLeaves) {
-        numLeftLeafNodes += unbalancedLeaves;
-      } else {
-        numLeftLeafNodes *= 2;
-      }
+      numLeftLeafNodes += Math.min(unbalancedLeaves, numLeftLeafNodes);
+      // we should always place unbalanced nodes on the left
       assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
 
       final long leftCount = numLeftLeafNodes * maxPointsInLeafNode;
