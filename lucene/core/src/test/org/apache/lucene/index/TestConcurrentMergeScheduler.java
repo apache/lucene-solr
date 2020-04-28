@@ -115,7 +115,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           failure.clearDoFail();
           assertTrue(writer.isClosed());
           // Abort should have closed the deleter:
-          assertTrue(writer.deleter.isClosed());
+          assertTrue(writer.isDeleterClosed());
           break outer;
         }
       }

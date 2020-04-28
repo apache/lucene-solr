@@ -363,9 +363,9 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
     w.commit(); // want to trigger merge no matter what.
 
-    assertEquals("There should be exactly one very large and one small segment", 2, w.listOfSegmentCommitInfos().size());
-    SegmentCommitInfo info0 = w.listOfSegmentCommitInfos().get(0);
-    SegmentCommitInfo info1 = w.listOfSegmentCommitInfos().get(1);
+    assertEquals("There should be exactly one very large and one small segment", 2, w.cloneSegmentInfos().size());
+    SegmentCommitInfo info0 = w.cloneSegmentInfos().info(0);
+    SegmentCommitInfo info1 = w.cloneSegmentInfos().info(1);
     int largeSegDocCount = Math.max(info0.info.maxDoc(), info1.info.maxDoc());
     int smallSegDocCount = Math.min(info0.info.maxDoc(), info1.info.maxDoc());
     assertEquals("The large segment should have a bunch of docs", largeSegDocCount, remainingDocs);
