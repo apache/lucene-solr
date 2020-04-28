@@ -38,6 +38,8 @@ Improvements
 
 * SOLR-12845: Add a default autoscaling cluster policy. (shalin, varunthacker, ab)
 
+* SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
