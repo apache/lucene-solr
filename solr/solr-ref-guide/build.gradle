@@ -168,7 +168,6 @@ ext {
     asciiDocAttrs = [
             'common': [
                     'attribute-missing' : 'warn',
-                    'section-toc'       : '',
                     'icons'             : 'font',
                     'icon-set'          : 'fa',
                     'figure-caption!'   : '',
