@@ -182,4 +182,19 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       return null;
     });
   }
+  
+  public void testMinExactHitsWithMaxScoreRequested() throws IOException {
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(2);
+      cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.GET_SCORES);
+      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
+      searcher.search(new QueryResult(), cmd);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesGraterThan(NUM_DOCS, qr);
+      assertNotEquals(Float.NaN, qr.getDocList().maxScore());
+      return null;
+    });
+  }
 }

@@ -1574,13 +1574,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
       hitsRelation = Relation.EQUAL_TO;
     } else {
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
-      // todo: think about this further but should be okay
-      //  don't calculate maxScore if user is using minExactHits
-      //  but NaN shouldn't be return as maxScore
-      if ((cmd.getFlags() & GET_SCORES) != 0 && cmd.getMinExactHits() == Integer.MAX_VALUE) {
+      if ((cmd.getFlags() & GET_SCORES) != 0) {
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
