@@ -70,7 +70,7 @@ public class XMLResponseParser extends ResponseParser
     catch( IllegalArgumentException ex ) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
+      log.debug( "Unable to set the 'reuse-instance' property for the input factory: {}", factory );
     }
     factory.setXMLReporter(xmllog);
   }

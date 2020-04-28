@@ -151,7 +151,7 @@ public class SocketProxy {
     synchronized (this.connections) {
       connections = new ArrayList<Bridge>(this.connections);
     }
-    log.warn("Closing " + connections.size()+" connections to: "+getUrl()+", target: "+target);
+    log.warn("Closing {} connections to: {}, target: {}", connections.size(), getUrl(), target);
     for (Bridge con : connections) {
       closeConnection(con);
     }
@@ -167,7 +167,9 @@ public class SocketProxy {
     synchronized (this.connections) {
       connections = new ArrayList<Bridge>(this.connections);
     }
-    log.info("halfClose, numConnections=" + connections.size());
+    if (log.isInfoEnabled()) {
+      log.info("halfClose, numConnections= {}", connections.size());
+    }
     for (Bridge con : connections) {
       halfCloseConnection(con);
     }
@@ -182,7 +184,9 @@ public class SocketProxy {
    * called after a close to restart the acceptor on the same port
    */
   public void reopen() {
-    log.info("Re-opening connectivity to "+getUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Re-opening connectivity to {}", getUrl());
+    }
     try {
       if (proxyUrl == null) {
         throw new IllegalStateException("Can not call open before open(URI uri).");
@@ -195,7 +199,9 @@ public class SocketProxy {
       serverSocket.bind(new InetSocketAddress(proxyUrl.getPort()));
       doOpen();
     } catch (Exception e) {
-      log.debug("exception on reopen url:" + getUrl(), e);
+      if (log.isDebugEnabled()) {
+        log.debug("exception on reopen url:{} ", getUrl(), e);
+      }
     }
   }
   
@@ -205,7 +211,9 @@ public class SocketProxy {
    */
   public void pause() {
     synchronized (connections) {
-      log.info("pause, numConnections=" + connections.size());
+      if (log.isInfoEnabled()) {
+        log.info("pause, numConnections={}", connections.size());
+      }
       acceptor.pause();
       for (Bridge con : connections) {
         con.pause();
@@ -218,7 +226,9 @@ public class SocketProxy {
    */
   public void goOn() {
     synchronized (connections) {
-      log.info("goOn, numConnections=" + connections.size());
+      if (log.isInfoEnabled()) {
+        log.info("goOn, numConnections={}", connections.size());
+      }
       for (Bridge con : connections) {
         con.goOn();
       }
@@ -230,7 +240,7 @@ public class SocketProxy {
     try {
       c.close();
     } catch (Exception e) {
-      log.debug("exception on close of: " + c, e);
+      log.debug("exception on close of: {}", c, e);
     }
   }
   
@@ -238,7 +248,7 @@ public class SocketProxy {
     try {
       c.halfClose();
     } catch (Exception e) {
-      log.debug("exception on half close of: " + c, e);
+      log.debug("exception on half close of: {}", c, e);
     }
   }
   
@@ -282,8 +292,9 @@ public class SocketProxy {
       sendSocket.connect(new InetSocketAddress(target.getHost(), target
           .getPort()));
       linkWithThreads(receiveSocket, sendSocket);
-      log.info("proxy connection " + sendSocket + ", receiveBufferSize="
-          + sendSocket.getReceiveBufferSize());
+      if (log.isInfoEnabled()) {
+        log.info("proxy connection {}, receiveBufferSize={}", sendSocket, sendSocket.getReceiveBufferSize());
+      }
     }
     
     public void goOn() {
@@ -344,10 +355,10 @@ public class SocketProxy {
           src.setSoTimeout(PUMP_SOCKET_TIMEOUT_MS);
         } catch (SocketException e) {
           if (e.getMessage().equals("Socket is closed")) {
-            log.warn("Failed to set socket timeout on "+src+" due to: "+e);
+            log.warn("Failed to set socket timeout on {} due to: ", src, e);
             return;
           }
-          log.error("Failed to set socket timeout on "+src+" due to: "+e);
+          log.error("Failed to set socket timeout on {} due to ",src, e);
           throw new RuntimeException(e);
         }
 
@@ -361,11 +372,11 @@ public class SocketProxy {
             try {
               len = in.read(buf);
             } catch (SocketTimeoutException ste) {
-              log.warn(ste+" when reading from "+src);
+              log.warn("Error when reading from {}", src, ste);
             }
 
             if (len == -1) {
-              log.debug("read eof from:" + src);
+              log.debug("read eof from: {}", src);
               break;
             }
             pause.get().await();
@@ -373,7 +384,9 @@ public class SocketProxy {
               out.write(buf, 0, len);
           }
         } catch (Exception e) {
-          log.debug("read/write failed, reason: " + e.getLocalizedMessage());
+          if (log.isDebugEnabled()) {
+            log.debug("read/write failed, reason: {}", e.getLocalizedMessage());
+          }
           try {
             if (!receiveSocket.isClosed()) {
               // for halfClose, on read/write failure if we close the
@@ -386,14 +399,14 @@ public class SocketProxy {
             try {
               in.close();
             } catch (Exception exc) {
-              log.debug(exc+" when closing InputStream on socket: "+src);
+              log.debug("Error when closing InputStream on socket: {}", src, exc);
             }
           }
           if (out != null) {
             try {
               out.close();
             } catch (Exception exc) {
-              log.debug(exc+" when closing OutputStream on socket: "+destination);
+              log.debug("{} when closing OutputStream on socket: {}", exc, destination);
             }
           }
         }
@@ -436,15 +449,18 @@ public class SocketProxy {
             if (receiveBufferSize > 0) {
               source.setReceiveBufferSize(receiveBufferSize);
             }
-            log.info("accepted " + source + ", receiveBufferSize:"
-                + source.getReceiveBufferSize());
+            if (log.isInfoEnabled()) {
+              log.info("accepted {}, receiveBufferSize: {}", source, source.getReceiveBufferSize());
+            }
             synchronized (connections) {
               connections.add(new Bridge(source, target));
             }
           } catch (SocketTimeoutException expected) {}
         }
       } catch (Exception e) {
-        log.debug("acceptor: finished for reason: " + e.getLocalizedMessage());
+        if (log.isDebugEnabled()) {
+          log.debug("acceptor: finished for reason: {}", e.getLocalizedMessage());
+        }
       }
     }
     

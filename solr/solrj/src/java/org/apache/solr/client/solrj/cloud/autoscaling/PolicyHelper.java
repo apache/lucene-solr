@@ -153,7 +153,7 @@ public class PolicyHelper {
           }
         }
       } catch (IOException e) {
-        log.warn("Exception while reading disk free metric values for nodes to be used for collection: " + collName, e);
+        log.warn("Exception while reading disk free metric values for nodes to be used for collection: {}", collName, e);
       }
 
 
@@ -180,8 +180,9 @@ public class PolicyHelper {
             if (op == null) {
               String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
               Policy.Session sessionCopy = suggester.session;
-              log.error("errorId : " + errorId + "  " +
-                  handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString()));
+              log.error("errorId : {} {}", errorId
+                  , handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString())
+              ); // logOK
 
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
                   Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "
@@ -359,9 +360,11 @@ public class PolicyHelper {
   public static void logState(SolrCloudManager cloudManager, Suggester suggester) {
     if (log.isTraceEnabled()) {
       try {
-        log.trace("LOGSTATE: {}",
-            Utils.writeJson(loggingInfo(cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy(), cloudManager, suggester),
-                new StringWriter(), true).toString());
+        if (log.isTraceEnabled()) {
+          log.trace("LOGSTATE: {}",
+              Utils.writeJson(loggingInfo(cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy(), cloudManager, suggester),
+                  new StringWriter(), true));
+        }
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -430,9 +433,12 @@ public class PolicyHelper {
       TimeSource timeSource = sessionWrapper.session != null ? sessionWrapper.session.cloudManager.getTimeSource() : TimeSource.NANO_TIME;
       synchronized (lockObj) {
         sessionWrapper.status = Status.EXECUTING;
-        log.debug("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} ", time(timeSource, MILLISECONDS),
-            sessionWrapper.createTime,
-            this.sessionWrapper.createTime);
+        if (log.isDebugEnabled()) {
+          log.debug("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} "
+              , time(timeSource, MILLISECONDS),
+              sessionWrapper.createTime,
+              this.sessionWrapper.createTime);
+        }
         if (sessionWrapper.createTime == this.sessionWrapper.createTime) {
           //this session was used for computing new operations and this can now be used for other
           // computing
@@ -466,13 +472,18 @@ public class PolicyHelper {
             return sessionWrapper;
           } else {
             //status= COMPUTING it's being used for computing. computing is
-            log.debug("session being used. waiting... current time {} ", time(timeSource, MILLISECONDS));
+            if (log.isDebugEnabled()) {
+              log.debug("session being used. waiting... current time {} ", time(timeSource, MILLISECONDS));
+            }
             try {
               lockObj.wait(10 * 1000);//wait for a max of 10 seconds
             } catch (InterruptedException e) {
               log.info("interrupted... ");
             }
-            log.debug("out of waiting curr-time:{} time-elapsed {}", time(timeSource, MILLISECONDS), timeElapsed(timeSource, waitStart, MILLISECONDS));
+            if (log.isDebugEnabled()) {
+              log.debug("out of waiting curr-time:{} time-elapsed {}"
+                  , time(timeSource, MILLISECONDS), timeElapsed(timeSource, waitStart, MILLISECONDS));
+            }
             // now this thread has woken up because it got timed out after 10 seconds or it is notified after
             // the session was returned from another COMPUTING operation
             if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {

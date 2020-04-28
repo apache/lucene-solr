@@ -387,7 +387,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               }
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
-              log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
+              log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
               solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
@@ -637,8 +637,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           }
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
-            log.warn("No more runners, but queue still has " +
-                queueSize + " adding more runners to process remaining requests on queue");
+            log.warn("No more runners, but queue still has {} adding more runners to process remaining requests on queue"
+                , queueSize);
             addRunner();
           }
           
@@ -676,16 +676,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
       if (scheduler.isTerminated()) {
-        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
-            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}"
+            , scheduler, queue.size(), runners.size(), threadInterrupted);
         break;
       }
 
       synchronized (runners) {
         int queueSize = queue.size();
         if (queueSize > 0 && runners.isEmpty()) {
-          log.warn("No more runners, but queue still has " +
-              queueSize + " adding more runners to process remaining requests on queue");
+          log.warn("No more runners, but queue still has {} adding more runners to process remaining requests on queue"
+              , queueSize);
           addRunner();
         }
       }

@@ -211,7 +211,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
             cause = cause.getCause();
           }
           if (hasCauseIOException || e instanceof IOException) {
-            log.info("Error on getting remote info, trying again: " + e.getMessage());
+            if (log.isInfoEnabled()) {
+              log.info("Error on getting remote info, trying again: {}", e.getMessage());
+            }
             Thread.sleep(500);
             continue;
           } else {
@@ -232,7 +234,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         }
       });
     } catch (Exception e) {
-      log.warn("could not get tags from node " + solrNode, e);
+      log.warn("could not get tags from node {}", solrNode, e);
     }
   }
 
@@ -322,7 +324,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
               cause = cause.getCause();
             }
             if (hasCauseIOException || e instanceof IOException) {
-              log.info("Error on getting remote info, trying again: " + e.getMessage());
+              if (log.isInfoEnabled()) {
+                log.info("Error on getting remote info, trying again: {}", e.getMessage());
+              }
               Thread.sleep(500);
               continue;
             } else {
