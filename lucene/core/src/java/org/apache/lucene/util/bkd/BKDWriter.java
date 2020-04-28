@@ -57,9 +57,10 @@ import org.apache.lucene.util.PriorityQueue;
  *  Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
  *  and smaller N-dim rectangles (cells) until the number of points in a given
  *  rectangle is &lt;= <code>maxPointsInLeafNode</code>.  The tree is
- *  fully balanced, which means the leaf nodes will have between 50% and 100% of
- *  the requested <code>maxPointsInLeafNode</code>.  Values that fall exactly
- *  on a cell boundary may be in either cell.
+ *  partially balanced, which means the leaf nodes will have
+ *  the requested <code>maxPointsInLeafNode</code> except one that might have less.
+ *  Leaf nodes may straddle the two bottom levels of the binary tree.
+ *  Values that fall exactly on a cell boundary may be in either cell.
  *
  *  <p>The number of dimensions can be 1 to 8, but every byte[] value is fixed length.
  *
@@ -446,7 +447,7 @@ public class BKDWriter implements Closeable {
     assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
     long indexFP = out.getFilePointer();
-    writeIndex(out, maxPointsInLeafNode, leafBlockFPs, splitPackedValues);
+    writeIndex(out, maxPointsInLeafNode, rotateLeaves(leafBlockFPs), splitPackedValues);
     return indexFP;
   }
 
@@ -610,7 +611,7 @@ public class BKDWriter implements Closeable {
       for(int i=0;i<leafBlockFPs.size();i++) {
         arr[i] = leafBlockFPs.get(i);
       }
-      writeIndex(out, maxPointsInLeafNode, arr, index);
+      writeIndex(out, maxPointsInLeafNode, rotateLeaves(arr), index);
       return indexFP;
     }
 
@@ -709,6 +710,23 @@ public class BKDWriter implements Closeable {
     } else {
       assert count == 0;
     }
+  }
+
+  private long[] rotateLeaves(long[] leafBlockFPs) {
+    int numLeaves = leafBlockFPs.length;
+    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
+    // In this case the leaf nodes may straddle the two bottom
+    // levels of the binary tree:
+    int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
+    int leavesPreviousLevel = 1 << maxLevel - 1;
+    int lastLevel = 2 * (numLeaves - leavesPreviousLevel);
+    if (lastLevel == 0) {
+      return leafBlockFPs;
+    }
+    long[] newLeafBlockFPs = new long[numLeaves];
+    System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
+    System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
+    return newLeafBlockFPs;
   }
 
   // TODO: if we fixed each partition step to just record the file offset at the "split point", we could probably handle variable length
@@ -813,39 +831,12 @@ public class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = out.getFilePointer();
-    writeIndex(out, maxPointsInLeafNode, leafBlockFPs, splitPackedValues);
+    writeIndex(out, maxPointsInLeafNode, rotateLeaves(leafBlockFPs), splitPackedValues);
     return indexFP;
   }
 
   /** Packs the two arrays, representing a balanced binary tree, into a compact byte[] structure. */
   private byte[] packIndex(long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
-
-    int numLeaves = leafBlockFPs.length;
-
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
-    // In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    if (numLeaves > 1) {
-      int levelCount = 2;
-      while (true) {
-        if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
-          int lastLevel = 2*(numLeaves - levelCount);
-          assert lastLevel >= 0;
-          if (lastLevel != 0) {
-            // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
-            // at read-time, so that we can still delta code them on disk at write:
-            long[] newLeafBlockFPs = new long[numLeaves];
-            System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
-            System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
-            leafBlockFPs = newLeafBlockFPs;
-          }
-          break;
-        }
-
-        levelCount *= 2;
-      }
-    }
-
     /** Reused while packing the index */
     ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableInstance();
 
@@ -1446,9 +1437,10 @@ public class BKDWriter implements Closeable {
       int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
       // how many leaves are in the previous level
       int leavesPreviousLevel = 1 << maxLevel - 1;
+      // leaf nodes from previous level
+      int numLeftLeafNodes = leavesPreviousLevel / 2;
       // nodes that do not fit in previous level
       int unbalancedLeaves = numLeaves - leavesPreviousLevel;
-      int numLeftLeafNodes = leavesPreviousLevel / 2;
       // distribute unbalanced nodes
       if (numLeftLeafNodes > unbalancedLeaves) {
         numLeftLeafNodes += unbalancedLeaves;
@@ -1641,14 +1633,14 @@ public class BKDWriter implements Closeable {
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
       // How many points will be in the left tree:
-
       // return the max level for this number of leaves. If level is full it returns the next level
       int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
       // how many leaves are in the previous level
       int leavesPreviousLevel = 1 << maxLevel - 1;
+      // leaf nodes from previous level
+      int numLeftLeafNodes = leavesPreviousLevel / 2;
       // nodes that do not fit in previous level
       int unbalancedLeaves = numLeaves - leavesPreviousLevel;
-      int numLeftLeafNodes = leavesPreviousLevel / 2;
       // distribute unbalanced nodes
       if (numLeftLeafNodes > unbalancedLeaves) {
         numLeftLeafNodes += unbalancedLeaves;
