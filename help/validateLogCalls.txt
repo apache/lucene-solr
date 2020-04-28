@@ -54,4 +54,6 @@ from there.
 
 Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path,
  e.g. '-PsrcDir=solr/core/src/java/org/apache/solr/core'. This task will
- recursively check all '*.java. files under that directory.
+ recursively check all '*.java. files under that directory. Actually, it
+ just checks any file whose AbsolutePath contains the specification. May be
+ comma-delimited.

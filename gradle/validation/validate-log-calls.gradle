@@ -23,33 +23,42 @@ import static java.util.concurrent.TimeUnit.SECONDS
 // either in CPU or unnecessary object creation
 
 configure(rootProject) {
+}
 
-  allprojects {
-
+allprojects {
+  plugins.withType(JavaPlugin) {
     task validateLogCalls(type: ValidateLogCallsTask) {
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
       doFirst {
         if (project.hasProperty('srcDir')) {
-          srcDir = project.getProperty('srcDir')
+          srcDir.addAll(project.getProperty('srcDir').split(','))
         } else { // Remove this later, make it optional
           //nocommit
           throw new BuildException(String.format(Locale.ENGLISH,
-              '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
-            "-PsrcDir=solr/core/src/java/org/apache/solr/core". This task will recursively check all
-             "*.java" files under that directory'''))
+                  '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
+          "-PsrcDir=solr/core/src/java/org/apache/solr/core". This task will recursively check all
+           "*.java" files under that directory'''))
         }
 
         checkPlus = Boolean.valueOf(propertyOrDefault('checkPlus', 'false'))
       }
     }
   }
+//    // Attach ecjLint to check.
+//    check.dependsOn ecjLint
+  // What does the below mean?
+//    // Each validation task should be attached to check but make sure
+//    // precommit() as a whole is a dependency on rootProject.check
+//    check.dependsOn precommit
+
 }
+//}
 
 class ValidateLogCallsTask extends DefaultTask {
   @Input
-  String srcDir = ""
+  List<String> srcDir = []
 
   @Input
   boolean checkPlus
@@ -94,6 +103,17 @@ class ValidateLogCallsTask extends DefaultTask {
                              , "solr/core/src/java/org/apache/solr/uninverting"
                              , "solr/core/src/java/org/apache/solr/update"
                              , "solr/core/src/java/org/apache/solr/util"
+                             , "solr/solrj/src/java/org/apache/solr/common/util"
+                             , "solr/solrj/src/java/org/apache/solr/common/cloud" // 18
+                             , "solr/solrj/src/java/org/apache/solr/client/solrj/impl" // 27
+                             , "solr/solrj/src/java/org/apache/solr/client/solrj/io" // 8
+                             , "solr/solrj/src/java/org/apache/solr/client/solrj/cloud" // 26
+                             , "solr/solrj/src/java/org/apache/solr/client/solrj/routing" //2
+                             , "solr/solrj/src/test/org/apache/solr/common/cloud" //1
+                             , "solr/solrj/src/test/org/apache/solr/client/solrj/impl" //15
+                             , "solr/solrj/src/test/org/apache/solr/client/solrj" //34
+                             , "solr/solrj/src/test/org/apache/solr/client/solrj/io/stream" // 1
+                             , "solr/solrj/src/test/org/apache/solr/client/solrj/cloud/autoscaling" //4
   ]
 
   //nocommit REMOVE ME! Really! and the check for bare parens. Several times I've put in () when I meant {} and only
@@ -151,7 +171,7 @@ class ValidateLogCallsTask extends DefaultTask {
 
     // If the line has been explicitly checked, skip it.
     if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
-      return violation
+      return
     }
     // Strip all of the comments, things in quotes and the like.
     def level = ""
@@ -207,18 +227,10 @@ class ValidateLogCallsTask extends DefaultTask {
       violation = true
     }
     if (violation) {
-      reportViolation(String.format("Suspicious logging call, Parameterize or surround with 'if (log.is*Enabled) {..%s    %s:%d"
-      , System.lineSeparator, file.getAbsolutePath(), lineNumber))
-//      reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s'"
-//          , file.name
-//          , lineNumber
-//          , line
-//          , file.getParentFile().getAbsolutePath()
-//          , stripped
-//      ))
-//      reportViolation(String.format("%s:%d", file.getAbsolutePath(), lineNumber))
+      reportViolation(String.format("Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
+              , System.lineSeparator, file.getAbsolutePath(), lineNumber))
     }
-    return violation
+    return
   }
 
 
@@ -288,19 +300,20 @@ class ValidateLogCallsTask extends DefaultTask {
         case 1:
           break;
         case 2:
-          foundViolation = (checkLogLine(file, sb.toString(), lineNumber, prevLine)) ? true : foundViolation
+          checkLogLine(file, sb.toString(), lineNumber, prevLine)
           state = 0
           break;
         default:
           break;
       }
     }
-    return foundViolation
+    return
   }
 
   @TaskAction
   def checkLogLines() {
-    dirsToCheck.add(srcDir)
+//    println srcDir
+    dirsToCheck.addAll(srcDir)
 
     //nocommit. This is here to check 8x on another branch since I can't run Gradle
     // over 8x. Used periodically as a sanity check.
@@ -314,26 +327,31 @@ class ValidateLogCallsTask extends DefaultTask {
 //        }
 //      }
 
+//    new File("/Users/Erick/apache/SolrEOEFork").traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.java/) { File it ->
+//        if (checkFile(it)) {
+//          println(it.getAbsolutePath())
+//        }
+//      }
+//
+//nocommit
+//    println project
+
+    // This is the real stuff
     project.sourceSets.each { srcSet ->
       srcSet.java.each { f ->
-        if (dirsToCheck.any {
+        if (srcDir.contains("all")) {
+          checkFile(f)
+        } else if (dirsToCheck.any {
           f.getCanonicalPath().contains(it)
         }) {
-          if (checkFile(f)) {
-            // nocommit. This just makes it much easier to get to the files during this mass migration!
-            println(f.getAbsolutePath())
-          }
+          checkFile(f)
         }
-//        nocommit move
-//        this to project based whenever
-//        if (srcDir != null && f.getCanonicalPath().contains(srcDir)) {
-//          checkFile(f)
-//        }
       }
     }
+
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-          errsFound, violations.join(', ')));
+              errsFound, violations.join(', ')));
     }
   }
 }
