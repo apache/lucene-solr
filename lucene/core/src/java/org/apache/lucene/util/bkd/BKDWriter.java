@@ -721,11 +721,12 @@ public class BKDWriter implements Closeable {
     int leavesPreviousLevel = 1 << maxLevel - 1;
     int lastLevel = 2 * (numLeaves - leavesPreviousLevel);
     if (lastLevel == 0) {
+      // fully balanced
       return leafBlockFPs;
     }
     long[] newLeafBlockFPs = new long[numLeaves];
-    System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
-    System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
+    System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, numLeaves - lastLevel);
+    System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - lastLevel, lastLevel);
     return newLeafBlockFPs;
   }
 
