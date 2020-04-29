@@ -253,7 +253,6 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     };
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    // If all points match, then the point count is numLeaves * maxPointsInLeafNode
     final int numLeaves = (int) Math.ceil((double) points.size() / maxPointsInLeafNode);
 
     assertEquals(numLeaves * maxPointsInLeafNode, points.estimatePointCount(allPointsVisitor));
