@@ -55,9 +55,14 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
   protected final int deltaNumLines;
   protected final BlockEncoder blockEncoder;
   protected final BlockDecoder blockDecoder;
+  protected final boolean dictionaryOnHeap;
 
+  /**
+   * Creates a {@link UniformSplitPostingsFormat} with default settings.
+   */
   public UniformSplitPostingsFormat() {
-    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES, null, null);
+    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, false);
   }
 
   /**
@@ -73,12 +78,20 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
    *                            It can be used for compression or encryption.
    * @param blockDecoder        Optional block decoder, may be null if none.
    *                            It can be used for compression or encryption.
+   * @param dictionaryOnHeap    Whether to force loading the terms dictionary on-heap. By default it is kept off-heap without
+   *                            impact on performance. If block encoding/decoding is used, then the dictionary is always
+   *                            loaded on-heap whatever this parameter value is.
    */
-  public UniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
-    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder);
+  public UniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder,
+                                    boolean dictionaryOnHeap) {
+    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder, dictionaryOnHeap);
   }
 
-  protected UniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
+  /**
+   * @see #UniformSplitPostingsFormat(int, int, BlockEncoder, BlockDecoder, boolean)
+   */
+  protected UniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder,
+                                       BlockDecoder blockDecoder, boolean dictionaryOnHeap) {
     super(name);
     UniformSplitTermsWriter.validateSettings(targetNumBlockLines, deltaNumLines);
     validateBlockEncoder(blockEncoder, blockDecoder);
@@ -86,6 +99,7 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
     this.deltaNumLines = deltaNumLines;
     this.blockEncoder = blockEncoder;
     this.blockDecoder = blockDecoder;
+    this.dictionaryOnHeap = dictionaryOnHeap;
   }
 
   @Override
@@ -125,7 +139,7 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
 
   protected FieldsProducer createUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
                                                BlockDecoder blockDecoder) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, state, blockDecoder);
+    return new UniformSplitTermsReader(postingsReader, state, blockDecoder, dictionaryOnHeap);
   }
 
   private static void validateBlockEncoder(BlockEncoder blockEncoder, BlockDecoder blockDecoder) {

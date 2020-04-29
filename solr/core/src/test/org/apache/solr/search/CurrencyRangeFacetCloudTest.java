@@ -50,7 +50,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   private static String FIELD = null; // randomized
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
-  // NOTE: in our test conversions EUR uses an asynetric echange rate
+  // NOTE: in our test conversions EUR uses an asynetric exchange rate
   // these are the equivalent values relative to:                                USD        EUR        GBP
   private static final List<String> VALUES = Arrays.asList("10.00,USD",     // 10.00,USD  25.00,EUR   5.00,GBP
                                                            "15.00,EUR",     //  7.50,USD  15.00,EUR   7.50,GBP
@@ -176,9 +176,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
           
-          assertEqualsHACK("before", 3L, ((NamedList)foo.get("before")).get("count"));
-          assertEqualsHACK("after", 3L, ((NamedList)foo.get("after")).get("count"));
-          assertEqualsHACK("between", 9L, ((NamedList)foo.get("between")).get("count"));
+          assertEquals("before", 3L, ((NamedList)foo.get("before")).get("count"));
+          assertEquals("after", 3L, ((NamedList)foo.get("after")).get("count"));
+          assertEquals("between", 9L, ((NamedList)foo.get("between")).get("count"));
           
           final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
           
@@ -187,14 +187,14 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
             for (int i = 0; i < 3; i++) {
               NamedList bucket = buckets.get(i);
               assertEquals((4 + (3 * i)) + ".00,USD", bucket.get("val"));
-              assertEqualsHACK("bucket #" + i, 3L, bucket.get("count"));
+              assertEquals("bucket #" + i, 3L, bucket.get("count"));
             }
           } else {
             assertEquals(7, buckets.size());
             for (int i = 0; i < 7; i++) {
               NamedList bucket = buckets.get(i);
               assertEquals((4 + i) + ".00,USD", bucket.get("val"));
-              assertEqualsHACK("bucket #" + i, (i == 0 || i == 3 || i == 6) ? 3L : 0L, bucket.get("count"));
+              assertEquals("bucket #" + i, (i == 0 || i == 3 || i == 6) ? 3L : 0L, bucket.get("count"));
             }
           }
         } catch (AssertionError|RuntimeException ae) {
@@ -268,9 +268,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         
         final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
         
-        assertEqualsHACK("before", 6L, ((NamedList)foo.get("before")).get("count"));
-        assertEqualsHACK("after", 3L, ((NamedList)foo.get("after")).get("count"));
-        assertEqualsHACK("between", 6L, ((NamedList)foo.get("between")).get("count"));
+        assertEquals("before", 6L, ((NamedList)foo.get("before")).get("count"));
+        assertEquals("after", 3L, ((NamedList)foo.get("after")).get("count"));
+        assertEquals("between", 6L, ((NamedList)foo.get("between")).get("count"));
         
         final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
         
@@ -279,14 +279,14 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           for (int i = 0; i < 2; i++) {
             NamedList bucket = buckets.get(i);
             assertEquals((12 + (i * 2)) + ".00,EUR", bucket.get("val"));
-            assertEqualsHACK("bucket #" + i, 3L, bucket.get("count"));
+            assertEquals("bucket #" + i, 3L, bucket.get("count"));
           }
         } else {
           assertEquals(7, buckets.size());
           for (int i = 0; i < 7; i++) {
             NamedList bucket = buckets.get(i);
             assertEquals((8 + (i * 2)) + ".00,EUR", bucket.get("val"));
-            assertEqualsHACK("bucket #" + i, (i == 2 || i == 3) ? 3L : 0L, bucket.get("count"));
+            assertEquals("bucket #" + i, (i == 2 || i == 3) ? 3L : 0L, bucket.get("count"));
           }
         }
       } catch (AssertionError|RuntimeException ae) {
@@ -365,9 +365,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         
         // sanity check our high level expectations...
         assertEquals("bar num buckets", 2, bar_buckets.size());
-        assertEqualsHACK("before count", 0L, before.get("count"));
-        assertEqualsHACK("between count", 8L, between.get("count"));
-        assertEqualsHACK("after count", 2L, after.get("count"));
+        assertEquals("before count", 0L, before.get("count"));
+        assertEquals("between count", 8L, between.get("count"));
+        assertEquals("after count", 2L, after.get("count"));
         
         // drill into the various buckets...
         
@@ -378,15 +378,15 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         for (int i = 0; i < 2; i++) {
           final NamedList<Object> bucket = bar_buckets.get(i);
           assertEquals((i * 10) + ".00,EUR", bucket.get("val"));
-          assertEqualsHACK("bucket #" + i, 4L, bucket.get("count"));
+          assertEquals("bucket #" + i, 4L, bucket.get("count"));
           final List<NamedList<Object>> foo_buckets = ((NamedList<List<NamedList<Object>>>)bucket.get("foo")).get("buckets");
           assertEquals("bucket #" + i + " foo num buckets", 2, foo_buckets.size());
           assertEquals("bucket #" + i + " foo top term", (0==i ? "x2" : "x0"), foo_buckets.get(0).get("val"));
-          assertEqualsHACK("bucket #" + i + " foo top count", 2, foo_buckets.get(0).get("count"));
+          assertEquals("bucket #" + i + " foo top count", 2L, foo_buckets.get(0).get("count"));
           // NOTE: we can't make any assertions about the 2nd val..
           // our limit + randomized sharding could result in either remaining term being picked.
-          // but for eiter term, the count should be exactly the same...
-          assertEqualsHACK("bucket #" + i + " foo 2nd count", 1, foo_buckets.get(1).get("count"));
+          // but for either term, the count should be exactly the same...
+          assertEquals("bucket #" + i + " foo 2nd count", 1L, foo_buckets.get(1).get("count"));
         }
         
         { // between...
@@ -394,9 +394,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           assertEquals("between num buckets", 2, buckets.size());
           // the counts should both be 3, and the term order should break the tie...
           assertEquals("between bucket top", "x0", buckets.get(0).get("val"));
-          assertEqualsHACK("between bucket top count", 3L, buckets.get(0).get("count"));
+          assertEquals("between bucket top count", 3L, buckets.get(0).get("count"));
           assertEquals("between bucket 2nd", "x2", buckets.get(1).get("val"));
-          assertEqualsHACK("between bucket 2nd count", 3L, buckets.get(1).get("count"));
+          assertEquals("between bucket 2nd count", 3L, buckets.get(1).get("count"));
         }
         
         { // after...
@@ -404,9 +404,9 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           assertEquals("after num buckets", 2, buckets.size());
           // the counts should both be 1, and the term order should break the tie...
           assertEquals("after bucket top", "x1", buckets.get(0).get("val"));
-          assertEqualsHACK("after bucket top count", 1L, buckets.get(0).get("count"));
+          assertEquals("after bucket top count", 1L, buckets.get(0).get("count"));
           assertEquals("after bucket 2nd", "x2", buckets.get(1).get("val"));
-          assertEqualsHACK("after bucket 2nd count", 1L, buckets.get(1).get("count"));
+          assertEquals("after bucket 2nd count", 1L, buckets.get(1).get("count"));
         }
         
       } catch (AssertionError|RuntimeException ae) {
@@ -449,15 +449,15 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         final List<NamedList<Object>> foo_buckets = (List<NamedList<Object>>) foo.get("buckets");
         assertEquals(1, foo_buckets.size());
         assertEquals("x2", foo_buckets.get(0).get("val"));
-        assertEqualsHACK("foo bucket count", 5L, foo_buckets.get(0).get("count"));
+        assertEquals("foo bucket count", 5L, foo_buckets.get(0).get("count"));
         
         final NamedList<Object> bar = (NamedList<Object>)foo_buckets.get(0).get("bar");
         
         // these are the 'x2' specific counts, based on our fq...
         
-        assertEqualsHACK("before", 2L, ((NamedList)bar.get("before")).get("count"));
-        assertEqualsHACK("after", 1L, ((NamedList)bar.get("after")).get("count"));
-        assertEqualsHACK("between", 2L, ((NamedList)bar.get("between")).get("count"));
+        assertEquals("before", 2L, ((NamedList)bar.get("before")).get("count"));
+        assertEquals("after", 1L, ((NamedList)bar.get("after")).get("count"));
+        assertEquals("between", 2L, ((NamedList)bar.get("between")).get("count"));
         
         final List<NamedList> buckets = (List<NamedList>) bar.get("buckets");
         assertEquals(7, buckets.size());
@@ -465,7 +465,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           NamedList bucket = buckets.get(i);
           assertEquals((8 + (i * 2)) + ".00,EUR", bucket.get("val"));
           // 12,EUR & 15,EUR are the 2 values that align with x2 docs
-          assertEqualsHACK("bucket #" + i, (i == 2 || i == 3) ? 1L : 0L, bucket.get("count"));
+          assertEquals("bucket #" + i, (i == 2 || i == 3) ? 1L : 0L, bucket.get("count"));
         }
       } catch (AssertionError|RuntimeException ae) {
         throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
@@ -473,14 +473,4 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
-  /**
-   * HACK to work around SOLR-11775.
-   * Asserts that the 'actual' argument is a (non-null) Number, then compares it's 'longValue' to the 'expected' argument
-   */
-  private static void assertEqualsHACK(String msg, long expected, Object actual) {
-    assertNotNull(msg, actual);
-    assertTrue(msg + " ... NOT A NUMBER: " + actual.getClass(), Number.class.isInstance(actual));
-    assertEquals(msg, expected, ((Number)actual).longValue());
-  }
-  
 }

@@ -80,20 +80,26 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
       final AutoScaling.Trigger t1 = new MockTrigger(TriggerEventType.NODELOST, "mock-timestamper") {
         @Override
         public void run() {
-          log.info("Running {} in {}", this.getName(), Thread.currentThread().getName());
+          if (log.isInfoEnabled()) {
+            log.info("Running {} in {}", this.getName(), Thread.currentThread().getName());
+          }
           timestamps.offer(solrCloudManager.getTimeSource().getTimeNs());
         }
       };
 
-      log.info("Configuring simple scheduler and adding trigger: {}", t1.getName());
+      if (log.isInfoEnabled()) {
+        log.info("Configuring simple scheduler and adding trigger: {}", t1.getName());
+      }
       t1.configure(resourceLoader, solrCloudManager, Collections.emptyMap());
       scheduledTriggers.add(t1);
 
       waitForAndDiffTimestamps("conf(default delay)",
                                ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS,
                                timestamps);
-      
-      log.info("Reconfiguing scheduler to use 4s delay and clearing queue for trigger: {}", t1.getName());
+
+      if (log.isInfoEnabled()) {
+        log.info("Reconfiguing scheduler to use 4s delay and clearing queue for trigger: {}", t1.getName());
+      }
       config = config.withProperties(Collections.singletonMap
                                      (AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS, 4));
       scheduledTriggers.setAutoScalingConfig(config);
@@ -102,8 +108,10 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
       waitForAndDiffTimestamps("conf(four sec delay)", 
                                4, TimeUnit.SECONDS, 
                                timestamps);
-      
-      log.info("Removing trigger: {}", t1.getName());
+
+      if (log.isInfoEnabled()) {
+        log.info("Removing trigger: {}", t1.getName());
+      }
       scheduledTriggers.remove(t1.getName());
       
       log.info("Reconfiguing scheduler to use default props");
@@ -146,11 +154,15 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
                                                       "mock-blocking-trigger-" + i)  {
           @Override
           public void run() {
-            log.info("Running {} in {}", this.getName(), Thread.currentThread().getName());
+            if (log.isInfoEnabled()) {
+              log.info("Running {} in {}", this.getName(), Thread.currentThread().getName());
+            }
             CyclicBarrier barrier = null;
             synchronized (latch) {
               if (triggerNames.add(this.getName())) {
-                log.info("{}: No-Op since we've already recorded a run", this.getName());
+                if (log.isInfoEnabled()) {
+                  log.info("{}: No-Op since we've already recorded a run", this.getName());
+                }
                 return;
               }
               threadNames.add(Thread.currentThread().getName());
@@ -158,12 +170,14 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
             }
             
             try {
-              log.info("{}: waiting on barrier to hog a thread", this.getName());
+              if (log.isInfoEnabled()) {
+                log.info("{}: waiting on barrier to hog a thread", this.getName());
+              }
               barrier.await(30, TimeUnit.SECONDS);
               completionSemaphore.release();
             } catch (Exception e) {
               fails.incrementAndGet();
-              log.error(this.getName() + ": failure waiting on cyclic barrier: " + e.toString(), e);
+              log.error("{} : failure waiting on cyclic barrier: {}", this.getName(), e, e);
             }
           }
         };
@@ -171,7 +185,9 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
         trigger.configure(resourceLoader, solrCloudManager, Collections.emptyMap());
         triggerList.add(trigger);
         completionSemaphore.acquire();
-        log.info("Adding trigger {} to scheduler", trigger.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Adding trigger {} to scheduler", trigger.getName());
+        }
         scheduledTriggers.add(trigger);
       }
       
@@ -222,7 +238,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
                                                      final TimeUnit minExpectedDeltaUnit,
                                                      final BlockingQueue<Long> timestamps) {
     try {
-      log.info(label + ": Waiting for 2 timestamps to be recorded");
+      log.info("{}: Waiting for 2 timestamps to be recorded", label);
       Long firstTs = timestamps.poll(minExpectedDelta * 3, minExpectedDeltaUnit);
       assertNotNull(label + ": Couldn't get first timestampe after max allowed polling", firstTs);
       Long secondTs = timestamps.poll(minExpectedDelta * 3, minExpectedDeltaUnit);
@@ -234,7 +250,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
                  "at least as much as min expected delay: " + minExpectedDeltaInNanos + "ns",
                  deltaInNanos >= minExpectedDeltaInNanos);
     } catch (InterruptedException e) {
-      log.error(label + ": interupted", e);
+      log.error("{}: interupted", label, e);
       fail(label + ": interupted:" + e.toString());
     }
   }

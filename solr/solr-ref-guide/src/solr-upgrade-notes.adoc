@@ -1,7 +1,6 @@
 = Solr Upgrade Notes
 :page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
-:page-toclevels: 3
-:page-tocclass: right
+:toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,6 +44,8 @@ See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Relea
 for an overview of the main new features of Solr 8.5.
 
 When upgrading to 8.5.x users should be aware of the following major changes from 8.4.
+
+__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g. "FST50").__
 
 *Considerations for a SolrCloud Upgrade*
 
@@ -119,7 +120,9 @@ This tool is not yet officially documented in the Reference Guide, but draft doc
 
 *Highlighting*
 
-Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`. See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`.
+See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+Regardless of the settings, the passages may be sized differently than before.
 
 *Shared Library System Parameter*
 
@@ -133,6 +136,11 @@ See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Relea
 for an overview of the main new features of Solr 8.4.
 
 When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
+
+*Reminder:*  If you set the `postingsFormat` or `docValuesFormat` in the schema in order to use a non-default option, you risk preventing yourself from upgrading your Lucene/Solr software at future versions.
+Multiple non-default postings formats changed in 8.4, thus rendering the index data from a previous index.
+This includes "FST50" which was recommended by the Solr TaggerHandler for performance reasons.
+There is now improved documentation to navigate this trade-off choice.
 
 *Package Management System*
 

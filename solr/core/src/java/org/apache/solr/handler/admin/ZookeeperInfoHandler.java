@@ -687,10 +687,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
                 if (childData != null)
                   childDataStr = (new BytesRef(childData)).utf8ToString();
               } catch (KeeperException.NoNodeException nne) {
-                log.warn("State for collection " + collection +
-                    " not found in /clusterstate.json or /collections/" + collection + "/state.json!");
+                log.warn("State for collection {} not found in /clusterstate.json or /collections/{}/state.json!"
+                    , collection, collection);
               } catch (Exception childErr) {
-                log.error("Failed to get " + collStatePath + " due to: " + childErr);
+                log.error("Failed to get {} due to", collStatePath, childErr);
               }
 
               if (childDataStr != null) {

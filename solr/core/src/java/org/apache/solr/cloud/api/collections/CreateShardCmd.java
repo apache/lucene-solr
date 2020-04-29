@@ -126,7 +126,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw e;
     }
 
-    log.info("Finished create command on all shards for collection: " + collectionName);
+    log.info("Finished create command on all shards for collection: {}", collectionName);
   }
 
 }

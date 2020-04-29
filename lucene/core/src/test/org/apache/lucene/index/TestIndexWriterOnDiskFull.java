@@ -533,8 +533,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     dir.close();
   }
   
-  // LUCENE-1130: make sure immeidate disk full on creating
-  // an IndexWriter (hit during DW.ThreadState.init()) is
+  // LUCENE-1130: make sure immediate disk full on creating
+  // an IndexWriter (hit during DWPT#updateDocuments()) is
   // OK:
   public void testImmediateDiskFull() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
@@ -550,7 +550,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     expectThrows(IOException.class, () -> {
       writer.addDocument(doc);
     });
-    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isDeleterClosed());
     assertTrue(writer.isClosed());
 
     dir.close();

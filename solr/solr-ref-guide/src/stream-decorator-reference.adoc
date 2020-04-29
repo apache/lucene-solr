@@ -1,6 +1,5 @@
 = Stream Decorator Reference
-:page-tocclass: right
-:page-toclevels: 1
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -507,7 +506,7 @@ The effect of this is to push documents that match a specific query into another
 
 Push streaming can also be used for continuous background aggregation scenarios where aggregates are rolled up in the background at intervals and pushed to other Solr collections. Another use case is continuous background machine learning model optimization, where the optimized model is pushed to another Solr collection where it can be integrated into queries.
 
-The `/stream` handler supports a small set commands for listing and controlling daemon functions:
+The `/stream` handler supports a small <<stream-api.adoc#plugins,set of commands>> for listing and controlling daemon functions:
 
 [source,text]
 ----

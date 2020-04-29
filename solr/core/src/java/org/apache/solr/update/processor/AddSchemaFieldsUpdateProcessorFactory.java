@@ -438,7 +438,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append("}");
           }
           builder.append("]");
-          log.debug(builder.toString());
+          log.debug("{}", builder);
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest

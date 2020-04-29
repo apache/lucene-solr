@@ -47,7 +47,7 @@ To build the HTML:
 [source,bash]
 $ ant clean default
 +
-This will produce pages with a DRAFT watermark across them. While these are fine for initial DRAFT publication, see the section <<Publish the Guide>> for steps to produce final production-ready HTML pages.
+This will produce pages with a DRAFT watermark across them. While these are fine for initial DRAFT publication, see the section <<Publish the Final Guide>> for steps to produce final production-ready HTML pages.
 . The resulting Guide will be in `solr/build/solr-ref-guide`. The HTML files themselves will be in `solr/build/solr-ref-guide/html-site`.
 
 == Upload to the Website
@@ -60,7 +60,7 @@ svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-gu
 Confirm you can browse to Guide manually by going to the new URL. For example:
 https://lucene.apache.org/solr/guide/7_7
 
-== Publish the Guide
+== Publish the Final Guide
 
 There are two steps to publishing the Guide: first, uploading the DRAFT pages with the production-ready version; and second, updating links to point to the new Guide.
 

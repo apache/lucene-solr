@@ -95,7 +95,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
       throws IOException, InterruptedException, KeeperException {
-    log.debug("addReplica() : {}", Utils.toJSONString(message));
+    if (log.isDebugEnabled()) {
+      log.debug("addReplica() : {}", Utils.toJSONString(message));
+    }
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);

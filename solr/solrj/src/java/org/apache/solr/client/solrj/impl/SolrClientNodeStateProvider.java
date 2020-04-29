@@ -193,37 +193,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
-      
-      SimpleSolrResponse rsp = null;
-      int cnt = 0;
-      while (cnt++ < 3) {
-        try {
-          rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
-          break;
-        } catch (SolrException | SolrServerException | IOException e) {
-          boolean hasCauseIOException = false;
-          Throwable cause = e;
-          while (cause != null) {
-            if (cause instanceof IOException) {
-              hasCauseIOException = true;
-              break;
-            }
-            cause = cause.getCause();
-          }
-          if (hasCauseIOException || e instanceof IOException) {
-            log.info("Error on getting remote info, trying again: " + e.getMessage());
-            Thread.sleep(500);
-            continue;
-          } else {
-            throw e;
-          }
-        }
-      }
-      
-      
-      SimpleSolrResponse frsp = rsp;
+      SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach((key, tag) -> {
-        Object v = Utils.getObjectByPath(frsp.nl, true, Arrays.asList("metrics", key));
+        Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
         if (tag instanceof Function) {
           Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
           ctx.getTags().put(p.first(), p.second());
@@ -232,7 +204,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         }
       });
     } catch (Exception e) {
-      log.warn("could not get tags from node " + solrNode, e);
+      log.warn("could not get tags from node {}", solrNode, e);
     }
   }
 
@@ -300,41 +272,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       params.add("prefix", StrUtils.join(prefixes, ','));
 
       try {
-        SimpleSolrResponse rsp = null;
-        int retries = 5;
-        int cnt = 0;
-        while (cnt++ < retries) {
-          try {
-            rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
-            break;
-          } catch (SolrException | SolrServerException | IOException e) {
-            if (e instanceof SolrServerException) {
-              
-            }
-            
-            boolean hasCauseIOException = false;
-            Throwable cause = e;
-            while (cause != null) {
-              if (cause instanceof IOException) {
-                hasCauseIOException = true;
-                break;
-              }
-              cause = cause.getCause();
-            }
-            if (hasCauseIOException || e instanceof IOException) {
-              log.info("Error on getting remote info, trying again: " + e.getMessage());
-              Thread.sleep(500);
-              continue;
-            } else {
-              throw e;
-            }
-          }
-        }
-        
-        if (cnt == retries || rsp == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
-        }
-                
+        SimpleSolrResponse rsp = snitchContext.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
+
         Map m = rsp.nl.asMap(4);
         if (requestedTags.contains(FREEDISK.tagName)) {
           Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
@@ -398,6 +337,41 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
+    /**
+     * Will attempt to call {@link #invoke(String, String, SolrParams)} up to five times, retrying on any IO Exceptions
+     */
+    public SimpleSolrResponse invokeWithRetry(String solrNode, String path, SolrParams params) throws InterruptedException, IOException, SolrServerException {
+      int retries = 5;
+      int cnt = 0;
+
+      while (cnt++ < retries) {
+        try {
+          return invoke(solrNode, path, params);
+        } catch (SolrException | SolrServerException | IOException e) {
+          boolean hasIOExceptionCause = false;
+
+          Throwable t = e;
+          while (t != null) {
+            if (t instanceof IOException) {
+              hasIOExceptionCause = true;
+              break;
+            }
+            t = t.getCause();
+          }
+
+          if (hasIOExceptionCause) {
+            if (log.isInfoEnabled()) {
+              log.info("Error on getting remote info, trying again: {}", e.getMessage());
+            }
+            Thread.sleep(500);
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
+    }
 
     public SimpleSolrResponse invoke(String solrNode, String path, SolrParams params)
         throws IOException, SolrServerException {

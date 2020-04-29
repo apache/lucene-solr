@@ -467,7 +467,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(4, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(146.66, (double) topLevelFacetingData.getStatValue("avg_price"), 0.5);
-    assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers"));
+    assertEquals(3L, topLevelFacetingData.getStatValue("num_suppliers"));
     assertEquals(352.0, (double) topLevelFacetingData.getStatValue("median_weight"), 0.5);
 
     Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");

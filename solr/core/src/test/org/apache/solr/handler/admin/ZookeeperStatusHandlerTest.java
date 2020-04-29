@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +34,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkDynamicConfig;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -44,8 +44,6 @@ import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
 import org.noggit.JSONUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -53,8 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -121,15 +117,22 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     when(zkStatusHandler.getZkRawResponse("zoo3:2181", "conf")).thenReturn(
         Arrays.asList("clientPort=2181"));
 
-    when(zkStatusHandler.getZkStatus(anyString())).thenCallRealMethod();
+    when(zkStatusHandler.getZkStatus(anyString(), any())).thenCallRealMethod();
     when(zkStatusHandler.monitorZookeeper(anyString())).thenCallRealMethod();
     when(zkStatusHandler.validateZkRawResponse(ArgumentMatchers.any(), any(), any())).thenAnswer(Answers.CALLS_REAL_METHODS);
 
-    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo1:2181,zoo2:2181,zoo3:2181");
+    ZkDynamicConfig zkDynamicConfig = ZkDynamicConfig.parseLines(
+        "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n" +
+            "server.2=zoo2:2781:2784:participant;0.0.0.0:2181\n" +
+            "server.3=zoo3:2782:2785:participant;0.0.0.0:2181\n" +
+            "version=400000003");
+    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo4:2181,zoo5:2181,zoo6:2181", zkDynamicConfig);
     String expected = "{\n" +
+        "  \"dynamicReconfig\":true,\n" +
         "  \"ensembleSize\":3,\n" +
         "  \"details\":[\n" +
         "    {\n" +
+        "      \"role\":\"participant\",\n" +
         "      \"zk_version\":\"3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT\",\n" +
         "      \"zk_avg_latency\":\"1\",\n" +
         "      \"host\":\"zoo1:2181\",\n" +
@@ -142,8 +145,9 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
         "    {\n" +
         "      \"host\":\"zoo3:2181\",\n" +
         "      \"ok\":false}],\n" +
-        "  \"zkHost\":\"zoo1:2181,zoo2:2181,zoo3:2181\",\n" +
+        "  \"zkHost\":\"zoo4:2181,zoo5:2181,zoo6:2181\",\n" +
         "  \"errors\":[\n" +
+        "    \"Your ZK connection string (3 hosts) is different from the dynamic ensemble config (3 hosts). Solr does not currently support dynamic reconfiguration and will only be able to connect to the zk hosts in your connection string.\",\n" +
         "    \"Unexpected line in 'conf' response from Zookeeper zoo1:2181: thisIsUnexpected\",\n" +
         "    \"Empty response from Zookeeper zoo2:2181\",\n" +
         "    \"Could not execute mntr towards ZK host zoo3:2181. Add this line to the 'zoo.cfg' configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter 'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.\"],\n" +

@@ -166,10 +166,11 @@ public class RealTimeGetComponent extends SearchComponent
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            log.debug(req.getCore()
-                .getCoreContainer().getZkController().getNodeName()
-                + " min count to sync to (from most recent searcher view) "
-                + searcher.count(new MatchAllDocsQuery()));
+            if (log.isDebugEnabled()) {
+              log.debug("{} min count to sync to (from most recent searcher view) {}"
+                  , req.getCore().getCoreContainer().getZkController().getNodeName()
+                  , searcher.count(new MatchAllDocsQuery()));
+            }
           } finally {
             searchHolder.decref();
           }
@@ -358,7 +359,7 @@ public class RealTimeGetComponent extends SearchComponent
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
     SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.DOC);
-    log.info("getInputDocument called for id="+idStr+", returning: "+doc);
+    log.info("getInputDocument called for id={}, returning {}", idStr, doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
   }
@@ -971,7 +972,7 @@ public class RealTimeGetComponent extends SearchComponent
     // the mappings.
 
     for (int i=0; i<rb.slices.length; i++) {
-      log.info("LOOKUP_SLICE:" + rb.slices[i] + "=" + rb.shards[i]);
+      log.info("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[]{rb.shards[i]};
       }

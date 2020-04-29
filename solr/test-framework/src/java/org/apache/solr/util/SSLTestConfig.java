@@ -39,7 +39,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
+import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 /**
- * An SSLConfig that provides {@link SSLConfig} and {@link SchemaRegistryProvider} for both clients and servers
+ * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both clients and servers
  * that supports reading key/trust store information directly from resource files provided with the
  * Solr test-framework classes
  */
@@ -134,17 +134,17 @@ public class SSLTestConfig {
   }
   
   /**
-   * Creates a {@link SchemaRegistryProvider} for HTTP <b>clients</b> to use when communicating with servers 
+   * Creates a {@link SocketFactoryRegistryProvider} for HTTP <b>clients</b> to use when communicating with servers 
    * which have been configured based on the settings of this object.  When {@link #isSSLMode} is true, this 
-   * <code>SchemaRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
+   * <code>SocketFactoryRegistryProvider</code> will <i>only</i> support HTTPS (no HTTP scheme) using the 
    * appropriate certs.  When {@link #isSSLMode} is false, <i>only</i> HTTP (no HTTPS scheme) will be 
    * supported.
    */
-  public SchemaRegistryProvider buildClientSchemaRegistryProvider() {
+  public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
     if (isSSLMode()) {
       SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
       assert null != sslConnectionFactory;
-      return new SSLSchemaRegistryProvider(sslConnectionFactory);
+      return new SSLSocketFactoryRegistryProvider(sslConnectionFactory);
     } else {
       return HTTP_ONLY_SCHEMA_PROVIDER;
     }
@@ -268,23 +268,23 @@ public class SSLTestConfig {
     return sslConnectionFactory;
   }
 
-  /** A SchemaRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
-  private static class SSLSchemaRegistryProvider extends SchemaRegistryProvider {
+  /** A SocketFactoryRegistryProvider that only knows about SSL using a specified SSLConnectionSocketFactory */
+  private static class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
     private final SSLConnectionSocketFactory sslConnectionFactory;
-    public SSLSchemaRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
+    public SSLSocketFactoryRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
       this.sslConnectionFactory = sslConnectionFactory;
     }
     @Override
-    public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
       return RegistryBuilder.<ConnectionSocketFactory>create()
         .register("https", sslConnectionFactory).build();
     }
   }
 
-  /** A SchemaRegistryProvider that only knows about HTTP */
-  private static final SchemaRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER = new SchemaRegistryProvider() {
+  /** A SocketFactoryRegistryProvider that only knows about HTTP */
+  private static final SocketFactoryRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER = new SocketFactoryRegistryProvider() {
     @Override
-    public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
       return RegistryBuilder.<ConnectionSocketFactory>create()
         .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
     }
