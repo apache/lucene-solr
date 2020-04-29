@@ -64,6 +64,9 @@ Other Changes
 
 * SOLR-14429: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
 
+* SOLR-14412: Automatically set urlScheme to https when running secure solr with embedded zookeeper. (Mike Drob)
+  Do not erroneously set solr.jetty.https.port system property when running in http mode (Upendra Penegalapati)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
