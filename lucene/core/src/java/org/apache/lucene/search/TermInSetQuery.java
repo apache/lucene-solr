@@ -44,6 +44,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 
 /**
  * Specialization for a disjunction over many terms that behaves like a
@@ -127,13 +132,22 @@ public class TermInSetQuery extends Query implements Accountable {
     if (visitor.acceptField(field) == false) {
       return;
     }
-    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
-    List<Term> terms = new ArrayList<>();
-    TermIterator iterator = termData.iterator();
-    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      terms.add(new Term(field, BytesRef.deepCopyOf(term)));
+    if (termData.size() == 1) {
+      visitor.consumeTerms(this, new Term(field, termData.iterator().next()));
     }
-    v.consumeTerms(this, terms.toArray(new Term[0]));
+    if (termData.size() > 1) {
+      visitor.consumeTermsMatching(this, field, this::asByteRunAutomaton);
+    }
+  }
+
+  private ByteRunAutomaton asByteRunAutomaton() {
+    TermIterator iterator = termData.iterator();
+    List<Automaton> automata = new ArrayList<>();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      automata.add(Automata.makeBinary(term));
+    }
+    return new CompiledAutomaton(Operations.union(automata)).runAutomaton;
+
   }
 
   @Override

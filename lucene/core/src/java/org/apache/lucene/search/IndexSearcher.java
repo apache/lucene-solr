@@ -47,6 +47,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 
 /** Implements search over a single IndexReader.
  *
