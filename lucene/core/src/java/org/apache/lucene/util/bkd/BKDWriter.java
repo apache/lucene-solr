@@ -1432,8 +1432,6 @@ public class BKDWriter implements Closeable {
         splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       }
 
-      // How many points will be in the left tree:
-
       // return the max level for this number of leaves. If level is full it returns the next level
       int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
       // how many leaves are in the previous level
@@ -1446,7 +1444,6 @@ public class BKDWriter implements Closeable {
       numLeftLeafNodes += Math.min(unbalancedLeaves, numLeftLeafNodes);
       // we should always place unbalanced nodes on the left
       assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
-
       // How many points will be in the left tree:
       final int mid = from + (numLeftLeafNodes) * maxPointsInLeafNode;
 
@@ -1629,7 +1626,6 @@ public class BKDWriter implements Closeable {
 
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
-      // How many points will be in the left tree:
       // return the max level for this number of leaves. If level is full it returns the next level
       int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
       // how many leaves are in the previous level
@@ -1642,7 +1638,7 @@ public class BKDWriter implements Closeable {
       numLeftLeafNodes += Math.min(unbalancedLeaves, numLeftLeafNodes);
       // we should always place unbalanced nodes on the left
       assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
-
+      // How many points will be in the left tree:
       final long leftCount = numLeftLeafNodes * maxPointsInLeafNode;
 
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
