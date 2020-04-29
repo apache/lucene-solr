@@ -416,7 +416,7 @@ join="zipper"::
 Enables merge join, aka "zipper" algorithm, for joining parent and child entities without cache. It should be specified at child (nested) `<entity>`. It implies that parent and child queries return results ordered by keys, otherwise it throws an exception. Keys should be specified either with `where` attribute or with `cacheKey` and `cacheLookup`.
 
 === Entity Caching
-Caching of entities in DIH is provided to avoid repeated lookups for same entities again and again. The default `SortedMapBackedCache` is a `HashMap` where a key is a field in the row and the value is a bunch of rows for that same key.
+Caching of entities in DIH is provided to avoid repeated lookups for same entities again and again. The default `SortedMapBackedCache` is a `HashMap` where a key is a field in the row and the value is a bunch of rows for that same key. It's also possible to use different datasources for the entities by setting the `datasource` attribute.
 
 In the example below, each `manufacturer` entity is cached using the `id` property as a cache key. Cache lookups will be performed for each `product` entity based on the product's `manu` property. When the cache has no data for a particular key, the query is run and the cache is populated
 
@@ -427,6 +427,8 @@ In the example below, each `manufacturer` entity is cached using the `id` proper
           cacheKey="id" cacheLookup="product.manu" cacheImpl="SortedMapBackedCache"/>
 </entity>
 ----
++
+CAUTION: Note that the `cacheKey` and the `cacheLookup` key must have the same type. This could be forced by adding casts to your sql.
 
 === The SQL Entity Processor
 
