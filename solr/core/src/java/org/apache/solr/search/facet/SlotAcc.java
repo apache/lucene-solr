@@ -52,6 +52,8 @@ public abstract class SlotAcc implements Closeable {
     this.fcontext = fcontext;
   }
 
+  @Override public String toString() { return key; }
+  
   /**
    * NOTE: this currently detects when it is being reused and calls resetIterators by comparing reader ords
    * with previous calls to setNextReader.  For this reason, current users must call setNextReader
@@ -645,6 +647,9 @@ final class SweepCountAccStruct {
     this.isBase = t.isBase;
     this.countAccEntry = t.countAccEntry;
   }
+  @Override public String toString() {
+    return this.countAccEntry.toString();
+  }
 }
 
 final class CountAccEntry {
@@ -656,6 +661,11 @@ final class CountAccEntry {
     this.countAcc = countAcc;
     this.roCountAcc = roCountAcc;
   }
+  @Override public String toString() {
+    // nocommit... if we really need roCountAcc for some reason, include it in toString..
+    return this.countAcc.toString() /* + "=" + this.roCountAcc.toString() */;
+  }
+  
 }
 
 /**
@@ -667,6 +677,7 @@ final class CountAccEntry {
  */
 class SweepingAcc implements CollectSlotAccMappingAware {
 
+  private final SimpleOrderedMap<Object> debug;
   private final FacetContext fcontext;
   final SweepCountAccStruct base;
   final List<SweepCountAccStruct> others = new ArrayList<>();
@@ -677,32 +688,50 @@ class SweepingAcc implements CollectSlotAccMappingAware {
     this.fcontext = baseCountAcc.fcontext;
     this.base = new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc);
     this.notify = notify;
+    final FacetDebugInfo fdebug = fcontext.getDebugInfo();
+    this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
+    if (null != this.debug) {
+      fdebug.putInfoItem("sweep_collection", debug);
+      debug.add("base", baseCountAcc.key);
+      debug.add("accs", new ArrayList<String>());
+      debug.add("mapped", new ArrayList<String>());
+    }
   }
 
   /**
    * Called by SweepableSlotAccs to register new DocSet domains for sweep collection
+   * @param key assigned to the returned SlotAcc, and used for debugging
    * @param docs the domain over which to sweep
    * @param numSlots the number of slots
    * @param factory used to create the associated/underlying CountSlotAcc
    * @return a read-only representation of the count acc which is guaranteed to be populated
    * after sweep count collection
    */
-  public ReadOnlyCountSlotAcc add(DocSet docs, int numSlots, CountSlotAccFactory factory) {
+  public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, CountSlotAccFactory factory) {
     final SweepCountAccStruct ret = factory.newInstance(docs, false, fcontext, numSlots);
-    others.add(ret);
+    ret.countAccEntry.countAcc.key = key;
+    this.add(ret);
     return ret.countAccEntry.roCountAcc;
   }
 
-  public void add(SweepCountAccStruct sweepCountAcc) {
+  public void add(SweepCountAccStruct sweepCountAcc) { // nocommit: why public
     assert !sweepCountAcc.isBase;
+    if (null != debug) {
+      ((List<String>)debug.get("accs")).add(sweepCountAcc.toString());
+    }
     others.add(sweepCountAcc);
   }
 
   @Override
   public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
+    // nocommit: can/should we assert that these have identical key values?
     output.add(toAcc);
     if (notify != null) {
       notify.registerMapping(fromAcc, toAcc);
+    }
+    // nocommit: if we aren't going to assert keys match, then debug should indicate the mapping
+    if (null != debug) {
+      ((List<String>)debug.get("mapped")).add(fromAcc.toString() /* + "=>" + toAcc.toString() */);
     }
   }
 
@@ -723,6 +752,8 @@ class SweepingAcc implements CollectSlotAccMappingAware {
 abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc /*, SweepableSlotAcc<CountSlotAcc> ... nocommit... */ {
   public CountSlotAcc(FacetContext fcontext) {
     super(fcontext);
+    // assume we are the 'count' by default unless/untill our creator overrides this
+    this.key = "count";
   }
 
   // nocommit: CountSlotAcc no longer implements SweepableSlotAcc...

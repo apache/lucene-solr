@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -235,12 +236,94 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * works and can be verified by inspecting the debug output of basic requests.
    */
   public void testWhiteboxSanitySweepDebug() throws Exception {
+    final SolrParams baseParams = params("rows","0",
+                                         "debug","query",
+                                         "q", multiStrField(5)+":9",
+                                         "fore", multiStrField(7)+":11",
+                                         "back", "*:*");
     
-    // nocommit: build some bespoke facets
-    // nocommit: enumerate some specific sweep option + facet method/processor combos
-    // nocommit:  - execute these facets w/ debug enabled
-    // nocommit:  - verify debug shows sweep used when expected per param & processor
-    
+    { // simple single facet with a single skg that is sorted on...
+      
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      // choose a single value string so we know both 'dv' and 'dvhash' can be specified
+      facets.put("str", new TermFacet(soloStrField(9), 10, 0, "skg desc", null));
+      final SolrParams facetParams
+        = SolrParams.wrapDefaults(params("method_val", "dv",
+                                         "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                  baseParams);
+      
+      // both default sweep option and explicit sweep should give same results...
+      for (SolrParams sweepParams : Arrays.asList(params(),
+                                                  params("sweep_key", "sweep_collection",
+                                                         "sweep_val", "true"))) {
+        final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
+        
+        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
+        assertEquals(1, facetDebug.size());
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) facetDebug.get(0).get("sweep_collection");
+        assertNotNull(sweep_debug);
+        assertEquals("count", sweep_debug.get("base"));
+        assertEquals(Arrays.asList("skg!fg","skg!bg"), sweep_debug.get("accs"));
+        assertEquals(Arrays.asList("skg"), sweep_debug.get("mapped"));
+      }
+      { // UIF will always *try* to sweep, but disabling on stat should mean debug is mostly empty...
+        final SolrParams params = SolrParams.wrapDefaults(params("sweep_key", "sweep_collection",
+                                                                 "sweep_val", "false"),
+                                                          facetParams);
+        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
+        assertEquals(1, facetDebug.size());
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) facetDebug.get(0).get("sweep_collection");
+        assertNotNull(sweep_debug);
+        assertEquals("count", sweep_debug.get("base"));
+        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
+        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+      }
+      { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
+        // even if the skg stat does ask for sweeping explicitly...
+        final SolrParams params = SolrParams.wrapDefaults(params("method_val", "dvhash",
+                                                                 "sweep_key", "sweep_collection",
+                                                                 "sweep_val", "true"),
+                                                          facetParams);
+        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
+        assertEquals(1, facetDebug.size());
+        assertEquals(FacetFieldProcessorByHashDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
+
+        // nocommit: this currently fails because even non-sweeping processors call
+        // nocommit: FacetFieldProcessor.fillBucketFromSlot which calls countAcc.getBaseSweepingAcc()
+        // nocommit: so we get a SweepingAcc (which populates the debug) even though we don't need/want/use it
+        //
+        // assertNull(facetDebug.get(0).get("sweep_collection"));
+      }
+
+      // nocommit: TODO test multiple relatedness() functions, confirm expected sweep accs based on sort
+      
+      // nocommit: TODO test nested facets and inspect nested debug
+      
+      // nocommit: TODO test multiacc situation w/multi relatedness(), confirm multiple sweep accs
+
+      // nocommit: TODO test prelim_sort=count + sort=relatedness(), confirm no sweep accs
+    }
+  }
+
+  private List<NamedList<Object>> getFacetDebug(final SolrParams params) {
+    try {
+      final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
+      assertNotNull(params + " is null rsp?", rsp);
+      final NamedList topNamedList = rsp.getResponse();
+      assertNotNull(params + " is null topNamedList?", topNamedList);
+      
+      // skip past the "top level" (implicit) Facet query to get it's "sub-facets" (the real facets)...
+      final List<NamedList<Object>> facetDebug =
+        (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
+      assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
+      return facetDebug;
+    } catch (Exception e) {
+      throw new RuntimeException("query failed: " + params + ": " + 
+                                 e.getMessage(), e);
+    } 
+
   }
   
   /** 
@@ -362,7 +445,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * We ignore {@link QueryResponse#getJsonFacetingResponse()} because it isn't as useful for
    * doing a "deep equals" comparison across requests
    */
-  private NamedList getFacetResponse(SolrParams params) {
+  private NamedList getFacetResponse(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);

@@ -117,7 +117,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // allow a custom count acc to be used
     if (countAcc == null) {
       countAcc = new CountSlotArrAcc(fcontext, slotCount);
-      countAcc.key = "count";
     }
 
     if (accs != null) {

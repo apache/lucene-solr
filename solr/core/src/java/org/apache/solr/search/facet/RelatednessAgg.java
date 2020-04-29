@@ -287,11 +287,12 @@ public class RelatednessAgg extends AggValueSource {
     @Override
     public SKGSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
       if (!this.agg.useSweep) {
-        baseSweepingAcc.registerMapping(this, this);
+        // nocommit: if we're not using sweeping, why do we need to register any mappings?
+        // baseSweepingAcc.registerMapping(this, this);
         return this;
       } else {
-        final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(fgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
-        final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(bgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
+        final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(key + "!fg", fgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
+        final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(key + "!bg", bgSet, slotvalues.length, CountSlotAccFactory.DEFAULT_COUNT_ACC_FACTORY);
         SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
         readOnlyReplacement.key = key;
         baseSweepingAcc.registerMapping(this, readOnlyReplacement);
