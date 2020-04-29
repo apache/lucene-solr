@@ -31,7 +31,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   private long numFound = 0;
   private long start = 0;
   private Float maxScore = null;
-  private HitCountRelation hitCountRelation = HitCountRelation.EQUAL_TO;
+  private HitCountRelation hitCountRelation = HitCountRelation.EQ;
   
   
   public HitCountRelation getHitCountRelation() {

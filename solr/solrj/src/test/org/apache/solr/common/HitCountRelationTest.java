@@ -24,17 +24,17 @@ public class HitCountRelationTest extends SolrTestCaseJ4 {
   @Test
   public void testOrdinalsDontChange() {
     assertEquals("HitCountRelation ordinals are used for serialization, don't change them without considering compatibility",
-        HitCountRelation.EQUAL_TO, HitCountRelation.values()[0]);
+        HitCountRelation.EQ, HitCountRelation.values()[0]);
     assertEquals("HitCountRelation ordinals are used for serialization, don't change them without considering compatibility",
-        HitCountRelation.GREATER_THAN_OR_EQUAL_TO, HitCountRelation.values()[1]);
+        HitCountRelation.GT_EQ, HitCountRelation.values()[1]);
   }
   
   @Test
   public void testForOrdinal() {
     expectThrows(IllegalArgumentException.class, () -> HitCountRelation.forOrdinal(-1));
     expectThrows(IllegalArgumentException.class, () -> HitCountRelation.forOrdinal(2));
-    assertEquals(HitCountRelation.EQUAL_TO, HitCountRelation.forOrdinal(0));
-    assertEquals(HitCountRelation.GREATER_THAN_OR_EQUAL_TO, HitCountRelation.forOrdinal(1));
+    assertEquals(HitCountRelation.EQ, HitCountRelation.forOrdinal(0));
+    assertEquals(HitCountRelation.GT_EQ, HitCountRelation.forOrdinal(1));
   }
 
 }

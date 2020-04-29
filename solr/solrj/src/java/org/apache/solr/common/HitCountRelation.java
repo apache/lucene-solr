@@ -25,11 +25,11 @@ public enum HitCountRelation {
   /**
    * The number of hits for the query are equal to the number reported in "numFound"
    */
-  EQUAL_TO,
+  EQ,
   /**
    * The number of hits for the query are greater than or equal to the number reported in "numFound"
    */
-  GREATER_THAN_OR_EQUAL_TO;
+  GT_EQ;
   
   @Override
   public String toString() {

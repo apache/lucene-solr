@@ -1604,7 +1604,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation == Relation.EQUAL_TO? HitCountRelation.EQUAL_TO : HitCountRelation.GREATER_THAN_OR_EQUAL_TO));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation == Relation.EQUAL_TO? HitCountRelation.EQ : HitCountRelation.GT_EQ));
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -1713,7 +1713,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
 
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, HitCountRelation.EQUAL_TO));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, HitCountRelation.EQ));
     // TODO: if we collect results before the filter, we just need to intersect with
     // that filter to generate the DocSet for qr.setDocSet()
     qr.setDocSet(set);
@@ -1986,7 +1986,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
-      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, HitCountRelation.EQUAL_TO);
+      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, HitCountRelation.EQ);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2025,7 +2025,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, HitCountRelation.EQUAL_TO);
+    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, HitCountRelation.EQ);
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 

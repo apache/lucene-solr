@@ -415,7 +415,7 @@ public class Grouping {
       for (int val : idSet) {
         ids[idx++] = val;
       }
-      qr.setDocList(new DocSlice(0, sz, ids, null, maxMatches, maxScore, HitCountRelation.EQUAL_TO));
+      qr.setDocList(new DocSlice(0, sz, ids, null, maxMatches, maxScore, HitCountRelation.EQ));
     }
   }
 
@@ -631,7 +631,7 @@ public class Grouping {
 
       float score = groups.maxScore;
       maxScore = maxAvoidNaN(score, maxScore);
-      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score, HitCountRelation.EQUAL_TO);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score, HitCountRelation.EQ);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();
@@ -673,7 +673,7 @@ public class Grouping {
       int len = docsGathered > offset ? docsGathered - offset : 0;
       int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
       float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
-      DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore, HitCountRelation.EQUAL_TO);
+      DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore, HitCountRelation.EQ);
 
       if (getDocList) {
         for (int i = offset; i < docs.length; i++) {

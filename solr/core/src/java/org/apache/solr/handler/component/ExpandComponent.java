@@ -440,13 +440,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             scores[i] = scoreDoc.score;
           }
           assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-          DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN, HitCountRelation.EQUAL_TO);
+          DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN, HitCountRelation.EQ);
           addGroupSliceToOutputMap(fieldType, ordBytes, outMap, charsRef, groupValue, slice);
         }
       } else {
         int totalHits = ((TotalHitCountCollector) cursor.value).getTotalHits();
         if (totalHits > 0) {
-          DocSlice slice = new DocSlice(0, 0, null, null, totalHits, 0, HitCountRelation.EQUAL_TO);
+          DocSlice slice = new DocSlice(0, 0, null, null, totalHits, 0, HitCountRelation.EQ);
           addGroupSliceToOutputMap(fieldType, ordBytes, outMap, charsRef, groupValue, slice);
         }
       }

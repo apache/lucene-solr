@@ -451,7 +451,7 @@ public class ResponseBuilder
       rsp.getResponseHeader().asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       if(getResults() != null && getResults().docList==null) {
-        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, HitCountRelation.EQUAL_TO);
+        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, HitCountRelation.EQ);
       }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();

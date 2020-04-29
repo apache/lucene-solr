@@ -50,7 +50,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         req("q", "field1_s:foo", 
             "minExactHits", Long.toString(10L * Integer.MAX_VALUE),
             "rows", "2")
-        ,"//*[@hitCountRelation='" + HitCountRelation.EQUAL_TO + "']"
+        ,"//*[@hitCountRelation='" + HitCountRelation.EQ + "']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
@@ -60,27 +60,27 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
-            ,"//*[@hitCountRelation='" + HitCountRelation.GREATER_THAN_OR_EQUAL_TO + "']"
+            ,"//*[@hitCountRelation='" + HitCountRelation.GT_EQ + "']"
             ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
     assertQ("test query on empty index",
         req("q", "field1_s:foo", 
             "minExactHits", "200",
             "rows", "2")
-        ,"//*[@hitCountRelation='" + HitCountRelation.EQUAL_TO + "']"
+        ,"//*[@hitCountRelation='" + HitCountRelation.EQ + "']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
   
   private void assertMatchesEqual(int expectedCount, QueryResult qr) {
     assertEquals(expectedCount, qr.getDocList().matches());
-    assertEquals(HitCountRelation.EQUAL_TO, qr.getDocList().hitCountRelation());
+    assertEquals(HitCountRelation.EQ, qr.getDocList().hitCountRelation());
   }
   
   private void assertMatchesGraterThan(int expectedCount, QueryResult qr) {
     assertTrue("Expecting returned matches to be greater than " + expectedCount + " but got " + qr.getDocList().matches(),
         expectedCount >= qr.getDocList().matches());
-    assertEquals(HitCountRelation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+    assertEquals(HitCountRelation.GT_EQ, qr.getDocList().hitCountRelation());
   }
   
   public void testLowMinExactHitsGeneratesApproximation() throws IOException {

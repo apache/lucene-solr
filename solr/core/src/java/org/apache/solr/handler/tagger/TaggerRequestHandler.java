@@ -285,7 +285,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     for (int i = 0; i < docIds.length; i++) {
       docIds[i] = docIdIter.nextDoc();
     }
-    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f, HitCountRelation.EQUAL_TO);
+    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f, HitCountRelation.EQ);
   }
 
   private TagClusterReducer chooseTagClusterReducer(String overlaps) {

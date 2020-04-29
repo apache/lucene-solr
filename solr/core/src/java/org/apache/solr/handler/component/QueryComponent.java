@@ -850,7 +850,7 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
-      HitCountRelation hitCountRelation = HitCountRelation.EQUAL_TO;
+      HitCountRelation hitCountRelation = HitCountRelation.EQ;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -925,8 +925,8 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountRelation == HitCountRelation.EQUAL_TO && docs.getHitCountRelation() == HitCountRelation.GREATER_THAN_OR_EQUAL_TO) {
-          hitCountRelation = HitCountRelation.GREATER_THAN_OR_EQUAL_TO;
+        if (hitCountRelation == HitCountRelation.EQ && docs.getHitCountRelation() == HitCountRelation.GT_EQ) {
+          hitCountRelation = HitCountRelation.GT_EQ;
         }
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
@@ -1291,7 +1291,7 @@ public class QueryComponent extends SearchComponent
     }
 
     DocListAndSet res = new DocListAndSet();
-    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, HitCountRelation.EQUAL_TO);
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, HitCountRelation.EQ);
     if (rb.isNeedDocSet()) {
       // TODO: create a cache for this!
       List<Query> queries = new ArrayList<>();

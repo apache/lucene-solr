@@ -115,7 +115,7 @@ public class TestDocSet extends SolrTestCase {
       arr[i] = iter.nextDoc();
     }
 
-    return new DocSlice(offset, len, arr, null, len*2, 100.0f, HitCountRelation.EQUAL_TO);
+    return new DocSlice(offset, len, arr, null, len*2, 100.0f, HitCountRelation.EQ);
   }
 
 
