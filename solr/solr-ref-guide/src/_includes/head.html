@@ -6,21 +6,24 @@
 {% comment %}NOTE: explicitly using the GUIDE version here (not solr) {% endcomment %}
 <title>{% if page_id != "index" %}{{ page.title }} | {% endif %}{{ site.site_title }} {{ site.solr-attributes.solr-guide-version}}</title>
 
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
-<link rel="stylesheet" href="{{ "css/lavish-bootstrap.css" }}">
-<link rel="stylesheet" href="{{ "css/customstyles.css" }}">
-<link rel="stylesheet" href="{{ "css/theme-solr.css" }}">
+<link rel="stylesheet" href="{{ "css/navs.css "}}">
 <link rel="stylesheet" href="{{ "css/ref-guide.css" }}">
+<link rel="stylesheet" href="{{ "css/decoration.css" }}">
+<link rel="stylesheet" href="{{ "css/search.css" }}">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+
+
+<!-- Scrollbar Custom CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/malihu-custom-scrollbar-plugin/3.1.5/jquery.mCustomScrollbar.min.css" crossorigin="anonymous">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js" crossorigin="anonymous"></script>
+
 <script src="{{ "js/jquery.navgoco.min.js" }}"></script>
 
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
-<script src="{{ "js/toc.js" }}"></script>
-<script src="{{ "js/customscripts.js" }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.2.0/anchor.min.js" crossorigin="anonymous"></script>
 
 <link rel="shortcut icon" href="{{ "images/icons/favicon.ico"  }}">
 

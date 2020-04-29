@@ -153,7 +153,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
   @Test
   public void testTriggerDefaults() throws Exception {
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    log.info(autoScalingConfig.toString());
+    log.info("{}", autoScalingConfig);
     AutoScalingConfig.TriggerConfig triggerConfig = autoScalingConfig.getTriggerConfigs().get(AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME);
     assertNotNull(triggerConfig);
     assertEquals(3, triggerConfig.actions.size());
@@ -181,7 +181,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }

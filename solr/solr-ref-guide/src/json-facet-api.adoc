@@ -1,8 +1,7 @@
 = JSON Facet API
-:page-tocclass: right
+:page-children: json-faceting-domain-changes
 :solr-root-path: ../../
 :example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
-:page-children: json-faceting-domain-changes
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
