@@ -214,3 +214,6 @@ limitations under the License.
 {
   margin-top: 20px;
 }
+
+#content #index #security h2 { background-image: url( ../../img/ico/prohibition.png ); }
+#content #index #security div { text-align: right; }
