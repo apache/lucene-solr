@@ -16,6 +16,8 @@
  */
 package org.apache.solr.security;
 
+import org.apache.http.HttpHeaders;
+
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +38,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
         X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
         if (certs == null || certs.length == 0) {
             numMissingCredentials.inc();
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "require certificate");
             return false;
         }
