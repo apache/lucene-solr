@@ -2983,4 +2983,30 @@ public abstract class LuceneTestCase extends Assert {
     assumeTrue("hit JDK collator bug", Integer.signum(v1) == Integer.signum(v2));
     return v1;
   }
+
+
+  /**
+   * Ensures that the MergePolicy has sane values for tests that test with lots of documents.
+   */
+  protected static IndexWriterConfig ensureSaneIWCOnNightly(IndexWriterConfig conf) {
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      // newIWConfig makes smallish max seg size, which
+      // results in tons and tons of segments for this test
+      // when run nightly:
+      MergePolicy mp = conf.getMergePolicy();
+      if (mp instanceof TieredMergePolicy) {
+        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
+      } else if (mp instanceof LogByteSizeMergePolicy) {
+        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
+      } else if (mp instanceof LogMergePolicy) {
+        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
+      }
+      // when running nightly, merging can still have crazy parameters,
+      // and might use many per-field codecs. turn on CFS for IW flushes
+      // and ensure CFS ratio is reasonable to keep it contained.
+      conf.setUseCompoundFile(true);
+      mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
+    }
+    return conf;
+  }
 }
