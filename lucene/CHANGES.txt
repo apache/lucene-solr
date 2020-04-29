@@ -142,6 +142,11 @@ API Changes
   interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
   around it. (Simon Willnauer)
 
+* LUCENE-9349: QueryVisitor.consumeTermsMatching() now takes a
+  Supplier<ByteRunAutomaton> to enable queries that build large automata to
+  provide them lazily.  TermsInSetQuery switches to using this method
+  to report matching terms. (Alan Woodward)
+
 New Features
 ---------------------
 (No changes)
