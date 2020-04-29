@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
@@ -183,6 +184,75 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
+  public void testSortOptimizationEqualValues() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(10000);
+    for (int i = 1; i <= numDocs; ++i) {
+      final Document doc = new Document();
+      doc.add(new NumericDocValuesField("my_field1", 100)); // all docs have the same value of my_field1
+      doc.add(new IntPoint("my_field1", 100));
+      doc.add(new NumericDocValuesField("my_field2", numDocs - i)); // diff values for the field my_field2
+      writer.addDocument(doc);
+      if (i == 7000) writer.flush(); // two segments
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+
+    { // test that sorting on a single field with equal values uses the optimization
+      final SortField sortField = new SortField("my_field1", SortField.Type.INT);
+      final Sort sort = new Sort(sortField);
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(100, fieldDoc.fields[0]);
+      }
+      assertTrue(topDocs.totalHits.value < numDocs); // assert that some docs were skipped => optimization was run
+    }
+
+    { // test that sorting on a single field with equal values and after parameter uses the optimization
+      final int afterValue = 100;
+      final SortField sortField = new SortField("my_field1", SortField.Type.INT);
+      final Sort sort = new Sort(sortField);
+      FieldDoc after = new FieldDoc(10, Float.NaN, new Integer[] {afterValue});
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(100, fieldDoc.fields[0]);
+      }
+      assertTrue(topDocs.totalHits.value < numDocs); // assert that some docs were skipped => optimization was run
+    }
+
+    { // test that sorting on main field with equal values + another field for tie breaks doesn't use optimization
+      final SortField sortField1 = new SortField("my_field1", SortField.Type.INT);
+      final SortField sortField2 = new SortField("my_field2", SortField.Type.INT);
+      final Sort sort = new Sort(sortField1, sortField2);
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        assertEquals(100, fieldDoc.fields[0]); // sort on 1st field as expected
+        assertEquals(i, fieldDoc.fields[1]); // sort on 2nd field as expected
+      }
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertEquals(topDocs.totalHits.value, numDocs); // assert that all documents were collected => optimization was not run
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
 
   public void testFloatSortOptimization() throws IOException {
     final Directory dir = newDirectory();
@@ -219,5 +289,6 @@ public class TestSortOptimization extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
 
 }

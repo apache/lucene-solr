@@ -16,41 +16,24 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 /**
- * {@link LeafCollector} delegator.
- *
- * @lucene.experimental
+ * Decorates a wrapped LeafFieldComparator to add a functionality to skip over non-competitive docs.
+ * FilteringLeafFieldComparator provides two additional functions to a LeafFieldComparator:
+ *  {@code competitiveIterator()} and {@code setCanUpdateIterator()}.
  */
-public abstract class FilterLeafCollector implements LeafCollector {
+public interface FilteringLeafFieldComparator extends LeafFieldComparator {
+  /**
+   * Returns a competitive iterator
+   * @return an iterator over competitive docs that are stronger than already collected docs
+   * or {@code null} if such an iterator is not available for the current segment.
+   */
+  DocIdSetIterator competitiveIterator();
 
-  protected final LeafCollector in;
-
-  /** Sole constructor. */
-  public FilterLeafCollector(LeafCollector in) {
-    this.in = in;
-  }
-
-  @Override
-  public void setScorer(Scorable scorer) throws IOException {
-    in.setScorer(scorer);
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-    in.collect(doc);
-  }
-
-  @Override
-  public String toString() {
-    String name = getClass().getSimpleName();
-    if (name.length() == 0) {
-      // an anonoymous subclass will have empty name?
-      name = "FilterLeafCollector";
-    }
-    return name + "(" + in + ")";
-  }
-
+  /**
+   * Informs this leaf comparator that it is allowed to start updating its competitive iterator.
+   * This method is called from a collector when queue becomes full and threshold is reached.
+   */
+  void setCanUpdateIterator() throws IOException;
 }

@@ -49,10 +49,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static abstract class MultiComparatorLeafCollector implements LeafCollector {
 
     final LeafFieldComparator comparator;
+    final FilteringLeafFieldComparator filteringLeafComparator;
     final int reverseMul;
     Scorable scorer;
 
     MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul) {
+      this.filteringLeafComparator = comparators[0] instanceof FilteringLeafFieldComparator ?
+          (FilteringLeafFieldComparator) comparators[0] : null;
       if (comparators.length == 1) {
         this.reverseMul = reverseMul[0];
         this.comparator = comparators[0];
@@ -86,6 +89,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
         updateGlobalMinCompetitiveScore(scorer);
+      }
+
+      if (filteringLeafComparator != null && queueFull &&
+          hitsThresholdChecker.isThresholdReached() && totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+        // for the first time queue becomes full and hitsThreshold is reached,
+        // notify leaf comparator that its competitive iterator can be updated
+        filteringLeafComparator.setCanUpdateIterator();
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
       }
     }
 
@@ -139,16 +150,23 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (minScoreAcc != null) {
         updateGlobalMinCompetitiveScore(scorer);
       }
+      if (filteringLeafComparator != null && queueFull && hitsThresholdChecker.isThresholdReached()) {
+        // if queue became full and hitsThreshold was reached in previous segments,
+        // notify this segment's leaf comparator that its competitive iterator can be updated
+        filteringLeafComparator.setCanUpdateIterator();
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+      }
     }
 
     @Override
     public DocIdSetIterator competitiveIterator() {
-      if (filteringComparator == null) {
+      if (filteringLeafComparator == null) {
         return null;
       } else {
-        return filteringComparator.competitiveIterator();
+        return filteringLeafComparator.competitiveIterator();
       }
     }
+
   }
 
   static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
@@ -289,8 +307,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // the current local minimum competitive score already propagated to the underlying scorer
   float minCompetitiveScore;
 
-  final FilteringFieldComparator<?> filteringComparator;
-
   final int numComparators;
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
@@ -320,16 +336,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       relevanceComparator = (FieldComparator.RelevanceComparator) firstComparator;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
-      filteringComparator = null;
     } else {
       relevanceComparator = null;
       canSetMinScore = false;
       if (firstComparator instanceof FilteringFieldComparator) {
         assert(hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE);
-        filteringComparator = (FilteringFieldComparator<?>) firstComparator;
         scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
       } else {
-        filteringComparator = null;
         scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       }
     }
@@ -358,8 +371,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (queueFull == false || hitsThresholdChecker.isThresholdReached() == false) return;
-    if (canSetMinScore) {
+    if (canSetMinScore
+          && queueFull
+          && hitsThresholdChecker.isThresholdReached()) {
       assert bottom != null && relevanceComparator != null;
       float minScore = relevanceComparator.value(bottom.slot);
       if (minScore > minCompetitiveScore) {
@@ -370,15 +384,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           minScoreAcc.accumulate(bottom.doc, minScore);
         }
       }
-    } else if (scoreMode == ScoreMode.TOP_DOCS || scoreMode == ScoreMode.TOP_DOCS_WITH_SCORES) {
-      if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-        // for the 1st time queue becomes full and hitsThreshold is reached
-        // we can let know the comparator's iterator that it can started to be updated
-        filteringComparator.setCanUpdateIterator();
-        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
-      }
     }
   }
+
 
   /**
    * Creates a new {@link TopFieldCollector} from the given

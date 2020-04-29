@@ -139,7 +139,8 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       if (i == 0 && filterNonCompetitiveDocs) {
         // try to rewrite the 1st comparator to the comparator that can skip non-competitive documents
         // skipping functionality is beneficial only for the 1st comparator
-        comparators[i] = FilteringFieldComparator.wrapToFilteringComparator(field.getComparator(size, i), field.reverse);
+        comparators[i] = FilteringFieldComparator.wrapToFilteringComparator(field.getComparator(size, i),
+            field.reverse, numComparators == 1);
       } else {
         comparators[i] = field.getComparator(size, i);
       }

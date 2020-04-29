@@ -16,27 +16,30 @@
  */
 package org.apache.lucene.search;
 
+import org.apache.lucene.index.LeafReaderContext;
+
 import java.io.IOException;
 
 /**
- * Decorates a wrapped FieldComparator to add a functionality to skip over non-competitive docs.
- * FilteringFieldComparator provides two additional functions for a FieldComparator:
- * 1) {@code competitiveIterator()} that returns an iterator over
- *      competitive docs that are stronger than already collected docs.
- * 2) {@code setCanUpdateIterator()} that notifies the comparator when it is ok to start updating its internal iterator.
- *  This method is called from a collector to inform the comparator to start updating its iterator.
+ * A wrapper over {@code FieldComparator} that provides a leaf comparator that can filter non-competitive docs.
  */
 public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
-  final FieldComparator<T> in;
+  protected final FieldComparator<T> in;
+  protected final boolean reverse;
+  // singleSort is true, if sort is based on a single sort field. As there are no other sorts configured
+  // as tie breakers, we can filter out docs with equal values.
+  protected final boolean singleSort;
+  protected boolean hasTopValue = false;
 
-  public FilteringFieldComparator(FieldComparator<T> in) {
+  public FilteringFieldComparator(FieldComparator<T> in, boolean reverse, boolean singleSort) {
     this.in = in;
+    this.reverse = reverse;
+    this.singleSort = singleSort;
   }
 
-  protected abstract DocIdSetIterator competitiveIterator();
+  @Override
+  public abstract FilteringLeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException;
 
-  protected abstract void setCanUpdateIterator() throws IOException;
-    
   @Override
   public int compare(int slot1, int slot2) {
     return in.compare(slot1, slot2);
@@ -50,6 +53,7 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
   @Override
   public void setTopValue(T value) {
     in.setTopValue(value);
+    hasTopValue = true;
   }
 
   @Override
@@ -57,22 +61,28 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
     return in.compareValues(first, second);
   }
 
+
   /**
    * Try to wrap a given field comparator to add to it a functionality to skip over non-competitive docs.
    * If for the given comparator the skip functionality is not implemented, return the comparator itself.
+   * @param comparator – comparator to wrap
+   * @param reverse – if this sort is reverse
+   * @param singleSort – true if this sort is based on a single field and there are no other sort fields for tie breaking
+   * @return comparator wrapped as a filtering comparator or the original comparator if the filtering functionality
+   * is not implemented for it
    */
-  public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse) {
-    if (comparator instanceof FieldComparator.LongComparator) {
-      return new FilteringNumericComparator.FilteringLongComparator((FieldComparator.LongComparator) comparator, reverse);
+  public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse, boolean singleSort) {
+    if (comparator instanceof FieldComparator.LongComparator){
+      return new FilteringNumericComparator<>((FieldComparator.LongComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.IntComparator) {
-      return new FilteringNumericComparator.FilteringIntComparator((FieldComparator.IntComparator) comparator, reverse);
+    if (comparator instanceof FieldComparator.IntComparator){
+      return new FilteringNumericComparator<>((FieldComparator.IntComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.DoubleComparator) {
-      return new FilteringNumericComparator.FilteringDoubleComparator((FieldComparator.DoubleComparator) comparator, reverse);
+    if (comparator instanceof FieldComparator.DoubleComparator){
+      return new FilteringNumericComparator<>((FieldComparator.DoubleComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.FloatComparator) {
-      return new FilteringNumericComparator.FilteringFloatComparator((FieldComparator.FloatComparator) comparator, reverse);
+    if (comparator instanceof FieldComparator.FloatComparator){
+      return new FilteringNumericComparator<>((FieldComparator.FloatComparator) comparator, reverse, singleSort);
     }
     return comparator;
   }
