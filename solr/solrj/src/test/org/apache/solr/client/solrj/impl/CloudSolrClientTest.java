@@ -466,7 +466,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       shardAddresses.add(shardAddress);
     }
     if (log.isInfoEnabled()) {
-      log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray())); // logOK
+      log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray()));
     }
 
     // Make sure the distributed queries were directed to a single node only
@@ -1035,7 +1035,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
     assertTrue("No responses", shardAddresses.size() > 0);
     if (log.isInfoEnabled()) {
-      log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray())); // logOk
+      log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray()));
     }
   }
 

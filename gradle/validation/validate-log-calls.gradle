@@ -35,9 +35,9 @@ allprojects {
         if (project.hasProperty('srcDir')) {
           srcDir.addAll(project.getProperty('srcDir').split(','))
         } else { // Remove this later, make it optional
-          //nocommit
+          //TODO
           throw new BuildException(String.format(Locale.ENGLISH,
-                  '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
+              '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
           "-PsrcDir=solr/core/src/java/org/apache/solr/core". This task will recursively check all
            "*.java" files under that directory'''))
         }
@@ -63,66 +63,77 @@ class ValidateLogCallsTask extends DefaultTask {
   @Input
   boolean checkPlus
 
-  // nocommit, remove when you go to project-based checking.
-  Set<String> dirsToCheck = ["solr/core/src/java/org/apache/solr/analysis"
-                             , "solr/core/src/java/org/apache/solr/api"
-                             , "solr/core/src/java/org/apache/solr/client"
-                             , "solr/core/src/java/org/apache/solr/cloud" // 120
-                             , "solr/core/src/java/org/apache/solr/cloud/api"
-                             , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
-                             , "solr/core/src/java/org/apache/solr/cloud/cdcr"
-                             , "solr/core/src/java/org/apache/solr/cloud/hdfs"
-                             , "solr/core/src/java/org/apache/solr/cloud/overseer"
-                             , "solr/core/src/java/org/apache/solr/cloud/rule"
-                             , "solr/core/src/java/org/apache/solr/core"
-                             , "solr/core/src/java/org/apache/solr/filestore"
-                             , "solr/core/src/java/org/apache/solr/handler/admin"
-                             , "solr/core/src/java/org/apache/solr/handler/component"
-                             , "solr/core/src/java/org/apache/solr/handler/export"
-                             , "solr/core/src/java/org/apache/solr/handler/loader"
-                             , "solr/core/src/java/org/apache/solr/handler/tagger"
-                             , "solr/core/src/java/org/apache/solr/highlight"
-                             , "solr/core/src/java/org/apache/solr/index"
-                             , "solr/core/src/java/org/apache/solr/internal"
-                             , "solr/core/src/java/org/apache/solr/legacy"
-                             , "solr/core/src/java/org/apache/solr/logging"
-                             , "solr/core/src/java/org/apache/solr/metrics"
-                             , "solr/core/src/java/org/apache/solr/packagemanager"
-                             , "solr/core/src/java/org/apache/solr/parser"
-                             , "solr/core/src/java/org/apache/solr/pkg"
-                             , "solr/core/src/java/org/apache/solr/query"
-                             , "solr/core/src/java/org/apache/solr/request"
-                             , "solr/core/src/java/org/apache/solr/response"
-                             , "solr/core/src/java/org/apache/solr/rest"
-                             , "solr/core/src/java/org/apache/solr/schema"
-                             , "solr/core/src/java/org/apache/solr/search"
-                             , "solr/core/src/java/org/apache/solr/security"
-                             , "solr/core/src/java/org/apache/solr/servlet"
-                             , "solr/core/src/java/org/apache/solr/spelling"
-                             , "solr/core/src/java/org/apache/solr/store"
-                             , "solr/core/src/java/org/apache/solr/uninverting"
-                             , "solr/core/src/java/org/apache/solr/update"
-                             , "solr/core/src/java/org/apache/solr/util"
-                             , "solr/solrj/src/java/org/apache/solr/common/util"
-                             , "solr/solrj/src/java/org/apache/solr/common/cloud" // 18
-                             , "solr/solrj/src/java/org/apache/solr/client/solrj/impl" // 27
-                             , "solr/solrj/src/java/org/apache/solr/client/solrj/io" // 8
-                             , "solr/solrj/src/java/org/apache/solr/client/solrj/cloud" // 26
-                             , "solr/solrj/src/java/org/apache/solr/client/solrj/routing" //2
-                             , "solr/solrj/src/test/org/apache/solr/common/cloud" //1
-                             , "solr/solrj/src/test/org/apache/solr/client/solrj/impl" //15
-                             , "solr/solrj/src/test/org/apache/solr/client/solrj" //34
-                             , "solr/solrj/src/test/org/apache/solr/client/solrj/io/stream" // 1
-                             , "solr/solrj/src/test/org/apache/solr/client/solrj/cloud/autoscaling" //4
+  // TODO, remove when you go to project-based checking.
+  Set<String> dirsToCheck = [
+      "solr/core/src/java/org/apache/solr/analysis"
+      , "solr/core/src/java/org/apache/solr/api"
+      , "solr/core/src/java/org/apache/solr/client"
+      , "solr/core/src/java/org/apache/solr/cloud" // 120
+      , "solr/core/src/java/org/apache/solr/cloud/api"
+      , "solr/core/src/java/org/apache/solr/cloud/autoscaling"
+      , "solr/core/src/java/org/apache/solr/cloud/cdcr"
+      , "solr/core/src/java/org/apache/solr/cloud/hdfs"
+      , "solr/core/src/java/org/apache/solr/cloud/overseer"
+      , "solr/core/src/java/org/apache/solr/cloud/rule"
+      , "solr/core/src/java/org/apache/solr/core"
+      , "solr/core/src/java/org/apache/solr/filestore"
+      , "solr/core/src/java/org/apache/solr/handler/admin"
+      , "solr/core/src/java/org/apache/solr/handler/component"
+      , "solr/core/src/java/org/apache/solr/handler/export"
+      , "solr/core/src/java/org/apache/solr/handler/loader"
+      , "solr/core/src/java/org/apache/solr/handler/tagger"
+      , "solr/core/src/java/org/apache/solr/highlight"
+      , "solr/core/src/java/org/apache/solr/index"
+      , "solr/core/src/java/org/apache/solr/internal"
+      , "solr/core/src/java/org/apache/solr/legacy"
+      , "solr/core/src/java/org/apache/solr/logging"
+      , "solr/core/src/java/org/apache/solr/metrics"
+      , "solr/core/src/java/org/apache/solr/packagemanager"
+      , "solr/core/src/java/org/apache/solr/parser"
+      , "solr/core/src/java/org/apache/solr/pkg"
+      , "solr/core/src/java/org/apache/solr/query"
+      , "solr/core/src/java/org/apache/solr/request"
+      , "solr/core/src/java/org/apache/solr/response"
+      , "solr/core/src/java/org/apache/solr/rest"
+      , "solr/core/src/java/org/apache/solr/schema"
+      , "solr/core/src/java/org/apache/solr/search"
+      , "solr/core/src/java/org/apache/solr/security"
+      , "solr/core/src/java/org/apache/solr/servlet"
+      , "solr/core/src/java/org/apache/solr/spelling"
+      , "solr/core/src/java/org/apache/solr/store"
+      , "solr/core/src/java/org/apache/solr/uninverting"
+      , "solr/core/src/java/org/apache/solr/update"
+      , "solr/core/src/java/org/apache/solr/util"
+      , "solr/solrj"
+      , "solr/core/src/java/org/apache/solr/handler"
+      , "solr/core/src/test/org/apache/solr/cloud/api"
+      , "solr/core/src/test/org/apache/solr/cloud/autoscaling"
+//      , "solr/core/src/test/org/apache/solr/cloud"
+//      , "solr/core/src/test/org/apache/solr/cloud/cdcr"
+//      , "solr/core/src/test/org/apache/solr/handler"
+//      , "solr/core/src/test/org/apache/solr/metrics"
+//      , "solr/core/src/test/org/apache/solr/request"
+//      , "solr/core/src/test/org/apache/solr/response"
+//      , "solr/core/src/test/org/apache/solr/schema"
+//      , "solr/core/src/test/org/apache/solr/search"
+//      , "solr/core/src/test/org/apache/solr/security"
+//      , "solr/core/src/test/org/apache/solr/spelling"
+//      , "solr/core/src/test/org/apache/solr"
+//      , "solr/core/src/test/org/apache/solr/update"
+//      , "solr/core/src/test/org/apache/solr/util"
+//      , "solr/core/src/test"
+//      , "solr/core"
+
   ]
 
-  //nocommit REMOVE ME! Really! and the check for bare parens. Several times I've put in () when I meant {} and only
+  //TODO REMOVE ME! Really! and the check for bare parens. Several times I've put in () when I meant {} and only
   // caught it by chance. So for this mass edit, I created a check with a a lot of false positives. This is a list of
   // them and we won't report them.
 
   Map<String, List<Integer>> parenHack = [
       "AddReplicaCmd.java"              : [99]
       , "Assign.java"                   : [329]
+      , "CloudSolrClientTest.java"      : [1083]
       , "CommitTracker.java"            : [135]
       , "DeleteReplicaCmd.java"         : [75]
       , "DirectUpdateHandler2.java"     : [838, 859]
@@ -133,6 +144,9 @@ class ValidateLogCallsTask extends DefaultTask {
       , "SliceMutator.java"             : [61]
       , "SolrDispatchFilter.java"       : [150, 205, 242]
       , "Suggester.java"                : [147, 181]
+      , "TestSimTriggerIntegration.java" : [710, 713]
+      , "TestSolrJErrorHandling.java"   : [289]
+      , "TriggerIntegrationTest.java"   : [427, 430]
       , "UpdateLog.java"                : [1976]
       , "V2HttpCall.java"               : [158]
       // checking against 8x in master, take these out usually.
@@ -155,7 +169,7 @@ class ValidateLogCallsTask extends DefaultTask {
   }
 
   // We have a log.something line, check for patterns we're not fond of.
-  def checkLogLine(File file, String line, int lineNumber, String previous) {
+  def checkLine(File file, String line, int lineNumber, String previous) {
 
     boolean violation = false
 
@@ -184,15 +198,27 @@ class ValidateLogCallsTask extends DefaultTask {
             .replaceFirst(/.*?\(/, " ") // Get rid of "log.info("
             .replaceFirst(/\);/, " ") // get rid of the closing ");"
             .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-            .replaceAll(/".*?"/, " ") // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+            .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
             .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
             .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
-
+            .replaceAll("\\s", "")
 
     def m = stripped =~ "\\(.*?\\)"
     def hasParens = m.find()
-    def hasPlus = stripped.contains("+")
 
+    // The compiler will pre-assemble patterns like 'log.info("string const1 {}" + " string const2 {}", obj1, obj2)'
+    // to log.info("string const1 {} string const2 {}", obj1, obj2)', so don't worry about any plus preceeded and
+    // followed by double quotes.
+    def hasPlus = false
+    for (int idx = 0; idx < stripped.length(); ++idx) {
+      if (stripped.charAt(idx) == '+') {
+        if (idx == 0 || idx == stripped.length() - 1
+            || stripped.charAt(idx - 1) != '"' || stripped.charAt(idx + 1) != '"') {
+          hasPlus = true
+          break
+        }
+      }
+    }
     // Check that previous line isn't an if statement for always-reported log levels. Arbitrary decision: we don't
     // really care about checking for awkward constructions for WARN and above, so report a violation if the previous
     // line contains an if for those levels.
@@ -222,13 +248,16 @@ class ValidateLogCallsTask extends DefaultTask {
         violation = true
       }
     }
-    // Always report toString(). Note, this over-reports constructs like Arrays.toString(something), but just add //logOK.
+    // Always report toString(). Note, this over-reports some constructs
+    // but just add //logOK if it's really OK.
     if (line.contains("toString(") == true) {
-      violation = true
+      if (line.replaceAll(/Arrays.toString\(/, "").contains("toString(") && prevLineNotIf) {
+        violation = true
+      }
     }
     if (violation) {
       reportViolation(String.format("Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
-              , System.lineSeparator, file.getAbsolutePath(), lineNumber))
+          , System.lineSeparator, file.getAbsolutePath(), lineNumber))
     }
     return
   }
@@ -259,7 +288,6 @@ class ValidateLogCallsTask extends DefaultTask {
     int state = 0 // 0 == not collecting a log line, 1 == collecting a log line, 2 == just collected the last.
     int lineNumber = 0
     StringBuilder sb = new StringBuilder();
-    boolean foundViolation = false
 
     // We have to assemble line-by-line to get the full log statement. We require that all loggers (except requestLog
     // and slowLog) be exactly "log". That will be checked as well.
@@ -300,7 +328,7 @@ class ValidateLogCallsTask extends DefaultTask {
         case 1:
           break;
         case 2:
-          checkLogLine(file, sb.toString(), lineNumber, prevLine)
+          checkLine(file, sb.toString(), lineNumber, prevLine)
           state = 0
           break;
         default:
@@ -315,7 +343,7 @@ class ValidateLogCallsTask extends DefaultTask {
 //    println srcDir
     dirsToCheck.addAll(srcDir)
 
-    //nocommit. This is here to check 8x on another branch since I can't run Gradle
+    //TODO. This is here to check 8x on another branch since I can't run Gradle
     // over 8x. Used periodically as a sanity check.
 //    new File("/Users/Erick/apache/solrJiras/master").traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.java/) { File it ->
 //      if (dirsToCheck.any { dir ->
@@ -323,7 +351,7 @@ class ValidateLogCallsTask extends DefaultTask {
 //      }) {
 //        if (checkFile(it)) {
 //          println(it.getAbsolutePath())
-//          // nocommit. This just makes it much easier to get to the files during this mass migration!
+//          // TODO. This just makes it much easier to get to the files during this mass migration!
 //        }
 //      }
 
@@ -333,13 +361,13 @@ class ValidateLogCallsTask extends DefaultTask {
 //        }
 //      }
 //
-//nocommit
+//TODO
 //    println project
 
     // This is the real stuff
     project.sourceSets.each { srcSet ->
       srcSet.java.each { f ->
-        if (srcDir.contains("all")) {
+        if (srcDir.contains("all")) { // TODO
           checkFile(f)
         } else if (dirsToCheck.any {
           f.getCanonicalPath().contains(it)
@@ -351,7 +379,7 @@ class ValidateLogCallsTask extends DefaultTask {
 
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-              errsFound, violations.join(', ')));
+          errsFound, violations.join(', ')));
     }
   }
 }
