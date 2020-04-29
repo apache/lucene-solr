@@ -143,7 +143,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       rsp.add( "solr_home", cc.getSolrHome());
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
-    rsp.add( "user", getSecurityInfo(req) );
+    rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
