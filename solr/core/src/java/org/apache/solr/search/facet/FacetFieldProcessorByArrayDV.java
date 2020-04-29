@@ -92,13 +92,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    if (collectAcc instanceof SweepableSlotAcc) {
-      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(slotAccMapper));
-      if (allBucketsAcc != null) {
-        allBucketsAcc.collectAcc = collectAcc;
-      }
-    }
-
+    registerSweepingAccIfSupportedByCollectAcc();
+    
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
     boolean fullRange = startTermIndex == 0 && endTermIndex == si.getValueCount();

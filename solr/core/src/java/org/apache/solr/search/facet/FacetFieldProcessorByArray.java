@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.facet.FacetFieldProcessor.FacetFieldProcessorSlotAccMapper;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
@@ -45,15 +44,6 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   int maxSlots;
 
   int allBucketsSlot = -1;  // slot for the primary Accs (countAcc, collectAcc)
-
-  /**
-   * Callback, registered by calling {@link CountSlotAcc#getBaseSweepingAcc(CollectSlotAccMappingAware)}
-   * on {@link #countAcc}. {@link #slotAccMapper} will be notified of any {@link SlotAcc} references that
-   * need to be modified on this {@link FacetFieldProcessor} instance as a consequence of changes made
-   * upon calling {@link SweepableSlotAcc#registerSweepingAccs(SweepingAcc)} on a {@link SweepableSlotAcc}
-   * instance of {@link #collectAcc};
-   */
-  protected final CollectSlotAccMappingAware slotAccMapper = new FacetFieldProcessorSlotAccMapper(this);
 
   FacetFieldProcessorByArray(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);

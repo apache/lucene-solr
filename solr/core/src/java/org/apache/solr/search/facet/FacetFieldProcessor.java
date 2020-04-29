@@ -780,10 +780,33 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   /**
-   * Simple {@link CollectSlotAccMappingAware} that receives notifications of {@link SlotAcc}
-   * replacements, and modifies its associated {@link FacetFieldProcessor} if necessary.
+   * Helper method that subclasses can use to indicate they with to use sweeping.
+   * If sweeping is supported by the {@link #collectAcc} this method will: 
+   * <ul>
+   * <li>Create a {@link CollectSlotAccMappingAware} instance to handle {@link #sortAcc} mapping (if needed)</li>
+   * <li>replace {@link #collectAcc} with it's sweeping equivilent</li>
+   * <li>update {@link #allBuckets}'s reference to {@link #collectAcc} (if it exists)</li>
+   * </ul>
+   *
+   * @return true if the above actions were taken
    */
-  static class FacetFieldProcessorSlotAccMapper implements CollectSlotAccMappingAware {
+  protected boolean registerSweepingAccIfSupportedByCollectAcc() {
+    if (collectAcc instanceof SweepableSlotAcc) {
+      final CollectSlotAccMappingAware slotAccMapper = new FacetFieldProcessorSlotAccMapper(this);
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(slotAccMapper));
+      if (allBucketsAcc != null) {
+        allBucketsAcc.collectAcc = collectAcc;
+      }
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Simple {@link CollectSlotAccMappingAware} that receives notifications of {@link SlotAcc}
+   * replacements, and modifies the {@link #sortAcc} of the {@link FacetFieldProcessor} if necessary.
+   */
+  private static class FacetFieldProcessorSlotAccMapper implements CollectSlotAccMappingAware {
 
     private final FacetFieldProcessor p;
 
@@ -802,6 +825,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+  
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
