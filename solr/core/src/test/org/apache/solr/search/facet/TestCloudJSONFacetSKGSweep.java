@@ -431,7 +431,13 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
           }
           
           final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
-          assertEquals(options.toString(), expected, actual);
+
+          // nocommit: we can't rely on a trivial equality comparison...
+          // 
+          // nocommit: even w/ any sweeping, the order of the sub-facet keys can change between
+          // nocommit: processors.  (notably: method:enum vs method:smart when sort:"index asc")
+          assertEquals("nocommit: this can spuriously fail due to changes in sub facet orders: " +
+                       options.toString(), expected, actual);
         }
       }
     } catch (AssertionError e) {
