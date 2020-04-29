@@ -166,7 +166,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
       for (Row row : session.getSortedNodes()) {
         Object val = row.getVal(Type.TOTALDISK.tagName, null);
-        log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
+        if (log.isInfoEnabled()) {
+          log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk", null));
+        }
         assertTrue(val != null);
 
       }

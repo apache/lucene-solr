@@ -338,7 +338,7 @@ public class Policy implements MapWriter {
                 clusterPreferences,
                 lastComparison[0].node,
                 lastComparison[1].node,
-                Utils.writeJson(m, new StringWriter(), true).toString(), exc.toString()); // logOK
+                Utils.writeJson(m, new StringWriter(), true).toString(), exc.toString()); // logOk
           } catch (IOException e1) {
             //
           }

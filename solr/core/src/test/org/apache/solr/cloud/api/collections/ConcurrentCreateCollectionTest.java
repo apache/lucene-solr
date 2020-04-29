@@ -188,12 +188,14 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
     /***
     SolrRequest req = CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.GET, null);
     SolrResponse response = req.process(client);
-    log.info("######### AUTOSCALE " + response);
+    log.info("######### AUTOSCALE {}", response);
      ***/
 
 
     byte[] data = client.getZkStateReader().getZkClient().getData("/autoscaling.json", null, null, true);
-    log.info("AUTOSCALE DATA: " + new String(data, "UTF-8"));
+    if (log.isInfoEnabled()) {
+      log.info("AUTOSCALE DATA: {}", new String(data, "UTF-8"));
+    }
 
     final AtomicInteger collectionNum = new AtomicInteger();
     Thread[] indexThreads = new Thread[nThreads];
@@ -258,7 +260,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
         if (expectBalanced) {
           failed = true;
         }
-        log.error("UNBALANCED CLUSTER: expected replicas per node " + expectedPerNode +  " but got " + replicas.size());
+        log.error("UNBALANCED CLUSTER: expected replicas per node {} but got {}", expectedPerNode, replicas.size());
       }
     }
 
@@ -271,14 +273,14 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
           if (prev != null) {
             failed = true;
             // NOTE: with a replication factor > 2, this will print multiple times per bad slice.
-            log.error("MULTIPLE REPLICAS OF SINGLE SHARD ON SAME NODE: r1=" + prev + " r2=" + replica);
+            log.error("MULTIPLE REPLICAS OF SINGLE SHARD ON SAME NODE: r1={} r2={}", prev, replica);
           }
         }
       }
     }
 
     if (failed) {
-      log.error("Cluster state " + cstate.getCollectionsMap());
+      log.error("Cluster state {}", cstate.getCollectionsMap());
     }
 
     assertEquals(replicaMap.size(),  NODES);  // make sure something was created

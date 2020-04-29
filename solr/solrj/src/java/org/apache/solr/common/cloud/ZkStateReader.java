@@ -2141,7 +2141,7 @@ public class ZkStateReader implements SolrCloseable {
             setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
             return;
           } catch (KeeperException.BadVersionException e) {
-            log.debug("{}", e.toString(), e); // logOk
+            log.debug("{}", e, e);
             log.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
             // considered a backoff here, but we really do want to compete strongly since the normal case is
             // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.

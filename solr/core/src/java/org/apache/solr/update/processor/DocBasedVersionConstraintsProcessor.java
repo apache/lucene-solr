@@ -308,7 +308,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     if (ignoreOldUpdates) {
       if (log.isDebugEnabled()) {
         log.debug("Dropping update since user version is not high enough: {}; old user version={}",
-            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions)); // logok
+            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions));
       }
       return false;
     } else {

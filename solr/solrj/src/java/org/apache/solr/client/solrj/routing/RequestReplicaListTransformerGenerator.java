@@ -139,7 +139,7 @@ public class RequestReplicaListTransformerGenerator {
       if (choices.size() > 1) {
         if (log.isDebugEnabled()) {
           log.debug("Applying the following sorting preferences to replicas: {}",
-              Arrays.toString(replicaComp.getPreferenceRules().toArray())); // logOK
+              Arrays.toString(replicaComp.getPreferenceRules().toArray()));
         }
 
         // First, sort according to comparator rules.
@@ -180,7 +180,7 @@ public class RequestReplicaListTransformerGenerator {
         }
 
         if (log.isDebugEnabled()) {
-          log.debug("Applied sorting preferences to replica list: {}", Arrays.toString(choices.toArray())); // logOK
+          log.debug("Applied sorting preferences to replica list: {}", Arrays.toString(choices.toArray()));
         }
       }
     }

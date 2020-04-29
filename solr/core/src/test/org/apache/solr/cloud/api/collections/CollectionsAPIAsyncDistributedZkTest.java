@@ -255,11 +255,15 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             }
             
             try {
-              log.info("{} - Reloading Collection.", Thread.currentThread().getName());
+              if (log.isInfoEnabled()) {
+                log.info("{} - Reloading Collection.", Thread.currentThread().getName());
+              }
               reloadCollectionRequest.processAsync("repeatedId", clients[random().nextInt(clients.length)]);
               numSuccess.incrementAndGet();
             } catch (SolrServerException e) {
-              log.info(e.getMessage());
+              if (log.isInfoEnabled()) {
+                log.info(e.getMessage());
+              }
               assertEquals("Task with the same requestid already exists.", e.getMessage());
               numFailure.incrementAndGet();
             } catch (IOException e) {
