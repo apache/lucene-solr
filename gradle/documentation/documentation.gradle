@@ -24,6 +24,7 @@ configure(rootProject) {
       prj.tasks.matching { task -> task.name in [
         "changesToHtml"
         // TODO: "markdownToHtml"
+        // TODO: "gatherJavadocs"
       ]}
     }
   }
