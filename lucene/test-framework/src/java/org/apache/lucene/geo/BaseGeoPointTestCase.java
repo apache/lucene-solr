@@ -438,7 +438,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testAllLatEqual() throws Exception {
-    int numPoints = atLeast(10000);
+    int numPoints = atLeast(1000);
     double lat = nextLatitude();
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -484,7 +484,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testAllLonEqual() throws Exception {
-    int numPoints = atLeast(10000);
+    int numPoints = atLeast(1000);
     double theLon = nextLongitude();
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -532,7 +532,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testMultiValued() throws Exception {
-    int numPoints = atLeast(10000);
+    int numPoints = atLeast(1000);
     // Every doc has 2 points:
     double[] lats = new double[2*numPoints];
     double[] lons = new double[2*numPoints];
@@ -644,7 +644,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(1000);
   }
 
   @Nightly
@@ -1256,7 +1256,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   
   /** Run a few iterations with just 10 docs, hopefully easy to debug */
   public void testRandomDistance() throws Exception {
-    for (int iters = 0; iters < 100; iters++) {
+    int numIters = atLeast(1);
+    for (int iters = 0; iters < numIters; iters++) {
       doRandomDistanceTest(10, 100);
     }
   }
@@ -1275,7 +1276,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
-    iwc.setCodec(new FilterCodec("Lucene80", TestUtil.getDefaultCodec()) {
+    iwc.setCodec(new FilterCodec("Lucene84", TestUtil.getDefaultCodec()) {
       @Override
       public PointsFormat pointsFormat() {
         return new PointsFormat() {

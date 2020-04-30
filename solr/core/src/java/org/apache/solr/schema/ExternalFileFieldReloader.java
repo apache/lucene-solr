@@ -85,7 +85,9 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
       if (type instanceof ExternalFileField) {
         ExternalFileField eff = (ExternalFileField)type;
         fieldSources.add(eff.getFileFloatSource(field, datadir));
-        log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
+        }
       }
     }
   }

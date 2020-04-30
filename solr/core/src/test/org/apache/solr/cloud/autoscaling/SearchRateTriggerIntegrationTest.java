@@ -51,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -93,12 +94,19 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
 
   }
 
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
+  }
+
   @Before
   public void beforeTest() throws Exception {
     cluster.deleteAllCollections();
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("{} reset, new znode version {}", SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
+    }
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
@@ -709,7 +717,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
           log.warn("Ignoring captured event since latch is 'full': {}", ev);
         } else {
           List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-          log.info("=======> " + ev);
+          log.info("=======> {}", ev);
           lst.add(ev);
           latch.countDown();
         }

@@ -123,6 +123,11 @@ public class ColStatus {
         int recoveringReplicas = 0;
         int recoveryFailedReplicas = 0;
         for (Replica r : s.getReplicas()) {
+          // replica may still be marked as ACTIVE even though its node is no longer live
+          if (! r.isActive(clusterState.getLiveNodes())) {
+            downReplicas++;
+            continue;
+          }
           switch (r.getState()) {
             case ACTIVE:
               activeReplicas++;
@@ -205,7 +210,7 @@ public class ColStatus {
             rsp.remove("fieldInfoLegend");
           }
         } catch (SolrServerException | IOException e) {
-          log.warn("Error getting details of replica segments from " + url, e);
+          log.warn("Error getting details of replica segments from {}", url, e);
         }
       }
       if (nonCompliant.isEmpty()) {

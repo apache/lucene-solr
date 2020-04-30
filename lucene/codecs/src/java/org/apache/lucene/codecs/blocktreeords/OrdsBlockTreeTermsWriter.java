@@ -45,7 +45,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
@@ -143,12 +143,11 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    private final int longsSize;
     public final BytesRef minTerm;
     public final BytesRef maxTerm;
 
     public FieldMetaData(FieldInfo fieldInfo, Output rootCode, long numTerms, long indexStartFP,
-                         long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize,
+                         long sumTotalTermFreq, long sumDocFreq, int docCount,
                          BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
@@ -159,7 +158,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
       this.minTerm = minTerm;
       this.maxTerm = maxTerm;
     }
@@ -361,16 +359,14 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final Builder<Output> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                                         0, 0, true, false, Integer.MAX_VALUE,
-                                                         FST_OUTPUTS, true, 15);
+      final FSTCompiler<Output> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS).shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
       //indexBuilder.DEBUG = false;
       final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef),
+      fstCompiler.add(Util.toIntsRef(prefix, scratchIntsRef),
                        FST_OUTPUTS.newOutput(new BytesRef(bytes, 0, bytes.length),
                                              0, Long.MAX_VALUE-(sumTotalTermCount-1)));
       scratchBytes.reset();
@@ -381,7 +377,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       for(PendingBlock block : blocks) {
         if (block.subIndices != null) {
           for(SubIndex subIndex : block.subIndices) {
-            append(indexBuilder, subIndex.index, termOrdOffset + subIndex.termOrdStart, scratchIntsRef);
+            append(fstCompiler, subIndex.index, termOrdOffset + subIndex.termOrdStart, scratchIntsRef);
           }
           block.subIndices = null;
         }
@@ -391,7 +387,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
       assert sumTotalTermCount == totFloorTermCount;
 
-      index = indexBuilder.finish();
+      index = fstCompiler.compile();
       assert subIndices == null;
 
       /*
@@ -405,7 +401,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Output> builder, FST<Output> subIndex, long termOrdOffset, IntsRefBuilder scratchIntsRef) throws IOException {
+    private void append(FSTCompiler<Output> fstCompiler, FST<Output> subIndex, long termOrdOffset, IntsRefBuilder scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Output> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Output> indexEnt;
       while ((indexEnt = subIndexEnum.next()) != null) {
@@ -416,7 +412,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         //long blockTermCount = output.endOrd - output.startOrd + 1;
         Output newOutput = FST_OUTPUTS.newOutput(output.bytes, termOrdOffset+output.startOrd, output.endOrd-termOrdOffset);
         //System.out.println("  append sub=" + indexEnt.input + " output=" + indexEnt.output + " termOrdOffset=" + termOrdOffset + " blockTermCount=" + blockTermCount  + " newOutput=" + newOutput  + " endOrd=" + (termOrdOffset+Long.MAX_VALUE-output.endOrd));
-        builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), newOutput);
+        fstCompiler.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), newOutput);
       }
     }
   }
@@ -426,7 +422,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter {
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
     final FixedBitSet docsSeen;
     long sumTotalTermFreq;
@@ -440,8 +435,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // to write a new block:
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private int[] prefixStarts = new int[8];
-
-    private final long[] longs;
 
     // Pending stack of terms and blocks.  As terms arrive (in sorted order)
     // we append to this stack, and once the top of the stack has enough
@@ -635,13 +628,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
           }
 
           // Write term meta data
-          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-          for (int pos = 0; pos < longsSize; pos++) {
-            assert longs[pos] >= 0;
-            metaWriter.writeVLong(longs[pos]);
-          }
-          bytesWriter.copyTo(metaWriter);
-          bytesWriter.reset();
+          postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
           absolute = false;
         }
         totalTermCount = end-start;
@@ -686,13 +673,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
-            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-            for (int pos = 0; pos < longsSize; pos++) {
-              assert longs[pos] >= 0;
-              metaWriter.writeVLong(longs[pos]);
-            }
-            bytesWriter.copyTo(metaWriter);
-            bytesWriter.reset();
+            postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
             absolute = false;
 
             totalTermCount++;
@@ -765,8 +746,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
       docsSeen = new FixedBitSet(maxDoc);
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.longs = new long[longsSize];
+      postingsWriter.setField(fieldInfo);
     }
     
     /** Writes one term's worth of postings. */
@@ -876,7 +856,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
                                      sumTotalTermFreq,
                                      sumDocFreq,
                                      docsSeen.cardinality(),
-                                     longsSize,
                                      minTerm, maxTerm));
       } else {
         assert docsSeen.cardinality() == 0;
@@ -886,7 +865,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput statsWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
   }
 
   private boolean closed;
@@ -918,7 +896,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
-        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
         writeBytesRef(out, field.minTerm);
         writeBytesRef(out, field.maxTerm);

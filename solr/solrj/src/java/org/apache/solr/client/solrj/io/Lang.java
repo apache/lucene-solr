@@ -39,6 +39,7 @@ public class Lang {
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
+        .withFunctionName("delete", DeleteStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
@@ -302,7 +303,7 @@ public class Lang {
         .withFunctionName("trim", TrimEvaluator.class)
         .withFunctionName("cosine", CosineDistanceEvaluator.class)
         .withFunctionName("trunc", TruncEvaluator.class)
-
+        .withFunctionName("dbscan", DbscanEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

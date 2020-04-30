@@ -71,7 +71,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private void moveReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    log.debug("moveReplica() : {}", Utils.toJSONString(message));
+    if (log.isDebugEnabled()) {
+      log.debug("moveReplica() : {}", Utils.toJSONString(message));
+    }
     ocmh.checkRequired(message, COLLECTION_PROP, CollectionParams.TARGET_NODE);
     String extCollection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
@@ -159,7 +161,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       log.debug("-- moveHdfsReplica");
       moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     } else {
-      log.debug("-- moveNormalReplica (inPlaceMove=" + inPlaceMove + ", isSharedFS=" + isSharedFS);
+      log.debug("-- moveNormalReplica (inPlaceMove={}, isSharedFS={}", inPlaceMove, isSharedFS);
       moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     }
   }
@@ -218,7 +220,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         WAIT_FOR_FINAL_STATE, String.valueOf(waitForFinalState),
         SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, skipCreateReplicaInClusterState,
         CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
-        CoreAdminParams.DATA_DIR, dataDir);
+        CoreAdminParams.DATA_DIR, dataDir,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     try {
@@ -228,7 +232,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
       results.add("failure", errorString);
-      log.warn("Error adding replica " + addReplicasProps + " - trying to roll back...", e);
+      log.warn("Error adding replica {} - trying to roll back...",  addReplicasProps, e);
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
       NamedList rollback = new NamedList();
       ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
@@ -272,16 +276,18 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
-        CoreAdminParams.NAME, newCoreName);
+        CoreAdminParams.NAME, newCoreName,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
     ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null).get(0);
-    log.debug("props " + props);
+    log.debug("props {}", props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
-      log.debug("-- registered watcher " + watcher);
+      log.debug("-- registered watcher {}", watcher);
       ocmh.zkStateReader.registerCollectionStateWatcher(coll.getName(), watcher);
     }
     if (addResult.get("failure") != null) {
@@ -305,7 +311,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           results.add("failure", errorString);
           return;
         } else {
-          log.debug("Replica " + watcher.getActiveReplicas() + " is active - deleting the source...");
+          if (log.isDebugEnabled()) {
+            log.debug("Replica {} is active - deleting the source...", watcher.getActiveReplicas());
+          }
         }
       } finally {
         ocmh.zkStateReader.removeCollectionStateWatcher(coll.getName(), watcher);

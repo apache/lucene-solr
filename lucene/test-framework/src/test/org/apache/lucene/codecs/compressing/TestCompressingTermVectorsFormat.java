@@ -43,7 +43,11 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
 
   @Override
   protected Codec getCodec() {
-    return CompressingCodec.randomInstance(random());
+    if (TEST_NIGHTLY) {
+      return CompressingCodec.randomInstance(random());
+    } else {
+      return CompressingCodec.reasonableInstance(random());
+    }
   }
   
   // https://issues.apache.org/jira/browse/LUCENE-5156

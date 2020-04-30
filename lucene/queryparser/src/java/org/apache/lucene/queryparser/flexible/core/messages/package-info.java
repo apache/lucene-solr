@@ -20,7 +20,7 @@
  * 
  * <h2>Query Parser Messages</h2>
  * 
- * Messages for the Flexible Query Parser, they use <tt>org.apache.lucene.messages.NLS</tt> API.
+ * Messages for the Flexible Query Parser, they use <code>org.apache.lucene.messages.NLS</code> API.
  */
 package org.apache.lucene.queryparser.flexible.core.messages;
 

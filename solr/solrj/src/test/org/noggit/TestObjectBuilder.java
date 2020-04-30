@@ -25,12 +25,15 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
+import org.noggit.JSONParser.ParseException;
 
+@SolrTestCaseJ4.SuppressSSL
 public class TestObjectBuilder extends SolrTestCaseJ4 {
 
   public void _test(String val, Object expected) throws IOException {
     val = val.replace('\'','"');
-    Object v = ObjectBuilder.fromJSON(val);
+    Object v = random().nextBoolean() ? ObjectBuilder.fromJSON(val) :
+      ObjectBuilder.fromJSONStrict(val) ;
 
     String s1 = JSONUtil.toJSON(v,-1);
     String s2 = JSONUtil.toJSON(expected,-1);
@@ -96,4 +99,32 @@ public class TestObjectBuilder extends SolrTestCaseJ4 {
     _testVariations("[false,true,false]", new boolean[]{false,true,false});
   }
 
+  @Test
+  public void testStrictPositive() throws IOException {
+    assertEquals(O("foo","bar", "ban", "buzz"),
+         ObjectBuilder.fromJSONStrict("{\"foo\":\"bar\", \"ban\":\"buzz\"}"));
+    assertEquals(O("foo","bar" ),
+        ObjectBuilder.fromJSONStrict("{\"foo\":\"bar\"/*, \"ban\":\"buzz\"*/}"));
+    assertEquals(O("foo","bar" ),
+        ObjectBuilder.fromJSONStrict("{\"foo\":\"bar\"} /*\"ban\":\"buzz\"*/"));
+    assertEquals("foo",
+        ObjectBuilder.fromJSONStrict("\"foo\""));
+    
+    assertEquals("fromJSON() ignores tail.",O("foo","bar" ),
+        ObjectBuilder.fromJSON("{\"foo\":\"bar\"} \"ban\":\"buzz\"}"));
+    
+    assertEquals("old method ignores tails", "foo",
+        ObjectBuilder.fromJSON("\"foo\" \"baar\" "));
+    expectThrows(ParseException.class,
+        () -> ObjectBuilder.fromJSONStrict("\"foo\" \"bar\""));
+    
+    expectThrows(ParseException.class,
+         () -> ObjectBuilder.fromJSONStrict("{\"foo\":\"bar\"} \"ban\":\"buzz\"}"));
+    expectThrows(ParseException.class,
+        () -> ObjectBuilder.getValStrict(new JSONParser("{\"foo\":\"bar\"} \"ban\":\"buzz\"}")));
+    expectThrows(ParseException.class,
+        () -> new ObjectBuilder(new JSONParser("{\"foo\":\"bar\"} \"ban\":\"buzz\"}")).getValStrict());
+
+
+  }
 }

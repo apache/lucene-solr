@@ -257,7 +257,7 @@ rsp['response']['docs'].each { |doc| puts 'name field = ' + doc['name'\] }
 
 The CSV response writer returns a list of documents in comma-separated values (CSV) format. Other information that would normally be included in a response, such as facet information, is excluded.
 
-The CSV response writer supports multi-valued fields, as well as<<transforming-result-documents.adoc#transforming-result-documents,pseudo-fields>>, and the output of this CSV format is compatible with Solr's https://wiki.apache.org/solr/UpdateCSV[CSV update format].
+The CSV response writer supports multi-valued fields, as well as <<transforming-result-documents.adoc#transforming-result-documents,pseudo-fields>>, and the output of this CSV format is compatible with Solr's <<uploading-data-with-index-handlers.adoc#csv-formatted-index-updates,CSV update format>>.
 
 === CSV Parameters
 
@@ -307,7 +307,7 @@ See the <<velocity-response-writer.adoc#velocity-response-writer,Velocity Respon
 
 == Smile Response Writer
 
-The Smile format is a JSON-compatible binary format, described in detail here: http://wiki.fasterxml.com/SmileFormat.
+The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]
 
 == XLSX Response Writer
 

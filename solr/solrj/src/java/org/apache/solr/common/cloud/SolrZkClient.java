@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -45,7 +46,7 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -55,6 +56,7 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -82,9 +84,9 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   private final ExecutorService zkCallbackExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
   private final ExecutorService zkConnManagerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("zkConnectionManagerCallback"));
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -221,7 +223,7 @@ public class SolrZkClient implements Closeable {
     String zkCredentialsProviderClassName = System.getProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
       try {
-        log.info("Using ZkCredentialsProvider: " + zkCredentialsProviderClassName);
+        log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         return (ZkCredentialsProvider)Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
@@ -237,7 +239,7 @@ public class SolrZkClient implements Closeable {
     String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkACLProviderClassName)) {
       try {
-        log.info("Using ZkACLProvider: " + zkACLProviderClassName);
+        log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
         return (ZkACLProvider)Class.forName(zkACLProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
@@ -353,6 +355,10 @@ public class SolrZkClient implements Closeable {
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+   atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
+  }
+
+  public void atomicUpdate(String path, BiFunction<Stat , byte[], byte[]> editor) throws KeeperException, InterruptedException {
     for (; ; ) {
       byte[] modified = null;
       byte[] zkData = null;
@@ -360,7 +366,7 @@ public class SolrZkClient implements Closeable {
       try {
         if (exists(path, true)) {
           zkData = getData(path, null, s, true);
-          modified = editor.apply(zkData);
+          modified = editor.apply(s, zkData);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -368,7 +374,7 @@ public class SolrZkClient implements Closeable {
           setData(path, modified, s.getVersion(), true);
           break;
         } else {
-          modified = editor.apply(null);
+          modified = editor.apply(s,null);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -573,7 +579,9 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+    if (log.isDebugEnabled()) {
+      log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+    }
     byte[] data = FileUtils.readFileToByteArray(file);
     return setData(path, data, retryOnConnLoss);
   }
@@ -737,6 +745,30 @@ public class SolrZkClient implements Closeable {
    */
   public String getZkServerAddress() {
     return zkServerAddress;
+  }
+
+  /**
+   * Gets the raw config node /zookeeper/config as returned by server. Response may look like
+   * <pre>
+   * server.1=localhost:2780:2783:participant;localhost:2791
+   * server.2=localhost:2781:2784:participant;localhost:2792
+   * server.3=localhost:2782:2785:participant;localhost:2793
+   * version=400000003
+   * </pre>
+   * @return Multi line string representing the config. For standalone ZK this will return empty string
+   */
+  public String getConfig() {
+    try {
+      Stat stat = new Stat();
+      keeper.sync(ZooDefs.CONFIG_NODE, null, null);
+      byte[] data = keeper.getConfig(false, stat);
+      if (data == null || data.length == 0) {
+        return "";
+      }
+      return new String(data, StandardCharsets.UTF_8);
+    } catch (KeeperException|InterruptedException ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
+    }
   }
 
   public ZkACLProvider getZkACLProvider() {

@@ -19,8 +19,8 @@ package org.apache.solr.schema;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -52,7 +52,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
         (Utils.makeMap("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    HttpSolrClient.RemoteExecutionException ex = expectThrows(HttpSolrClient.RemoteExecutionException.class,
+    BaseHttpSolrClient.RemoteExecutionException ex = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class,
         () -> fieldAddition.process(client, COLLECTION));
 
     assertTrue("expected error message 'Field 'myfield' already exists'.",Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]").toString().contains("Field 'myfield' already exists.") );

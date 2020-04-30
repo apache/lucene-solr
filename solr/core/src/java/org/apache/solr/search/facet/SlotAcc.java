@@ -431,13 +431,8 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
     }
   }
 
-  private double avg(double tot, int count) {
-    return count == 0 ? 0 : tot / count; // returns 0 instead of NaN.. todo - make configurable? if NaN, we need to
-                                         // handle comparisons though...
-  }
-
   private double avg(int slot) {
-    return avg(result[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -488,13 +483,8 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
     this.sum = resizer.resize(this.sum, 0);
   }
 
-  private double variance(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
-    return val;
-  }
-
   private double variance(int slot) {
-    return variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -550,13 +540,8 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
     this.result = resizer.resize(this.result, 0);
   }
 
-  private double stdDev(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2)); 
-    return val;
-  }
-
   private double stdDev(int slot) {
-    return stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -593,17 +578,17 @@ abstract class CountSlotAcc extends SlotAcc {
     super(fcontext);
   }
 
-  public abstract void incrementCount(int slot, int count);
+  public abstract void incrementCount(int slot, long count);
 
-  public abstract int getCount(int slot);
+  public abstract long getCount(int slot);
 }
 
 class CountSlotArrAcc extends CountSlotAcc {
-  int[] result;
+  long[] result;
 
   public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
     super(fcontext);
-    result = new int[numSlots];
+    result = new long[numSlots];
   }
 
   @Override
@@ -615,7 +600,7 @@ class CountSlotArrAcc extends CountSlotAcc {
 
   @Override
   public int compare(int slotA, int slotB) {
-    return Integer.compare(result[slotA], result[slotB]);
+    return Long.compare(result[slotA], result[slotB]);
   }
 
   @Override
@@ -623,16 +608,18 @@ class CountSlotArrAcc extends CountSlotAcc {
     return result[slotNum];
   }
 
-  public void incrementCount(int slot, int count) {
+  @Override
+  public void incrementCount(int slot, long count) {
     result[slot] += count;
   }
 
-  public int getCount(int slot) {
+  @Override
+  public long getCount(int slot) {
     return result[slot];
   }
 
   // internal and expert
-  int[] getCountArray() {
+  long[] getCountArray() {
     return result;
   }
 
@@ -657,6 +644,7 @@ class SortSlotAcc extends SlotAcc {
     // no-op
   }
 
+  @Override
   public int compare(int slotA, int slotB) {
     return slotA - slotB;
   }

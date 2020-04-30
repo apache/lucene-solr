@@ -71,31 +71,31 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     final List<TriggerEvent> events = new ArrayList<>();
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
     SolrResourceLoader loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
-    SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), cluster.getSolrClient());
+    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), cluster.getSolrClient())) {
+      try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
+        metricTrigger.configure(loader, cloudManager, props);
+        metricTrigger.setProcessor(noFirstRunProcessor);
+        metricTrigger.run();
+        metricTrigger.setProcessor(event -> events.add(event));
+        assertEquals(0, events.size());
+        Thread.sleep(waitForSeconds * 1000 + 2000);
+        metricTrigger.run();
+        assertEquals(1, events.size());
+      }
 
-    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
-      metricTrigger.configure(loader, cloudManager, props);
-      metricTrigger.setProcessor(noFirstRunProcessor);
-      metricTrigger.run();
-      metricTrigger.setProcessor(event -> events.add(event));
-      assertEquals(0, events.size());
-      Thread.sleep(waitForSeconds * 1000 + 2000);
-      metricTrigger.run();
-      assertEquals(1, events.size());
-    }
-
-    events.clear();
-    tag = "metrics:" + registry + ":ADMIN./admin/file.handlerStart";
-    props = createTriggerProps(waitForSeconds, tag, null, 100.0d, DEFAULT_TEST_COLLECTION_NAME, null, null);
-    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
-      metricTrigger.configure(loader, cloudManager, props);
-      metricTrigger.setProcessor(noFirstRunProcessor);
-      metricTrigger.run();
-      metricTrigger.setProcessor(event -> events.add(event));
-      assertEquals(0, events.size());
-      Thread.sleep(waitForSeconds * 1000 + 2000);
-      metricTrigger.run();
-      assertEquals(1, events.size());
+      events.clear();
+      tag = "metrics:" + registry + ":ADMIN./admin/file.handlerStart";
+      props = createTriggerProps(waitForSeconds, tag, null, 100.0d, DEFAULT_TEST_COLLECTION_NAME, null, null);
+      try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
+        metricTrigger.configure(loader, cloudManager, props);
+        metricTrigger.setProcessor(noFirstRunProcessor);
+        metricTrigger.run();
+        metricTrigger.setProcessor(event -> events.add(event));
+        assertEquals(0, events.size());
+        Thread.sleep(waitForSeconds * 1000 + 2000);
+        metricTrigger.run();
+        assertEquals(1, events.size());
+      }
     }
   }
 

@@ -304,7 +304,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     }
     if (withFieldInfos) {
       if (seg == null) {
-        log.debug("Skipping segment info - not available as a SegmentReader: " + segmentCommitInfo);
+        log.debug("Skipping segment info - not available as a SegmentReader: {}", segmentCommitInfo);
       } else {
         FieldInfos fis = seg.getFieldInfos();
         SimpleOrderedMap<Object> fields = new SimpleOrderedMap<>();
@@ -376,9 +376,9 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     flags.append( (fi.hasPayloads() ? "p" : "-"));
     flags.append( (fi.isSoftDeletesField() ? "s" : "-"));
-    if (fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
+    if (fi.getPointDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
       flags.append(":");
-      flags.append(fi.getPointDataDimensionCount()).append(':');
+      flags.append(fi.getPointDimensionCount()).append(':');
       flags.append(fi.getPointIndexDimensionCount()).append(':');
       flags.append(fi.getPointNumBytes());
     }
@@ -392,7 +392,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         fieldFlags.add("sumTotalTermFreq", terms.getSumTotalTermFreq());
       }
     } catch (Exception e) {
-      log.debug("Exception retrieving term stats for field " + fi.name, e);
+      log.debug("Exception retrieving term stats for field {}", fi.name, e);
     }
 
     // probably too much detail?
@@ -403,7 +403,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     // check compliance of the index with the current schema
     SchemaField sf = schema.getFieldOrNull(fi.name);
-    boolean hasPoints = fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0;
+    boolean hasPoints = fi.getPointDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0;
 
     if (sf != null) {
       fieldFlags.add("schemaType", sf.getType().getTypeName());

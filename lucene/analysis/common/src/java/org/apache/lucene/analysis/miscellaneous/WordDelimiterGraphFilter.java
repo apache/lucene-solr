@@ -447,7 +447,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private class PositionSorter extends InPlaceMergeSorter {
     @Override
     protected int compare(int i, int j) {
-      // sort by smaller start position
+      // smaller start position
       int iPosStart = bufferedParts[4*i];
       int jPosStart = bufferedParts[4*j];
       int cmp = Integer.compare(iPosStart, jPosStart);
@@ -455,10 +455,18 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         return cmp;
       }
 
-      // tie break by longest pos length:
+      // longest pos length:
       int iPosEnd = bufferedParts[4*i+1];
       int jPosEnd = bufferedParts[4*j+1];
-      return Integer.compare(jPosEnd, iPosEnd);
+      cmp = Integer.compare(jPosEnd, iPosEnd);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      // smaller start offset
+      int iOff = bufferedParts[4*i + 2];
+      int jOff = bufferedParts[4*j + 2];
+      return Integer.compare(iOff, jOff);
     }
 
     @Override

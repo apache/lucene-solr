@@ -183,6 +183,59 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
 
+  public void testAlignedLittleEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testAlignedLittleEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeLong(Long.reverseBytes(3L));
+        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
+        out.writeLong(Long.reverseBytes(-3L));
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(24, input.length());
+        long[] l = new long[4];
+        input.readLELongs(l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(24, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testUnalignedLittleEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testUnalignedLittleEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeLong(Long.reverseBytes(3L));
+        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
+        out.writeLong(Long.reverseBytes(-3L));
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(25, input.length());
+        assertEquals(2, input.readByte());
+        long[] l = new long[4];
+        input.readLELongs(l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(25, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testLittleEndianLongsUnderflow() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testLittleEndianLongsUnderflow"))) {
+      final int offset = random().nextInt(8);
+      final int length = TestUtil.nextInt(random(), 1, 16);
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        byte[] b = new byte[offset + length * Long.BYTES - TestUtil.nextInt(random(), 1, Long.BYTES)];
+        random().nextBytes(b);
+        out.writeBytes(b, b.length);
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        input.seek(offset);
+        expectThrows(EOFException.class,
+            () -> input.readLELongs(new long[length], 0, length));
+      }
+    }
+  }
+
   public void testString() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testString"))) {
       IndexOutput output = dir.createOutput("string", newIOContext(random()));
@@ -414,6 +467,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
             String fileName = "file-" + i;
             try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
+              assert output != null;
               // Add some lags so that the other thread can read the content of the directory.
               Thread.yield();
             }
@@ -439,6 +493,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
                 String file = RandomPicks.randomFrom(rnd, files);
                 try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
                   // Just open, nothing else.
+                  assert input != null;
                 } catch (AccessDeniedException e) {
                   // Access denied is allowed for files for which the output is still open (MockDirectoryWriter enforces
                   // this, for example). Since we don't synchronize with the writer thread, just ignore it.
@@ -1049,11 +1104,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     try (Directory dir = getDirectory(createTempDir())) {
       String name = "file";
       try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+        assert out != null;
       }
 
       // Try to create an existing file should fail.
       expectThrows(FileAlreadyExistsException.class, () -> {
         try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+          assert out != null;
         }
       });
 

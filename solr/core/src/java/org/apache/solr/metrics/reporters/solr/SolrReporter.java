@@ -37,6 +37,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import org.apache.http.client.HttpClient;
@@ -105,11 +106,11 @@ public class SolrReporter extends ScheduledReporter {
         } else if (oFilters instanceof Collection) {
           metricFilters = (Collection<String>)oFilters;
         } else {
-          log.warn("Invalid report filters, ignoring: " + oFilters);
+          log.warn("Invalid report filters, ignoring: {}", oFilters);
         }
       }
       if (groupPattern == null || registryPattern == null) {
-        log.warn("Invalid report configuration, group and registry required!: " + map);
+        log.warn("Invalid report configuration, group and registry required!: {}", map);
         return null;
       }
       return new Report(groupPattern, labelPattern, registryPattern, metricFilters);
@@ -301,12 +302,17 @@ public class SolrReporter extends ScheduledReporter {
     }
   }
 
+  // Recent dropwizard (found with version 4.1.2) requires that you _must_ call the superclass with a non-null registry.
+  // We delegate to registries anyway, so having a dummy registry is harmless.
+  private static final MetricRegistry dummyRegistry = new MetricRegistry();
+
   public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
                       boolean cloudClient, boolean compact) {
-    super(null, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit, null, true);
+    super(dummyRegistry, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit, null, true);
+
     this.metricManager = metricManager;
     this.urlProvider = urlProvider;
     this.reporterId = reporterId;
@@ -322,7 +328,7 @@ public class SolrReporter extends ScheduledReporter {
         CompiledReport cs = new CompiledReport(report);
         compiledReports.add(cs);
       } catch (PatternSyntaxException e) {
-        log.warn("Skipping report with invalid registryPattern: " + report.registryPattern, e);
+        log.warn("Skipping report with invalid registryPattern: {}", report.registryPattern, e);
       }
     });
     this.skipHistograms = skipHistograms;
@@ -398,7 +404,9 @@ public class SolrReporter extends ScheduledReporter {
       //log.info("%%% sending to " + url + ": " + req.getParams());
       solr.request(req);
     } catch (Exception e) {
-      log.debug("Error sending metric report", e.toString());
+      if (log.isDebugEnabled()) {
+        log.debug("Error sending metric report: {}", e);
+      }
     }
 
   }

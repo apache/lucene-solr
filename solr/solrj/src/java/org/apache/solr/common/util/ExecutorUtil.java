@@ -72,6 +72,7 @@ public class ExecutorUtil {
   }
 
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
+    if(pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
   }
@@ -113,7 +114,7 @@ public class ExecutorUtil {
    * Create a cached thread pool using a named thread factory
    */
   public static ExecutorService newMDCAwareCachedThreadPool(String name) {
-    return newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(name));
+    return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
   /**

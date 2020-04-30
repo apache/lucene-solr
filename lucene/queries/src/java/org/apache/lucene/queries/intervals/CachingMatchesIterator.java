@@ -24,13 +24,14 @@ import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 
-class CachingMatchesIterator extends FilterMatchesIterator {
+class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMatchesIterator {
 
   private boolean positioned = false;
-  private int[] posAndOffsets = new int[16];
-  private int count = 0;
+  private int[] posAndOffsets = new int[4*4];
+  private Query[] matchingQueries = new Query[4];
+  private int count = 0; 
 
-  CachingMatchesIterator(MatchesIterator in) {
+  CachingMatchesIterator(IntervalMatchesIterator in) {
     super(in);
   }
 
@@ -43,16 +44,19 @@ class CachingMatchesIterator extends FilterMatchesIterator {
       posAndOffsets[1] = in.endPosition();
       posAndOffsets[2] = in.startOffset();
       posAndOffsets[3] = in.endOffset();
+      matchingQueries [0] = in.getQuery();
     }
     else {
       while (mi.next()) {
         if (count * 4 >= posAndOffsets.length) {
           posAndOffsets = ArrayUtil.grow(posAndOffsets, (count + 1) * 4);
+          matchingQueries = ArrayUtil.grow(matchingQueries, (count + 1));
         }
         posAndOffsets[count * 4] = mi.startPosition();
         posAndOffsets[count * 4 + 1] = mi.endPosition();
         posAndOffsets[count * 4 + 2] = mi.startOffset();
         posAndOffsets[count * 4 + 3] = mi.endOffset();
+        matchingQueries[count] = mi.getQuery();
         count++;
       }
     }
@@ -124,9 +128,18 @@ class CachingMatchesIterator extends FilterMatchesIterator {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return matchingQueries[upto];
       }
     };
   }
 
+  @Override
+  public int gaps() {
+    return ((IntervalMatchesIterator)in).gaps();
+  }
+
+  @Override
+  public int width() {
+    return ((IntervalMatchesIterator)in).width();
+  }
 }

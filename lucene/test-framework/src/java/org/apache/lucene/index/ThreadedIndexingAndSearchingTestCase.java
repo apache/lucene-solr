@@ -321,7 +321,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   }
 
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
-    final int numThreads = TestUtil.nextInt(random(), 1, 5);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 5) : 2;
     final Thread[] searchThreads = new Thread[numThreads];
     final AtomicLong totHits = new AtomicLong();
 
@@ -448,24 +448,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
     }
 
-    if (LuceneTestCase.TEST_NIGHTLY) {
-      // newIWConfig makes smallish max seg size, which
-      // results in tons and tons of segments for this test
-      // when run nightly:
-      MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof TieredMergePolicy) {
-        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
-      } else if (mp instanceof LogByteSizeMergePolicy) {
-        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
-      } else if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
-      }
-      // when running nightly, merging can still have crazy parameters, 
-      // and might use many per-field codecs. turn on CFS for IW flushes
-      // and ensure CFS ratio is reasonable to keep it contained.
-      conf.setUseCompoundFile(true);
-      mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
-    }
+    ensureSaneIWCOnNightly(conf);
 
     conf.setMergedSegmentWarmer((reader) -> {
       if (VERBOSE) {
@@ -511,13 +494,13 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     final int NUM_INDEX_THREADS = TestUtil.nextInt(random(), 2, 4);
 
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
+    final int RUN_TIME_MSEC = LuceneTestCase.TEST_NIGHTLY ? 300000 : 100 * RANDOM_MULTIPLIER;
 
     final Set<String> delIDs = Collections.synchronizedSet(new HashSet<String>());
     final Set<String> delPackIDs = Collections.synchronizedSet(new HashSet<String>());
     final List<SubDocs> allSubDocs = Collections.synchronizedList(new ArrayList<SubDocs>());
 
-    final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC*1000;
+    final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
 
     final Thread[] indexThreads = launchIndexingThreads(docs, NUM_INDEX_THREADS, stopTime, delIDs, delPackIDs, allSubDocs);
 

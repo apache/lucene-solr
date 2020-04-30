@@ -135,9 +135,30 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void infoRequestValidateXSolrAuthHeaders() throws IOException {
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
-    assertEquals("401", headers.get("code"));
-    assertEquals("HTTP/1.1 401 Require authentication", headers.get(null));
+    assertEquals("Should have received 401 code", "401", headers.get("code"));
     assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
+    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
+    assertEquals("{\n" +
+        "  \"scope\":\"solr:admin\",\n" +
+        "  \"redirect_uris\":[],\n" +
+        "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n" +
+        "  \"client_id\":\"solr-cluster\"}", authData);
+  }
+
+  @Test
+  public void infoRequestValidateXSolrAuthHeadersBlockUnknownFalse() throws Exception {
+    // Re-configure cluster with other security.json, see https://issues.apache.org/jira/browse/SOLR-14196
+    shutdownCluster();
+    configureCluster(NUM_SERVERS)// nodes
+        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security_blockUnknownFalse.json"))
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
+        .configure();
+    baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+
+    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    assertEquals("Should have received 401 code", "401", headers.get("code"));
+    assertEquals("Bearer realm=\"my-solr-jwt-blockunknown-false\"", headers.get("WWW-Authenticate"));
     String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals("{\n" +
         "  \"scope\":\"solr:admin\",\n" +

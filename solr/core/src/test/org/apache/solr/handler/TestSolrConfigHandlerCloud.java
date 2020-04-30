@@ -262,6 +262,15 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         null,
         TIMEOUT_S);
 
+    payload = " {'unset' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Unknown operation 'unset'");
+
+    // deleting already deleted one should fail
+    // error message should contain parameter set name
+    payload = " {'delete' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Could not delete. No such params 'y' exist");
 
   }
 

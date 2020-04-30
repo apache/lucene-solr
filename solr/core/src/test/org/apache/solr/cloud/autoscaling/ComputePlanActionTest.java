@@ -56,6 +56,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -161,11 +162,22 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     for (String node: cloudManager.getClusterStateProvider().getLiveNodes()) {
       Map<String, Object> values = cloudManager.getNodeStateProvider().getNodeValues(node, ImplicitSnitch.tags);
-      log.debug("* Node values: " + node + "\n" + Utils.toJSONString(values));
+      if (log.isDebugEnabled()) {
+        log.debug("* Node values: {}\n{}", node, Utils.toJSONString(values));
+      }
     }
-    log.debug("* Live nodes: " + cloudManager.getClusterStateProvider().getLiveNodes());
+    if (log.isDebugEnabled()) {
+      log.debug("* Live nodes: {}", cloudManager.getClusterStateProvider().getLiveNodes());
+    }
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
-    state.forEachCollection(coll -> log.debug("* Collection " + coll.getName() + " state: " + coll));
+    if (log.isDebugEnabled()) {
+      state.forEachCollection(coll -> log.debug("* Collection {} state: {}", coll.getName(), coll));
+    }
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   @Test
@@ -316,7 +328,9 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null "+ getNodeStateProviderState() + actionContextPropsRef.get(), operations);
-    operations.forEach(solrRequest -> log.info(solrRequest.getParams().toString()));
+    if (log.isInfoEnabled()) {
+      operations.forEach(solrRequest -> log.info(solrRequest.getParams().toString()));
+    }
     assertEquals("ComputePlanAction should have computed exactly 2 operation", 2, operations.size());
 
     for (SolrRequest solrRequest : operations) {
@@ -431,7 +445,9 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   @Test
   //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollections() throws Exception {
-    log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
+    }
     // start 3 more nodes
     cluster.startJettySolrRunner();
     cluster.startJettySolrRunner();

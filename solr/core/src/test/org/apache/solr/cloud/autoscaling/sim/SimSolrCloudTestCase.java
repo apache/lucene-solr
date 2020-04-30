@@ -109,7 +109,9 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     if (cluster != null) {
-      log.info(cluster.dumpClusterState(false));
+      if (log.isInfoEnabled()) {
+        log.info(cluster.dumpClusterState(false));
+      }
     }
   }
 

@@ -18,6 +18,10 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
@@ -35,12 +39,19 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -109,6 +120,7 @@ public class TestIntervals extends LuceneTestCase {
         continue;
       for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
         ids.advance(doc);
+        MatchesIterator mi = source.matches(field, ctx, doc);
         int id = (int) ids.longValue();
         if (intervals.docID() == doc ||
             (intervals.docID() < doc && intervals.advance(doc) == doc)) {
@@ -123,19 +135,59 @@ public class TestIntervals extends LuceneTestCase {
             assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
             assertEquals("Wrong end value in doc " + id, expected[id][i + 1], intervals.end());
             i += 2;
+            assertTrue(mi.next());
+            assertEquals(source + ": wrong start value in match in doc " + id, intervals.start(), mi.startPosition());
+            assertEquals(source + ": wrong end value in match in doc " + id, intervals.end(), mi.endPosition());
           }
           assertEquals(source + ": wrong number of endpoints in doc " + id, expected[id].length, i);
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
-          if (i > 0)
+          if (i > 0) {
             matchedDocs++;
+            assertFalse(mi.next());
+          } else {
+            assertNull("Expected null matches iterator on doc " + id, mi);
+          }
         }
         else {
           assertEquals(0, expected[id].length);
+          assertNull(mi);
         }
       }
     }
     assertEquals(expectedMatchCount, matchedDocs);
+  }
+
+  private void checkVisits(IntervalsSource source, int expectedVisitCount, String... expectedTerms) {
+    Set<String> actualTerms = new HashSet<>();
+    int[] visitedSources = new int[1];
+    source.visit("field", new QueryVisitor() {
+      @Override
+      public void consumeTerms(Query query, Term... terms) {
+        visitedSources[0]++;
+        actualTerms.addAll(Arrays.stream(terms).map(Term::text).collect(Collectors.toList()));
+      }
+
+      @Override
+      public void visitLeaf(Query query) {
+        visitedSources[0]++;
+        super.visitLeaf(query);
+      }
+
+      @Override
+      public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+        visitedSources[0]++;
+        return super.getSubVisitor(occur, parent);
+      }
+    });
+
+    Set<String> expectedSet = new HashSet<>(Arrays.asList(expectedTerms));
+    expectedSet.removeAll(actualTerms);
+    actualTerms.removeAll(Arrays.asList(expectedTerms));
+    assertEquals(expectedVisitCount, visitedSources[0]);
+    assertTrue("Unexpected terms collected: " + actualTerms, actualTerms.isEmpty());
+    assertTrue("Missing expected terms: " + expectedSet, expectedSet.isEmpty());
+
   }
 
   private MatchesIterator getMatches(IntervalsSource source, int doc, String field) throws IOException {
@@ -187,11 +239,17 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 2, "no_such_field"));
     MatchesIterator mi = getMatches(source, 2, "field1");
     assertMatch(mi, 1, 1, 6, 14);
+    final TermQuery porridge = new TermQuery(new Term("field1","porridge"));
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 4, 4, 27, 35);
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 7, 7, 47, 55);
+    assertEquals(porridge, mi.getQuery());
     assertFalse(mi.next());
 
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 1, "porridge");
   }
 
   public void testOrderedNearIntervals() throws IOException {
@@ -219,6 +277,26 @@ public class TestIntervals extends LuceneTestCase {
     assertFalse(mi.next());
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "hot");
+  }
+
+  public void testOrderedNearWithDuplicates() throws IOException {
+    IntervalsSource source = Intervals.ordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("porridge"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 4, 3, 7 }, { 0, 4, 3, 7 }, {}, { 0, 4, 3, 7 }, {}
+    });
+    assertGaps(source, 1, "field1", new int[]{ 2, 2 });
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 4, 0, 34);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 0, 0, 0, 5);
+    assertMatch(sub, 3, 3, 20, 25);
+    assertMatch(sub, 4, 4, 26, 34);
+    assertMatch(mi, 3, 7, 20, 55);
+    assertFalse(mi.next());
   }
 
   public void testPhraseIntervals() throws IOException {
@@ -237,11 +315,22 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 3, 4, 20, 34);
     MatchesIterator sub = mi.getSubMatches();
     assertMatch(sub, 3, 3, 20, 25);
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 4, 4, 26, 34);
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
     assertFalse(sub.next());
+    
     assertMatch(mi, 6, 7, 41, 55);
+    sub = mi.getSubMatches();
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
+    assertFalse(sub.next());
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "porridge");
   }
 
   public void testUnorderedNearIntervals() throws IOException {
@@ -270,6 +359,30 @@ public class TestIntervals extends LuceneTestCase {
     });
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "hot");
+  }
+
+  public void testUnorderedWithRepeats() throws IOException {
+    IntervalsSource source = Intervals.unordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 3, 2, 6, 3, 17 }, { 0, 5, 3, 6 }, {}, { 0, 3, 2, 6, 3, 17 }, {}
+    });
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 3, 0, 25);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 0, 0, 0, 5);
+    assertMatch(sub, 2, 2, 15, 18);
+    assertMatch(sub, 3, 3, 20, 25);
+  }
+
+  public void testUnorderedWithRepeatsAndMaxGaps() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(2,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot")));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 3, 2, 6 }, { 3, 6 }, {}, { 0, 3, 2, 6 }, {}
+    });
   }
 
   public void testIntervalDisjunction() throws IOException {
@@ -285,12 +398,16 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 0, "field1"));
     MatchesIterator mi = getMatches(source, 3, "field1");
     assertMatch(mi, 3, 3, 15, 18);
+    assertEquals(new TermQuery(new Term("field1","hot")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertMatch(mi, 7, 7, 31, 36);
+    assertEquals(new TermQuery(new Term("field1","pease")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertFalse(mi.next());
 
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 4, "pease", "hot", "notMatching");
   }
 
   public void testCombinationDisjunction() throws IOException {
@@ -303,8 +420,9 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 8 },
         {}, {}, {}, {}
     });
-
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 5, "alph", "sacred", "measureless");
   }
 
   public void testNesting() throws IOException {
@@ -369,6 +487,8 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 18, 18 },
         {}
     });
+
+    checkVisits(before, 7, "pease", "porridge", "hot", "cold");
   }
 
   public void testNesting2() throws IOException {
@@ -393,9 +513,13 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(it, 6, 21, 41, 118);
     MatchesIterator sub = it.getSubMatches();
     assertMatch(sub, 6, 6, 41, 46);
+    assertEquals(new TermQuery(new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 19, 19, 106, 110);
+    assertEquals(new TermQuery(new Term("field1", "like")), sub.getQuery());
     assertMatch(sub, 20, 20, 111, 113);
+    assertEquals(new TermQuery(new Term("field1", "it")),sub.getQuery());
     assertMatch(sub, 21, 21, 114, 118);
+    assertEquals(new TermQuery(new Term("field1", "cold")),sub.getQuery());
     assertFalse(sub.next());
     assertFalse(it.next());
     assertEquals(4, source.minExtent());
@@ -433,9 +557,10 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3 },
             {}
         });
-    checkIntervals(Intervals.unorderedNoOverlaps(
+    IntervalsSource source = Intervals.unorderedNoOverlaps(
         Intervals.term("porridge"),
-        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"))), "field1", 3, new int[][]{
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge")));
+    checkIntervals(source, "field1", 3, new int[][]{
         {},
         { 1, 4, 4, 7 },
         { 1, 4, 4, 7 },
@@ -443,6 +568,8 @@ public class TestIntervals extends LuceneTestCase {
         { 1, 4, 4, 7 },
         {}
     });
+    // automatic rewrites mean that we end up with 11 sources to visit
+    checkVisits(source, 11, "porridge", "pease");
   }
 
   public void testContainedBy() throws IOException {
@@ -473,6 +600,8 @@ public class TestIntervals extends LuceneTestCase {
     assertFalse(subs.next());
     assertFalse(mi.next());
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 5, "porridge", "pease", "cold");
   }
 
   public void testContaining() throws IOException {
@@ -542,6 +671,25 @@ public class TestIntervals extends LuceneTestCase {
 
     assertEquals(3, source.minExtent());
 
+  }
+
+  public void testMaxGapsWithRepeats() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(11,
+        Intervals.ordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot")));
+    checkIntervals(source, "field1", 1, new int[][]{
+        {}, {}, { 0, 5 }, {}, {}, {}
+    });
+    assertGaps(source, 2, "field1", new int[]{ 3 });
+  }
+
+  public void testMaxGapsWithOnlyRepeats() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(1, Intervals.ordered(
+        Intervals.or(Intervals.term("pease"), Intervals.term("hot")), Intervals.or(Intervals.term("pease"), Intervals.term("hot"))
+    ));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 2, 2, 3 }, { 3, 5, 5, 6 }, {}, { 0, 2, 2, 3 }, {}
+    });
+    assertGaps(source, 1, "field1", new int[]{ 1, 0 });
   }
 
   public void testNestedMaxGaps() throws IOException {
@@ -741,11 +889,11 @@ public class TestIntervals extends LuceneTestCase {
     IntervalsSource source = Intervals.prefix(new BytesRef("p"));
     checkIntervals(source, "field1", 5, new int[][]{
         {},
-        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27 },
-        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
-        { 7, 7 },
-        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
-        { 0, 0 }
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27},
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10},
+        {7, 7},
+        {0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10},
+        {0, 0}
     });
     MatchesIterator mi = getMatches(source, 1, "field1");
     assertNotNull(mi);
@@ -755,13 +903,15 @@ public class TestIntervals extends LuceneTestCase {
     IntervalsSource noSuch = Intervals.prefix(new BytesRef("qqq"));
     checkIntervals(noSuch, "field1", 0, new int[][]{});
 
-    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
-      IntervalsSource s = Intervals.prefix(new BytesRef("p"), 1);
-      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
-        s.intervals("field1", ctx);
-      }
-    });
-    assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
+    IntervalsSource s = Intervals.prefix(new BytesRef("p"), 1);
+      IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+        for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+          s.intervals("field1", ctx);
+        }
+      });
+      assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(Intervals.prefix(new BytesRef("p")), 1);
   }
 
   public void testWildcard() throws IOException {
@@ -787,6 +937,8 @@ public class TestIntervals extends LuceneTestCase {
       }
     });
     assertEquals("Automaton [?ot] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(Intervals.wildcard(new BytesRef("p??")), 1);
   }
 
   public void testWrappedFilters() throws IOException {
@@ -805,6 +957,30 @@ public class TestIntervals extends LuceneTestCase {
         {}
     });
 
+  }
+
+  public void testMultiTerm() throws IOException {
+    RegExp re = new RegExp("p.*e");
+    IntervalsSource source = Intervals.multiterm(new CompiledAutomaton(re.toAutomaton()), re.toString());
+
+    checkIntervals(source, "field1", 5, new int[][]{
+        {},
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7 },
+        { 0, 0 }
+    });
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.multiterm(new CompiledAutomaton(re.toAutomaton()), 1, re.toString());
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [\\p(.)*\\e] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(source, 1);
   }
 
 }

@@ -69,7 +69,7 @@ public class TestFieldType extends LuceneTestCase {
   public void testPointsToString() {
     FieldType ft = new FieldType();
     ft.setDimensions(1, Integer.BYTES);
-    assertEquals("pointDataDimensionCount=1,pointIndexDimensionCount=1,pointNumBytes=4", ft.toString());
+    assertEquals("pointDimensionCount=1,pointIndexDimensionCount=1,pointNumBytes=4", ft.toString());
   }
 
   /**
@@ -114,11 +114,11 @@ public class TestFieldType extends LuceneTestCase {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         final Object[] args = new Object[parameterTypes.length];
         if (method.equals(setDimensionsMethodA)) {
-          args[0] = 1 + random().nextInt(PointValues.MAX_DIMENSIONS);
+          args[0] = 1 + random().nextInt(PointValues.MAX_INDEX_DIMENSIONS);
           args[1] = 1 + random().nextInt(PointValues.MAX_NUM_BYTES);
         } else if (method.equals(setDimensionsMethodB)) {
           args[0] = 1 + random().nextInt(PointValues.MAX_DIMENSIONS);
-          args[1] = 1 + random().nextInt((Integer)args[0]);
+          args[1] = 1 + Math.min((Integer)args[0] - 1, random().nextInt(PointValues.MAX_INDEX_DIMENSIONS));
           args[2] = 1 + random().nextInt(PointValues.MAX_NUM_BYTES);
         } else {
           for (int i = 0; i < args.length; ++i) {

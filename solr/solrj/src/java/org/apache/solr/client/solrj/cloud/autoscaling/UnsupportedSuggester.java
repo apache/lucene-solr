@@ -48,7 +48,7 @@ public class UnsupportedSuggester extends Suggester {
 
   @Override
   SolrRequest init() {
-    log.warn("Unsupported suggester for action " + action + " with hints " + hints + " - no suggestion available");
+    log.warn("Unsupported suggester for action {} with hings {} - no suggestion available", action, hints);
     return null;
   }
 

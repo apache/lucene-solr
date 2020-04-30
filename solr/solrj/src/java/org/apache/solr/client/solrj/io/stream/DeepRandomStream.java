@@ -51,7 +51,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ROWS;
@@ -309,12 +309,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
-
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
+
+      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
+
       String rows = mParams.get(ROWS);
       int r = Integer.parseInt(rows);
       int newRows = r/shardUrls.size();
@@ -347,7 +347,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("DeepRandomStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("DeepRandomStream"));
     try {
       List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {

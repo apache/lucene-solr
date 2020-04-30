@@ -192,6 +192,7 @@ public class RequestUtil {
 
     // implement compat for existing components...
     JsonQueryConverter jsonQueryConverter = new JsonQueryConverter();
+
     if (json != null && !isShard) {
       for (Map.Entry<String,Object> entry : json.entrySet()) {
         String key = entry.getKey();
@@ -214,48 +215,62 @@ public class RequestUtil {
           out = "rows";
         } else if (SORT.equals(key)) {
           out = SORT;
+        } else if ("queries".equals(key)) {
+          Object queriesJsonObj = entry.getValue();
+          if (queriesJsonObj instanceof Map && queriesJsonObj != null) {
+            @SuppressWarnings("unchecked")
+            final Map<String,Object> queriesAsMap = (Map<String,Object>) queriesJsonObj;
+            for (Map.Entry<String,Object> queryJsonProperty : queriesAsMap.entrySet()) {
+              out = queryJsonProperty.getKey();
+              arr = true;
+              isQuery = true;
+              convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+            }
+            continue;
+          } else {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Expected Map for 'queries', received " + queriesJsonObj);
+          }
         } else if ("params".equals(key) || "facet".equals(key) ) {
           // handled elsewhere
           continue;
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown top-level key in JSON request : " + key);
         }
-
-        Object val = entry.getValue();
-
-        if (arr) {
-          String[] existing = newMap.get(out);
-          List lst = val instanceof List ? (List)val : null;
-          int existingSize = existing==null ? 0 : existing.length;
-          int jsonSize = lst==null ? 1 : lst.size();
-          String[] newval = new String[ existingSize + jsonSize ];
-          for (int i=0; i<existingSize; i++) {
-            newval[i] = existing[i];
-          }
-          if (lst != null) {
-            for (int i = 0; i < jsonSize; i++) {
-              Object v = lst.get(i);
-              newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, newMap) : v.toString();
-            }
-          } else {
-            newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString();
-          }
-          newMap.put(out, newval);
-        } else {
-          newMap.put(out, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString()});
-        }
-
+        convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, entry, out, isQuery, arr);
       }
-
-
     }
 
     if (json != null) {
       req.setJSON(json);
     }
-
   }
 
+  private static void convertJsonPropertyToLocalParams(Map<String, String[]> outMap, JsonQueryConverter jsonQueryConverter, Map.Entry<String, Object> jsonProperty, String outKey, boolean isQuery, boolean arr) {
+    Object val = jsonProperty.getValue();
+
+    if (arr) {
+      String[] existing = outMap.get(outKey);
+      List<?> lst = val instanceof List ? (List<?>)val : null;
+      int existingSize = existing==null ? 0 : existing.length;
+      int jsonSize = lst==null ? 1 : lst.size();
+      String[] newval = new String[ existingSize + jsonSize ];
+      for (int i=0; i<existingSize; i++) {
+        newval[i] = existing[i];
+      }
+      if (lst != null) {
+        for (int i = 0; i < jsonSize; i++) {
+          Object v = lst.get(i);
+          newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
+        }
+      } else {
+        newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
+      }
+      outMap.put(outKey, newval);
+    } else {
+      outMap.put(outKey, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
+    }
+  }
 
 
   // queryParamName is something like json.facet or json.query, or just json...
@@ -264,7 +279,7 @@ public class RequestUtil {
       List<String> path = StrUtils.splitSmart(queryParamName, ".", true);
       path = path.subList(1, path.size());
       for (String jsonStr : vals) {
-        Object o = ObjectBuilder.fromJSON(jsonStr);
+        Object o = ObjectBuilder.fromJSONStrict(jsonStr);
         // zero-length strings or comments can cause this to be null (and a zero-length string can result from a json content-type w/o a body)
         if (o != null) {
           ObjectUtil.mergeObjects(json, path, o, handler);
@@ -295,6 +310,7 @@ public class RequestUtil {
 
       Object o = ObjectBuilder.getVal(parser);
       if (!(o instanceof Map)) return;
+      @SuppressWarnings("unchecked")
       Map<String,Object> map = (Map<String,Object>)o;
       // To make consistent with json.param handling, we should make query params come after json params (i.e. query params should
       // appear to overwrite json params.
@@ -310,7 +326,7 @@ public class RequestUtil {
         if (val == null) {
           params.remove(key);
         } else if (val instanceof List) {
-          List lst = (List) val;
+          List<?> lst = (List<?>) val;
           String[] vals = new String[lst.size()];
           for (int i = 0; i < vals.length; i++) {
             vals[i] = lst.get(i).toString();

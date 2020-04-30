@@ -48,6 +48,11 @@ public class TypeAsPayloadTokenFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public TypeAsPayloadTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TypeAsPayloadTokenFilter create(TokenStream input) {
     return new TypeAsPayloadTokenFilter(input);

@@ -1,4 +1,6 @@
 <!--
+_(If you are a project committer then you may remove some/all of the following template.)_
+
 Before creating a pull request, please file an issue in the ASF Jira system for Lucene or Solr:
 
 * https://issues.apache.org/jira/projects/LUCENE
@@ -34,7 +36,6 @@ Please review the following and check all that apply:
 
 - [ ] I have reviewed the guidelines for [How to Contribute](https://wiki.apache.org/solr/HowToContribute) and my code conforms to the standards described there to the best of my ability.
 - [ ] I have created a Jira issue and added the issue ID to my pull request title.
-- [ ] I am authorized to contribute this code to the ASF and have removed any code I do not have a license to distribute.
 - [ ] I have given Solr maintainers [access](https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork) to contribute to my PR branch. (optional but recommended)
 - [ ] I have developed this patch against the `master` branch.
 - [ ] I have run `ant precommit` and the appropriate test suite.

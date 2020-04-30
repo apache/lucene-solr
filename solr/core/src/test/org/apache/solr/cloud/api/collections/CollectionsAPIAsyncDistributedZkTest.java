@@ -42,7 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -239,7 +239,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final AtomicInteger numFailure = new AtomicInteger(0);
     final CountDownLatch latch = new CountDownLatch(numThreads);
     
-    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new DefaultSolrThreadFactory("testAsyncIdRaceCondition"));
+    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
         es.submit(new Runnable() {
@@ -255,11 +255,15 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             }
             
             try {
-              log.info("{} - Reloading Collection.", Thread.currentThread().getName());
+              if (log.isInfoEnabled()) {
+                log.info("{} - Reloading Collection.", Thread.currentThread().getName());
+              }
               reloadCollectionRequest.processAsync("repeatedId", clients[random().nextInt(clients.length)]);
               numSuccess.incrementAndGet();
             } catch (SolrServerException e) {
-              log.info(e.getMessage());
+              if (log.isInfoEnabled()) {
+                log.info(e.getMessage());
+              }
               assertEquals("Task with the same requestid already exists.", e.getMessage());
               numFailure.incrementAndGet();
             } catch (IOException e) {
@@ -278,17 +282,4 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       }
     }
   }
-  
-  public void testAsyncIdBackCompat() throws Exception {
-    //remove with Solr 9
-    cluster.getZkClient().makePath("/overseer/collection-map-completed/mn-testAsyncIdBackCompat", true, true);
-    try {
-      CollectionAdminRequest.createCollection("testAsyncIdBackCompat","conf1",1,1)
-      .processAsync("testAsyncIdBackCompat", cluster.getSolrClient());
-      fail("Expecting exception");
-    } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("Task with the same requestid already exists"));
-    }
-  }
-
 }

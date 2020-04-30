@@ -43,6 +43,7 @@ import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -92,7 +93,9 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("{} reset, new znode version {}", SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
+    }
 
     cluster.getSolrClient().setDefaultCollection(null);
 
@@ -114,6 +117,11 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
   @After
   public void cleanUpTest() throws Exception {
     shutdownCluster();
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {

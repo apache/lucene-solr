@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 
 public class DateFieldTest extends SolrTestCaseJ4 {
   private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
@@ -39,7 +38,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     SolrConfig config = new SolrConfig
-        (new SolrResourceLoader(Paths.get(testInstanceDir)), testConfHome + "solrconfig.xml", null);
+        (Paths.get(testInstanceDir), testConfHome + "solrconfig.xml");
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
     f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
       ? new DatePointField() : new TrieDateField();

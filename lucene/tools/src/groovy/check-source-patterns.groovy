@@ -71,7 +71,7 @@ def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
 def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
 def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
 def lineSplitter = ~$/[\r\n]+/$;
-def singleLineSplitter = ~$/\n\r?/$;
+def singleLineSplitter = ~$/\r?\n/$;
 def licenseMatcher = Defaults.createDefaultMatcher();
 def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
 def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
@@ -147,10 +147,12 @@ ant.fileScanner{
       include(name: 'dev-tools/**/*.' + it)
       include(name: '*.' + it)
     }
-    // TODO: For now we don't scan txt files, so we
+    // TODO: For now we don't scan txt / md files, so we
     // check licenses in top-level folders separately:
     include(name: '*.txt')
     include(name: '*/*.txt')
+    include(name: '*.md')
+    include(name: '*/*.md')
     // excludes:
     exclude(name: '**/build/**')
     exclude(name: '**/dist/**')

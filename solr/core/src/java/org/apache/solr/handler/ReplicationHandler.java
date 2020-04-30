@@ -92,14 +92,14 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -156,11 +156,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             version = Long.parseLong(commitTime);
           } catch (NumberFormatException e) {
-            log.warn("Version in commitData was not formatted correctly: " + commitTime, e);
+            log.warn("Version in commitData was not formatted correctly: {}", commitTime, e);
           }
         }
       } catch (IOException e) {
-        log.warn("Unable to get version from commitData, commit: " + commit, e);
+        log.warn("Unable to get version from commitData, commit: {}", commit, e);
       }
       return new CommitVersionInfo(generation, version);
     }
@@ -175,7 +175,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private ReentrantLock indexFetchLock = new ReentrantLock();
 
   private ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new DefaultSolrThreadFactory("restoreExecutor"));
+      new SolrNamedThreadFactory("restoreExecutor"));
 
   private volatile Future<Boolean> restoreFuture;
 
@@ -376,7 +376,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.add(CMD_GET_FILE_LIST, commitList);
         l.add(nl);
       } catch (IOException e) {
-        log.warn("Exception while reading files for commit " + c, e);
+        log.warn("Exception while reading files for commit {}", c, e);
       }
     }
     return l;
@@ -393,7 +393,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         checksum.update(buffer, 0, bytesRead);
       return checksum.getValue();
     } catch (Exception e) {
-      log.warn("Exception in finding checksum of " + f, e);
+      log.warn("Exception in finding checksum of {}", f, e);
     } finally {
       IOUtils.closeQuietly(fis);
     }
@@ -614,104 +614,121 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @SuppressWarnings("unchecked")
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
-    String v = solrParams.required().get(GENERATION);
-    long gen = Long.parseLong(v);
-    if (gen == -1) {
-      IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-      if(commitPoint == null) {
-        rsp.add(CMD_GET_FILE_LIST, Collections.EMPTY_LIST);
-        return;
-      }
-      gen = commitPoint.getGeneration();
-    }
-    IndexCommit commit = core.getDeletionPolicy().getCommitPoint(gen);
-
-    if (commit == null) {
-      reportErrorOnResponse(rsp, "invalid index generation", null);
-      return;
-    }
-
-    // reserve the indexcommit for sometime
-    core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
-    List<Map<String, Object>> result = new ArrayList<>();
-    Directory dir = null;
+    final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
+    final long gen = Long.parseLong(solrParams.required().get(GENERATION));
+    
+    IndexCommit commit = null;
     try {
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
-      for (SegmentCommitInfo commitInfo : infos) {
-        for (String file : commitInfo.files()) {
-          Map<String, Object> fileMeta = new HashMap<>();
-          fileMeta.put(NAME, file);
-          fileMeta.put(SIZE, dir.fileLength(file));
-
-          try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+      if (gen == -1) {
+        commit = delPol.getAndSaveLatestCommit();
+        if (null == commit) {
+          rsp.add(CMD_GET_FILE_LIST, Collections.EMPTY_LIST);
+          return;
+        }
+      } else {
+        try {
+          commit = delPol.getAndSaveCommitPoint(gen);
+        } catch (IllegalStateException ignored) {
+          /* handle this below the same way we handle a return value of null... */
+        }
+        if (null == commit) {
+          // The gen they asked for either doesn't exist or has already been deleted
+          reportErrorOnResponse(rsp, "invalid index generation", null);
+          return;
+        }
+      }
+      assert null != commit;
+      
+      List<Map<String, Object>> result = new ArrayList<>();
+      Directory dir = null;
+      try {
+        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+        for (SegmentCommitInfo commitInfo : infos) {
+          for (String file : commitInfo.files()) {
+            Map<String, Object> fileMeta = new HashMap<>();
+            fileMeta.put(NAME, file);
+            fileMeta.put(SIZE, dir.fileLength(file));
+            
+            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+              try {
+                long checksum = CodecUtil.retrieveChecksum(in);
+                fileMeta.put(CHECKSUM, checksum);
+              } catch (Exception e) {
+                //TODO Should this trigger a larger error?
+                log.warn("Could not read checksum from index file: {}", file, e);
+              }
+            }
+            
+            result.add(fileMeta);
+          }
+        }
+        
+        // add the segments_N file
+        
+        Map<String, Object> fileMeta = new HashMap<>();
+        fileMeta.put(NAME, infos.getSegmentsFileName());
+        fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
+        if (infos.getId() != null) {
+          try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
-              long checksum = CodecUtil.retrieveChecksum(in);
-              fileMeta.put(CHECKSUM, checksum);
+              fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch (Exception e) {
               //TODO Should this trigger a larger error?
-              log.warn("Could not read checksum from index file: " + file, e);
+              log.warn("Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
             }
           }
-
-          result.add(fileMeta);
         }
-      }
-
-      // add the segments_N file
-
-      Map<String, Object> fileMeta = new HashMap<>();
-      fileMeta.put(NAME, infos.getSegmentsFileName());
-      fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
-      if (infos.getId() != null) {
-        try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+        result.add(fileMeta);
+      } catch (IOException e) {
+        log.error("Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
+        reportErrorOnResponse(rsp, "unable to get file names for given index generation", e);
+        return;
+      } finally {
+        if (dir != null) {
           try {
-            fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
-          } catch (Exception e) {
-            //TODO Should this trigger a larger error?
-            log.warn("Could not read checksum from index file: " + infos.getSegmentsFileName(), e);
+            core.getDirectoryFactory().release(dir);
+          } catch (IOException e) {
+            SolrException.log(log, "Could not release directory after fetching file list", e);
           }
         }
       }
-      result.add(fileMeta);
-    } catch (IOException e) {
-      log.error("Unable to get file names for indexCommit generation: " + gen, e);
-      reportErrorOnResponse(rsp, "unable to get file names for given index generation", e);
-      return;
-    } finally {
-      if (dir != null) {
+      rsp.add(CMD_GET_FILE_LIST, result);
+      
+      if (solrParams.getBool(TLOG_FILES, false)) {
         try {
-          core.getDirectoryFactory().release(dir);
-        } catch (IOException e) {
-          SolrException.log(log, "Could not release directory after fetching file list", e);
+          List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
+          log.info("Adding tlog files to list: {}", tlogfiles);
+          rsp.add(TLOG_FILES, tlogfiles);
+        }
+        catch (IOException e) {
+          log.error("Unable to get tlog file names for indexCommit generation: {}", commit.getGeneration(), e);
+          reportErrorOnResponse(rsp, "unable to get tlog file names for given index generation", e);
+          return;
         }
       }
-    }
-    rsp.add(CMD_GET_FILE_LIST, result);
-
-    if (solrParams.getBool(TLOG_FILES, false)) {
-      try {
-        List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
-        log.info("Adding tlog files to list: " + tlogfiles);
-        rsp.add(TLOG_FILES, tlogfiles);
-      }
-      catch (IOException e) {
-        log.error("Unable to get tlog file names for indexCommit generation: " + gen, e);
-        reportErrorOnResponse(rsp, "unable to get tlog file names for given index generation", e);
+      
+      if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
         return;
+      log.debug("Adding config files to list: {}", includeConfFiles);
+      //if configuration files need to be included get their details
+      rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
+      rsp.add(STATUS, OK_STATUS);
+      
+    } finally {
+      if (null != commit) {
+        // before releasing the save on our commit point, set a short reserve duration since
+        // the main reason remote nodes will ask for the file list is because they are preparing to
+        // replicate from us...
+        delPol.setReserveDuration(commit.getGeneration(), reserveCommitDuration);
+        delPol.releaseCommitPoint(commit);
       }
     }
-
-    if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
-      return;
-    log.debug("Adding config files to list: " + includeConfFiles);
-    //if configuration files need to be included get their details
-    rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
-    rsp.add(STATUS, OK_STATUS);
   }
 
   /**
    * Retrieves the list of tlog files associated to a commit point.
+   * NOTE: The commit <b>MUST</b> be reserved before calling this method
    */
   List<Map<String, Object>> getTlogFileList(IndexCommit commit) throws IOException {
     long maxVersion = this.getMaxVersion(commit);
@@ -734,6 +751,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   /**
    * Retrieves the maximum version number from an index commit.
+   * NOTE: The commit <b>MUST</b> be reserved before calling this method
    */
   private long getMaxVersion(IndexCommit commit) throws IOException {
     try (DirectoryReader reader = DirectoryReader.open(commit)) {
@@ -799,7 +817,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void disablePoll(SolrQueryResponse rsp) {
     if (pollingIndexFetcher != null){
       pollDisabled.set(true);
-      log.info("inside disable poll, value of pollDisabled = " + pollDisabled);
+      log.info("inside disable poll, value of pollDisabled = {}", pollDisabled);
       rsp.add(STATUS, OK_STATUS);
     } else {
       reportErrorOnResponse(rsp, "No slave configured", null);
@@ -809,7 +827,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void enablePoll(SolrQueryResponse rsp) {
     if (pollingIndexFetcher != null){
       pollDisabled.set(false);
-      log.info("inside enable poll, value of pollDisabled = " + pollDisabled);
+      log.info("inside enable poll, value of pollDisabled = {}", pollDisabled);
       rsp.add(STATUS, OK_STATUS);
     } else {
       reportErrorOnResponse(rsp, "No slave configured", null);
@@ -863,21 +881,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    super.initializeMetrics(manager, registry, tag, scope);
-
-    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
-        tag, true, "indexSize", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
-        tag, true, "indexVersion", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
-        tag, true, GENERATION, getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
-        tag, true, "indexPath", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> isMaster,
-        tag, true, "isMaster", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> isSlave,
-        tag, true, "isSlave", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+        true, "indexSize", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+         true, "indexVersion", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+        true, GENERATION, getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+        true, "indexPath", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isMaster,
+         true, "isMaster", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isSlave,
+         true, "isSlave", getCategory().toString(), scope);
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
@@ -906,13 +923,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
     });
-    manager.registerGauge(this, registry, fetcherMap, tag, true, "fetcher", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
-        tag, true, "confFilesToReplicate", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
-        tag, true, REPLICATE_AFTER, getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> isMaster && replicationEnabled.get(),
-        tag, true, "replicationEnabled", getCategory().toString(), scope);
+    solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isMaster && includeConfFiles != null ? includeConfFiles : "",
+         true, "confFilesToReplicate", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
+        true, REPLICATE_AFTER, getCategory().toString(), scope);
+    solrMetricsContext.gauge( () -> isMaster && replicationEnabled.get(),
+        true, "replicationEnabled", getCategory().toString(), scope);
   }
 
   //TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is there a core set of values that are required to make a response here useful?
@@ -1195,7 +1212,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
-        new DefaultSolrThreadFactory("indexFetcher"));
+        new SolrNamedThreadFactory("indexFetcher"));
     // Randomize initial delay, with a minimum of 1ms
     long initialDelayNs = new Random().nextLong() % pollIntervalNs
         + TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
@@ -1228,9 +1245,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     if (enableMaster || (enableSlave && !currentIndexFetcher.fetchFromLeader)) {
       if (core.getCoreContainer().getZkController() != null) {
-        log.warn("SolrCloud is enabled for core " + core.getName() + " but so is old-style replication. Make sure you" +
-            " intend this behavior, it usually indicates a mis-configuration. Master setting is " +
-            Boolean.toString(enableMaster) + " and slave setting is " + Boolean.toString(enableSlave));
+        log.warn("SolrCloud is enabled for core {} but so is old-style replication. "
+                + "Make sure you intend this behavior, it usually indicates a mis-configuration. "
+                + "Master setting is {} and slave setting is {}"
+        , core.getName(), enableMaster, enableSlave);
       }
     }
 
@@ -1249,7 +1267,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           // if there is an alias add it or it is null
           confFileNameAlias.add(strs[0], strs.length > 1 ? strs[1] : null);
         }
-        log.info("Replication enabled for following config files: " + includeConfFiles);
+        log.info("Replication enabled for following config files: {}", includeConfFiles);
       }
       List backup = master.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
@@ -1273,7 +1291,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             solrPolicy.setMaxOptimizedCommitsToKeep(1);
           }
         } else {
-          log.warn("Replication can't call setMaxOptimizedCommitsToKeep on " + policy);
+          log.warn("Replication can't call setMaxOptimizedCommitsToKeep on {}", policy);
         }
       }
 
@@ -1339,7 +1357,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
     }
-    log.info("Commits will be reserved for " + reserveCommitDuration + "ms.");
+    log.info("Commits will be reserved for {} ms", reserveCommitDuration);
   }
 
   // check master or slave is enabled
@@ -1387,7 +1405,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
-  public void close() {
+  public void shutdown() {
     if (executorService != null) executorService.shutdown();
     if (pollingIndexFetcher != null) {
       pollingIndexFetcher.destroy();
@@ -1592,7 +1610,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
-          log.debug("Wrote {} bytes for file {}", offset + read, fileName);
+          log.debug("Wrote {} bytes for file {}", offset + read, fileName); // logOK
 
           //Pause if necessary
           maxBytesBeforePause += read;
@@ -1609,7 +1627,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           in.seek(offset);
         }
       } catch (IOException e) {
-        log.warn("Exception while writing response for params: " + params, e);
+        log.warn("Exception while writing response for params: {}", params, e);
       } finally {
         if (in != null) {
           in.close();
@@ -1677,7 +1695,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           writeNothingAndFlush();
         }
       } catch (IOException e) {
-        log.warn("Exception while writing response for params: " + params, e);
+        log.warn("Exception while writing response for params: {}", params, e);
       } finally {
         IOUtils.closeQuietly(inputStream);
         extendReserveAndReleaseCommitPoint();

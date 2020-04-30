@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -104,7 +105,7 @@ public class TestV2Request extends SolrCloudTestCase {
             "    'replicationFactor' : 2," +
             "    'config' : 'config'" +
             "  }" +
-            "}").build());
+            "}" + "/* ignore comment*/").build());
     assertSuccess(client, new V2Request.Builder("/c").build());
     assertSuccess(client, new V2Request.Builder("/c/_introspect").build());
 
@@ -122,7 +123,20 @@ public class TestV2Request extends SolrCloudTestCase {
     
     // TODO: this is not guaranteed now - beast test if you try to fix
     // assertFalse( collections.contains("test"));
-
+    try{
+      NamedList<Object> res1 = client.request(new V2Request.Builder("/collections")
+              .withMethod(SolrRequest.METHOD.POST)
+              .withPayload("{" +
+                  "  'create' : {" +
+                  "    'name' : 'jsontailtest'," +
+                  "    'numShards' : 2," +
+                  "    'replicationFactor' : 2," +
+                  "    'config' : 'config'" +
+                  "  }" +
+                  "}" + ", 'something':'bogus'").build());
+      assertFalse("The request failed", res1.get("responseHeader").toString().contains("status=0"));
+    } catch(BaseHttpSolrClient.RemoteExecutionException itsOk) {
+    }
   }
 
   public void testV2Forwarding() throws Exception {

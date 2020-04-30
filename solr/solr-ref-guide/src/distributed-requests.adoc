@@ -160,7 +160,7 @@ Solr allows you to pass an optional string parameter named `shards.preference` t
 
 The syntax is: `shards.preference=_property_:__value__`. The order of the properties and the values are significant: the first one is the primary sort, the second is secondary, etc.
 
-IMPORTANT: `shards.preference` only works for distributed queries, i.e., queries targeting multiple shards. Single shard scenarios are not supported.
+IMPORTANT: `shards.preference` is supported for single shard scenarios when using the SolrJ clients.
 
 The properties that can be specified are as follows:
 
@@ -185,9 +185,9 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 +
 `random`, the default, randomly shuffles replicas for each request. This distributes requests evenly, but can result in sub-optimal cache usage for shards with replication factor > 1.
 +
-`stable:dividend:_paramName_` parses an integer from the value associated with the given param name; this integer is used as the dividend (mod equivalent replica count) to determine (via list rotation) order of preference among equivalent replicas.
+`stable:dividend:_paramName_` parses an integer from the value associated with the given parameter name; this integer is used as the dividend (mod equivalent replica count) to determine (via list rotation) order of preference among equivalent replicas.
 +
-`stable[:hash[:_paramName_]]` the string value associated with the given param name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
+`stable[:hash[:_paramName_]]` the string value associated with the given parameter name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
 
 Examples:
 

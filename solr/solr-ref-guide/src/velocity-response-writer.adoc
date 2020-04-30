@@ -16,7 +16,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "_default", "techproducts", and "example/files".
+The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using some example configurations such as "techproducts" and "example/files".
+
+[IMPORTANT]
+====
+The VelocityResponseWriter has been deprecated and may be removed in a future version of Solr.
+====
 
 Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:
 
@@ -27,8 +32,6 @@ Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion),
 
 <!--
   <str name="init.properties.file">velocity-init.properties</str>
-  <bool name="params.resource.loader.enabled">true</bool>
-  <bool name="solr.resource.loader.enabled">false</bool>
   <lst name="tools">
     <str name="mytool">com.example.MyCustomTool</str>
   </lst>
@@ -36,9 +39,13 @@ Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion),
 </queryResponseWriter>
 ----
 
-The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. See further below for request-time parameters.
-
 == Configuration & Usage
+
+=== Template Rendering Protections
+
+Velocity template rendering is largely controlled by the `trusted` configset flag.  Templates built into (the `/browse` ones) the component library are always available
+with this component.  In a trusted configset, templates in the `velocity/` subdirectory of the configset are renderable.  Also in a trusted configset, when `template.base.dir`
+is specified those templates are renderable.
 
 === VelocityResponseWriter Initialization Parameters
 
@@ -46,17 +53,6 @@ The above example shows the optional initialization and custom tool parameters u
 If specified and exists as a file system directory, a file resource loader will be added for this directory. Templates in this directory will override "solr" resource loader templates.
 
 `init.properties.file`:: Specifies a properties file name which must exist in the Solr `conf/` directory (*not* under a `velocity/` subdirectory) or root of a JAR file in a <lib>.
-
-`params.resource.loader.enabled`::
-The "params" resource loader allows templates to be specified in Solr request parameters. For example:
-+
-[source,bash]
-http://localhost:8983/solr/gettingstarted/select?q=\*:*&wt=velocity&v.template=custom&v.template.custom=CUSTOM%3A%20%23core_name
-+
-where `v.template=custom` says to render a template called "custom" and the value of `v.template.custom` is the custom template. This is `false` by default; it'd be a niche, unusual, use case to need this enabled.
-
-`solr.resource.loader.enabled`::
-The "solr" resource loader is the only template loader registered by default. Templates are served from resources visible to the SolrResourceLoader under a `velocity/` subdirectory. The VelocityResponseWriter itself has some built-in templates (in its JAR file, under `velocity/`) that are available automatically through this loader. These built-in templates can be overridden when the same template name is in conf/velocity/ or by using the `template.base.dir` option.
 
 `tools`::
 External "tools" can be specified as list of string name/value (tool name / class name) pairs. Tools, in the Velocity context, are simply Java objects. Tool classes are constructed using a no-arg constructor (or a single-SolrCore-arg constructor if it exists) and added to the Velocity context with the specified name.
@@ -95,8 +91,6 @@ Locale to use with the `$resource` tool and other LocaleConfig implementing tool
 +
 Resource bundles can be added by providing a JAR file visible by the SolrResourceLoader with resource bundles under a velocity sub-directory. Resource bundles are not loadable under `conf/`, as only the class loader aspect of SolrResourceLoader can be used here.
 
-`v.template._template_name_`:: When the "params" resource loader is enabled, templates can be specified as part of the Solr request.
-
 
 === VelocityResponseWriter Context Objects
 
@@ -106,7 +100,7 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 |===
 |Context Reference |Description
 |`request` |{solr-javadocs}solr-core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] javadocs
-|`response` |{solr-javadocs}solr-core/org/apache/solr/response/SolrQueryResponse.html[QueryResponse] most of the time, but in some cases where QueryResponse doesn't like the request handler's output (https://wiki.apache.org/solr/AnalysisRequestHandler[AnalysisRequestHandler], for example, causes a ClassCastException parsing "response"), the response will be a SolrResponseBase object.
+|`response` |{solr-javadocs}solr-core/org/apache/solr/response/SolrQueryResponse.html[QueryResponse] most of the time, but in some cases where QueryResponse doesn't like the request handler's output (https://cwiki.apache.org/confluence/display/solr/AnalysisRequestHandler[AnalysisRequestHandler], for example, causes a ClassCastException parsing "response"), the response will be a SolrResponseBase object.
 |`esc` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#EscapeTool[EscapeTool] instance
 |`date` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ComparisonDateTool[ComparisonDateTool] instance
 |`math` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#MathTool[MathTool] instance
@@ -120,3 +114,9 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 |`content` |The rendered output of the main template, when rendering the layout (`v.layout.enabled=true` and `v.layout=<template>`).
 |[custom tool(s)] |Tools provided by the optional "tools" list of the VelocityResponseWriter registration are available by their specified name.
 |===
+
+=== VelocityResponseWriter Usage
+
+To see results in an HTML user interface on your own collection, try http://localhost:8983/solr/<my collection>/select?q=*:*&wt=velocity&v.template=browse&v.layout=layout
+
+Or try `/browse` in the examples techproducts or example/files.

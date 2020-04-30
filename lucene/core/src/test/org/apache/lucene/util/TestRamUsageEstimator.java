@@ -17,9 +17,6 @@
 package org.apache.lucene.util;
 
 
-import static org.apache.lucene.util.RamUsageEstimator.*;
-import static org.apache.lucene.util.RamUsageTester.sizeOf;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,8 +28,21 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
+
+import static org.apache.lucene.util.RamUsageEstimator.COMPRESSED_REFS_ENABLED;
+import static org.apache.lucene.util.RamUsageEstimator.HOTSPOT_BEAN_CLASS;
+import static org.apache.lucene.util.RamUsageEstimator.JVM_IS_HOTSPOT_64BIT;
+import static org.apache.lucene.util.RamUsageEstimator.LONG_SIZE;
+import static org.apache.lucene.util.RamUsageEstimator.MANAGEMENT_FACTORY_CLASS;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_ALIGNMENT;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOf;
+import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOfInstance;
+import static org.apache.lucene.util.RamUsageTester.sizeOf;
 
 public class TestRamUsageEstimator extends LuceneTestCase {
 
@@ -161,7 +171,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
         Arrays.asList(new TermQuery(new Term("foo1", "bar1")), new TermQuery(new Term("baz1", "bam1"))), 1.0f);
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("foo2", "bar2")), BooleanClause.Occur.SHOULD)
-        .add(new FuzzyQuery(new Term("foo3", "baz3")), BooleanClause.Occur.MUST_NOT)
+        .add(new PhraseQuery.Builder().add(new Term("foo3", "baz3")).build(), BooleanClause.Occur.MUST_NOT)
         .add(dismax, BooleanClause.Occur.MUST)
         .build();
     long actual = sizeOf(bq);
@@ -208,8 +218,6 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     System.out.println("NUM_BYTES_OBJECT_HEADER = " + NUM_BYTES_OBJECT_HEADER);
     System.out.println("NUM_BYTES_ARRAY_HEADER = " + NUM_BYTES_ARRAY_HEADER);
     System.out.println("LONG_SIZE = " + LONG_SIZE);
-    System.out.println("LONG_CACHE_MIN_VALUE = " + LONG_CACHE_MIN_VALUE);
-    System.out.println("LONG_CACHE_MAX_VALUE = " + LONG_CACHE_MAX_VALUE);
   }
 
   @SuppressWarnings("unused")

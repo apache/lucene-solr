@@ -62,12 +62,16 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * The exception are {@link Types#DATE}, {@link Types#TIME} or {@link Types#TIMESTAMP}
  * which are determined by the JDBC type.
  * 
- * <table rules="all" frame="box" cellpadding="3" summary="Supported Java Types">
+ * <table class="padding3">
+ * <caption>Supported Java Types</caption>
+ * <thead style="border: 1px solid">
  * <tr>
  *   <th>Java or JDBC Type</th>
  *   <th>Tuple Type</th>
  *   <th>Notes</th>
  * </tr>
+ * </thead>
+ * <tbody style="border: 1px solid">
  * <tr>
  *   <td>Boolean</td>
  *   <td>Boolean</td>
@@ -113,6 +117,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  *   <td>String</td>
  *   <td>See {@link DateTimeFormatter#ISO_INSTANT}</td>
  * </tr>
+ * </tbody>
  * </table>
  * 
  * @since 6.0.0

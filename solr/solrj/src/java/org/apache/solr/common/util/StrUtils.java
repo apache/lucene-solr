@@ -92,7 +92,7 @@ public class StrUtils {
 
     /***
      if (SolrCore.log.isLoggable(Level.FINEST)) {
-     SolrCore.log.trace("splitCommand=" + lst);
+     SolrCore.log.trace("splitCommand={}", lst);
      }
      ***/
 
@@ -368,7 +368,7 @@ public class StrUtils {
   }
 
   /**
-   * Format using MesssageFormat but with the ROOT locale
+   * Format using {@link MessageFormat} but with the ROOT locale
    */
   public static String formatString(String pattern, Object... args) {
     return new MessageFormat(pattern, Locale.ROOT).format(args);

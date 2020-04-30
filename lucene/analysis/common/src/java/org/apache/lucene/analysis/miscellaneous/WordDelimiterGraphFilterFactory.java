@@ -107,6 +107,11 @@ public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implemen
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public WordDelimiterGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (wordFiles != null) {  

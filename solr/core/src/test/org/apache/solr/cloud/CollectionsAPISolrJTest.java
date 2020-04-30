@@ -43,6 +43,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -658,6 +659,19 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
+    // test for replicas not active - SOLR-13882
+    DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collectionName);
+    Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
+    String firstNode = firstReplica.getNodeName();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getNodeName().equals(firstNode)) {
+        cluster.stopJettySolrRunner(jetty);
+      }
+    }
+    rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
+    assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
   }
 
   private static final int NUM_DOCS = 10;

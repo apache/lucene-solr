@@ -34,8 +34,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
@@ -217,7 +217,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
 
     // so that we start with some versions when we reload...
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
 
     try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 30000)) {
 
@@ -290,8 +290,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
-    // set this back
-    DirectUpdateHandler2.commitOnClose = true;
+    TestInjection.skipIndexWriterCommitOnClose = false; // set this back
     assertTrue(CollectionAdminRequest
         .addReplicaToShard("unloadcollection", "shard1")
         .setCoreName(leaderProps.getCoreName())
@@ -335,7 +334,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       int numReplicas = atLeast(3);
       ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, new SynchronousQueue<>(),
-          new DefaultSolrThreadFactory("testExecutor"));
+          new SolrNamedThreadFactory("testExecutor"));
       try {
         // create the cores
         createCollectionInOneInstance(adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
@@ -345,7 +344,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
       executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
           TimeUnit.SECONDS, new SynchronousQueue<>(),
-          new DefaultSolrThreadFactory("testExecutor"));
+          new SolrNamedThreadFactory("testExecutor"));
       try {
         for (int j = 0; j < numReplicas; j++) {
           final int freezeJ = j;

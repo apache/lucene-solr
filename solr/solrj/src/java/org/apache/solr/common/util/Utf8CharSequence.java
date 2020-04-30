@@ -23,7 +23,7 @@ import java.io.OutputStream;
 /**
  * A byte[] backed String
  */
-public interface Utf8CharSequence extends CharSequence , Comparable, Cloneable {
+public interface Utf8CharSequence extends CharSequence , Comparable<Utf8CharSequence>, Cloneable {
 
   /**
    * Write the bytes into a buffer. The objective is to avoid the local bytes being exposed to
@@ -48,7 +48,7 @@ public interface Utf8CharSequence extends CharSequence , Comparable, Cloneable {
   byte byteAt(int idx);
 
   @Override
-  default int compareTo(Object o) {
+  default int compareTo(Utf8CharSequence o) {
     if(o == null) return 1;
     return toString().compareTo(o.toString());
   }

@@ -43,7 +43,7 @@
 
     <!-- Typical version patterns. -->
     <replaceregex pattern="\.rc[0-9]+" replace="" flags="gi" />
-    <replaceregex pattern="\-(r)?([0-9\-\_\.])+(([a-zA-Z]+)([0-9\-\.])*)?" replace="" flags="gi" />
+    <replaceregex pattern="(?&lt;!log4j)\-(r)?([0-9\-\_\.])+(([a-zA-Z]+)([0-9\-\.])*)?" replace="" flags="gi" />
     
     <replaceregex pattern="[-]tests$" replace="-tests" flags="gi" />
 

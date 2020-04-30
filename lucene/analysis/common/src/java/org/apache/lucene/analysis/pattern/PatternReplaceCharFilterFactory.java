@@ -55,6 +55,11 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public PatternReplaceCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Reader create(Reader input) {
     return new PatternReplaceCharFilter(pattern, replacement, input);

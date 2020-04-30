@@ -96,6 +96,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,7 +243,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               colShardReplicaMap.computeIfAbsent(ri.getCollection(), name -> new ConcurrentHashMap<>())
                   .computeIfAbsent(ri.getShard(), shard -> new ArrayList<>()).add(ri);
             } else {
-              log.warn("- dropping replica because its node " + r.getNodeName() + " is not live: " + r);
+              log.warn("- dropping replica because its node {} is not live: {}", r.getNodeName(), r);
             }
           });
         });
@@ -385,7 +386,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     // pick first
     overseerLeader = liveNodes.iterator().next();
-    log.debug("--- new Overseer leader: " + overseerLeader);
+    log.debug("--- new Overseer leader: {}", overseerLeader);
     // record it in ZK
     Map<String, Object> id = new HashMap<>();
     id.put("id", cloudManager.getTimeSource().getTimeNs() +
@@ -679,7 +680,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       int version = oldData != null ? oldData.getVersion() : 0;
       assert clusterStateVersion == version : "local clusterStateVersion out of sync";
       stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
-      log.debug("** saved cluster state version " + (version));
+      log.debug("** saved cluster state version {}", version);
       clusterStateVersion++;
     } catch (Exception e) {
       throw new IOException(e);
@@ -698,6 +699,19 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       return;
     }
     cloudManager.getTimeSource().sleep(delays.get(op));
+  }
+
+  public void simSetOpDelays(String collection, Map<String, Long> delays) {
+    Map<String, Long> currentDelays = opDelays.getOrDefault(collection, Collections.emptyMap());
+    Map<String, Long> newDelays = new HashMap<>(currentDelays);
+    delays.forEach((k, v) -> {
+      if (v == null) {
+        newDelays.remove(k);
+      } else {
+        newDelays.put(k, v);
+      }
+    });
+    opDelays.put(collection, newDelays);
   }
 
   /**
@@ -722,7 +736,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           return;
         }
         dc.getSlices().forEach(s -> {
+          if (log.isTraceEnabled()) {
             log.trace("-- submit leader election for {} / {}", dc.getName(), s.getName());
+          }
             cloudManager.submit(() -> {
                 simRunLeaderElection(dc.getName(), s.getName(), saveClusterState);
                 return true;
@@ -754,8 +770,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         return;
       }        
       if (s.getState() == Slice.State.INACTIVE) {
-        log.trace("-- slice state is {}, skipping leader election ({} / {})",
-                  s.getState(), collection, slice);
+        if (log.isTraceEnabled()) {
+          log.trace("-- slice state is {}, skipping leader election ({} / {})",
+              s.getState(), collection, slice);
+        }
         return;
       }
       if (s.getReplicas().isEmpty()) {
@@ -771,8 +789,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
       
       if (s.getState() != Slice.State.ACTIVE) {
-        log.trace("-- slice state is {}, but I will run leader election anyway ({} / {})",
-                  s.getState(), collection, slice);
+        if (log.isTraceEnabled()) {
+          log.trace("-- slice state is {}, but I will run leader election anyway ({} / {})",
+              s.getState(), collection, slice);
+        }
       }
       
       log.debug("Running leader election ({} / {})", collection, slice);
@@ -790,14 +810,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             synchronized (ri) {
               if (r.isActive(liveNodes.get())) {
                 if (ri.getVariables().get(ZkStateReader.LEADER_PROP) != null) {
-                  log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
+                  if (log.isTraceEnabled()) {
+                    log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
+                  }
                   alreadyHasLeader.set(true);
                   return;
                 } else {
                   active.add(ri);
                 }
               } else { // if it's on a node that is not live mark it down
-                log.trace("-- replica not active on live nodes: {}, {}", liveNodes.get(), r);
+                if (log.isTraceEnabled()) {
+                  log.trace("-- replica not active on live nodes: {}, {}", liveNodes.get(), r);
+                }
                 if (!liveNodes.contains(r.getNodeName())) {
                   ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
                   ri.getVariables().remove(ZkStateReader.LEADER_PROP);
@@ -807,12 +831,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
           });
         if (alreadyHasLeader.get()) {
-          log.trace("-- already has leader {} / {}: {}", collection, s.getName(), s);
+          if (log.isTraceEnabled()) {
+            log.trace("-- already has leader {} / {}: {}", collection, s.getName(), s);
+          }
           return;
         }
         if (active.isEmpty()) {
-          log.warn("Can't find any active replicas for {} / {}: {}", collection, s.getName(), s);
-          log.debug("-- liveNodes: {}", liveNodes.get());
+          if (log.isWarnEnabled()) {
+            log.warn("Can't find any active replicas for {} / {}: {}", collection, s.getName(), s);
+          }
+          if (log.isDebugEnabled()) {
+            log.debug("-- liveNodes: {}", liveNodes.get());
+          }
           return;
         }
         // pick first active one
@@ -833,8 +863,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         synchronized (ri) {
           ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
         }
-        log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
-                  s.getName(), clusterStateVersion, ri);
+        if (log.isDebugEnabled()) {
+          log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
+              s.getName(), clusterStateVersion, ri);
+        }
         stateChanged.set(true);
       }
     } finally {
@@ -1174,7 +1206,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         .filter(e -> !NO_COPY_PROPS.contains(e.getKey()))
         .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     ReplicaInfo newReplica = new ReplicaInfo(coreNodeName, newSolrCoreName, collection, slice.getName(), replica.getType(), targetNode, props);
-    log.debug("-- new replica: " + newReplica);
+    log.debug("-- new replica: {}", newReplica);
     // xxx should run leader election here already?
     simAddReplica(targetNode, newReplica, false);
     // this will trigger leader election
@@ -1262,6 +1294,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     AtomicReference<String> sliceName = new AtomicReference<>();
     sliceName.set(message.getStr(SHARD_ID_PROP));
     String splitKey = message.getStr("split.key");
+    String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
+          ": " + methodStr);
+    }
 
     ClusterState clusterState = getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -1272,6 +1310,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard " + collectionName +
           " /  " + sliceName.get() + " has no leader and can't be split");
     }
+    SplitShardCmd.checkDiskSpace(collectionName, sliceName.get(), leader, splitMethod, cloudManager);
     SplitShardCmd.lockForSplit(cloudManager, collectionName, sliceName.get());
     // start counting buffered updates
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
@@ -1372,7 +1411,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             return false;
           }
           if (s.getReplicas().size() < repFactor) {
-            log.debug("** expected {} repFactor but there are {} replicas", repFactor, s.getReplicas().size());
+            if (log.isDebugEnabled()) {
+              log.debug("** expected {} repFactor but there are {} replicas", repFactor, s.getReplicas().size());
+            }
             return false;
           }
         }
@@ -1388,8 +1429,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
     }
     // mark the new slices as active and the old slice as inactive
-    log.trace("-- switching slice states after split shard: collection={}, parent={}, subSlices={}", collectionName,
-        sliceName.get(), subSlices);
+    if (log.isTraceEnabled()) {
+      log.trace("-- switching slice states after split shard: collection={}, parent={}, subSlices={}", collectionName,
+          sliceName.get(), subSlices);
+    }
     lock.lockInterruptibly();
     try {
       Map<String, Object> sProps = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
@@ -1401,8 +1444,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         // apply buffered updates
         long perShard = bufferedUpdates.get() / subSlices.size();
         long remainder = bufferedUpdates.get() % subSlices.size();
-        log.debug("-- applying {} buffered docs from {} / {}, perShard={}, remainder={}", bufferedUpdates.get(),
-            collectionName, parentSlice.getName(), perShard, remainder);
+        if (log.isDebugEnabled()) {
+          log.debug("-- applying {} buffered docs from {} / {}, perShard={}, remainder={}", bufferedUpdates.get(),
+              collectionName, parentSlice.getName(), perShard, remainder);
+        }
         for (int i = 0; i < subSlices.size(); i++) {
           String sub = subSlices.get(i);
           long numUpdates = perShard;
@@ -1544,7 +1589,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         ReplicaInfo ri = getReplicaInfo(leader);
         Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
         if (numDocs == null || numDocs.intValue() <= 0) {
-          log.debug("-- attempting to delete nonexistent doc " + id + " from " + s.getLeader());
+          if (log.isDebugEnabled()) {
+            log.debug("-- attempting to delete nonexistent doc {} from {}", id, s.getLeader());
+          }
           continue;
         }
 
@@ -1559,7 +1606,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           if (bufferedUpdates.get() > 0) {
             bufferedUpdates.decrementAndGet();
           } else {
-            log.debug("-- attempting to delete nonexistent buffered doc " + id + " from " + s.getLeader());
+            if (log.isDebugEnabled()) {
+              log.debug("-- attempting to delete nonexistent buffered doc {} from {}", id, s.getLeader());
+            }
           }
           continue;
         }
@@ -1604,7 +1653,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         if (!"*:*".equals(q)) {
           throw new UnsupportedOperationException("Only '*:*' query is supported in deleteByQuery");
         }
-        //log.debug("-- req delByQ " + collection);
+        //log.debug("-- req delByQ {}", collection);
         for (Slice s : coll.getSlices()) {
           Replica leader = s.getLeader();
           if (leader == null) {
@@ -1658,7 +1707,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
     }
     if (docCount > 0) {
-      //log.debug("-- req update " + collection + " / " + docCount);
+      //log.debug("-- req update {}/{}", collection, docCount);
       // this approach to updating counters and metrics drastically increases performance
       // of bulk updates, because simSetShardValue is relatively costly
 
@@ -1795,7 +1844,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             double deltaGB = (Double) Type.FREEDISK.convertVal(delta.get());
             freedisk += deltaGB;
             if (freedisk < 0) {
-              log.warn("-- freedisk=" + freedisk + " - ran out of disk space on node " + node);
+              log.warn("-- freedisk={} - ran out of disk space on node {}", freedisk, node);
               freedisk = 0;
             }
             return freedisk;
@@ -2373,7 +2422,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
                 props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
                 props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
-                Replica r = new Replica(ri.getName(), props);
+                Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
                 collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
                   .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
                   .put(ri.getName(), r);
@@ -2397,7 +2446,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         Map<String, Slice> slices = new HashMap<>();
         shards.forEach((s, replicas) -> {
           Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>()).computeIfAbsent(s, sl -> new ConcurrentHashMap<>());
-          Slice slice = new Slice(s, replicas, sliceProps);
+          Slice slice = new Slice(s, replicas, sliceProps, coll);
           slices.put(s, slice);
         });
         Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());

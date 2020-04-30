@@ -252,6 +252,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
       while (true) {
         final int savNextEnt = currentFrame.nextEnt;
         final int savePos = currentFrame.suffixesReader.getPosition();
+        final int saveLengthPos = currentFrame.suffixLengthsReader.getPosition();
         final int saveStartBytePos = currentFrame.startBytePos;
         final int saveSuffix = currentFrame.suffix;
         final long saveLastSubFP = currentFrame.lastSubFP;
@@ -294,6 +295,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
             currentFrame.startBytePos = saveStartBytePos;
             currentFrame.suffix = saveSuffix;
             currentFrame.suffixesReader.setPosition(savePos);
+            currentFrame.suffixLengthsReader.setPosition(saveLengthPos);
             currentFrame.termState.termBlockOrd = saveTermBlockOrd;
             System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
@@ -515,7 +517,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
-        // This term is a prefix of a term accepted by the automaton, but is not itself acceptd
+        // This term is a prefix of a term accepted by the automaton, but is not itself accepted
       }
 
       isSubBlock = popPushNext();

@@ -45,12 +45,14 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -80,6 +82,14 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     realManager = cluster.getJettySolrRunner(cluster.getJettySolrRunners().size() - 1).getCoreContainer()
         .getZkController().getSolrCloudManager();
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(realManager, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(realManager, ".scheduled_maintenance");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    realManager = null;
   }
 
   @Test
@@ -215,10 +225,16 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
 
   // ignore these because SimCloudManager always modifies them
   private static final Set<Pattern> IGNORE_DISTRIB_STATE_PATTERNS = new HashSet<>(Arrays.asList(
-      Pattern.compile("/autoscaling/triggerState.*"),
-      Pattern.compile("/clusterstate\\.json"), // different format in SimClusterStateProvider
+      Pattern.compile("/autoscaling/triggerState/.*"),
+      // some triggers may have run after the snapshot was taken
+      Pattern.compile("/autoscaling/events/.*"),
+      // we always use format 1 in SimClusterStateProvider
+      Pattern.compile("/clusterstate\\.json"),
+      // depending on the startup sequence leaders may differ
       Pattern.compile("/collections/[^/]+?/leader_elect/.*"),
       Pattern.compile("/collections/[^/]+?/leaders/.*"),
+      Pattern.compile("/collections/[^/]+?/terms/.*"),
+      Pattern.compile("/overseer_elect/election/.*"),
       Pattern.compile("/live_nodes/.*")
   ));
 

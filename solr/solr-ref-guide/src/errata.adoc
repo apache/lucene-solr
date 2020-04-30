@@ -18,9 +18,7 @@
 
 == Errata For This Documentation
 
-Any mistakes found in this documentation after its release will be listed on the on-line version of this page:
-
-https://lucene.apache.org/solr/guide/{solr-docs-version}/errata.html
+Any mistakes found in this documentation after its release will be listed below.
 
 === Errata For Past Versions of This Documentation
 

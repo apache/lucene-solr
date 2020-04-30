@@ -86,7 +86,7 @@ public class TestCoveringQuery extends LuceneTestCase {
   public void testRandom() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    int numDocs = atLeast(200);
+    int numDocs = atLeast(50);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       if (random().nextBoolean()) {

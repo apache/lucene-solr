@@ -251,11 +251,11 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
    */
   public void testRandomScoring() throws Exception {
     Random random = random();
-    final int iterations = atLeast(10);
+    final int iterations = atLeast(1);
     for (int i = 0; i < iterations; i++) {
       // pull a new similarity to switch up parameters
       Similarity similarity = getSimilarity(random);
-      for (int j = 0; j < 10; j++) {
+      for (int j = 0; j < 3; j++) {
         // for each norm value...
         for (int k = 1; k < 256; k++) {
           CollectionStatistics corpus = newCorpus(random, k);
@@ -359,7 +359,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       if (score != explanation.getValue().doubleValue()) {
         fail("expected: " + score + ", got: " + explanation);
       }
-      CheckHits.verifyExplanation("<test query>", 0, score, true, explanation);
+      if (rarely()) {
+        CheckHits.verifyExplanation("<test query>", 0, score, true, explanation);
+      }
       
       // check score(freq-1), given the same norm it should be <= score(freq) [scores non-decreasing for more term occurrences]
       final float prevFreq;
@@ -380,7 +382,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       if (prevScore != prevExplanation.getValue().doubleValue()) {
         fail("expected: " + prevScore + ", got: " + prevExplanation);
       }
-      CheckHits.verifyExplanation("test query (prevFreq)", 0, prevScore, true, prevExplanation);
+      if (rarely()) {
+        CheckHits.verifyExplanation("test query (prevFreq)", 0, prevScore, true, prevExplanation);
+      }
 
       if (prevScore > score) {
         System.out.println(prevExplanation);
@@ -399,8 +403,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         if (prevNormScore != prevNormExplanation.getValue().doubleValue()) {
           fail("expected: " + prevNormScore + ", got: " + prevNormExplanation);
         }
-        CheckHits.verifyExplanation("test query (prevNorm)", 0, prevNormScore, true, prevNormExplanation);
-
+        if (rarely()) {
+          CheckHits.verifyExplanation("test query (prevNorm)", 0, prevNormScore, true, prevNormExplanation);
+        }
         if (prevNormScore < score) {
           System.out.println(prevNormExplanation);
           System.out.println(explanation);
@@ -421,7 +426,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         if (prevTermScore != prevTermExplanation.getValue().doubleValue()) {
           fail("expected: " + prevTermScore + ", got: " + prevTermExplanation);
         }
-        CheckHits.verifyExplanation("test query (prevTerm)", 0, prevTermScore, true, prevTermExplanation);
+        if (rarely()) {
+          CheckHits.verifyExplanation("test query (prevTerm)", 0, prevTermScore, true, prevTermExplanation);
+        }
 
         if (prevTermScore < score) {
           System.out.println(prevTermExplanation);

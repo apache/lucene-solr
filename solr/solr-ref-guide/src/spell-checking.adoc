@@ -69,6 +69,7 @@ The `DirectSolrSpellChecker` uses terms from the Solr index without building a p
     <int name="minPrefix">1</int>
     <int name="maxInspections">5</int>
     <int name="minQueryLength">4</int>
+    <int name="maxQueryLength">40</int>
     <float name="maxQueryFrequency">0.01</float>
     <float name="thresholdTokenFrequency">.01</float>
   </lst>
@@ -81,7 +82,7 @@ Many of the parameters relate to how this spell checker should query the index f
 
 Because this spell checker is querying the main index, you may want to limit how often it queries the index to be sure to avoid any performance conflicts with user queries. The `accuracy` setting defines the threshold for a valid suggestion, while `maxEdits` defines the number of changes to the term to allow. Since most spelling mistakes are only 1 letter off, setting this to 1 will reduce the number of possible suggestions (the default, however, is 2); the value can only be 1 or 2. `minPrefix` defines the minimum number of characters the terms should share. Setting this to 1 means that the spelling suggestions will all start with the same letter, for example.
 
-The `maxInspections` parameter defines the maximum number of possible matches to review before returning results; the default is 5. `minQueryLength` defines how many characters must be in the query before suggestions are provided; the default is 4.
+The `maxInspections` parameter defines the maximum number of possible matches to review before returning results; the default is 5. `minQueryLength` defines how many characters must be in the query before suggestions are provided; the default is 4. `maxQueryLength` enables the spell checker to skip over very long query terms, which can avoid expensive operations or exceptions. There is no limit to term length by default.
 
 At first, spellchecker analyses incoming query words by looking up them in the index. Only query words, which are absent in index or too rare ones (below `maxQueryFrequency`) are considered as misspelled and used for finding suggestions. Words which are frequent than `maxQueryFrequency` bypass spellchecker unchanged. After suggestions for every misspelled word are found they are filtered for enough frequency with `thresholdTokenFrequency` as boundary value. These parameters (`maxQueryFrequency` and `thresholdTokenFrequency`) can be a percentage (such as .01, or 1%) or an absolute value (such as 4).
 
@@ -191,7 +192,7 @@ If set to `true`, this parameter reloads the spellchecker. The results depend on
 `spellcheck.count`::
 This parameter specifies the maximum number of suggestions that the spellchecker should return for a term. If this parameter isn't set, the value defaults to `1`. If the parameter is set but not assigned a number, the value defaults to `5`. If the parameter is set to a positive integer, that number becomes the maximum number of suggestions returned by the spellchecker.
 
-`spellcheck.queryAnalyzerFieldtype`::
+`spellcheck.queryAnalyzerFieldType`::
 A field type from Solr's schema. The analyzer configured for the provided field type is used by the QueryConverter to tokenize the value for "q" parameter. The field type specified by this parameter should do minimal transformations. It's usually a best practice to avoid types that aggressively stem or NGram, for instance, since those types of analysis can throw off spell checking.
 
 `spellcheck.onlyMorePopular`::

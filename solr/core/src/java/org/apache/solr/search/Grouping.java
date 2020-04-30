@@ -33,8 +33,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
@@ -440,16 +438,9 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      Query q = query;
-      if (luceneFilter != null) {
-        q = new BooleanQuery.Builder()
-            .add(q, Occur.MUST)
-            .add(luceneFilter, Occur.FILTER)
-            .build();
-      }
-      searcher.search(q, collector);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; {}", query, x.getMessage());
       qr.setPartialResults(true);
     }
   }
@@ -887,12 +878,13 @@ public class Grouping {
 
     @Override
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
-      TopDocs topDocs = topDocsCollector.topDocs();
+      TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
+        // use top-level query to populate the scores
+        TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {
         maxScore = Float.NaN;

@@ -44,7 +44,7 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
     analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, false, JapaneseTokenizer.Mode.SEARCH);
         return new TokenStreamComponents(tokenizer, new JapaneseNumberFilter(tokenizer));
       }
     };
@@ -256,12 +256,17 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomHugeStrings() throws Exception {
-    checkRandomData(random(), analyzer, 50 * RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), analyzer, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Test @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    checkRandomData(random(), analyzer, 3 * RANDOM_MULTIPLIER, 8192);
   }
 
   @Test
   public void testRandomSmallStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500 * RANDOM_MULTIPLIER, 128);
+    checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER, 128);
   }
 
   @Test

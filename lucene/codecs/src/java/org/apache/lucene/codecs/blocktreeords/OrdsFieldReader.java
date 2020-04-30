@@ -46,7 +46,6 @@ final class OrdsFieldReader extends Terms implements Accountable {
   final Output rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final int longsSize;
   final OrdsBlockTreeTermsReader parent;
 
   final FST<Output> index;
@@ -54,7 +53,7 @@ final class OrdsFieldReader extends Terms implements Accountable {
 
   OrdsFieldReader(OrdsBlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms,
                   Output rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-                  long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+                  long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -65,7 +64,6 @@ final class OrdsFieldReader extends Terms implements Accountable {
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
-    this.longsSize = longsSize;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {

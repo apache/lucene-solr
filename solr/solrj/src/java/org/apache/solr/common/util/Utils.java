@@ -16,43 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -80,6 +43,44 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.Writer;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -174,6 +175,12 @@ public class Utils {
       return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
     }
   }
+  
+  public static Object fromJavabin(byte[] bytes) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      return jbc.unmarshal(bytes);
+    }
+  }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
     return getDeepCopy(c, maxDepth, mutable, false);
@@ -196,10 +203,10 @@ public class Utils {
   }
 
   public static Writer writeJson(Object o, Writer writer, boolean indent) throws IOException {
-    new SolrJSONWriter(writer)
-        .setIndent(indent)
-        .writeObj(o)
-        .close();
+    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
+      jsonWriter.setIndent(indent)
+      .writeObj(o);
+    }
     return writer;
   }
 
@@ -245,17 +252,21 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8) {
+    return fromJSON(utf8, 0, utf8.length);
+  }
+  
+  public static Object fromJSON(byte[] utf8, int offset, int length) {
     // convert directly from bytes to chars
     // and parse directly from that instead of going through
     // intermediate strings or readers
     CharArr chars = new CharArr();
-    ByteUtils.UTF8toUTF16(utf8, 0, utf8.length, chars);
+    ByteUtils.UTF8toUTF16(utf8, offset, length, chars);
     JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
     parser.setFlags(parser.getFlags() |
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
         JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return STANDARDOBJBUILDER.apply(parser).getVal(parser);
+      return STANDARDOBJBUILDER.apply(parser).getValStrict();
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
@@ -284,12 +295,11 @@ public class Utils {
 
   public static Object fromJSON(Reader is) {
     try {
-      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getValStrict();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
-
 
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
@@ -324,9 +334,16 @@ public class Utils {
     }
   };
 
+  /**
+   * Util function to convert {@link Object} to {@link String}
+   * Specially handles {@link Date} to string conversion
+   */
+  public static final Function<Object, String> OBJECT_TO_STRING =
+      obj -> ((obj instanceof Date) ? Objects.toString(((Date) obj).toInstant()) : Objects.toString(obj));
+
   public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
     try {
-      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getValStrict();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -355,7 +372,7 @@ public class Utils {
 
   public static Object fromJSONString(String json) {
     try {
-      return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getValStrict();
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : " + json, e);
     }
@@ -646,7 +663,6 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -686,12 +702,8 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    try {
-      final String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
-      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
-    }
+    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -728,7 +740,7 @@ public class Utils {
   }
 
   public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
-  public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
+  public static final InputStreamConsumer<?> JSONCONSUMER = Utils::fromJSON;
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
@@ -757,13 +769,13 @@ public class Utils {
     try {
       rsp = client.execute(httpGet);
     } catch (IOException e) {
-      log.error("Error in request to url : " + url, e);
+      log.error("Error in request to url : {}", url, e);
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       try {
-        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // logOk
       } catch (IOException e) {
         log.error("could not print error", e);
       }

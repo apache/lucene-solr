@@ -16,11 +16,17 @@
  */
 package org.apache.solr.search.json;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.DocSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +37,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
 
+  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
@@ -44,6 +51,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
@@ -303,17 +311,9 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "response/numFound==1"
     );
 
-    client.testJQ( params("json","{ " +
-            " query : {" +
-            "  bool : {" +
-            "   must : '{!lucene q.op=AND df=cat_s}A'" +
-            "   must_not : '{!lucene v=\\'id:1\\'}'" +
-            "  }" +
-            " }" +
-            "}")
-        , "response/numFound==1"
-    );
-
+    assertCatANot1(client, "must");
+    
+    testFilterCachingLocally(client);
 
     client.testJQ( params("json","{" +
             " query : '*:*'," +
@@ -405,6 +405,64 @@ public class TestJsonRequest extends SolrTestCaseHS {
       assertTrue(e.getMessage().contains("foobar"));
     }
 
+  }
+
+  private static void testFilterCachingLocally(Client client) throws Exception {
+    if(client.getClientProvider()==null) {
+      final SolrQueryRequest request = req();
+      try {
+        final CaffeineCache<Query,DocSet> filterCache = (CaffeineCache<Query,DocSet>) request.getSearcher().getFilterCache();
+        filterCache.clear();
+        final TermQuery catA = new TermQuery(new Term("cat_s", "A"));
+        assertNull("cache is empty",filterCache.get(catA));
+
+        if(random().nextBoolean()) {
+          if(random().nextBoolean()) {
+            if(random().nextBoolean()) {
+              assertCatANot1(client, "must");
+            }else {
+              assertCatANot1(client, "must", "cat_s:A");
+            }
+          } else {
+            assertCatANot1(client, "must","{!lucene q.op=AND df=cat_s "+"cache="+random().nextBoolean()+"}A" );
+          }   
+        } else {
+          assertCatANot1(client, "filter", "{!lucene q.op=AND df=cat_s cache=false}A");
+        }
+        assertNull("no cache still",filterCache.get(catA));
+
+        if (random().nextBoolean()) {
+          if (random().nextBoolean()) {
+            assertCatANot1(client, "filter", "cat_s:A");
+          } else {
+            assertCatANot1(client, "filter");
+          }
+        } else {
+          assertCatANot1(client, "filter","{!lucene q.op=AND df=cat_s cache=true}A");
+        }
+        assertNotNull("got cached ",filterCache.get(catA));
+
+      } finally {
+        request.close();
+      }
+    }
+  }
+
+  private static void assertCatANot1(Client client, final String occur) throws Exception {
+    assertCatANot1(client, occur,  "{!lucene q.op=AND df=cat_s}A");
+  }
+
+  private static void assertCatANot1(Client client, final String occur, String catAclause) throws Exception {
+    client.testJQ( params("json","{ " +
+            " query : {" +
+            "  bool : {" +
+            "   " + occur + " : '"+ catAclause+ "'" +
+            "   must_not : '{!lucene v=\\'id:1\\'}'" +
+            "  }" +
+            " }" +
+            "}")
+        , "response/numFound==1"
+    );
   }
 
   public static void doJsonRequestWithTag(Client client) throws Exception {

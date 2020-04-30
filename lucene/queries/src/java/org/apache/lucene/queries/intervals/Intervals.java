@@ -196,6 +196,34 @@ public final class Intervals {
   }
 
   /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that are accepted by the given automaton
+   *
+   * @param ca      an automaton accepting matching terms
+   * @param pattern string representation of the given automaton, mostly used in exception messages
+   *
+   * @throws IllegalStateException if the automaton accepts more than 128 terms
+   */
+  public static IntervalsSource multiterm(CompiledAutomaton ca, String pattern) {
+    return multiterm(ca, 128, pattern);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that are accepted by the given automaton
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param ca            an automaton accepting matching terms
+   * @param maxExpansions the maximum number of terms to expand to
+   * @param pattern string representation of the given automaton, mostly used in exception messages
+   *
+   * @throws IllegalStateException if the automaton accepts more than {@code maxExpansions} terms
+   */
+  public static IntervalsSource multiterm(CompiledAutomaton ca, int maxExpansions, String pattern) {
+    return new MultiTermIntervalsSource(ca, maxExpansions, pattern);
+  }
+  
+  /**
    * Create an {@link IntervalsSource} that filters a sub-source by the width of its intervals
    * @param width       the maximum width of intervals in the sub-source to filter
    * @param subSource   the sub-source to filter

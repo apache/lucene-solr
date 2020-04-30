@@ -38,12 +38,15 @@ public final class ConnectionCosts {
   private final ByteBuffer buffer;
   private final int forwardSize;
 
-  private ConnectionCosts() throws IOException {
+  /**
+   * @param scheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath - where to load resources from, without the ".dat" suffix
+   */
+  public ConnectionCosts(BinaryDictionary.ResourceScheme scheme, String resourcePath) throws IOException {
     InputStream is = null;
-    ByteBuffer buffer;
     boolean success = false;
     try {
-      is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
+      is = BinaryDictionary.getResource(scheme, resourcePath.replace('.', '/') + FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
@@ -69,9 +72,12 @@ public final class ConnectionCosts {
         IOUtils.closeWhileHandlingException(is);
       }
     }
-    this.buffer = buffer;
   }
-  
+
+  private ConnectionCosts() throws IOException {
+    this(BinaryDictionary.ResourceScheme.CLASSPATH, ConnectionCosts.class.getName());
+  }
+
   public int get(int forwardId, int backwardId) {
     // map 2d matrix into a single dimension short array
     int offset = (backwardId * forwardSize + forwardId) * 2;

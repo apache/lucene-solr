@@ -280,7 +280,10 @@ public class CommandOperation {
     List<CommandOperation> operations = new ArrayList<>();
     for (; ; ) {
       int ev = parser.nextEvent();
-      if (ev == JSONParser.OBJECT_END) return operations;
+      if (ev == JSONParser.OBJECT_END) {
+        ObjectBuilder.checkEOF(parser);
+        return operations;
+      }
       Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();

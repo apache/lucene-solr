@@ -42,7 +42,7 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
   }
 
   @Override
-  public Object doWork(Object[] values) throws IOException {
+  public Object doWork(Object... values) throws IOException {
     if(values.length != 4) {
       throw new IOException("The pivot function requires four parameters.");
     }

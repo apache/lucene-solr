@@ -279,12 +279,16 @@ class ExclusiveSliceProperty {
   }
 
   private void removeProp(Slice origSlice, String replicaName) {
-    log.debug("Removing property {} from slice {}, replica {}", property, origSlice.getName(), replicaName);
+    if (log.isDebugEnabled()) {
+      log.debug("Removing property {} from slice {}, replica {}", property, origSlice.getName(), replicaName);
+    }
     getReplicaFromChanged(origSlice, replicaName).getProperties().remove(property);
   }
 
   private void addProp(Slice origSlice, String replicaName) {
-    log.debug("Adding property {} to slice {}, replica {}", property, origSlice.getName(), replicaName);
+    if (log.isDebugEnabled()) {
+      log.debug("Adding property {} to slice {}, replica {}", property, origSlice.getName(), replicaName);
+    }
     getReplicaFromChanged(origSlice, replicaName).getProperties().put(property, "true");
   }
 
@@ -296,7 +300,7 @@ class ExclusiveSliceProperty {
     if (newSlice != null) {
       replica = newSlice.getReplica(replicaName);
     } else {
-      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy());
+      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy(), origSlice.collection);
       changedSlices.put(origSlice.getName(), newSlice);
       replica = newSlice.getReplica(replicaName);
     }

@@ -54,7 +54,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static final String SOURCE_CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   private static final String ROOT_DIR = "dih" + File.separator + "solr" + File.separator;
 
-  private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
+  private static final String DEAD_SOLR_SERVER = "http://" + DEAD_HOST_1 + "/solr";
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<>();

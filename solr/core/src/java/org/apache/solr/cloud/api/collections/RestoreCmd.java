@@ -18,20 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -77,6 +63,20 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -199,7 +199,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(backupSlice.getName(),
-              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties()));
+              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties(),restoreCollectionName));
         }
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, newSlices);
       }
@@ -251,7 +251,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
-        log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        if (log.isInfoEnabled()) {
+          log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        }
         HashMap<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
         propMap.put(COLLECTION_PROP, restoreCollectionName);
@@ -341,8 +343,10 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             String coreNodeName = r.getCoreName();
             Replica.State stateRep = r.getState();
 
-            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
-                stateRep.name());
+            if (log.isDebugEnabled()) {
+              log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+                  stateRep.name());
+            }
 
             ModifiableSolrParams params = new ModifiableSolrParams();
             params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
@@ -368,7 +372,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (totalReplicasPerShard > 1) {
-        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
+        if (log.isInfoEnabled()) {
+          log.info("Adding replicas to restored collection={}", restoreCollection.getName());
+        }
         for (Slice slice : restoreCollection.getSlices()) {
 
           //Add the remaining replicas for each shard, considering it's type
@@ -395,7 +401,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
               assert createdPullReplicas <= numPullReplicas: "Unexpected number of replicas";
             }
 
-            log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
+            if (log.isDebugEnabled()) {
+              log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
+            }
             HashMap<String, Object> propMap = new HashMap<>();
             propMap.put(COLLECTION_PROP, restoreCollectionName);
             propMap.put(SHARD_ID_PROP, slice.getName());

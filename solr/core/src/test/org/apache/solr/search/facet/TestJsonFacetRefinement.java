@@ -277,7 +277,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "    between:{ x:{_l : [x1]} }" + 
                  "} } ");
     // a range face w/o any sub facets shouldn't require any refinement
-    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" +
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" ,
                  // phase #1
                  "{top: {buckets:[{val:0, count:2}, {val:2, count:2}]," +
                  "       before:{count:3},after:{count:47}," +
@@ -314,7 +314,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // a range facet w/o any sub facets shouldn't require any refinement
     // other and include ignored for ranges
-    doTestRefine("{top:{type:range, other:all, field:R, ranges:[{from:0, to:2},{from:2, to:3}] } }" +
+    doTestRefine("{top:{type:range, other:all, field:R, ranges:[{from:0, to:2},{from:2, to:3}] } }",
             // phase #1
             "{top: {buckets:[{val:\"[0,2)\", count:2}, {val:\"[2,3)\", count:2}]," +
             "       } }",

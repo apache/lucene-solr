@@ -29,7 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
@@ -65,7 +65,7 @@ public final class UserDictionary implements Dictionary {
     // text, segmentation, readings, POS
     while ((line = br.readLine()) != null) {
       // Remove comments
-      line = line.replaceAll("#.*$", "");
+      line = line.replaceAll("^#.*$", "");
 
       // Skip empty lines or comment lines
       if (line.trim().length() == 0) {
@@ -99,7 +99,7 @@ public final class UserDictionary implements Dictionary {
     List<int[]> segmentations = new ArrayList<>(featureEntries.size());
     
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = 0;
     
@@ -136,11 +136,11 @@ public final class UserDictionary implements Dictionary {
       for (int i = 0; i < token.length(); i++) {
         scratch.setIntAt(i, (int) token.charAt(i));
       }
-      fstBuilder.add(scratch.get(), ord);
+      fstCompiler.add(scratch.get(), ord);
       segmentations.add(wordIdAndLength);
       ord++;
     }
-    this.fst = new TokenInfoFST(fstBuilder.finish(), false);
+    this.fst = new TokenInfoFST(fstCompiler.compile(), false);
     this.data = data.toArray(new String[data.size()]);
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
   }

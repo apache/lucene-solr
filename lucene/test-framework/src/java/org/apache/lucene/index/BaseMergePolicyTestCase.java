@@ -70,16 +70,16 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       final AtomicBoolean mayMerge = new AtomicBoolean(true);
       final MergeScheduler mergeScheduler = new SerialMergeScheduler() {
           @Override
-          synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+          synchronized public void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
             if (mayMerge.get() == false) {
-              MergePolicy.OneMerge merge = writer.getNextMerge();
+              MergePolicy.OneMerge merge = mergeSource.getNextMerge();
               if (merge != null) {
                 System.out.println("TEST: we should not need any merging, yet merge policy returned merge " + merge);
                 throw new AssertionError();
               }
             }
 
-            super.merge(writer, trigger, newMergesFound);
+            super.merge(mergeSource, trigger);
           }
         };
 
@@ -140,7 +140,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
             Collections.emptyMap(), // attributes
             null /* indexSort */);
         info.setFiles(Collections.emptyList());
-        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, -1, -1));
+        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, -1, -1, StringHelper.randomId()));
       }
       MergePolicy.MergeSpecification forcedDeletesMerges = mp.findForcedDeletesMerges(infos, context);
       if (forcedDeletesMerges != null) {
@@ -208,7 +208,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
         name, maxDoc, false, TestUtil.getDefaultCodec(), Collections.emptyMap(), id,
         Collections.singletonMap(IndexWriter.SOURCE, source), null);
     info.setFiles(Collections.singleton(name + "_size=" + Long.toString((long) (sizeMB * 1024 * 1024)) + ".fake"));
-    return new SegmentCommitInfo(info, numDeletedDocs, 0, 0, 0, 0);
+    return new SegmentCommitInfo(info, numDeletedDocs, 0, 0, 0, 0, StringHelper.randomId());
   }
 
   /** A directory that computes the length of a file based on its name. */
@@ -331,7 +331,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       int newDelCount = sci.getDelCount() + segDeletes;
       assert newDelCount <= sci.info.maxDoc();
       if (newDelCount < sci.info.maxDoc()) { // drop fully deleted segments
-        SegmentCommitInfo newInfo = new SegmentCommitInfo(sci.info, sci.getDelCount() + segDeletes, 0, sci.getDelGen() + 1, sci.getFieldInfosGen(), sci.getDocValuesGen());
+        SegmentCommitInfo newInfo = new SegmentCommitInfo(sci.info, sci.getDelCount() + segDeletes, 0, sci.getDelGen() + 1, sci.getFieldInfosGen(), sci.getDocValuesGen(), StringHelper.randomId());
         newInfoList.add(newInfo);
       }
       numDeletes -= segDeletes;
@@ -388,7 +388,8 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
    * Simulate an update use-case where documents are uniformly updated across segments.
    */
   public void testSimulateUpdates() throws IOException {
-    doTestSimulateUpdates(mergePolicy(), 10_000_000, 2500);
+    int numDocs = atLeast(1_000_000);
+    doTestSimulateUpdates(mergePolicy(), numDocs, 2500);
   }
 
   /**
@@ -403,7 +404,14 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
     SegmentInfos segmentInfos = new SegmentInfos(Version.LATEST.major);
     final double avgDocSizeMB = 5. / 1024; // 5kB
     for (int numDocs = 0; numDocs < totalDocs; ) {
-      int flushDocCount = TestUtil.nextInt(random(), 1, maxDocsPerFlush);
+      final int flushDocCount;
+      if (usually()) {
+        // reasonable value
+        flushDocCount = TestUtil.nextInt(random(), maxDocsPerFlush/2, maxDocsPerFlush);
+      } else {
+        // crazy value
+        flushDocCount = TestUtil.nextInt(random(), 1, maxDocsPerFlush);
+      }
       // how many of these documents are actually updates
       int delCount = (int) (flushDocCount * 0.9 * numDocs / totalDocs);
       numDocs += flushDocCount - delCount;

@@ -45,13 +45,14 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -65,13 +66,19 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 // TODO: longer term this should be combined with TestRecovery somehow ??
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
-  private static String FROM_LEADER = DistribPhase.FROMLEADER.toString(); 
+  private static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
-  private static int timeout=60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
-  
+  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
+  private static final int TIMEOUT = 60;
+
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
   private static FileSystem fs;
+  
+  @After
+  public void afterTest() {
+    TestInjection.reset(); // do after every test, don't wait for AfterClass
+  }
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -102,7 +109,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
         HdfsTestUtil.teardownClass(dfsCluster);
       } finally {
         dfsCluster = null;
-        hdfsDataDir = null;
+        hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
         System.clearProperty("test.build.data");
         System.clearProperty("test.cache.data");
@@ -136,13 +143,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   public void testLogReplay() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -183,7 +190,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
@@ -203,7 +210,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       assertJQ(req("q","*:*") ,"/response/numFound==5");
       assertJQ(req("q","id:A2") ,"/response/numFound==0");
 
@@ -221,7 +228,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -229,13 +235,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   @Test
   public void testBuffering() throws Exception {
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -369,7 +375,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -380,13 +385,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   @Ignore("HDFS-3107: no truncate support yet")
   public void testDropBuffered() throws Exception {
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -492,7 +497,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -502,7 +506,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   @Test
   public void testExistOldBufferLog() throws Exception {
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -563,7 +567,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
           () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
       assertJQ(req("qt","/get", "id", "Q7") ,"/doc/id==Q7");
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -600,13 +603,12 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // make sure that log isn't needlessly replayed after a clean close
   @Test
   public void testCleanShutdown() throws Exception {
-    DirectUpdateHandler2.commitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -638,7 +640,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertEquals(10, logReplay.availablePermits());
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -655,13 +656,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   public void testRemoveOldLogs() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -718,7 +719,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
       logReplay.release(1000);
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
 
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
@@ -749,7 +750,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       resetExceptionIgnores();
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -762,13 +762,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   public void testTruncatedLog() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -802,7 +802,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       logReplayFinish.drainPermits();
       ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
       createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       resetExceptionIgnores();
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
@@ -819,7 +819,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions","3"), "/versions==[106,105,104]");
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -831,7 +830,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   public void testCorruptLog() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
  
@@ -880,7 +879,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       deleteLogs();
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -890,13 +888,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @Test
   public void testRecoveryMultipleLogs() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -948,12 +946,11 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       logReplayFinish.drainPermits();
       ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
       createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       resetExceptionIgnores();
       assertJQ(req("q","*:*") ,"/response/numFound==6");
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }

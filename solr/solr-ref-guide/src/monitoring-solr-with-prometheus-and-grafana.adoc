@@ -116,7 +116,7 @@ The start commands provided with the Prometheus Exporter support the use of cust
 Sets the initial (`Xms`) and max (`Xmx`) Java heap size. The default is `512m`.
 
 `JAVA_MEM`::
-Custom java memory settings (e.g. `-Xms1g -Xmx2g`). This is ignored if `JAVA_HEAP` is provided.
+Custom java memory settings (e.g., `-Xms1g -Xmx2g`). This is ignored if `JAVA_HEAP` is provided.
 
 `GC_TUNE`::
 Custom Java garbage collection settings. The default is `-XX:+UseG1GC`.
@@ -127,9 +127,9 @@ Extra JVM options.
 `CLASSPATH_PREFIX`::
 Location of extra libraries to load when starting the `solr-exporter`.
 
-=== Getting metrics from a secure Solr(Cloud)
+=== Getting Metrics from a Secured SolrCloud
 
-Your Solr(Cloud) might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>. The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>. This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
+Your SolrCloud might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>. The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>. This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
 
 Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>>, <<enabling-ssl.adoc#enabling-ssl,SSL>> and <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>:
 
@@ -145,7 +145,7 @@ Then you can start the Exporter as follows (Linux).
 [source,bash]
 ----
 $ cd contrib/prometheus-exporter
-$ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.jks -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
+$ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
 $ export CLASSPATH_PREFIX="../../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
 $ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
 ----

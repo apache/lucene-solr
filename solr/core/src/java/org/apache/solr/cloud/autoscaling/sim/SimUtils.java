@@ -134,17 +134,20 @@ public class SimUtils {
     }
     allReplicaInfos.keySet().forEach(collection -> {
       Set<String> infosCores = allReplicaInfos.getOrDefault(collection, Collections.emptyMap()).keySet();
-      Set<String> csCores = allReplicas.getOrDefault(collection, Collections.emptyMap()).keySet();
+      Map<String, Replica> replicas = allReplicas.getOrDefault(collection, Collections.emptyMap());
+      Set<String> csCores = replicas.keySet();
       if (!infosCores.equals(csCores)) {
         Set<String> notInClusterState = infosCores.stream()
             .filter(k -> !csCores.contains(k))
             .collect(Collectors.toSet());
         Set<String> notInNodeProvider = csCores.stream()
-            .filter(k -> !infosCores.contains(k))
+            .filter(k -> !infosCores.contains(k) && replicas.get(k).isActive(solrCloudManager.getClusterStateProvider().getLiveNodes()))
             .collect(Collectors.toSet());
-        throw new RuntimeException("Mismatched replica data between ClusterState and NodeStateProvider:\n\t" +
-            "replica not in ClusterState: " + notInClusterState + "\n\t" +
-            "replica not in NodeStateProvider: " + notInNodeProvider);
+        if (!notInClusterState.isEmpty() || !notInNodeProvider.isEmpty()) {
+          throw new RuntimeException("Mismatched replica data for collection " + collection + " between ClusterState and NodeStateProvider:\n\t" +
+              "replica in NodeStateProvider but not in ClusterState: " + notInClusterState + "\n\t" +
+              "replica in ClusterState but not in NodeStateProvider: " + notInNodeProvider);
+        }
       }
     });
     // verify all replicas have size info
@@ -327,35 +330,71 @@ public class SimUtils {
   private static final Map<String, String> v2v1Mapping = new HashMap<>();
   static {
     for (CollectionApiMapping.Meta meta : CollectionApiMapping.Meta.values()) {
-      if (meta.action != null) v2v1Mapping.put(meta.commandName, meta.action.toLower());
+      if (meta.action != null) {
+        String key;
+        if (meta.commandName != null) {
+          key = meta.commandName;
+        } else {
+          key = meta.action.toLower();
+        }
+        v2v1Mapping.put(key, meta.action.toLower());
+      } else {
+        log.warn("V2 action {} has no equivalent V1 action", meta);
+      }
     }
   }
 
   /**
    * Convert a V2 {@link org.apache.solr.client.solrj.request.CollectionAdminRequest} to regular {@link org.apache.solr.common.params.SolrParams}
    * @param req request
-   * @return payload converted to V1 params
+   * @return request payload and parameters converted to V1 params
    */
   public static ModifiableSolrParams v2AdminRequestToV1Params(V2Request req) {
     Map<String, Object> reqMap = new HashMap<>();
-    ((V2Request)req).toMap(reqMap);
+    req.toMap(reqMap);
     String path = (String)reqMap.get("path");
-    if (!path.startsWith("/c/") || path.length() < 4) {
+    if (!(path.startsWith("/c/") || path.startsWith("/collections/")) || path.length() < 4) {
       throw new UnsupportedOperationException("Unsupported V2 request path: " + reqMap);
     }
-    Map<String, Object> cmd = (Map<String, Object>)reqMap.get("command");
+    Map<String, Object> cmd;
+    Object cmdObj = reqMap.get("command");
+    if (cmdObj instanceof String) {
+      cmd = (Map<String, Object>)Utils.fromJSONString((String)cmdObj);
+    } else if (cmdObj instanceof Map) {
+      cmd = (Map<String, Object>)cmdObj;
+    } else {
+      throw new UnsupportedOperationException("Unsupported 'command': " + cmdObj + " (of type " + cmdObj.getClass() + ")");
+    }
     if (cmd.size() != 1) {
       throw new UnsupportedOperationException("Unsupported multi-command V2 request: " + reqMap);
     }
     String a = cmd.keySet().iterator().next();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CollectionAdminParams.COLLECTION, path.substring(3));
+    params.set("path", "/admin/collections");
     if (req.getParams() != null) {
       params.add(req.getParams());
     }
     Map<String, Object> reqParams = (Map<String, Object>)cmd.get(a);
     for (Map.Entry<String, Object> e : reqParams.entrySet()) {
       params.add(e.getKey(), e.getValue().toString());
+    }
+    // trim the leading /
+    path = path.substring(1);
+    String[] pathEls = path.split("/");
+    if (pathEls.length < 2) {
+      throw new UnsupportedOperationException("Unsupported V2 request path: " + reqMap);
+    }
+    params.set(CollectionAdminParams.COLLECTION, pathEls[1]);
+    if (pathEls.length > 3) {
+      if (!pathEls[2].equals("shards")) {
+        throw new UnsupportedOperationException("Invalid V2 request path: expected 'shards' but was '" + pathEls[2] + "'");
+      }
+      if (!pathEls[3].isBlank()) {
+        params.set("shard", pathEls[3]);
+      }
+    }
+    if (pathEls.length > 4 && !pathEls[4].isBlank()) {
+      params.set("replica", pathEls[4]);
     }
     // re-map from v2 to v1 action
     a = v2v1Mapping.get(a);
@@ -383,7 +422,7 @@ public class SimUtils {
         // node name format
         ctx.addEquivalentName(hostPort, u.getHost() + "_" + u.getPort() + "_", RedactionUtils.NODE_REDACTION_PREFIX);
       } catch (MalformedURLException e) {
-        log.warn("Invalid URL for node name " + nodeName + ", replacing including protocol and path", e);
+        log.warn("Invalid URL for node name {}, replacing including protocol and path", nodeName, e);
         ctx.addName(urlString, RedactionUtils.NODE_REDACTION_PREFIX);
         ctx.addEquivalentName(urlString, Utils.getBaseUrlForNodeName(nodeName, "https"), RedactionUtils.NODE_REDACTION_PREFIX);
       }

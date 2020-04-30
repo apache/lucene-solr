@@ -111,7 +111,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       CLIO.out("Successfully created snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
-      log.error("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName, e);
+      log.error("Failed to create a snapshot with name {} for collection {}", snapshotName, collectionName, e);
       CLIO.out("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -126,7 +126,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       CLIO.out("Successfully deleted snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
-      log.error("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName, e);
+      log.error("Failed to delete a snapshot with name {} for collection {}", snapshotName, collectionName, e);
       CLIO.out("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -146,7 +146,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       }
 
     } catch (Exception e) {
-      log.error("Failed to list snapshots for collection " + collectionName, e);
+      log.error("Failed to list snapshots for collection {}", collectionName, e);
       CLIO.out("Failed to list snapshots for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
@@ -275,8 +275,9 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       buildCopyListings(collectionName, snapshotName, localFsPath, pathPrefix);
       CLIO.out("Successfully prepared copylisting for the snapshot export.");
     } catch (Exception e) {
-      log.error("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
-      + collectionName, e);
+
+      log.error("Failed to prepare a copylisting for snapshot with name {} for collection {}", snapshotName, collectionName, e);
+
       CLIO.out("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
       + collectionName + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
@@ -286,7 +287,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       backupCollectionMetaData(collectionName, snapshotName, destPath);
       CLIO.out("Successfully backed up collection meta-data");
     } catch (Exception e) {
-      log.error("Failed to backup collection meta-data for collection " + collectionName, e);
+      log.error("Failed to backup collection meta-data for collection {}", collectionName, e);
       CLIO.out("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
@@ -306,7 +307,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       // if asyncId is null, processAsync will block and throw an Exception with any error
       backup.processAsync(asyncReqId.orElse(null), solrClient);
     } catch (Exception e) {
-      log.error("Failed to backup collection meta-data for collection " + collectionName, e);
+      log.error("Failed to backup collection meta-data for collection {}", collectionName, e);
       CLIO.out("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
