@@ -695,7 +695,7 @@ public class BKDWriter implements Closeable {
     int numLeftLeafNodes = leavesFullLevel / 2;
     // leaf nodes that do not fit in the full level
     int unbalancedLeafNodes = numLeaves - leavesFullLevel;
-    // distribute unbalanced leave nodes
+    // distribute unbalanced leaf nodes
     numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
     // we should always place unbalanced leave nodes on the left
     assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
