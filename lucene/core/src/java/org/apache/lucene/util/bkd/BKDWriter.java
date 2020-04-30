@@ -423,10 +423,7 @@ public class BKDWriter implements Closeable {
 
     pointCount = values.size();
 
-    int numLeaves = Math.toIntExact(pointCount / maxPointsInLeafNode);
-    if (pointCount % maxPointsInLeafNode != 0) {
-      numLeaves++;
-    }
+    final int numLeaves = Math.toIntExact((pointCount + maxPointsInLeafNode - 1) / maxPointsInLeafNode);
 
     checkMaxLeafNodeCount(numLeaves);
 
@@ -698,7 +695,7 @@ public class BKDWriter implements Closeable {
     // distribute unbalanced leaf nodes
     numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
     // we should always place unbalanced leaf nodes on the left
-    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
+    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes && numLeftLeafNodes <= 2L * (numLeaves - numLeftLeafNodes);
     return numLeftLeafNodes;
   }
 
@@ -753,10 +750,7 @@ public class BKDWriter implements Closeable {
     tempInput = null;
     pointWriter = null;
 
-    int numLeaves = Math.toIntExact(pointCount / maxPointsInLeafNode);
-    if (pointCount % maxPointsInLeafNode != 0) {
-      numLeaves++;
-    }
+    final int numLeaves = Math.toIntExact((pointCount + maxPointsInLeafNode - 1) / maxPointsInLeafNode);
 
     checkMaxLeafNodeCount(numLeaves);
 
@@ -808,7 +802,7 @@ public class BKDWriter implements Closeable {
     return indexFP;
   }
 
-  /** Packs the two arrays, representing a balanced binary tree, into a compact byte[] structure. */
+  /** Packs the two arrays, representing a semi-balanced binary tree, into a compact byte[] structure. */
   private byte[] packIndex(long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
     int numLeaves = leafBlockFPs.length;
     // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
@@ -816,13 +810,13 @@ public class BKDWriter implements Closeable {
     // levels of the binary tree:
     int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
     int leavesFullLevel = 1 << lastFullLevel;
-    int unbalancedLeafNodes = 2 * (numLeaves - leavesFullLevel);
-    if (unbalancedLeafNodes != 0) {
+    int leavesPartialLevel = 2 * (numLeaves - leavesFullLevel);
+    if (leavesPartialLevel != 0) {
       // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
       // at read-time, so that we can still delta code them on disk at write:
       long[] newLeafBlockFPs = new long[numLeaves];
-      System.arraycopy(leafBlockFPs, unbalancedLeafNodes, newLeafBlockFPs, 0, numLeaves - unbalancedLeafNodes);
-      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - unbalancedLeafNodes, unbalancedLeafNodes);
+      System.arraycopy(leafBlockFPs, leavesPartialLevel, newLeafBlockFPs, 0, numLeaves - leavesPartialLevel);
+      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - leavesPartialLevel, leavesPartialLevel);
       leafBlockFPs = newLeafBlockFPs;
     }
     /** Reused while packing the index */
