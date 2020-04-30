@@ -340,6 +340,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String f0 = fp.parseArg();
         String qf = fp.parseArg();
+        if (qf == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "Invalid linkField detected in '" + fp.qstr + "'");
+        }
         return new JoinDocFreqValueSource( f0, qf );
       }
     });

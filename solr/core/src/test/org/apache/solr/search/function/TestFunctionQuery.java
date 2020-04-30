@@ -845,6 +845,13 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                100,10,  25,5,  0,0,   1,1);
     singleTest(fieldAsFunc, "log(\0)",  1,0); 
   }
+  
+  @Test
+  public void testQFieldValidation() {
+    Exception e = expectThrows(SolrException.class, () -> h.query(req("q", "{!frange l=10 u=100}joindf(genre:comedy,$x)")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
+    assertEquals("Invalid linkField detected in 'joindf(genre:comedy,$x)'", e.getMessage());
+  }
 
   @Test
   public void testBooleanFunctions() throws Exception {
