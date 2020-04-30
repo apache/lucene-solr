@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -432,12 +433,21 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
           
           final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
 
-          // nocommit: we can't rely on a trivial equality comparison...
+          // we can't rely on a trivial assertEquals() comparison...
           // 
-          // nocommit: even w/ any sweeping, the order of the sub-facet keys can change between
-          // nocommit: processors.  (notably: method:enum vs method:smart when sort:"index asc")
-          assertEquals("nocommit: this can spuriously fail due to changes in sub facet orders: " +
-                       options.toString(), expected, actual);
+          // even w/ any sweeping, the order of the sub-facet keys can change between
+          // processors.  (notably: method:enum vs method:smart when sort:"index asc")
+          // 
+          // NOTE: this doesn't ignore the order of the buckets,
+          // it ignores the order of the keys in each bucket...
+          final String pathToMismatch = BaseDistributedSearchTestCase.compare
+            (expected, actual, 0,
+             Collections.singletonMap("buckets", BaseDistributedSearchTestCase.UNORDERED));
+          if (null != pathToMismatch) {
+            log.error("{}: expected = {}", options, expected);
+            log.error("{}: actual = {}", options, actual);
+            fail("Mismatch: " + pathToMismatch + " using " + options);
+          }
         }
       }
     } catch (AssertionError e) {
