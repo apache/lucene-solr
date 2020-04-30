@@ -1451,7 +1451,7 @@ public class BKDWriter implements Closeable {
       // How many leaves will be in the left tree:
       int numLeftLeafNodes = getNumLeftLeaveNodes(numLeaves);
       // How many points will be in the left tree:
-      final int mid = from + (numLeftLeafNodes) * maxPointsInLeafNode;
+      final int mid = from + numLeftLeafNodes * maxPointsInLeafNode;
 
       int commonPrefixLen = Arrays.mismatch(minPackedValue, splitDim * bytesPerDim,
           splitDim * bytesPerDim + bytesPerDim, maxPackedValue, splitDim * bytesPerDim,
