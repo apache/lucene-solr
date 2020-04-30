@@ -147,8 +147,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             ManagedIndexSchema managed = (ManagedIndexSchema) schema;
             zkVersion = managed.getSchemaZkVersion();
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-              log.info("REFRESHING SCHEMA (refreshIfBelowVersion=" + refreshIfBelowVersion +
-                  ", currentVersion=" + zkVersion + ") before returning version!");
+              log.info("REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!"
+                  , refreshIfBelowVersion, zkVersion);
               ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
               ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
               managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);

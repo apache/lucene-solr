@@ -41,14 +41,14 @@
  *     long outputValues[] = {5, 7, 12};
  *     
  *     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
- *     Builder&lt;Long&gt; builder = new Builder&lt;Long&gt;(INPUT_TYPE.BYTE1, outputs);
- *     BytesRef scratchBytes = new BytesRef();
+ *     FSTCompiler&lt;Long&gt; fstCompiler = new FSTCompiler&lt;Long&gt;(INPUT_TYPE.BYTE1, outputs);
+ *     BytesRefBuilder scratchBytes = new BytesRefBuilder();
  *     IntsRefBuilder scratchInts = new IntsRefBuilder();
  *     for (int i = 0; i &lt; inputValues.length; i++) {
  *       scratchBytes.copyChars(inputValues[i]);
- *       builder.add(Util.toIntsRef(scratchBytes, scratchInts), outputValues[i]);
+ *       fstCompiler.add(Util.toIntsRef(scratchBytes.toBytesRef(), scratchInts), outputValues[i]);
  *     }
- *     FST&lt;Long&gt; fst = builder.finish();
+ *     FST&lt;Long&gt; fst = fstCompiler.compile();
  * </pre>
  * Retrieval by key:
  * <pre class="prettyprint">
@@ -79,11 +79,11 @@
  *       }
  *     };
  *     Arc&lt;Long&gt; firstArc = fst.getFirstArc(new Arc&lt;Long&gt;());
- *     MinResult&lt;Long&gt; paths[] = Util.shortestPaths(fst, firstArc, comparator, 2);
- *     System.out.println(Util.toBytesRef(paths[0].input, scratchBytes).utf8ToString()); // cat
- *     System.out.println(paths[0].output); // 5
- *     System.out.println(Util.toBytesRef(paths[1].input, scratchBytes).utf8ToString()); // dog
- *     System.out.println(paths[1].output); // 7
+ *     Util.TopResults&lt;Long&gt; paths = Util.shortestPaths(fst, firstArc, fst.outputs.getNoOutput(), comparator, 3, true);
+ *     System.out.println(Util.toBytesRef(paths.topN.get(0).input, scratchBytes).utf8ToString()); // cat
+ *     System.out.println(paths.topN.get(0).output); // 5
+ *     System.out.println(Util.toBytesRef(paths.topN.get(1).input, scratchBytes).utf8ToString()); // dog
+ *     System.out.println(paths.topN.get(1).output); // 7
  * </pre>
  */
 package org.apache.lucene.util.fst;

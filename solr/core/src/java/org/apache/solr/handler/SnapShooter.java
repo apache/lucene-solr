@@ -186,7 +186,9 @@ public class SnapShooter {
         final Optional<IndexCommit> namedCommit = snapshotMgr.getIndexCommitByName(commitName);
         if (namedCommit.isPresent()) {
           final IndexCommit commit = namedCommit.get();
-          log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration());
+          if (log.isDebugEnabled()) {
+            log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration());
+          }
           delPolicy.saveCommitPoint(commit.getGeneration());
           return commit;
         }
@@ -200,7 +202,9 @@ public class SnapShooter {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Index does not yet have any commits for core " +
                               solrCore.getName());
     }
-    log.debug("Using latest commit: generation={}", commit.getGeneration());
+    if (log.isDebugEnabled()) {
+      log.debug("Using latest commit: generation={}", commit.getGeneration());
+    }
     return commit;
   }
 
@@ -240,7 +244,9 @@ public class SnapShooter {
    */
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
-    log.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + baseSnapDirPath);
+    if (log.isInfoEnabled()) {
+      log.info("Creating backup snapshot {} at {}", (snapshotName == null ? "<not named>" : snapshotName), baseSnapDirPath);
+    }
     boolean success = false;
     try {
       NamedList<Object> details = new NamedList<>();
@@ -262,7 +268,9 @@ public class SnapShooter {
       details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
       details.add("directoryName", directoryName);
-      log.info("Done creating backup snapshot: {} into {}", (snapshotName == null ? "<not named>" : snapshotName), snapshotDirPath);
+      if (log.isInfoEnabled()) {
+        log.info("Done creating backup snapshot: {} into {}", (snapshotName == null ? "<not named>" : snapshotName), snapshotDirPath);
+      }
       success = true;
       return details;
     } finally {
@@ -270,7 +278,7 @@ public class SnapShooter {
         try {
           backupRepo.deleteDirectory(snapshotDirPath);
         } catch (Exception excDuringDelete) {
-          log.warn("Failed to delete "+snapshotDirPath+" after snapshot creation failed due to: "+excDuringDelete);
+          log.warn("Failed to delete {} after snapshot creation failed due to: {}", snapshotDirPath, excDuringDelete);
         }
       }
     }
@@ -300,7 +308,7 @@ public class SnapShooter {
   }
 
   protected void deleteNamedSnapshot(ReplicationHandler replicationHandler) {
-    log.info("Deleting snapshot: " + snapshotName);
+    log.info("Deleting snapshot: {}", snapshotName);
 
     NamedList<Object> details = new NamedList<>();
     details.add("snapshotName", snapshotName);
@@ -314,7 +322,7 @@ public class SnapShooter {
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
-      log.warn("Unable to delete snapshot: " + snapshotName, e);
+      log.warn("Unable to delete snapshot: {}", snapshotName, e);
     }
 
     replicationHandler.snapShootDetails = details;
