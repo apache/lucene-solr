@@ -447,7 +447,7 @@ public class BKDWriter implements Closeable {
     assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
     long indexFP = out.getFilePointer();
-    writeIndex(out, maxPointsInLeafNode, rotateLeaves(leafBlockFPs), splitPackedValues);
+    writeIndex(out, maxPointsInLeafNode, leafBlockFPs, splitPackedValues);
     return indexFP;
   }
 
@@ -611,7 +611,7 @@ public class BKDWriter implements Closeable {
       for(int i=0;i<leafBlockFPs.size();i++) {
         arr[i] = leafBlockFPs.get(i);
       }
-      writeIndex(out, maxPointsInLeafNode, rotateLeaves(arr), index);
+      writeIndex(out, maxPointsInLeafNode, arr, index);
       return indexFP;
     }
 
@@ -710,24 +710,6 @@ public class BKDWriter implements Closeable {
     } else {
       assert count == 0;
     }
-  }
-
-  private long[] rotateLeaves(long[] leafBlockFPs) {
-    int numLeaves = leafBlockFPs.length;
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
-    // In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
-    int leavesPreviousLevel = 1 << maxLevel - 1;
-    int lastLevel = 2 * (numLeaves - leavesPreviousLevel);
-    if (lastLevel == 0) {
-      // fully balanced
-      return leafBlockFPs;
-    }
-    long[] newLeafBlockFPs = new long[numLeaves];
-    System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, numLeaves - lastLevel);
-    System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - lastLevel, lastLevel);
-    return newLeafBlockFPs;
   }
 
   private int getNumLeftLeaveNodes(int numLeaves) {
@@ -848,12 +830,27 @@ public class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = out.getFilePointer();
-    writeIndex(out, maxPointsInLeafNode, rotateLeaves(leafBlockFPs), splitPackedValues);
+    writeIndex(out, maxPointsInLeafNode, leafBlockFPs, splitPackedValues);
     return indexFP;
   }
 
   /** Packs the two arrays, representing a balanced binary tree, into a compact byte[] structure. */
   private byte[] packIndex(long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
+    int numLeaves = leafBlockFPs.length;
+    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
+    // In this case the leaf nodes may straddle the two bottom
+    // levels of the binary tree:
+    int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
+    int leavesPreviousLevel = 1 << maxLevel - 1;
+    int lastLevel = 2 * (numLeaves - leavesPreviousLevel);
+    if (lastLevel != 0) {
+      // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
+      // at read-time, so that we can still delta code them on disk at write:
+      long[] newLeafBlockFPs = new long[numLeaves];
+      System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, numLeaves - lastLevel);
+      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - lastLevel, lastLevel);
+      leafBlockFPs = newLeafBlockFPs;
+    }
     /** Reused while packing the index */
     ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableInstance();
 
