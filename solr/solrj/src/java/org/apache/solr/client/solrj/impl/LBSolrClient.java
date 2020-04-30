@@ -24,10 +24,12 @@ import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,7 +63,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 public abstract class LBSolrClient extends SolrClient {
 
   // defaults
-  private static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
+  protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
 
@@ -69,7 +72,7 @@ public abstract class LBSolrClient extends SolrClient {
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
 
-  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
+  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -136,6 +139,91 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
+  protected static class ServerIterator {
+    String serverStr;
+    List<String> skipped;
+    int numServersTried;
+    Iterator<String> it;
+    Iterator<String> skippedIt;
+    String exceptionMessage;
+    long timeAllowedNano;
+    long timeOutTime;
+
+    final Map<String, ServerWrapper> zombieServers;
+    final Req req;
+
+    public ServerIterator(Req req, Map<String, ServerWrapper> zombieServers) {
+      this.it = req.getServers().iterator();
+      this.req = req;
+      this.zombieServers = zombieServers;
+      this.timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
+      this.timeOutTime = System.nanoTime() + timeAllowedNano;
+      fetchNext();
+    }
+
+    public synchronized boolean hasNext() {
+      return serverStr != null;
+    }
+
+    private void fetchNext() {
+      serverStr = null;
+      if (req.numServersToTry != null && numServersTried > req.numServersToTry) {
+        exceptionMessage = "Time allowed to handle this request exceeded";
+        return;
+      }
+
+      while (it.hasNext()) {
+        serverStr = it.next();
+        serverStr = normalize(serverStr);
+        // if the server is currently a zombie, just skip to the next one
+        ServerWrapper wrapper = zombieServers.get(serverStr);
+        if (wrapper != null) {
+          final int numDeadServersToTry = req.getNumDeadServersToTry();
+          if (numDeadServersToTry > 0) {
+            if (skipped == null) {
+              skipped = new ArrayList<>(numDeadServersToTry);
+              skipped.add(wrapper.getBaseUrl());
+            } else if (skipped.size() < numDeadServersToTry) {
+              skipped.add(wrapper.getBaseUrl());
+            }
+          }
+          continue;
+        }
+
+        break;
+      }
+      if (serverStr == null && skipped != null) {
+        if (skippedIt == null) {
+          skippedIt = skipped.iterator();
+        }
+        if (skippedIt.hasNext()) {
+          serverStr = skippedIt.next();
+        }
+      }
+    }
+
+    boolean isServingZombieServer() {
+      return skippedIt != null;
+    }
+
+    public synchronized String nextOrError() throws SolrServerException {
+      if (isTimeExceeded(timeAllowedNano, timeOutTime)) {
+        throw new SolrServerException("Time allowed to handle this request exceeded");
+      }
+      if (serverStr == null) {
+        throw new SolrServerException("No live SolrServers available to handle this request");
+      }
+      numServersTried++;
+      if (req.getNumServersToTry() != null && numServersTried > req.getNumServersToTry()) {
+        throw new SolrServerException("No live SolrServers available to handle this request:"
+            + " numServersTried="+numServersTried
+            + " numServersToTry="+req.getNumServersToTry());
+      }
+      String rs = serverStr;
+      fetchNext();
+      return rs;
+    }
+  }
 
   public static class Req {
     protected SolrRequest request;
@@ -349,13 +437,13 @@ public abstract class LBSolrClient extends SolrClient {
   /**
    * @return time allowed in nanos, returns -1 if no time_allowed is specified.
    */
-  private long getTimeAllowedInNanos(final SolrRequest req) {
+  private static long getTimeAllowedInNanos(final SolrRequest req) {
     SolrParams reqParams = req.getParams();
     return reqParams == null ? -1 :
         TimeUnit.NANOSECONDS.convert(reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
   }
 
-  private boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {
+  private static boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {
     return timeAllowedNano > 0 && System.nanoTime() > timeOutTime;
   }
 
@@ -413,7 +501,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected abstract SolrClient getClient(String baseUrl);
 
-  private Exception addZombie(String serverStr, Exception e) {
+  protected Exception addZombie(String serverStr, Exception e) {
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
     zombieServers.put(serverStr, wrapper);

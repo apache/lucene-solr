@@ -96,7 +96,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  private LBHttp2SolrClient loadbalancer;
+  protected LBHttp2SolrClient loadbalancer;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -316,6 +316,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.defaultClient = new Http2SolrClient.Builder()
         .connectionTimeout(connectionTimeout)
         .idleTimeout(soTimeout)
+        .withExecutor(commExecutor)
         .maxConnectionsPerHost(maxConnectionsPerHost).build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
@@ -368,18 +369,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return solrMetricsContext;
   }
 
-  /**
-   * Makes a request to one or more of the given urls, using the configured load balancer.
-   *
-   * @param req The solr search request that should be sent through the load balancer
-   * @param urls The list of solr server urls to load balance across
-   * @return The response from the request
-   */
-  public LBSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
-    throws SolrServerException, IOException {
-    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
-  }
-
   protected LBSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
     int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
     if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
@@ -422,13 +411,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
     }
-  }
-
-  /**
-   * Creates a new completion service for use by a single set of distributed requests.
-   */
-  public CompletionService<ShardResponse> newCompletionService() {
-    return new ExecutorCompletionService<>(commExecutor);
   }
 
   /**
