@@ -81,13 +81,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
-    // try to add 5 more replicas which should fail because numNodes(4)*maxShardsPerNode(2)=8 and 4 replicas already exist
-    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
-        .setNrtReplicas(3)
-        .setTlogReplicas(1)
-        .setPullReplicas(1);
-    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(FAILED, status);
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
@@ -96,7 +89,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
-    // but adding any number of replicas is supported if an explicit create node set is specified
+    // adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
     LinkedHashSet<String> createNodeSet = new LinkedHashSet<>(2);
     createNodeSet.add(cluster.getRandomJetty(random()).getNodeName());

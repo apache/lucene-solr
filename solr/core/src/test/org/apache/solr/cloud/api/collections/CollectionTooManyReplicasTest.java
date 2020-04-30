@@ -64,11 +64,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     String nodeName = getAllNodeNames(collectionName).get(0);
 
     // Add a replica using the "node" parameter
-    // AND force skipping the node assignment (no "too many replicas check")
     // this node should have 2 replicas on it
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(nodeName)
-        //.setSkipNodeAssignment(true)
         .process(cluster.getSolrClient());
 
     // equivalent to maxShardsPerNode=1

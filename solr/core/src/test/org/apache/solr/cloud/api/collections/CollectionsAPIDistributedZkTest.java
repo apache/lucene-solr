@@ -222,15 +222,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testTooManyReplicas() {
-    CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
-
-    expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(req);
-    });
-  }
-
-  @Test
   public void testMissingNumShards() {
     // No numShards should fail
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -345,18 +336,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     ZkNodeProps props = ZkNodeProps.load(data);
     String configName = props.getStr(ZkController.CONFIGNAME_PROP);
     assertEquals("conf2", configName);
-  }
-
-  @Test
-  public void testMaxNodesPerShard() {
-    int numLiveNodes = cluster.getJettySolrRunners().size();
-    int numShards = (numLiveNodes/2) + 1;
-    int replicationFactor = 2;
-
-    expectThrows(SolrException.class, () -> {
-      CollectionAdminRequest.createCollection("oversharded", "conf", numShards, replicationFactor)
-          .process(cluster.getSolrClient());
-    });
   }
 
   @Test
