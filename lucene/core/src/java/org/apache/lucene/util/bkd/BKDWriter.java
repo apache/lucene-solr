@@ -671,7 +671,7 @@ public class BKDWriter implements Closeable {
       // Internal index node
       // numNodes + 1 is the number of leaves
       // -1 because there is one less inner node
-      int leftHalf = getNumLeftLeaveNodes(numNodes + 1) - 1;
+      int leftHalf = getNumLeftLeafNodes(numNodes + 1) - 1;
       int rootOffset = offset + leftHalf;
 
       System.arraycopy(leafBlockStartValues.get(rootOffset), 0, index, nodeID*(1+bytesPerDim)+1, bytesPerDim);
@@ -685,19 +685,19 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private int getNumLeftLeaveNodes(int numLeaves) {
+  private int getNumLeftLeafNodes(int numLeaves) {
     assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
-    // return the max level for this number of leaves. If level is full it returns the next level
-    int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
-    // how many leaves are in the previous level
-    int leavesPreviousLevel = 1 << maxLevel - 1;
-    // leaf nodes from previous level
-    int numLeftLeafNodes = leavesPreviousLevel / 2;
-    // nodes that do not fit in previous level
-    int unbalancedLeaves = numLeaves - leavesPreviousLevel;
-    // distribute unbalanced nodes
-    numLeftLeafNodes += Math.min(unbalancedLeaves, numLeftLeafNodes);
-    // we should always place unbalanced nodes on the left
+    // return the level that can be filled with this number of leaves
+    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
+    // how many leaf nodes are in the full level
+    int leavesFullLevel = 1 << lastFullLevel;
+    // half of the leaf nodes from the full level goes to the left
+    int numLeftLeafNodes = leavesFullLevel / 2;
+    // leaf nodes that do not fit in the full level
+    int unbalancedLeafNodes = numLeaves - leavesFullLevel;
+    // distribute unbalanced leave nodes
+    numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
+    // we should always place unbalanced leave nodes on the left
     assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes;
     return numLeftLeafNodes;
   }
@@ -814,15 +814,15 @@ public class BKDWriter implements Closeable {
     // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
     // In this case the leaf nodes may straddle the two bottom
     // levels of the binary tree:
-    int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
-    int leavesPreviousLevel = 1 << maxLevel - 1;
-    int lastLevel = 2 * (numLeaves - leavesPreviousLevel);
-    if (lastLevel != 0) {
+    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
+    int leavesFullLevel = 1 << lastFullLevel;
+    int unbalancedLeafNodes = 2 * (numLeaves - leavesFullLevel);
+    if (unbalancedLeafNodes != 0) {
       // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
       // at read-time, so that we can still delta code them on disk at write:
       long[] newLeafBlockFPs = new long[numLeaves];
-      System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, numLeaves - lastLevel);
-      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - lastLevel, lastLevel);
+      System.arraycopy(leafBlockFPs, unbalancedLeafNodes, newLeafBlockFPs, 0, numLeaves - unbalancedLeafNodes);
+      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - unbalancedLeafNodes, unbalancedLeafNodes);
       leafBlockFPs = newLeafBlockFPs;
     }
     /** Reused while packing the index */
@@ -1420,7 +1420,7 @@ public class BKDWriter implements Closeable {
       }
 
       // How many leaves will be in the left tree:
-      int numLeftLeafNodes = getNumLeftLeaveNodes(numLeaves);
+      int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
       // How many points will be in the left tree:
       final int mid = from + numLeftLeafNodes * maxPointsInLeafNode;
 
@@ -1604,7 +1604,7 @@ public class BKDWriter implements Closeable {
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
       // How many leaves will be in the left tree:
-      int numLeftLeafNodes = getNumLeftLeaveNodes(numLeaves);
+      int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
       // How many points will be in the left tree:
       final long leftCount = numLeftLeafNodes * maxPointsInLeafNode;
 
