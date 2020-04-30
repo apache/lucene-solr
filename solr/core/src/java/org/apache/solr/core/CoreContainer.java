@@ -896,9 +896,9 @@ public class CoreContainer {
 
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
-        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as {}{}"
-                , "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or "
-                , "external.  See https://s.apache.org/solrsecurity for more info",
+      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+          "external.  See https://s.apache.org/solrsecurity for more info",
             (authenticationPlugin != null) ? "enabled" : "disabled",
             (authorizationPlugin != null) ? "enabled" : "disabled");
     }

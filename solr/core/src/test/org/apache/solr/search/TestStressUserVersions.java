@@ -56,7 +56,7 @@ public class TestStressUserVersions extends TestRTGBase {
       sb.append(' ');
       sb.append(o==null ? "(null)" : o.toString());
     }
-    log.info(sb.toString());
+    log.info("{}", sb);
   }
 
   // This version simulates user versions sometimes being reordered.
@@ -285,7 +285,7 @@ public class TestStressUserVersions extends TestRTGBase {
                   long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
                   if (foundVer < Math.abs(info.version)
                       || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
-                    log.error("ERROR, id=" + id + " found=" + response + " model" + info);
+                    log.error("ERROR, id={} found={} model {}", id, response, info);
                     assertTrue(false);
                   }
                 } else {
@@ -293,7 +293,7 @@ public class TestStressUserVersions extends TestRTGBase {
                   assertNull( ((Map)doclist.get(0)).get(FIELD) );
 
                   if (foundVer < Math.abs(info.version)) {
-                    log.error("ERROR, id=" + id + " found=" + response + " model" + info);
+                    log.error("ERROR, id={} found={} model {}", id, response, info);
                     assertTrue(false);
                   }
                 }

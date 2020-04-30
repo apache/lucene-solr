@@ -102,14 +102,14 @@ public class FileDataSource extends DataSource<Reader> {
         File basePathFile;
         if (basePath == null) {
           basePathFile = new File(".").getAbsoluteFile(); 
-          log.warn("FileDataSource.basePath is empty. " +
-              "Resolving to: " + basePathFile.getAbsolutePath());
+          log.warn("FileDataSource.basePath is empty. Resolving to: {}"
+              , basePathFile.getAbsolutePath());
         } else {
           basePathFile = new File(basePath);
           if (!basePathFile.isAbsolute()) {
             basePathFile = basePathFile.getAbsoluteFile();
-            log.warn("FileDataSource.basePath is not absolute. Resolving to: "
-                + basePathFile.getAbsolutePath());
+            log.warn("FileDataSource.basePath is not absolute. Resolving to: {}"
+                , basePathFile.getAbsolutePath());
           }
         }
 
@@ -117,7 +117,9 @@ public class FileDataSource extends DataSource<Reader> {
       }
 
       if (file.isFile() && file.canRead()) {
-        log.debug("Accessing File: " + file.getAbsolutePath());
+        if (log.isDebugEnabled()) {
+          log.debug("Accessing File: {}", file.getAbsolutePath());
+        }
         return file;
       } else {
         throw new FileNotFoundException("Could not find file: " + query + 

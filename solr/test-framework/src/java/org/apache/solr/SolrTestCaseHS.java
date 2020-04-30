@@ -126,12 +126,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     Object realResponse = ObjectBuilder.fromJSON(strResponse);
     String err = JSONTestUtil.matchObj(path, realResponse, model);
     if (err != null) {
-      log.error("RESPONSE MISMATCH: " + err
-              + "\n\trequest="+req
-              + "\n\tresult="+strResponse
-              + "\n\texpected="+ JSONUtil.toJSON(model)
-              + "\n\tmodel="+ fullModel
-      );
+      log.error("RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}" +
+          "\n\texpected={}\n\tmodel={}"
+          , err, req, strResponse, JSONUtil.toJSON(model), fullModel);
 
       // re-execute the request... good for putting a breakpoint here for debugging
       String rsp = h.query(req);
@@ -184,17 +181,15 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         String err = JSONTestUtil.match(response, test, JSONTestUtil.DEFAULT_DELTA);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error=" + err +
-                  "\n expected =" + test +
-                  "\n response = " + response
+          log.error("query failed JSON validation. error={}\n expected ={}\n response = {}"
+              , err, test, response
           );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception." +
-                  "\n expected =" + test +
-                  "\n response = " + response
+          log.error("JSON query validation threw an exception.\n expected ={}\n response = {}"
+                  , test, response
           );
         }
       }
@@ -524,7 +519,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       jetty.start();
       port = jetty.getLocalPort();
-      log.info("===> Started solr server port=" + port + " home="+getBaseDir());
+      if (log.isInfoEnabled()) {
+        log.info("===> Started solr server port={} home={}", port, getBaseDir());
+      }
     }
 
     public void stop() throws Exception {

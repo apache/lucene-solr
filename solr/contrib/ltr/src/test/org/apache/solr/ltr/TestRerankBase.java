@@ -159,13 +159,15 @@ public class TestRerankBase extends RestTestBase {
     }
 
     if (fstore.exists()) {
-      log.info("remove feature store config file in {}",
-          fstore.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("remove feature store config file in {}", fstore.getAbsolutePath());
+      }
       Files.delete(fstore.toPath());
     }
     if (mstore.exists()) {
-      log.info("remove model store config file in {}",
-          mstore.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("remove model store config file in {}", mstore.getAbsolutePath());
+      }
       Files.delete(mstore.toPath());
     }
     if (!solrconfig.equals("solrconfig.xml")) {
