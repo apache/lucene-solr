@@ -686,6 +686,7 @@ public class BKDWriter implements Closeable {
   }
 
   private int getNumLeftLeaveNodes(int numLeaves) {
+    assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
     // return the max level for this number of leaves. If level is full it returns the next level
     int maxLevel = 32 - Integer.numberOfLeadingZeros(numLeaves);
     // how many leaves are in the previous level
