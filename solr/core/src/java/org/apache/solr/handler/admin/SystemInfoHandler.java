@@ -323,8 +323,14 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 
-    if (cc.getAuthenticationPlugin() != null) info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
-    if (cc.getAuthorizationPlugin() != null) info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+    if (cc != null) {
+      if (cc.getAuthenticationPlugin() != null) {
+        info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
+      }
+      if (cc.getAuthorizationPlugin() != null) {
+        info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+      }
+    }
 
     // User principal
     String username = null;
@@ -333,7 +339,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       info.add("username", username);
 
       // Mapped roles for this principal
-      AuthorizationPlugin auth = cc.getAuthorizationPlugin();
+      AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
       if (auth != null) {
         RuleBasedAuthorizationPlugin rbap = (RuleBasedAuthorizationPlugin) auth;
         Set<String> roles = rbap.getRoles(username);
