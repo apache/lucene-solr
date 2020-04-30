@@ -181,8 +181,7 @@ public class PolicyHelper {
               String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
               Policy.Session sessionCopy = suggester.session;
               log.error("errorId : {} {}", errorId
-                  , handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString())
-              ); // logOK
+                  , handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString())); // logOk
 
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
                   Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "

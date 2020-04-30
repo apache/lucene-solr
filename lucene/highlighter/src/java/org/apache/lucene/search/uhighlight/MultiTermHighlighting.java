@@ -19,6 +19,7 @@ package org.apache.lucene.search.uhighlight;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -80,8 +81,8 @@ final class MultiTermHighlighting {
     }
 
     @Override
-    public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
-      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton));
+    public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton.get()));
     }
 
   }

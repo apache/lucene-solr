@@ -1,0 +1,89 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+  task changesToHtml(type: ChangesToHtmlTask)
+}
+
+// compile changes.txt into an html file
+class ChangesToHtmlTask extends DefaultTask {
+
+  @Input
+  File changesFile = project.file("CHANGES.txt")
+
+  @Input
+  File changesDoapFile = project.rootProject.file("dev-tools/doap/${project.name}.rdf")
+
+  @InputDirectory
+  File siteDir = project.rootProject.file("lucene/site/changes")
+
+  @OutputDirectory
+  File targetDir = project.file("${project.docroot}/changes")
+
+  def luceneDocUrl = "https://lucene.apache.org/core/${project.version.replace(".", "_")}/".toString()
+
+  def loadVersions(File outfile) {
+    // load version properties from DOAP RDF
+    def prefix = "doap.${project.name}".toString()
+    ant.xmlproperty(keeproot: false, file: changesDoapFile, collapseAttributes: false, prefix: "${prefix}")
+    outfile.withWriter("UTF-8") { writer ->
+      writer.println(ant.properties["${prefix}.Project.release.Version.revision"])
+      writer.println(ant.properties["${prefix}.Project.release.Version.created"])
+    }
+  }
+
+  def toHtml(File versionsFile) {
+    def output = new ByteArrayOutputStream()
+    def result = project.exec {
+      executable "perl"
+      standardInput changesFile.newInputStream()
+      standardOutput project.file("${targetDir}/Changes.html").newOutputStream()
+      errorOutput = output
+      ignoreExitValue = true
+
+      args += [
+        "-CSD",
+        project.rootProject.file("${siteDir}/changes2html.pl").toString(),
+        "${project.name}",
+        versionsFile.toString(),
+        luceneDocUrl
+      ]
+    }
+
+    if (result.getExitValue() != 0) {
+      throw new GradleException("Changes generation failed:\n${output}")
+    }
+  }
+
+  @TaskAction
+  def convert() {
+    project.mkdir targetDir
+    if (changesFile.exists() && changesDoapFile.exists()) {
+      File versionsFile = project.file("${project.buildDir}/doap.${project.name}.changes.version.dates.csv")
+      loadVersions(versionsFile)
+      toHtml(versionsFile)
+      project.copy {
+        from siteDir
+        into targetDir
+        include "*.css"
+      }
+      versionsFile.delete()
+    } else {
+      throw new GradleException("Changes file ${changesFile} or Doap file ${changesDoapFile} not found.")
+    }
+  }
+}

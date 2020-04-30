@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.LucenePackage;
@@ -39,6 +40,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
@@ -140,6 +143,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       rsp.add( "solr_home", cc.getSolrHome());
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
+    rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
@@ -311,7 +315,36 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "jmx", jmx );
     return jvm;
   }
-  
+
+  /**
+   * Get Security Info
+   */
+  public SimpleOrderedMap<Object> getSecurityInfo(SolrQueryRequest req)
+  {
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+
+    if (cc.getAuthenticationPlugin() != null) info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
+    if (cc.getAuthorizationPlugin() != null) info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+
+    // User principal
+    String username = null;
+    if (req.getUserPrincipal() != null) {
+      username = req.getUserPrincipal().getName();
+      info.add("username", username);
+
+      // Mapped roles for this principal
+      AuthorizationPlugin auth = cc.getAuthorizationPlugin();
+      if (auth != null) {
+        RuleBasedAuthorizationPlugin rbap = (RuleBasedAuthorizationPlugin) auth;
+        Set<String> roles = rbap.getRoles(username);
+        info.add("roles", roles);
+      }
+    }
+
+    return info;
+  }
+
+
   private static SimpleOrderedMap<Object> getLuceneInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 

@@ -64,6 +64,9 @@ Other Changes
 
 * SOLR-14429: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
 
+* SOLR-14412: Automatically set urlScheme to https when running secure solr with embedded zookeeper. (Mike Drob)
+  Do not erroneously set solr.jetty.https.port system property when running in http mode (Upendra Penegalapati)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -75,6 +78,7 @@ New Features
 
 * SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK direcory (noble)
 
+* SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
 Improvements
 ---------------------
@@ -97,6 +101,8 @@ Improvements
 * SOLR-14396: TaggerRequestHandler should not error on an empty index (Trey Grainger)
 
 * SOLR-12845: Add a default autoscaling cluster policy. (shalin, varunthacker, ab)
+
+* SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
 
 Optimizations
 ---------------------
