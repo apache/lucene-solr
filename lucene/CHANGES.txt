@@ -149,6 +149,10 @@ Improvements
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
   snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
 
+* LUCENE-9353: Metadata of the terms dictionary moved to its own file, with the
+  `.tmd` extension. This allows checksums of metadata to be verified when
+  opening indices. (Adrien Grand)
+
 Optimizations
 ---------------------
 

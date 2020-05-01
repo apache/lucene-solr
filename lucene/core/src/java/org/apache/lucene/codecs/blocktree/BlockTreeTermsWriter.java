@@ -211,6 +211,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   //private final static boolean SAVE_DOT_FILES = false;
 
+  private final SegmentWriteState state;
   private final IndexOutput termsOut;
   private final IndexOutput indexOut;
   final int maxDoc;
@@ -262,6 +263,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     validateSettings(minItemsInBlock,
                      maxItemsInBlock);
 
+    this.state = state;
     this.minItemsInBlock = minItemsInBlock;
     this.maxItemsInBlock = maxItemsInBlock;
 
@@ -292,16 +294,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         IOUtils.closeWhileHandlingException(termsOut, indexOut);
       }
     }
-  }
-
-  /** Writes the terms file trailer. */
-  private void writeTrailer(IndexOutput out, long dirStart) throws IOException {
-    out.writeLong(dirStart);    
-  }
-
-  /** Writes the index file trailer. */
-  private void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
-    indexOut.writeLong(dirStart);    
   }
 
   /** Throws {@code IllegalArgumentException} if any of these settings
@@ -1060,36 +1052,35 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       return;
     }
     closed = true;
-    
-    boolean success = false;
-    try {
-      
-      final long dirStart = termsOut.getFilePointer();
-      final long indexDirStart = indexOut.getFilePointer();
 
-      termsOut.writeVInt(fields.size());
+    final String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_META_EXTENSION);
+    boolean success = false;
+    try (IndexOutput metaOut = state.directory.createOutput(metaName, state.context)) {
+      CodecUtil.writeIndexHeader(metaOut, BlockTreeTermsReader.TERMS_META_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
+          state.segmentInfo.getId(), state.segmentSuffix);
+
+      metaOut.writeVInt(fields.size());
       
       for(FieldMetaData field : fields) {
         //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
-        termsOut.writeVInt(field.fieldInfo.number);
+        metaOut.writeVInt(field.fieldInfo.number);
         assert field.numTerms > 0;
-        termsOut.writeVLong(field.numTerms);
-        termsOut.writeVInt(field.rootCode.length);
-        termsOut.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
+        metaOut.writeVLong(field.numTerms);
+        metaOut.writeVInt(field.rootCode.length);
+        metaOut.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
         assert field.fieldInfo.getIndexOptions() != IndexOptions.NONE;
         if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
-          termsOut.writeVLong(field.sumTotalTermFreq);
+          metaOut.writeVLong(field.sumTotalTermFreq);
         }
-        termsOut.writeVLong(field.sumDocFreq);
-        termsOut.writeVInt(field.docCount);
-        indexOut.writeVLong(field.indexStartFP);
-        writeBytesRef(termsOut, field.minTerm);
-        writeBytesRef(termsOut, field.maxTerm);
+        metaOut.writeVLong(field.sumDocFreq);
+        metaOut.writeVInt(field.docCount);
+        writeBytesRef(metaOut, field.minTerm);
+        writeBytesRef(metaOut, field.maxTerm);
+        metaOut.writeVLong(field.indexStartFP);
       }
-      writeTrailer(termsOut, dirStart);
       CodecUtil.writeFooter(termsOut);
-      writeIndexTrailer(indexOut, indexDirStart);
       CodecUtil.writeFooter(indexOut);
+      CodecUtil.writeFooter(metaOut);
       success = true;
     } finally {
       if (success) {
