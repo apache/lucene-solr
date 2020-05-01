@@ -54,7 +54,7 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(Principal principal) {
+  public Set<String> getUserRoles(Principal principal) {
     return usersVsRoles.get(principal.getName());
   }
 }
