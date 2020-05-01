@@ -43,14 +43,15 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
 
   @Override
   public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
-    HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
-    HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
-
     if(disabled){
-      response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
+      _response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
           "ENABLED in bin/solr.in.sh or solr.in.cmd or pass the value of -DdisableAdminUI=false");
       return;
     }
+    HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
+    HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
+
+
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter
