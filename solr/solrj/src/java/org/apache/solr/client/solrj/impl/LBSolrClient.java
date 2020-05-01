@@ -341,45 +341,12 @@ public abstract class LBSolrClient extends SolrClient {
     Rsp rsp = new Rsp();
     Exception ex = null;
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    List<ServerWrapper> skipped = null;
-
-    final Integer numServersToTry = req.getNumServersToTry();
-    int numServersTried = 0;
-
-    boolean timeAllowedExceeded = false;
-    long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
-    long timeOutTime = System.nanoTime() + timeAllowedNano;
-    for (String serverStr : req.getServers()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
-        break;
-      }
-
-      serverStr = normalize(serverStr);
-      // if the server is currently a zombie, just skip to the next one
-      ServerWrapper wrapper = zombieServers.get(serverStr);
-      if (wrapper != null) {
-        // System.out.println("ZOMBIE SERVER QUERIED: " + serverStr);
-        final int numDeadServersToTry = req.getNumDeadServersToTry();
-        if (numDeadServersToTry > 0) {
-          if (skipped == null) {
-            skipped = new ArrayList<>(numDeadServersToTry);
-            skipped.add(wrapper);
-          }
-          else if (skipped.size() < numDeadServersToTry) {
-            skipped.add(wrapper);
-          }
-        }
-        continue;
-      }
+    ServerIterator serverIterator = new ServerIterator(req, zombieServers);
+    String serverStr;
+    while ((serverStr = serverIterator.nextOrError()) != null) {
       try {
         MDC.put("LBSolrClient.url", serverStr);
-
-        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
-          break;
-        }
-
-        ++numServersTried;
-        ex = doRequest(serverStr, req, rsp, isNonRetryable, false);
+        ex = doRequest(serverStr, req, rsp, isNonRetryable, serverIterator.isServingZombieServer());
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -387,49 +354,7 @@ public abstract class LBSolrClient extends SolrClient {
         MDC.remove("LBSolrClient.url");
       }
     }
-
-    // try the servers we previously skipped
-    if (skipped != null) {
-      for (ServerWrapper wrapper : skipped) {
-        if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
-          break;
-        }
-
-        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
-          break;
-        }
-
-        try {
-          MDC.put("LBSolrClient.url", wrapper.getBaseUrl());
-          ++numServersTried;
-          ex = doRequest(wrapper.baseUrl, req, rsp, isNonRetryable, true);
-          if (ex == null) {
-            return rsp; // SUCCESS
-          }
-        } finally {
-          MDC.remove("LBSolrClient.url");
-        }
-      }
-    }
-
-
-    final String solrServerExceptionMessage;
-    if (timeAllowedExceeded) {
-      solrServerExceptionMessage = "Time allowed to handle this request exceeded";
-    } else {
-      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
-        solrServerExceptionMessage = "No live SolrServers available to handle this request:"
-            + " numServersTried="+numServersTried
-            + " numServersToTry="+numServersToTry.intValue();
-      } else {
-        solrServerExceptionMessage = "No live SolrServers available to handle this request";
-      }
-    }
-    if (ex == null) {
-      throw new SolrServerException(solrServerExceptionMessage);
-    } else {
-      throw new SolrServerException(solrServerExceptionMessage+":" + zombieServers.keySet(), ex);
-    }
+    throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
   }
 
   /**

@@ -343,16 +343,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void close() {
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
+      if (loadbalancer != null) {
+        loadbalancer.close();
+      }
     } finally {
       try {
-        if (loadbalancer != null) {
-          loadbalancer.close();
-        }
-      } finally {
         if (defaultClient != null) {
           IOUtils.closeQuietly(defaultClient);
         }
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
       }
     }
     try {

@@ -34,10 +34,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
@@ -135,6 +133,7 @@ public class Http2SolrClient extends SolrClient {
   private String serverBaseUrl;
   private boolean closeClient;
   private ExecutorService executor;
+  private boolean shutdownExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null)  {
@@ -178,14 +177,14 @@ public class Http2SolrClient extends SolrClient {
     HttpClient httpClient;
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-    Executor executor = builder.executor;
+    executor = builder.executor;
     if (executor == null) {
       this.executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
           256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
-      executor = this.executor;
+      shutdownExecutor = true;
+    } else {
+      shutdownExecutor = false;
     }
-    this.executor = Objects.requireNonNullElseGet(builder.executor, () -> new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
-        256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc")));
 
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
@@ -240,10 +239,12 @@ public class Http2SolrClient extends SolrClient {
       try {
         httpClient.setStopTimeout(1000);
         httpClient.stop();
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
       } catch (Exception e) {
         throw new RuntimeException("Exception on closing client", e);
       }
+    }
+    if (shutdownExecutor) {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
 
     assert ObjectReleaseTracker.release(this);
@@ -367,6 +368,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private static final Exception CANCELLED_EXCEPTION = new Exception();
+  private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
   public Cancellable asyncRequest(SolrRequest solrRequest, String collection, OnComplete onComplete) {
     Request req;
@@ -374,7 +376,7 @@ public class Http2SolrClient extends SolrClient {
       req = makeRequest(solrRequest, collection);
     } catch (SolrServerException | IOException e) {
       onComplete.onFailure(e);
-      return () -> {};
+      return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
@@ -405,7 +407,7 @@ public class Http2SolrClient extends SolrClient {
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
             if (failure != CANCELLED_EXCEPTION) {
-              onComplete.onFailure(createException(req, failure));
+              onComplete.onFailure(new SolrServerException(failure.getMessage(), failure));
             }
           }
         });
@@ -428,33 +430,21 @@ public class Http2SolrClient extends SolrClient {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (Throwable e) {
-      throw createException(req, e);
-    }
-  }
-
-  private SolrServerException createException(Request req, Throwable throwable) {
-    try {
-      throw throwable;
     } catch (TimeoutException e) {
-      return new SolrServerException(
+      throw new SolrServerException(
           "Timeout occured while waiting response from server at: " + req.getURI(), e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
       if (cause instanceof ConnectException) {
-        return new SolrServerException("Server refused connection at: " + req.getURI(), cause);
+        throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
       }
       if (cause instanceof SolrServerException) {
-        return (SolrServerException) cause;
+        throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
-        return new SolrServerException(
+        throw new SolrServerException(
             "IOException occured when talking to server at: " + getBaseURL(), cause);
       }
-      return new SolrServerException(cause.getMessage(), cause);
-    } catch (Throwable e) {
-      return new SolrServerException(e.getMessage(), e);
+      throw new SolrServerException(cause.getMessage(), cause);
     }
   }
 

@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -54,6 +53,10 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 
+/**
+ * Submit requests in async manner.
+ * This class is not thread-safe so all methods should be called in a same thread.
+ */
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,
@@ -62,10 +65,9 @@ public class HttpShardHandler extends ShardHandler {
    * by the RealtimeGet handler, since other types of replicas shouldn't respond to RTG requests
    */
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
-  private static final ShardResponse END_QUEUE = new ShardResponse();
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
-  private LinkedList<Cancellable> requests;
+  private Map<ShardResponse, Cancellable> responseCancellableMap;
   private BlockingQueue<ShardResponse> responses;
   private AtomicInteger pending;
   private Map<String, List<String>> shardToURLs;
@@ -78,7 +80,7 @@ public class HttpShardHandler extends ShardHandler {
     this.lbClient = httpShardHandlerFactory.loadbalancer;
     this.pending = new AtomicInteger(0);
     this.responses = new LinkedBlockingQueue<>();
-    this.requests = new LinkedList<>();
+    this.responseCancellableMap = new HashMap<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
@@ -89,9 +91,9 @@ public class HttpShardHandler extends ShardHandler {
 
   private static class SimpleSolrResponse extends SolrResponse {
 
-    long elapsedTime;
+    volatile long elapsedTime;
 
-    NamedList<Object> nl;
+    volatile NamedList<Object> nl;
 
     @Override
     public long getElapsedTime() {
@@ -161,7 +163,8 @@ public class HttpShardHandler extends ShardHandler {
       return;
     }
 
-    requests.add(this.lbClient.asyncReq(lbReq, new LBHttp2SolrClient.OnComplete() {
+    // all variables that set inside this listener must be at least volatile
+    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new LBHttp2SolrClient.OnComplete() {
       long startTime = System.nanoTime();
 
       @Override
@@ -236,8 +239,7 @@ public class HttpShardHandler extends ShardHandler {
     try {
       while (pending.get() > 0) {
         ShardResponse rsp = responses.take();
-        if (rsp == END_QUEUE)
-          continue;
+        responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();
         if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
@@ -259,12 +261,10 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    for (Cancellable cancellable : requests) {
+    for (Cancellable cancellable : responseCancellableMap.values()) {
       cancellable.cancel();
       pending.decrementAndGet();
     }
-    // ensure that we do not hang on responses.take()
-    responses.add(END_QUEUE);
   }
 
   @Override
