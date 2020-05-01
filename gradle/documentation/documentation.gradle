@@ -15,39 +15,23 @@
  * limitations under the License.
  */
 
-// This adds top-level 'precommit' task.
-
 configure(rootProject) {
-  task precommit() {
-    group = 'Precommit'
-    description = "All precommit checks"
+  task documentation() {
+    group = 'documentation'
+    description = 'Generate all documentation'
 
-    // Root-level validation tasks.
-    dependsOn ":verifyLocks"
-    dependsOn ":versionsPropsAreSorted"
-    dependsOn ":checkWorkingCopyClean"
-    dependsOn ":validateSourcePatterns"
-
-    // Solr validation tasks.
-    dependsOn ":solr:validateConfigFileSanity"
-
-    // Attach all these tasks from all projects that have them.
-    // This uses lazy collections as they may not yet be defined.
     dependsOn allprojects.collect { prj ->
       prj.tasks.matching { task -> task.name in [
-          "forbiddenApis",
-          "licenses",
-          "javadoc",
-          "rat",
-          "ecjLint",
-          "checkMissingDocs",
-          "validateLogCalls"
+        "changesToHtml"
+        // TODO: "markdownToHtml"
+        // TODO: "gatherJavadocs"
       ]}
     }
   }
-
-  // Each validation task should be attached to check but make sure
-  // precommit() as a whole is a dependency on rootProject.check
-  check.dependsOn precommit
 }
 
+configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+  ext {
+    docroot = "${project.buildDir}/documentation"
+  }
+}

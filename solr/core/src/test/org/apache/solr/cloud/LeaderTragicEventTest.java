@@ -102,7 +102,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       for (String id : addedIds) {
         assertNotNull(cluster.getSolrClient().getById(collection,id));
       }
-      log.info("The test success oldLeader:{} currentState:{}", oldLeader, getCollectionState(collection));
+      if (log.isInfoEnabled()) {
+        log.info("The test success oldLeader:{} currentState:{}", oldLeader, getCollectionState(collection));
+      }
 
     } finally {
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
@@ -178,7 +180,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       if (numReplicas == 2) {
         Slice shard = getCollectionState(collection).getSlice("shard1");
         otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
-        log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
+        if (log.isInfoEnabled()) {
+          log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
+        }
         otherReplicaJetty.stop();
         cluster.waitForJettyToStop(otherReplicaJetty);
         waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);

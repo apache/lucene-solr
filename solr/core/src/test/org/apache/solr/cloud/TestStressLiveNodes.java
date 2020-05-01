@@ -112,8 +112,10 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     for (int i = 0; i < 10; i++) {
       result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getClusterState().getLiveNodes());
       if (expectedCount != result.size()) {
-        log.info("sleeping #{} to give watchers a chance to finish: {} != {}",
-                 i, expectedCount, result.size());
+        if (log.isInfoEnabled()) {
+          log.info("sleeping #{} to give watchers a chance to finish: {} != {}",
+              i, expectedCount, result.size());
+        }
         Thread.sleep(200);
       } else {
         break;
@@ -235,7 +237,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
           client.makePath(nodePath, CreateMode.EPHEMERAL, true);
           numAdded++;
         } catch (Exception e) {
-          log.error("failed to create: " + nodePath, e);
+          log.error("failed to create: {}", nodePath, e);
         }
       }
       return numAdded;
