@@ -46,7 +46,6 @@ import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationPlugin, ConfigEditablePlugin, SpecProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();
   private final List<Permission> permissions = new ArrayList<>();
 
@@ -241,8 +240,8 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return MatchStatus.FORBIDDEN;
   }
 
-  public boolean doesUserHavePermission(String user, PermissionNameProvider.Name permission) {
-    Set<String> roles = usersVsRoles.get(user);
+  public boolean doesUserHavePermission(Principal principal, PermissionNameProvider.Name permission) {
+    Set<String> roles = getUserRoles(principal);
     if (roles != null) {
       for (String role: roles) {
         if (mapping.get(null) == null) continue;
