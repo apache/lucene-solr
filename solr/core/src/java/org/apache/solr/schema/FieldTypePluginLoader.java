@@ -404,11 +404,11 @@ public final class FieldTypePluginLoader
             SolrConfig.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
     if (!version.onOrAfter(Version.LUCENE_8_0_0)) {
-      log.warn("{} is using deprecated {}{}{}"
+      log.warn("{} is using deprecated {}"
+          + " emulation. You should at some point declare and reindex to at least 8.0, because "
+          + "7.x emulation is deprecated and will be removed in 9.0"
           , pluginClassName
-          , version
-          , " emulation. You should at some point declare and reindex to at least 8.0, because "
-          , "7.x emulation is deprecated and will be removed in 9.0");
+          , version);
     }
     return version;
   }
