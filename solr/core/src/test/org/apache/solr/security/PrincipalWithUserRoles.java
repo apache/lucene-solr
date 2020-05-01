@@ -20,8 +20,6 @@ import java.security.Principal;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.http.util.Args;
-
 /**
  * Type of Principal object that can contain also a list of roles the user has.
  * One use case can be to keep track of user-role mappings in an Identity Server
