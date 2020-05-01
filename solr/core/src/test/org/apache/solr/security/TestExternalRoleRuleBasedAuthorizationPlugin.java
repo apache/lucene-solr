@@ -55,7 +55,7 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBa
       @Override
       public Principal getUserPrincipal() {
         String userPrincipal = (String) values.get("userPrincipal");
-        return userPrincipal == null ? null : 
+        return userPrincipal == null ? null :
             principals.get(userPrincipal) != null ? principals.get(userPrincipal) :
                 new BasicUserPrincipal(userPrincipal);
       }
