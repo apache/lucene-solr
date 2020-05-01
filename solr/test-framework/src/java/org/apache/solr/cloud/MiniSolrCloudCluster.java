@@ -67,7 +67,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TimeOut;
@@ -113,6 +113,8 @@ public class MiniSolrCloudCluster {
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
       "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +
       "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n" +
+      "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
+      "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
       "  </solrcloud>\n" +
       "  <metrics>\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
@@ -300,7 +302,7 @@ public class MiniSolrCloudCluster {
       startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
     }
 
-    final ExecutorService executorLauncher = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-launcher"));
+    final ExecutorService executorLauncher = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-launcher"));
     Collection<Future<JettySolrRunner>> futures = executorLauncher.invokeAll(startups);
     ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
     Exception startupError = checkForExceptions("Error starting up MiniSolrCloudCluster", futures);
@@ -353,7 +355,9 @@ public class MiniSolrCloudCluster {
 
   public void waitForNode(JettySolrRunner jetty, int timeoutSeconds)
       throws IOException, InterruptedException, TimeoutException {
-    log.info("waitForNode: {}", jetty.getNodeName());
+     if (log.isInfoEnabled()) {
+       log.info("waitForNode: {}", jetty.getNodeName());
+     }
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
@@ -608,7 +612,7 @@ public class MiniSolrCloudCluster {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
       jettys.clear();
-      final ExecutorService executorCloser = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-closer"));
+      final ExecutorService executorCloser = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
       Collection<Future<JettySolrRunner>> futures = executorCloser.invokeAll(shutdowns);
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
       Exception shutdownError = checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
@@ -691,7 +695,9 @@ public class MiniSolrCloudCluster {
       zkClient.getSolrZooKeeper().closeCnxn();
       long sessionId = zkClient.getSolrZooKeeper().getSessionId();
       zkServer.expire(sessionId);
-      log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+      }
     }
   }
 
@@ -792,7 +798,9 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    }
     TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {
       if (runner.isStopped()) {

@@ -532,7 +532,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER);
     }
   }
   */

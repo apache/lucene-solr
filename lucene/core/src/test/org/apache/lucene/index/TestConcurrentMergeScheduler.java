@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,6 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -113,7 +115,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           failure.clearDoFail();
           assertTrue(writer.isClosed());
           // Abort should have closed the deleter:
-          assertTrue(writer.deleter.isClosed());
+          assertTrue(writer.isDeleterClosed());
           break outer;
         }
       }
@@ -275,7 +277,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
 
       @Override
-      protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+      protected void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
         try {
           // Stall all incoming merges until we see
           // maxMergeCount:
@@ -294,13 +296,13 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             // Then sleep a bit to give a chance for the bug
             // (too many pending merges) to appear:
             Thread.sleep(20);
-            super.doMerge(writer, merge);
+            super.doMerge(mergeSource, merge);
           } finally {
             runningMergeCount.decrementAndGet();
           }
         } catch (Throwable t) {
           failed.set(true);
-          writer.mergeFinish(merge);
+          mergeSource.onMergeFinished(merge);
           throw new RuntimeException(t);
         }
       }
@@ -340,10 +342,10 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     @Override
-    public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+    public void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
       totMergedBytes += merge.totalBytesSize();
       atLeastOneMerge.countDown();
-      super.doMerge(writer, merge);
+      super.doMerge(mergeSource, merge);
     }
   }
 
@@ -352,7 +354,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
     CountDownLatch atLeastOneMerge = new CountDownLatch(1);
     iwc.setMergeScheduler(new TrackingCMS(atLeastOneMerge));
@@ -404,7 +406,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         final AtomicInteger runningMergeCount = new AtomicInteger();
 
         @Override
-        public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+        public void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
           int count = runningMergeCount.incrementAndGet();
           // evil?
           synchronized (this) {
@@ -413,7 +415,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             }
           }
           try {
-            super.doMerge(writer, merge);
+            super.doMerge(mergeSource, merge);
           } finally {
             runningMergeCount.decrementAndGet();
           }
@@ -461,19 +463,21 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testMaybeStallCalled() throws Exception {
     final AtomicBoolean wasCalled = new AtomicBoolean();
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(new LogByteSizeMergePolicy());
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
-        protected boolean maybeStall(IndexWriter writer) {
+        protected boolean maybeStall(MergeSource mergeSource) {
           wasCalled.set(true);
           return true;
         }
       });
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
+    w.flush();
+    w.addDocument(new Document());
     w.forceMerge(1);
     assertTrue(wasCalled.get());
-
     w.close();
     dir.close();
   }
@@ -490,14 +494,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     final CountDownLatch mergeFinish = new CountDownLatch(1);
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
         @Override
-        protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+        protected void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
           mergeStart.countDown();
           try {
             mergeFinish.await();
           } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
           }
-          super.doMerge(writer, merge);
+          super.doMerge(mergeSource, merge);
         }
       };
     cms.setMaxMergesAndThreads(1, 1);
@@ -627,7 +631,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int i=0;i<1000;i++) {
+    int numDocs = TEST_NIGHTLY ? 1000 : 100;
+    for(int i=0;i<numDocs;i++) {
       Document doc = new Document();
       doc.add(newStringField("field", ""+i, Field.Store.YES));
       w.addDocument(doc);
@@ -655,5 +660,89 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     dir.close();
 
     assertFalse(failed.get());
+  }
+
+  /*
+   * This test tries to produce 2 merges running concurrently with 2 segments per merge. While these
+   * merges run we kick off a forceMerge that puts a pending merge in the queue but waits for things to happen.
+   * While we do this we reduce maxMergeCount to 1. If concurrency in CMS is not right the forceMerge will wait forever
+   * since none of the currently running merges picks up the pending merge. This test fails every time.
+   */
+  public void testChangeMaxMergeCountyWhileForceMerge() throws IOException, InterruptedException {
+    int numIters = TEST_NIGHTLY ? 100 : 10;
+    for (int iters = 0; iters < numIters; iters++) {
+      LogDocMergePolicy mp = new LogDocMergePolicy();
+      mp.setMergeFactor(2);
+      CountDownLatch forceMergeWaits = new CountDownLatch(1);
+      CountDownLatch mergeThreadsStartAfterWait = new CountDownLatch(1);
+      CountDownLatch mergeThreadsArrived = new CountDownLatch(2);
+      InfoStream stream = new InfoStream() {
+        @Override
+        public void message(String component, String message) {
+          if ("TP".equals(component) && "mergeMiddleStart".equals(message)) {
+            mergeThreadsArrived.countDown();
+            try {
+              mergeThreadsStartAfterWait.await();
+            } catch (InterruptedException e) {
+              throw new AssertionError(e);
+            }
+          } else if ("TP".equals(component) && "forceMergeBeforeWait".equals(message)) {
+            forceMergeWaits.countDown();
+          }
+        }
+
+        @Override
+        public boolean isEnabled(String component) {
+          return "TP".equals(component);
+        }
+
+        @Override
+        public void close() {
+        }
+      };
+      try (Directory dir = newDirectory();
+           IndexWriter writer = new IndexWriter(dir,
+               new IndexWriterConfig().setMergeScheduler(new ConcurrentMergeScheduler())
+                   .setMergePolicy(mp).setInfoStream(stream)) {
+             @Override
+             protected boolean isEnableTestPoints() {
+               return true;
+             }
+           }) {
+        Thread t = new Thread(() -> {
+          try {
+            writer.forceMerge(1);
+          } catch (IOException e) {
+            throw new AssertionError(e);
+          }
+        });
+        ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
+        cms.setMaxMergesAndThreads(2, 2);
+        try {
+          for (int i = 0; i < 4; i++) {
+            Document document = new Document();
+            document.add(new TextField("foo", "the quick brown fox jumps over the lazy dog", Field.Store.YES));
+            document.add(new TextField("bar", RandomStrings.randomRealisticUnicodeOfLength(random(), 20), Field.Store.YES));
+            writer.addDocument(document);
+            writer.flush();
+          }
+          assertEquals(writer.cloneSegmentInfos().toString(), 4, writer.getSegmentCount());
+          mergeThreadsArrived.await();
+          t.start();
+          forceMergeWaits.await();
+          cms.setMaxMergesAndThreads(1, 1);
+        } finally {
+          mergeThreadsStartAfterWait.countDown();
+        }
+
+        while (t.isAlive()) {
+          t.join(10);
+          if (cms.mergeThreadCount() == 0 && writer.hasPendingMerges()) {
+            fail("writer has pending merges but no CMS threads are running");
+          }
+        }
+        assertEquals(1, writer.getSegmentCount());
+      }
+    }
   }
 }

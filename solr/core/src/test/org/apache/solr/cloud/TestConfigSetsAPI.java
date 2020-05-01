@@ -28,11 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -59,9 +54,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
@@ -83,6 +78,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.security.BasicAuthIntegrationTest;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -353,7 +349,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
       1, 1, solrCluster.getSolrClient());
       });
@@ -379,7 +375,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String untrustedSuffix = "-untrusted";
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
-    Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
           1, 1, solrCluster.getSolrClient());
     });
@@ -504,10 +500,14 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
     File directory = TestDynamicLoading.getFile(directoryPath);
-    log.info("Directory: "+directory.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("Directory: {}", directory.getAbsolutePath());
+    }
     try {
       zip (directory, zipFile);
-      log.info("Zipfile: "+zipFile.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+      }
       return zipFile.getAbsolutePath();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -735,50 +735,34 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
     solrClient.close();
   }
-  
+
+  /**
+   * A simple sanity check that the test-framework hueristic logic for setting 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET} is working as it should 
+   * in the current test env, and finding the real directory which matches what {@link ZkController}
+   * finds and uses to bootstrap ZK in cloud based tests.
+   *
+   * <p>
+   * This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property 
+   * has not been externally set in the environment where this test is being run -- which should 
+   * <b>never</b> be the case, since it would prevent the test-framework from using 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET}
+   *
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see #setDefaultConfigDirSysPropIfNotSet
+   * @see ZkController#getDefaultConfigDirPath
+   */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
-    File testDefaultConf = configset("_default").toFile();
-    log.info("Test _default path: " + testDefaultConf);
+    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
+    assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
     
-    File userDefaultConf = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    log.info("User _default path: " + userDefaultConf);
-    
-    compareDirectories(userDefaultConf, testDefaultConf);
+    final String zkBootStrap = ZkController.getDefaultConfigDirPath();
+    assertEquals("extPath _default configset dir vs zk bootstrap path",
+                 ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
   }
 
-  private static void compareDirectories(File userDefault, File testDefault) throws IOException {
-    assertTrue("Test _default doesn't exist: " + testDefault.getAbsolutePath(), testDefault.exists());
-    assertTrue("Test _default not a directory: " + testDefault.getAbsolutePath(),testDefault.isDirectory());
-    assertTrue("User _default doesn't exist: " + userDefault.getAbsolutePath(), userDefault.exists());
-    assertTrue("User _default not a directory: " + userDefault.getAbsolutePath(),userDefault.isDirectory());
-
-    Files.walkFileTree(userDefault.toPath(), new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.preVisitDirectory(dir, attrs);
-        Path relativePath = userDefault.toPath().relativize(dir);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String[] listOne = dir.toFile().list();
-        String[] listTwo = testDefaultFile.list();
-        Arrays.sort(listOne);
-        Arrays.sort(listTwo);
-        assertEquals("Mismatch in files", Arrays.toString(listOne), Arrays.toString(listTwo));
-        return result;
-      }
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.visitFile(file, attrs);
-        Path relativePath = userDefault.toPath().relativize(file);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String userDefaultContents = FileUtils.readFileToString(file.toFile(), "UTF-8");
-        String testDefaultContents = FileUtils.readFileToString(testDefaultFile, "UTF-8");
-        assertEquals(testDefaultFile+" contents doesn't match expected ("+file+")", userDefaultContents, testDefaultContents);                    
-        return result;
-      }
-    });
-  }
-  
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), StandardCharsets.UTF_8));
   }

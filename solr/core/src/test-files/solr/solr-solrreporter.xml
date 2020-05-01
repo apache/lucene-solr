@@ -32,9 +32,6 @@
     <int name="leaderVoteWait">${leaderVoteWait:10000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
-    <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
-    <int name="autoReplicaFailoverWorkLoopDelay">${autoReplicaFailoverWorkLoopDelay:10000}</int>
-    <int name="autoReplicaFailoverBadNodeExpiration">${autoReplicaFailoverBadNodeExpiration:60000}</int>
   </solrcloud>
 
   <metrics>
@@ -44,7 +41,7 @@
     </reporter>
     <reporter name="test" group="shard" class="org.apache.solr.metrics.reporters.solr.SolrShardReporter">
       <int name="period">5</int>
-      <str name="filter">UPDATE\./update/.*requests</str>
+      <str name="filter">UPDATE\./update.*requests</str>
       <str name="filter">QUERY\./select.*requests</str>
     </reporter>
     <reporter name="test" group="cluster" class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter">
@@ -63,7 +60,7 @@
         <str name="group">cluster</str>
         <str name="label">leader.$1</str>
         <str name="registry">solr\.collection\.(.*)\.leader</str>
-        <str name="filter">UPDATE\./update/.*</str>
+        <str name="filter">UPDATE\./update.*</str>
       </lst>
     </reporter>
   </metrics>

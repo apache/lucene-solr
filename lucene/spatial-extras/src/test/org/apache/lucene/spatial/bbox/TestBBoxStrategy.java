@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.Query;
@@ -80,7 +79,6 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 15)
   public void testOperations() throws IOException {
     //setup
     if (random().nextInt(4) > 0) {//75% of the time choose geo (more interesting to test)

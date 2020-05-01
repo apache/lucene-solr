@@ -341,7 +341,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void apply(String name) {
-      if (doFail && name.equals("DocumentsWriterPerThread addDocument start"))
+      if (doFail && name.equals("DocumentsWriterPerThread addDocuments start"))
         throw new RuntimeException("intentionally failing");
     }
   }
@@ -597,7 +597,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // only one flush should fail:
     assertFalse(hitError);
     hitError = true;
-    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isDeleterClosed());
     assertTrue(writer.isClosed());
     assertFalse(DirectoryReader.indexExists(dir));
 
@@ -749,7 +749,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     final int NUM_THREAD = 3;
-    final int NUM_ITER = 100;
+    final int NUM_ITER = atLeast(10);
 
     for(int i=0;i<2;i++) {
       Directory dir = newDirectory();
@@ -1292,7 +1292,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
             // This is an aborting exception, so writer is closed:
-            assertTrue(w.deleter.isClosed());
+            assertTrue(w.isDeleterClosed());
             assertTrue(w.isClosed());
             dir.close();
             continue iters;
@@ -1950,6 +1950,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
+  // TODO: can be super slow in pathological cases (merge config?)
+  @Nightly
   public void testMergeExceptionIsTragic() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
     final AtomicBoolean didFail = new AtomicBoolean();

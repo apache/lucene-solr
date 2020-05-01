@@ -1,6 +1,5 @@
 = Overview of SolrCloud Autoscaling
-:page-toclevels: 1
-:page-tocclass: right
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -64,6 +63,27 @@ A cluster policy is a set of rules that a node, shard, or collection must satisf
 There are many metrics on which the rule can be based, e.g., system load average, heap usage, free disk space, etc. The full list of supported metrics can be found in the section describing <<solrcloud-autoscaling-policy-preferences.adoc#policy-rule-attributes,Autoscaling Policy Rule Attributes>>.
 
 When a node, shard, or collection does not satisfy a policy rule, we call it a *violation*.   By default, cluster management operations will fail if there is even one violation.  You can allow operations to succeed in the face of a violation by marking the corresponding rule with <<solrcloud-autoscaling-policy-preferences.adoc#rule-strictness,`"strict":false`>>.  When you do this, Solr ensures that cluster management operations minimize the number of violations.
+
+The default cluster policy, if none is specified, is the following:
+
+[source,json]
+----
+[
+  { "replica" : "<2", "shard" : "#EACH", "node" : "#ANY", "strict" : false},
+  { "replica" : "#EQUAL", "node" : "#ANY", "strict" : false},
+  { "cores" : "#EQUAL", "node" : "#ANY", "strict" : false}
+]
+----
+
+These rules mean that:
+
+* Each shard should not have more than one replica on the same node, if possible (strict: false).
+* Each collection's replicas should be equally distributed among nodes.
+* All cores should be equally distributed among nodes.
+
+
+NOTE: You can remove this default policy by specifying an empty rule-set in the autoscaling
+admin request, like this: `{set-cluster-policy : []}`.
 
 Solr also supports <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy,collection-specific policies>>, which operate in tandem with the cluster policy.
 

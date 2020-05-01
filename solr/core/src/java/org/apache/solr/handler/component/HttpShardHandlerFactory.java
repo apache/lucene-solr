@@ -72,7 +72,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -90,16 +90,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-      0,
-      Integer.MAX_VALUE,
-      5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-      new SynchronousQueue<>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("httpShardExecutor"),
-      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-      // see SOLR-11880 for more details
-      false
-  );
+  //
+  // This executor is initialized in the init method
+  private ExecutorService commExecutor;
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
@@ -306,7 +299,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         this.maximumPoolSize,
         this.keepAliveTime, TimeUnit.SECONDS,
         blockingQueue,
-        new DefaultSolrThreadFactory("httpShardExecutor")
+        new SolrNamedThreadFactory("httpShardExecutor"),
+        // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+        // see SOLR-11880 for more details
+        false
     );
 
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
@@ -431,8 +427,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   /**
    * Creates a new completion service for use by a single set of distributed requests.
    */
-  public CompletionService newCompletionService() {
-    return new ExecutorCompletionService<ShardResponse>(commExecutor);
+  public CompletionService<ShardResponse> newCompletionService() {
+    return new ExecutorCompletionService<>(commExecutor);
   }
 
   /**
@@ -553,7 +549,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
         }
         if (!localWhitelistHosts.contains(url.getHost() + ":" + url.getPort())) {
-          log.warn("The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist ("+localWhitelistHosts+"), shardUrl:" + shardUrl);
+          log.warn("The '{}' parameter value '{}' contained value(s) not on the shards whitelist ({}), shardUrl: '{}'"
+              , ShardParams.SHARDS, shardsParamValue, localWhitelistHosts, shardUrl);
           throw new SolrException(ErrorCode.FORBIDDEN,
               "The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist. shardUrl:" + shardUrl + "." +
                   HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);

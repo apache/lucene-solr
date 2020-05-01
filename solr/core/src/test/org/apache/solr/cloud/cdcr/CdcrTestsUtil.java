@@ -105,7 +105,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
       }
       Thread.sleep(200);
     }
-    log.error("maxVersionEncountered not found for client : " + client + "in 20 attempts");
+    log.error("maxVersionEncountered not found for client : {} in 20 attempts", client);
     return null;
   }
 
@@ -128,7 +128,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
       }
       Thread.sleep(1000);
     }
-    return response != null ? response.getResults().getNumFound() : null;
+    return response != null ? response.getResults().getNumFound() : 0;
   }
 
   protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
@@ -236,7 +236,9 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     if (!file.isDirectory()) {
       assertTrue("Path to tlog " + dir + " does not exists or it's not a directory.", false);
     }
-    log.debug("Update log dir {} contains: {}", dir, file.listFiles());
+    if (log.isDebugEnabled()) {
+      log.debug("Update log dir {} contains: {}", dir, file.listFiles());
+    }
     return file.listFiles().length;
   }
 

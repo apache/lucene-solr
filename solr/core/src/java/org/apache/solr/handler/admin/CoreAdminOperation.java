@@ -321,7 +321,7 @@ enum CoreAdminOperation implements CoreAdminOp {
         try (SolrCore core = cores.getCore(cname)) {
           if (core != null) {
             info.add(NAME, core.getName());
-            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("instanceDir", core.getInstancePath().toString());
             info.add("dataDir", normalizePath(core.getDataDir()));
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());

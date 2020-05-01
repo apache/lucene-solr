@@ -414,7 +414,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(3);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -433,14 +433,14 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 20, false, false);
       a.close();
     }
   }
   
   /** blast some enormous random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -459,7 +459,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 20*RANDOM_MULTIPLIER, 8192, false, false);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 8192, false, false);
       a.close();
     }
   }

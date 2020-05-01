@@ -215,7 +215,7 @@ public class QueryComponent extends SearchComponent
           rb.setFilters( filters );
         }
       }
-    } catch (SyntaxError e) {
+    } catch (SyntaxError | FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -323,7 +323,9 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
-    log.debug("process: {}", rb.req.getParams());
+    if (log.isDebugEnabled()) {
+      log.debug("process: {}", rb.req.getParams());
+    }
   
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -1484,12 +1486,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
-
-    try {
-      searcher.search(result, cmd);
-    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    searcher.search(result, cmd);
     rb.setResult(result);
 
     ResultContext ctx = new BasicResultContext(rb);

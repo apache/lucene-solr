@@ -16,10 +16,17 @@
  */
 package org.apache.lucene.geo;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -384,6 +391,13 @@ public class GeoTestUtil {
     return new Polygon(result[0], result[1]);
   }
 
+  public static Circle nextCircle() {
+    double lat = nextLatitude();
+    double lon = nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    return new Circle(lat, lon, radiusMeters);
+  }
+
   /** returns next pseudorandom polygon */
   public static Polygon nextPolygon() {
     if (random().nextBoolean()) {
@@ -710,5 +724,27 @@ public class GeoTestUtil {
       }
     }
     return c;
+  }
+
+  /** reads a shape from file */
+  public static String readShape(String name) throws IOException {
+    return Loader.LOADER.readShape(name);
+  }
+
+  private static class Loader {
+
+    static Loader LOADER = new Loader();
+
+    String readShape(String name) throws IOException {
+      InputStream is = getClass().getResourceAsStream(name);
+      if (is == null) {
+        throw new FileNotFoundException("classpath resource not found: " + name);
+      }
+      if (name.endsWith(".gz")) {
+        is = new GZIPInputStream(is);
+      }
+      BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      return reader.readLine();
+    }
   }
 }

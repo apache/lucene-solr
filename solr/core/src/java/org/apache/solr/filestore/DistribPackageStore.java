@@ -73,9 +73,8 @@ public class DistribPackageStore implements PackageStore {
 
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    solrhome = this.coreContainer.getResourceLoader().getInstancePath();
-    ensurePackageStoreDir(coreContainer.getResourceLoader().getInstancePath());
-
+    this.solrhome = Paths.get(this.coreContainer.getSolrHome());
+    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
 
   @Override
@@ -126,7 +125,9 @@ public class DistribPackageStore implements PackageStore {
         this.metaData = meta;
         this.fileData = data;
         _persistToFile(solrhome, path, data, meta);
-        log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
+        if (log.isInfoEnabled()) {
+          log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
+        }
 
       }
     }
@@ -165,7 +166,7 @@ public class DistribPackageStore implements PackageStore {
       try {
         IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
       } catch (IOException e) {
-        log.error("Unable to delete files: " + path);
+        log.error("Unable to delete files: {}", path);
       }
 
     }
@@ -367,8 +368,7 @@ public class DistribPackageStore implements PackageStore {
           //fire and forget
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
-          log.info("Node: " + node +
-              " failed to respond for file fetch notification", e);
+          log.info("Node: {} failed to respond for file fetch notification",  node, e);
           //ignore the exception
           // some nodes may be down or not responding
         }
@@ -488,7 +488,7 @@ public class DistribPackageStore implements PackageStore {
         }
       }
     } catch (Exception e) {
-      log.error("Could not refresh files in " +path, e);
+      log.error("Could not refresh files in {}", path, e);
     }
   }
 
@@ -522,7 +522,7 @@ public class DistribPackageStore implements PackageStore {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
         }
       } catch (Exception e) {
-        log.warn("Unable to create [" + packageStoreDir + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
       }
     }
   }

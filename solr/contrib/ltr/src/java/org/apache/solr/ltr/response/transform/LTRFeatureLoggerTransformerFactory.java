@@ -53,7 +53,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * features declared in the feature store of the current reranking model,
  * or a specified feature store.  Ex. <code>fl=id,[features store=myStore efi.user_text="ibm"]</code>
  * 
- * <h3>Parameters</h3>
+ * <h2>Parameters</h2>
  * <code>store</code> - The feature store to extract features from. If not provided it
  * will default to the features used by your reranking model.<br>
  * <code>efi.*</code> - External feature information variables required by the features

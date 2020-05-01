@@ -80,7 +80,7 @@ public class CollectionMutator {
       collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
-      log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
+      log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
       return ZkStateWriter.NO_OP;
     }
   }
@@ -90,7 +90,7 @@ public class CollectionMutator {
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
-    log.info("Removing collection: " + collection + " shard: " + sliceId + " from clusterstate");
+    log.info("Removing collection: {} shard: {}  from clusterstate", collection, sliceId);
 
     DocCollection coll = clusterState.getCollection(collection);
 
@@ -167,7 +167,7 @@ public class CollectionMutator {
   static boolean checkKeyExistence(ZkNodeProps message, String key) {
     String value = message.getStr(key);
     if (value == null || value.trim().length() == 0) {
-      log.error("Skipping invalid Overseer message because it has no " + key + " specified: " + message);
+      log.error("Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
       return false;
     }
     return true;

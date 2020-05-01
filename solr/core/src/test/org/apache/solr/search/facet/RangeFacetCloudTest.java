@@ -741,7 +741,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         toMerge.add(TERM_MODEL[i]);
       }
 
-      assertEqualsHACK("count", expectedCount, bucket.get("count"));
+      assertEquals("count", expectedCount, bucket.get("count"));
       
       // merge the maps of our range values by summing the (int) values on key collisions
       final Map<String,Long> expectedTermCounts = toMerge.stream()
@@ -766,7 +766,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           assertNotNull("subfacet bucket with null term: " + subBucket, term);
           final Long expectedTermCount = expectedTermCounts.get(term.toString());
           assertNotNull("unexpected subfacet bucket: " + subBucket, expectedTermCount);
-          assertEqualsHACK("subfacet count for term: " + term, expectedTermCount, subBucket.get("count"));
+          assertEquals("subfacet count for term: " + term, expectedTermCount, subBucket.get("count"));
         }
       }
         
@@ -908,16 +908,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       val = val.replaceAll("\\s","");
     }
     return ", other:" + val;
-  }
-  
-  /**
-   * HACK to work around SOLR-11775.
-   * Asserts that the 'actual' argument is a (non-null) Number, then compares it's 'longValue' to the 'expected' argument
-   */
-  private static void assertEqualsHACK(String msg, long expected, Object actual) {
-    assertNotNull(msg, actual);
-    assertTrue(msg + " ... NOT A NUMBER: " + actual.getClass(), Number.class.isInstance(actual));
-    assertEquals(msg, expected, ((Number)actual).longValue());
   }
   
 }

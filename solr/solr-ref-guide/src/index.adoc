@@ -20,7 +20,7 @@
     errata, \
     how-to-contribute
 :page-notitle:
-:page-toc: false
+:page-show-toc: false
 :page-layout: home
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -39,8 +39,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// This jumbotron is in a sidebar-style block instead of an open block because
+// an open block uses a different template that we rely on for other uses.
+// See also src/_templates/open.html.slim for the open block template.
 [.jumbotron]
---
+****
 [.lead-homepage]
 Welcome to Apache Solr(TM), the open source solution for search and analytics.
 
@@ -48,19 +51,17 @@ Solr is the fast open source search platform built on Apache Lucene(TM) that pro
 
 This Reference Guide is the official Solr documentation, written and published by Lucene/Solr committers.
 
-ifdef::backend-html5[]
 ++++
-<p><a class="btn btn-home btn-lg noCrossRef" href="https://lucene.apache.org/solr/downloads.html" role="button">Download Solr</a></p>
+<p><a class="btn btn-home btn-lg" href="https://lucene.apache.org/solr/downloads.html" role="button">Download Solr</a></p>
 ++++
-endif::[]
---
+****
 
 The Guide includes the following sections:
 
-[.row.match-my-cols]
+[.container]
 --
 .Getting Started with Solr
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 
 The *<<getting-started.adoc#getting-started,Getting Started>>* section guides you through the installation and setup of Solr. A detailed tutorial for first-time users shows many of Solr's features.
@@ -69,7 +70,7 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 ****
 
 .Deploying Solr
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 
 *<<deployment-and-operations.adoc#deployment-and-operations,Deployment and Operations>>*: Once you have Solr configured, you want to deploy it to production and keep it up to date. This section includes information about how to take Solr to production, run it in HDFS or AWS, and information about upgrades and managing Solr from the command line.
@@ -78,17 +79,15 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 ****
 --
 
-[.row]
 --
 
 '''
 
 --
 
-[.row.match-my-cols]
 --
 .Indexing Documents
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 *<<indexing-and-basic-data-operations.adoc#indexing-and-basic-data-operations,Indexing and Basic Data Operations>>*: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
 
@@ -98,7 +97,7 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 ****
 
 .Searching Documents
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 
 *<<searching.adoc#searching,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
@@ -109,17 +108,15 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 ****
 --
 
-[.row]
 --
 
 '''
 
 --
 
-[.row.match-my-cols]
 --
 .Scaling Solr
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 *<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes SolrCloud, which provides comprehensive distributed capabilities.
 
@@ -127,7 +124,7 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 ****
 
 .Advanced Configuration
-[sidebar.col-sm-6.col-md-4]
+[sidebar.col]
 ****
 *<<securing-solr.adoc#securing-solr,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
 

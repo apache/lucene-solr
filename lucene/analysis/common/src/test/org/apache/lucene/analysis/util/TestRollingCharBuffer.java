@@ -26,7 +26,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestRollingCharBuffer extends LuceneTestCase {
 
   public void test() throws Exception {
-    final int ITERS = atLeast(1000);
+    final int ITERS = atLeast(100);
     
     RollingCharBuffer buffer = new RollingCharBuffer();
 

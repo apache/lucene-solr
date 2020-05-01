@@ -81,7 +81,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -105,7 +105,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
-      .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
+      .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
   private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";
@@ -343,12 +343,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * @throws InterruptedException if the wait is interrupted
    */
   public void connect(long duration, TimeUnit timeUnit) throws TimeoutException, InterruptedException {
-    log.info("Waiting for {} {} for cluster at {} to be ready", duration, timeUnit, getClusterStateProvider());
+    if (log.isInfoEnabled()) {
+      log.info("Waiting for {} {} for cluster at {} to be ready", duration, timeUnit, getClusterStateProvider());
+    }
     long timeout = System.nanoTime() + timeUnit.toNanos(duration);
     while (System.nanoTime() < timeout) {
       try {
         connect();
-        log.info("Cluster at {} ready", getClusterStateProvider());
+        if (log.isInfoEnabled()) {
+          log.info("Cluster at {} ready", getClusterStateProvider());
+        }
         return;
       }
       catch (RuntimeException e) {
@@ -943,8 +947,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
               rootCause instanceof SocketException ||
               wasCommError(rootCause));
 
-      log.error("Request to collection {} failed due to (" + errorCode + ") {}, retry={} commError={} errorCode={} ",
-          inputCollections, rootCause.toString(), retryCount, wasCommError, errorCode);
+      log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
+          inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
 
       if (wasCommError
           || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
@@ -1014,7 +1018,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to collection(s) "+inputCollections+" after stale state error from server.");
+        log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
         resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {

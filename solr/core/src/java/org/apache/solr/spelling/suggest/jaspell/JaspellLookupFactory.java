@@ -36,7 +36,7 @@ public class JaspellLookupFactory extends LookupFactory {
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
-    log.info("init: " + params);
+    log.info("init: {}", params);
     return new JaspellLookup();
   }
 

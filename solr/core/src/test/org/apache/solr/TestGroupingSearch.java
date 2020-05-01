@@ -918,12 +918,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/grouped/" + groupField, realResponse, modelResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(modelResponse)
-           + "\n\tsorted_model="+ sortedGroups
-          );
+          log.error("GROUPING MISMATCH ({}}): {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tsorted_model={}"
+              , queryIter, err, req, strResponse, Utils.toJSONString(modelResponse), sortedGroups);
 
           // re-execute the request... good for putting a breakpoint here for debugging
           String rsp = h.query(req);
@@ -934,12 +930,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         // assert post / pre grouping facets
         err = JSONTestUtil.matchObj("/facet_counts/facet_fields/"+FOO_STRING_FIELD, realResponse, expectedFacetResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(expectedFacetResponse)
-          );
-
+          log.error("GROUPING MISMATCH ({}): {}\n\trequest={}\n\tresult={}\n\texpected={}"
+              , queryIter, err, req, strResponse, Utils.toJSONString(expectedFacetResponse));
           // re-execute the request... good for putting a breakpoint here for debugging
           h.query(req);
           fail(err);

@@ -72,7 +72,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
     });
-    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
     w.close();
     dir.close();
   }
@@ -90,7 +90,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc2);
     });
-    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w.close();
     dir.close();
@@ -110,7 +110,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc2);
     });
-    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w.close();
     dir.close();
@@ -132,7 +132,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w2.addDocument(doc2);
     });
-    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w2.close();
     dir.close();
@@ -155,7 +155,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w2.addIndexes(new Directory[] {dir});
     });
-    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(w2, dir, dir2);
   }
@@ -178,7 +178,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
     });
-    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(r, w2, dir, dir2);
   }
@@ -202,7 +202,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       TestUtil.addIndexesSlowly(w2, r);
     });
-    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(r, w2, dir, dir2);
   }
@@ -377,7 +377,7 @@ public class TestPointValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    byte[][] values = new byte[PointValues.MAX_DIMENSIONS+1][];
+    byte[][] values = new byte[PointValues.MAX_INDEX_DIMENSIONS +1][];
     for(int i=0;i<values.length;i++) {
       values[i] = new byte[4];
     }
@@ -492,7 +492,8 @@ public class TestPointValues extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new IntPoint("int", 17));
-    for(int i=0;i<300000;i++) {
+    int numDocs = TEST_NIGHTLY ? 300000 : 3000;
+    for(int i=0;i<numDocs;i++) {
       w.addDocument(doc);
       if (random().nextInt(1000) == 17) {
         w.commit();

@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -314,28 +312,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return mergePolicy;
   }
 
-  /** Expert: Sets the {@link DocumentsWriterPerThreadPool} instance used by the
-   * IndexWriter to assign thread-states to incoming indexing threads.
-   * <p>
-   * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
-   * other {@link IndexWriter} instances once it has been initialized / associated with an
-   * {@link IndexWriter}.
-   * </p>
-   * <p>
-   * NOTE: This only takes effect when IndexWriter is first created.</p>*/
-  IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
-    if (threadPool == null) {
-      throw new IllegalArgumentException("threadPool must not be null");
-    }
-    this.indexerThreadPool = threadPool;
-    return this;
-  }
-
-  @Override
-  DocumentsWriterPerThreadPool getIndexerThreadPool() {
-    return indexerThreadPool;
-  }
-
   /** By default, IndexWriter does not pool the
    *  SegmentReaders it must open for deletions and
    *  merging, unless a near-real-time reader has been
@@ -543,16 +519,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setSoftDeletesField(String softDeletesField) {
     this.softDeletesField = softDeletesField;
-    return this;
-  }
-
-  /**
-   * Sets the reader attributes used for all readers pulled from the IndexWriter. Reader attributes allow configuration
-   * of low-level aspects like ram utilization on a per-reader basis.
-   * Note: This method make a shallow copy of the provided map.
-   */
-  public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
-    this.readerAttributes = Map.copyOf(Objects.requireNonNull(readerAttributes));
     return this;
   }
 }

@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 /**
  * MultiThreaded IndexWriter tests
  */
-@Slow
+@Slow @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below
@@ -136,12 +136,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   }
 
   // LUCENE-1130: make sure immediate disk full on creating
-  // an IndexWriter (hit during DW.ThreadState.init()), with
+  // an IndexWriter (hit during DWPT#updateDocuments()), with
   // multiple threads, is OK:
   public void testImmediateDiskFullWithThreads() throws Exception {
 
     int NUM_THREADS = 3;
-    final int numIterations = TEST_NIGHTLY ? 10 : 3;
+    final int numIterations = TEST_NIGHTLY ? 10 : 1;
     for (int iter=0;iter<numIterations;iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -180,7 +180,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         writer.commit();
       } catch (AlreadyClosedException ace) {
         // OK: abort closes the writer
-        assertTrue(writer.deleter.isClosed());
+        assertTrue(writer.isDeleterClosed());
       } finally {
         writer.close();
       }
@@ -317,7 +317,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         success = true;
       } catch (AlreadyClosedException ace) {
         // OK: abort closes the writer
-        assertTrue(writer.deleter.isClosed());
+        assertTrue(writer.isDeleterClosed());
       } catch (IOException ioe) {
         writer.rollback();
         failure.clearDoFail();
@@ -388,7 +388,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       writer.close();
     });
 
-    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isDeleterClosed());
     dir.close();
   }
 
@@ -648,7 +648,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     try (Directory dir = newDirectory();
          RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
              newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001), useSoftDeletes)) {
-      Thread[] threads = new Thread[3 + random().nextInt(3)];
+      int numThreads = TEST_NIGHTLY ? 3 + random().nextInt(3) : 3;
+      Thread[] threads = new Thread[numThreads];
       AtomicInteger done = new AtomicInteger(0);
       CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
       Document doc = new Document();

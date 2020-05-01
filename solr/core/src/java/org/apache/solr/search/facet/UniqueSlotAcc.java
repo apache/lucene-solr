@@ -56,12 +56,22 @@ abstract class UniqueSlotAcc extends SlotAcc {
     if (fcontext.isShard()) {
       return getShardValue(slot);
     }
-    if (counts != null) {  // will only be pre-populated if this was used for sorting.
-      return counts[slot];
-    }
+    return getNonShardValue(slot);
+  }
 
-    FixedBitSet bs = arr[slot];
-    return bs==null ? 0 : bs.cardinality();
+  /**
+   * Returns the current slot value as long
+   * This is used to get non-sharded value
+   */
+  public long getNonShardValue(int slot) {
+    long res;
+    if (counts != null) {  // will only be pre-populated if this was used for sorting.
+      res = counts[slot];
+    } else {
+      FixedBitSet bs = arr[slot];
+      res = bs == null ? 0 : bs.cardinality();
+    }
+    return res;
   }
 
   private Object getShardHLL(int slot) throws IOException {
@@ -108,8 +118,8 @@ abstract class UniqueSlotAcc extends SlotAcc {
 
       List lst = new ArrayList( Math.min(unique, maxExplicit) );
 
-      long maxOrd = ords.length();
-      if (ords != null && ords.length() > 0) {
+      int maxOrd = ords.length();
+      if (maxOrd > 0) {
         for (int ord=0; lst.size() < maxExplicit;) {
           ord = ords.nextSetBit(ord);
           if (ord == DocIdSetIterator.NO_MORE_DOCS) break;

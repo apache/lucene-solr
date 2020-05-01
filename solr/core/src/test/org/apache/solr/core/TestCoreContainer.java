@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
@@ -76,8 +75,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init(Path homeDirectory, String xml) throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(homeDirectory);
-    CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(loader, xml));
+    CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(homeDirectory, xml));
     ret.load();
     return ret;
   }
@@ -199,13 +197,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     MockCoresLocator cl = new MockCoresLocator();
 
-    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
-
+    Path solrHome = createTempDir();
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
-    Path corePath = resourceLoader.getInstancePath().resolve("badcore");
-    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc.getContainerProperties(), cc.isZooKeeperAware(),
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    Path corePath = solrHome.resolve("badcore");
+    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
         "configSet", "nosuchconfigset");
 
     cl.add(badcore);
@@ -264,6 +261,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       jar2.closeEntry();
     }
 
+    File customLib2 = new File(tmpRoot.toFile(), "customLib2");
+    customLib2.mkdirs();
+
+    try (JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+      jar3.putNextEntry(new JarEntry("jar3File"));
+      jar3.closeEntry();
+    }
+
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
       cc1.loader.openResource("defaultSharedLibFile").close();
@@ -271,6 +276,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc1.shutdown();
     }
 
+    // Explicitly declaring 'lib' makes no change compared to the default
     final CoreContainer cc2 = init(tmpRoot, "<solr><str name=\"sharedLib\">lib</str></solr>");
     try {
       cc2.loader.openResource("defaultSharedLibFile").close();
@@ -278,11 +284,23 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc2.shutdown();
     }
 
+    // custom lib folder, added to path in addition to default 'lib' folder
     final CoreContainer cc3 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib</str></solr>");
     try {
+      cc3.loader.openResource("defaultSharedLibFile").close();
       cc3.loader.openResource("customSharedLibFile").close();
     } finally {
       cc3.shutdown();
+    }
+
+    // Comma separated list of lib folders
+    final CoreContainer cc4 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib, customLib2</str></solr>");
+    try {
+      cc4.loader.openResource("defaultSharedLibFile").close();
+      cc4.loader.openResource("customSharedLibFile").close();
+      cc4.loader.openResource("jar3File").close();
+    } finally {
+      cc4.shutdown();
     }
   }
 
@@ -450,15 +468,15 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // init the  CoreContainer with the mix of ok/bad cores
     MockCoresLocator cl = new MockCoresLocator();
 
-    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
+    Path solrHome = createTempDir();
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
-    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "minimal"));
-    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "bad-mergepolicy"));
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    cl.add(new CoreDescriptor("col_ok", solrHome.resolve("col_ok"), cc,
+        "configSet", "minimal"));
+    cl.add(new CoreDescriptor("col_bad", solrHome.resolve("col_bad"), cc,
+        "configSet", "bad-mergepolicy"));
     cc.load();
 
     // check that we have the cores we expect

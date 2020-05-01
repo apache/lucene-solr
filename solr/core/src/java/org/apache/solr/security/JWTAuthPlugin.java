@@ -17,10 +17,7 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -259,7 +256,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
           ic.init();
           configs.add(ic);
-          log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          if (log.isDebugEnabled()) {
+            log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+          }
         });
       }
       return configs;
@@ -272,10 +271,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    * Main authentication method that looks for correct JWT token in the Authorization header
    */
   @Override
-  public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-    HttpServletRequest request = (HttpServletRequest) servletRequest;
-    HttpServletResponse response = (HttpServletResponse) servletResponse;
-    
+  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {
@@ -318,12 +314,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
         final Principal principal = authResponse.getPrincipal();
-        HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-          @Override
-          public Principal getUserPrincipal() {
-            return principal;
-          }
-        };
+        request = wrapWithPrincipal(request, principal);
         if (!(principal instanceof JWTPrincipal)) {
           numErrors.mark();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -331,13 +322,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
         numAuthenticated.inc();
-        filterChain.doFilter(wrapper, response);
+        filterChain.doFilter(request, response);
         return true;
 
       case PASS_THROUGH:
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
         numPassThrough.inc();
+        request.setAttribute(AuthenticationPlugin.class.getName(), getPromptHeaders(null, null));
         filterChain.doFilter(request, response);
         return true;
 
@@ -536,16 +528,28 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope}
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
+    getPromptHeaders(responseError, message).forEach(response::setHeader);
+    response.sendError(httpCode, message);
+    log.info("JWT Authentication attempt failed: {}", message);
+  }
+
+  /**
+   * Generate proper response prompt headers
+   * @param responseError standardized error code. Set to 'null' to generate WWW-Authenticate header with no error
+   * @param message custom message string to return in www-authenticate, or null if no error
+   * @return map of headers to add to response
+   */
+  private Map<String, String> getPromptHeaders(BearerWwwAuthErrorCode responseError, String message) {
+    Map<String,String> headers = new HashMap<>();
     List<String> wwwAuthParams = new ArrayList<>();
     wwwAuthParams.add("Bearer realm=\"" + realm + "\"");
     if (responseError != null) {
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
-    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
-    response.addHeader(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
-    response.sendError(httpCode, message);
-    log.info("JWT Authentication attempt failed: {}", message);
+    headers.put(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
+    headers.put(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
+    return headers;
   }
 
   protected String generateAuthDataHeader() {

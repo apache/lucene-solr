@@ -1,7 +1,6 @@
 = Solr Upgrade Notes
 :page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
-:page-toclevels: 3
-:page-tocclass: right
+:toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -31,9 +30,105 @@ that may effect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
+== Upgrading to 9.x Releases (NOT RELEASED)
+
+// DEVS: please put 9.0 Upgrade Notes in `major-changes-in-solr-9.adoc`!.
+
 == Upgrading to 8.x Releases
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
+
+=== Solr 8.5
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
+for an overview of the main new features of Solr 8.5.
+
+When upgrading to 8.5.x users should be aware of the following major changes from 8.4.
+
+__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g. "FST50").__
+
+*Considerations for a SolrCloud Upgrade*
+
+Solr 8.5 introduces a change in the format used for the elements in the Overseer queues and maps (see https://issues.apache.org/jira/browse/SOLR-14095[SOLR-14095] for technical discussion of the change). This queue is used internally by the Overseer to reliably handle
+operations, to communicate operation results between the Overseer and the coordinator node, and by the REQUESTSTATUS API for displaying information about async Collection operations.
+
+This change won’t require you to change any client-side code you should see no differences on the client side.
+However, it does require some care when upgrading an existing SolrCloud cluster depending on your upgrade strategy.
+
+If you are upgrading Solr with an atomic restart strategy:
+
+* If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+* If you do use Collection API operations:
+. Pause Collection API operations.
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+if you use async operations.
+. Upgrade and restart the nodes.
+. Resume all normal operations.
+
+If you are upgrading Solr with a rolling restart strategy:
+
+* If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+any issues.
+* If you do use Collection API operations, but you can pause their use during the restart the easiest
+way is to:
+. Pause Collection API operations.
+. Upgrade and restart all nodes.
+. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+if you use async operations.
+. Resume all normal operations.
+
+If you use Collection API operations and can’t pause them during the upgrade:
+
+. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+Overseer node is upgraded last.
+. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+system property.
+
+If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the system
+property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
+
+*Security Manager*
+
+Solr now has the ability to run with a Java security manager enabled. To enable this, set the property `SOLR_SECURITY_MANAGER_ENABLED=true` in `solr.in.sh` or `solr.in.cmd`. Note that if you are using HDFS to store indexes, you cannot enable the security manager.
+
+In Solr 9.0, this will be the default.
+
+// See SOLR-14147: See also the section <<securing-solr.adoc#enable-security-manager,Enable Security Manager>>.
+
+*Block/Allow Specific IPs*
+
+Solr has two new parameters to allow you to restrict access to Solr using IP addresses. Use `SOLR_IP_WHITELIST` to configure a whitelist, and `SOLR_IP_BLACKLIST` to configure a blacklist. These properties are defined in `solr.in.sh` or `solr.in.cmd`.
+
+See also the section <<securing-solr.adoc#enable-ip-access-control,Enable IP Access Control>>.
+
+*BlockJoin Facet Deprecation*
+
+The BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+Users are encouraged to migrate to `uniqueBlock()` in JSON Facet API.
+More information about this is available in the section <<json-faceting-domain-changes.adoc#block-join-domain-changes,Block Join Domain Changes>>.
+
+*Caching with the Boolean Query Parser*
+
+By default, the <<other-parsers.adoc#boolean-query-parser,Boolean Query Parser>> caches queries in Solr's filterCache. It's now possible to disable this with the local param `cache=false`.
+
+*Indexing Log Files*
+
+Solr now includes a command line tool, `bin/postlogs` which will index Solr's log files into a collection.
+This provides an easy way to use Solr or visualization tools (such as Zeppelin) to troubleshoot problems with the system.
+
+This tool is not yet officially documented in the Reference Guide, but draft documentation is available in a branch and can be accessed https://github.com/apache/lucene-solr/blob/visual-guide/solr/solr-ref-guide/src/logs.adoc[via GitHub].
+
+*Highlighting*
+
+Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`.
+See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+Regardless of the settings, the passages may be sized differently than before.
+
+*Shared Library System Parameter*
+
+Solr's `solr.xml` file has long had support for a `sharedLib` parameter, which allows you to define a common location for .jar files that may need to be in the path for all cores.
+
+This property can now be defined in `solr.in.sh` or `solr.in.cmd` as a system property (`-Dsolr.sharedLib=/path/to/lib`) added to `SOLR_OPTS` (see `solr.in.sh` or `solr.in.cmd` for details).
 
 === Solr 8.4
 
@@ -41,6 +136,11 @@ See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Relea
 for an overview of the main new features of Solr 8.4.
 
 When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
+
+*Reminder:*  If you set the `postingsFormat` or `docValuesFormat` in the schema in order to use a non-default option, you risk preventing yourself from upgrading your Lucene/Solr software at future versions.
+Multiple non-default postings formats changed in 8.4, thus rendering the index data from a previous index.
+This includes "FST50" which was recommended by the Solr TaggerHandler for performance reasons.
+There is now improved documentation to navigate this trade-off choice.
 
 *Package Management System*
 
@@ -226,7 +326,7 @@ This release adds support for tracing requests in Solr. Please review the sectio
 
 === Solr 8.1
 
-See the https://wiki.apache.org/solr/ReleaseNote810[8.1 Release Notes] for an overview of the main new features of Solr 8.1.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.1 Release Notes] for an overview of the main new features of Solr 8.1.
 
 When upgrading to 8.1.x, users should be aware of the following major changes from v8.0.
 

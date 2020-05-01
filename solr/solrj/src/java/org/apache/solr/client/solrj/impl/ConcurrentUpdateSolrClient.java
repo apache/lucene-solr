@@ -55,7 +55,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,6 +125,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     this.client = new HttpSolrClient.Builder(builder.baseSolrUrl)
         .withHttpClient(builder.httpClient)
+        .withConnectionTimeout(builder.connectionTimeoutMillis)
+        .withSocketTimeout(builder.socketTimeoutMillis)
         .build();
     this.client.setFollowRedirects(false);
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
@@ -142,7 +144,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.scheduler = builder.executorService;
       this.shutdownExecutor = false;
     } else {
-      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
+      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("concurrentUpdateScheduler"));
       this.shutdownExecutor = true;
     }
     
@@ -385,9 +387,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               }
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
-              log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
+              log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
-              solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
+              solrExc = new BaseHttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);
               }
@@ -635,8 +637,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           }
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
-            log.warn("No more runners, but queue still has " +
-                queueSize + " adding more runners to process remaining requests on queue");
+            log.warn("No more runners, but queue still has {} adding more runners to process remaining requests on queue"
+                , queueSize);
             addRunner();
           }
           
@@ -674,16 +676,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
       if (scheduler.isTerminated()) {
-        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
-            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}"
+            , scheduler, queue.size(), runners.size(), threadInterrupted);
         break;
       }
 
       synchronized (runners) {
         int queueSize = queue.size();
         if (queueSize > 0 && runners.isEmpty()) {
-          log.warn("No more runners, but queue still has " +
-              queueSize + " adding more runners to process remaining requests on queue");
+          log.warn("No more runners, but queue still has {} adding more runners to process remaining requests on queue"
+              , queueSize);
           addRunner();
         }
       }

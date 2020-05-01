@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * the final Lucene {@link Document} to be indexed.</p>
  * <p>Fields that are declared in the patterns list but are not present
  * in the current schema will be removed from the input document.</p>
- * <h3>Implementation details</h3>
+ * <h2>Implementation details</h2>
  * <p>This update processor uses {@link PreAnalyzedParser}
  * to parse the original field content (interpreted as a string value), and thus
  * obtain the stored part and the token stream part. Then it creates the "template"
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * field type does not support stored or indexed parts then such parts are silently
  * discarded. Finally the updated "template" {@link Field}-s are added to the resulting
  * {@link SolrInputField}, and the original value of that field is removed.</p>
- * <h3>Example configuration</h3>
+ * <h2>Example configuration</h2>
  * <p>In the example configuration below there are two update chains, one that
  * uses the "simple" parser ({@link SimplePreAnalyzedParser}) and one that uses
  * the "json" parser ({@link JsonPreAnalyzedParser}). Field "nonexistent" will be

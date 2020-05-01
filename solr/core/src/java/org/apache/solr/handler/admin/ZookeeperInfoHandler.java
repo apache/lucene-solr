@@ -529,18 +529,13 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         label = idx > 0 ? path.substring(idx + 1) : path;
       }
       json.startObject();
-      //writeKeyValue(json, "data", label, true );
-      json.writeString("data");
-      json.writeNameSeparator();
-
-      json.startObject();
-      writeKeyValue(json, "title", label, true);
+      writeKeyValue(json, "text", label, true);
       json.writeValueSeparator();
-      json.writeString("attr");
+      json.writeString("a_attr");
       json.writeNameSeparator();
       json.startObject();
-      writeKeyValue(json, "href", "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, "UTF-8"), true);
-      json.endObject();
+      String href = "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+      writeKeyValue(json, "href", href, true);
       json.endObject();
 
       Stat stat = new Stat();
@@ -692,10 +687,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
                 if (childData != null)
                   childDataStr = (new BytesRef(childData)).utf8ToString();
               } catch (KeeperException.NoNodeException nne) {
-                log.warn("State for collection " + collection +
-                    " not found in /clusterstate.json or /collections/" + collection + "/state.json!");
+                log.warn("State for collection {} not found in /clusterstate.json or /collections/{}/state.json!"
+                    , collection, collection);
               } catch (Exception childErr) {
-                log.error("Failed to get " + collStatePath + " due to: " + childErr);
+                log.error("Failed to get {} due to", collStatePath, childErr);
               }
 
               if (childDataStr != null) {

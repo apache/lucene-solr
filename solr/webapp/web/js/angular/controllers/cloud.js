@@ -381,7 +381,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
           nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-          nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
+          nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
           nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
@@ -536,10 +536,9 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
           "zk_packets_sent", "zk_packets_received",
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
-        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort", "role"];
         $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
-          "server.1", "server.2", "server.3", "server.4", "server.5"];
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
         $scope.notEmptyRow = function(key) {
           for (hostId in $scope.zkState.details) {
             if (key in $scope.zkState.details[hostId]) return true;
@@ -651,7 +650,7 @@ var graphSubController = function ($scope, Zookeeper) {
         Zookeeper.liveNodes(function (data) {
             var live_nodes = {};
             for (var c in data.tree[0].children) {
-                live_nodes[data.tree[0].children[c].data.title] = true;
+                live_nodes[data.tree[0].children[c].text] = true;
             }
 
             var params = {view: "graph"};

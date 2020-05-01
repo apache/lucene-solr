@@ -335,7 +335,11 @@ class ConnectionImpl implements Connection {
     // check that the connection isn't closed and able to connect within the timeout
     try {
       if(!isClosed()) {
-        this.client.connect(timeout, TimeUnit.SECONDS);
+        if (timeout == 0) {
+          this.client.connect();
+        } else {
+          this.client.connect(timeout, TimeUnit.SECONDS);
+        }
         return true;
       }
     } catch (InterruptedException|TimeoutException ignore) {

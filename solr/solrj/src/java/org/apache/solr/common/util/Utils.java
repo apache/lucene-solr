@@ -769,13 +769,13 @@ public class Utils {
     try {
       rsp = client.execute(httpGet);
     } catch (IOException e) {
-      log.error("Error in request to url : " + url, e);
+      log.error("Error in request to url : {}", url, e);
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       try {
-        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // logOk
       } catch (IOException e) {
         log.error("could not print error", e);
       }

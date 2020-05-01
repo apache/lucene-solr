@@ -39,17 +39,17 @@ import org.apache.lucene.store.DataOutput;
  * <li>Block: &lt;Header, (Ints)&gt;
  * <li>Header: &lt;Token, (MinValue)&gt;
  * <li>Token: a {@link DataOutput#writeByte(byte) byte}, first 7 bits are the
- *     number of bits per value (<tt>bitsPerValue</tt>). If the 8th bit is 1,
- *     then MinValue (see next) is <tt>0</tt>, otherwise MinValue and needs to
+ *     number of bits per value (<code>bitsPerValue</code>). If the 8th bit is 1,
+ *     then MinValue (see next) is <code>0</code>, otherwise MinValue and needs to
  *     be decoded
  * <li>MinValue: a
  *     <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag-encoded</a>
  *     {@link DataOutput#writeVLong(long) variable-length long} whose value
  *     should be added to every int from the block to restore the original
  *     values
- * <li>Ints: If the number of bits per value is <tt>0</tt>, then there is
+ * <li>Ints: If the number of bits per value is <code>0</code>, then there is
  *     nothing to decode and all ints are equal to MinValue. Otherwise: BlockSize
- *     {@link PackedInts packed ints} encoded on exactly <tt>bitsPerValue</tt>
+ *     {@link PackedInts packed ints} encoded on exactly <code>bitsPerValue</code>
  *     bits per value. They are the subtraction of the original values and
  *     MinValue
  * </ul>

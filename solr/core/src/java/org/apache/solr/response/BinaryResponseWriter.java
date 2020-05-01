@@ -137,7 +137,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {
-          log.warn("Error reading a field : " + o, e);
+          log.warn("Error reading a field : {}", o, e);
         }
       }
       return o;

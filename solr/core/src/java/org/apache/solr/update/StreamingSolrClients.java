@@ -126,7 +126,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
 
   @Override
   public void handleError(Throwable ex) {
-    log.error("Error when calling {} to {}", req.toString(), req.node.getUrl(), ex);
+    log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
     Error error = new Error();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {

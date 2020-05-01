@@ -564,7 +564,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     QueueEvent qe = new QueueEvent("id", Utils.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
-        lastProcessMessageResult = OverseerSolrResponse.deserialize(bytes);
+        lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
       }
     };
     queue.add(qe);
@@ -745,7 +745,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         overseerMock, completedMapMock, failureMapMock);
 
 
-    log.info("clusterstate " + clusterStateMock.hashCode());
+    if (log.isInfoEnabled()) {
+      log.info("clusterstate {}", clusterStateMock.hashCode());
+    }
 
     startComponentUnderTest();
     
