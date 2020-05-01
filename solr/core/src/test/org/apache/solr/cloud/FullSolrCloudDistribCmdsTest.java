@@ -480,7 +480,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         for (Replica replica : slice) {
           try (HttpSolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults = replicaClient.query(perReplicaParams).getResults();
-            log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);
+            if (log.isDebugEnabled()) {
+              log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);
+            }
             assertEquals("inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
                          Collections.emptySet(),
                          CloudInspectUtil.showDiff(leaderResults, replicaResults,

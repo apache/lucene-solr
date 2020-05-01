@@ -83,11 +83,15 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
             + printClusterStateInfo(),
         notLeaders.size() == 1);
 
-    log.info("All replicas active for "+testCollectionName);
+    if (log.isInfoEnabled()) {
+      log.info("All replicas active for {}", testCollectionName);
+    }
 
     // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    log.info("Creating partition to leader at "+leader.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Creating partition to leader at {}", leader.getCoreUrl());
+    }
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
 
@@ -101,7 +105,9 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
-    log.info("Healing partitioned replica at "+leader.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Healing partitioned replica at {}", leader.getCoreUrl());
+    }
     leaderProxy.reopen();
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -126,11 +132,13 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
             + printClusterStateInfo(),
         notLeaders.size() == 2);
 
-    log.info("All replicas active for "+testCollectionName);
+    log.info("All replicas active for {}", testCollectionName);
 
     // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    log.info("Creating partition to leader at "+leader.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Creating partition to leader at {}", leader.getCoreUrl());
+    }
 
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
@@ -143,7 +151,9 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
-    log.info("Healing partitioned replica at "+leader.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Healing partitioned replica at {}", leader.getCoreUrl());
+    }
     leaderProxy.reopen();
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -165,21 +175,22 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   protected void sendCommitWithRetry(Replica replica) throws Exception {
     String replicaCoreUrl = replica.getCoreUrl();
-    log.info("Sending commit request to: "+replicaCoreUrl);
+    log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
     try (HttpSolrClient client = getHttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 
-        log.info("Sent commit request to {} OK, took {}ms", replicaCoreUrl, timer.getTime());
+        if (log.isInfoEnabled()) {
+          log.info("Sent commit request to {} OK, took {}ms", replicaCoreUrl, timer.getTime());
+        }
       } catch (Exception exc) {
         Throwable rootCause = SolrException.getRootCause(exc);
         if (rootCause instanceof NoHttpResponseException) {
-          log.warn("No HTTP response from sending commit request to "+replicaCoreUrl+
-              "; will re-try after waiting 3 seconds");
+          log.warn("No HTTP response from sending commit request to {}; will re-try after waiting 3 seconds", replicaCoreUrl);
           Thread.sleep(3000);
           client.commit();
-          log.info("Second attempt at sending commit to "+replicaCoreUrl+" succeeded.");
+          log.info("Second attempt at sending commit to {} succeeded", replicaCoreUrl);
         } else {
           throw exc;
         }

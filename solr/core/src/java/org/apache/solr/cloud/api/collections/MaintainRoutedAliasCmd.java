@@ -128,9 +128,9 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
               try {
                 deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
               } catch (Exception e) {
-                log.warn("Deletion of {} by {} failed (this might be ok if two clients were " +
-                        "writing to a routed alias at the same time and both caused a deletion)",
-                    action.targetCollection, ra.getAliasName());
+                log.warn("Deletion of {} by {} {} failed (this might be ok if two clients were"
+                    , action.targetCollection, ra.getAliasName()
+                    , " writing to a routed alias at the same time and both caused a deletion)");
                 log.debug("Exception for last message:", e);
               }
             });

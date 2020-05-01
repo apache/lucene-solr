@@ -91,7 +91,7 @@ public class SolrClientCache implements Serializable {
       try {
         entry.getValue().close();
       } catch (IOException e) {
-        log.error("Error closing SolrClient for " + entry.getKey(), e);
+        log.error("Error closing SolrClient for {}", entry.getKey(), e);
       }
     }
     solrClients.clear();

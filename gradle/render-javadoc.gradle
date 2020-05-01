@@ -67,7 +67,7 @@ allprojects {
 
         def opts = []
         opts += [ "-overview ${file("src/java/overview.html").toString()}" ]
-        opts += [ "-sourcepath ${srcDirs.join(' ')}" ]
+        opts += [ "-sourcepath ${srcDirs.join(File.pathSeparator)}" ]
         opts += [ "-subpackages ${project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr'}"]
         opts += [ "-d ${project.javadoc.destinationDir.toString()}" ]
         opts += [ "-protected" ]

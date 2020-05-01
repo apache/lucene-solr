@@ -923,7 +923,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         break;
       }
     }
-    assertTrue(modifier.deleter.isClosed());
+    assertTrue(modifier.isDeleterClosed());
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     dir.close();

@@ -326,7 +326,8 @@ public class Assign {
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
-    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet );
+    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
+        , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     List<String> createNodeList = null;
@@ -394,9 +395,14 @@ public class Assign {
       throw new AssignmentException("Error getting replica locations : " + e.getMessage(), e);
     } finally {
       if (log.isTraceEnabled()) {
-        if (replicaPositions != null)
-          log.trace("REPLICA_POSITIONS: " + Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
-        log.trace("AUTOSCALING_CONF: " + Utils.toJSONString(autoScalingConfig));
+        if (replicaPositions != null) {
+          if (log.isTraceEnabled()) {
+            log.trace("REPLICA_POSITIONS: {}", Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
+          }
+        }
+        if (log.isTraceEnabled()) {
+          log.trace("AUTOSCALING_CONF: {}", Utils.toJSONString(autoScalingConfig));
+        }
       }
     }
   }

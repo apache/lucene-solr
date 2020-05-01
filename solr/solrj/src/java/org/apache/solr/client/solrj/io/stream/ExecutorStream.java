@@ -214,7 +214,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
-        log.error("Executor Error: id="+id+" expr_s="+expr, e);
+        log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();

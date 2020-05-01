@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '2.7' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.0' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
   id "de.undercouch.download" version "4.0.2" apply false
 }
@@ -131,3 +131,6 @@ apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
 apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')
+
+apply from: file('gradle/documentation/documentation.gradle')
+apply from: file('gradle/documentation/changes-to-html.gradle')

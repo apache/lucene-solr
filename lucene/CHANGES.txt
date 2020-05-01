@@ -51,10 +51,12 @@ API Changes
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom analysis factories
-  must now also implement the default constructor (see MIGRATE.txt).
+  must now also implement the default constructor (see MIGRATE.md).
   (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
+
+* LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
 
 Improvements
 
@@ -115,6 +117,11 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+* LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-9267: Update MatchingQueries documentation to correct
+  time unit. (Pierre-Luc Perron via Mike Drob)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
@@ -128,6 +135,17 @@ API Changes
 
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
+
+* LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
+
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
+
+* LUCENE-9349: QueryVisitor.consumeTermsMatching() now takes a
+  Supplier<ByteRunAutomaton> to enable queries that build large automata to
+  provide them lazily.  TermsInSetQuery switches to using this method
+  to report matching terms. (Alan Woodward)
 
 New Features
 ---------------------
@@ -148,6 +166,9 @@ Improvements
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
   snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+
+* LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
+  (Tomás Fernández Löbbe)
 
 * LUCENE-9353: Metadata of the terms dictionary moved to its own file, with the
   `.tmd` extension. This allows checksums of metadata to be verified when
@@ -198,6 +219,9 @@ Bug Fixes
   finishing threads fail to pick up pending merges causing potential thread starvation on
   forceMerge calls. (Simon Willnauer)
 
+* LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
+  implementation. (Pierre-Luc Perron, Alan Woodward)
+
 Other
 ---------------------
 
@@ -219,6 +243,13 @@ Other
 
 * LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
   Mike McCandless)
+
+* LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
+  Adrien Grand)
+
+Build
+
+* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
 
 ======================= Lucene 8.5.1 =======================
 

@@ -103,11 +103,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     if (templateBaseDir != null && !templateBaseDir.isEmpty()) {
       fileResourceLoaderBaseDir = new File(templateBaseDir).getAbsoluteFile();
       if (!fileResourceLoaderBaseDir.exists()) { // "*not* exists" condition!
-        log.warn(TEMPLATE_BASE_DIR + " specified does not exist: " + fileResourceLoaderBaseDir);
+        log.warn("{} specified does not exist: {}", TEMPLATE_BASE_DIR, fileResourceLoaderBaseDir);
         fileResourceLoaderBaseDir = null;
       } else {
         if (!fileResourceLoaderBaseDir.isDirectory()) { // "*not* a directory" condition
-          log.warn(TEMPLATE_BASE_DIR + " specified is not a directory: " + fileResourceLoaderBaseDir);
+          log.warn("{} specified is not a directory: {}", TEMPLATE_BASE_DIR, fileResourceLoaderBaseDir);
           fileResourceLoaderBaseDir = null;
         }
       }
@@ -132,7 +132,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
       try {
         velocityInitProps.load(new InputStreamReader(core.getResourceLoader().openResource(initPropertiesFileName), StandardCharsets.UTF_8));
       } catch (IOException e) {
-        log.warn("Error loading " + PROPERTIES_FILE + " specified property file: " + initPropertiesFileName, e);
+        log.warn("Error loading {} specified property file: {}", PROPERTIES_FILE, initPropertiesFileName, e);
       }
     }
     }

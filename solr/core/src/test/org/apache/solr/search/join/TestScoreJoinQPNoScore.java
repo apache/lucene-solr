@@ -308,13 +308,13 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
                   , "sort", "_docid_ asc"
                   ,"rows","0"
                 );
-            log.error("faceting on from field: "+h.query(f));
+            log.error("faceting on from field: {}", h.query(f));
           }
           {
             final Map<String,String> ps = ((MapSolrParams)req.getParams()).getMap();
             final String q = ps.get("q");
             ps.put("q", q.replaceAll("join score=none", "join"));
-            log.error("plain join: "+h.query(req));
+            log.error("plain join: {}", h.query(req));
             ps.put("q", q);
             
           }

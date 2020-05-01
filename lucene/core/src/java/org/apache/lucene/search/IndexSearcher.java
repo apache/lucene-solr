@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Supplier;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -47,6 +48,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 
 /** Implements search over a single IndexReader.
  *
@@ -477,8 +479,8 @@ public class IndexSearcher {
 
     final CollectorManager<TopScoreDocCollector, TopDocs> manager = new CollectorManager<TopScoreDocCollector, TopDocs>() {
 
-      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
-          HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(Math.max(TOTAL_HITS_THRESHOLD, numHits)) :
+          HitsThresholdChecker.createShared(Math.max(TOTAL_HITS_THRESHOLD, numHits));
 
       private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
 
@@ -610,8 +612,8 @@ public class IndexSearcher {
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<>() {
 
-      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
-          HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(Math.max(TOTAL_HITS_THRESHOLD, numHits)) :
+          HitsThresholdChecker.createShared(Math.max(TOTAL_HITS_THRESHOLD, numHits));
 
       private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
 
@@ -785,6 +787,14 @@ public class IndexSearcher {
 
       @Override
       public void consumeTerms(Query query, Term... terms) {
+        if (numClauses > maxClauseCount) {
+          throw new TooManyClauses();
+        }
+        ++numClauses;
+      }
+
+      @Override
+      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
         if (numClauses > maxClauseCount) {
           throw new TooManyClauses();
         }

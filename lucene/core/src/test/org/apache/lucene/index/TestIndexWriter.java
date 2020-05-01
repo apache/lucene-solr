@@ -2399,7 +2399,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
-        public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+        public void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
           mergeStarted.countDown();
           try {
             closeStarted.await();
@@ -2407,7 +2407,7 @@ public class TestIndexWriter extends LuceneTestCase {
             Thread.currentThread().interrupt();
             throw new RuntimeException(ie);
           }
-          super.doMerge(writer, merge);
+          super.doMerge(mergeSource, merge);
         }
 
         @Override
@@ -3448,12 +3448,12 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(new StringField("id", "doc-1", Field.Store.YES));
     writer.addDocument(d);
     writer.deleteDocuments(new Term("id", "doc-1"));
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.flush();
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.commit();
     assertFiles(writer);
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     IOUtils.close(writer, dir);
   }
 

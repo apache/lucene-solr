@@ -2226,7 +2226,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:51147_solr");
     SolrRequest op = suggester.getSuggestion();
-    log.info("" + op);
+    log.info("{}", op);
     assertNotNull("operation expected ", op);
   }
 
@@ -2686,7 +2686,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       CollectionAdminRequest.MoveReplica op = (CollectionAdminRequest.MoveReplica) suggester.getSuggestion();
       if (op == null) break;
       count++;
-      log.info("OP:{}", op.getParams());
+      if (log.isInfoEnabled()) {
+        log.info("OP:{}", op.getParams());
+      }
       suggester = createSuggester(cloudManager, jsonObj, suggester);
     }
 
@@ -2702,7 +2704,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       CollectionAdminRequest.MoveReplica op = (CollectionAdminRequest.MoveReplica) suggester.getSuggestion();
       if (op == null) break;
       count++;
-      log.info("OP:{}", op.getParams());
+      if (log.isInfoEnabled()) {
+        log.info("OP:{}", op.getParams());
+      }
       suggester = createSuggester(cloudManager, jsonObj, suggester);
     }
 
@@ -2718,7 +2722,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       CollectionAdminRequest.MoveReplica op = (CollectionAdminRequest.MoveReplica) suggester.getSuggestion();
       if (op == null) break;
       count++;
-      log.info("OP:{}", op.getParams());
+      if (log.isInfoEnabled()) {
+        log.info("OP:{}", op.getParams());
+      }
       suggester = createSuggester(cloudManager, jsonObj, suggester);
     }
 

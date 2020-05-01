@@ -87,7 +87,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     for (List e : collectErrors) {
       if (e != null &&  !e.isEmpty()) {
         success = false;
-        log.error(e.toString());
+        log.error("{}", e);
       }
     }
 

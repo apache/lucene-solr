@@ -129,9 +129,13 @@ public class SolrZkServer {
     };
 
     if (zkProps.getServers().size() > 1) {
-      log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port " + zkProps.getClientPortAddress().getPort());
+      if (log.isInfoEnabled()) {
+        log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}", zkProps.getClientPortAddress().getPort());
+      }
     } else {
-      log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port " + zkProps.getClientPortAddress().getPort());
+      if (log.isInfoEnabled()) {
+        log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port {}", zkProps.getClientPortAddress().getPort());
+      }
     }
 
     log.warn("Embedded Zookeeper is not recommended in production environments. See Reference Guide for details.");
@@ -171,7 +175,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
   public static Properties getProperties(String path) throws ConfigException {
     File configFile = new File(path);
 
-    log.info("Reading configuration from: " + configFile);
+    log.info("Reading configuration from: {}", configFile);
 
     try {
       if (!configFile.exists()) {

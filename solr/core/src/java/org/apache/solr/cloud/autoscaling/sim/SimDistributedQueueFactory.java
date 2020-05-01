@@ -190,7 +190,9 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
       try {
         queue.offer(new Pair(String.format(Locale.ROOT, "qn-%010d", seq), data));
         seq++;
-        log.trace("=== offer " + System.nanoTime());
+        if (log.isTraceEnabled()) {
+          log.trace("=== offer {}", System.nanoTime());
+        }
         changed.signalAll();
       } finally {
         updateLock.unlock();

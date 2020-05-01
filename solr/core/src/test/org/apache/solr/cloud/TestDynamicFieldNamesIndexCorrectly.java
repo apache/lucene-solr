@@ -64,7 +64,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   void populateIndex(int numRuns) throws IOException, SolrServerException {
     try {
       for (int i = 0; i < numRuns; i++) {
-        log.debug("Iteration number: " + i);
+        log.debug("Iteration number: {}", i);
         cloudClient.deleteByQuery(COLLECTION, "*:*");
         cloudClient.commit(COLLECTION);
 
@@ -74,7 +74,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
         final SolrQuery solrQuery = new SolrQuery("*:*");
         solrQuery.setRows(solrDocs.size());
         final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
-        log.debug(resultDocs.toString());
+        log.debug("{}", resultDocs);
         assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
       }
     } finally {
