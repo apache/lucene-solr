@@ -327,6 +327,9 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         = SolrParams.wrapDefaults(params("method_val", "dv",
                                          "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
                                   baseParams);
+
+      // nocommit: optionally add another non-relatedness() stat to prove consistent behavior
+      // nocommit: even when MultiAcc has non-sweeping SlotAccs in it
       
       // both default sweep option and explicit sweep should give same results...
       for (SolrParams sweepParams : Arrays.asList(params(),
@@ -580,6 +583,9 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     public CharSequence toJSONFacetParamValue();
   }
 
+  // nocommit: add another trivial non-relatedess() Facet impl so we can randomly test how sweeping
+  // nocommit: behaves when non-sweepable stats are also included
+  
   /**
    * Trivial data structure for modeling a simple <code>relatedness()</code> facet that can be written out as a json.facet param.
    *
@@ -869,7 +875,11 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
             final String key = (0 == skgId && 0 == TestUtil.nextInt(random(), 0, 5)) ? "skg" : "skg" + skgId;
             facet.subFacets.put(key, RelatednessFacet.buildRandom());
           }
-                                                 
+
+          // nocommit: randomly add another trivial non-relatedess() stat to confirm how
+          // nocommit: sweeping behaves when non-sweepable stats are also included
+          
+          
         }
       }
       return results;
