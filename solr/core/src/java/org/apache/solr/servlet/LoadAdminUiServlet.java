@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.servlet;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
