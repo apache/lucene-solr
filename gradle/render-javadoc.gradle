@@ -60,16 +60,20 @@ allprojects {
       def solrDocUrl = "https://lucene.apache.org/solr/${project.version.replace(".", "_")}".toString()
 
       def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
+      
+      def escapeOption = { String s ->
+        return s.replace($/\/$, $/\\/$).replace($/'/$, $/\'/$);
+      }
 
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
         def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
 
         def opts = []
-        opts += [ "-overview ${file("src/java/overview.html").toString()}" ]
-        opts += [ "-sourcepath ${srcDirs.join(File.pathSeparator)}" ]
+        opts += [ "-overview '${escapeOption(file("src/java/overview.html").toString())}'" ]
+        opts += [ "-sourcepath '${escapeOption(srcDirs.join(File.pathSeparator))}'" ]
         opts += [ "-subpackages ${project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr'}"]
-        opts += [ "-d ${project.javadoc.destinationDir.toString()}" ]
+        opts += [ "-d '${escapeOption(project.javadoc.destinationDir.toString())}'" ]
         opts += [ "-protected" ]
         opts += [ "-encoding UTF-8" ]
         opts += [ "-charset UTF-8" ]
@@ -82,28 +86,28 @@ allprojects {
         }
         opts += [ "-use" ]
         opts += [ "-locale en_US" ]
-        opts += [ "-windowtitle '${title}'" ]
-        opts += [ "-doctitle '${title}'" ]
+        opts += [ "-windowtitle '${escapeOption(title)}'" ]
+        opts += [ "-doctitle '${escapeOption(title)}'" ]
         if (!sourceSets.main.compileClasspath.isEmpty()) {
-          opts += ["-classpath ${sourceSets.main.compileClasspath.asPath}" ]
+          opts += ["-classpath '${escapeOption(sourceSets.main.compileClasspath.asPath)}'" ]
         }
         opts += [ "-bottom '<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>'" ]
 
         opts += [ "-tag 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.'" ]
         opts += [ "-tag 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.'" ]
-        opts += [ "-tag 'lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service).'" ]
+        opts += [ "-tag '" + escapeOption("lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service).") + "'" ]
 
         // resolve links to JavaSE and JUnit API
-        opts += [ "-linkoffline ${javaSEDocUrl} ${project(':lucene').file('tools/javadoc/java11/').toString()}" ]
+        opts += [ "-linkoffline ${javaSEDocUrl} '${escapeOption(project(':lucene').file('tools/javadoc/java11/').toString())}'" ]
         if (linkJUnit) {
-          opts += [ "-linkoffline ${junitDocUrl} ${project(':lucene').file('tools/javadoc/junit').toURL()}" ]
+          opts += [ "-linkoffline ${junitDocUrl} '${escapeOption(project(':lucene').file('tools/javadoc/junit/').toString())}'" ]
         }
         // resolve inter-project links
         linkLuceneProjects.collect { path ->
-          opts += [ "-linkoffline ${luceneDocUrl}/${pathToDocdir(path)} ${file(project(path).javadoc.destinationDir).toString()}" ]
+          opts += [ "-linkoffline ${luceneDocUrl}/${pathToDocdir(path)} '${escapeOption(file(project(path).javadoc.destinationDir).toString())}'" ]
         }
         linkSorlProjects.collect { path ->
-          opts += [ "-linkoffline ${solrDocUrl}/${pathToDocdir(path)} ${file(project(path).javadoc.destinationDir).toString()}" ]
+          opts += [ "-linkoffline ${solrDocUrl}/${pathToDocdir(path)} '${escapeOption(file(project(path).javadoc.destinationDir).toString())}'" ]
         }
 
         opts += [ "--release 11" ]
