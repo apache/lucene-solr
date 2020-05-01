@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.security.Principal;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.http.util.Args;
@@ -40,8 +41,8 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
    */
   public PrincipalWithUserRoles(final String username, Set<String> roles) {
     super();
-    Args.notNull(username, "User name");
-    Args.notNull(roles, "User roles");
+    Objects.requireNonNull(username, "User name was null");
+    Objects.requireNonNull(roles, "User roles was null");
     this.username = username;
     this.roles = roles;
   }
