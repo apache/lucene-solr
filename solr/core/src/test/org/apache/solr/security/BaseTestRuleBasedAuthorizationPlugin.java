@@ -56,6 +56,10 @@ import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+/**
+ * Base class for testing RBAC. This will test the {@link RuleBasedAuthorizationPlugin} implementation
+ * but also serves as a base class for testing other sub classes
+ */
 @SuppressWarnings("unchecked")
 public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   protected Map rules;

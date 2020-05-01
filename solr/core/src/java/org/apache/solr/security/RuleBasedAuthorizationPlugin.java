@@ -48,7 +48,7 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
   }
 
   /**
-   * Implementers should calculate the users roles
+   * Look up user's role from the explicit user-role mapping
    *
    * @param principal the user Principal from the request
    * @return set of roles as strings

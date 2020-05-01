@@ -26,6 +26,9 @@ import java.util.Map;
 
 import org.apache.http.auth.BasicUserPrincipal;
 
+/**
+ * Tests {@link ExternalRoleRuleBasedAuthorizationPlugin} through simulating principals with roles attached
+ */
 public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBasedAuthorizationPlugin {
   private HashMap<String, Principal> principals;
 

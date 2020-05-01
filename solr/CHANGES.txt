@@ -80,6 +80,8 @@ New Features
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -219,8 +221,6 @@ New Features
 * SOLR-12238: Synonyms can be individually boosted by marking them with '|<boost>' in
   the synonyms file, and adding a DelimitedBoostTokenFilter to the analysis chain
   (Alessandro Benedetti, Alan Woodward)
-
-* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
 
 Improvements
 ---------------------
