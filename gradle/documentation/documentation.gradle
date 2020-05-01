@@ -22,8 +22,10 @@ configure(rootProject) {
 
     dependsOn allprojects.collect { prj ->
       prj.tasks.matching { task -> task.name in [
-        "changesToHtml"
-        // TODO: "markdownToHtml"
+        "changesToHtml",
+        "copyDocumentationAssets",
+        "markdownToHtml",
+        "createDocumentationIndex"
         // TODO: "gatherJavadocs"
       ]}
     }
@@ -33,5 +35,12 @@ configure(rootProject) {
 configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   ext {
     docroot = "${project.buildDir}/documentation"
+  }
+  
+  task copyDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('site/html')      // lucene
+    from('site/assets')    // solr
+    into project.docroot
   }
 }

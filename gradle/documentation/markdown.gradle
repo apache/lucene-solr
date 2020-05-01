@@ -1,0 +1,95 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import com.vladsch.flexmark.util.ast.Document;
+import com.vladsch.flexmark.ast.Heading;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.parser.ParserEmulationProfile;
+import com.vladsch.flexmark.util.sequence.Escaping;
+import com.vladsch.flexmark.util.data.MutableDataSet;
+import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    def flexmarkVersion = '0.61.24'
+  
+    classpath 'com.vladsch.flexmark:flexmark:' + flexmarkVersion
+    classpath 'com.vladsch.flexmark:flexmark-ext-autolink:' + flexmarkVersion
+    classpath 'com.vladsch.flexmark:flexmark-ext-abbreviation:' + flexmarkVersion
+  }
+}
+
+configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+  task markdownToHtml(type: Copy) {
+    filteringCharset = 'UTF-8'
+    includeEmptyDirs = false
+    from('.') {            // lucene
+      include 'MIGRATE.md'
+      include 'JRE_VERSION_MIGRATION.md'
+      include 'SYSTEM_REQUIREMENTS.md'
+    }
+    from('site') {         // solr
+      include '**/*.md'
+    }
+    into project.docroot
+    rename(/\.md$/, '.html')
+    filter(MarkdownFilter)
+  }
+  
+  task createDocumentationIndex {
+    // nocommit: this needs to be implemented next
+  }
+}
+
+class MarkdownFilter extends FilterReader {
+  public MarkdownFilter(Reader reader) throws IOException {
+    // this is a hack: it reads whole file, converts it and provides result as a StringReader
+    super(new StringReader(convert(reader.text)));
+  }
+
+  public static String convert(String markdownSource) {
+    // first replace LUCENE and SOLR issue numbers with a markdown link
+    markdownSource = markdownSource.replaceAll(/(?s)\b(LUCENE|SOLR)\-\d+\b/,
+      '[$0](https://issues.apache.org/jira/browse/$0)');
+  
+    // convert the markdown
+    MutableDataSet options = new MutableDataSet();
+    options.setFrom(ParserEmulationProfile.MARKDOWN);
+    options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create() ]);
+    options.set(HtmlRenderer.RENDER_HEADER_ID, true);
+    options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
+    Document parsed = Parser.builder(options).build().parse(markdownSource);
+
+    StringBuilder html = new StringBuilder('<html>\n<head>\n');
+    CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();          
+    if (title != null) {
+      html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
+    }
+    html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+      .append('</head>\n<body>\n');
+    HtmlRenderer.builder(options).build().render(parsed, html);
+    html.append('</body>\n</html>\n');
+    return html;
+  }
+}
+
