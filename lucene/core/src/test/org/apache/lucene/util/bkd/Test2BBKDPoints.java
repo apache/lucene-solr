@@ -58,12 +58,12 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("1d.bkd", IOContext.DEFAULT);
-    long indexFP = w.finish(out);
+    long indexFP = w.finish(out, out, out);
     out.close();
 
     IndexInput in = dir.openInput("1d.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
-    BKDReader r = new BKDReader(in);
+    BKDReader r = new BKDReader(in, in, in);
     CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("1d", numDocs, r);
     r.intersect(visitor);
     assertEquals(r.size(), visitor.getPointCountSeen());
@@ -98,12 +98,12 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("2d.bkd", IOContext.DEFAULT);
-    long indexFP = w.finish(out);
+    long indexFP = w.finish(out, out, out);
     out.close();
 
     IndexInput in = dir.openInput("2d.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
-    BKDReader r = new BKDReader(in);
+    BKDReader r = new BKDReader(in, in, in);
     CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("2d", numDocs, r);
     r.intersect(visitor);
     assertEquals(r.size(), visitor.getPointCountSeen());

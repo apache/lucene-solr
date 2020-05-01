@@ -61,12 +61,12 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(out, out, out);
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in, false);//randomBoolean());
 
         // Simple 1D range query:
         final int queryMin = 42;
@@ -163,12 +163,12 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(out, out, out);
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in, randomBoolean());
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
@@ -291,12 +291,12 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        indexFP = w.finish(out, out, out);
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in, randomBoolean());
 
         int iters = atLeast(100);
         for(int iter=0;iter<iters;iter++) {
@@ -756,7 +756,7 @@ public class TestBKD extends LuceneTestCase {
                 return curDocIDBase + docID;
               }
             });
-          toMerge.add(w.finish(out));
+          toMerge.add(w.finish(out, out, out));
           valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
           segCount = 0;
 
@@ -772,7 +772,7 @@ public class TestBKD extends LuceneTestCase {
 
       if (toMerge != null) {
         if (segCount > 0) {
-          toMerge.add(w.finish(out));
+          toMerge.add(w.finish(out, out, out));
           final int curDocIDBase = lastDocIDBase;
           docMaps.add(new MergeState.DocMap() {
               @Override
@@ -788,21 +788,21 @@ public class TestBKD extends LuceneTestCase {
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
-          readers.add(new BKDReader(in, randomBoolean()));
+          readers.add(new BKDReader(in, in, in, randomBoolean()));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(out, docMaps, readers);
+        indexFP = w.merge(out, out, out, docMaps, readers);
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
       } else {
-        indexFP = w.finish(out);
+        indexFP = w.finish(out, out, out);
         out.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
       }
 
       in.seek(indexFP);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in, randomBoolean());
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
@@ -1071,12 +1071,12 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      long fp = w.finish(out, out, out);
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in, randomBoolean());
       r.intersect(new IntersectVisitor() {
           int lastDocID = -1;
 
@@ -1127,13 +1127,13 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      indexFP = w.finish(out, out, out);
       w.close();
     }
 
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn);
+    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
 
     points.intersect(new IntersectVisitor() {
 
@@ -1185,12 +1185,12 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      long fp = w.finish(out, out, out);
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in, randomBoolean());
       int[] count = new int[1];
       r.intersect(new IntersectVisitor() {
 
@@ -1241,12 +1241,12 @@ public class TestBKD extends LuceneTestCase {
     }
     
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-    long fp = w.finish(out);
+    long fp = w.finish(out, out, out);
     out.close();
 
     IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
     in.seek(fp);
-    BKDReader r = new BKDReader(in, randomBoolean());
+    BKDReader r = new BKDReader(in, in, in, randomBoolean());
     int[] count = new int[1];
     r.intersect(new IntersectVisitor() {
 
@@ -1300,13 +1300,13 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      indexFP = w.finish(out, out, out);
       w.close();
     }
     
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn);
+    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
 
     int actualMaxPointsInLeafNode = numValues;
     while (actualMaxPointsInLeafNode > maxPointsInLeafNode) {
@@ -1452,7 +1452,7 @@ public class TestBKD extends LuceneTestCase {
         BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
     expectThrows(IllegalStateException.class, () -> {
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(out, "test_field_name", reader);
+        w.writeField(out, out, out, "test_field_name", reader);
       } finally {
         w.close();
         dir.close();
@@ -1563,7 +1563,7 @@ public class TestBKD extends LuceneTestCase {
       }
     };
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, "", val);});
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, out, out, "", val);});
       assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
       w.close();
     }

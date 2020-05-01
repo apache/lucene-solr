@@ -14,15 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene60;
+package org.apache.lucene.codecs.lucene86;
 
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.MutablePointValues;
@@ -42,13 +40,10 @@ import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Writes dimensional values */
-public class Lucene60PointsWriter extends PointsWriter implements Closeable {
+public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
-  /** Output used to write the BKD tree data file */
-  protected final IndexOutput dataOut;
-
-  /** Maps field name to file pointer in the data file where the BKD index is located. */
-  protected final Map<String,Long> indexFPs = new HashMap<>();
+  /** Outputs used to write the BKD tree data files. */
+  protected final IndexOutput metaOut, indexOut, dataOut;
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
@@ -56,32 +51,53 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
   private boolean finished;
 
   /** Full constructor */
-  public Lucene60PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
+  public Lucene86PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
     assert writeState.fieldInfos.hasPointValues();
     this.writeState = writeState;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxMBSortInHeap = maxMBSortInHeap;
     String dataFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
                                                          writeState.segmentSuffix,
-                                                         Lucene60PointsFormat.DATA_EXTENSION);
+                                                         Lucene86PointsFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
-                                 Lucene60PointsFormat.DATA_CODEC_NAME,
-                                 Lucene60PointsFormat.DATA_VERSION_CURRENT,
+                                 Lucene86PointsFormat.DATA_CODEC_NAME,
+                                 Lucene86PointsFormat.VERSION_CURRENT,
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
+
+      String metaFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
+          writeState.segmentSuffix,
+          Lucene86PointsFormat.META_EXTENSION);
+      metaOut = writeState.directory.createOutput(metaFileName, writeState.context);
+      CodecUtil.writeIndexHeader(metaOut,
+          Lucene86PointsFormat.META_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          writeState.segmentInfo.getId(),
+          writeState.segmentSuffix);
+
+      String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
+          writeState.segmentSuffix,
+          Lucene86PointsFormat.INDEX_EXTENSION);
+      indexOut = writeState.directory.createOutput(indexFileName, writeState.context);
+      CodecUtil.writeIndexHeader(indexOut,
+          Lucene86PointsFormat.INDEX_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          writeState.segmentInfo.getId(),
+          writeState.segmentSuffix);
+
       success = true;
     } finally {
       if (success == false) {
-        IOUtils.closeWhileHandlingException(dataOut);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
 
   /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
-  public Lucene60PointsWriter(SegmentWriteState writeState) throws IOException {
+  public Lucene86PointsWriter(SegmentWriteState writeState) throws IOException {
     this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
@@ -101,10 +117,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        final long fp = writer.writeField(dataOut, dataOut, dataOut, fieldInfo.name, (MutablePointValues) values);
-        if (fp != -1) {
-          indexFPs.put(fieldInfo.name, fp);
-        }
+        writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
         return;
       }
 
@@ -126,7 +139,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
       if (writer.getPointCount() > 0) {
-        indexFPs.put(fieldInfo.name, writer.finish(dataOut, dataOut, dataOut));
+        metaOut.writeInt(fieldInfo.number);
+        writer.finish(metaOut, indexOut, dataOut);
       }
     }
   }
@@ -138,7 +152,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
      * If the readers are all sorted then it's safe to perform a bulk merge of the points.
      **/
     for(PointsReader reader : mergeState.pointsReaders) {
-      if (reader instanceof Lucene60PointsReader == false) {
+      if (reader instanceof Lucene86PointsReader == false) {
         // We can only bulk merge when all to-be-merged segments use our format:
         super.merge(mergeState);
         return;
@@ -191,8 +205,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               if (reader != null) {
 
                 // we confirmed this up above
-                assert reader instanceof Lucene60PointsReader;
-                Lucene60PointsReader reader60 = (Lucene60PointsReader) reader;
+                assert reader instanceof Lucene86PointsReader;
+                Lucene86PointsReader reader60 = (Lucene86PointsReader) reader;
 
                 // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
                 // reader's FieldInfo as we do below) because field numbers can easily be different
@@ -210,10 +224,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            long fp = writer.merge(dataOut, dataOut, dataOut, docMaps, bkdReaders);
-            if (fp != -1) {
-              indexFPs.put(fieldInfo.name, fp);
-            }
+            writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
           }
         } else {
           mergeOneField(mergeState, fieldInfo);
@@ -230,34 +241,14 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
+    metaOut.writeInt(-1);
+    CodecUtil.writeFooter(metaOut);
+    CodecUtil.writeFooter(indexOut);
     CodecUtil.writeFooter(dataOut);
-
-    String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-                                                          writeState.segmentSuffix,
-                                                          Lucene60PointsFormat.INDEX_EXTENSION);
-    // Write index file
-    try (IndexOutput indexOut = writeState.directory.createOutput(indexFileName, writeState.context)) {
-      CodecUtil.writeIndexHeader(indexOut,
-                                 Lucene60PointsFormat.META_CODEC_NAME,
-                                 Lucene60PointsFormat.INDEX_VERSION_CURRENT,
-                                 writeState.segmentInfo.getId(),
-                                 writeState.segmentSuffix);
-      int count = indexFPs.size();
-      indexOut.writeVInt(count);
-      for(Map.Entry<String,Long> ent : indexFPs.entrySet()) {
-        FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(ent.getKey());
-        if (fieldInfo == null) {
-          throw new IllegalStateException("wrote field=\"" + ent.getKey() + "\" but that field doesn't exist in FieldInfos");
-        }
-        indexOut.writeVInt(fieldInfo.number);
-        indexOut.writeVLong(ent.getValue());
-      }
-      CodecUtil.writeFooter(indexOut);
-    }
   }
 
   @Override
   public void close() throws IOException {
-    dataOut.close();
+    IOUtils.close(metaOut, indexOut, dataOut);
   }
 }

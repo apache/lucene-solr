@@ -97,7 +97,7 @@ public class RandomCodec extends AssertingCodec {
       @Override
       public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
 
-        // Randomize how BKDWriter chooses its splis:
+        // Randomize how BKDWriter chooses its splits:
 
         return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
           @Override
@@ -133,7 +133,7 @@ public class RandomCodec extends AssertingCodec {
 
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
                 if (writer.getPointCount() > 0) {
-                  indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+                  indexFPs.put(fieldInfo.name, writer.finish(dataOut, dataOut, dataOut));
                 }
               }
           }
