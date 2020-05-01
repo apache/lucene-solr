@@ -1785,10 +1785,12 @@ public class ZkController implements Closeable {
       }
       String collectionName = cd.getCloudDescriptor().getCollectionName();
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-      log.debug(collection == null ?
-              "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
-              "Registering watch for collection {}",
-          collectionName);
+      if (log.isDebugEnabled()) {
+        log.debug(collection == null ?
+                "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
+                "Registering watch for collection {}",
+            collectionName);
+      }
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -2301,9 +2303,9 @@ public class ZkController implements Closeable {
       if (wasRemoved) {
         log.debug("Removed OnReconnect listener {}", listener);
       } else {
-        log.warn("Was asked to remove OnReconnect listener {}{}"
-            , listener
-            , ", but remove operation did not find it in the list of registered listeners.");
+        log.warn("Was asked to remove OnReconnect listener {}, but remove operation " +
+                "did not find it in the list of registered listeners."
+            , listener);
       }
     }
   }

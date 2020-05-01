@@ -72,7 +72,7 @@ public class SolrTestCase extends LuceneTestCase {
   public static void setDefaultConfigDirSysPropIfNotSet() {
     final String existingValue = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
-      log.info("Test env includes configset dir system property '{}'='{}'");
+      log.info("Test env includes configset dir system property '{}'='{}'", SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, existingValue);
       return;
     }
     final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);

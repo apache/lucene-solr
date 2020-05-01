@@ -234,12 +234,10 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
 
     if (TRACE_HTTP) {
       HttpServletRequest req = (HttpServletRequest) request;
-      log.info("----------HTTP Request---------{}");
+      log.info("----------HTTP Request---------");
       if (log.isInfoEnabled()) {
         log.info("{} : {}", req.getMethod(), req.getRequestURI());
-      }
-      if (log.isInfoEnabled()) {
-        log.info("Query : {}", req.getQueryString());
+        log.info("Query : {}", req.getQueryString()); // logOk
       }
       log.info("Headers :");
       Enumeration<String> headers = req.getHeaderNames();

@@ -363,11 +363,10 @@ public final class FieldTypePluginLoader
 
     if (!version.onOrAfter(Version.LUCENE_7_0_0)) {
       if (log.isWarnEnabled()) {
-        log.warn("{} is using deprecated {} {} {}"
-            , pluginClassName, version
-            , "emulation. You should at some point declare and reindex to at least 7.0, because "
-            , "6.x emulation is deprecated and will be removed in 8.0"
-            );
+        log.warn("{} is using deprecated {} "
+            + "emulation. You should at some point declare and reindex to at least 7.0, because "
+            + "6.x emulation is deprecated and will be removed in 8.0"
+            , pluginClassName, version);
       }
     }
     return version;

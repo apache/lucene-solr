@@ -651,7 +651,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
                 afterCrit));
 
             if (log.isInfoEnabled()) {
-              log.info("GMail server-side filter found {} messages received {} in folder "
+              log.info("GMail server-side filter found {} messages received {} in folder {}"
                   , afterMessages.length, afterCrit, folder.getName());
             }
             
