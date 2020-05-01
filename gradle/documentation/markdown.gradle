@@ -31,11 +31,9 @@ buildscript {
   }
 
   dependencies {
-    def flexmarkVersion = '0.61.24'
-  
-    classpath 'com.vladsch.flexmark:flexmark:' + flexmarkVersion
-    classpath 'com.vladsch.flexmark:flexmark-ext-autolink:' + flexmarkVersion
-    classpath 'com.vladsch.flexmark:flexmark-ext-abbreviation:' + flexmarkVersion
+    classpath 'com.vladsch.flexmark:flexmark:' + scriptDepVersions['flexmark']
+    classpath 'com.vladsch.flexmark:flexmark-ext-autolink:' + scriptDepVersions['flexmark']
+    classpath 'com.vladsch.flexmark:flexmark-ext-abbreviation:' + scriptDepVersions['flexmark']
   }
 }
 
