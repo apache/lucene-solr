@@ -18,9 +18,14 @@
 // generate javadocs by calling javadoc tool
 // see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
 
+import java.util.stream.Collectors;
+
 // utility function to convert project path to document dir
 // e.g.: ':lucene:analysis:common' => 'analysis/common'
 def pathToDocdir = { path -> path.split(':').drop(2).join('/') }
+
+// escapes an option with single quotes or whitespace to be passed in the options.txt file for
+def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
 
 allprojects {
   plugins.withType(JavaPlugin) {
@@ -61,60 +66,59 @@ allprojects {
 
       def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
       
-      def escapeOption = { String s ->
-        return s.replace($/\/$, $/\\/$).replace($/'/$, $/\'/$);
-      }
-
       doFirst {
         def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
         def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
 
         def opts = []
-        opts += [ "-overview '${escapeOption(file("src/java/overview.html").toString())}'" ]
-        opts += [ "-sourcepath '${escapeOption(srcDirs.join(File.pathSeparator))}'" ]
-        opts += [ "-subpackages ${project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr'}"]
-        opts += [ "-d '${escapeOption(project.javadoc.destinationDir.toString())}'" ]
-        opts += [ "-protected" ]
-        opts += [ "-encoding UTF-8" ]
-        opts += [ "-charset UTF-8" ]
-        opts += [ "-docencoding UTF-8" ]
-        opts += [ "-noindex" ]
-        opts += [ "-author" ]
-        opts += [ "-version" ]
+        opts << [ '-overview', file("src/java/overview.html") ]
+        opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
+        opts << [ '-subpackages', project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr' ]
+        opts << [ '-d', project.javadoc.destinationDir ]
+        opts << '-protected'
+        opts << [ '-encoding', 'UTF-8' ]
+        opts << [ '-charset', 'UTF-8' ]
+        opts << [ '-docencoding', 'UTF-8' ]
+        opts << '-noindex'
+        opts << '-author'
+        opts << '-version'
         if (linksource) {
-          opts += [ "-linksource" ]
+          opts << '-linksource'
         }
-        opts += [ "-use" ]
-        opts += [ "-locale en_US" ]
-        opts += [ "-windowtitle '${escapeOption(title)}'" ]
-        opts += [ "-doctitle '${escapeOption(title)}'" ]
+        opts << '-use'
+        opts << [ '-locale', 'en_US' ]
+        opts << [ '-windowtitle', title ]
+        opts << [ '-doctitle', title ]
         if (!sourceSets.main.compileClasspath.isEmpty()) {
-          opts += ["-classpath '${escapeOption(sourceSets.main.compileClasspath.asPath)}'" ]
+          opts << [ '-classpath', sourceSets.main.compileClasspath.asPath ]
         }
-        opts += [ "-bottom '<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>'" ]
+        opts << [ '-bottom', "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
 
-        opts += [ "-tag 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.'" ]
-        opts += [ "-tag 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.'" ]
-        opts += [ "-tag '" + escapeOption("lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service).") + "'" ]
+        opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
+        opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
+        opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
 
         // resolve links to JavaSE and JUnit API
-        opts += [ "-linkoffline ${javaSEDocUrl} '${escapeOption(project(':lucene').file('tools/javadoc/java11/').toString())}'" ]
+        opts << [ '-linkoffline', javaSEDocUrl, project(':lucene').file('tools/javadoc/java11/') ]
         if (linkJUnit) {
-          opts += [ "-linkoffline ${junitDocUrl} '${escapeOption(project(':lucene').file('tools/javadoc/junit/').toString())}'" ]
+          opts << [ '-linkoffline', junitDocUrl, project(':lucene').file('tools/javadoc/junit/') ]
         }
         // resolve inter-project links
         linkLuceneProjects.collect { path ->
-          opts += [ "-linkoffline ${luceneDocUrl}/${pathToDocdir(path)} '${escapeOption(file(project(path).javadoc.destinationDir).toString())}'" ]
+          opts << [ '-linkoffline', "${luceneDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir) ]
         }
         linkSorlProjects.collect { path ->
-          opts += [ "-linkoffline ${solrDocUrl}/${pathToDocdir(path)} '${escapeOption(file(project(path).javadoc.destinationDir).toString())}'" ]
+          opts << [ '-linkoffline', "${solrDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir) ]
         }
 
-        opts += [ "--release 11" ]
-        opts += [ "-Xdoclint:all,-missing" ]
+        opts << [ '--release', 11 ]
+        opts << '-Xdoclint:all,-missing'
 
         // Temporary file that holds all javadoc options for the current task.
-        optionsFile.write(opts.join("\n"), "UTF-8")
+        String optionsStr = opts.stream()
+          .map{ (it instanceof List) ? it.stream().map{it as String}.map(escapeJavadocOption).collect(Collectors.joining(' ')) : escapeJavadocOption(it as String)}
+          .collect(Collectors.joining('\n'));
+        optionsFile.write(optionsStr, 'UTF-8')
 
         def outputFile = file("${getTemporaryDir()}/javadoc-output.txt")
         def result
