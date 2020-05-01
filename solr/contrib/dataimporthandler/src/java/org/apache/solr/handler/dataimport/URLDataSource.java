@@ -72,14 +72,14 @@ public class URLDataSource extends DataSource<Reader> {
       try {
         connectionTimeout = Integer.parseInt(cTimeout);
       } catch (NumberFormatException e) {
-        log.warn("Invalid connection timeout: " + cTimeout);
+        log.warn("Invalid connection timeout: {}", cTimeout);
       }
     }
     if (rTimeout != null) {
       try {
         readTimeout = Integer.parseInt(rTimeout);
       } catch (NumberFormatException e) {
-        log.warn("Invalid read timeout: " + rTimeout);
+        log.warn("Invalid read timeout: {}", rTimeout);
       }
     }
   }
@@ -91,7 +91,7 @@ public class URLDataSource extends DataSource<Reader> {
       if (URIMETHOD.matcher(query).find()) url = new URL(query);
       else url = new URL(baseUrl + query);
 
-      log.debug("Accessing URL: " + url.toString());
+      log.debug("Accessing URL: {}", url);
 
       URLConnection conn = url.openConnection();
       conn.setConnectTimeout(connectionTimeout);

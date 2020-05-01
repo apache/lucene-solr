@@ -84,7 +84,9 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           try {
             String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
             if (leaderNode != null && !leaderNode.trim().isEmpty()) {
-              log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+              if (log.isInfoEnabled()) {
+                log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+              }
               found = true;
               break;
             }

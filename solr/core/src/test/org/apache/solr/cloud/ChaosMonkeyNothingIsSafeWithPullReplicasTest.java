@@ -291,8 +291,10 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
           .getResults().getNumFound();
       
       assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
-      
-      log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+
+      if (log.isInfoEnabled()) {
+        log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION));
+      }
       
       if (VERBOSE) System.out.println("control docs:"
           + controlClient.query(new SolrQuery("*:*")).getResults()

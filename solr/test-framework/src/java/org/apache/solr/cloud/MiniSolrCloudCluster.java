@@ -353,7 +353,9 @@ public class MiniSolrCloudCluster {
 
   public void waitForNode(JettySolrRunner jetty, int timeoutSeconds)
       throws IOException, InterruptedException, TimeoutException {
-    log.info("waitForNode: {}", jetty.getNodeName());
+     if (log.isInfoEnabled()) {
+       log.info("waitForNode: {}", jetty.getNodeName());
+     }
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
@@ -691,7 +693,9 @@ public class MiniSolrCloudCluster {
       zkClient.getSolrZooKeeper().closeCnxn();
       long sessionId = zkClient.getSolrZooKeeper().getSessionId();
       zkServer.expire(sessionId);
-      log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+      }
     }
   }
 
@@ -792,7 +796,9 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    }
     TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {
       if (runner.isStopped()) {

@@ -118,7 +118,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
       
-      log.info("Making requests to " + baseUrl + "a1x2");
+      log.info("Making requests to {} a1x2", baseUrl);
       while (uniqueCoreNames.size() < counters.keySet().size() && expectedTotalRequests < 1000L) {
         expectedTotalRequests++;
         client.query(new SolrQuery("*:*"));
@@ -134,7 +134,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         assertEquals("Sanity Check: Num Queries So Far Doesn't Match Total????",
                      expectedTotalRequests, actualTotalRequests);
       }
-      log.info("Total requests: " + expectedTotalRequests);
+      log.info("Total requests: {}", expectedTotalRequests);
       assertEquals("either request randomization code is broken of this test seed is really unlucky, " +
                    "Gave up waiting for requests to hit every core at least once after " +
                    expectedTotalRequests + " requests",
@@ -178,7 +178,9 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         ZkStateReader.ROLES_PROP, "",
         ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
 
-    log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+    if (log.isInfoEnabled()) {
+      log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+    }
     ZkDistributedQueue q = jettys.get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
     q.offer(Utils.toJSON(m));
 
@@ -189,7 +191,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = notLeader.getStr(ZkStateReader.BASE_URL_PROP);
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
-    log.info("Firing queries against path=" + path);
+    log.info("Firing queries against path={}", path);
     try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
 
       SolrCore leaderCore = null;

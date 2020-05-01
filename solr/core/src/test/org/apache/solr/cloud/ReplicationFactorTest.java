@@ -91,12 +91,14 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
-        
+
     waitForThingsToLevelOut(30000);
-    log.info("replication factor testing complete! final clusterState is: "+
-        cloudClient.getZkStateReader().getClusterState());    
+    if (log.isInfoEnabled()) {
+      log.info("replication factor testing complete! final clusterState is: {}"
+          , cloudClient.getZkStateReader().getClusterState());
+    }
   }
-  
+
   protected void testRf2NotUsingDirectUpdates() throws Exception {
     int numShards = 2;
     int replicationFactor = 2;

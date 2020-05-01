@@ -361,7 +361,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       // no stats for this pivot, nothing to check
 
       // TODO: use a trace param to know if/how-many to expect ?
-      log.info("No stats to check for => " + message);
+      log.info("No stats to check for => {}", message);
       return;
     }
     
@@ -379,7 +379,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         // StatsComponent results being "null" (and not even included in the 
         // getFieldStatsInfo() Map due to specila SolrJ logic) 
 
-        log.info("Requested stats missing in verification query, pivot stats: " + pivotStats);
+        log.info("Requested stats missing in verification query, pivot stats: {}", pivotStats);
         assertEquals("Special Count", 0L, pivotStats.getCount().longValue());
         assertEquals("Special Missing", 
                      constraint.getCount(), pivotStats.getMissing().longValue());

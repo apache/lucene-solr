@@ -137,17 +137,17 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
           .get(language);
 
       if (stemmerClazz == null) {
-        log.warn("No Snowball stemmer class for: " + language.name()
-            + ". Quality of clustering may be degraded.");
+        log.warn("No Snowball stemmer class for: {}. "
+            + "Quality of clustering may be degraded.", language.name());
         return IdentityStemmer.INSTANCE;
       }
 
       try {
         return new SnowballStemmerAdapter(stemmerClazz.newInstance());
       } catch (Exception e) {
-        log.warn("Could not instantiate snowball stemmer"
-            + " for language: " + language.name()
-            + ". Quality of clustering may be degraded.", e);
+        log.warn("Could not instantiate snowball stemmer for language: {}"
+                + ". Quality of clustering may be degraded."
+            , language.name(), e);
 
         return IdentityStemmer.INSTANCE;
       }

@@ -85,7 +85,7 @@ final class SubtypeCollector<T> implements Runnable {
           }
         }
       } catch (IOException e) {
-        log.error("Cannot load jar " + url.toString(), e);
+        log.error("Cannot load jar {}", url, e);
       }
     }
   }

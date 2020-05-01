@@ -203,10 +203,11 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     Thread.sleep(3000);
 
     waitForThingsToLevelOut(180000);
-    
-    log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
-    
-    log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+
+    if (log.isInfoEnabled()) {
+      log.info("control docs:{}\n\n", controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // logOk
+    }
     
     waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 //    waitForAllWarmingSearchers();

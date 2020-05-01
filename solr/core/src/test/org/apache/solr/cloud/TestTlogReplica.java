@@ -434,7 +434,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         }
         log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
       } catch (SolrException e) {
-        log.error("Exception while adding replica. Attempt: " + i + "/" +  maxAttempts, e);
+        log.error("Exception while adding replica. Attempt: {}/{}", i, maxAttempts, e);
       }
     }
   }

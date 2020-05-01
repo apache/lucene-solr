@@ -49,10 +49,14 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster2 = new MiniSolrCloudCluster(1, createTempDir("cdcr-cluster2"), buildJettyConfig("/solr"));
     MiniSolrCloudCluster cluster1 = new MiniSolrCloudCluster(1, createTempDir("cdcr-cluster1"), buildJettyConfig("/solr"));
     try {
-      log.info("cluster2 zkHost = " + cluster2.getZkServer().getZkAddress());
+      if (log.isInfoEnabled()) {
+        log.info("cluster2 zkHost = {}", cluster2.getZkServer().getZkAddress());
+      }
       System.setProperty("cdcr.cluster2.zkHost", cluster2.getZkServer().getZkAddress());
 
-      log.info("cluster1 zkHost = " + cluster1.getZkServer().getZkAddress());
+      if (log.isInfoEnabled()) {
+        log.info("cluster1 zkHost = {}", cluster1.getZkServer().getZkAddress());
+      }
       System.setProperty("cdcr.cluster1.zkHost", cluster1.getZkServer().getZkAddress());
 
 
@@ -89,7 +93,7 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
           req.add(doc);
         }
         req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-        log.info("Adding " + docs + " docs with commit=true, numDocs=" + numDocs_c1);
+        log.info("Adding {} docs with commit=true, numDocs={}", docs, numDocs_c1);
         req.process(cluster1SolrClient);
       }
 
@@ -112,7 +116,7 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
           req.add(doc);
         }
         req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-        log.info("Adding " + docs + " docs with commit=true, numDocs=" + numDocs_c2);
+        log.info("Adding {} docs with commit=true, numDocs= {}", docs, numDocs_c2);
         req.process(cluster2SolrClient);
       }
 
@@ -125,9 +129,13 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
 
       // logging cdcr clusters queue response
       response = CdcrTestsUtil.getCdcrQueue(cluster1SolrClient);
-      log.info("Cdcr cluster1 queue response: " + response.getResponse());
+      if (log.isInfoEnabled()) {
+        log.info("Cdcr cluster1 queue response: {}", response.getResponse());
+      }
       response = CdcrTestsUtil.getCdcrQueue(cluster2SolrClient);
-      log.info("Cdcr cluster2 queue response: " + response.getResponse());
+      if (log.isInfoEnabled()) {
+        log.info("Cdcr cluster2 queue response: {}", response.getResponse());
+      }
 
       // lets find and keep the maximum version assigned by cluster1 & cluster2 across all our updates
 
@@ -150,8 +158,8 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       Long checkpoint_1 = (Long) response.getResponse().get(CdcrParams.CHECKPOINT);
       assertNotNull(checkpoint_1);
 
-      log.info("v1: " + maxVersion_c1 + "\t" + "v2: " + maxVersion_c2 + "\t" +
-          "checkpoint1: " + checkpoint_1 + "\t" + "checkpoint2: " + checkpoint_2);
+      log.info("v1: {}\tv2: {}\tcheckpoint1: {}\tcheckpoint2: {}"
+          , maxVersion_c1, maxVersion_c2, checkpoint_1, checkpoint_2);
 
       assertEquals("COLLECTIONCHECKPOINT from cluster2 should have returned the maximum " +
           "version across all updates made to cluster1", maxVersion_c1, checkpoint_2.longValue());
@@ -204,9 +212,13 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
 
       // logging cdcr clusters queue response
       response = CdcrTestsUtil.getCdcrQueue(cluster1SolrClient);
-      log.info("Cdcr cluster1 queue response at end of testcase: " + response.getResponse());
+      if (log.isInfoEnabled()) {
+        log.info("Cdcr cluster1 queue response at end of testcase: {}", response.getResponse());
+      }
       response = CdcrTestsUtil.getCdcrQueue(cluster2SolrClient);
-      log.info("Cdcr cluster2 queue response at end of testcase: " + response.getResponse());
+      if (log.isInfoEnabled()) {
+        log.info("Cdcr cluster2 queue response at end of testcase: {}", response.getResponse());
+      }
 
       CdcrTestsUtil.cdcrStop(cluster1SolrClient);
       CdcrTestsUtil.cdcrStop(cluster2SolrClient);

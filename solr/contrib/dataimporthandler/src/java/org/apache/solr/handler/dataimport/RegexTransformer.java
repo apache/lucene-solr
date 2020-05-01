@@ -165,7 +165,7 @@ public class RegexTransformer extends Transformer {
               }
             }
           } catch (Exception e) {
-            log.warn("Parsing failed for field : " + columnName, e);
+            log.warn("Parsing failed for field : {}", columnName, e);
           }
         }
         return l == null ? map: l;

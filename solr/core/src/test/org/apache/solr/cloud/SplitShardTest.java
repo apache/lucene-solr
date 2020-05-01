@@ -181,7 +181,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         long numFound = 0;
         try {
           numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
-          log.info("Replica count=" + numFound + " for " + replica);
+          log.info("Replica count={} for {}", numFound, replica);
         } finally {
           replicaClient.close();
         }
@@ -269,11 +269,11 @@ public class SplitShardTest extends SolrCloudTestCase {
         String id = (String) doc.get("id");
         leftover.remove(id);
       }
-      log.error("MISSING DOCUMENTS: " + leftover);
+      log.error("MISSING DOCUMENTS: {}", leftover);
     }
 
     assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
-    log.info("Number of documents indexed and queried : " + numDocs);
+    log.info("Number of documents indexed and queried : {}", numDocs);
   }
 
 

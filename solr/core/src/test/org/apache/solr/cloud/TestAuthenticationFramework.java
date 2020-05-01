@@ -151,7 +151,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
-      log.info("Username: "+username+", password: "+password);
+      log.info("Username: {}, password: {}", username, password);
       if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
         return true;

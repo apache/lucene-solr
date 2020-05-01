@@ -516,8 +516,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     SSLTestConfig result = sslRandomizer.createSSLTestConfig();
-    log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
-             result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
+    if (log.isInfoEnabled()) {
+      log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
+          result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
+    }
     return result;
   }
 
@@ -592,12 +594,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("###Starting " + getTestName());  // returns <unknown>???
+    if (log.isInfoEnabled()) {
+      log.info("###Starting {}", getTestName());  // returns <unknown>???
+    }
   }
 
   @Override
   public void tearDown() throws Exception {
-    log.info("###Ending " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("###Ending {}", getTestName());
+    }
     super.tearDown();
   }
 
@@ -624,7 +630,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       final int id = dataDirCount.incrementAndGet();
       dataDir = initCoreDataDir = createTempDir("data-dir-"+ id).toFile();
       assertNotNull(dataDir);
-      log.info("Created dataDir: {}", dataDir.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("Created dataDir: {}", dataDir.getAbsolutePath());
+      }
     }
     return dataDir;
   }
@@ -670,7 +678,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     numCloses = SolrIndexSearcher.numCloses.getAndSet(0);
     if (numOpens != 0 || numCloses != 0) {
       // NOTE: some other tests don't use this base class and hence won't reset the counts.
-      log.warn("startTrackingSearchers: numOpens="+numOpens+" numCloses="+numCloses);
+      log.warn("startTrackingSearchers: numOpens={} numCloses={}", numOpens, numCloses);
       numOpens = numCloses = 0;
     }
   }
@@ -856,7 +864,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * to log the fact that their setUp process has ended.
    */
   public void postSetUp() {
-    log.info("####POSTSETUP " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####POSTSETUP {}", getTestName());
+    }
   }
 
 
@@ -866,7 +876,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * tearDown method.
    */
   public void preTearDown() {
-    log.info("####PRETEARDOWN " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####PRETEARDOWN {}", getTestName());
+    }
   }
 
   /**
@@ -1028,7 +1040,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: " + req.getParamString());
+        log.error("REQUEST FAILED: {}", req.getParamString());
       }
     }
 
@@ -1077,7 +1089,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         failed = false;
       } finally {
         if (failed) {
-          log.error("REQUEST FAILED: " + req.getParamString());
+          log.error("REQUEST FAILED: {}", req.getParamString());
         }
       }
 
@@ -1090,19 +1102,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           String err = JSONTestUtil.match(response, testJSON, delta);
           failed = false;
           if (err != null) {
-            log.error("query failed JSON validation. error=" + err +
-                "\n expected =" + testJSON +
-                "\n response = " + response +
-                "\n request = " + req.getParamString()
+            log.error("query failed JSON validation. error={}\n expected ={}\n response = {}\n request = {}"
+                , err, testJSON, response, req.getParamString()
             );
             throw new RuntimeException(err);
           }
         } finally {
           if (failed) {
-            log.error("JSON query validation threw an exception." +
-                "\n expected =" + testJSON +
-                "\n response = " + response +
-                "\n request = " + req.getParamString()
+            log.error("JSON query validation threw an exception.\n expected ={} \n response = {}\n request = {}"
+                , testJSON, response, req.getParamString()
             );
           }
         }
@@ -2972,7 +2980,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
     }
-    log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
+    if (log.isInfoEnabled()) {
+      log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
+    }
   }
 
   /**
@@ -2998,7 +3008,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class)
         || (! usePoints)) {
-      log.info("Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
+      log.info("Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.TrieIntField");
@@ -3010,7 +3020,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
-      log.info("Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
+      log.info("Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.IntPointField");
