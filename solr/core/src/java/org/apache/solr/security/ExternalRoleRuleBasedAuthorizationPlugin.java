@@ -47,7 +47,7 @@ public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthoriza
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(Principal principal) {
+  public Set<String> getUserRoles(Principal principal) {
     if(principal instanceof VerifiedUserRoles) {
       return ((VerifiedUserRoles) principal).getVerifiedRoles();
     } else {
