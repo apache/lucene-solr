@@ -77,6 +77,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudJSONFacetSKG
  */
+@org.apache.solr.util.RandomizeSSL(ssl=0.0,clientAuth=0.0,reason="nocommit: keep test fast for now")
 public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -172,6 +173,9 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       }
     }
     CLOUD_CLIENT.commit();
+
+    log.info("Created {} using numNodes={}, numShards={}, repFactor={}, numDocs={}",
+             COLLECTION_NAME, numNodes, numShards, repFactor, numDocs);
   }
 
   /**
@@ -237,17 +241,34 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * works and can be verified by inspecting the debug output of basic requests.
    */
   public void testWhiteboxSanitySweepDebug() throws Exception {
+    // NOTE: json.facet debugging output can be wonky, particularly when dealing with cloud
+    // so for these queries we keep it simple:
+    // - only one "top" facet per request
+    // - no refinement
+    // even with those constraints in place, a single facet can (may/sometimes?) produce multiple debug
+    // blocks - aparently due to shard merging? So...
+    // - only inspect the "first" debug NamedList in the results
+    //
+    
     final SolrParams baseParams = params("rows","0",
-                                         "debug","query",
+                                         "debug","true", // SOLR-14451
                                          "q", multiStrField(5)+":9",
                                          "fore", multiStrField(7)+":11",
                                          "back", "*:*");
     
-    { // simple single facet with a single skg that is sorted on...
-      
+    // simple individual facet that sorts on an skg stat...
+    //
+    // all results we test should be the same even if there is another 'skg_extra' stat,
+    // it shouldn't be involved in the sweeping at all.
+    for (Facet extra : Arrays.asList(null,  new RelatednessFacet(multiStrField(2)+":9", null))) {
+      // choose a single value string so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
+      final TermFacet f = new TermFacet(soloStrField(9), 10, 0, "skg desc", null);
+      if (null != extra) {
+        f.subFacets.put("skg_extra", extra);
+      }
       final Map<String,TermFacet> facets = new LinkedHashMap<>();
-      // choose a single value string so we know both 'dv' and 'dvhash' can be specified
-      facets.put("str", new TermFacet(soloStrField(9), 10, 0, "skg desc", null));
+      facets.put("str", f);
+        
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
                                          "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
@@ -259,23 +280,21 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                                          "sweep_val", "true"))) {
         final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
         
-        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
-        assertEquals(1, facetDebug.size());
-        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
-        final NamedList<Object> sweep_debug = (NamedList<Object>) facetDebug.get(0).get("sweep_collection");
+        final NamedList<Object> debug = getFacetDebug(params);
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
         assertEquals(Arrays.asList("skg!fg","skg!bg"), sweep_debug.get("accs"));
         assertEquals(Arrays.asList("skg"), sweep_debug.get("mapped"));
       }
-      { // UIF will always *try* to sweep, but disabling on stat should mean debug is mostly empty...
+      { // 'dv' will always *try* to sweep, but disabling on stat should mean debug is mostly empty...
         final SolrParams params = SolrParams.wrapDefaults(params("sweep_key", "sweep_collection",
                                                                  "sweep_val", "false"),
                                                           facetParams);
-        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
-        assertEquals(1, facetDebug.size());
-        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
-        final NamedList<Object> sweep_debug = (NamedList<Object>) facetDebug.get(0).get("sweep_collection");
+        final NamedList<Object> debug = getFacetDebug(params);
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
         assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
@@ -287,39 +306,113 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                                                  "sweep_key", "sweep_collection",
                                                                  "sweep_val", "true"),
                                                           facetParams);
-        final List<NamedList<Object>> facetDebug = getFacetDebug(params);
-        assertEquals(1, facetDebug.size());
-        assertEquals(FacetFieldProcessorByHashDV.class.getSimpleName(), facetDebug.get(0).get("processor"));
-
+        final NamedList<Object> debug = getFacetDebug(params);
+        assertEquals(FacetFieldProcessorByHashDV.class.getSimpleName(), debug.get("processor"));
         // nocommit: this currently fails because even non-sweeping processors call
         // nocommit: FacetFieldProcessor.fillBucketFromSlot which calls countAcc.getBaseSweepingAcc()
         // nocommit: so we get a SweepingAcc (which populates the debug) even though we don't need/want/use it
         //
-        // assertNull(facetDebug.get(0).get("sweep_collection"));
+        // assertNull(debug.get("sweep_collection"));
       }
-
-      // nocommit: TODO test multiple relatedness() functions, confirm expected sweep accs based on sort
-      
-      // nocommit: TODO test nested facets and inspect nested debug
-      
-      // nocommit: TODO test multiacc situation w/multi relatedness(), confirm multiple sweep accs
-
-      // nocommit: TODO test prelim_sort=count + sort=relatedness(), confirm no sweep accs
     }
+      
+    { // single facet with infinite limit + multiple skgs...
+      // this should trigger MultiAcc collection, causing sweeping on both skg functions
+      
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      final TermFacet facet = new TermFacet(soloStrField(9), -1, 0, "skg2 desc", null);
+      facet.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", null));
+      facets.put("str", facet);
+      final SolrParams facetParams
+        = SolrParams.wrapDefaults(params("method_val", "dv",
+                                         "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                  baseParams);
+      
+      // both default sweep option and explicit sweep should give same results...
+      for (SolrParams sweepParams : Arrays.asList(params(),
+                                                  params("sweep_key", "sweep_collection",
+                                                         "sweep_val", "true"))) {
+        final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
+      
+        final NamedList<Object> debug = getFacetDebug(params);
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+        assertNotNull(sweep_debug);
+        assertEquals("count", sweep_debug.get("base"));
+        assertEquals(Arrays.asList("skg!fg","skg!bg","skg2!fg","skg2!bg"), sweep_debug.get("accs"));
+        assertEquals(Arrays.asList("skg","skg2"), sweep_debug.get("mapped"));
+
+      }
+    }
+    
+    // nested facets that both sort on an skg stat
+    // (set limit + overrequest tiny to keep multishard response managable)
+    //
+    // all results we test should be the same even if there is another 'skg_extra' stat,
+    // in each term facet.  they shouldn't be involved in the sweeping at all.
+    for (Facet extra : Arrays.asList(null,  new RelatednessFacet(multiStrField(2)+":9", null))) {
+      // choose a single value string so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
+      final TermFacet parent = new TermFacet(soloStrField(9), 1, 0, "skg desc", false);
+      final TermFacet child = new TermFacet(soloStrField(7), 1, 0, "skg desc", false);
+      parent.subFacets.put("child", child);
+      if (null != extra) {
+        parent.subFacets.put("skg_extra", extra);
+        child.subFacets.put("skg_extra", extra);
+      }
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("parent", parent);
+        
+      final SolrParams facetParams
+        = SolrParams.wrapDefaults(params("method_val", "dv",
+                                         "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                  baseParams);
+      // both default sweep option and explicit sweep should give same results...
+      for (SolrParams sweepParams : Arrays.asList(params(),
+                                                  params("sweep_key", "sweep_collection",
+                                                         "sweep_val", "true"))) {
+        final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
+        
+        final NamedList<Object> parentDebug = getFacetDebug(params);
+        assertEquals(soloStrField(9), parentDebug.get("field"));
+        assertNotNull(parentDebug.get("sub-facet"));
+        // may be multiples from diff shards, just use first one
+        final NamedList<Object> childDebug = ((List<NamedList<Object>>)parentDebug.get("sub-facet")).get(0);
+        assertEquals(soloStrField(7), childDebug.get("field"));
+
+        // these should all be true for both the parent and the child debug..
+        for (NamedList<Object> debug : Arrays.asList(parentDebug, childDebug)) {
+          assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+          final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+          assertNotNull(sweep_debug);
+          assertEquals("count", sweep_debug.get("base"));
+          assertEquals(Arrays.asList("skg!fg","skg!bg"), sweep_debug.get("accs"));
+          assertEquals(Arrays.asList("skg"), sweep_debug.get("mapped"));
+        }
+      }
+    }
+    
+    // nocommit: TODO test prelim_sort=count + sort=relatedness(), confirm no sweep accs
+
   }
 
-  private List<NamedList<Object>> getFacetDebug(final SolrParams params) {
+  /**
+   * returns the <b>FIRST</b> NamedList (under the implicit 'null' FacetQuery) in the "facet-trace" output 
+   * of the request.  Should not be used with multiple "top level" facets 
+   * (the output is too confusing in cloud mode to be confident where/qhy each NamedList comes from)
+   */
+  private NamedList<Object> getFacetDebug(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
       final NamedList topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
       
-      // skip past the "top level" (implicit) Facet query to get it's "sub-facets" (the real facets)...
+      // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
       final List<NamedList<Object>> facetDebug =
         (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
-      return facetDebug;
+      assertFalse(topNamedList + " ... not even one facet debug?", facetDebug.isEmpty());
+      return facetDebug.get(0);
     } catch (Exception e) {
       throw new RuntimeException("query failed: " + params + ": " + 
                                  e.getMessage(), e);
