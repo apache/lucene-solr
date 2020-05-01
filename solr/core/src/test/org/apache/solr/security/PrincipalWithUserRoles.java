@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.Serializable;
 import java.security.Principal;
 import java.util.Set;
 
@@ -29,8 +28,7 @@ import org.apache.http.util.Args;
  * another secure manner. The role information can then be used to authorize
  * requests without the need to maintain or lookup what roles each user belongs to. 
  */
-public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles, Serializable {
-  private static final long serialVersionUID = 4144666467522831388L;
+public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
   private final String username;
 
   private final Set<String> roles;
