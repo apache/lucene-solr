@@ -112,9 +112,9 @@ public class BlockJoinSelector {
    *  one value per parent among its {@code children} using the configured
    *  {@code selection} type. */
   public static SortedDocValues wrap(final SortedDocValues values, Type selection, BitSet parents, DocIdSetIterator children) {
-    if (values.docID() != -1) {
-      throw new IllegalArgumentException("values iterator was already consumed: values.docID=" + values.docID());
-    }
+    //if (values.docID() != -1) {
+    //  throw new IllegalArgumentException("values iterator was already consumed: values.docID=" + values.docID());
+    //}
     return ToParentDocValues.wrap(values, selection, parents, children);
   }
 

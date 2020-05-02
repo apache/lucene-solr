@@ -168,7 +168,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     final LeafReader leafReader = context.reader();
     @SuppressWarnings("resource")
     final LeafReaderContext singleThreadContext = 
-                          new DocValuesReusingReader(leafReader).getContext();
+                          new DocValuesPoolingReader(leafReader).getContext();
     groupSelector.setNextReader(singleThreadContext);
     this.context = singleThreadContext;
     this.contextDocBase = context.docBase;

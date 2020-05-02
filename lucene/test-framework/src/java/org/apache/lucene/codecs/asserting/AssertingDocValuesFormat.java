@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -285,7 +286,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == DocValuesType.SORTED_SET;
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
-      return new AssertingLeafReader.AssertingSortedSetDocValues(values, maxDoc);
+      final SortedDocValues singleton = DocValues.unwrapSingleton(values);
+      return singleton==null ? new AssertingLeafReader.AssertingSortedSetDocValues(values, maxDoc) :
+        DocValues.singleton(new AssertingLeafReader.AssertingSortedDocValues(singleton, maxDoc));
     }
     
     @Override

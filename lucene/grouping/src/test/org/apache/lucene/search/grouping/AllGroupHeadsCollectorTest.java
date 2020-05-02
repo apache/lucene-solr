@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -34,6 +35,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -48,6 +50,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -58,6 +61,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
+  @SuppressWarnings("unchecked")
   public void testBasic() throws Exception {
     final String groupField = "author";
     Directory dir = newDirectory();
@@ -73,6 +77,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "random text", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 1));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("1")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("10")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("11")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("1")));
     w.addDocument(doc);
 
     // 1
@@ -81,6 +88,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 2));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("2")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("20")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("21")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("2")));
     w.addDocument(doc);
 
     // 2
@@ -89,6 +99,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 3));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("3")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("30")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("31")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("3")));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
@@ -98,6 +111,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "some random text", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 4));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("4")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("40")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("41")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("4")));
     w.addDocument(doc);
 
     // 4
@@ -106,6 +122,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "some more random text", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 5));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("5")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("50")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("51")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("5")));
     w.addDocument(doc);
 
     // 5
@@ -114,6 +133,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "random blob", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 6));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("60")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("61")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("6")));
     w.addDocument(doc);
 
     // 6 -- no author field
@@ -121,6 +143,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 6));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("60")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("61")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("6")));
     w.addDocument(doc);
 
     // 7 -- no author field
@@ -128,6 +153,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
     doc.add(new NumericDocValuesField("id_1", 7));
     doc.add(new SortedDocValuesField("id_2", new BytesRef("7")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("70")));
+    doc.add(new SortedSetDocValuesField("id_3", new BytesRef("71")));
+    doc.add(new SortedSetDocValuesField("id_4", new BytesRef("7")));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
@@ -153,19 +181,25 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
-    Sort sortWithinGroup2 = new Sort(new SortField("id_2", SortField.Type.STRING, true));
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
-    assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
+    for (Function<Boolean,SortField> sortFunc : new Function[] {
+        (r) -> new SortField("id_2", SortField.Type.STRING, (boolean) r), // singular
+        (r) -> new SortedSetSortField("id_3", (boolean) r), //  multivalue 
+        (r) -> new SortedSetSortField("id_4", (boolean) r)  // singular multivalue
+    }) {
 
-    Sort sortWithinGroup3 = new Sort(new SortField("id_2", SortField.Type.STRING, false));
-    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
-    // 7 b/c higher doc id wins, even if order of field is in not in reverse.
-    assertTrue(arrayContains(new int[]{0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
+      Sort sortWithinGroup2 = new Sort(sortFunc.apply(true));
+      allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2);
+      indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
+      assertTrue(arrayContains(new int[] {2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
+      assertTrue(openBitSetContains(new int[] {2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
+      Sort sortWithinGroup3 = new Sort(sortFunc.apply(false));
+      allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3);
+      indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
+      // 7 b/c higher doc id wins, even if order of field is in not in reverse.
+      assertTrue(arrayContains(new int[] {0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads()));
+      assertTrue(openBitSetContains(new int[] {0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
+    }
     indexSearcher.getIndexReader().close();
     dir.close();
   }

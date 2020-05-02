@@ -17,11 +17,9 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.join.BlockJoinSelector.Type;
 import org.apache.lucene.util.BitSet;
@@ -170,16 +168,19 @@ class ToParentDocValues extends DocIdSetIterator {
 
   private ToParentDocValues(DocIdSetIterator values, BitSet parents, DocIdSetIterator children, Accumulator collect) {
     this.parents = parents;
-    childWithValues = ConjunctionDISI.intersectIterators(Arrays.asList(children, values));
+    //childWithValues = ConjunctionDISI.intersectIterators(Arrays.asList(children, values));
+    this.children = children;
+    this.childValues = values;
     this.collector = collect;
   }
 
   
   final private BitSet parents;
-  private int docID = -1;
   final private Accumulator collector;
-  boolean seen=false;
-  private DocIdSetIterator childWithValues;
+  private int docID = -1;
+  private boolean seen=false;
+  final private DocIdSetIterator childValues;
+  final private DocIdSetIterator children;
 
   @Override
   public int docID() {
@@ -190,29 +191,34 @@ class ToParentDocValues extends DocIdSetIterator {
   public int nextDoc() throws IOException {
     assert docID != NO_MORE_DOCS;
     
-    assert childWithValues.docID()!=docID || docID==-1;
-    if (childWithValues.docID()<docID || docID==-1) {
-      childWithValues.nextDoc();
+    assert children.docID()!=docID || docID==-1;
+    while (children.docID()<docID || docID==-1 || !advanceExactChildDV(children.docID())) {
+      children.nextDoc();
+      if (children.docID() == NO_MORE_DOCS || advanceExactChildDV(children.docID())) {
+        break;
+      }
     }
-    if (childWithValues.docID() == NO_MORE_DOCS) {
+    if (children.docID() == NO_MORE_DOCS) {
       docID = NO_MORE_DOCS;
       return docID;
     }
     
 
-    assert parents.get(childWithValues.docID()) == false;
+    assert parents.get(children.docID()) == false;
     
-    int nextParentDocID = parents.nextSetBit(childWithValues.docID());
+    int nextParentDocID = parents.nextSetBit(children.docID());
     collector.reset();
     seen=true;
     
     while (true) {
-      int childDocID = childWithValues.nextDoc();
+      int childDocID = children.nextDoc();
       assert childDocID != nextParentDocID;
       if (childDocID > nextParentDocID) {
         break;
       }
-      collector.increment();
+      if (advanceExactChildDV(childDocID)) {
+        collector.increment();
+      }
     }
 
     docID = nextParentDocID;
@@ -231,8 +237,8 @@ class ToParentDocValues extends DocIdSetIterator {
       return nextDoc();
     }
     int prevParentDocID = parents.prevSetBit(target-1);
-    if (childWithValues.docID() <= prevParentDocID) {
-      childWithValues.advance(prevParentDocID+1);
+    if (children.docID() <= prevParentDocID) {
+      children.advance(prevParentDocID+1);
     }
     return nextDoc();
   }
@@ -245,37 +251,49 @@ class ToParentDocValues extends DocIdSetIterator {
     int previousDocId = docID;
     docID = targetParentDocID;
     if (targetParentDocID == previousDocId) {
-      return seen;//ord != -1; rlly???
+      return seen;
     }
-    docID = targetParentDocID;
-    seen =false;
-    //ord = -1;
+    seen = false;
+
     if (parents.get(targetParentDocID) == false) {
       return false;
     }
     int prevParentDocId = docID == 0 ? -1 : parents.prevSetBit(docID - 1);
-    int childDoc = childWithValues.docID();
+    int childDoc = children.docID();
     if (childDoc <= prevParentDocId) {
-      childDoc = childWithValues.advance(prevParentDocId + 1);
-    }
-    if (childDoc >= docID) {
-      return false;
+      childDoc = children.advance(prevParentDocId + 1);
     }
     
-    if (childWithValues.docID() < docID) {
-      collector.reset();
-      seen=true;
-      childWithValues.nextDoc();
+    for(;children.docID() < docID && !seen; children.nextDoc()) {
+      if (advanceExactChildDV(children.docID())) {
+        collector.reset();
+        seen=true;
+      } 
     }
     
     if (seen == false) {
       return false;
     }
 
-    for (int doc = childWithValues.docID(); doc < docID; doc = childWithValues.nextDoc()) {
+    for (int doc = children.docID(); doc < docID; doc = children.nextDoc()) {
+      if (advanceExactChildDV(doc)) {
         collector.increment();
+      }
     }
     return true;
+  }
+
+  private boolean advanceExactChildDV(int docnum) throws IOException {
+    if (childValues instanceof SortedDocValues) {
+      return ((SortedDocValues) childValues).advanceExact(docnum);
+    } else {
+      if (childValues instanceof NumericDocValues) {
+        return ((NumericDocValues) childValues).advanceExact(docnum);
+      } else {
+        throw new UnsupportedOperationException("unexpected " + childValues 
+            + " for advanceExact()");
+      }
+    }
   }
 
   @Override

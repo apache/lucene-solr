@@ -21,13 +21,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Caches docValues for the given {@linkplain LeafReader}.
@@ -37,7 +40,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * it looses baseDoc, ord from underneath context.
  * @lucene.experimental   
  * */
-class DocValuesReusingReader extends FilterLeafReader {
+class DocValuesPoolingReader extends FilterLeafReader {
 
   @FunctionalInterface
   interface DVSupplier<T extends DocIdSetIterator>{
@@ -46,7 +49,7 @@ class DocValuesReusingReader extends FilterLeafReader {
   
   private Map<String, ? super DocIdSetIterator> cache = new HashMap<>();
 
-  DocValuesReusingReader(LeafReader in) {
+  DocValuesPoolingReader(LeafReader in) {
     super(in);
   }
 
@@ -91,7 +94,82 @@ class DocValuesReusingReader extends FilterLeafReader {
   
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    return computeIfAbsent(field, in::getSortedSetDocValues);
+    return computeIfAbsent(field, field1 -> {
+      final SortedSetDocValues sortedSet = in.getSortedSetDocValues(field1);
+      final SortedDocValues singleton = DocValues.unwrapSingleton(sortedSet);
+      if (singleton!=null) {
+        return new SortedSetDocValues() {
+          private long ord;
+          
+          @Override
+          public int docID() {
+            return singleton.docID();
+          }
+
+          @Override
+          public long nextOrd() {
+            long v = ord;
+            ord = NO_MORE_ORDS;
+            return v;
+          }
+
+          @Override
+          public int nextDoc() throws IOException {
+            int docID = singleton.nextDoc();
+            if (docID != NO_MORE_DOCS) {
+              ord = singleton.ordValue();
+            }
+            return docID;
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            int docID = singleton.advance(target);
+            if (docID != NO_MORE_DOCS) {
+              ord = singleton.ordValue();
+            }
+            return docID;
+          }
+
+          @Override
+          public boolean advanceExact(int target) throws IOException {
+            if (singleton.advanceExact(target)) {
+              ord = singleton.ordValue();
+              return true;
+            }
+            return false;
+          }
+
+          @Override
+          public BytesRef lookupOrd(long ord) throws IOException {
+            // cast is ok: single-valued cannot exceed Integer.MAX_VALUE
+            return singleton.lookupOrd((int) ord);
+          }
+
+          @Override
+          public long getValueCount() {
+            return singleton.getValueCount();
+          }
+
+          @Override
+          public long lookupTerm(BytesRef key) throws IOException {
+            return singleton.lookupTerm(key);
+          }
+
+          @Override
+          public TermsEnum termsEnum() throws IOException {
+            return singleton.termsEnum();
+          }
+
+          @Override
+          public long cost() {
+            return singleton.cost();
+          }
+        };
+      } else {
+        return sortedSet;
+      }
+    });
   }
   
 }

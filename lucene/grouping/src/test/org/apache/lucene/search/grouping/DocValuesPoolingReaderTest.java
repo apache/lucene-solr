@@ -40,7 +40,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class DocValuesReusingReaderTest extends LuceneTestCase {
+public class DocValuesPoolingReaderTest extends LuceneTestCase {
   
   private static RandomIndexWriter w;
   private static Directory dir;
@@ -78,7 +78,7 @@ public class DocValuesReusingReaderTest extends LuceneTestCase {
   public void testDVCache() throws IOException {
     assertFalse(reader.leaves().isEmpty());
     for (LeafReaderContext leaf : reader.leaves()) {
-      final DocValuesReusingReader caching = new DocValuesReusingReader(leaf.reader());
+      final DocValuesPoolingReader caching = new DocValuesPoolingReader(leaf.reader());
       
       assertSame(assertBinaryDV(caching, "bin", "binary"), 
           caching.getBinaryDocValues("bin"));
