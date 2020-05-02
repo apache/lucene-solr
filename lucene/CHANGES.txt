@@ -93,6 +93,9 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9354: Improvements to snowball french stopwords list, so that it is less
+  aggressive. (Philippe Ouellet)
+
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
