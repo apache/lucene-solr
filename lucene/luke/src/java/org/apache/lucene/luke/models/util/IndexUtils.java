@@ -93,7 +93,9 @@ public final class IndexUtils {
       throw new RuntimeException("No valid directory at the location: " + indexPath);
     }
 
-    log.info(String.format(Locale.ENGLISH, "IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ENGLISH, "IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
+    }
 
     if (readers.size() == 1) {
       return readers.get(0);
@@ -115,7 +117,9 @@ public final class IndexUtils {
   public static Directory openDirectory(String dirPath, String dirImpl) throws IOException {
     final Path path = FileSystems.getDefault().getPath(Objects.requireNonNull(dirPath));
     Directory dir = openDirectory(path, dirImpl);
-    log.info(String.format(Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
+    }
     return dir;
   }
 

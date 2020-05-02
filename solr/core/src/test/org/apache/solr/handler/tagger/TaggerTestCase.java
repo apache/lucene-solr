@@ -62,7 +62,9 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   public TestWatcher watchman = new TestWatcher() {
     @Override
     protected void starting(Description description) {
-      log.info("{} being run...", description.getDisplayName());
+      if (log.isInfoEnabled()) {
+        log.info("{} being run...", description.getDisplayName());
+      }
     }
   };
 
@@ -175,7 +177,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   /** REMEMBER to close() the result req object. */
   protected SolrQueryRequest reqDoc(String doc, SolrParams moreParams) {
-    log.debug("Test doc: "+doc);
+    log.debug("Test doc: {}", doc);
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
     Iterable<ContentStream> stream = Collections.singleton((ContentStream)new ContentStreamBase.StringStream(doc));

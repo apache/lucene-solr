@@ -93,6 +93,9 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9354: Improvements to snowball french stopwords list, so that it is less
+  aggressive. (Philippe Ouellet)
+
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
@@ -141,6 +144,11 @@ API Changes
 * LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
   interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
   around it. (Simon Willnauer)
+
+* LUCENE-9349: QueryVisitor.consumeTermsMatching() now takes a
+  Supplier<ByteRunAutomaton> to enable queries that build large automata to
+  provide them lazily.  TermsInSetQuery switches to using this method
+  to report matching terms. (Alan Woodward)
 
 New Features
 ---------------------

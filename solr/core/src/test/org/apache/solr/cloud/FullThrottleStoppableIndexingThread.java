@@ -107,7 +107,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       
     }
 
-    log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+    log.info("FT added docs:{} with {} fails deletes:{}", numAdds, fails, numDeletes);
   }
 
   private void changeUrlOnError(Exception e) {

@@ -121,7 +121,9 @@ class CdcrProcessStateManager extends CdcrStateManager {
           zkClient.makePath(this.getZnodeBase(), null, CreateMode.PERSISTENT, null, false, true);
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
-        log.info("Created znode {}", this.getZnodePath());
+        if (log.isInfoEnabled()) {
+          log.info("Created znode {}", this.getZnodePath());
+        }
       }
     } catch (KeeperException.NodeExistsException ne) {
       // Someone got in first and created the node.
@@ -164,7 +166,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
         log.info("Received new CDCR process state from watcher: {} @ {}:{}", state, collectionName, shard);
         CdcrProcessStateManager.this.setState(state);
       } catch (KeeperException | InterruptedException e) {
-        log.warn("Failed synchronising new state @ " + collectionName + ":" + shard, e);
+        log.warn("Failed synchronising new state @ {}: {}", collectionName, shard, e);
       }
     }
 

@@ -33,7 +33,9 @@ public abstract class AbstractHandler<T extends Observer> {
 
   public void addObserver(T observer) {
     observers.add(observer);
-    log.debug("{} registered.", observer.getClass().getName());
+    if (log.isDebugEnabled()) {
+      log.debug("{} registered.", observer.getClass().getName());
+    }
   }
 
   void notifyObservers() {

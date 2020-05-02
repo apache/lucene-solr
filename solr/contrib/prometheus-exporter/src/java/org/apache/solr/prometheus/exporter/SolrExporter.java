@@ -208,7 +208,7 @@ public class SolrExporter {
       solrExporter.start();
       log.info("Solr Prometheus Exporter is running");
     } catch (IOException e) {
-      log.error("Failed to start Solr Prometheus Exporter: " + e.toString());
+      log.error("Failed to start Solr Prometheus Exporter: ", e);
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }

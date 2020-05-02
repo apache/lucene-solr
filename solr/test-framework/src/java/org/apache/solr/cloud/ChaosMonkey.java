@@ -518,11 +518,11 @@ public class ChaosMonkey {
   }
   
   public static void monkeyLog(String msg) {
-    log.info("monkey: " + msg);
+    log.info("monkey: {}", msg);
   }
   
   public static void monkeyLog(String msg, Object...logParams) {
-    log.info("monkey: " + msg, logParams);
+    log.info("monkey: {}", msg, logParams);
   }
   
   public void stopTheMonkey() {
@@ -654,7 +654,7 @@ public class ChaosMonkey {
     for (Slice slice:docCollection.getSlices()) {
       builder.append(slice.getName()).append(": {");
       for (Replica replica:slice.getReplicas()) {
-        log.info(replica.toString());
+        log.info("{}", replica);
         java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();
         String jettyPort = m.group(1);
