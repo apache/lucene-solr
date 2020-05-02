@@ -973,7 +973,7 @@ public class SolrPluginUtils {
       /* we definitely had some sort of sort string from the user,
        * but no SortSpec came out of it
        */
-      log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
+      log.warn("Invalid sort '{}' was specified, ignoring", sort, sortE);
       return null;
     }
 

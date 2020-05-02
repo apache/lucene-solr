@@ -53,7 +53,6 @@ class ValidateLogCallsTask extends DefaultTask {
     violations.add(System.lineSeparator + msg);
     errsFound++;
   }
-
   // We have a log.something line, check for patterns we're not fond of.
   def checkLine(File file, String line, int lineNumber, String previous) {
     boolean violation = false
@@ -98,7 +97,7 @@ class ValidateLogCallsTask extends DefaultTask {
       level = lev.group(1).toLowerCase().trim()
     }
     if (logLevels.contains("log." + level) == false) {
-      reportViolation(String.format("Found an unexpeted log level: %s, file: %s:%d"
+      reportViolation(String.format("Found an unexpected log level: %s, file: %s:%d"
           , level, file.getAbsolutePath(), lineNumber))
     }
     boolean persnicketyLevel = !(level.equals("fatal") || level.equals("error") || level.equals("warn"))
