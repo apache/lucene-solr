@@ -240,6 +240,11 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     return MatchStatus.FORBIDDEN;
   }
 
+  public Set<String> getRoles(String user) {
+    Set<String> roles = usersVsRoles.get(user);
+    return roles;
+  }
+
   public boolean doesUserHavePermission(String user, PermissionNameProvider.Name permission) {
     Set<String> roles = usersVsRoles.get(user);
     if (roles != null) {

@@ -99,7 +99,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         flushPolicy.peakBytesWithoutFlush <= maxRAMBytes);
     assertActiveBytesAfter(flushControl);
     if (flushPolicy.hasMarkedPending) {
-      assertTrue(maxRAMBytes < flushControl.peakActiveBytes);
+      assertTrue(maxRAMBytes < flushControl.getPeakActiveBytes());
     }
     if (ensureNotStalled) {
       assertFalse(docsWriter.flushControl.stallControl.wasStalled());
@@ -194,8 +194,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertTrue("peak bytes without flush exceeded watermark",
           flushPolicy.peakBytesWithoutFlush <= maxRAMBytes);
       if (flushPolicy.hasMarkedPending) {
-        assertTrue("max: " + maxRAMBytes + " " + flushControl.peakActiveBytes,
-            maxRAMBytes <= flushControl.peakActiveBytes);
+        assertTrue("max: " + maxRAMBytes + " " + flushControl.getPeakActiveBytes(),
+            maxRAMBytes <= flushControl.getPeakActiveBytes());
       }
     }
     assertActiveBytesAfter(flushControl);
@@ -253,7 +253,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
             "single thread must not block numThreads: " + numThreads[i],
             docsWriter.flushControl.stallControl.hasBlocked());
       }
-      if (docsWriter.flushControl.peakNetBytes > (2.d * iwc.getRAMBufferSizeMB() * 1024.d * 1024.d)) {
+      if (docsWriter.flushControl.getPeakNetBytes() > (2.d * iwc.getRAMBufferSizeMB() * 1024.d * 1024.d)) {
         assertTrue(docsWriter.flushControl.stallControl.wasStalled());
       }
       assertActiveBytesAfter(flushControl);
