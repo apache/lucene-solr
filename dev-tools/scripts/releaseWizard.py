@@ -163,7 +163,7 @@ def get_editor():
               print("WARNING: You have EDITOR set to %s, which will not work when launched from this tool. Please use an editor that launches a separate window/process" % os.environ['EDITOR'])
           editor = os.environ['EDITOR']
       elif is_windows():
-          editpr = 'notepad.exe'
+          editor = 'notepad.exe'
       elif is_mac():
           editor = 'open -a TextEdit'
       else:
