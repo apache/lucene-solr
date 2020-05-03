@@ -35,10 +35,10 @@ The users that RBAP sees come from whatever authentication plugin has been confi
 
 === Roles
 
-Roles help bridge the gap between users and permissions. The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are two implementaions of the plugin, which only differs in how the user's roles are obtained:
+Roles help bridge the gap between users and permissions. The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are two implementations of the plugin, which only differs in how the user's roles are obtained:
 
 * `RuleBasedAuthorizationPlugin`: The role-to-user mappings must be defined explicitly in `security.json` for every possible authenticated user.
-* `ExternalRoleRuleBasedAuthorizationPlugin`: The role-to-user mappings are managed externally. This plugin expects the user's roles to be present on the `Principal` object which is part of the request.
+* `ExternalRoleRuleBasedAuthorizationPlugin`: The role-to-user mappings are managed externally. This plugin expects the AuthenticationPlugin to provide a Principal that has the roles information as well, implementing the `VerifiedUserRoles` interface.
 
 === Permissions
 
