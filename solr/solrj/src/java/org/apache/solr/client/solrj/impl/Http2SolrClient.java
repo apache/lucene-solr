@@ -57,6 +57,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.client.solrj.util.OnComplete;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -370,7 +371,7 @@ public class Http2SolrClient extends SolrClient {
   private static final Exception CANCELLED_EXCEPTION = new Exception();
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
-  public Cancellable asyncRequest(SolrRequest solrRequest, String collection, OnComplete onComplete) {
+  public Cancellable asyncRequest(SolrRequest solrRequest, String collection, OnComplete<NamedList<Object>> onComplete) {
     Request req;
     try {
       req = makeRequest(solrRequest, collection);
@@ -778,12 +779,6 @@ public class Http2SolrClient extends SolrClient {
 
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
-  }
-
-  public interface OnComplete {
-    void onSuccess(NamedList<Object> result);
-
-    void onFailure(Throwable e);
   }
 
   public void setFollowRedirects(boolean follow) {

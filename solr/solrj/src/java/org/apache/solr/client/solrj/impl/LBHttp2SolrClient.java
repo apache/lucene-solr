@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.OnComplete;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
@@ -81,13 +82,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return httpClient;
   }
 
-  public interface OnComplete {
-    void onStart();
-    void onComplete(Rsp rsp);
-    void onError(Throwable throwable);
-  }
-
-  public Cancellable asyncReq(Req req, OnComplete onComplete) {
+  public Cancellable asyncReq(Req req, OnComplete<Rsp> onComplete) {
     Rsp rsp = new Rsp();
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     ServerIterator it = new ServerIterator(req, zombieServers);
@@ -98,7 +93,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
       @Override
       public void onSuccess(Rsp rsp) {
-        onComplete.onComplete(rsp);
+        onComplete.onSuccess(rsp);
       }
 
       @Override
@@ -108,7 +103,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
           try {
             url = it.nextOrError();
           } catch (SolrServerException ex) {
-            onComplete.onError(e);
+            onComplete.onFailure(e);
             return;
           }
           try {
@@ -124,7 +119,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
             MDC.remove("LBSolrClient.url");
           }
         } else {
-          onComplete.onError(e);
+          onComplete.onFailure(e);
         }
       }
     };
@@ -132,7 +127,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       Cancellable cancellable = doRequest(it.nextOrError(), req, rsp, isNonRetryable, it.isServingZombieServer(), retryListener);
       currentCancellable.set(cancellable);
     } catch (SolrServerException e) {
-      onComplete.onError(e);
+      onComplete.onFailure(e);
     }
     return () -> {
       synchronized (cancelled) {
@@ -153,7 +148,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    return ((Http2SolrClient)getClient(baseUrl)).asyncRequest(req.getRequest(), null, new Http2SolrClient.OnComplete() {
+    return ((Http2SolrClient)getClient(baseUrl)).asyncRequest(req.getRequest(), null, new OnComplete<>() {
       @Override
       public void onSuccess(NamedList<Object> result) {
         rsp.rsp = result;
@@ -167,9 +162,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
       public void onFailure(Throwable oe) {
         try {
           throw (Exception) oe;
-        } catch (BaseHttpSolrClient.RemoteExecutionException e){
+        } catch (BaseHttpSolrClient.RemoteExecutionException e) {
           listener.onFailure(e, false);
-        } catch(SolrException e) {
+        } catch (SolrException e) {
           // we retry on 404 or 403 or 503 or 500
           // unless it's an update - then we only retry on connect exception
           if (!isNonRetryable && RETRY_CODES.contains(e.code())) {

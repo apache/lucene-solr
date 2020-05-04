@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 
 public final class ShardResponse {
