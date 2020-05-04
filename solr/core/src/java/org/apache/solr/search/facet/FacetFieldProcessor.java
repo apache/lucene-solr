@@ -756,6 +756,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
             subAccs[j] = replacement;
           }
         } else {
+          // nocommit: why is MultiAcc registering mappings for something that by definition can't change?
           baseSweepingAcc.registerMapping(acc, acc);
           if (j < i) {
             subAccs[j] = acc;
