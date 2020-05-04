@@ -754,7 +754,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Sorted doc values", creationThread);
       assert target >= 0;
-      //assert target > in.docID(): "" + in.docID() + "->" + target;
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
