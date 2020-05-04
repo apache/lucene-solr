@@ -20,13 +20,20 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 
 public class DoubleRangeGroupSelectorTest extends BaseGroupSelectorTestCase<DoubleRange> {
 
   @Override
   protected void addGroupField(Document document, int id) {
+    if (rarely()) {
+      return;   // missing value
+    }
     // numbers between 0 and 1000, groups are 100 wide from 100 to 900
     double value = random().nextDouble() * 1000;
     document.add(new DoublePoint("double", value));
@@ -41,6 +48,12 @@ public class DoubleRangeGroupSelectorTest extends BaseGroupSelectorTestCase<Doub
 
   @Override
   protected Query filterQuery(DoubleRange groupValue) {
+    if (groupValue == null) {
+      return new BooleanQuery.Builder()
+          .add(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER)
+          .add(new DocValuesFieldExistsQuery("double"), BooleanClause.Occur.MUST_NOT)
+          .build();
+    }
     return DoublePoint.newRangeQuery("double", groupValue.min, Math.nextDown(groupValue.max));
   }
 }

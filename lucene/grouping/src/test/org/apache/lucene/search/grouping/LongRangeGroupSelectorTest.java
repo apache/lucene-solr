@@ -20,13 +20,20 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.LongValuesSource;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 
 public class LongRangeGroupSelectorTest extends BaseGroupSelectorTestCase<LongRange> {
 
   @Override
   protected void addGroupField(Document document, int id) {
+    if (rarely()) {
+      return; // missing value
+    }
     // numbers between 0 and 1000, groups are 100 wide from 100 to 900
     long value = random().nextInt(1000);
     document.add(new LongPoint("long", value));
@@ -41,6 +48,12 @@ public class LongRangeGroupSelectorTest extends BaseGroupSelectorTestCase<LongRa
 
   @Override
   protected Query filterQuery(LongRange groupValue) {
+    if (groupValue == null) {
+      return new BooleanQuery.Builder()
+          .add(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER)
+          .add(new DocValuesFieldExistsQuery("long"), BooleanClause.Occur.MUST_NOT)
+          .build();
+    }
     return LongPoint.newRangeQuery("long", groupValue.min, groupValue.max - 1);
   }
 }
