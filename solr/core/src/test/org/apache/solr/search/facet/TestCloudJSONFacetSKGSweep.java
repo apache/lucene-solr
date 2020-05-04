@@ -252,7 +252,10 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     
     final SolrParams baseParams = params("rows","0",
                                          "debug","true", // SOLR-14451
-                                         "q", multiStrField(5)+":9",
+                                         // *:* is the only "safe" query for this test,
+                                         // to ensure we always have at least one bucket for every facet
+                                         // so we can be confident in getting the debug we expect...
+                                         "q", "*:*",
                                          "fore", multiStrField(7)+":11",
                                          "back", "*:*");
     
@@ -354,8 +357,9 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     // all results we test should be the same even if there is another 'skg_extra' stat,
     // in each term facet.  they shouldn't be involved in the sweeping at all.
     for (Facet extra : Arrays.asList(null,  new RelatednessFacet(multiStrField(2)+":9", null))) {
-      // choose a single value string so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
-      final TermFacet parent = new TermFacet(soloStrField(9), 1, 0, "skg desc", false);
+      // choose single value strings so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
+      // choose 'id' for the parent facet so we are garunteed some child facets
+      final TermFacet parent = new TermFacet("id", 1, 0, "skg desc", false);
       final TermFacet child = new TermFacet(soloStrField(7), 1, 0, "skg desc", false);
       parent.subFacets.put("child", child);
       if (null != extra) {
@@ -376,7 +380,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
         
         final NamedList<Object> parentDebug = getFacetDebug(params);
-        assertEquals(soloStrField(9), parentDebug.get("field"));
+        assertEquals("id", parentDebug.get("field"));
         assertNotNull(parentDebug.get("sub-facet"));
         // may be multiples from diff shards, just use first one
         final NamedList<Object> childDebug = ((List<NamedList<Object>>)parentDebug.get("sub-facet")).get(0);
