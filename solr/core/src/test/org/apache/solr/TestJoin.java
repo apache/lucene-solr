@@ -263,11 +263,8 @@ public class TestJoin extends SolrTestCaseJ4 {
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
         if (err != null) {
-          log.error("JOIN MISMATCH: " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(resultSet)
-           + "\n\tmodel="+ model
+          log.error("JOIN MISMATCH: {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tmodel={}"
+              , err, req, strResponse, Utils.toJSONString(resultSet), model
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging

@@ -87,8 +87,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
       } catch (SolrServerException | IOException e) {
-        log.warn("Attempt to fetch cluster state from " +
-            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+        log.warn("Attempt to fetch cluster state from {} failed."
+            , Utils.getBaseUrlForNodeName(nodeName, urlScheme), e);
       } catch (RemoteSolrException e) {
         if ("NOT_FOUND".equals(e.getMetadata("CLUSTERSTATUS"))) {
           return null;
@@ -226,8 +226,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         } catch (SolrServerException | RemoteSolrException | IOException e) {
           // Situation where we're hitting an older Solr which doesn't have LISTALIASES
           if (e instanceof RemoteSolrException && ((RemoteSolrException)e).code()==400) {
-            log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work"
-                + " unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server", e);
+            log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work {}"
+                ,"unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server"
+                , e);
             this.aliases = Collections.emptyMap();
             this.aliasProperties = Collections.emptyMap();
             this.aliasesTimestamp = System.nanoTime();

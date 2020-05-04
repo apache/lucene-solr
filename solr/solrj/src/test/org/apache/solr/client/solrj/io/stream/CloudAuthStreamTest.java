@@ -521,7 +521,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
           daemonCheck.setCredentials(user, user);
           final List<Tuple> tuples = getTuples(daemonCheck);
           assertEquals(1, tuples.size()); // our daemon;
-          log.info("Current daemon status: {}", tuples.get(0).fields);
+          if (log.isInfoEnabled()) {
+            log.info("Current daemon status: {}", tuples.get(0).fields);
+          }
           assertEquals(daemonId + " should have never had a successful iteration",
                        Long.valueOf(0L), tuples.get(0).getLong("iterations"));
           state = tuples.get(0).get("state");

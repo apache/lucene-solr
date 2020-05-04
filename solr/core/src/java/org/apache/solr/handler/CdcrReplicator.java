@@ -124,7 +124,9 @@ public class CdcrReplicator implements Runnable {
       // we might have read a single commit operation and reached the end of the update logs
       logReader.forwardSeek(subReader);
 
-      log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection());
+      if (log.isInfoEnabled()) {
+        log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection());
+      }
     } catch (Exception e) {
       // report error and update error stats
       this.handleException(e);
@@ -182,10 +184,10 @@ public class CdcrReplicator implements Runnable {
       log.warn("Failed to forward update request {} to target: {}. Got response {}", req, state.getTargetCollection(), rsp);
       state.reportError(CdcrReplicatorState.ErrorType.BAD_REQUEST);
     } else if (e instanceof CloudSolrClient.RouteException) {
-      log.warn("Failed to forward update request to target: " + state.getTargetCollection(), e);
+      log.warn("Failed to forward update request to target: {}", state.getTargetCollection(), e);
       state.reportError(CdcrReplicatorState.ErrorType.BAD_REQUEST);
     } else {
-      log.warn("Failed to forward update request to target: " + state.getTargetCollection(), e);
+      log.warn("Failed to forward update request to target: {}", state.getTargetCollection(), e);
       state.reportError(CdcrReplicatorState.ErrorType.INTERNAL);
     }
   }
