@@ -236,5 +236,5 @@
 #SOLR_SECURITY_MANAGER_ENABLED=true
 # This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
-# scripts. You can also disable the UI when you start solr with "-DdisableAdminUI=true".
-#SOLR_ADMIN_UI_DISABLED=false
+# scripts.
+# SOLR_ADMIN_UI_DISABLED=false

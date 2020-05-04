@@ -45,7 +45,7 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
   public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
     if(disabled){
       _response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
-          "ENABLED in bin/solr.in.sh or solr.in.cmd or pass the value of -DdisableAdminUI=false");
+          "ENABLED in bin/solr.in.sh or solr.in.cmd.");
       return;
     }
     HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
