@@ -177,6 +177,9 @@ Improvements
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)
 
+* LUCENE-9359: SegmentInfos#readCommit now always returns a
+  CorruptIndexException if the content of the file is invalid. (Adrien Grand)
+
 Optimizations
 ---------------------
 
