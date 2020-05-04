@@ -556,7 +556,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     AtomicReference<IndexWriter> writerRef = new AtomicReference<>();
     final MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(IndexWriter.MAX_TERM_LENGTH);
-    writerRef.set(new IndexWriter(dir, newIndexWriterConfig(analyzer)));
+    writerRef.set(new IndexWriter(dir, ensureSaneIWCOnNightly(newIndexWriterConfig(analyzer))));
 
     AtomicReference<SearcherManager> mgrRef = new AtomicReference<>();
     mgrRef.set(new SearcherManager(writerRef.get(), null));
@@ -580,7 +580,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
                 } else {
                   w.rollback();
                 }
-                writerRef.set(new IndexWriter(dir, newIndexWriterConfig(analyzer)));
+                writerRef.set(new IndexWriter(dir, ensureSaneIWCOnNightly(newIndexWriterConfig(analyzer))));
               }
             }
             if (VERBOSE) {

@@ -30,7 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -152,7 +152,7 @@ public class RulesTest extends SolrCloudTestCase {
 
     // adding an additional replica should fail since our rule says at most one replica
     // per node, and we know every node already has one replica
-    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expect(BaseHttpSolrClient.RemoteSolrException.class);
     expectedException.expectMessage(containsString("current number of eligible live nodes 0"));
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
     
@@ -297,7 +297,7 @@ public class RulesTest extends SolrCloudTestCase {
     String ip_1 = ipFragments[ipFragments.length - 1];
     String ip_2 = ipFragments[ipFragments.length - 2];
 
-    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expect(BaseHttpSolrClient.RemoteSolrException.class);
     expectedException.expectMessage(containsString("ip_1"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)

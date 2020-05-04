@@ -23,7 +23,7 @@ import java.io.IOException;
  */
 interface ReadOnlyCountSlotAcc {
 
-  public int getCount(int slot);
+  public long getCount(int slot);
 
   public int compare(int slotA, int slotB);
 

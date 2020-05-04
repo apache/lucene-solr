@@ -238,6 +238,7 @@
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
   <property name="m2.repository.id" value="local"/>
   <property name="m2.credentials.prompt" value="true"/>
+  <property name="maven.repository.id" value="remote"/>
 
   <property name="tests.workDir" location="${build.dir}/test"/>
   <property name="junit.output.dir" location="${build.dir}/test"/>
@@ -598,9 +599,13 @@
     <attribute name="pom.xml"/>
     <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
     <sequential>
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7">
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+      </artifact:install-provider>
       <parent-poms/>
-      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}">
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+      </artifact:pom>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">
@@ -2337,7 +2342,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.7"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="3.0"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

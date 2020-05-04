@@ -58,8 +58,7 @@
 #-XX:CMSInitiatingOccupancyFraction=50 \
 #-XX:CMSMaxAbortablePrecleanTime=6000 \
 #-XX:+CMSParallelRemarkEnabled \
-#-XX:+ParallelRefProcEnabled \
-#-XX:-OmitStackTraceInFastThrow  etc.
+#-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 # e.g. host1:2181,host2:2181/chroot

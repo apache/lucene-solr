@@ -205,7 +205,9 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Trigger a value change event
     log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
-    log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
+    if (log.isInfoEnabled()) {
+      log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
+    }
     assertEquals("value2", watcher.getProps().get("property"));
 
     // Delete the properties znode

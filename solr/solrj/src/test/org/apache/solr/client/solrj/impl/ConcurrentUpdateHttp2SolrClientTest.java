@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -72,7 +72,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       concurrentClient.blockUntilFinished();
 
       int poolSize = 5;
-      ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
+      ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("testCUSS"));
 
       int numDocs = 100;
       int numRunnables = 5;
@@ -161,7 +161,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       concurrentClient.deleteByQuery("collection1", "*:*");
 
       int poolSize = 5;
-      ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
+      ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("testCUSS"));
 
       for (int r=0; r < numRunnables; r++)
         threadPool.execute(new ConcurrentUpdateSolrClientTest.SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient, "collection1"));

@@ -108,7 +108,7 @@ public class PackageManager implements Closeable {
     } catch (Exception e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
-    log.info("Got packages: "+ret);
+    log.info("Got packages: {}", ret);
     return ret;
   }
 

@@ -576,7 +576,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException,
     IOException {
-      log.info("Intercepted params: "+context);
+      log.info("Intercepted params: {}", context);
 
       HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
       URIBuilder uribuilder = new URIBuilder(wrapper.getURI());

@@ -177,7 +177,7 @@ public abstract class Suggester implements MapWriter {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
           if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode))) {
-            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
+            session.matrix.add(new Row(srcNode, session.getPolicy().getParams(), session.getPolicy().getPerReplicaAttributes(), session));
           }
         }
       }
@@ -324,7 +324,7 @@ public abstract class Suggester implements MapWriter {
   List<Violation> testChangedMatrix(boolean executeInStrictMode, Policy.Session session) {
     if (this.deviations != null) this.lastBestDeviation = this.deviations;
     this.deviations = null;
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().getClusterPreferences(), session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;

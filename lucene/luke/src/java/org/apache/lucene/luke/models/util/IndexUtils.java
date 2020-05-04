@@ -93,7 +93,9 @@ public final class IndexUtils {
       throw new RuntimeException("No valid directory at the location: " + indexPath);
     }
 
-    log.info(String.format(Locale.ENGLISH, "IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ENGLISH, "IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
+    }
 
     if (readers.size() == 1) {
       return readers.get(0);
@@ -115,7 +117,9 @@ public final class IndexUtils {
   public static Directory openDirectory(String dirPath, String dirImpl) throws IOException {
     final Path path = FileSystems.getDefault().getPath(Objects.requireNonNull(dirPath));
     Directory dir = openDirectory(path, dirImpl);
-    log.info(String.format(Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
+    }
     return dir;
   }
 
@@ -303,8 +307,10 @@ public final class IndexUtils {
               format = "Lucene 7.2 or later";
             } else if (actualVersion == SegmentInfos.VERSION_74) {
               format = "Lucene 7.4 or later";
-            } else if (actualVersion > SegmentInfos.VERSION_74) {
-              format = "Lucene 7.4 or later (UNSUPPORTED)";
+            } else if (actualVersion == SegmentInfos.VERSION_86) {
+              format = "Lucene 8.6 or later";
+            } else if (actualVersion > SegmentInfos.VERSION_86) {
+              format = "Lucene 8.6 or later (UNSUPPORTED)";
             }
           } else {
             format = "Lucene 6.x or prior (UNSUPPORTED)";

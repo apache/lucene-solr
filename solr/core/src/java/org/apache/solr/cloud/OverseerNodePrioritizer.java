@@ -92,7 +92,9 @@ public class OverseerNodePrioritizer {
     if(!designateNodeId.equals( electionNodes.get(1))) { //checking if it is already at no:1
       log.info("asking node {} to come join election at head", designateNodeId);
       invokeOverseerOp(designateNodeId, "rejoinAtHead"); //ask designate to come first
-      log.info("asking the old first in line {} to rejoin election  ",electionNodes.get(1) );
+      if (log.isInfoEnabled()) {
+        log.info("asking the old first in line {} to rejoin election  ", electionNodes.get(1));
+      }
       invokeOverseerOp(electionNodes.get(1), "rejoin");//ask second inline to go behind
     }
     //now ask the current leader to QUIT , so that the designate can takeover

@@ -24,7 +24,6 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random generated {@link Line} types */
 @SuppressWarnings("SimpleText")
@@ -83,37 +82,12 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testComponentQuery(Component2D component2D, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinLine(component2D, (Line) shape);
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line)) == Component2D.WithinRelation.CANDIDATE;
       }
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
-        Relation r = component2D.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
-        }
-      }
-      return queryRelation == QueryRelation.INTERSECTS ? false : true;
-    }
-
-    private boolean testWithinLine(Component2D component2D, Line line) {
-      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
-        Component2D.WithinRelation relation = component2D.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
-        if (relation == Component2D.WithinRelation.NOTWITHIN) {
-          return false;
-        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
-          answer = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      return answer == Component2D.WithinRelation.CANDIDATE;
+      return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", line));
     }
   }
 }

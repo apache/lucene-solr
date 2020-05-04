@@ -135,7 +135,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
 
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
     //
     // we want to walk up the fcontext and inherit the queries from any ancestor SKGAgg
@@ -209,8 +209,8 @@ public class RelatednessAgg extends AggValueSource {
     private double getRelatedness(int slot) {
       final double cachedRelatedness = relatedness[slot];
       if (Double.isNaN(cachedRelatedness)) {
-        final int fg_count = fgCount.getCount(slot);
-        final int bg_count = bgCount.getCount(slot);
+        final long fg_count = fgCount.getCount(slot);
+        final long bg_count = bgCount.getCount(slot);
         if (minCount > 0) {
           // if min_pop is configured, and either (fg|bg) popularity is lower then that value
           // then "this.relatedness=-Infinity" so it sorts below any "valid" relatedness scores

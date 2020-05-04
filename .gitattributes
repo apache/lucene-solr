@@ -1,2 +1,5 @@
 # Ignore all differences in line endings for the lock file.
 versions.lock text eol=lf
+
+# Gradle files are always in LF.
+*.gradle          text eol=lf

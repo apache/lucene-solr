@@ -46,7 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
@@ -133,7 +133,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     if (leaderStateManager.amILeader() && processStateManager.getState().equals(CdcrParams.ProcessState.STARTED)) {
       if (replicatorStates.size() > 0)  {
         this.bootstrapExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(replicatorStates.size(),
-            new SolrjNamedThreadFactory("cdcr-bootstrap-status"));
+            new SolrNamedThreadFactory("cdcr-bootstrap-status"));
       }
       this.initLogReaders();
       this.scheduler.start();
@@ -166,8 +166,10 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       state.closeLogReader();
       try {
         long checkpoint = this.getCheckpoint(state);
-        log.info("Create new update log reader for target {} with checkpoint {} @ {}:{}", state.getTargetCollection(),
-            checkpoint, collectionName, shard);
+        if (log.isInfoEnabled()) {
+          log.info("Create new update log reader for target {} with checkpoint {} @ {}:{}", state.getTargetCollection(),
+              checkpoint, collectionName, shard);
+        }
         CdcrUpdateLog.CdcrLogReader reader = ulog.newLogReader();
         boolean seek = reader.seek(checkpoint);
         state.init(reader);
@@ -187,9 +189,9 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           }
         }
       } catch (IOException | SolrServerException | SolrException e) {
-        log.warn("Unable to instantiate the log reader for target collection " + state.getTargetCollection(), e);
+        log.warn("Unable to instantiate the log reader for target collection {}", state.getTargetCollection(), e);
       } catch (InterruptedException e) {
-        log.warn("Thread interrupted while instantiate the log reader for target collection " + state.getTargetCollection(), e);
+        log.warn("Thread interrupted while instantiate the log reader for target collection {}", state.getTargetCollection(), e);
         Thread.currentThread().interrupt();
       }
     }
@@ -295,8 +297,10 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           } else if (status == BootstrapStatus.COMPLETED) {
             log.info("CDCR bootstrap successful in {} seconds", BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
             long checkpoint = CdcrReplicatorManager.this.getCheckpoint(state);
-            log.info("Create new update log reader for target {} with checkpoint {} @ {}:{}", state.getTargetCollection(),
-                checkpoint, collectionName, shard);
+            if (log.isInfoEnabled()) {
+              log.info("Create new update log reader for target {} with checkpoint {} @ {}:{}", state.getTargetCollection(),
+                  checkpoint, collectionName, shard);
+            }
             CdcrUpdateLog.CdcrLogReader reader1 = ulog.newLogReader();
             reader1.seek(checkpoint);
             success = true;
@@ -316,8 +320,11 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
               retries++;
             }
           } else if (status == BootstrapStatus.NOTFOUND || status == BootstrapStatus.CANCELLED) {
-            log.info("CDCR bootstrap " + (status == BootstrapStatus.NOTFOUND ? "not found" : "cancelled") + "in {} seconds",
-                BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
+            if (log.isInfoEnabled()) {
+              log.info("CDCR bootstrap {} in {} seconds"
+                  , (status == BootstrapStatus.NOTFOUND ? "not found" : "cancelled")
+                  , BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
+            }
             // the leader of the target shard may have changed and therefore there is no record of the
             // bootstrap process so we must retry the operation
             while (!closed && sendBootstrapCommand() != BootstrapStatus.SUBMITTED)  {
@@ -326,8 +333,10 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
             retries = 1;
             timeOut = new TimeOut(6L * 3600L * 3600L, TimeUnit.SECONDS, TimeSource.NANO_TIME); // reset the timer
           } else if (status == BootstrapStatus.UNKNOWN || status == BootstrapStatus.SUBMITTED) {
-            log.info("CDCR bootstrap is " + (status == BootstrapStatus.UNKNOWN ? "unknown" : "submitted"),
-                BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
+            if (log.isInfoEnabled()) {
+              log.info("CDCR bootstrap is {} {}", (status == BootstrapStatus.UNKNOWN ? "unknown" : "submitted"),
+                  BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
+            }
             // we were not able to query the status on the remote end
             // so just sleep for a bit and try again
             timeOut.sleep(BOOTSTRAP_RETRY_DELAY_MS);
@@ -338,7 +347,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         state.reportError(CdcrReplicatorState.ErrorType.INTERNAL);
         Thread.currentThread().interrupt();
       } catch (IOException | SolrServerException | SolrException e) {
-        log.error("Unable to bootstrap the target collection " + targetCollection + " shard: " + shard, e);
+        log.error("Unable to bootstrap the target collection {} shard: {}", targetCollection, shard, e);
         state.reportError(CdcrReplicatorState.ErrorType.BAD_REQUEST);
       } finally {
         if (success) {
