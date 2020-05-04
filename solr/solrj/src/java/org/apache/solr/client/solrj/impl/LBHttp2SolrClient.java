@@ -97,11 +97,11 @@ public class LBHttp2SolrClient extends LBSolrClient {
       }
 
       @Override
-      public void onFailure(Throwable e, boolean retryReq) {
+      public void onFailure(Exception e, boolean retryReq) {
         if (retryReq) {
           String url;
           try {
-            url = it.nextOrError();
+            url = it.nextOrError(e);
           } catch (SolrServerException ex) {
             onComplete.onFailure(e);
             return;
@@ -141,7 +141,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   private interface RetryListener {
     void onSuccess(Rsp rsp);
-    void onFailure(Throwable e, boolean retryReq);
+    void onFailure(Exception e, boolean retryReq);
   }
 
   private Cancellable doRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,

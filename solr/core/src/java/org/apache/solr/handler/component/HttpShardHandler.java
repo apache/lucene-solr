@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.OnComplete;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -162,7 +163,7 @@ public class HttpShardHandler extends ShardHandler {
     }
 
     // all variables that set inside this listener must be at least volatile
-    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new LBHttp2SolrClient.OnComplete() {
+    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new OnComplete<>() {
       long startTime = System.nanoTime();
 
       @Override
@@ -175,7 +176,7 @@ public class HttpShardHandler extends ShardHandler {
       }
 
       @Override
-      public void onComplete(LBSolrClient.Rsp rsp) {
+      public void onSuccess(LBSolrClient.Rsp rsp) {
         ssr.nl = rsp.getResponse();
         srsp.setShardAddress(rsp.getServer());
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);

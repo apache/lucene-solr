@@ -205,17 +205,25 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     public synchronized String nextOrError() throws SolrServerException {
+      return nextOrError(null);
+    }
+
+    public synchronized String nextOrError(Exception previousEx) throws SolrServerException {
+      String suffix = "";
+      if (previousEx == null) {
+        suffix = ":" + zombieServers.keySet();
+      }
       if (isTimeExceeded(timeAllowedNano, timeOutTime)) {
-        throw new SolrServerException("Time allowed to handle this request exceeded");
+        throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
       if (serverStr == null) {
-        throw new SolrServerException("No live SolrServers available to handle this request");
+        throw new SolrServerException("No live SolrServers available to handle this request"+suffix, previousEx);
       }
       numServersTried++;
       if (req.getNumServersToTry() != null && numServersTried > req.getNumServersToTry()) {
         throw new SolrServerException("No live SolrServers available to handle this request:"
             + " numServersTried="+numServersTried
-            + " numServersToTry="+req.getNumServersToTry());
+            + " numServersToTry="+req.getNumServersToTry()+suffix, previousEx);
       }
       String rs = serverStr;
       fetchNext();
@@ -343,7 +351,7 @@ public abstract class LBSolrClient extends SolrClient {
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     ServerIterator serverIterator = new ServerIterator(req, zombieServers);
     String serverStr;
-    while ((serverStr = serverIterator.nextOrError()) != null) {
+    while ((serverStr = serverIterator.nextOrError(ex)) != null) {
       try {
         MDC.put("LBSolrClient.url", serverStr);
         ex = doRequest(serverStr, req, rsp, isNonRetryable, serverIterator.isServingZombieServer());

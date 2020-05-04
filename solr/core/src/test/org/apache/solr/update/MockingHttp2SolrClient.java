@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.OnComplete;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
@@ -120,7 +121,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(SolrRequest request, String collection, OnComplete onComplete) {
+  public Cancellable asyncRequest(SolrRequest request, String collection, OnComplete<NamedList<Object>> onComplete) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
