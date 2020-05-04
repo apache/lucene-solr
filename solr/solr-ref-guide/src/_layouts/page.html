@@ -1,19 +1,27 @@
 ---
 layout: default
 ---
-{% comment %}NOTE: page_id is also definied in default.html{% endcomment %}
+
+{% comment %}NOTE: page_id is also defined in default.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <header class="header">
    <h1 class="title-main">{{ page.title }}</h1>
 </header>
 
-    {% unless page.toc == false %}
-    {% include toc.html %}
-    {% endunless %}
+<div class="container-fluid">
 
-<section class="content">
-   {{content}}
-</section>
+<!-- This makes the automatic TOC generation conditional.
+     Add ":page-show-toc: false" to front-matter to disable auto-TOC. -->
+  {% if page.show-toc != false %}
+  <nav class="toc float-right justify-content-end">
+    {{ page.document | tocify_asciidoc }}
+  </nav>
+  {% endif %}
+
+  <section class="content">
+     {{ content }}
+  </section>
+
 
 <!-- Adds tags, if any -->
     <div class="tags">
@@ -32,11 +40,14 @@ layout: default
     {% assign scrollnav = site.data.scrollnav[page_id] %}
     {% if scrollnav %}
     <nav class="scrollnav row">
+      <div class="col-lg-12">
       {% if scrollnav.prev %}
-      <a class="btn btn-primary prev" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
+      <a class="btn btn-primary prev float-left" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
       {% endif %}
       {% if scrollnav.next %}
-      <a class="btn btn-primary next" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
+      <a class="btn btn-primary next float-right" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
       {% endif %}
+      </div>
    </nav>
     {% endif %}
+</div>

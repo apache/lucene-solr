@@ -1,7 +1,6 @@
 = Solr Upgrade Notes
 :page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
-:page-toclevels: 3
-:page-tocclass: right
+:toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

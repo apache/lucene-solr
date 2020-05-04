@@ -52,7 +52,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
       threads[i] = new DocThread( "T"+i+":" );
       threads[i].setName("DocThread-" + i);
       threads[i].start();
-      log.info("Started thread: " + i);
+      log.info("Started thread: {}", i);
     }
     for (int i=0; i<threadCount; i++) {
       threads[i].join();
@@ -98,7 +98,9 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
             docs = new ArrayList<>();
           }
           if (i > 0 && i % 5000 == 0) {
-            log.info(getName() + " - Committing " + i);
+            if (log.isInfoEnabled()) {
+              log.info("{} - Committing {}", getName(), i);
+            }
             resp = client.commit();
             assertEquals(0, resp.getStatus());
           }
@@ -117,7 +119,9 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         assertEquals(0, resp.getStatus());
         } catch (Exception e) {
           // a commit/optimize can fail with a too many warming searchers exception
-          log.info("Caught benign exception during commit: " + e.getMessage());
+          if (log.isInfoEnabled()) {
+            log.info("Caught benign exception during commit: {}", e.getMessage());
+          }
         }
         if (!(client instanceof EmbeddedSolrServer)) {
           client.close();

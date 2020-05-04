@@ -31,7 +31,7 @@ configure(project(":lucene:analysis:common")) {
     // git commit hash of source code https://github.com/snowballstem/snowball/
     snowballStemmerCommit = "53739a805cfa6c77ff8496dc711dc1c106d987c1"
     // git commit hash of stopwords https://github.com/snowballstem/snowball-website
-    snowballWebsiteCommit = "ff891e74f08e7315523ee3c0cad55bb1b7831b9d"
+    snowballWebsiteCommit = "5a8cf2451d108217585d8e32d744f8b8fd20c711"
     // git commit hash of test data https://github.com/snowballstem/snowball-data
     snowballDataCommit    = "9145f8732ec952c8a3d1066be251da198a8bc792"
 

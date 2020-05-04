@@ -61,7 +61,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
     } catch (DataImportHandlerException e) {
       throw e;
     } catch (Exception e) {
-      log.error( "The query failed '" + q + "'", e);
+      log.error( "The query failed '{}'", q, e);
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
   }
@@ -103,8 +103,10 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String parentDeltaQuery = context.getEntityAttribute(PARENT_DELTA_QUERY);
       if (parentDeltaQuery == null)
         return null;
-      log.info("Running parentDeltaQuery for Entity: "
-              + context.getEntityAttribute("name"));
+      if (log.isInfoEnabled()) {
+        log.info("Running parentDeltaQuery for Entity: {}"
+            , context.getEntityAttribute("name"));
+      }
       initQuery(context.replaceTokens(parentDeltaQuery));
     }
     return getNext();
@@ -119,7 +121,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String deltaImportQuery = context.getEntityAttribute(DELTA_IMPORT_QUERY);
       if(deltaImportQuery != null) return deltaImportQuery;
     }
-    log.warn("'deltaImportQuery' attribute is not specified for entity : "+ entityName);
+    log.warn("'deltaImportQuery' attribute is not specified for entity : {}", entityName);
     return getDeltaImportQuery(queryString);
   }
 

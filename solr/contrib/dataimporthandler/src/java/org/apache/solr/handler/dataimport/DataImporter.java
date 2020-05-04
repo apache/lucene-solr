@@ -125,7 +125,7 @@ public class DataImporter {
         } else if(dataconfigFile!=null) {
           is = new InputSource(core.getResourceLoader().openResource(dataconfigFile));
           is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(dataconfigFile));
-          log.info("Loading DIH Configuration: " + dataconfigFile);
+          log.info("Loading DIH Configuration: {}", dataconfigFile);
         }
         if(is!=null) {          
           config = loadDataConfig(is);
@@ -148,7 +148,7 @@ public class DataImporter {
               for (int i = 0; i < dsConfig.size(); i++) {
                 props.put(dsConfig.getName(i), dsConfig.getVal(i).toString());
               }
-              log.info("Adding properties to datasource: " + props);
+              log.info("Adding properties to datasource: {}", props);
               dsProps.put((String) dsConfig.get("name"), props);
             }
             position++;

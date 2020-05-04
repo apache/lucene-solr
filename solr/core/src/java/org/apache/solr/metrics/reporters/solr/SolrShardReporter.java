@@ -68,7 +68,7 @@ public class SolrShardReporter extends SolrCoreReporter {
     add("REPLICATION.*");
     add("INDEX\\.flush.*");
     add("INDEX\\.merge\\.major.*");
-    add("UPDATE\\./update/.*requests");
+    add("UPDATE\\./update.*requests");
     add("QUERY\\./select.*requests");
   }};
 

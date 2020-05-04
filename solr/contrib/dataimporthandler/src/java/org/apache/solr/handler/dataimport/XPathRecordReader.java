@@ -645,7 +645,7 @@ public class XPathRecordReader {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + factory);
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", factory);
     }
   }
 
