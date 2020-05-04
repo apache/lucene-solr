@@ -17,13 +17,11 @@
 
 package org.apache.lucene.search.grouping;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -36,18 +34,14 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 
-public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
+public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestCase {
 
   protected abstract void addGroupField(Document document, int id);
 
@@ -57,16 +51,13 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
 
   public void testSortByRelevance() throws IOException {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    indexRandomDocs(w);
-    IndexSearcher searcher = new IndexSearcher(w.getReader());
-    w.close();
+    Shard shard = new Shard();
+    indexRandomDocs(shard.writer);
 
     String[] query = new String[]{ "foo", "bar", "baz" };
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
+    IndexSearcher searcher = shard.getIndexSearcher();
     GroupingSearch grouper = new GroupingSearch(getGroupSelector());
     grouper.setGroupDocsLimit(10);
     TopGroups<T> topGroups = grouper.search(searcher, topLevel, 0, 5);
@@ -86,18 +77,14 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
       }
     }
 
-    searcher.getIndexReader().close();
-    dir.close();
+    shard.close();
   }
 
   public void testSortGroups() throws IOException {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    indexRandomDocs(w);
-    IndexSearcher searcher = new IndexSearcher(w.getReader());
-    w.close();
+    Shard shard = new Shard();
+    indexRandomDocs(shard.writer);
+    IndexSearcher searcher = shard.getIndexSearcher();
 
     String[] query = new String[]{ "foo", "bar", "baz" };
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
@@ -128,18 +115,14 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
       }
     }
 
-    searcher.getIndexReader().close();
-    dir.close();
+    shard.close();
   }
 
   public void testSortWithinGroups() throws IOException {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    indexRandomDocs(w);
-    IndexSearcher searcher = new IndexSearcher(w.getReader());
-    w.close();
+    Shard shard = new Shard();
+    indexRandomDocs(shard.writer);
+    IndexSearcher searcher = shard.getIndexSearcher();
 
     String[] query = new String[]{ "foo", "bar", "baz" };
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
@@ -171,19 +154,13 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
       assertScoreDocsEquals(td.scoreDocs, topGroups.groups[i].scoreDocs);
     }
 
-    searcher.getIndexReader().close();
-    dir.close();
-
   }
 
   public void testGroupHeads() throws IOException {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    indexRandomDocs(w);
-    IndexSearcher searcher = new IndexSearcher(w.getReader());
-    w.close();
+    Shard shard = new Shard();
+    indexRandomDocs(shard.writer);
+    IndexSearcher searcher = shard.getIndexSearcher();
 
     String[] query = new String[]{ "foo", "bar", "baz" };
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
@@ -229,18 +206,14 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
       assertTrue(groupHeads.get(td.scoreDocs[0].doc));
     }
 
-    searcher.getIndexReader().close();
-    dir.close();
+    shard.close();
   }
 
   public void testGroupHeadsWithSort() throws IOException {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    indexRandomDocs(w);
-    IndexSearcher searcher = new IndexSearcher(w.getReader());
-    w.close();
+    Shard shard = new Shard();
+    indexRandomDocs(shard.writer);
+    IndexSearcher searcher = shard.getIndexSearcher();
 
     String[] query = new String[]{ "foo", "bar", "baz" };
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
@@ -275,8 +248,7 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
       assertTrue(groupHeads.get(td.scoreDocs[0].doc));
     }
 
-    searcher.getIndexReader().close();
-    dir.close();
+    shard.close();
   }
 
   public void testShardedGrouping() throws IOException {
@@ -385,42 +357,6 @@ public abstract class BaseGroupSelectorTestCase<T> extends LuceneTestCase {
     assertTrue(((BytesRef)prevSortValues[0]).compareTo((BytesRef)groupSortValues[0]) <= 0);
     if (prevSortValues[0].equals(groupSortValues[0])) {
       assertTrue((long)prevSortValues[1] <= (long)groupSortValues[1]);
-    }
-  }
-
-  private static void assertScoreDocsEquals(ScoreDoc[] expected, ScoreDoc[] actual) {
-    assertEquals(expected.length, actual.length);
-    for (int i = 0; i < expected.length; i++) {
-      assertEquals(expected[i].doc, actual[i].doc);
-      assertEquals(expected[i].score, actual[i].score, 0);
-    }
-  }
-
-  private static class Shard implements Closeable {
-
-    final Directory directory;
-    final RandomIndexWriter writer;
-    IndexSearcher searcher;
-
-    Shard() throws IOException {
-      this.directory = newDirectory();
-      this.writer = new RandomIndexWriter(random(), directory,
-          newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    }
-
-    IndexSearcher getIndexSearcher() throws IOException {
-      if (searcher == null) {
-        searcher = new IndexSearcher(this.writer.getReader());
-      }
-      return searcher;
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (searcher != null) {
-        searcher.getIndexReader().close();
-      }
-      IOUtils.close(writer, directory);
     }
   }
 
