@@ -69,7 +69,7 @@ import org.apache.lucene.util.PriorityQueue;
  *  {@code maxMBSortInHeap} heap space for writing.
  *
  *  <p>
- *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> / (1+bytesPerDim)
+ *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> / bytesPerDim
  *  total points.
  *
  * @lucene.experimental */
@@ -370,6 +370,22 @@ public class BKDWriter implements Closeable {
       // Tie break by sorting smaller docIDs earlier:
       return a.docID < b.docID;
     }
+  }
+
+  /** flat representation of a kd-tree */
+  private interface BKDTreeLeafNodes {
+    /** number of leaf nodes */
+    int numLeaves();
+    /** pointer to the leaf node previously written. Leaves are order from
+     * left to right, so leaf at {@code index} 0 is the leftmost leaf and
+     * the the leaf at {@code numleaves()} -1 is the rightmost leaf */
+    long getLeafLP(int index);
+    /** split value between two leaves. The split value at position n corresponds to the
+     *  leaves at (n -1) and n. */
+    BytesRef getSplitValue(int index);
+    /** split dimension between two leaves. The split dimension at position n corresponds to the
+     *  leaves at (n -1) and n.*/
+    int getSplitDimension(int index);
   }
 
   /** Write a field from a {@link MutablePointValues}. This way of writing
@@ -721,7 +737,7 @@ public class BKDWriter implements Closeable {
   */
 
   private void checkMaxLeafNodeCount(int numLeaves) {
-    if ((1+bytesPerDim) * (long) numLeaves > ArrayUtil.MAX_ARRAY_LENGTH) {
+    if (bytesPerDim * (long) numLeaves > ArrayUtil.MAX_ARRAY_LENGTH) {
       throw new IllegalStateException("too many nodes; increase maxPointsInLeafNode (currently " + maxPointsInLeafNode + ") and reindex");
     }
   }
