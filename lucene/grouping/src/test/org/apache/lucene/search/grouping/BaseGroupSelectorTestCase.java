@@ -154,6 +154,8 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       assertScoreDocsEquals(td.scoreDocs, topGroups.groups[i].scoreDocs);
     }
 
+    shard.close();
+
   }
 
   public void testGroupHeads() throws IOException {
