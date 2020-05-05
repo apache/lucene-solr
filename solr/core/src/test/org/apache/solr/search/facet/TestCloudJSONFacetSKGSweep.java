@@ -90,14 +90,18 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
   private static final int UNIQUE_FIELD_VALS = 50;
 
   /** Multi-Valued string field suffixes that can be randomized for testing diff facet code paths */
-  private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[] { "_ss", "_sds", "_sdsS" };
+  private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[]
+    { "_multi_ss", "_multi_sds", "_multi_sdsS" };
   /** Multi-Valued int field suffixes that can be randomized for testing diff facet code paths */
-  private static final String[] MULTI_INT_FIELD_SUFFIXES = new String[] { "_is", "_ids", "_idsS" };
+  private static final String[] MULTI_INT_FIELD_SUFFIXES = new String[]
+    { "_multi_is", "_multi_ids", "_multi_idsS" };
 
   /** Single Valued string field suffixes that can be randomized for testing diff facet code paths */
-  private static final String[] SOLO_STR_FIELD_SUFFIXES = new String[] { "_s", "_sd", "_sdS" };
+  private static final String[] SOLO_STR_FIELD_SUFFIXES = new String[]
+    { "_solo_s", "_solo_sd", "_solo_sdS" };
   /** Single Valued int field suffixes that can be randomized for testing diff facet code paths */
-  private static final String[] SOLO_INT_FIELD_SUFFIXES = new String[] { "_i", "_id", "_idS" };
+  private static final String[] SOLO_INT_FIELD_SUFFIXES = new String[]
+    { "_solo_i", "_solo_id", "_solo_idS" };
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
@@ -459,39 +463,84 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
       }
     }
-     
-    { // infinite limit with an additional (non-sweeping) stat
-      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, null, false);
-      xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
+
+    { // multi-valued facet field w/infinite limit and an extra non-sweeping stat
+
+      // nocommit: currently fails, buckets wind up with different "min" values
+      // nocommit: depending on wether ArrayUIF or ArrayDV gets used with the MultiAcc ???
+      
+      // ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespoke -Dtests.seed=838E28E3EBC3B3B3:66DB4D3457DDE2F7 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=rof-TZ -Dtests.timezone=Etc/GMT+3 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
+      
+      final TermFacet xxx = new TermFacet(multiStrField(12), -1, 0, "count asc", false);
+      xxx.subFacets.put("min", new MinFacet(multiIntField(4)));
       final Map<String,TermFacet> facets = new LinkedHashMap<>();
       facets.put("xxx", xxx);
       assertFacetSKGsAreConsistent(facets,
-                                   buildORQuery(multiStrField(11) + ":55",
-                                                multiStrField(0) + ":46"),
-                                   multiStrField(5)+":9", "*:*");
+                                   buildORQuery(multiStrField(13) + ":26",
+                                                multiStrField(6) + ":33",
+                                                multiStrField(9) + ":24"),
+                                   buildORQuery(multiStrField(4) + ":27",
+                                                multiStrField(12) + ":18",
+                                                multiStrField(2) + ":28",
+                                                multiStrField(13) + ":50"),
+                                   "*:*");
+      
     }
+  }
+  
+  /** 
+   * Given a few explicit "structures" of requests, test many permutations of various params/options.
+   * This is more complex then {@link #testBespoke} but should still be easier to trace/debug then 
+   * a pure random monstrosity.
+   */
+  public void testBespokeStructures() throws Exception {
+
+    // nocommit: currently fails...
+
+    // ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespokeStructures -Dtests.seed=838E28E3EBC3B3B3:66DB4D3457DDE2F7 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=rof-TZ -Dtests.timezone=Etc/GMT+3 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
+
     
-    { // infinite limit with multiple SKGs
-      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, "skg desc", false);
-      xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
-      final Map<String,TermFacet> facets = new LinkedHashMap<>();
-      facets.put("xxx", xxx);
-      assertFacetSKGsAreConsistent(facets,
-                                   buildORQuery(multiStrField(11) + ":55",
-                                                multiStrField(0) + ":46"),
-                                   multiStrField(5)+":9", "*:*");
-    }
-    { // infinite limit with multiple SKGs and a multiple non-sweeping stats
-      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, "skg desc", false);
-      xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
-      xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
-      xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
-      final Map<String,TermFacet> facets = new LinkedHashMap<>();
-      facets.put("xxx", xxx);
-      assertFacetSKGsAreConsistent(facets,
-                                   buildORQuery(multiStrField(11) + ":55",
-                                                multiStrField(0) + ":46"),
-                                   multiStrField(5)+":9", "*:*");
+    for (int facetFieldNum = 0; facetFieldNum < MAX_FIELD_NUM; facetFieldNum++) {
+      for (String facetFieldName : Arrays.asList(soloStrField(facetFieldNum), multiStrField(facetFieldNum))) {
+        for (int limit : Arrays.asList(10, -1)) {
+          for (String sort : Arrays.asList("count desc", "skg desc", "index asc")) {
+            for (Boolean refine : Arrays.asList(false, true)) {
+              { // 1 additional (non-sweeping) stat
+                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx1", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
+              }
+              { // multiple SKGs
+                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx2", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
+              }
+              { // multiple SKGs and a multiple non-sweeping stats
+                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
+                xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+                xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx3", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
+              }
+            }
+          }
+        }
+      }
     }
   }
   
