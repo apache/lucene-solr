@@ -774,7 +774,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
             return this;
           } else {
             // must resize final field subAccs
-            return new MultiAcc(fcontext, ArrayUtil.growExact(subAccs, j));
+            return new MultiAcc(fcontext, ArrayUtil.copyOfSubArray(subAccs, 0, j));
           }
       }
     }
