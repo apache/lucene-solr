@@ -131,11 +131,11 @@ public class TestExpressionValueSource extends LuceneTestCase {
   public void testRewrite() throws Exception {
     Expression expr = JavascriptCompiler.compile("a");
 
-    var rewritingExpressionSource = new ExpressionValueSource(
+    ExpressionValueSource rewritingExpressionSource = new ExpressionValueSource(
             new DoubleValuesSource[]{createDoubleValuesSourceMock(true)},
             expr,
             false);
-    var notRewritingExpressionSource = new ExpressionValueSource(
+    ExpressionValueSource notRewritingExpressionSource = new ExpressionValueSource(
             new DoubleValuesSource[]{createDoubleValuesSourceMock(false)},
             expr,
             false);
