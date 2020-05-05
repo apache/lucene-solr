@@ -55,6 +55,7 @@ public class MultiMapSolrParams extends SolrParams {
 
 
   public MultiMapSolrParams(Map<String,String[]> map) {
+    assert map.entrySet().stream().allMatch(e -> e.getKey().getClass() == String.class && e.getValue().getClass() == String[].class);
     this.map = map;
   }
 
