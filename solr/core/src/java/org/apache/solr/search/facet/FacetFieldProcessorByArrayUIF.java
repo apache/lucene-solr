@@ -65,7 +65,7 @@ class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
 
   @Override
   protected void collectDocs() throws IOException {
-    registerSweepingAccIfSupportedByCollectAcc();
+    registerSweepingAccIfSupportedByCollectAcc((SweepingCountSlotAcc) countAcc);
     uif.collectDocs(this);
   }
 

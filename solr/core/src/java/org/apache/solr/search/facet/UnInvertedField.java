@@ -41,7 +41,6 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -327,8 +326,8 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepingAcc sweepDocSets = processor.countAcc.getBaseSweepingAcc();
-    SweepCountAccStruct baseCountAccStruct = sweepDocSets.base;
+    final SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
+    SweepCountAccStruct baseCountAccStruct = sweepCountAcc.base;
 
     final int[] index = this.index;
 
@@ -349,10 +348,10 @@ public class UnInvertedField extends DocTermOrds {
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorting by index order
       final int termOrd = tt.termNum;
-      Iterator<SweepCountAccStruct> othersIter = sweepDocSets.others.iterator();
+      Iterator<SweepCountAccStruct> othersIter = sweepCountAcc.others.iterator();
       SweepCountAccStruct entry = baseCountAccStruct != null ? baseCountAccStruct : othersIter.next();
       for (;;) {
-        entry.countAccEntry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
+        entry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
         if (!othersIter.hasNext()) {
           break;
         }
@@ -364,7 +363,7 @@ public class UnInvertedField extends DocTermOrds {
     // where we already have enough terms from the bigTerms
 
     if (termInstances > 0) {
-      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, sweepDocSets.others);
+      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, sweepCountAcc.others);
       final SweepDocIterator iter = iterAndCounts.iter;
       final SegCountGlobal counts = new SegCountGlobal(iterAndCounts.countAccs);
       while (iter.hasNext()) {
@@ -447,7 +446,7 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepingAcc sweep = processor.countAcc.getBaseSweepingAcc();
+    final SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
@@ -458,8 +457,8 @@ public class UnInvertedField extends DocTermOrds {
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
         final int termOrd = tt.termNum - startTermIndex;
         countAcc.incrementCount(termOrd, collected);
-        for (SweepCountAccStruct entry : sweep.others) {
-          entry.countAccEntry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
+        for (SweepCountAccStruct entry : sweepCountAcc.others) {
+          entry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
         }
         if (collected > 0) {
           uniqueTerms++;
@@ -480,7 +479,7 @@ public class UnInvertedField extends DocTermOrds {
 
       // TODO: handle facet.prefix here!!!
 
-      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(sweep.base, sweep.others);
+      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(sweepCountAcc.base, sweepCountAcc.others);
       final SweepDocIterator iter = sweepIterAndCounts.iter;
       final CountSlotAcc[] countAccs = sweepIterAndCounts.countAccs;
       final SegCountGlobal counts = new SegCountGlobal(countAccs);

@@ -52,7 +52,7 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
       entry = base;
     }
     if (activeCt == 1) {
-      final CountSlotAcc[] countAccs = new CountSlotAcc[] {entry.countAccEntry.countAcc};
+      final CountSlotAcc[] countAccs = new CountSlotAcc[] {entry.countAcc};
       return new SweepIteratorAndCounts(new SingletonDocIterator(entry.docSet.iterator(), base != null), countAccs);
     } else {
       final DocIterator[] subIterators = new DocIterator[activeCt];
@@ -61,7 +61,7 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
       int i = 0;
       for (;;) {
         subIterators[i] = entry.docSet.iterator();
-        countAccs[i] = entry.countAccEntry.countAcc;
+        countAccs[i] = entry.countAcc;
         if (++i == activeCt) {
           break;
         }

@@ -37,11 +37,11 @@ public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAw
     if (docIdSet == null || (subIterators[idx] = docIdSet.iterator()) == null) {
       return false;
     }
-    activeCountAccs[idx] = entry.countAccEntry.countAcc;
+    activeCountAccs[idx] = entry.countAcc;
     return true;
   }
 
-  static SweepDISI newInstance(SweepingAcc sweep, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
+  static SweepDISI newInstance(SweepingCountSlotAcc sweep, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
     int activeCt = 0;
     final int baseIdx;
     if (sweep.base == null || !addAcc(sweep.base, subIterators, activeCountAccs, subCtx, activeCt)) {

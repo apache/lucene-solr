@@ -508,11 +508,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot,
                                   SlotAcc resortAcc) throws IOException {
     final int slotOrd = slot.slot;
-    final long count = countAcc.getCount(slotOrd);
-    target.add("count", count);
-    if (count <= 0 && !freq.processEmpty) return;
+    countAcc.setValues(target, slotOrd);
+    if (countAcc.getCount(slotOrd) <= 0 && !freq.processEmpty) return;
 
-    if (slotOrd >= 0 && !countAcc.getBaseSweepingAcc().setValues(target, slotOrd) && collectAcc != null) {
+    if (slotOrd >= 0 && collectAcc != null) {
       collectAcc.setValues(target, slotOrd);
     }
 
@@ -742,7 +741,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     @Override
-    public SlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
+    public SlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
       final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;
       int j = 0;
       for (int i = 0; i < subAccs.length; i++) {
@@ -755,12 +754,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
           } else if (replacement != acc || j < i) {
             subAccs[j] = replacement;
           }
-        } else {
-          // nocommit: why is MultiAcc registering mappings for something that by definition can't change?
-          baseSweepingAcc.registerMapping(acc, acc);
-          if (j < i) {
-            subAccs[j] = acc;
-          }
+        } else if (j < i) {
+          subAccs[j] = acc;
         }
         j++;
       }
@@ -784,17 +779,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * Helper method that subclasses can use to indicate they with to use sweeping.
    * If sweeping is supported by the {@link #collectAcc} this method will: 
    * <ul>
-   * <li>Create a {@link CollectSlotAccMappingAware} instance to handle {@link #sortAcc} mapping (if needed)</li>
-   * <li>replace {@link #collectAcc} with it's sweeping equivilent</li>
-   * <li>update {@link #allBuckets}'s reference to {@link #collectAcc} (if it exists)</li>
+   * <li>replace {@link #collectAcc} with it's sweeping equivalent</li>
+   * <li>update {@link #allBucketsAcc}'s reference to {@link #collectAcc} (if it exists)</li>
    * </ul>
    *
    * @return true if the above actions were taken
    */
-  protected boolean registerSweepingAccIfSupportedByCollectAcc() {
+  protected boolean registerSweepingAccIfSupportedByCollectAcc(SweepingCountSlotAcc sweepingCountAcc) {
+    assert countAcc == sweepingCountAcc;
     if (collectAcc instanceof SweepableSlotAcc) {
-      final CollectSlotAccMappingAware slotAccMapper = new FacetFieldProcessorSlotAccMapper(this);
-      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(countAcc.getBaseSweepingAcc(slotAccMapper));
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
       }
@@ -802,31 +796,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
     return false;
   }
-  
-  /**
-   * Simple {@link CollectSlotAccMappingAware} that receives notifications of {@link SlotAcc}
-   * replacements, and modifies the {@link #sortAcc} of the {@link FacetFieldProcessor} if necessary.
-   */
-  private static class FacetFieldProcessorSlotAccMapper implements CollectSlotAccMappingAware {
-
-    private final FacetFieldProcessor p;
-
-    FacetFieldProcessorSlotAccMapper(FacetFieldProcessor p) {
-      this.p = p;
-    }
-
-    /**
-     * sortAcc reference needs to be replaced iff the existing sortAcc {@link SlotAcc}
-     * has been swapped out.
-     */
-    @Override
-    public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
-      if (toAcc != fromAcc && p.sortAcc == fromAcc) {
-        p.sortAcc = toAcc;
-      }
-    }
-  }
-  
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -834,15 +803,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int collectAccSlot;
     int otherAccsSlot;
     long count;
-    CountSlotAcc countAcc;
+    SweepingCountSlotAcc sweepingCountAcc;
 
-    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot, CountSlotAcc countAcc) {
+    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot, SweepingCountSlotAcc sweepingCountAcc) {
       super(fcontext);
       this.collectAcc = collectAcc;
       this.collectAccSlot = collectAccSlot;
       this.otherAccs = otherAccs;
       this.otherAccsSlot = otherAccsSlot;
-      this.countAcc = countAcc;
+      this.sweepingCountAcc = sweepingCountAcc;
     }
 
     public int getCollectAccSlot() { return collectAccSlot; }
@@ -892,7 +861,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      if (!countAcc.getBaseSweepingAcc().setValues(bucket, collectAccSlot) && collectAcc != null) {
+      if (sweepingCountAcc != null) {
+        sweepingCountAcc.setSweepValues(bucket, collectAccSlot);
+      }
+      if (collectAcc != null) {
         collectAcc.setValues(bucket, collectAccSlot);
       }
       if (otherAccs != null) {

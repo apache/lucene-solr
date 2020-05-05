@@ -586,10 +586,10 @@ interface SweepableSlotAcc<T extends SlotAcc> {
    * be covered by the "sweeping" data structures registered with the specified
    * baseSweepingAcc as a result of the call to this method).
    *
-   * The implementing instance must call {@link CollectSlotAccMappingAware#registerMapping(SlotAcc, SlotAcc)}
+   * The implementing instance must call {@link SweepingCountSlotAcc#registerMapping(SlotAcc, SlotAcc)}
    * on the specified baseSweepingAcc to notify it of the mapping (possibly "identity") from
    * original SlotAcc to the SlotAcc that should be used for purposes of read access. It is
-   * the responsibility of the specified {@link CollectSlotAccMappingAware} to ensure proper
+   * the responsibility of the specified {@link SweepingCountSlotAcc} to ensure proper
    * placement/accessibility of the SlotAcc to be used for read access.
    *
    * @param baseSweepingAcc - never null, where the SlotAcc may register domains for sweep collection,
@@ -598,101 +598,55 @@ interface SweepableSlotAcc<T extends SlotAcc> {
    * @return SlotAcc to be used for purpose of collection. If null then collect methods will
    * never be called on this SlotAcc.
    */
-  public T registerSweepingAccs(SweepingAcc baseSweepingAcc);
-}
-
-/**
- * Provides a hook to notify components of changes to the read-access representation of
- * SlotAccs. Implementers will generally use the provided information to make corresponding
- * changes ensuring accessibility of the replacement instance.
- */
-interface CollectSlotAccMappingAware {
-  void registerMapping(SlotAcc fromAcc, SlotAcc toAcc);
-}
-
-/**
- * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
- */
-interface CountSlotAccFactory {
-  // nocommit: this is only *indirectly* a factory for CountSlotAcc instances?
-  // nocommit: should we rename it 'SweepCountAccStructFactory' or simplify?
-  // nocommit: seems like SweepCountAccStruct instantiation should be refactored out into SweepingAcc.add ?
-  
-  SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots);
-
-  static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
-    @Override
-    public SweepCountAccStruct newInstance(DocSet docs, boolean isBase, FacetContext fcontext, int numSlots) {
-      final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
-      return new SweepCountAccStruct(docs, isBase, count, count);
-    }
-  };
+  public T registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc);
 }
 
 final class SweepCountAccStruct {
   final DocSet docSet;
   final boolean isBase;
-
-  // nocommit: seems like a 1-to-1 final binding between SweepCountAccStruct & CountAccEntry ...
-  // nocommit: so why not refactor CountAccEntry into SweepCountAccStruct?
-  final CountAccEntry countAccEntry;
-
-  public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
+  final CountSlotAcc countAcc;
+  public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc) {
     this.docSet = docSet;
     this.isBase = isBase;
-    this.countAccEntry = new CountAccEntry(countAcc, roCountAcc);
+    this.countAcc = countAcc;
   }
   public SweepCountAccStruct(SweepCountAccStruct t, DocSet replaceDocSet) {
     this.docSet = replaceDocSet;
     this.isBase = t.isBase;
-    this.countAccEntry = t.countAccEntry;
+    this.countAcc = t.countAcc;
+  }
+  public ReadOnlyCountSlotAcc roCountAcc() {
+    return countAcc;
   }
   @Override public String toString() {
-    return this.countAccEntry.toString();
+    return this.countAcc.toString();
   }
-}
-
-final class CountAccEntry {
-  // nocommit: why do we need a distinact constructor arg & ref to roCountAcc ?
-  // nocommit: should always be the same as countAcc ?
-  final CountSlotAcc countAcc; // nocommit: make private
-  final ReadOnlyCountSlotAcc roCountAcc; // nocommit: make public method that returns countAcc
-  public CountAccEntry(CountSlotAcc countAcc, ReadOnlyCountSlotAcc roCountAcc) {
-    this.countAcc = countAcc;
-    this.roCountAcc = roCountAcc;
-  }
-  @Override public String toString() {
-    // nocommit... if we really need roCountAcc for some reason, include it in toString..
-    return this.countAcc.toString() /* + "=" + this.roCountAcc.toString() */;
-  }
-  
 }
 
 /**
- * Abstraction used by processors that support sweeping to decide what to sweep over and how to
+ * Special CountSlotAcc used by processors that support sweeping to decide what to sweep over and how to
  * "collect" when doing the sweep.
  *
  * This class may be used by SweepableSlotAccs to register DocSet domains over which to sweep-collect
  * facet counts.
  */
-class SweepingAcc implements CollectSlotAccMappingAware {
+class SweepingCountSlotAcc extends CountSlotArrAcc {
 
   private final SimpleOrderedMap<Object> debug;
-  private final FacetContext fcontext;
+  private final FacetFieldProcessor p;
   final SweepCountAccStruct base;
   final List<SweepCountAccStruct> others = new ArrayList<>();
   private final List<SlotAcc> output = new ArrayList<>();
-  final CollectSlotAccMappingAware notify;
 
-  SweepingAcc(CountSlotAcc baseCountAcc, CollectSlotAccMappingAware notify) {
-    this.fcontext = baseCountAcc.fcontext;
-    this.base = new SweepCountAccStruct(baseCountAcc.fcontext.base, true, baseCountAcc, baseCountAcc);
-    this.notify = notify;
+  SweepingCountSlotAcc(FacetContext fcontext, int numSlots, FacetFieldProcessor p) {
+    super(fcontext, numSlots);
+    this.p = p;
+    this.base = new SweepCountAccStruct(fcontext.base, true, this);
     final FacetDebugInfo fdebug = fcontext.getDebugInfo();
     this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
     if (null != this.debug) {
       fdebug.putInfoItem("sweep_collection", debug);
-      debug.add("base", baseCountAcc.key);
+      debug.add("base", key);
       debug.add("accs", new ArrayList<String>());
       debug.add("mapped", new ArrayList<String>());
     }
@@ -703,99 +657,59 @@ class SweepingAcc implements CollectSlotAccMappingAware {
    * @param key assigned to the returned SlotAcc, and used for debugging
    * @param docs the domain over which to sweep
    * @param numSlots the number of slots
-   * @param factory used to create the associated/underlying CountSlotAcc
    * @return a read-only representation of the count acc which is guaranteed to be populated
    * after sweep count collection
    */
-  public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, CountSlotAccFactory factory) {
-    final SweepCountAccStruct ret = factory.newInstance(docs, false, fcontext, numSlots);
-    ret.countAccEntry.countAcc.key = key;
-    this.add(ret);
-    return ret.countAccEntry.roCountAcc;
-  }
-
-  public void add(SweepCountAccStruct sweepCountAcc) { // nocommit: why public
-    assert !sweepCountAcc.isBase;
+  public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots) {
+    final CountSlotAcc count = new CountSlotArrAcc(fcontext, numSlots);
+    count.key = key;
+    final SweepCountAccStruct ret = new SweepCountAccStruct(docs, false, count);
     if (null != debug) {
-      ((List<String>)debug.get("accs")).add(sweepCountAcc.toString());
+      ((List<String>)debug.get("accs")).add(ret.toString());
     }
-    others.add(sweepCountAcc);
+    others.add(ret);
+    return ret.roCountAcc();
   }
 
-  @Override
   public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
-    // nocommit: can/should we assert that these have identical key values?
+    assert fromAcc.key.equals(toAcc.key);
     output.add(toAcc);
-    if (notify != null) {
-      notify.registerMapping(fromAcc, toAcc);
+    if (p.sortAcc == fromAcc) {
+      p.sortAcc = toAcc;
     }
-    // nocommit: if we aren't going to assert keys match, then debug should indicate the mapping
     if (null != debug) {
-      ((List<String>)debug.get("mapped")).add(fromAcc.toString() /* + "=>" + toAcc.toString() */);
+      ((List<String>)debug.get("mapped")).add(fromAcc.toString());
     }
   }
 
-  public boolean setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-    if (output.isEmpty()) {
-      return false;
+  public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+    super.setValues(bucket, slotNum);
+    if (getCount(slotNum) <= 0 && !fcontext.processor.freq.processEmpty) {
+      //nocommit: this is a hacky way to preserve the shortcircuit in FacetFieldProcessor.fillBucketFromSlot(...), which
+      //nocommit: prevents setting other stats, etc. *after* recording the count (zero, evidently, if we get to here).
+      //nocommit: is there another way to preserve this behavior?
+      return;
     }
     for (SlotAcc acc : output) {
       acc.setValues(bucket, slotNum);
     }
-    return true;
+  }
+
+  /* There are some contexts (namely SpecialSlotAcc, for allBuckets, etc.) in which "base" count is tracked differently,
+   * via getSpecialCount(). For such cases, we need a method that lets us use this SweepingCountSlotAcc to
+   * coordinate calling setValues(...) on the sweeping output accs, while avoiding calling super.setValues(...) */
+  public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+    for (SlotAcc acc : output) {
+      acc.setValues(bucket, slotNum);
+    }
   }
 }
 
-// nocommit: since 'countAcc' is now the special place all sweeping is tracked, it seems
-// nocommit: unneccessary (and uneccessarly confusing) for it to also be a 'SweepableSlotAcc'
-// nocommit: any reason not to just remove this?
-abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc /*, SweepableSlotAcc<CountSlotAcc> ... nocommit... */ {
+abstract class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc {
   public CountSlotAcc(FacetContext fcontext) {
     super(fcontext);
     // assume we are the 'count' by default unless/untill our creator overrides this
     this.key = "count";
-  }
-
-  // nocommit: CountSlotAcc no longer implements SweepableSlotAcc...
-  // @Override
-  // public CountSlotAcc registerSweepingAccs(SweepingAcc baseSweepingAcc) {
-  //   baseSweepingAcc.add(new SweepCountAccStruct(fcontext.base, false, this, this));
-  //   baseSweepingAcc.registerMapping(this, this);
-  //   return null;
-  // }
-
-  public SweepingAcc getBaseSweepingAcc() {
-    return baseSweepingAcc == null ? baseSweepingAcc = new SweepingAcc(this, null) : baseSweepingAcc;
-  }
-
-  private SweepingAcc baseSweepingAcc;
-  /**
-   * CountSlotAcc always supports being used for sweeping across the base set
-   * @param notify - optional; to be notified of SlotAcc replacements, for purpose of read access
-   * @returns never null
-   */
-  public SweepingAcc getBaseSweepingAcc(CollectSlotAccMappingAware notify) {
-    // nocommit: this logic seems like a code smell ... need to investigate/reconsider.
-    // nocommit: Perhaps a single "initSweeping(CollectSlotAccMappingAware notify) for use by processors,
-    // nocommit: that fails if called more then once?
-    // nocommit: All other code paths use getBaseSweepingAcc() ?
-    // nocommit: (or maybe a second constructor that takes in CollectSlotAccMappingAware and
-    // nocommit: sweeping processors use that?)
-    //
-    // nocommit: for that matter: can we eliminate SweepingAcc as a class,
-    // nocommit: and just roll that specific logic into CountSlotAcc?
-    // nocommit: IIUC: there should only ever be a single SweepingAcc instance,
-    // nocommit: and callers should never use/instantiate a SweepingAcc w/o using 'countAcc' ... correct?
-    
-    if (notify == null) {
-      throw new IllegalArgumentException("notify must not be null");
-    } else if (baseSweepingAcc == null) {
-      return baseSweepingAcc = new SweepingAcc(this, notify);
-    } else if (baseSweepingAcc.notify != notify) {
-      throw new IllegalStateException(CollectSlotAccMappingAware.class.getSimpleName()+" notify must be stable");
-    } else {
-      return baseSweepingAcc;
-    }
   }
 
   public abstract void incrementCount(int slot, long count);

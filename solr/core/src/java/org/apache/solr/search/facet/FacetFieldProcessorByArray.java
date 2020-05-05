@@ -56,6 +56,23 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   /** this BytesRef may be shared across calls and should be deep-cloned if necessary */
   abstract protected BytesRef lookupOrd(int ord) throws IOException;
 
+
+  @Override
+  protected void createAccs(long docCount, int slotCount) throws IOException {
+    if (countAcc == null) {
+      countAcc = new SweepingCountSlotAcc(fcontext, slotCount, this);
+    }
+    super.createAccs(docCount, slotCount);
+  }
+
+  @Override
+  void createCollectAcc(int numDocs, int numSlots) throws IOException {
+    if (countAcc == null) {
+      countAcc = new SweepingCountSlotAcc(fcontext, numSlots, this);
+    }
+    super.createCollectAcc(numDocs, numSlots);
+  }
+
   @Override
   public void process() throws IOException {
     super.process();
@@ -86,7 +103,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     if (refineResult != null) {
       if (freq.allBuckets) {
         createAccs(nDocs, 1);
-        allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0, countAcc);
+        allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0, (SweepingCountSlotAcc) countAcc);
         collectDocs();
 
         SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
@@ -106,7 +123,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     createCollectAcc(nDocs, maxSlots);
 
     if (freq.allBuckets) {
-      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0, countAcc);
+      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0, (SweepingCountSlotAcc) countAcc);
     }
 
     collectDocs();

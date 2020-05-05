@@ -92,7 +92,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    registerSweepingAccIfSupportedByCollectAcc();
+    SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
+    registerSweepingAccIfSupportedByCollectAcc(sweepingCountAcc);
     
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
@@ -118,8 +119,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final SweepingAcc sweep = countAcc.getBaseSweepingAcc();
-    final int maxSize = sweep.others.size() + (sweep.base == null ? 0 : 1);
+    final int maxSize = sweepingCountAcc.others.size() + (sweepingCountAcc.base == null ? 0 : 1);
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
     final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
@@ -129,7 +129,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi = SweepDISI.newInstance(sweep, subIterators, activeCountAccs, subCtx);
+      final SweepDISI disi = SweepDISI.newInstance(sweepingCountAcc, subIterators, activeCountAccs, subCtx);
       if (disi == null) {
         continue;
       }
