@@ -423,7 +423,7 @@ public class StatsValuesFactory {
   /**
    * Implementation of StatsValues that supports Double values
    */
-  private static class NumericStatsValues extends AbstractStatsValues<Number> {
+  static class NumericStatsValues extends AbstractStatsValues<Number> {
 
     double sum;
     double sumOfSquares;
@@ -667,7 +667,7 @@ public class StatsValuesFactory {
   /**
    * /** Implementation of StatsValues that supports Date values
    */
-  private static class DateStatsValues extends AbstractStatsValues<Date> {
+  static class DateStatsValues extends AbstractStatsValues<Date> {
 
     private double sum = 0.0;
     double sumOfSquares = 0;
