@@ -99,7 +99,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         throws KeeperException, InterruptedException, IOException {
       super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
       if (runLeaderDelay > 0) {
-        log.info("Sleeping for " + runLeaderDelay + "ms to simulate leadership takeover delay");
+        log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
         Thread.sleep(runLeaderDelay);
       }
     }
@@ -352,7 +352,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testParallelElection() throws Exception {
     final int numShards = 2 + random().nextInt(18);
-    log.info("Testing parallel election across " + numShards + " shards");
+    log.info("Testing parallel election across {} shards", numShards);
 
     List<ClientThread> threads = new ArrayList<>();
 

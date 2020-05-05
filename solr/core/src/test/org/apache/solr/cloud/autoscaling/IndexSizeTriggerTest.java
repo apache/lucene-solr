@@ -116,7 +116,9 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   @After
   public void restoreDefaults() throws Exception {
     if (!realCluster) {
-      log.info(((SimCloudManager) cloudManager).dumpClusterState(true));
+      if (log.isInfoEnabled()) {
+        log.info(((SimCloudManager) cloudManager).dumpClusterState(true));
+      }
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simDeleteAllCollections();
       ((SimCloudManager) cloudManager).simClearSystemCollection();
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simResetLeaderThrottles();
@@ -239,7 +241,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }

@@ -716,7 +716,7 @@ public class IndexSchema {
     Arrays.sort(dFields);
 
     if (log.isTraceEnabled()) {
-      log.trace("Dynamic Field Ordering: {}", Arrays.toString(dFields)); // logok
+      log.trace("Dynamic Field Ordering: {}", Arrays.toString(dFields));
     }
 
     return dFields; 

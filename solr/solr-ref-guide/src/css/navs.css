@@ -61,7 +61,8 @@ div.navbar-collapse .dropdown-menu > li > a:hover {
 }
 
 #mysidebar ul li a:hover {
-    background-color: #E6E7E8;
+    background-color: #D9411E;
+    color: white;
 }
 
 
@@ -142,9 +143,8 @@ ul.nav li ul {
 .nav a:hover,
 .nav a:focus,
 .nav li.active > a {
-    background-color: #E6E7E8;
-    color: #D9411E;
-    font-weight: bold;
+    background-color: #D9411E;
+    color: white;
 }
 
 .nav ul li a {
@@ -215,20 +215,10 @@ ul#mysidebar li.sb-level4 a {
    padding-left: 40px;
 }
 
-/* we can style the 'current-tree' hierarchy in the sidebar independently of the 'active' page as
-   the user clicks around expanding/collapsing the nav menus w/o clicking a link to load a diff page
-
-   For now:
-    - the 'current' page title is always bolder if 'active' (ie: visible)
-    - if the 'current' page is not 'active'/visible, then the closest ancestor that *is* 'active'/visible
-      will be bolded -- reminding the reader what section of the doc they are currently in.
-*/
-ul#mysidebar li.current-tree > a {
-    font-weight: bold;
-}
-
+/* Highlight currently selected page */
 ul#mysidebar li.current.active > a {
-    font-weight: bold;
+    background-color: #D9411E;
+    color: white;
 }
 
 /** === END LEFT SIDEBAR === **/

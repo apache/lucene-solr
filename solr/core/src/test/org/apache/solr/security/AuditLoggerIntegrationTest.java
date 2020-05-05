@@ -450,7 +450,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     @Override
     public void run() {
       try {
-        log.info("Listening for audit callbacks on on port {}", serverSocket.getLocalPort());
+        if (log.isInfoEnabled()) {
+          log.info("Listening for audit callbacks on on port {}", serverSocket.getLocalPort());
+        }
         Socket socket = serverSocket.accept();
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         while (!Thread.currentThread().isInterrupted()) {
