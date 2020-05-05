@@ -160,7 +160,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
     StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(StreamHandler.getClientCache());
+    streamContext.setSolrClientCache(schema.getSolrClientCache());
     tupleStream.setStreamContext(streamContext);
 
     final TupleStream finalStream = tupleStream;

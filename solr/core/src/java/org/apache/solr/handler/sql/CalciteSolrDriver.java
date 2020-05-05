@@ -16,13 +16,35 @@
  */
 package org.apache.solr.handler.sql;
 
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.Driver;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.SchemaPlus;
 
+import java.lang.reflect.Type;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -59,11 +81,346 @@ public class CalciteSolrDriver extends Driver {
     if(schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    rootSchema.add(schemaName, new SolrSchema(info));
+    SolrSchema solrSchema = new SolrSchema(info);
+    rootSchema.add(schemaName, solrSchema);
 
     // Set the default schema
     calciteConnection.setSchema(schemaName);
 
-    return connection;
+    return new SolrCalciteConnectionWrapper(calciteConnection, solrSchema);
+  }
+
+  // the sole purpose of this class is to be able to invoke SolrSchema.close()
+  // when the connection is closed.
+  private static final class SolrCalciteConnectionWrapper implements CalciteConnection {
+
+    private final CalciteConnection delegate;
+    private final SolrSchema schema;
+
+    SolrCalciteConnectionWrapper(CalciteConnection delegate, SolrSchema schema) {
+      this.delegate = delegate;
+      this.schema = schema;
+    }
+
+    @Override
+    public SchemaPlus getRootSchema() {
+      return delegate.getRootSchema();
+    }
+
+    @Override
+    public JavaTypeFactory getTypeFactory() {
+      return delegate.getTypeFactory();
+    }
+
+    @Override
+    public Properties getProperties() {
+      return delegate.getProperties();
+    }
+
+    @Override
+    public Statement createStatement() throws SQLException {
+      return delegate.createStatement();
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql) throws SQLException {
+      return delegate.prepareStatement(sql);
+    }
+
+    @Override
+    public CallableStatement prepareCall(String sql) throws SQLException {
+      return delegate.prepareCall(sql);
+    }
+
+    @Override
+    public String nativeSQL(String sql) throws SQLException {
+      return delegate.nativeSQL(sql);
+    }
+
+    @Override
+    public void setAutoCommit(boolean autoCommit) throws SQLException {
+      delegate.setAutoCommit(autoCommit);
+    }
+
+    @Override
+    public boolean getAutoCommit() throws SQLException {
+      return delegate.getAutoCommit();
+    }
+
+    @Override
+    public void commit() throws SQLException {
+      delegate.commit();
+    }
+
+    @Override
+    public void rollback() throws SQLException {
+      delegate.rollback();
+    }
+
+    @Override
+    public void close() throws SQLException {
+      schema.close();
+      delegate.close();
+    }
+
+    @Override
+    public boolean isClosed() throws SQLException {
+      return delegate.isClosed();
+    }
+
+    @Override
+    public DatabaseMetaData getMetaData() throws SQLException {
+      return delegate.getMetaData();
+    }
+
+    @Override
+    public void setReadOnly(boolean readOnly) throws SQLException {
+      delegate.setReadOnly(readOnly);
+    }
+
+    @Override
+    public boolean isReadOnly() throws SQLException {
+      return delegate.isReadOnly();
+    }
+
+    @Override
+    public void setCatalog(String catalog) throws SQLException {
+      delegate.setCatalog(catalog);
+    }
+
+    @Override
+    public String getCatalog() throws SQLException {
+      return delegate.getCatalog();
+    }
+
+    @Override
+    public void setTransactionIsolation(int level) throws SQLException {
+      delegate.setTransactionIsolation(level);
+    }
+
+    @Override
+    public int getTransactionIsolation() throws SQLException {
+      return delegate.getTransactionIsolation();
+    }
+
+    @Override
+    public SQLWarning getWarnings() throws SQLException {
+      return delegate.getWarnings();
+    }
+
+    @Override
+    public void clearWarnings() throws SQLException {
+      delegate.clearWarnings();
+    }
+
+    @Override
+    public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+      return delegate.createStatement(resultSetType, resultSetConcurrency);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+      return delegate.prepareStatement(sql, resultSetType, resultSetConcurrency);
+    }
+
+    @Override
+    public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+      return delegate.prepareCall(sql, resultSetType, resultSetConcurrency);
+    }
+
+    @Override
+    public Map<String, Class<?>> getTypeMap() throws SQLException {
+      return delegate.getTypeMap();
+    }
+
+    @Override
+    public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
+      delegate.setTypeMap(map);
+    }
+
+    @Override
+    public void setHoldability(int holdability) throws SQLException {
+      delegate.setHoldability(holdability);
+    }
+
+    @Override
+    public int getHoldability() throws SQLException {
+      return delegate.getHoldability();
+    }
+
+    @Override
+    public Savepoint setSavepoint() throws SQLException {
+      return delegate.setSavepoint();
+    }
+
+    @Override
+    public Savepoint setSavepoint(String name) throws SQLException {
+      return delegate.setSavepoint(name);
+    }
+
+    @Override
+    public void rollback(Savepoint savepoint) throws SQLException {
+      delegate.rollback(savepoint);
+    }
+
+    @Override
+    public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+      delegate.releaseSavepoint(savepoint);
+    }
+
+    @Override
+    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+      return delegate.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+      return delegate.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
+    }
+
+    @Override
+    public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+      return delegate.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+      return delegate.prepareStatement(sql, autoGeneratedKeys);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+      return delegate.prepareStatement(sql, columnIndexes);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+      return delegate.prepareStatement(sql, columnNames);
+    }
+
+    @Override
+    public Clob createClob() throws SQLException {
+      return delegate.createClob();
+    }
+
+    @Override
+    public Blob createBlob() throws SQLException {
+      return delegate.createBlob();
+    }
+
+    @Override
+    public NClob createNClob() throws SQLException {
+      return delegate.createNClob();
+    }
+
+    @Override
+    public SQLXML createSQLXML() throws SQLException {
+      return delegate.createSQLXML();
+    }
+
+    @Override
+    public boolean isValid(int timeout) throws SQLException {
+      return delegate.isValid(timeout);
+    }
+
+    @Override
+    public void setClientInfo(String name, String value) throws SQLClientInfoException {
+      delegate.setClientInfo(name, value);
+    }
+
+    @Override
+    public void setClientInfo(Properties properties) throws SQLClientInfoException {
+      delegate.setClientInfo(properties);
+    }
+
+    @Override
+    public String getClientInfo(String name) throws SQLException {
+      return delegate.getClientInfo(name);
+    }
+
+    @Override
+    public Properties getClientInfo() throws SQLException {
+      return delegate.getClientInfo();
+    }
+
+    @Override
+    public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
+      return delegate.createArrayOf(typeName, elements);
+    }
+
+    @Override
+    public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
+      return delegate.createStruct(typeName, attributes);
+    }
+
+    @Override
+    public void setSchema(String schema) throws SQLException {
+      delegate.setSchema(schema);
+    }
+
+    @Override
+    public String getSchema() throws SQLException {
+      return delegate.getSchema();
+    }
+
+    @Override
+    public void abort(Executor executor) throws SQLException {
+      delegate.abort(executor);
+    }
+
+    @Override
+    public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+      delegate.setNetworkTimeout(executor, milliseconds);
+    }
+
+    @Override
+    public int getNetworkTimeout() throws SQLException {
+      return delegate.getNetworkTimeout();
+    }
+
+    @Override
+    public CalciteConnectionConfig config() {
+      return delegate.config();
+    }
+
+    @Override
+    public CalcitePrepare.Context createPrepareContext() {
+      return delegate.createPrepareContext();
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+      return delegate.unwrap(iface);
+    }
+
+    @Override
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+      return delegate.isWrapperFor(iface);
+    }
+
+    @Override
+    public <T> Queryable<T> createQuery(Expression expression, Class<T> aClass) {
+      return delegate.createQuery(expression, aClass);
+    }
+
+    @Override
+    public <T> Queryable<T> createQuery(Expression expression, Type type) {
+      return delegate.createQuery(expression, type);
+    }
+
+    @Override
+    public <T> T execute(Expression expression, Class<T> aClass) {
+      return delegate.execute(expression, aClass);
+    }
+
+    @Override
+    public <T> T execute(Expression expression, Type type) {
+      return delegate.execute(expression, type);
+    }
+
+    @Override
+    public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
+      return delegate.executeQuery(queryable);
+    }
   }
 }

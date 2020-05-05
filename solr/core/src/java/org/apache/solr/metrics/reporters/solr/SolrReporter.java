@@ -259,8 +259,13 @@ public class SolrReporter extends ScheduledReporter {
      * @return configured instance of reporter
      */
     public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
-      return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
-          params, skipHistograms, skipAggregateValues, cloudClient, compact);
+      return new SolrReporter(new SolrClientCache(client), urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
+          params, skipHistograms, skipAggregateValues, cloudClient, compact, true);
+    }
+
+    public SolrReporter build(SolrClientCache solrClientCache, Supplier<String> urlProvider) {
+      return new SolrReporter(solrClientCache, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
+          params, skipHistograms, skipAggregateValues, cloudClient, compact, false);
     }
 
   }
@@ -269,6 +274,7 @@ public class SolrReporter extends ScheduledReporter {
   private String handler;
   private Supplier<String> urlProvider;
   private SolrClientCache clientCache;
+  private boolean closeClientCache;
   private List<CompiledReport> compiledReports;
   private SolrMetricManager metricManager;
   private boolean skipHistograms;
@@ -306,11 +312,11 @@ public class SolrReporter extends ScheduledReporter {
   // We delegate to registries anyway, so having a dummy registry is harmless.
   private static final MetricRegistry dummyRegistry = new MetricRegistry();
 
-  public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
+  public SolrReporter(SolrClientCache solrClientCache, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
-                      boolean cloudClient, boolean compact) {
+                      boolean cloudClient, boolean compact, boolean closeClientCache) {
     super(dummyRegistry, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit, null, true);
 
     this.metricManager = metricManager;
@@ -320,7 +326,8 @@ public class SolrReporter extends ScheduledReporter {
       handler = MetricsCollectorHandler.HANDLER_PATH;
     }
     this.handler = handler;
-    this.clientCache = new SolrClientCache(httpClient);
+    this.clientCache = solrClientCache;
+    this.closeClientCache = closeClientCache;
     this.compiledReports = new ArrayList<>();
     metrics.forEach(report -> {
       MetricFilter filter = new SolrMetricManager.RegexFilter(report.metricFilters);
@@ -347,7 +354,9 @@ public class SolrReporter extends ScheduledReporter {
 
   @Override
   public void close() {
-    clientCache.close();
+    if (closeClientCache) {
+      clientCache.close();
+    }
     super.close();
   }
 

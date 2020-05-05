@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
@@ -83,6 +84,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -93,6 +95,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
+    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
 
     if(coreContainer.isZooKeeperAware()) {
@@ -147,7 +150,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     StreamContext context = new StreamContext();
-    context.setSolrClientCache(StreamHandler.clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.put("core", this.coreName);
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);

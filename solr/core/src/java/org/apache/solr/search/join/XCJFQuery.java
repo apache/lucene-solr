@@ -261,7 +261,7 @@ public class XCJFQuery extends Query {
     }
 
     private DocSet getDocSet() throws IOException {
-      SolrClientCache solrClientCache = new SolrClientCache();
+      SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
       if (zkHost != null || solrUrl == null) {
         solrStream = createCloudSolrStream(solrClientCache);
