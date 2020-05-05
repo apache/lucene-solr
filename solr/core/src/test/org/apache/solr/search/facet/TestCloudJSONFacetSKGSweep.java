@@ -311,11 +311,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByHashDV.class.getSimpleName(), debug.get("processor"));
-        // nocommit: this currently fails because even non-sweeping processors call
-        // nocommit: FacetFieldProcessor.fillBucketFromSlot which calls countAcc.getBaseSweepingAcc()
-        // nocommit: so we get a SweepingAcc (which populates the debug) even though we don't need/want/use it
-        //
-        // assertNull(debug.get("sweep_collection"));
+        assertNull(debug.get("sweep_collection"));
       }
     }
       
@@ -349,12 +345,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
           assertNotNull(sweep_debug);
           assertEquals("count", sweep_debug.get("base"));
           assertEquals(Arrays.asList("skg!fg","skg!bg","skg2!fg","skg2!bg"), sweep_debug.get("accs"));
-
-          // nocommit: hack to account for current behavior of MultiAcc, but...
-          // nocommit: seems wrong -- see nocommit in MultiAcc...
-          assertEquals("nocommit: weird MultiAcc behavior",
-                       facet.subFacets.keySet(), new LinkedHashSet((List)sweep_debug.get("mapped")));
-          // nocommit assertEquals(Arrays.asList("skg","skg2"), sweep_debug.get("mapped"));
+          assertEquals(Arrays.asList("skg","skg2"), sweep_debug.get("mapped"));
         }
       }
     }
@@ -468,14 +459,33 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
       }
     }
-
-    // nocommit....
-    //
-    // reproduce with: ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespoke -Dtests.seed=BA57FB9FFC92FE7C -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=fo-DK -Dtests.timezone=Pacific/Midway -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
      
     { // infinite limit with an additional (non-sweeping) stat
       final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, null, false);
       xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("xxx", xxx);
+      assertFacetSKGsAreConsistent(facets,
+                                   buildORQuery(multiStrField(11) + ":55",
+                                                multiStrField(0) + ":46"),
+                                   multiStrField(5)+":9", "*:*");
+    }
+    
+    { // infinite limit with multiple SKGs
+      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, "skg desc", false);
+      xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("xxx", xxx);
+      assertFacetSKGsAreConsistent(facets,
+                                   buildORQuery(multiStrField(11) + ":55",
+                                                multiStrField(0) + ":46"),
+                                   multiStrField(5)+":9", "*:*");
+    }
+    { // infinite limit with multiple SKGs and a multiple non-sweeping stats
+      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, "skg desc", false);
+      xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
+      xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+      xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
       final Map<String,TermFacet> facets = new LinkedHashMap<>();
       facets.put("xxx", xxx);
       assertFacetSKGsAreConsistent(facets,
