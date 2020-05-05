@@ -129,51 +129,6 @@ public class FillMissingFunction {
     return new StreamFillMissingFunction(baseExpr,fillExpr);
   });
 
-  static class BooleanFillMissingFunction extends AbstractBooleanValue {
-    private final BooleanValue baseExpr;
-    private final BooleanValue fillExpr;
-    public static final String name = FillMissingFunction.name;
-    private final String exprStr;
-    private final ExpressionType funcType;
-
-    public BooleanFillMissingFunction(BooleanValue baseExpr, BooleanValue fillExpr) throws SolrException {
-      this.baseExpr = baseExpr;
-      this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
-    }
-
-    boolean exists = false;
-
-    @Override
-    public boolean getBoolean() {
-      boolean value = baseExpr.getBoolean();
-      exists = true;
-      if (!baseExpr.exists()) {
-        value = fillExpr.getBoolean();
-        exists = fillExpr.exists();
-      }
-      return value;
-    }
-    @Override
-    public boolean exists() {
-      return exists;
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-    @Override
-    public String getExpressionStr() {
-      return exprStr;
-    }
-    @Override
-    public ExpressionType getExpressionType() {
-      return funcType;
-    }
-  }
-
   static class StreamFillMissingFunction extends AbstractAnalyticsValueStream implements Consumer<Object> {
     private final AnalyticsValueStream baseExpr;
     private final AnalyticsValueStream fillExpr;
@@ -295,6 +250,51 @@ public class FillMissingFunction {
     public void accept(boolean value) {
       exists = true;
       cons.accept(value);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class BooleanFillMissingFunction extends AbstractBooleanValue {
+    private final BooleanValue baseExpr;
+    private final BooleanValue fillExpr;
+    public static final String name = FillMissingFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public BooleanFillMissingFunction(BooleanValue baseExpr, BooleanValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public boolean getBoolean() {
+      boolean value = baseExpr.getBoolean();
+      exists = true;
+      if (!baseExpr.exists()) {
+        value = fillExpr.getBoolean();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
     }
 
     @Override

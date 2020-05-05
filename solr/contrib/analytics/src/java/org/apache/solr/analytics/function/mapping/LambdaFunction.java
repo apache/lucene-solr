@@ -2442,45 +2442,6 @@ public class LambdaFunction {
     }
   }
 
-  static class DoubleStreamDoubleValueInDoubleStreamOutFunction extends AbstractDoubleValueStream {
-    private final DoubleValueStream param1;
-    private final DoubleValue param2;
-    private final TwoDoubleInDoubleOutLambda lambda;
-    private final String name;
-    private final String exprStr;
-    private final ExpressionType funcType;
-
-    public DoubleStreamDoubleValueInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param1, DoubleValue param2) {
-      this.name = name;
-      this.lambda = lambda;
-      this.param1 = param1;
-      this.param2 = param2;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-    }
-
-    @Override
-    public void streamDoubles(DoubleConsumer cons) {
-      double value2 = param2.getDouble();
-      if (param2.exists()) {
-        param1.streamDoubles(value1 -> cons.accept(lambda.apply(value1,value2)));
-      }
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-    @Override
-    public String getExpressionStr() {
-      return exprStr;
-    }
-    @Override
-    public ExpressionType getExpressionType() {
-      return funcType;
-    }
-  }
-
   static class DoubleValueDoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
     private final DoubleValue param1;
     private final DoubleValueStream param2;
@@ -2503,6 +2464,45 @@ public class LambdaFunction {
       double value1 = param1.getDouble();
       if (param1.exists()) {
         param2.streamDoubles(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DoubleStreamDoubleValueInDoubleStreamOutFunction extends AbstractDoubleValueStream {
+    private final DoubleValueStream param1;
+    private final DoubleValue param2;
+    private final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleStreamDoubleValueInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param1, DoubleValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      double value2 = param2.getDouble();
+      if (param2.exists()) {
+        param1.streamDoubles(value1 -> cons.accept(lambda.apply(value1,value2)));
       }
     }
 

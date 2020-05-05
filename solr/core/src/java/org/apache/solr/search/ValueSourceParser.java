@@ -1184,74 +1184,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     BytesRefBuilder indexedBytes;
   }
 
-  static class BoolConstValueSource extends ConstNumberSource {
-    public static final BoolConstValueSource TRUE = new BoolConstValueSource(true);
-    public static final BoolConstValueSource FALSE = new BoolConstValueSource(false);
-
-    final boolean constant;
-
-    private BoolConstValueSource(boolean constant) {
-      this.constant = constant;
-    }
-
-    @Override
-    public String description() {
-      return "const(" + constant + ")";
-    }
-
-    @Override
-    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-      return new BoolDocValues(this) {
-        @Override
-        public boolean boolVal(int doc) {
-          return constant;
-        }
-      };
-    }
-
-    @Override
-    public int hashCode() {
-      return constant ? 0x12345678 : 0x87654321;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (BoolConstValueSource.class != o.getClass()) return false;
-      BoolConstValueSource other = (BoolConstValueSource) o;
-      return this.constant == other.constant;
-    }
-
-    @Override
-    public int getInt() {
-      return constant ? 1 : 0;
-    }
-
-    @Override
-    public long getLong() {
-      return constant ? 1 : 0;
-    }
-
-    @Override
-    public float getFloat() {
-      return constant ? 1 : 0;
-    }
-
-    @Override
-    public double getDouble() {
-      return constant ? 1 : 0;
-    }
-
-    @Override
-    public Number getNumber() {
-      return constant ? 1 : 0;
-    }
-
-    @Override
-    public boolean getBool() {
-      return constant;
-    }
-  }
-
   static class DateValueSourceParser extends ValueSourceParser {
     @Override
     public void init(NamedList args) {
@@ -1562,6 +1494,74 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     }
 
+  }
+
+  static class BoolConstValueSource extends ConstNumberSource {
+    public static final BoolConstValueSource TRUE = new BoolConstValueSource(true);
+    public static final BoolConstValueSource FALSE = new BoolConstValueSource(false);
+
+    final boolean constant;
+
+    private BoolConstValueSource(boolean constant) {
+      this.constant = constant;
+    }
+
+    @Override
+    public String description() {
+      return "const(" + constant + ")";
+    }
+
+    @Override
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      return new BoolDocValues(this) {
+        @Override
+        public boolean boolVal(int doc) {
+          return constant;
+        }
+      };
+    }
+
+    @Override
+    public int hashCode() {
+      return constant ? 0x12345678 : 0x87654321;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (BoolConstValueSource.class != o.getClass()) return false;
+      BoolConstValueSource other = (BoolConstValueSource) o;
+      return this.constant == other.constant;
+    }
+
+    @Override
+    public int getInt() {
+      return constant ? 1 : 0;
+    }
+
+    @Override
+    public long getLong() {
+      return constant ? 1 : 0;
+    }
+
+    @Override
+    public float getFloat() {
+      return constant ? 1 : 0;
+    }
+
+    @Override
+    public double getDouble() {
+      return constant ? 1 : 0;
+    }
+
+    @Override
+    public Number getNumber() {
+      return constant ? 1 : 0;
+    }
+
+    @Override
+    public boolean getBool() {
+      return constant;
+    }
   }
 
   static class TestValueSource extends ValueSource {
