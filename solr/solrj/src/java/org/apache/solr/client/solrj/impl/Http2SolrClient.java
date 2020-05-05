@@ -96,7 +96,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
@@ -383,7 +384,7 @@ public class Http2SolrClient extends SolrClient {
             InputStream is = getContentAsInputStream();
             assert ObjectReleaseTracker.track(is);
             rsp = processErrorsAndResponse(result.getResponse(),
-                parser, is, getEncoding(), isV2ApiRequest(solrRequest));
+                parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
             onComplete.onSuccess(rsp);
           } catch (Exception e) {
             onComplete.onFailure(e);
@@ -398,7 +399,15 @@ public class Http2SolrClient extends SolrClient {
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
         assert ObjectReleaseTracker.track(is);
-        return processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
+
+        ContentType contentType = getContentType(response);
+        String mimeType = null;
+        String encoding = null;
+        if (contentType != null) {
+          mimeType = contentType.getMimeType();
+          encoding = contentType.getCharset() != null? contentType.getCharset().name() : null;
+        }
+        return processErrorsAndResponse(response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
@@ -421,25 +430,9 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private String getEncoding(Response response) {
+  private ContentType getContentType(Response response) {
     String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
-    if (contentType != null) {
-      String charset = "charset=";
-      int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
-      if (index > 0) {
-        String encoding = contentType.substring(index + charset.length());
-        // Sometimes charsets arrive with an ending semicolon.
-        int semicolon = encoding.indexOf(';');
-        if (semicolon > 0)
-          encoding = encoding.substring(0, semicolon).trim();
-        // Sometimes charsets are quoted.
-        int lastIndex = encoding.length() - 1;
-        if (encoding.charAt(0) == '"' && encoding.charAt(lastIndex) == '"')
-          encoding = encoding.substring(1, lastIndex).trim();
-        return encoding;
-      }
-    }
-    return null;
+    return StringUtils.isEmpty(contentType)? null : ContentType.parse(contentType);
   }
 
   private void setBasicAuthHeader(SolrRequest solrRequest, Request req) {
@@ -639,6 +632,7 @@ public class Http2SolrClient extends SolrClient {
   private NamedList<Object> processErrorsAndResponse(Response response,
                                                      final ResponseParser processor,
                                                      InputStream is,
+                                                     String mimeType,
                                                      String encoding,
                                                      final boolean isV2Api)
       throws SolrServerException {
@@ -646,10 +640,6 @@ public class Http2SolrClient extends SolrClient {
     try {
       // handle some http level checks before trying to parse the response
       int httpStatus = response.getStatus();
-
-      String contentType;
-      contentType = response.getHeaders().get("content-type");
-      if (contentType == null) contentType = "";
 
       switch (httpStatus) {
         case HttpStatus.SC_OK:
@@ -664,7 +654,7 @@ public class Http2SolrClient extends SolrClient {
           }
           break;
         default:
-          if (processor == null || "".equals(contentType)) {
+          if (processor == null || mimeType == null) {
             throw new RemoteSolrException(serverBaseUrl, httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getReason(),
                 null);
@@ -683,7 +673,6 @@ public class Http2SolrClient extends SolrClient {
       String procCt = processor.getContentType();
       if (procCt != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        String mimeType = ContentType.parse(contentType).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
