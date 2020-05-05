@@ -646,6 +646,55 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  public void testSKGSweepMultiAcc() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+    
+    // simple single level facet w/skg & trivial non-sweeping stat using various sorts & (re)sorting
+    for (String sort : Arrays.asList("sort:'index asc'",
+                                     "sort:'y desc'",
+                                     "sort:'z desc'",
+                                     "sort:'skg desc'",
+                                     "prelim_sort:'count desc', sort:'index asc'",
+                                     "prelim_sort:'count desc', sort:'y desc'",
+                                     "prelim_sort:'count desc', sort:'z desc'",
+                                     "prelim_sort:'count desc', sort:'skg desc'")) {
+      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order,
+      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      //
+      // So all of these re/sort options should produce identical output
+      // - Testing "index" sort allows the randomized use of "stream" processor as default to be tested.
+      // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "defered" Agg
+
+      for (String sweep : Arrays.asList("true", "false")) {
+        //  results should be the same even if we disable sweeping...
+        assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                     "fore", "where_s:NY", "back", "*:*",
+                     "json.facet", ""
+                     + "{x: { type: terms, field: 'cat_s', "+sort+", limit:-1, "
+                     + "      facet: { skg: { type: 'func', func:'relatedness($fore,$back)', "
+                     // nocommit: refactor to use constant for sweep_collection param name
+                     +"                       sweep_collection: "+sweep+" },"
+                     + "               y:'sum(num_i)', "
+                     +"                z:'min(num_i)' } } }")
+                 , "facets=={count:5, x:{ buckets:["
+                 + "   { val:'A', count:2, y:5.0, z:2, "
+                 + "     skg : { relatedness: 0.00554, "
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.33333, },"
+                 + "   }, "
+                 + "   { val:'B', count:3, y:-3.0, z:-5, "
+                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.5 },"
+                 + "   } ] } } "
+                 );
+      }
+    }
+  }
+
+  
+  @Test
   public void testRepeatedNumerics() throws Exception {
     Client client = Client.localClient();
     String field = "num_is"; // docValues of multi-valued points field can contain duplicate values... make sure they don't mess up our counts.

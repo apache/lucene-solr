@@ -469,6 +469,20 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       }
     }
 
+    // nocommit....
+    //
+    // reproduce with: ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespoke -Dtests.seed=BA57FB9FFC92FE7C -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=fo-DK -Dtests.timezone=Pacific/Midway -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
+     
+    { // infinite limit with an additional (non-sweeping) stat
+      final TermFacet xxx = new TermFacet(multiStrField(4), -1, 0, null, false);
+      xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("xxx", xxx);
+      assertFacetSKGsAreConsistent(facets,
+                                   buildORQuery(multiStrField(11) + ":55",
+                                                multiStrField(0) + ":46"),
+                                   multiStrField(5)+":9", "*:*");
+    }
   }
   
   public void testRandom() throws Exception {
@@ -643,7 +657,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       final String f = null == foreQ ? "$fore" : "{!v='"+foreQ+"'}";
       final String b = null == backQ ? "$back" : "{!v='"+backQ+"'}";
 
-      // nocommit: can we remove min_popularity ?
+      // nocommit: can we remove this hardcoded min_popularity -- ie: paramaterize/randomize it?
       return"{ \"type\": \"func\", "
         + "  \"func\": \"relatedness("+f+","+b+")\", "
         + "  \"min_popularity\": 0.001, "
