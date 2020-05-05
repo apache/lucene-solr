@@ -88,7 +88,6 @@ public class LineFileDocs implements Closeable {
 
     // true if the InputStream is not already randomly seek'd after the if/else block below:
     boolean needSkip;
-    boolean skipFirstLineFragment = false;
     
     long size = 0L, seekTo = 0L;
     if (is == null) {
@@ -109,8 +108,15 @@ public class LineFileDocs implements Closeable {
         channel.position(seekTo);
         is = Channels.newInputStream(channel);
 
-        // we (likely) seeked to the middle of a line:
-        skipFirstLineFragment = true;
+        // read until newline char, otherwise we may hit "java.nio.charset.MalformedInputException: Input length = 1"
+        // exception in readline() below, because we seeked part way through a multi-byte (in UTF-8) encoded
+        // unicode character:
+        if (seekTo > 0L) {
+          int b;
+          do {
+            b = is.read();
+          } while (b >= 0 && b != 13 && b != 10);
+        }
 
         needSkip = false;
       }
@@ -169,11 +175,6 @@ public class LineFileDocs implements Closeable {
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);
     reader = new BufferedReader(new InputStreamReader(is, decoder), BUFFER_SIZE);
-    
-    if (skipFirstLineFragment) {
-      // read until end of line:
-      reader.readLine();
-    }
   }
 
   public synchronized void reset() throws IOException {
