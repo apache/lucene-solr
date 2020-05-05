@@ -51,7 +51,7 @@ API Changes
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom analysis factories
-  must now also implement the default constructor (see MIGRATE.txt).
+  must now also implement the default constructor (see MIGRATE.md).
   (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
@@ -93,6 +93,9 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9354: Improvements to snowball french stopwords list, so that it is less
+  aggressive. (Philippe Ouellet)
+
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
@@ -119,6 +122,9 @@ Other
 
 * LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
 
+* LUCENE-9267: Update MatchingQueries documentation to correct
+  time unit. (Pierre-Luc Perron via Mike Drob)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
@@ -137,6 +143,15 @@ API Changes
   are used as index sorts.  (Alan Woodward, Uwe Schindler, Adrien Grand)
 
 * LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
+
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
+
+* LUCENE-9349: QueryVisitor.consumeTermsMatching() now takes a
+  Supplier<ByteRunAutomaton> to enable queries that build large automata to
+  provide them lazily.  TermsInSetQuery switches to using this method
+  to report matching terms. (Alan Woodward)
 
 New Features
 ---------------------
@@ -181,6 +196,9 @@ Optimizations
   computed at deserialization time, therefore we can be more selective when decoding points of a triangle.
   (Ignacio Vera)
 
+* LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
+  (Ignacio Vera)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
@@ -206,6 +224,9 @@ Bug Fixes
   finishing threads fail to pick up pending merges causing potential thread starvation on
   forceMerge calls. (Simon Willnauer)
 
+* LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
+  implementation. (Pierre-Luc Perron, Alan Woodward)
+
 Other
 ---------------------
 
@@ -230,6 +251,10 @@ Other
 
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
+
+Build
+
+* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
 
 ======================= Lucene 8.5.1 =======================
 

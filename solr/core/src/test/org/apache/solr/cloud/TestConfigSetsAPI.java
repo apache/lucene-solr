@@ -500,10 +500,14 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
     File directory = TestDynamicLoading.getFile(directoryPath);
-    log.info("Directory: "+directory.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("Directory: {}", directory.getAbsolutePath());
+    }
     try {
       zip (directory, zipFile);
-      log.info("Zipfile: "+zipFile.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+      }
       return zipFile.getAbsolutePath();
     } catch (IOException e) {
       throw new RuntimeException(e);

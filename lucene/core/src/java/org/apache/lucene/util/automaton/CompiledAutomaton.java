@@ -354,12 +354,12 @@ public class CompiledAutomaton implements Accountable {
     if (visitor.acceptField(field)) {
       switch (type) {
         case NORMAL:
-          visitor.consumeTermsMatching(parent, field, runAutomaton);
+          visitor.consumeTermsMatching(parent, field, () -> runAutomaton);
           break;
         case NONE:
           break;
         case ALL:
-          visitor.consumeTermsMatching(parent, field, new ByteRunAutomaton(Automata.makeAnyString()));
+          visitor.consumeTermsMatching(parent, field, () -> new ByteRunAutomaton(Automata.makeAnyString()));
           break;
         case SINGLE:
           visitor.consumeTerms(parent, new Term(field, term));

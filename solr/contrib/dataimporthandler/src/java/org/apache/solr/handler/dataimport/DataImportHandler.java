@@ -266,7 +266,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           try {
             return super.upload(document);
           } catch (RuntimeException e) {
-            log.error("Exception while adding: " + document, e);
+            log.error("Exception while adding: {}", document, e);
             return false;
           }
         }

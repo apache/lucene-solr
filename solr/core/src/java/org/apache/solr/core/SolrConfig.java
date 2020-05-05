@@ -315,10 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn("You should not use LATEST as luceneMatchVersion property: {}{}{}"
-          , "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
-          , "sizable changes may happen. If precise back compatibility is important "
-          , "then you should instead explicitly specify an actual Lucene version.");
+      log.warn("You should not use LATEST as luceneMatchVersion property: "
+          + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          + "sizable changes may happen. If precise back compatibility is important "
+          + "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;

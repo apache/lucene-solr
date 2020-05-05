@@ -38,7 +38,7 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
 
   @Override
   public void warning(SAXParseException e) {
-    log.warn("XML parse warning in \""+e.getSystemId()+"\", line "+e.getLineNumber()+", column "+e.getColumnNumber()+": "+e.getMessage());
+    log.warn("XML parse warning in '{}', line {}, column {}: {}", e.getSystemId(), e.getLineNumber(), e.getColumnNumber(), e.getMessage());
   }
 
   @Override
@@ -77,7 +77,7 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
       sb.append(" in \"").append(loc.getSystemId()).append("\", line ")
         .append(loc.getLineNumber()).append(", column ").append(loc.getColumnNumber());
     }
-    log.warn(sb.append(": ").append(message).toString());
+    log.warn("{}", sb.append(": ").append(message));
   }
 
 }

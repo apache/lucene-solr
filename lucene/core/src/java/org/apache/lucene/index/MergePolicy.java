@@ -403,24 +403,14 @@ public abstract class MergePolicy {
 
   /** Exception thrown if there are any problems while executing a merge. */
   public static class MergeException extends RuntimeException {
-    private Directory dir;
-
     /** Create a {@code MergeException}. */
-    public MergeException(String message, Directory dir) {
+    public MergeException(String message) {
       super(message);
-      this.dir = dir;
     }
 
     /** Create a {@code MergeException}. */
-    public MergeException(Throwable exc, Directory dir) {
+    public MergeException(Throwable exc) {
       super(exc);
-      this.dir = dir;
-    }
-
-    /** Returns the {@link Directory} of the index that hit
-     *  the exception. */
-    public Directory getDirectory() {
-      return dir;
     }
   }
 

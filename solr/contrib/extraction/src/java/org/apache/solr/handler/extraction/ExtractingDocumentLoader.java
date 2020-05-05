@@ -215,7 +215,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if(pwMapFile != null && pwMapFile.length() > 0) {
             InputStream is = req.getCore().getResourceLoader().openResource(pwMapFile);
             if(is != null) {
-              log.debug("Password file supplied: "+pwMapFile);
+              log.debug("Password file supplied: {}", pwMapFile);
               epp.parse(is);
             }
           }
@@ -223,13 +223,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           String resourcePassword = params.get(ExtractingParams.RESOURCE_PASSWORD);
           if(resourcePassword != null) {
             epp.setExplicitPassword(resourcePassword);
-            log.debug("Literal password supplied for file "+resourceName);
+            log.debug("Literal password supplied for file {}", resourceName);
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
           if(ignoreTikaException)
             log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
-                .append(". metadata=").append(metadata.toString()).toString());
+                .append(". metadata=").append(metadata.toString()).toString()); // logOk
           else
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

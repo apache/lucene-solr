@@ -144,7 +144,9 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Optional<CoreSnapshotMetaData> leaderCore = snapshots.stream().filter(x -> x.isLeader()).findFirst();
     if (leaderCore.isPresent()) {
-      log.info("Replica {} was the leader when snapshot {} was created.", leaderCore.get().getCoreName(), snapshotMeta.getName());
+      if (log.isInfoEnabled()) {
+        log.info("Replica {} was the leader when snapshot {} was created.", leaderCore.get().getCoreName(), snapshotMeta.getName());
+      }
       Replica r = slice.getReplica(leaderCore.get().getCoreName());
       if ((r != null) && !r.getState().equals(State.DOWN)) {
         return r;

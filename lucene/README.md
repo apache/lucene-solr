@@ -20,4 +20,4 @@ Files are organized by module, for example in core/:
 To review the documentation, read the main documentation page, located at:
 `docs/index.html`
 
-To build Lucene or its documentation for a source distribution, see BUILD.txt
+To build Lucene or its documentation for a source distribution, see `BUILD.md`
