@@ -125,6 +125,8 @@ Other Changes
 
 * SOLR-13886: HDFSSyncSliceTest and SyncSliceTest started failing frequently (Kevin Risden)
 
+* SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
