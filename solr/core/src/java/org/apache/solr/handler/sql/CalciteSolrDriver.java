@@ -65,7 +65,7 @@ public class CalciteSolrDriver extends Driver {
     // Set the default schema
     calciteConnection.setSchema(schemaName);
 
-    return new CalciteConnectionWrapper(calciteConnection) {
+    return new FilterCalciteConnection(calciteConnection) {
       @Override
       public void close() throws SQLException {
         solrSchema.close();

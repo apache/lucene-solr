@@ -299,7 +299,6 @@ public class XCJFQuery extends Query {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
         solrStream.close();
-        solrClientCache.close();
       }
 
       return collector.getDocSet();
