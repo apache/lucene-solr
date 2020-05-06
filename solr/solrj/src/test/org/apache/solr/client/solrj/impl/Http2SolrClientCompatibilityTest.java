@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.ParseException;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;

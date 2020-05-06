@@ -20,11 +20,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -117,7 +117,7 @@ public class Http2SolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-  private static final String UTF_8 = StandardCharsets.UTF_8.name();
+  private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
@@ -286,7 +286,7 @@ public class Http2SolrClient extends SolrClient {
     @Override
     public void close() throws IOException {
       if (isXml) {
-        write("</stream>".getBytes(StandardCharsets.UTF_8));
+        write("</stream>".getBytes(FALLBACK_CHARSET));
       }
       this.outProvider.getOutputStream().close();
     }
@@ -330,7 +330,7 @@ public class Http2SolrClient extends SolrClient {
     OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
         isXml);
     if (isXml) {
-      outStream.write("<stream>".getBytes(StandardCharsets.UTF_8));
+      outStream.write("<stream>".getBytes(FALLBACK_CHARSET));
     }
     return outStream;
   }
@@ -352,7 +352,7 @@ public class Http2SolrClient extends SolrClient {
           byte[] content = String.format(Locale.ROOT,
               fmt, params.getBool(UpdateParams.WAIT_SEARCHER, false)
                   + "")
-              .getBytes(StandardCharsets.UTF_8);
+              .getBytes(FALLBACK_CHARSET);
           outStream.write(content);
         }
       }
@@ -438,7 +438,7 @@ public class Http2SolrClient extends SolrClient {
   private void setBasicAuthHeader(SolrRequest solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
       String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(StandardCharsets.UTF_8));
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
       req.header("Authorization", "Basic " + encoded);
     }
   }
@@ -619,7 +619,7 @@ public class Http2SolrClient extends SolrClient {
           }
         }
       }
-      req.content(new FormContentProvider(fields, StandardCharsets.UTF_8));
+      req.content(new FormContentProvider(fields, FALLBACK_CHARSET));
     }
 
     return req;
@@ -676,10 +676,11 @@ public class Http2SolrClient extends SolrClient {
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String exceptionEncoding = encoding != null? encoding : FALLBACK_CHARSET.name();
           try {
-            msg = msg + " " + IOUtils.toString(is, encoding);
+            msg = msg + " " + IOUtils.toString(is, exceptionEncoding);
           } catch (IOException e) {
-            throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + encoding, e);
+            throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + exceptionEncoding, e);
           }
           throw new RemoteSolrException(serverBaseUrl, httpStatus, msg, null);
         }
@@ -715,10 +716,7 @@ public class Http2SolrClient extends SolrClient {
               .append("\n\n")
               .append("request: ")
               .append(response.getRequest().getMethod());
-          try {
-            reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
-          } catch (UnsupportedEncodingException e) {
-          }
+          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss = new RemoteSolrException(serverBaseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
