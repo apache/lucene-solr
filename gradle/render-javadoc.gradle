@@ -58,7 +58,7 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
         // fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly (by removing all the packages which are part of lucene-core)
         // problem description: [https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106]
         ant.local(name: "element-list-regex") // contains a regex for all package names which are in lucene-core's javadoc
-        ant.loadfile(property: "element-list-regex", srcFile: "${project(':lucene:core').javadoc.destinationDir}/element-list", encoding: "utf-8") {
+        ant.loadfile(property: "element-list-regex", srcFile: "${project(':lucene:core').tasks[name].outputDir}/element-list", encoding: "utf-8") {
           filterchain {
             tokenfilter(delimoutput: "|") {
               replacestring(from: ".", to: "\\.")
@@ -424,7 +424,7 @@ class RenderJavadocTask extends DefaultTask {
     linkProjects.collect { path ->
       def docdir = convertPath2Link(path)
       logger.warn(docdir as String);
-      opts << [ '-linkoffline', docdir, project.project(path).javadoc.destinationDir ]
+      opts << [ '-linkoffline', docdir, project.project(path).tasks[name].outputDir ]
     }
 
     opts << [ '--release', 11 ]
