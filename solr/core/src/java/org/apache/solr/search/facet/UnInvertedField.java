@@ -486,6 +486,7 @@ public class UnInvertedField extends DocTermOrds {
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
         int maxIdx = iter.registerCounts(counts);
+        boolean collectBase = iter.collectBase();
 
         if (doc >= adjustedMax) {
           do {
@@ -524,7 +525,9 @@ public class UnInvertedField extends DocTermOrds {
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
             counts.incrementCount(-1, arrIdx, 1, maxIdx);
-            processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            if (collectBase) {
+              processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            }
           }
         } else {
           int tnum = 0;
@@ -538,7 +541,9 @@ public class UnInvertedField extends DocTermOrds {
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
                 counts.incrementCount(-1, arrIdx, 1, maxIdx);
-                processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                if (collectBase) {
+                  processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                }
               }
               delta = 0;
             }
