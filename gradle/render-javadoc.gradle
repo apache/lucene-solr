@@ -20,13 +20,6 @@
 
 import java.util.stream.Collectors;
 
-// utility function to convert project path to document dir
-// e.g.: ':lucene:analysis:common' => 'analysis/common'
-def pathToDocdir = { path -> path.split(':').drop(2).join('/') }
-
-// escapes an option with single quotes or whitespace to be passed in the options.txt file for
-def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
-
 allprojects {
   plugins.withType(JavaPlugin) {
 
@@ -39,133 +32,15 @@ allprojects {
       dependsOn "renderJavadoc"
     }
 
-    task renderJavadoc {
+    task renderJavadoc(type:RenderJavadocTask) {
       description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
       group "documentation"
 
-      ext {
-        linksource = false
-        linkJUnit = false
-        linkLuceneProjects = []
-        linkSorlProjects = []
-      }
-
       dependsOn sourceSets.main.compileClasspath
 
-      inputs.files { sourceSets.main.java.asFileTree }
-      outputs.dir project.javadoc.destinationDir
-
-      def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
-      def title = "${libName} ${project.version} ${project.name} API".toString()
-
-      // absolute urls for "-linkoffline" option
-      def javaSEDocUrl = "https://docs.oracle.com/en/java/javase/11/docs/api/"
-      def junitDocUrl = "https://junit.org/junit4/javadoc/4.12/"
-      def luceneDocUrl = "https://lucene.apache.org/core/${project.version.replace(".", "_")}".toString()
-      def solrDocUrl = "https://lucene.apache.org/solr/${project.version.replace(".", "_")}".toString()
-
-      def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
-      
-      doFirst {
-        def srcDirs = sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }
-        def optionsFile = file("${getTemporaryDir()}/javadoc-options.txt")
-
-        def opts = []
-        opts << [ '-overview', file("src/java/overview.html") ]
-        opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
-        opts << [ '-subpackages', project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr' ]
-        opts << [ '-d', project.javadoc.destinationDir ]
-        opts << '-protected'
-        opts << [ '-encoding', 'UTF-8' ]
-        opts << [ '-charset', 'UTF-8' ]
-        opts << [ '-docencoding', 'UTF-8' ]
-        opts << '-noindex'
-        opts << '-author'
-        opts << '-version'
-        if (linksource) {
-          opts << '-linksource'
-        }
-        opts << '-use'
-        opts << [ '-locale', 'en_US' ]
-        opts << [ '-windowtitle', title ]
-        opts << [ '-doctitle', title ]
-        if (!sourceSets.main.compileClasspath.isEmpty()) {
-          opts << [ '-classpath', sourceSets.main.compileClasspath.asPath ]
-        }
-        opts << [ '-bottom', "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
-
-        opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
-        opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
-        opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
-
-        // resolve links to JavaSE and JUnit API
-        opts << [ '-linkoffline', javaSEDocUrl, project(':lucene').file('tools/javadoc/java11/') ]
-        if (linkJUnit) {
-          opts << [ '-linkoffline', junitDocUrl, project(':lucene').file('tools/javadoc/junit/') ]
-        }
-        // resolve inter-project links
-        linkLuceneProjects.collect { path ->
-          opts << [ '-linkoffline', "${luceneDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir) ]
-        }
-        linkSorlProjects.collect { path ->
-          opts << [ '-linkoffline', "${solrDocUrl}/${pathToDocdir(path)}", file(project(path).javadoc.destinationDir) ]
-        }
-
-        opts << [ '--release', 11 ]
-        opts << '-Xdoclint:all,-missing'
-
-        // Temporary file that holds all javadoc options for the current task.
-        String optionsStr = opts.stream()
-          .map{ (it instanceof List) ? it.stream().map{it as String}.map(escapeJavadocOption).collect(Collectors.joining(' ')) : escapeJavadocOption(it as String)}
-          .collect(Collectors.joining('\n'));
-        optionsFile.write(optionsStr, 'UTF-8')
-
-        def outputFile = file("${getTemporaryDir()}/javadoc-output.txt")
-        def result
-        outputFile.withOutputStream { output ->
-          result = project.exec {
-            executable javadocCmd
-
-            standardOutput = output
-            errorOutput = output
-
-            args += [ "@${optionsFile}" ]
-
-            // -J flags can't be passed via options file... (an error "javadoc: error - invalid flag: -J-Xmx512m" occurs.)
-            args += [ "-J-Xmx512m" ]
-            // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
-            args += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
-
-            ignoreExitValue true
-          }
-        }
-
-        if (result.getExitValue() != 0) {
-          // Pipe the output to console. Intentionally skips any encoding conversion 
-          // and pumps raw bytes.
-          System.out.write(outputFile.bytes)
-
-          def cause
-          try {
-            result.rethrowFailure()
-          } catch (ex) {
-            cause = ex
-          }
-          throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
-        }
-
-        // append some special table css, prettify css
-        ant.concat(destfile: "${project.javadoc.destinationDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
-          filelist(dir: project(":lucene").file("tools/javadoc"), files: "table_padding.css")
-          filelist(dir: project(":lucene").file("tools/prettify"), files: "prettify.css")
-        }
-        // append prettify to scripts
-        ant.concat(destfile: "${project.javadoc.destinationDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-          filelist(dir: project(':lucene').file("tools/prettify"), files: "prettify.js inject-javadocs.js")
-        }
-        ant.fixcrlf(srcdir: project.javadoc.destinationDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
-
-      }
+      srcDirSet = sourceSets.main.java;
+      outputDir = project.javadoc.destinationDir;
+      classpath = sourceSets.main.compileClasspath;
     }
   }
 }
@@ -176,7 +51,7 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
     renderJavadoc {
       [':lucene:core'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
 
       doLast {
@@ -206,7 +81,7 @@ configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') && it.pat
     renderJavadoc {
       [':lucene:analysis:common'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -222,7 +97,7 @@ configure(project(':lucene:benchmark')) {
        ':lucene:facet',
        ':lucene:spatial-extras'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -233,7 +108,7 @@ configure(project(':lucene:classification')) {
     renderJavadoc {
       [':lucene:queries', ':lucene:analysis:common', ':lucene:grouping'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -248,7 +123,7 @@ configure(project(':lucene:demo')) {
        ':lucene:facet',
        ':lucene:expressions'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
 
       // we link the example source in the javadocs, as it's ref'ed elsewhere
@@ -262,7 +137,7 @@ configure(project(':lucene:grouping')) {
     renderJavadoc {
       [':lucene:queries'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -273,7 +148,7 @@ configure(project(':lucene:highlighter')) {
     renderJavadoc {
       [':lucene:memory'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -284,7 +159,7 @@ configure(project(':lucene:monitor')) {
     renderJavadoc {
       [':lucene:memory', ':lucene:analysis:common', ':lucene:queryparser'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -295,7 +170,7 @@ configure(project(':lucene:queryparser')) {
     renderJavadoc {
       [':lucene:queries', ':lucene:sandbox'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -306,7 +181,7 @@ configure(project(':lucene:replicator')) {
     renderJavadoc {
       [':lucene:facet'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -317,7 +192,7 @@ configure(project(':lucene:spatial-extras')) {
     renderJavadoc {
       [':lucene:spatial3d'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -328,7 +203,7 @@ configure(project(':lucene:suggest')) {
     renderJavadoc {
       [':lucene:analysis:common'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -340,7 +215,7 @@ configure(project(':lucene:test-framework')) {
     renderJavadoc {
       [':lucene:codecs'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkLuceneProjects += [ path ]
+        linkProjects += [ path ]
       }
       linkJUnit = true
     }
@@ -375,7 +250,7 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
          ':lucene:classification',
          ':lucene:spatial-extras'].collect { path ->
           dependsOn "${path}:renderJavadoc"
-          linkLuceneProjects += [ path ]
+          linkProjects += [ path ]
         }
       }
     }
@@ -388,7 +263,7 @@ configure(project(':solr:core')) {
     renderJavadoc {
       [':solr:solrj'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkSorlProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -399,7 +274,7 @@ configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
     renderJavadoc {
       [':solr:solrj', ':solr:core'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkSorlProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -410,7 +285,7 @@ configure(project(':solr:contrib:dataimporthandler-extras')) {
     renderJavadoc {
       [':solr:contrib:dataimporthandler'].collect { path ->
         dependsOn "${path}:renderJavadoc"
-        linkSorlProjects += [ path ]
+        linkProjects += [ path ]
       }
     }
   }
@@ -428,5 +303,182 @@ configure(project(':solr:test-framework')) {
 configure(subprojects.findAll { it.path in [':solr:solr-ref-guide', ':solr:server', ':solr:webapp']}) {
   afterEvaluate {
     project.tasks.findByPath("renderJavadoc").enabled = false
+  }
+}
+
+class RenderJavadocTask extends DefaultTask {
+  @InputFiles
+  @SkipWhenEmpty
+  SourceDirectorySet srcDirSet;
+  
+  @OutputDirectory
+  File outputDir;
+  
+  @InputFiles
+  @Classpath
+  FileCollection classpath;
+  
+  @Input
+  boolean linksource = false;
+  
+  @Input
+  boolean linkJUnit = false;
+  
+  @Input
+  boolean relativeProjectLinks = true;
+
+  @Input
+  def linkProjects = [];
+  
+  @Input
+  def luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${project.baseVersion.replace(".", "_")}")
+
+  @Input
+  def solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${project.baseVersion.replace(".", "_")}")
+  
+  @TaskAction
+  public void render() {
+    def thispc = project.path.split(':').drop(1);
+    // Converts absolute project path (e.g., ":lucene:analysis:common") to 
+    // a link in the docs; relative to current, if needed for global documentation
+    def convertPath2Link = { path ->
+      def pc = path.split(':').drop(1);
+      if (relativeProjectLinks) {
+        int toDrop = 0;
+        for (int i = 0; i < Math.min(pc.size(), thispc.size()); i++) {
+          if (pc[i] == thispc[i]) {
+            toDrop++;
+          } else {
+            break;
+          }
+        }
+        // only create relative path if there is actually anything removed from beginning (this implies absolute link solr -> lucene):
+        if (toDrop > 0) {
+          return Collections.nCopies(thispc.size() - toDrop, '..').plus(pc.drop(toDrop) as List).join('/').concat('/');
+        } 
+      }
+      return "${(pc[0] == 'lucene') ? luceneDocUrl : solrDocUrl}/${pc.drop(1).join('/')}/"
+    }
+
+    // escapes an option with single quotes or whitespace to be passed in the options.txt file for
+    def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
+    
+    def relativizeURL = { String from, String to ->
+      URI fromUri = URI.create(from).normalize();
+      URI toUri = URI.create(to).normalize();
+      if (fromUri.scheme != toUri.scheme || fromUri.authority != toUri.authority) {
+        return to;
+      }
+      // because URI#relativice can't handle relative paths, we use Path class as workaround
+      Path fromPath = Paths.get("./${fromUri.path}");
+      Path toPath = Paths.get("./${toUri.path}");
+      return fromPath.relativize(toPath).toString().replace(File.separator, '/')
+    }
+
+    def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
+    def title = "${libName} ${project.version} ${project.name} API"
+    
+    // absolute urls for "-linkoffline" option
+    def javaSEDocUrl = "https://docs.oracle.com/en/java/javase/11/docs/api/"
+    def junitDocUrl = "https://junit.org/junit4/javadoc/4.12/"
+
+    def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
+
+    def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
+    def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
+    
+    def opts = []
+    opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
+    opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
+    opts << [ '-subpackages', project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr' ]
+    opts << [ '-d', outputDir ]
+    opts << '-protected'
+    opts << [ '-encoding', 'UTF-8' ]
+    opts << [ '-charset', 'UTF-8' ]
+    opts << [ '-docencoding', 'UTF-8' ]
+    opts << '-noindex'
+    opts << '-author'
+    opts << '-version'
+    if (linksource) {
+      opts << '-linksource'
+    }
+    opts << '-use'
+    opts << [ '-locale', 'en_US' ]
+    opts << [ '-windowtitle', title ]
+    opts << [ '-doctitle', title ]
+    if (!classpath.isEmpty()) {
+      opts << [ '-classpath', classpath.asPath ]
+    }
+    opts << [ '-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
+
+    opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
+    opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
+    opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
+
+    // resolve links to JavaSE and JUnit API
+    opts << [ '-linkoffline', javaSEDocUrl, project.project(':lucene').file('tools/javadoc/java11/') ]
+    if (linkJUnit) {
+      opts << [ '-linkoffline', junitDocUrl, project.project(':lucene').file('tools/javadoc/junit/') ]
+    }
+    // resolve inter-project links
+    linkProjects.collect { path ->
+      def docdir = convertPath2Link(path)
+      logger.warn(docdir as String);
+      opts << [ '-linkoffline', docdir, project.project(path).javadoc.destinationDir ]
+    }
+
+    opts << [ '--release', 11 ]
+    opts << '-Xdoclint:all,-missing'
+
+    // Temporary file that holds all javadoc options for the current task.
+    String optionsStr = opts.stream()
+      .map{ (it instanceof List) ? it.stream().map{it as String}.map(escapeJavadocOption).collect(Collectors.joining(' ')) : escapeJavadocOption(it as String)}
+      .collect(Collectors.joining('\n'));
+    optionsFile.write(optionsStr, 'UTF-8')
+
+    def outputFile = project.file("${getTemporaryDir()}/javadoc-output.txt")
+    def result
+    outputFile.withOutputStream { output ->
+      result = project.exec {
+        executable javadocCmd
+
+        standardOutput = output
+        errorOutput = output
+
+        args += [ "@${optionsFile}" ]
+
+        // -J flags can't be passed via options file... (an error "javadoc: error - invalid flag: -J-Xmx512m" occurs.)
+        args += [ "-J-Xmx512m" ]
+        // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
+        args += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
+
+        ignoreExitValue true
+      }
+    }
+
+    if (result.getExitValue() != 0) {
+      // Pipe the output to console. Intentionally skips any encoding conversion 
+      // and pumps raw bytes.
+      System.out.write(outputFile.bytes)
+
+      def cause
+      try {
+        result.rethrowFailure()
+      } catch (ex) {
+        cause = ex
+      }
+      throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
+    }
+
+    // append some special table css, prettify css
+    ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
+      filelist(dir: project.project(":lucene").file("tools/javadoc"), files: "table_padding.css")
+      filelist(dir: project.project(":lucene").file("tools/prettify"), files: "prettify.css")
+    }
+    // append prettify to scripts
+    ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
+      filelist(dir: project.project(':lucene').file("tools/prettify"), files: "prettify.js inject-javadocs.js")
+    }
+    ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
   }
 }
