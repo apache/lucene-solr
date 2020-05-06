@@ -465,12 +465,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     }
 
     { // multi-valued facet field w/infinite limit and an extra non-sweeping stat
-
-      // nocommit: currently fails, buckets wind up with different "min" values
-      // nocommit: depending on wether ArrayUIF or ArrayDV gets used with the MultiAcc ???
-      
-      // ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespoke -Dtests.seed=838E28E3EBC3B3B3:66DB4D3457DDE2F7 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=rof-TZ -Dtests.timezone=Etc/GMT+3 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
-      
       final TermFacet xxx = new TermFacet(multiStrField(12), -1, 0, "count asc", false);
       xxx.subFacets.put("min", new MinFacet(multiIntField(4)));
       final Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -494,12 +488,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * a pure random monstrosity.
    */
   public void testBespokeStructures() throws Exception {
-
-    // nocommit: currently fails...
-
-    // ant test  -Dtestcase=TestCloudJSONFacetSKGSweep -Dtests.method=testBespokeStructures -Dtests.seed=838E28E3EBC3B3B3:66DB4D3457DDE2F7 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=rof-TZ -Dtests.timezone=Etc/GMT+3 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
-
-    
     for (int facetFieldNum = 0; facetFieldNum < MAX_FIELD_NUM; facetFieldNum++) {
       for (String facetFieldName : Arrays.asList(soloStrField(facetFieldNum), multiStrField(facetFieldNum))) {
         for (int limit : Arrays.asList(10, -1)) {
