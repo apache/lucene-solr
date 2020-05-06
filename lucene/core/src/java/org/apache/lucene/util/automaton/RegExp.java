@@ -317,7 +317,8 @@ import java.util.Set;
 public class RegExp {
   
   enum Kind {
-    REGEXP_UNION, REGEXP_CONCATENATION, REGEXP_INTERSECTION, REGEXP_OPTIONAL, REGEXP_REPEAT, REGEXP_REPEAT_MIN, REGEXP_REPEAT_MINMAX, REGEXP_COMPLEMENT, REGEXP_CHAR, REGEXP_CHAR_RANGE, REGEXP_ANYCHAR, REGEXP_EMPTY, REGEXP_STRING, REGEXP_ANYSTRING, REGEXP_AUTOMATON, REGEXP_INTERVAL
+    REGEXP_UNION, REGEXP_CONCATENATION, REGEXP_INTERSECTION, REGEXP_OPTIONAL, REGEXP_REPEAT, REGEXP_REPEAT_MIN, REGEXP_REPEAT_MINMAX, REGEXP_COMPLEMENT, REGEXP_CHAR, REGEXP_CHAR_RANGE, REGEXP_ANYCHAR, REGEXP_EMPTY, REGEXP_STRING, REGEXP_ANYSTRING, REGEXP_AUTOMATON, REGEXP_INTERVAL,
+    REGEXP_SHORTHAND
   }
   
   /**
@@ -506,6 +507,10 @@ public class RegExp {
     List<Automaton> list;
     Automaton a = null;
     switch (kind) {
+      case REGEXP_SHORTHAND:
+        RegExp expanded = expandPredefined();
+        a = expanded.toAutomatonInternal(automata, automaton_provider, maxDeterminizedStates);
+        break;
       case REGEXP_UNION:
         list = new ArrayList<>();
         findLeaves(exp1, Kind.REGEXP_UNION, list, automata, automaton_provider,
@@ -716,6 +721,9 @@ public class RegExp {
           b.append('0');
         b.append(s2).append(">");
         break;
+      case REGEXP_SHORTHAND:
+        b.append("\\").appendCodePoint(from);
+        break;
     }
   }
 
@@ -774,6 +782,13 @@ public class RegExp {
         b.appendCodePoint(c);
         b.append('\n');
         break;
+      case REGEXP_SHORTHAND:
+        b.append(indent);
+        b.append(kind);
+        b.append(" class=\\");
+        b.appendCodePoint(from);
+        b.append('\n');
+        break;        
       case REGEXP_CHAR_RANGE:
         b.append(indent);
         b.append(kind);
@@ -1101,10 +1116,51 @@ public class RegExp {
   }
   
   final RegExp parseCharClass() throws IllegalArgumentException {
+    RegExp predefinedExp = matchPredefinedCharacterClass();
+    if (predefinedExp != null) {
+      return predefinedExp;
+    }
+        
     int c = parseCharExp();
     if (match('-')) return makeCharRange(c, parseCharExp());
     else return makeChar(c);
   }
+
+  RegExp expandPredefined() {
+    //See https://docs.oracle.com/javase/tutorial/essential/regex/pre_char_classes.html
+    switch (from) {
+      case 'd':
+        return new RegExp("[0-9]"); // digit
+      case 'D':
+        return new RegExp("[^0-9]"); // non-digit
+      case 's':
+        return new RegExp("[ \t\n\r]"); // whitespace
+      case 'S':
+        return new RegExp("[^\\s]"); // non-whitespace
+      case 'w':
+        return new RegExp("[a-zA-Z_0-9]"); // word
+      case 'W':
+        return new RegExp("[^\\w]"); // non-word
+      default:
+        throw new IllegalArgumentException(
+            "invalid character class " + from);
+      }   
+  }
+
+  
+  final RegExp matchPredefinedCharacterClass() {
+    //See https://docs.oracle.com/javase/tutorial/essential/regex/pre_char_classes.html
+    if (match('\\')) {
+      if (peek("dDwWsS")) {
+        RegExp re =new RegExp();
+        re.kind = Kind.REGEXP_SHORTHAND;
+        re.from = next();
+        return re;
+      }
+    }    
+    return null;
+  }
+  
   
   final RegExp parseSimpleExp() throws IllegalArgumentException {
     if (match('.')) return makeAnyChar();
@@ -1158,7 +1214,13 @@ public class RegExp {
               "interval syntax error at position " + (pos - 1));
         }
       }
-    } else return makeChar(parseCharExp());
+    } else {
+      RegExp predefined = matchPredefinedCharacterClass();
+      if (predefined != null) {
+        return predefined;
+      }
+      return makeChar(parseCharExp());
+    }
   }
   
   final int parseCharExp() throws IllegalArgumentException {
