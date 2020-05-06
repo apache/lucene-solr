@@ -57,20 +57,11 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
       doLast {
         // fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly (by removing all the packages which are part of lucene-core)
         // problem description: [https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106]
-        ant.local(name: "element-list-regex") // contains a regex for all package names which are in lucene-core's javadoc
-        ant.loadfile(property: "element-list-regex", srcFile: "${project(':lucene:core').tasks[name].outputDir}/element-list", encoding: "utf-8") {
-          filterchain {
-            tokenfilter(delimoutput: "|") {
-              replacestring(from: ".", to: "\\.")
-            }
-          }
-        }
-        ant.replaceregexp(
-            encoding: "UTF-8",
-            file: "${project.javadoc.destinationDir}/element-list",
-            byline: "true",
-            match: "^(\${element-list-regex})\$",
-            replace: "")
+        Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
+        File elementFile = file("${outputDir}/element-list");
+        List elements = elementFile.readLines('UTF-8');
+        elements.removeAll{ luceneCorePackages.contains(it) }
+        elementFile.write(elements.join('\n').concat('\n'), 'UTF-8');
       }
     }
   }
