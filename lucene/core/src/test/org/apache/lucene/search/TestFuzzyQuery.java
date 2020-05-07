@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -38,10 +39,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
@@ -492,7 +495,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
-  
+
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("field", text, Field.Store.YES));
@@ -704,5 +707,31 @@ public class TestFuzzyQuery extends LuceneTestCase {
       cp = ref.ints[ref.length++] = Character.codePointAt(s, i);
     }
     return ref;
+  }
+
+  public void testVisitor() {
+    FuzzyQuery q = new FuzzyQuery(new Term("field", "blob"), 2);
+    AtomicBoolean visited = new AtomicBoolean(false);
+    q.visit(new QueryVisitor() {
+      @Override
+      public void consumeTermsMatching(Query query, String field, ByteRunAutomaton a) {
+        visited.set(true);
+        assertMatches(a, "blob");
+        assertMatches(a, "bolb");
+        assertMatches(a, "blobby");
+        assertNoMatches(a, "bolbby");
+      }
+    });
+    assertTrue(visited.get());
+  }
+
+  private static void assertMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertTrue(automaton.run(b.bytes, b.offset, b.length));
+  }
+
+  private static void assertNoMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertFalse(automaton.run(b.bytes, b.offset, b.length));
   }
 }

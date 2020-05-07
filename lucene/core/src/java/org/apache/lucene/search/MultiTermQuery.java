@@ -286,9 +286,9 @@ public abstract class MultiTermQuery extends Query {
    *  (should instead return {@link TermsEnum#EMPTY} if no
    *  terms match).  The TermsEnum must already be
    *  positioned to the first matching term.
-   * The given {@link AttributeSource} is passed by the {@link RewriteMethod} to
-   * provide attributes, the rewrite method uses to inform about e.g. maximum competitive boosts.
-   * This is currently only used by {@link TopTermsRewrite}
+   *  The given {@link AttributeSource} is passed by the {@link RewriteMethod} to
+   *  share information between segments, for example {@link TopTermsRewrite} uses
+   *  it to share maximum competitive boosts
    */
   protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
 
