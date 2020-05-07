@@ -194,6 +194,8 @@ Other Changes
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
+* SOLR-14461: Replaced commons-fileupload dependency with using Jetty's facilities. (David Smiley)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
