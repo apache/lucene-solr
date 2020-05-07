@@ -72,33 +72,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     reader.close();
     directory.close();
   }
-  
-  public void testPrefixLengthEqualStringLength() throws Exception {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    addDoc("bbab", writer);
-    addDoc("bbabc", writer);
-    addDoc("bbabcd", writer);
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader);
-    writer.close();
 
-    int maxEdits = 1;
-    int prefixLength = 3;
-    FuzzyQuery query = new FuzzyQuery(new Term("field", "bba"), maxEdits, prefixLength);
-    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
-    assertEquals(1, hits.length);
-
-    maxEdits = 2;
-    query = new FuzzyQuery(new Term("field", "bba"), maxEdits, prefixLength);
-    hits = searcher.search(query, 1000).scoreDocs;
-    assertEquals(2, hits.length);
-
-    
-    reader.close();
-    directory.close();
-  }
-  
   public void testFuzziness() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
