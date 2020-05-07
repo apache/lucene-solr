@@ -456,7 +456,7 @@ public final class CodecUtil {
         if (remaining < footerLength()) {
           // corruption caused us to read into the checksum footer already: we can't proceed
           throw new CorruptIndexException("checksum status indeterminate: remaining=" + remaining +
-                                          ", please run checkindex for more details", in);
+                                          "; please run checkindex for more details", in);
         } else {
           // otherwise, skip any unread bytes.
           in.skipBytes(remaining - footerLength());
