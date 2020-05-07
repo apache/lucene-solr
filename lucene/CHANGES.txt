@@ -153,6 +153,13 @@ API Changes
   provide them lazily.  TermsInSetQuery switches to using this method
   to report matching terms. (Alan Woodward)
 
+* LUCENE-9366: DocValues.emptySortedNumeric() not longer takes a maxDoc parameter
+  (Alan Woodward)
+
+* LUCENE-7822: CodecUtil#checkFooter(IndexInput, Throwable) now throws a
+  CorruptIndexException if checksums mismatch or if checksums can't be verified.
+  (Martin Amirault, Adrien Grand)
+
 New Features
 ---------------------
 (No changes)
