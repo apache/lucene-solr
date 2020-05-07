@@ -67,6 +67,10 @@ Other Changes
 * SOLR-14412: Automatically set urlScheme to https when running secure solr with embedded zookeeper. (Mike Drob)
   Do not erroneously set solr.jetty.https.port system property when running in http mode (Upendra Penegalapati)
 
+* SOLR-14014: Introducing a system property that allows users to disable the Admin UI, which is enabled by default.
+  If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
+  `solr.in.sh`/`solr.in.cmd` at start. (marcussorealheis)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -150,6 +154,8 @@ Bug Fixes
 
 * SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
 
+* SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -185,6 +191,8 @@ Other Changes
   SolrIndexSearcher.getDocSet(List<Query>) (processes some filter queries).  (David Smiley)
 
 * SOLR-13886: HDFSSyncSliceTest and SyncSliceTest started failing frequently (Kevin Risden)
+
+* SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
 ==================  8.5.1 ==================
 
