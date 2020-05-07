@@ -74,7 +74,6 @@ The syntax for individual permissions is more involved and is treated in greater
 User's roles may either come from the request itself, then you will use the `ExternalRoleRuleBasedAuthorizationPlugin` variant of RBAC. If you need to hardcode user-role mappings, then you need to use the `RuleBasedAuthorizationPlugin` and define the user-role mappings in `security.json` like this:
 
 user-role:: A mapping of individual users to the roles they belong to.  The value of this property is a JSON map, where each property name is a user, and each property value is either the name of a single role or a JSON array of multiple roles that the specified user belongs to.  For example:
-+
 [source,json]
 ----
 "user-role": {
@@ -82,6 +81,11 @@ user-role:: A mapping of individual users to the roles they belong to.  The valu
   "user2": ["role1", "role2"]
 }
 ----
+useShortName:: Determines if user-role mappings will resolve using the full principal or a shortened name provided by the authentication plugin. For example, the `KerberosAuthPlugin` may provide a full principal as `user@EXAMPLE.COM`, while the corresponding short name would be `user`.
++
+For some plugins the principal name and short name may be the same.
++
+This setting is optional and defaults to `false` if unset.
 
 === Example for RuleBasedAuthorizationPlugin and BasicAuth
 
