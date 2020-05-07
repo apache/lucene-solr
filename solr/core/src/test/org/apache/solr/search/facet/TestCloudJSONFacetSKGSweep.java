@@ -703,37 +703,49 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * trigger the "nested facets re-using the same fore/back set for SKG situation)
    */
   private static final class RelatednessFacet implements Facet, Writable {
-    private final String foreQ;
-    private final String backQ;
-    /** Assumes null for fore/back queries */
+    public final Map<String,Object> jsonData = new LinkedHashMap<>();
+    
+    /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null);
+      this(null, null, map());
     }
+    /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this.foreQ = foreQ;
-      this.backQ = backQ;
+      this(foreQ, backQ, map());
     }
-    @Override
-    public void write(JSONWriter writer) {
+    public RelatednessFacet(final String foreQ, final String backQ,
+                            final Map<String,Object> options) {
+      assert null != options;
+      
       final String f = null == foreQ ? "$fore" : "{!v='"+foreQ+"'}";
       final String b = null == backQ ? "$back" : "{!v='"+backQ+"'}";
 
-      final Map<String,Object> data = new LinkedHashMap<>();
-      data.put("type", "func");
-      data.put("func", "relatedness("+f+","+b+")");
-      // nocommit: can we remove this hardcoded min_popularity -- ie: paramaterize/randomize it?
-      data.put("min_popularity", 0.001F);
-      // sweep_val param can be set to true|false to test explicit values, but to do so
-      // sweep_key param must be changed to 'sweep'
-      data.put("${sweep_key:xxx}","${sweep_val:yyy}");
-      writer.write(data);
+      jsonData.putAll(options);
+      
+      // we don't allow these to be overridden by options, so set them now...
+      jsonData.put("type", "func");
+      jsonData.put("func", "relatedness("+f+","+b+")");
+      jsonData.put("${sweep_key:xxx}","${sweep_val:yyy}");
+      
+    }
+    @Override
+    public void write(JSONWriter writer) {
+      writer.write(jsonData);
     }
     
     public static RelatednessFacet buildRandom() {
-      // nocommit: want to bias this in favor of null fore/back since
-      // nocommit: that's most realistic for typical nested facets
-      return new RelatednessFacet(buildRandomORQuery(TestUtil.nextInt(random(), 1, 5)),
-                                  buildRandomORQuery(TestUtil.nextInt(random(), 3, 9)));
+
+      final Map<String,Object> options = new LinkedHashMap<>();
+      if (random().nextBoolean()) {
+        options.put("min_popularity", "0.001");
+      }
+      
+      // bias this in favor of null fore/back since that's most realistic for typical nested facets
+      final boolean simple = random().nextBoolean();
+      final String fore = simple ? null : buildRandomORQuery(TestUtil.nextInt(random(), 1, 5));
+      final String back = simple ? null : buildRandomORQuery(TestUtil.nextInt(random(), 1, 9));
+      
+      return new RelatednessFacet(fore, back, options);
     }
   }
   
