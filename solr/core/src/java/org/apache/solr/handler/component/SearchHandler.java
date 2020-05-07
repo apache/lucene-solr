@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -484,7 +485,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
       else {
         nl.add("numFound", rb.getResults().docList.matches());
-        nl.add("hitCountRelation", rb.getResults().docList.hitCountRelation().name());
+        nl.add("hitCountRelation", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);

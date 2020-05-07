@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -135,7 +134,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
 
   /**
    * This method will be removed in Solr 9
-   * @deprecated Use {{@link #writeStartDocumentList(String, long, int, long, Float, HitCountRelation)}.
+   * @deprecated Use {{@link #writeStartDocumentList(String, long, int, long, Float, Boolean)}.
    */
   @Override
   @Deprecated
@@ -165,7 +164,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   
   @Override
   public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
+      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException {
     writeMapOpener(headerSize(maxScore, hitCountRelation));
     incLevel();
     writeKey("numFound",false);
@@ -183,7 +182,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     if (hitCountRelation != null) {
       writeMapSeparator();
       writeKey("hitCountRelation",false);
-      writeStr(null, hitCountRelation.name(), false);
+      writeBool(null, hitCountRelation);
     }
     writeMapSeparator();
     writeKey("docs",false);
@@ -192,7 +191,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     incLevel();
   } 
 
-  protected int headerSize(Float maxScore, HitCountRelation hitCountRelation) {
+  protected int headerSize(Float maxScore, Boolean hitCountRelation) {
     int headerSize = 3;
     if (maxScore != null) headerSize++;
     if (hitCountRelation != null) headerSize++;

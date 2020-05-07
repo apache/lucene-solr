@@ -21,7 +21,6 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -224,7 +223,7 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
   
   @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException {
     ifNeededWriteTypeAndValueKey("doclist");
     super.writeStartDocumentList(name, start, size, numFound, maxScore, hitCountRelation);
   }

@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -100,7 +99,7 @@ class PHPSerializedWriter extends JSONWriter {
 
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException
   {
     writeMapOpener(headerSize(maxScore, hitCountRelation));
     writeKey("numFound",false);
@@ -114,7 +113,7 @@ class PHPSerializedWriter extends JSONWriter {
     }
     if (hitCountRelation != null) {
       writeKey("hitCountRelation",false);
-      writeStr(null, hitCountRelation.name(), false);
+      writeBool(null, hitCountRelation);
     }
     writeKey("docs",false);
     writeArrayOpener(size);

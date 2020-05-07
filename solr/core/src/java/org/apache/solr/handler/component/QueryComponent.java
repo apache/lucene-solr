@@ -44,6 +44,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -51,7 +52,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -850,7 +850,7 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
-      HitCountRelation hitCountRelation = HitCountRelation.EQ;
+      TotalHits.Relation hitCountRelation = TotalHits.Relation.EQUAL_TO;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -925,8 +925,8 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountRelation == HitCountRelation.EQ && docs.getHitCountRelation() == HitCountRelation.GT_EQ) {
-          hitCountRelation = HitCountRelation.GT_EQ;
+        if (hitCountRelation == TotalHits.Relation.EQUAL_TO && !docs.getHitCountRelation()) {
+          hitCountRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
         }
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
@@ -999,7 +999,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
-      responseDocs.setHitCountRelation(hitCountRelation);
+      responseDocs.setHitCountRelation(hitCountRelation == TotalHits.Relation.EQUAL_TO);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);
@@ -1291,7 +1291,7 @@ public class QueryComponent extends SearchComponent
     }
 
     DocListAndSet res = new DocListAndSet();
-    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, HitCountRelation.EQ);
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, TotalHits.Relation.EQUAL_TO);
     if (rb.isNeedDocSet()) {
       // TODO: create a cache for this!
       List<Query> queries = new ArrayList<>();

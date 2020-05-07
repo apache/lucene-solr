@@ -47,12 +47,12 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -285,7 +285,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     for (int i = 0; i < docIds.length; i++) {
       docIds[i] = docIdIter.nextDoc();
     }
-    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f, HitCountRelation.EQ);
+    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f, TotalHits.Relation.EQUAL_TO);
   }
 
   private TagClusterReducer chooseTagClusterReducer(String overlaps) {

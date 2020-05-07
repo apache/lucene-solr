@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -158,12 +158,12 @@ public abstract class TextResponseWriter implements TextWriter {
   // some XML formats).
 
   //TODO: Make abstract in Solr 9.0
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException {
     writeStartDocumentList(name, start, size, numFound, maxScore);
   }
   
   /**
-   * @deprecated Use {@link #writeStartDocumentList(String, long, int, long, Float, HitCountRelation)}
+   * @deprecated Use {@link #writeStartDocumentList(String, long, int, long, Float, Boolean)}
    */
   @Deprecated
   public abstract void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException;
@@ -187,7 +187,7 @@ public abstract class TextResponseWriter implements TextWriter {
     DocList ids = res.getDocList();
     Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        res.wantsScores() ? ids.maxScore() : null, ids.hitCountRelation());
+        res.wantsScores() ? ids.maxScore() : null, ids.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
 
     int idx = 0;
     while (docsStreamer.hasNext()) {

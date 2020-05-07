@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.common.HitCountRelation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -302,7 +301,7 @@ class GeoJSONWriter extends JSONWriter {
   
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, HitCountRelation hitCountRelation) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException
   {
     writeMapOpener(headerSize(maxScore, hitCountRelation));
     incLevel();
@@ -324,7 +323,7 @@ class GeoJSONWriter extends JSONWriter {
     if (hitCountRelation != null) {
       writeMapSeparator();
       writeKey("hitCountRelation",false);
-      writeStr(null, hitCountRelation.name(), false);
+      writeBool(null, hitCountRelation);
     }
     
     writeMapSeparator();

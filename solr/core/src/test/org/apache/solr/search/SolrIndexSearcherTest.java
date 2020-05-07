@@ -18,8 +18,8 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.HitCountRelation;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -50,7 +50,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         req("q", "field1_s:foo", 
             "minExactHits", Long.toString(10L * Integer.MAX_VALUE),
             "rows", "2")
-        ,"//*[@hitCountRelation='" + HitCountRelation.EQ + "']"
+        ,"//*[@hitCountRelation='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
@@ -60,27 +60,27 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
-            ,"//*[@hitCountRelation='" + HitCountRelation.GT_EQ + "']"
+            ,"//*[@hitCountRelation='false']"
             ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
     assertQ("test query on empty index",
         req("q", "field1_s:foo", 
             "minExactHits", "200",
             "rows", "2")
-        ,"//*[@hitCountRelation='" + HitCountRelation.EQ + "']"
+        ,"//*[@hitCountRelation='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
   
   private void assertMatchesEqual(int expectedCount, QueryResult qr) {
     assertEquals(expectedCount, qr.getDocList().matches());
-    assertEquals(HitCountRelation.EQ, qr.getDocList().hitCountRelation());
+    assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
   }
   
   private void assertMatchesGraterThan(int expectedCount, QueryResult qr) {
     assertTrue("Expecting returned matches to be greater than " + expectedCount + " but got " + qr.getDocList().matches(),
         expectedCount >= qr.getDocList().matches());
-    assertEquals(HitCountRelation.GT_EQ, qr.getDocList().hitCountRelation());
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
   }
   
   public void testLowMinExactHitsGeneratesApproximation() throws IOException {

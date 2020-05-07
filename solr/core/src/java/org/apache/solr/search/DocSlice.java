@@ -19,9 +19,9 @@ package org.apache.solr.search;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.HitCountRelation;
 
 /**
  * <code>DocSlice</code> implements DocList as an array of docids and optional scores.
@@ -38,7 +38,7 @@ public class DocSlice implements DocList, Accountable {
 
   final float[] scores;  // optional score list
   final long matches;
-  final HitCountRelation matchesRelation;
+  final TotalHits.Relation matchesRelation;
   final float maxScore;
   final long ramBytesUsed; // cached value
 
@@ -52,7 +52,7 @@ public class DocSlice implements DocList, Accountable {
    * @param matches total number of matches for the query
    * @param matchesRelation Indicates if {@code matches} is exact or an approximation
    */
-  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore, HitCountRelation matchesRelation) {
+  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore, TotalHits.Relation matchesRelation) {
     this.offset=offset;
     this.len=len;
     this.docs=docs;
@@ -145,7 +145,7 @@ public class DocSlice implements DocList, Accountable {
   }
 
   @Override
-  public HitCountRelation hitCountRelation() {
+  public TotalHits.Relation hitCountRelation() {
     return matchesRelation;
   }
 }
