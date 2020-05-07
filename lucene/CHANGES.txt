@@ -7,7 +7,10 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
 
 ======================= Lucene 8.5.1 =======================
 
