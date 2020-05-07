@@ -52,6 +52,10 @@ import static org.apache.solr.search.facet.FacetField.FacetMethod;
 import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
 import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
 
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
+import org.noggit.JSONWriter.Writable;
+  
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -278,7 +282,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
-                                         "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                         "json.facet", Facet.toJSONFacetParamValue(facets)),
                                   baseParams);
       
       // both default sweep option and explicit sweep should give same results...
@@ -334,7 +338,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         facets.put("str", facet);
         final SolrParams facetParams
           = SolrParams.wrapDefaults(params("method_val", "dv",
-                                           "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                           "json.facet", Facet.toJSONFacetParamValue(facets)),
                                     baseParams);
         
         // both default sweep option and explicit sweep should give same results...
@@ -374,7 +378,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
-                                         "json.facet", ""+TermFacet.toJSONFacetParamValue(facets)),
+                                         "json.facet", Facet.toJSONFacetParamValue(facets)),
                                   baseParams);
       // both default sweep option and explicit sweep should give same results...
       for (SolrParams sweepParams : Arrays.asList(params(),
@@ -403,6 +407,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     
     // nocommit: TODO test prelim_sort=count + sort=relatedness(), confirm no sweep accs
 
+    // nocommit: does/should allBuckets affect debug?
   }
 
   /**
@@ -583,7 +588,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                             final String backQ) throws SolrServerException, IOException {
     final SolrParams basicParams = params("rows","0",
                                           "q", query, "fore", foreQ, "back", backQ,
-                                          "json.facet", ""+TermFacet.toJSONFacetParamValue(facets));
+                                          "json.facet", Facet.toJSONFacetParamValue(facets));
     
     log.info("Doing full run: {}", basicParams);
     try {
@@ -649,11 +654,18 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     }
   }
 
-  private static interface Facet {
+  private static interface Facet { // Mainly just a Marker Interface
+    
     /**
-     * recursively generates the <code>json.facet</code> param value to use for testing this facet
+     * Given a set of (possibly nested) facets, generates a suitable <code>json.facet</code> param value to 
+     * use for testing them against in a solr request.
      */
-    public CharSequence toJSONFacetParamValue();
+    public static String toJSONFacetParamValue(final Map<String,? extends Facet> facets) {
+      assert null != facets;
+      assert ! facets.isEmpty();
+
+      return JSONUtil.toJSON(facets, -1); // no newlines
+    }
   }
 
   /** 
@@ -665,8 +677,9 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     public MinFacet(final String field) {
       this.field = field;
     }
-    public CharSequence toJSONFacetParamValue() {
-      return "\"min(" + field + ")\"";
+    @Override
+    public String toString() { // used in JSON by default
+      return "min(" + field + ")";
     }
     public static MinFacet buildRandom() {
       final int fieldNum = random().nextInt(MAX_FIELD_NUM);
@@ -689,7 +702,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * in their place, and must be set as request params (this allows "random" facets to still easily 
    * trigger the "nested facets re-using the same fore/back set for SKG situation)
    */
-  private static final class RelatednessFacet implements Facet {
+  private static final class RelatednessFacet implements Facet, Writable {
     private final String foreQ;
     private final String backQ;
     /** Assumes null for fore/back queries */
@@ -700,17 +713,20 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       this.foreQ = foreQ;
       this.backQ = backQ;
     }
-    public CharSequence toJSONFacetParamValue() {
+    @Override
+    public void write(JSONWriter writer) {
       final String f = null == foreQ ? "$fore" : "{!v='"+foreQ+"'}";
       final String b = null == backQ ? "$back" : "{!v='"+backQ+"'}";
 
+      final Map<String,Object> data = new LinkedHashMap<>();
+      data.put("type", "func");
+      data.put("func", "relatedness("+f+","+b+")");
       // nocommit: can we remove this hardcoded min_popularity -- ie: paramaterize/randomize it?
-      return"{ \"type\": \"func\", "
-        + "  \"func\": \"relatedness("+f+","+b+")\", "
-        + "  \"min_popularity\": 0.001, "
-        // sweep_val param can be set to true|false to test explicit values, but to do so
-        // sweep_key param must be changed to 'sweep'XZ
-        + "  ${sweep_key:xxx}: ${sweep_val:yyy} }";
+      data.put("min_popularity", 0.001F);
+      // sweep_val param can be set to true|false to test explicit values, but to do so
+      // sweep_key param must be changed to 'sweep'
+      data.put("${sweep_key:xxx}","${sweep_val:yyy}");
+      writer.write(data);
     }
     
     public static RelatednessFacet buildRandom() {
@@ -731,70 +747,60 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
    * The resulting facets all specify a <code>method</code> of <code>${method_val:smart}</code> which may be 
    * overridden via request params. 
    */
-  private static final class TermFacet implements Facet {
-    public final String field;
+  private static final class TermFacet implements Facet, Writable {
+
+    public final Map<String,Object> jsonData = new LinkedHashMap<>();
     public final Map<String,Facet> subFacets = new LinkedHashMap<>();
-    public final Integer limit; // may be null
-    public final Integer overrequest; // may be null
-    public final String sort; // may be null
-    public final Boolean refine; // may be null
 
-    // nocommit: we need to add some 'allBuckets' testing options as well
-    // nocommit: since that makes interesting changes to the processor/collection paths
-    
-    // nocommit: we need to add some 'prelim_sort' testing options as well
-    // nocommit: since that makes interesting changes to the processor/collection paths
-    
-    /** Simplified constructor asks for limit = # unique vals */
-    public TermFacet(String field) {
-      this(field, UNIQUE_FIELD_VALS, 0, null, null); 
-    }
-    
-    public TermFacet(String field, Integer limit, Integer overrequest, String sort, Boolean refine) {
-      assert null != field;
-      this.field = field;
-      this.limit = limit;
-      this.overrequest = overrequest;
-      this.sort = sort;
-      this.refine = refine;
-      this.subFacets.put("skg", new RelatednessFacet());
-    }
-
-    public CharSequence toJSONFacetParamValue() {
-      assert ! subFacets.isEmpty() : "TermFacet w/o at least one SKG stat defeats point of test";
-      
-      final String limitStr = (null == limit) ? "" : (", limit:" + limit);
-      final String overrequestStr = (null == overrequest) ? "" : (", overrequest:" + overrequest);
-      final String sortStr = (null == sort) ? "" : (", sort: '" + sort + "'");
-      final String refineStr = (null == refine) ? "" : (", refine: " + refine);
-      final StringBuilder sb
-        = new StringBuilder("{ type:terms, method:${method_val:smart}, field:" + field +
-                            limitStr + overrequestStr + sortStr + refineStr);
-      
-      if ( ! subFacets.isEmpty()) {
-        sb.append(", facet:");
-        sb.append(toJSONFacetParamValue(subFacets));
-      }
-      sb.append("}");
-      return sb;
-    }
-    
-    /**
-     * Given a set of (possibly nested) facets, generates a suitable <code>json.facet</code> param value to 
-     * use for testing them against in a solr request.
+    /** 
+     * @param field must be non null
+     * @param options can set any of options used in a term facet other then field or (sub) facets
      */
-    public static CharSequence toJSONFacetParamValue(final Map<String,? extends Facet> facets) {
-      assert null != facets;
-      assert ! facets.isEmpty();
+    public TermFacet(final String field, final Map<String,Object> options) {
+      assert null != field;
+      
+      jsonData.put("method", "${method_val:smart}");
+      
+      jsonData.putAll(options);
 
-      StringBuilder sb = new StringBuilder("{");
-      for (String key : facets.keySet()) {
-        sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
-        sb.append(" ,");
-      }
-      sb.setLength(sb.length() - 1);
-      sb.append("}");
-      return sb;
+      // we don't allow these to be overridden by options, so set them now...
+      jsonData.put("type", "terms");
+      jsonData.put("field",field);
+      jsonData.put("facet", subFacets);
+      
+      subFacets.put("skg", new RelatednessFacet());
+    }
+
+    /** all params except field can be null */
+    public TermFacet(String field, Integer limit, Integer overrequest, String sort, Boolean refine) {
+      this(field, map("limit", limit, "overrequest", overrequest, "sort", sort, "refine", refine));
+    }
+    
+    @Override
+    public void write(JSONWriter writer) {
+      writer.write(jsonData);
+    }
+
+    /** 
+     * Generates a random TermFacet that does not contai nany random sub-facets 
+     * beyond a single consistent "skg" stat) 
+     */
+    public static TermFacet buildRandom() {
+      final String sort = randomSortParam(random());
+      
+      // nocommit: we need to add some 'prelim_sort' testing options as well
+      // nocommit: since that makes interesting changes to the processor/collection paths
+      // nocommit: new helper method that looks at 'sort' and suggests a diff prelim_sort if non null
+      
+      return new TermFacet(randomFacetField(random()),
+                           map("limit", randomLimitParam(random(), sort),
+                               "overrequest", randomOverrequestParam(random()),
+                               "sort", sort,
+                               "refine", randomRefineParam(random())));
+      
+      // nocommit: we need to add some 'allBuckets' testing options as well
+      // nocommit: since that makes interesting changes to the processor/collection paths
+      
     }
     
     /**
@@ -878,6 +884,8 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
      * @see #randomSortParam
      */
     public static Integer randomLimitParam(Random r, final String sort) {
+      // nocommit: once certain we can eliminate the sort param, update javadocs of this method
+      // nocommit: and javadocs / body comments in randomSortParam
       if (null != sort) {
         
         // nocommit: since we're not using processEmpty for this test
@@ -935,19 +943,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       for (int i = 0; i < numFacets; i++) {
         if (keyCounter.get() < 3) { // a hard limit on the total number of facets (regardless of depth) to reduce OOM risk
 
-          final String field = randomFacetField(random());
-          final Boolean refine = randomRefineParam(random());
-          final String sort = randomSortParam(random());
-          final Integer limit = randomLimitParam(random(), sort);
-          final Integer overrequest = randomOverrequestParam(random());
-          
-          // nocommit: we need to add some 'allBuckets' testing options as well
-          // nocommit: since that makes interesting changes to the processor/collection paths
-          
-          // nocommit: we need to add some 'prelim_sort' testing options as well
-          // nocommit: since that makes interesting changes to the processor/collection paths
-    
-          final TermFacet facet =  new TermFacet(field, limit, overrequest, sort, refine);
+          final TermFacet facet = TermFacet.buildRandom();
           
           results.put("facet_" + keyCounter.incrementAndGet(), facet);
           if (0 < maxDepth) {
@@ -965,8 +961,8 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
             facet.subFacets.put(key, RelatednessFacet.buildRandom());
           }
 
-          if (1 == Math.max(0, TestUtil.nextInt(random(), 0, 4))) {
-            // occasionally add in a non-SKG realted stat...
+          if (1 == TestUtil.nextInt(random(), 0, 4)) {
+            // occasionally add in a non-SKG related stat...
             facet.subFacets.put("min", MinFacet.buildRandom());
           }
         }
@@ -1001,4 +997,18 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                                         true, true, 330);
   }
 
+  /** helper macro: fails on null keys, skips pairs with null values  */
+  public static Map<String,Object> map(Object... pairs) {
+    if (0 != pairs.length % 2) throw new IllegalArgumentException("uneven number of arguments");
+    final Map<String,Object> map = new LinkedHashMap<>();
+    for (int i = 0; i < pairs.length; i+=2) {
+      final Object key = pairs[i];
+      final Object val = pairs[i+1];
+      if (null == key) throw new NullPointerException("arguemnt " + i);
+      if (null == val) continue;
+      
+      map.put(key.toString(), val);
+    }
+    return map;
+  }
 }
