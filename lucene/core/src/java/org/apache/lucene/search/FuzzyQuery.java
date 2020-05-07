@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -100,22 +99,9 @@ public class FuzzyQuery extends MultiTermQuery {
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
-    if (term.text().length() == prefixLength) {
-      setRewriteAsRegExpQuery();
-    } else {
-      setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
-    }
+    setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
   }
   
-  private void setRewriteAsRegExpQuery() {
-    setRewriteMethod(new RewriteMethod() {
-      @Override
-      public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-        return new RegexpQuery(new Term(term.field(), term.text() + ".{0," + maxEdits + "}"));
-      }
-    });
-  }
-
   /**
    * Calls {@link #FuzzyQuery(Term, int, int, int, boolean) 
    * FuzzyQuery(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions)}.
@@ -180,8 +166,6 @@ public class FuzzyQuery extends MultiTermQuery {
       }
     }
   }
-  
-  
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
