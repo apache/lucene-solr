@@ -20,17 +20,18 @@ package org.apache.lucene.search.grouping;
 import java.util.Objects;
 
 /**
- * Represents a contiguous range of double values, with a minimum and maximum
+ * Represents a contiguous range of double values, with an inclusive minimum and
+ * exclusive maximum
  */
 public class DoubleRange {
 
-  /** The minimum value of this range */
+  /** The inclusive minimum value of this range */
   public double min;
-  /** The maximum value of this range */
+  /** The exclusive maximum value of this range */
   public double max;
 
   /**
-   * Crate a new double range, running from {@code min} to {@code max}
+   * Creates a new double range, running from {@code min} inclusive to {@code max} exclusive
    */
   public DoubleRange(double min, double max) {
     this.min = min;
