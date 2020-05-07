@@ -96,10 +96,19 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   }
 
   HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal) {
+      return wrapWithPrincipal(request, principal, principal.getName());
+  }
+
+  HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal, String username) {
     return new HttpServletRequestWrapper(request) {
       @Override
       public Principal getUserPrincipal() {
         return principal;
+      }
+
+      @Override
+      public String getRemoteUser() {
+        return username;
       }
     };
   }

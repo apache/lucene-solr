@@ -16,23 +16,18 @@
  */
 package org.apache.solr.security;
 
-import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Rule Based Authz plugin implementation which reads user roles from the request. This requires
  * a Principal implementing VerifiedUserRoles interface, e.g. JWTAuthenticationPlugin
  */
 public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Override
   public void init(Map<String, Object> initInfo) {
     super.init(initInfo);

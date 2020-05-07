@@ -27,4 +27,11 @@ public interface AuthorizationPlugin extends Closeable {
   AuthorizationResponse authorize(AuthorizationContext context);
 
   void init(Map<String, Object> initInfo);
+
+  /**
+   * Whether this plugin is using short names or full principal names for user authorization lookups
+   */
+  default boolean useShortName() {
+    return false;
+  }
 }
