@@ -393,7 +393,7 @@ public abstract class DocValuesConsumer implements Closeable {
                                   }
                                 }
                                 if (values == null) {
-                                  values = DocValues.emptySortedNumeric(mergeState.maxDocs[i]);
+                                  values = DocValues.emptySortedNumeric();
                                 }
                                 cost += values.cost();
                                 subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], values));
