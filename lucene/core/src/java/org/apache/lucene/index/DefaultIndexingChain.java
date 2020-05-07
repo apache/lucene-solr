@@ -92,63 +92,63 @@ final class DefaultIndexingChain extends DocConsumer {
   private LeafReader getDocValuesLeafReader() {
     return new DocValuesLeafReader() {
       @Override
-      public NumericDocValues getNumericDocValues(String field) {
+      public NumericDocValues getNumericDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
         if (pf == null) {
-          return DocValues.emptyNumeric();
+          return null;
         }
         if (pf.fieldInfo.getDocValuesType() == DocValuesType.NUMERIC) {
           return (NumericDocValues) pf.docValuesWriter.getDocValues();
         }
-        return DocValues.emptyNumeric();
+        return null;
       }
 
       @Override
-      public BinaryDocValues getBinaryDocValues(String field) {
+      public BinaryDocValues getBinaryDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
         if (pf == null) {
-          return DocValues.emptyBinary();
+          return null;
         }
         if (pf.fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
           return (BinaryDocValues) pf.docValuesWriter.getDocValues();
         }
-        return DocValues.emptyBinary();
+        return null;
       }
 
       @Override
-      public SortedDocValues getSortedDocValues(String field) {
+      public SortedDocValues getSortedDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
         if (pf == null) {
-          return DocValues.emptySorted();
+          return null;
         }
         if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED) {
           return (SortedDocValues) pf.docValuesWriter.getDocValues();
         }
-        return DocValues.emptySorted();
+        return null;
       }
 
       @Override
-      public SortedNumericDocValues getSortedNumericDocValues(String field) {
+      public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
         if (pf == null) {
-          return DocValues.emptySortedNumeric(0);
+          return null;
         }
         if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
           return (SortedNumericDocValues) pf.docValuesWriter.getDocValues();
         }
-        return DocValues.emptySortedNumeric(0);
+        return null;
       }
 
       @Override
-      public SortedSetDocValues getSortedSetDocValues(String field) {
+      public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
         PerField pf = getPerField(field);
         if (pf == null) {
-          return DocValues.emptySortedSet();
+          return null;
         }
         if (pf.fieldInfo.getDocValuesType() == DocValuesType.SORTED_SET) {
           return (SortedSetDocValues) pf.docValuesWriter.getDocValues();
         }
-        return DocValues.emptySortedSet();
+        return null;
       }
 
       @Override
