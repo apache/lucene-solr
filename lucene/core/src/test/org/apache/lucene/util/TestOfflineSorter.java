@@ -17,7 +17,6 @@
 package org.apache.lucene.util;
 
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -350,14 +349,12 @@ public class TestOfflineSorter extends LuceneTestCase {
       IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
       writeAll(unsorted, generateFixed(5*1024));
 
-      // This corruption made OfflineSorter fail with its own exception, but we verify it also went and added (as suppressed) that the
-      // checksum was wrong:
-      EOFException e = expectThrows(EOFException.class, () -> {
+      // This corruption made OfflineSorter fail with its own exception, but we verify and throw a CorruptIndexException
+      // instead when checksums don't match.
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
           new OfflineSorter(dir, "foo").sort(unsorted.getName());
         });
-      assertEquals(1, e.getSuppressed().length);
-      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     }
   }
 
@@ -435,12 +432,10 @@ public class TestOfflineSorter extends LuceneTestCase {
       IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
       writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
 
-      EOFException e = expectThrows(EOFException.class, () -> {
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
           new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1, null, 0).sort(unsorted.getName());
         });
-      assertEquals(1, e.getSuppressed().length);
-      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     }
   }
 
