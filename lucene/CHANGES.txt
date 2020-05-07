@@ -199,6 +199,10 @@ Optimizations
 * LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
   (Ignacio Vera)
 
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
