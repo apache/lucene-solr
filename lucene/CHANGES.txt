@@ -224,6 +224,9 @@ Bug Fixes
 * LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
   implementation. (Pierre-Luc Perron, Alan Woodward)
 
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
+
 Other
 ---------------------
 
