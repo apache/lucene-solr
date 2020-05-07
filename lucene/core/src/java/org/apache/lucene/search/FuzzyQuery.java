@@ -20,13 +20,17 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
 
 /** Implements the fuzzy search query. The similarity measurement
  * is based on the Damerau-Levenshtein (optimal string alignment) algorithm,
@@ -99,7 +103,24 @@ public class FuzzyQuery extends MultiTermQuery {
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
-    setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
+    if (term.text().length() == prefixLength) {
+      setRewriteAsPrefixedQuery();
+    } else {
+      setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
+    }
+  }
+
+  private void setRewriteAsPrefixedQuery() {
+    setRewriteMethod(new RewriteMethod() {
+      @Override
+      public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
+        Automaton prefix = Automata.makeString(term.text());
+        Automaton any = Automata.makeAnyChar();
+        Automaton suffix = Operations.repeat(any, 0, maxEdits);
+        Automaton prefixAndSuffix = Operations.concatenate(prefix, suffix);
+        return new AutomatonQuery(term, prefixAndSuffix);
+      }
+    });
   }
   
   /**
