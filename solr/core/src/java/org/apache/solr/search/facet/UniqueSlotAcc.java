@@ -35,7 +35,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
-  public UniqueSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSlotAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
