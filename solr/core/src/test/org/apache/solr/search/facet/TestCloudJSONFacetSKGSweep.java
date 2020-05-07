@@ -322,7 +322,45 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         assertNull(debug.get("sweep_collection"));
       }
     }
-      
+
+    // simple facet that sorts on an skg stat but uses prelim_sort on count
+    //
+    // all results we test should be the same even if there is another 'skg_extra' stat,
+    // neither skg should be involved in the sweeping at all.
+    for (Facet extra : Arrays.asList(null,  new RelatednessFacet(multiStrField(2)+":9", null))) {
+      // choose a single value string so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
+      final TermFacet f = new TermFacet(soloStrField(9), map("limit", 3, "overrequest", 0,
+                                                             "sort", "skg desc",
+                                                             "prelim_sort", "count asc"));
+      if (null != extra) {
+        f.subFacets.put("skg_extra", extra);
+      }
+      final Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("str", f);
+        
+      final SolrParams facetParams
+        = SolrParams.wrapDefaults(params("method_val", "dv",
+                                         "json.facet", Facet.toJSONFacetParamValue(facets)),
+                                  baseParams);
+
+      // default sweep as well as any explicit sweep=true/false values should give same results: no sweeping
+      for (SolrParams sweepParams : Arrays.asList(params(),
+                                                  params("sweep_key", "sweep_collection",
+                                                         "sweep_val", "false"),
+                                                  params("sweep_key", "sweep_collection",
+                                                         "sweep_val", "true"))) {
+        final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
+        
+        final NamedList<Object> debug = getFacetDebug(params);
+        assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+        assertNotNull(sweep_debug);
+        assertEquals("count", sweep_debug.get("base"));
+        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
+        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+      }
+    }
+    
     { // single facet with infinite limit + multiple skgs...
       // this should trigger MultiAcc collection, causing sweeping on both skg functions
       //
@@ -404,8 +442,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         }
       }
     }
-    
-    // nocommit: TODO test prelim_sort=count + sort=relatedness(), confirm no sweep accs
 
     // nocommit: does/should allBuckets affect debug?
   }
@@ -800,14 +836,11 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     public static TermFacet buildRandom() {
       final String sort = randomSortParam(random());
       
-      // nocommit: we need to add some 'prelim_sort' testing options as well
-      // nocommit: since that makes interesting changes to the processor/collection paths
-      // nocommit: new helper method that looks at 'sort' and suggests a diff prelim_sort if non null
-      
       return new TermFacet(randomFacetField(random()),
-                           map("limit", randomLimitParam(random(), sort),
+                           map("limit", randomLimitParam(random()),
                                "overrequest", randomOverrequestParam(random()),
                                "sort", sort,
+                               "prelim_sort", randomPrelimSortParam(random(), sort),
                                "refine", randomRefineParam(random())));
       
       // nocommit: we need to add some 'allBuckets' testing options as well
@@ -864,16 +897,13 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     
     /**
      * picks a random value for the "sort" param, biased in favor of interesting test cases.  
-     * Assumes every TermFacet will have at least one "skg0" stat
+     * Assumes every TermFacet will have at least one "skg" stat
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
-     * @see #randomLimitParam
+     * @see #randomPrelimSortParam
      */
-    public static String randomSortParam(Random r) {
+    public static String randomSortParam(final Random r) {
 
-      // IMPORTANT!!!
-      // if this method is modified to produce new sorts, make sure to update
-      // randomLimitParam to account for them if they are impacted by SOLR-12556
       final String dir = random().nextBoolean() ? "asc" : "desc";
       switch(r.nextInt(4)) {
         case 0: return null;
@@ -884,38 +914,37 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       }
     }
     /**
-     * picks a random value for the "limit" param, biased in favor of interesting test cases
+     * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.  
      *
-     * <p>
-     * <b>NOTE:</b> Due to SOLR-12556, we have to force an overrequest of "all" possible terms for 
-     * some sort values.
-     * </p>
+     * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
+     * @see #randomSortParam
+     */
+    public static String randomPrelimSortParam(final Random r, final String sort) {
+
+      if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
+        return "count desc";
+      }
+      return null;
+    }
+    /**
+     * picks a random value for the "limit" param, biased in favor of interesting test cases
      *
      * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
      * @see #UNIQUE_FIELD_VALS
-     * @see #randomSortParam
      */
-    public static Integer randomLimitParam(Random r, final String sort) {
-      // nocommit: once certain we can eliminate the sort param, update javadocs of this method
-      // nocommit: and javadocs / body comments in randomSortParam
-      if (null != sort) {
-        
-        // nocommit: since we're not using processEmpty for this test
-        // nocommit: (because we're only comparing equivilent requests, not issuing verification queries)
-        // nocommit: we should be able to ignore SOLR-12556 and not do anything special on these sorts...
-        
-        if (sort.equals("count asc") || sort.startsWith("skg")) {
-          // of the known types of sorts produced, these are at risk of SOLR-12556
-          // so request (effectively) unlimited num buckets
-          return r.nextBoolean() ? UNIQUE_FIELD_VALS : -1;
-        }
-      }
+    public static Integer randomLimitParam(final Random r) {
+
       final int limit = 1 + r.nextInt((int) (UNIQUE_FIELD_VALS * 1.5F));
+      
+      if (1 == TestUtil.nextInt(random(), 0, 3)) {
+        // bias in favor of just using default
+        return null;
+      }
+      
       if (limit >= UNIQUE_FIELD_VALS && r.nextBoolean()) {
         return -1; // unlimited
-      } else if (limit == DEFAULT_LIMIT && r.nextBoolean()) { 
-        return null; // sometimes, don't specify limit if it's the default
       }
+      
       return limit;
     }
     
@@ -925,7 +954,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
      * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
      * @see #UNIQUE_FIELD_VALS
      */
-    public static Integer randomOverrequestParam(Random r) {
+    public static Integer randomOverrequestParam(final Random r) {
       switch(r.nextInt(10)) {
         case 0:
         case 1:
