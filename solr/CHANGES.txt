@@ -156,6 +156,9 @@ Bug Fixes
 
 * SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
 
+* SOLR-8394: /admin/luke was always howing 0 for indexHeapUsageBytes. It should work now.
+  (Steve Molloy, Isabelle Giguere, David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
