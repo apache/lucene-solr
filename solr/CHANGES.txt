@@ -10,7 +10,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
 
 ==================  8.5.1 ==================
 
