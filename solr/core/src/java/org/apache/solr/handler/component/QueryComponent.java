@@ -882,7 +882,7 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
-            nl.add("hitCountExact", docs.getHitCountExact());
+            nl.add("numFoundExact", docs.getNumFoundExact());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -925,7 +925,7 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountIsExact && Boolean.FALSE.equals(docs.getHitCountExact())) {
+        if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
           hitCountIsExact = false;
         }
 
@@ -999,7 +999,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
-      responseDocs.setHitCountExact(hitCountIsExact);
+      responseDocs.setNumFoundExact(hitCountIsExact);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);

@@ -50,7 +50,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         req("q", "field1_s:foo", 
             "minExactHits", Long.toString(10L * Integer.MAX_VALUE),
             "rows", "2")
-        ,"//*[@hitCountExact='true']"
+        ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
@@ -60,14 +60,14 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
-            ,"//*[@hitCountExact='false']"
+            ,"//*[@numFoundExact='false']"
             ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
     assertQ("minExactHits is higher than numFound,should produce exact results",
         req("q", "field1_s:foo", 
             "minExactHits", "200",
             "rows", "2")
-        ,"//*[@hitCountExact='true']"
+        ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }

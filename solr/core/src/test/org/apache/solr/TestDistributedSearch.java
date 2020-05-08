@@ -1102,18 +1102,18 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   private void assertIsExactHitCount(Object... requestParams) throws Exception {
     QueryResponse response = query(requestParams);
     assertNotNull("Expecting exact hit count in response: " + response.getResults().toString(),
-        response.getResults().getHitCountExact());
+        response.getResults().getNumFoundExact());
     assertTrue("Expecting exact hit count in response: " + response.getResults().toString(),
-        response.getResults().getHitCountExact());
+        response.getResults().getNumFoundExact());
   }
   
   private void assertApproximatedHitCount(Object...requestParams) throws Exception {
     handle.put("numFound", SKIPVAL);
     QueryResponse response = query(requestParams);
-    assertNotNull("Expecting hitCountExact in response: " + response.getResults().toString(),
-        response.getResults().getHitCountExact());
+    assertNotNull("Expecting numFoundExact in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
     assertFalse("Expecting aproximated results in response: " + response.getResults().toString(),
-        response.getResults().getHitCountExact());
+        response.getResults().getNumFoundExact());
     handle.remove("numFound", SKIPVAL);
   }
 

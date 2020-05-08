@@ -179,7 +179,7 @@ class SubQueryAugmenter extends DocTransformer {
           docList.size(), new int[0], new float[docList.size()],
           (int) docList.getNumFound(), 
           docList.getMaxScore() == null ?  Float.NaN : docList.getMaxScore(),
-              docList.getHitCountExact() ? TotalHits.Relation.EQUAL_TO : TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
+              docList.getNumFoundExact() ? TotalHits.Relation.EQUAL_TO : TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
     }
 
     @Override

@@ -158,7 +158,7 @@ public abstract class TextResponseWriter implements TextWriter {
   // some XML formats).
 
   //TODO: Make abstract in Solr 9.0
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
     writeStartDocumentList(name, start, size, numFound, maxScore);
   }
   
@@ -175,7 +175,7 @@ public abstract class TextResponseWriter implements TextWriter {
   // Assume each SolrDocument is already transformed
   public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields) throws IOException
   {
-    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getHitCountExact());
+    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getNumFoundExact());
     for( int i=0; i<docs.size(); i++ ) {
       writeSolrDocument( null, docs.get(i), fields, i );
     }

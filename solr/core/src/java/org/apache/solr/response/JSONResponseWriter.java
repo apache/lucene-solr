@@ -223,9 +223,9 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
   
   @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
     ifNeededWriteTypeAndValueKey("doclist");
-    super.writeStartDocumentList(name, start, size, numFound, maxScore, hitCountExact);
+    super.writeStartDocumentList(name, start, size, numFound, maxScore, numFoundExact);
   }
 
 

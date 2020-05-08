@@ -947,13 +947,13 @@ public class TestFaceting extends SolrTestCaseJ4 {
     params.set(FacetParams.FACET_FIELD, "title_ws");
     assertQ(req(params),
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1'][.='20']"
-        ,"//*[@hitCountExact='true']"
+        ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']");
     
     // It doesn't matter if we request minExactHits, when requesting facets, the numFound value is precise
     assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2"),
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1'][.='20']"
-        ,"//*[@hitCountExact='true']"
+        ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']");
   }
 }

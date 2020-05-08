@@ -239,7 +239,7 @@ public class EmbeddedSolrServer extends SolrClient {
                   // write an empty list...
                   SolrDocumentList docs = new SolrDocumentList();
                   docs.setNumFound(ctx.getDocList().matches());
-                  docs.setHitCountExact(ctx.getDocList().hitCountRelation() == Relation.EQUAL_TO);
+                  docs.setNumFoundExact(ctx.getDocList().hitCountRelation() == Relation.EQUAL_TO);
                   docs.setStart(ctx.getDocList().offset());
                   docs.setMaxScore(ctx.getDocList().maxScore());
                   codec.writeSolrDocumentList(docs);

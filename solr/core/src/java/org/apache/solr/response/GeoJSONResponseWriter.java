@@ -301,9 +301,9 @@ class GeoJSONWriter extends JSONWriter {
   
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
   {
-    writeMapOpener(headerSize(maxScore, hitCountExact));
+    writeMapOpener(headerSize(maxScore, numFoundExact));
     incLevel();
     writeKey("type",false);
     writeStr(null, "FeatureCollection", false);
@@ -320,10 +320,10 @@ class GeoJSONWriter extends JSONWriter {
       writeFloat(null,maxScore);
     }
     
-    if (hitCountExact != null) {
+    if (numFoundExact != null) {
       writeMapSeparator();
-      writeKey("hitCountExact",false);
-      writeBool(null, hitCountExact);
+      writeKey("numFoundExact",false);
+      writeBool(null, numFoundExact);
     }
     
     writeMapSeparator();
