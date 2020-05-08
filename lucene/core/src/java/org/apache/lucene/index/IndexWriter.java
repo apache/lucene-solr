@@ -2277,6 +2277,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // changes concurrently, abortMerges is synced as well
         stopMerges = true; // this disables merges forever
         abortMerges();
+        assert mergingSegments.isEmpty() : "we aborted all merges but still have merging segments: " + mergingSegments;
       }
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
@@ -2511,8 +2512,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     notifyAll();
-    assert 0 == mergingSegments.size();
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "all running merges have aborted");
     }
