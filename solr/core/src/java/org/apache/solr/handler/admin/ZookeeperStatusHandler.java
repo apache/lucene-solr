@@ -147,7 +147,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           followers++;
         } else if ("leader".equals(state)) {
           leaders++;
-          reportedFollowers = Integer.parseInt(String.valueOf(stat.get("zk_followers")));
+          reportedFollowers += Integer.parseInt((String) stat.getOrDefault("zk_followers", "0"));
+          reportedFollowers += Integer.parseInt((String) stat.getOrDefault("zk_synced_followers", "0"));
         } else if ("standalone".equals(state)) {
           standalone++;
         }
