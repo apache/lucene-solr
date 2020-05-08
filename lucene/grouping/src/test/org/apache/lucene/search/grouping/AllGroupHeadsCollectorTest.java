@@ -181,11 +181,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
-    for (Function<Boolean,SortField> sortFunc : new Function[] {
+    for (Function<Boolean,SortField> sortFunc : Arrays.<Function<Boolean,SortField>>asList(
         (r) -> new SortField("id_2", SortField.Type.STRING, (boolean) r), // singular
         (r) -> new SortedSetSortField("id_3", (boolean) r), //  multivalue 
         (r) -> new SortedSetSortField("id_4", (boolean) r)  // singular multivalue
-    }) {
+    )) {
 
       Sort sortWithinGroup2 = new Sort(sortFunc.apply(true));
       allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2);

@@ -41,7 +41,7 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * @lucene.experimental
  */
-@SuppressWarnings({"unchecked","rawtypes"})
+@SuppressWarnings({"rawtypes"})
 public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   private final GroupSelector<T> groupSelector;
