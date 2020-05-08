@@ -33,12 +33,11 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   private Float maxScore = null;
   private Boolean hitCountExact = true;
   
-  //nocommit: rename
-  public Boolean getHitCountRelation() {
+  public Boolean getHitCountExact() {
     return hitCountExact;
   }
 
-  public void setHitCountRelation(Boolean hitCountExact) {
+  public void setHitCountExact(Boolean hitCountExact) {
     this.hitCountExact = hitCountExact;
   }
 
@@ -69,7 +68,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   @Override
   public String toString() {
     return "{numFound="+numFound
-            +",hitCountRelation="+String.valueOf(hitCountExact)
+            +",hitCountExact="+String.valueOf(hitCountExact)
             +",start="+start
             + (maxScore!=null ? ",maxScore="+maxScore : "")
             +",docs="+super.toString()

@@ -1031,7 +1031,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     assertQ("Match all docs, but count only until certain value. Return an approximate count",
             req("q", "val_s:foo", "minExactHits", "2", "rows", "2")
-            ,"//*[@hitCountRelation='false']"
+            ,"//*[@hitCountExact='false']"
             );
   }
 

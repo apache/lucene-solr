@@ -485,7 +485,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
       else {
         nl.add("numFound", rb.getResults().docList.matches());
-        nl.add("hitCountRelation", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
+        nl.add("hitCountExact", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);

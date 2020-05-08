@@ -76,7 +76,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
              "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-             "=={'response':{'numFound':1,'start':0,'hitCountRelation':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+             "=={'response':{'numFound':1,'start':0,'hitCountExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
 
     assertU(commit());
 
@@ -85,6 +85,6 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-        "=={'response':{'numFound':1,'start':0,'hitCountRelation':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+        "=={'response':{'numFound':1,'start':0,'hitCountExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
   }
 }

@@ -80,37 +80,37 @@ public class TestJoin extends SolrTestCaseJ4 {
     ModifiableSolrParams p = params("sort","id asc");
 
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'hitCountRelation':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'hitCountExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // empty from
     assertJQ(req(p, "q", buildJoinRequest("noexist_ss_dv", DEPT_ID_FIELD, "*:*", "fl","id"))
-        ,"/response=={'numFound':0,'start':0,'hitCountRelation':true,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'hitCountExact':true,'docs':[]}"
     );
 
     // empty to
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, "noexist_ss_dv", "*:*"), "fl","id")
-        ,"/response=={'numFound':0,'start':0,'hitCountRelation':true,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'hitCountExact':true,'docs':[]}"
     );
 
     // self join... return everyone in same dept(s) as Dave
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_FIELD, "name:dave"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'hitCountRelation':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'hitCountExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // from single-value to multi-value
     assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'hitCountRelation':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'hitCountExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // from multi-value to single-value
     assertJQ(req(p, "q",buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id", "debugQuery","true")
-        ,"/response=={'numFound':3,'start':0,'hitCountRelation':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'hitCountExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // expected outcome for a sub query matching dave joined against departments
     final String davesDepartments =
-        "/response=={'numFound':2,'start':0,'hitCountRelation':true,'docs':[{'id':'10'},{'id':'13'}]}";
+        "/response=={'numFound':2,'start':0,'hitCountExact':true,'docs':[{'id':'10'},{'id':'13'}]}";
 
     // straight forward query
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "name:dave"), "fl","id"),
@@ -134,7 +134,7 @@ public class TestJoin extends SolrTestCaseJ4 {
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id", "fq", "name:john")
-        ,"/response=={'numFound':1,'start':0,'hitCountRelation':true,'docs':[{'id':'1'}]}"
+        ,"/response=={'numFound':1,'start':0,'hitCountExact':true,'docs':[{'id':'1'}]}"
     );
   }
 
@@ -171,7 +171,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     // non-DV/text field.
     assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
-        ,"/response=={'numFound':2,'start':0,'hitCountRelation':true,'docs':[{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':2,'start':0,'hitCountExact':true,'docs':[{'id':'3'},{'id':'4'}]}"
     );
   }
 
@@ -248,7 +248,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         Map<String,Object> resultSet = new LinkedHashMap<>();
         resultSet.put("numFound", docList.size());
         resultSet.put("start", 0);
-        resultSet.put("hitCountRelation", true);
+        resultSet.put("hitCountExact", true);
         resultSet.put("docs", sortedDocs);
 
         // todo: use different join queries for better coverage

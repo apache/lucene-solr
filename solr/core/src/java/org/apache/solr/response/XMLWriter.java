@@ -167,7 +167,7 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException
   {
     if (doIndent) indent();
 
@@ -178,8 +178,8 @@ public class XMLWriter extends TextResponseWriter {
     if (maxScore != null) {
       writeAttr("maxScore",Float.toString(maxScore));
     }
-    if (hitCountRelation != null) {
-      writeAttr("hitCountRelation", hitCountRelation.toString());
+    if (hitCountExact != null) {
+      writeAttr("hitCountExact", hitCountExact.toString());
     }
     writer.write(">");
 

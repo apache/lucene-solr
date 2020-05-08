@@ -850,7 +850,7 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
-      TotalHits.Relation hitCountRelation = TotalHits.Relation.EQUAL_TO;
+      boolean hitCountIsExact = true;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -882,7 +882,7 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
-            nl.add("hitCountRelation", docs.getHitCountRelation());
+            nl.add("hitCountExact", docs.getHitCountExact());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -925,8 +925,8 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountRelation == TotalHits.Relation.EQUAL_TO && !docs.getHitCountRelation()) {
-          hitCountRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+        if (hitCountIsExact && docs.getHitCountExact() == Boolean.FALSE) {
+          hitCountIsExact = false;
         }
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
@@ -999,7 +999,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
-      responseDocs.setHitCountRelation(hitCountRelation == TotalHits.Relation.EQUAL_TO);
+      responseDocs.setHitCountExact(hitCountIsExact);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);

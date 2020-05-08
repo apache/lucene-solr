@@ -164,8 +164,8 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   
   @Override
   public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException {
-    writeMapOpener(headerSize(maxScore, hitCountRelation));
+      long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException {
+    writeMapOpener(headerSize(maxScore, hitCountExact));
     incLevel();
     writeKey("numFound",false);
     writeLong(null,numFound);
@@ -179,10 +179,10 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
       writeFloat(null,maxScore);
     }
     
-    if (hitCountRelation != null) {
+    if (hitCountExact != null) {
       writeMapSeparator();
-      writeKey("hitCountRelation",false);
-      writeBool(null, hitCountRelation);
+      writeKey("hitCountExact",false);
+      writeBool(null, hitCountExact);
     }
     writeMapSeparator();
     writeKey("docs",false);
@@ -191,10 +191,10 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     incLevel();
   } 
 
-  protected int headerSize(Float maxScore, Boolean hitCountRelation) {
+  protected int headerSize(Float maxScore, Boolean hitCountExact) {
     int headerSize = 3;
     if (maxScore != null) headerSize++;
-    if (hitCountRelation != null) headerSize++;
+    if (hitCountExact != null) headerSize++;
     return headerSize;
   }
 

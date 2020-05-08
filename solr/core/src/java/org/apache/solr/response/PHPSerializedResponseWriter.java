@@ -99,9 +99,9 @@ class PHPSerializedWriter extends JSONWriter {
 
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException
   {
-    writeMapOpener(headerSize(maxScore, hitCountRelation));
+    writeMapOpener(headerSize(maxScore, hitCountExact));
     writeKey("numFound",false);
     writeLong(null,numFound);
     writeKey("start",false);
@@ -111,9 +111,9 @@ class PHPSerializedWriter extends JSONWriter {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
     }
-    if (hitCountRelation != null) {
-      writeKey("hitCountRelation",false);
-      writeBool(null, hitCountRelation);
+    if (hitCountExact != null) {
+      writeKey("hitCountExact",false);
+      writeBool(null, hitCountExact);
     }
     writeKey("docs",false);
     writeArrayOpener(size);

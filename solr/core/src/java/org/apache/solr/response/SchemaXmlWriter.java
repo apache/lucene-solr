@@ -468,7 +468,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
   
   @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException {
     // no-op
   }
 

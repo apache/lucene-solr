@@ -130,7 +130,7 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   
   @Override
   public void writeStartDocumentList(String name,
-                                     long start, int size, long numFound, Float maxScore, Boolean hitCountRelation) throws IOException
+                                     long start, int size, long numFound, Float maxScore, Boolean hitCountExact) throws IOException
   {
     // nothing
   }
