@@ -490,7 +490,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       facets.put("xxx", new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, "skg desc", false));
       assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
     }
-
+    
     { // trivial single level facet w/ 2 diff ways to request "limit = (effectively) Infinite"
       // to sanity check refinement of buckets missing from other shard in both cases
       
@@ -522,20 +522,44 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       
     }
   }
-  
+
+  /** 
+   * If/when we can re-enable this test, make sure to update {@link TermFacet#buildRandom} 
+   * and {@link #testBespokeStructures} to start doing randomized testing of <code>allBuckets</code>
+   */
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14467")
+  public void testBespokeAllBuckets() throws Exception {
+    { // single level facet w/sorting on skg and allBuckets
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      facets.put("xxx", new TermFacet(multiStrField(9), map("sort", "skg desc",
+                                                            "allBuckets", true)));
+                                      
+      assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
+    }
+  }
+
   /** 
    * Given a few explicit "structures" of requests, test many permutations of various params/options.
    * This is more complex then {@link #testBespoke} but should still be easier to trace/debug then 
    * a pure random monstrosity.
    */
   public void testBespokeStructures() throws Exception {
-    for (int facetFieldNum = 0; facetFieldNum < MAX_FIELD_NUM; facetFieldNum++) {
+    // we don't need to test every field, just make sure we test enough fields to hit every suffix..
+    final int maxFacetFieldNum = Collections.max(Arrays.asList(MULTI_STR_FIELD_SUFFIXES.length,
+                                                               MULTI_INT_FIELD_SUFFIXES.length,
+                                                               SOLO_STR_FIELD_SUFFIXES.length,
+                                                               SOLO_INT_FIELD_SUFFIXES.length));
+    
+    for (int facetFieldNum = 0; facetFieldNum < maxFacetFieldNum; facetFieldNum++) {
       for (String facetFieldName : Arrays.asList(soloStrField(facetFieldNum), multiStrField(facetFieldNum))) {
         for (int limit : Arrays.asList(10, -1)) {
           for (String sort : Arrays.asList("count desc", "skg desc", "index asc")) {
             for (Boolean refine : Arrays.asList(false, true)) {
               { // 1 additional (non-sweeping) stat
-                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
                 xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
                 final Map<String,TermFacet> facets = new LinkedHashMap<>();
                 facets.put("xxx1", xxx);
@@ -545,7 +569,10 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                              multiStrField(5)+":9", "*:*");
               }
               { // multiple SKGs
-                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
                 xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
                 final Map<String,TermFacet> facets = new LinkedHashMap<>();
                 facets.put("xxx2", xxx);
@@ -555,7 +582,10 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                              multiStrField(5)+":9", "*:*");
               }
               { // multiple SKGs and a multiple non-sweeping stats
-                final TermFacet xxx = new TermFacet(facetFieldName, limit, 0, sort, refine);
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
                 xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
                 xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
                 xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
@@ -841,11 +871,8 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                "overrequest", randomOverrequestParam(random()),
                                "sort", sort,
                                "prelim_sort", randomPrelimSortParam(random(), sort),
+                               // SOLR-14467 // "allBuckets", randomAllBucketsParam(random()),
                                "refine", randomRefineParam(random())));
-      
-      // nocommit: we need to add some 'allBuckets' testing options as well
-      // nocommit: since that makes interesting changes to the processor/collection paths
-      
     }
     
     /**
@@ -879,13 +906,29 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       }
     }
   
+    /**
+     * picks a random value for the "allBuckets" param, biased in favor of interesting test cases
+     *
+     * @return a Boolean, may be null
+     * @see #testBespokeAllBuckets
+     */
+    public static Boolean randomAllBucketsParam(final Random r) {
+
+      switch(r.nextInt(4)) {
+        case 0: return true;
+        case 1: return false;
+        case 2: 
+        case 3: return null;
+        default: throw new RuntimeException("Broken case statement");
+      }
+    }
 
     /**
      * picks a random value for the "refine" param, biased in favor of interesting test cases
      *
      * @return a Boolean, may be null
      */
-    public static Boolean randomRefineParam(Random r) {
+    public static Boolean randomRefineParam(final Random r) {
 
       switch(r.nextInt(3)) {
         case 0: return null;
