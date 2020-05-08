@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.CharArr;
 
@@ -138,6 +137,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     SolrDocumentList solrDocs = new SolrDocumentList();
     solrDocs.setMaxScore(1.0f);
     solrDocs.setNumFound(1);
+    solrDocs.setNumFoundExact(Boolean.TRUE);
     solrDocs.setStart(0);
     solrDocs.add(0, doc);
     types.add(solrDocs);
@@ -243,7 +243,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore("This test compares binaries, which changed due to SOLR-13289")
   public void testForwardCompat() throws IOException {
     try (JavaBinCodec javabin = new JavaBinCodec(); ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
@@ -517,7 +516,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   private static void runInThreads(int count,  Runnable runnable) throws InterruptedException {
-    ArrayList<Thread> t =new ArrayList();
+    ArrayList<Thread> t =new ArrayList<>();
     for(int i=0;i<count;i++ ) t.add(new Thread(runnable));
     for (Thread thread : t) thread.start();
     for (Thread thread : t) thread.join();
@@ -539,14 +538,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   }
 
-  public static void main(String[] args) {
-    // TestJavaBinCodec test = new TestJavaBinCodec();
-    // test.genBinaryFiles();
-    try {
-      doDecodePerf(args);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  public static void main(String[] args) throws IOException {
+     TestJavaBinCodec test = new TestJavaBinCodec();
+     test.genBinaryFiles();
+//    try {
+//      doDecodePerf(args);
+//    } catch (Exception e) {
+//      throw new RuntimeException(e);
+//    }
   }
 
   // common-case ascii
