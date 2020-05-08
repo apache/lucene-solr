@@ -50,6 +50,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1302,7 +1303,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         && (flags & (NO_CHECK_QCACHE | NO_SET_QCACHE)) != ((NO_CHECK_QCACHE | NO_SET_QCACHE))) {
       // all of the current flags can be reused during warming,
       // so set all of them on the cache key.
-      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags);
+      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactHits());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 
@@ -1479,7 +1480,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *          The Command whose properties should determine the type of TopDocsCollector to use.
    */
   private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
-
+    int minNumFound = cmd.getMinExactHits();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
       RankQuery rq = (RankQuery) q;
@@ -1488,14 +1489,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len, Integer.MAX_VALUE);
+      return TopScoreDocCollector.create(len, minNumFound);
     } else {
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, Integer.MAX_VALUE);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
     }
   }
 
@@ -1514,6 +1515,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
+    Relation hitsRelation;
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -1566,8 +1568,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
+      hitsRelation = Relation.EQUAL_TO;
     } else {
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
       if ((cmd.getFlags() & GET_SCORES) != 0) {
@@ -1578,6 +1581,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
+      hitsRelation = topDocs.totalHits.relation;
       if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
@@ -1596,7 +1600,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -1615,6 +1619,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
+    cmd.setMinExactHits(Integer.MAX_VALUE);// We need the full DocSet
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
@@ -1665,7 +1670,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
       MaxScoreCollector maxScoreCollector = null;
@@ -1705,7 +1709,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
 
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, TotalHits.Relation.EQUAL_TO));
     // TODO: if we collect results before the filter, we just need to intersect with
     // that filter to generate the DocSet for qr.setDocSet()
     qr.setDocSet(set);
@@ -1978,7 +1982,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
-      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f);
+      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2017,7 +2021,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f);
+    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 

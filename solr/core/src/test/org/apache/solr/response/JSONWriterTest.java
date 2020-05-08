@@ -180,8 +180,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
                result.contains("\"id\"") &&
                result.contains("\"score\"") && result.contains("_children_"));
 
-    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7,'docs':[{'id':'1', 'score':'0.7'," +
-        " '_children_':{'numFound':1,'start':0,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7, 'numFoundExact':true,'docs':[{'id':'1', 'score':'0.7'," +
+        " '_children_':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
     String error = JSONTestUtil.match(result, "=="+expectedResult);
     assertNull("response validation failed with error: " + error, error);
 

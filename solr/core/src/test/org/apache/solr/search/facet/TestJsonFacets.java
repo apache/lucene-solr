@@ -3176,7 +3176,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "  }" +
             "}" )
 
-        , "response=={numFound:10,start:0,docs:[]}"
+        , "response=={numFound:10,start:0,numFoundExact:true,docs:[]}"
         , "facets=={ count:10," +
             "types:{" +
             "    buckets:[ {val:page, count:10, in_books:2, via_field:2, via_query:2 } ]}" +
