@@ -56,14 +56,14 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   }
   
   public void testMinExactHits() {
-    assertQ("test query on empty index",
+    assertQ("minExactHits is lower than numFound,should produce approximated results",
             req("q", "field1_s:foo", 
                 "minExactHits", "2",
                 "rows", "2")
             ,"//*[@hitCountExact='false']"
             ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
-    assertQ("test query on empty index",
+    assertQ("minExactHits is higher than numFound,should produce exact results",
         req("q", "field1_s:foo", 
             "minExactHits", "200",
             "rows", "2")

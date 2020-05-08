@@ -163,6 +163,10 @@ public interface CommonParams {
    */
   String TIME_ALLOWED = "timeAllowed";
 
+  /**
+   * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_HITS} documents
+   * match a query, then the value in "numFound" may be an estimate to speedup search.
+   */
   String MIN_EXACT_HITS = "minExactHits";
   
   /** 'true' if the header should include the handler name */

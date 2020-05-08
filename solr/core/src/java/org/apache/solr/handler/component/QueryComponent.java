@@ -925,7 +925,7 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
         
-        if (hitCountIsExact && docs.getHitCountExact() == Boolean.FALSE) {
+        if (hitCountIsExact && Boolean.FALSE.equals(docs.getHitCountExact())) {
           hitCountIsExact = false;
         }
 

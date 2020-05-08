@@ -243,7 +243,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore("This test compares binaries, which change due to SOLR-13289")
+  @Ignore("This test compares binaries, which changed due to SOLR-13289")
   public void testForwardCompat() throws IOException {
     try (JavaBinCodec javabin = new JavaBinCodec(); ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
