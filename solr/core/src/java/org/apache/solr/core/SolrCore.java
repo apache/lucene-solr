@@ -2540,7 +2540,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
          ***/
 
         newSearcher.register(); // register subitems (caches)
-        log.info("{}Registered new searcher {}", logid, newSearcher);
+
+        if (log.isInfoEnabled()) {
+          log.info("{} Registered new searcher autowarm time: {} ms", logid, newSearcher.getWarmupTime());
+        }
 
       } catch (Exception e) {
         // an exception in register() shouldn't be fatal.

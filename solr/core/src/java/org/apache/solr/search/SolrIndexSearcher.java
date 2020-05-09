@@ -242,7 +242,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
-    log.info("Opening [{}]", this.name);
+    log.debug("Opening [{}]", this.name);
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -2445,6 +2445,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           + 31 * Objects.hashCode(topFilter)
           + 31 * Objects.hashCode(weights);
     }
+  }
+  public long getWarmupTime() {
+    return warmupTime;
   }
 
 }
