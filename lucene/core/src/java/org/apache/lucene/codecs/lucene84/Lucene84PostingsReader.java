@@ -17,7 +17,7 @@
 package org.apache.lucene.codecs.lucene84;
 
 
-import static org.apache.lucene.codecs.lucene84.ForUtil.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.DOC_CODEC;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_LEVELS;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
@@ -364,7 +364,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       this.needsFreq = PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
       this.isFreqsRead = true;
       if (indexHasFreq == false || needsFreq == false) {
-        for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+        for (int i = 0; i < BLOCK_SIZE; ++i) {
           freqBuffer[i] = 1;
         }
       }
@@ -1636,7 +1636,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       skipper.init(docTermStartFP+termState.skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
 
       if (indexHasFreq == false) {
-        for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+        for (int i = 0; i < BLOCK_SIZE; ++i) {
           freqBuffer[i] = 1;
         }
       }

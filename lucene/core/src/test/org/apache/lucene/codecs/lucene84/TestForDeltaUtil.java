@@ -28,18 +28,20 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
+
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestForDeltaUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomNumbers.randomIntBetween(random(), 50, 1000);
-    final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
+    final int[] values = new int[iterations * BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
       final int bpv = TestUtil.nextInt(random(), 1, 31-7);
-      for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-        values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
+      for (int j = 0; j < BLOCK_SIZE; ++j) {
+        values[i * BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
             1, (int) PackedInts.maxValue(bpv));
       }
     }
@@ -53,9 +55,9 @@ public class TestForDeltaUtil extends LuceneTestCase {
       final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(new ForUtil());
 
       for (int i = 0; i < iterations; ++i) {
-        long[] source = new long[ForUtil.BLOCK_SIZE];
-        for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          source[j] = values[i*ForUtil.BLOCK_SIZE+j];
+        long[] source = new long[BLOCK_SIZE];
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
+          source[j] = values[i*BLOCK_SIZE+j];
         }
         forDeltaUtil.encodeDeltas(source, out);
       }
@@ -73,11 +75,11 @@ public class TestForDeltaUtil extends LuceneTestCase {
           continue;
         }
         long base = 0;
-        final long[] restored = new long[ForUtil.BLOCK_SIZE];
+        final long[] restored = new long[BLOCK_SIZE];
         forDeltaUtil.decodeAndPrefixSum(in, base, restored);
-        final long[] expected = new long[ForUtil.BLOCK_SIZE];
-        for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          expected[j] = values[i*ForUtil.BLOCK_SIZE+j];
+        final long[] expected = new long[BLOCK_SIZE];
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
+          expected[j] = values[i*BLOCK_SIZE+j];
           if (j > 0) {
             expected[j] += expected[j-1];
           } else {

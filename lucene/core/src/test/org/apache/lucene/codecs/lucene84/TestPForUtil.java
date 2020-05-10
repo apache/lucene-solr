@@ -30,17 +30,18 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 public class TestPForUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomNumbers.randomIntBetween(random(), 50, 1000);
-    final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
+    final int[] values = new int[iterations * BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
       final int bpv = TestUtil.nextInt(random(), 0, 31);
-      for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-        values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
+      for (int j = 0; j < BLOCK_SIZE; ++j) {
+        values[i * BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
             0, (int) PackedInts.maxValue(bpv));
         if (random().nextInt(100) == 0) {
           final int exceptionBpv;
@@ -49,7 +50,7 @@ public class TestPForUtil extends LuceneTestCase {
           } else {
             exceptionBpv = Math.min(bpv + TestUtil.nextInt(random(), 1, 8), 31);
           }
-          values[i * ForUtil.BLOCK_SIZE + j] |= random().nextInt(1 << (exceptionBpv - bpv)) << bpv;
+          values[i * BLOCK_SIZE + j] |= random().nextInt(1 << (exceptionBpv - bpv)) << bpv;
         }
       }
     }
@@ -63,9 +64,9 @@ public class TestPForUtil extends LuceneTestCase {
       final PForUtil pforUtil = new PForUtil(new ForUtil());
 
       for (int i = 0; i < iterations; ++i) {
-        long[] source = new long[ForUtil.BLOCK_SIZE];
-        for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          source[j] = values[i*ForUtil.BLOCK_SIZE+j];
+        long[] source = new long[BLOCK_SIZE];
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
+          source[j] = values[i*BLOCK_SIZE+j];
         }
         pforUtil.encode(source, out);
       }
@@ -82,14 +83,14 @@ public class TestPForUtil extends LuceneTestCase {
           pforUtil.skip(in);
           continue;
         }
-        final long[] restored = new long[ForUtil.BLOCK_SIZE];
+        final long[] restored = new long[BLOCK_SIZE];
         pforUtil.decode(in, restored);
-        int[] ints = new int[ForUtil.BLOCK_SIZE];
-        for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
+        int[] ints = new int[BLOCK_SIZE];
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
           ints[j] = Math.toIntExact(restored[j]);
         }
         assertArrayEquals(Arrays.toString(ints),
-            ArrayUtil.copyOfSubArray(values, i*ForUtil.BLOCK_SIZE, (i+1)*ForUtil.BLOCK_SIZE),
+            ArrayUtil.copyOfSubArray(values, i*BLOCK_SIZE, (i+1)*BLOCK_SIZE),
             ints);
       }
       assertEquals(endPointer, in.getFilePointer());

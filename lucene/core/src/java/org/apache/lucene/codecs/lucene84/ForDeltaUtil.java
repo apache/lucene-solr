@@ -20,7 +20,10 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.packed.PackedInts;
+
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 /**
  * Utility class to encode/decode increasing sequences of 128 integers.
@@ -28,17 +31,17 @@ import org.apache.lucene.util.packed.PackedInts;
 public class ForDeltaUtil {
 
   // IDENTITY_PLUS_ONE[i] == i+1
-  private static final long[] IDENTITY_PLUS_ONE = new long[ForUtil.BLOCK_SIZE];
+  private static final long[] IDENTITY_PLUS_ONE = new long[BLOCK_SIZE];
   static {
-    for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
       IDENTITY_PLUS_ONE[i] = i+1;
     }
   }
 
   private static void prefixSumOfOnes(long[] arr, long base) {
-    System.arraycopy(IDENTITY_PLUS_ONE, 0, arr, 0, ForUtil.BLOCK_SIZE);
+    System.arraycopy(IDENTITY_PLUS_ONE, 0, arr, 0, BLOCK_SIZE);
     // This loop gets auto-vectorized
-    for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
       arr[i] += base;
     }
   }
@@ -86,7 +89,7 @@ public class ForDeltaUtil {
   void skip(DataInput in) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue != 0) {
-      in.skipBytes(forUtil.numBytes(bitsPerValue));
+      in.skipBytes(ForPrimitives.numBytes(bitsPerValue));
     }
   }
 

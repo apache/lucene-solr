@@ -21,7 +21,10 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.packed.PackedInts;
+
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 /**
  * Utility class to encode sequences of 128 small positive integers.
@@ -29,7 +32,7 @@ import org.apache.lucene.util.packed.PackedInts;
 final class PForUtil {
 
   static boolean allEqual(long[] l) {
-    for (int i = 1; i < ForUtil.BLOCK_SIZE; ++i) {
+    for (int i = 1; i < BLOCK_SIZE; ++i) {
       if (l[i] != l[0]) {
         return false;
       }
@@ -50,7 +53,7 @@ final class PForUtil {
     // At most 3 exceptions
     final long[] top4 = new long[4];
     Arrays.fill(top4, -1L);
-    for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
       if (longs[i] > top4[0]) {
         top4[0] = longs[i];
         Arrays.sort(top4); // For only 4 entries we just sort on every iteration instead of maintaining a PQ
@@ -70,7 +73,7 @@ final class PForUtil {
     final byte[] exceptions = new byte[numExceptions*2];
     if (numExceptions > 0) {
       int exceptionCount = 0;
-      for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+      for (int i = 0; i < BLOCK_SIZE; ++i) {
         if (longs[i] > (1L << patchedBitsRequired) - 1) {
           exceptions[exceptionCount*2] = (byte) i;
           exceptions[exceptionCount*2+1] = (byte) (longs[i] >>> patchedBitsRequired);
@@ -103,7 +106,7 @@ final class PForUtil {
     final int bitsPerValue = token & 0x1f;
     final int numExceptions = token >>> 5;
     if (bitsPerValue == 0) {
-      Arrays.fill(longs, 0, ForUtil.BLOCK_SIZE, in.readVLong());
+      Arrays.fill(longs, 0, BLOCK_SIZE, in.readVLong());
     } else {
       forUtil.decode(bitsPerValue, in, longs);
     }
@@ -123,7 +126,7 @@ final class PForUtil {
       in.readVLong();
       in.skipBytes((numExceptions << 1));
     } else {
-      in.skipBytes(forUtil.numBytes(bitsPerValue) + (numExceptions << 1));
+      in.skipBytes(ForPrimitives.numBytes(bitsPerValue) + (numExceptions << 1));
     }
   }
 

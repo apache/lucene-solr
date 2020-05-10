@@ -23,6 +23,8 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.MultiLevelSkipListReader;
 import org.apache.lucene.store.IndexInput;
 
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
+
 /**
  * Implements the skip list reader for block postings format
  * that stores positions and payloads.
@@ -66,7 +68,7 @@ class Lucene84SkipReader extends MultiLevelSkipListReader {
   public Lucene84SkipReader(
       IndexInput skipStream, int maxSkipLevels,
       boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
-    super(skipStream, maxSkipLevels, ForUtil.BLOCK_SIZE, 8);
+    super(skipStream, maxSkipLevels, BLOCK_SIZE, 8);
     docPointer = new long[maxSkipLevels];
     if (hasPos) {
       posPointer = new long[maxSkipLevels];
@@ -96,7 +98,7 @@ class Lucene84SkipReader extends MultiLevelSkipListReader {
    *
    */
   protected int trim(int df) {
-    return df % ForUtil.BLOCK_SIZE == 0? df - 1: df;
+    return df % BLOCK_SIZE == 0? df - 1: df;
   }
 
   public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) throws IOException {

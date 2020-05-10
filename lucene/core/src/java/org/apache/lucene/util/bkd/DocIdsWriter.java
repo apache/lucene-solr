@@ -21,12 +21,28 @@ import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ForPrimitives;
 
 class DocIdsWriter {
 
+  private static final byte SORTED = (byte) 0;
+  private static final byte INT24 = (byte) 24;
+  private static final byte INT32 = (byte) 32;
+  private static final byte SIMD = (byte) 64;
+
   private DocIdsWriter() {}
 
-  static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
+  static void writeDocIds(int[] docIds, int start, int count, DataOutput out, ForDocIdsWriter encoder) throws IOException {
+    // if the number of points is a multiple of BLOCK_SIZE, then use
+    // For encoder to get better encoding compression and most of the times
+    // better decoding speed.
+    if (count % ForPrimitives.BLOCK_SIZE == 0) {
+      out.writeByte(SIMD);
+      for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+        encoder.encode(docIds, start + i, out);
+      }
+      return;
+    }
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
@@ -37,7 +53,7 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      out.writeByte((byte) 0);
+      out.writeByte(SORTED);
       int previous = 0;
       for (int i = 0; i < count; ++i) {
         int doc = docIds[start + i];
@@ -50,13 +66,13 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        out.writeByte((byte) 24);
+        out.writeByte(INT24);
         for (int i = 0; i < count; ++i) {
           out.writeShort((short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
-        out.writeByte((byte) 32);
+        out.writeByte(INT32);
         for (int i = 0; i < count; ++i) {
           out.writeInt(docIds[start + i]);
         }
@@ -65,20 +81,30 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
-    final int bpv = in.readByte();
+  static void readInts(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
+    final byte bpv = in.readByte();
     switch (bpv) {
-      case 0:
+      case SORTED:
         readDeltaVInts(in, count, docIDs);
         break;
-      case 32:
+      case INT32:
         readInts32(in, count, docIDs);
         break;
-      case 24:
+      case INT24:
         readInts24(in, count, docIDs);
+        break;
+      case SIMD:
+        readSIMD(in, count, docIDs, decoder);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
+    }
+
+  }
+
+  private static void readSIMD(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
+    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+      decoder.decode(in, docIDs, i);
     }
   }
 
@@ -90,7 +116,7 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; i++) {
       docIDs[i] = in.readInt();
     }
@@ -117,20 +143,29 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    final int bpv = in.readByte();
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
+    final byte bpv = in.readByte();
     switch (bpv) {
-      case 0:
+      case SORTED:
         readDeltaVInts(in, count, visitor);
         break;
-      case 32:
+      case INT32:
         readInts32(in, count, visitor);
         break;
-      case 24:
+      case INT24:
         readInts24(in, count, visitor);
+        break;
+      case SIMD:
+        readSIMD(in, count, visitor, decoder);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
+    }
+  }
+
+  private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
+    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+      decoder.decode(in, visitor);
     }
   }
 

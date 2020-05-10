@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene84;
 
-import static org.apache.lucene.codecs.lucene84.ForUtil.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.DOC_CODEC;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_LEVELS;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
