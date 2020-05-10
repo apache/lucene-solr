@@ -128,6 +128,8 @@ public class BKDWriter implements Closeable {
   final BytesRef scratchBytesRef2 = new BytesRef();
   final int[] commonPrefixLengths;
 
+  final private  ForDocIdsWriter encoder = new ForDocIdsWriter();
+
   protected final FixedBitSet docsSeen;
 
   private PointWriter pointWriter;
@@ -1010,8 +1012,6 @@ public class BKDWriter implements Closeable {
     out.writeVInt(packedIndex.length);
     out.writeBytes(packedIndex, 0, packedIndex.length);
   }
-
-  private final ForDocIdsWriter encoder = new ForDocIdsWriter();
 
   private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
