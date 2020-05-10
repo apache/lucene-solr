@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -382,33 +383,36 @@ public class PolicyHelper {
   }
 
   public enum Status {
-    NULL,
-    //it is just created and not yet used or all operations on it has been completed fully
-    UNUSED,
-    COMPUTING, EXECUTING
+    COMPUTING, // A command is actively using and modifying the session to compute placements
+    EXECUTING // A command is not done yet processing its changes but no longer uses the session
   }
 
   /**
-   * This class stores a session for sharing purpose. If a process creates a session to
-   * compute operations,
-   * 1) see if there is a session that is available in the cache,
-   * 2) if yes, check if it is expired
-   * 3) if it is expired, create a new session
-   * 4) if it is not expired, borrow it
-   * 5) after computing operations put it back in the cache
+   * This class stores sessions for sharing purposes. If a process requirees a session to
+   * compute operations:
+   * <ol>
+   * <li>see if there is an available non expired session in the cache,</li>
+   * <li>if yes, borrow it.</li>
+   * <li>if no, create a new one and borrow it.</li>
+   * <li>after computing (update) operations are done, {@link #returnSession(SessionWrapper)} back to the cache so it's
+   * again available for borrowing.</li>
+   * <li>after all borrowers are done computing then executing with the session, {@link #release(SessionWrapper)} it,
+   * which removes it from the cache.</li>
+   * </ol>
    */
   static class SessionRef {
     private final Object lockObj = new Object();
-    private SessionWrapper sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
 
+    private Set<SessionWrapper> sessionWrapperSet = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public SessionRef() {
     }
 
-
-    //only for debugging
-    SessionWrapper getSessionWrapper() {
-      return sessionWrapper;
+    // used only by tests
+    boolean isEmpty() {
+      synchronized (lockObj) {
+        return sessionWrapperSet.isEmpty();
+      }
     }
 
     /**
@@ -416,11 +420,18 @@ public class PolicyHelper {
      * is complete. Do not even cache anything
      */
     private void release(SessionWrapper sessionWrapper) {
+      boolean present;
       synchronized (lockObj) {
-        if (sessionWrapper.createTime == this.sessionWrapper.createTime && this.sessionWrapper.refCount.get() <= 0) {
-          log.debug("session set to NULL");
-          this.sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
-        } // else somebody created a new session b/c of expiry . So no need to do anything about it
+        present = sessionWrapperSet.remove(sessionWrapper);
+      }
+      if (!present) {
+        log.warn("released session {} not found in session set", sessionWrapper.getCreateTime());
+      } else {
+        if (log.isDebugEnabled()) {
+          TimeSource timeSource = sessionWrapper.session.cloudManager.getTimeSource();
+          log.debug("final release, session {} lived a total of {}ms, ", sessionWrapper.getCreateTime(),
+              timeElapsed(timeSource, TimeUnit.MILLISECONDS.convert(sessionWrapper.getCreateTime(), TimeUnit.NANOSECONDS), MILLISECONDS));
+        }
       }
     }
 
@@ -429,87 +440,122 @@ public class PolicyHelper {
      * The session can be used by others while the caller is performing operations
      */
     private void returnSession(SessionWrapper sessionWrapper) {
-      TimeSource timeSource = sessionWrapper.session != null ? sessionWrapper.session.cloudManager.getTimeSource() : TimeSource.NANO_TIME;
+      boolean present;
       synchronized (lockObj) {
         sessionWrapper.status = Status.EXECUTING;
-        if (log.isDebugEnabled()) {
-          log.debug("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} "
-              , time(timeSource, MILLISECONDS),
-              sessionWrapper.createTime,
-              this.sessionWrapper.createTime);
-        }
-        if (sessionWrapper.createTime == this.sessionWrapper.createTime) {
-          //this session was used for computing new operations and this can now be used for other
-          // computing
-          this.sessionWrapper = sessionWrapper;
+        present = sessionWrapperSet.contains(sessionWrapper);
 
-          //one thread who is waiting for this need to be notified.
-          lockObj.notify();
-        } else {
-          log.debug("create time NOT SAME {} ", SessionWrapper.DEFAULT_INSTANCE.createTime);
-          //else just ignore it
-        }
+        // wake up single thread waiting for a session return (ok if not woken up, wait is short)
+        lockObj.notify();
       }
 
+      // Logging
+      if (present) {
+        if (log.isDebugEnabled()) {
+          log.debug("returnSession {}", sessionWrapper.getCreateTime());
+        }
+      } else {
+        log.warn("returning unknown session {} ", sessionWrapper.getCreateTime());
+      }
     }
 
 
     public SessionWrapper get(SolrCloudManager cloudManager) throws IOException, InterruptedException {
       TimeSource timeSource = cloudManager.getTimeSource();
+      long oldestUpdateTimeNs = TimeUnit.SECONDS.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS) - SESSION_EXPIRY;
+      int zkVersion = cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion();
+
       synchronized (lockObj) {
-        if (sessionWrapper.status == Status.NULL ||
-            sessionWrapper.zkVersion != cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion() ||
-            TimeUnit.SECONDS.convert(timeSource.getTimeNs() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
-          //no session available or the session is expired
+        // If nothing in the cache can possibly work, create a new session
+        if (!hasNonExpiredSession(zkVersion, oldestUpdateTimeNs)) {
           return createSession(cloudManager);
+        }
+
+        // Try to find a session available right away
+        SessionWrapper sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
+
+        if (sw != null) {
+          if (log.isDebugEnabled()) {
+            log.debug("reusing session {}", sw.getCreateTime());
+          }
+          return sw;
         } else {
+          // No session available, but if we wait a bit, maybe one can become available
+          // wait 1 to 10 secs in case a session is returned. Random to spread wakeup otherwise sessions not reused
+          long waitForMs = (long) (Math.random() * 9 * 1000 + 1000);
+
+          if (log.isDebugEnabled()) {
+            log.debug("No sessions are available, all busy COMPUTING. starting wait of {}ms", waitForMs);
+          }
           long waitStart = time(timeSource, MILLISECONDS);
-          //the session is not expired
-          log.debug("reusing a session {}", this.sessionWrapper.createTime);
-          if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
-            this.sessionWrapper.status = Status.COMPUTING;
-            return sessionWrapper;
+          try {
+            lockObj.wait(waitForMs);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+
+          if (log.isDebugEnabled()) {
+            log.debug("out of waiting. wait of {}ms, actual time elapsed {}ms", waitForMs, timeElapsed(timeSource, waitStart, MILLISECONDS));
+          }
+
+          // Try again to find an available session
+          sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
+
+          if (sw != null) {
+            if (log.isDebugEnabled()) {
+              log.debug("Wait over. reusing an existing session {}", sw.getCreateTime());
+            }
+            return sw;
           } else {
-            //status= COMPUTING it's being used for computing. computing is
-            if (log.isDebugEnabled()) {
-              log.debug("session being used. waiting... current time {} ", time(timeSource, MILLISECONDS));
-            }
-            try {
-              lockObj.wait(10 * 1000);//wait for a max of 10 seconds
-            } catch (InterruptedException e) {
-              log.info("interrupted... ");
-            }
-            if (log.isDebugEnabled()) {
-              log.debug("out of waiting curr-time:{} time-elapsed {}"
-                  , time(timeSource, MILLISECONDS), timeElapsed(timeSource, waitStart, MILLISECONDS));
-            }
-            // now this thread has woken up because it got timed out after 10 seconds or it is notified after
-            // the session was returned from another COMPUTING operation
-            if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
-              log.debug("Wait over. reusing the existing session ");
-              this.sessionWrapper.status = Status.COMPUTING;
-              return sessionWrapper;
-            } else {
-              //create a new Session
-              return createSession(cloudManager);
-            }
+            return createSession(cloudManager);
           }
         }
       }
     }
 
+    /**
+     * Returns an available session from the cache (the best one once cache strategies are defined), or null if no session
+     * from the cache is available (i.e. all are still COMPUTING, are too old, wrong zk version or the cache is empty).<p>
+     * This method must be called while holding the monitor on {@link #lockObj}.<p>
+     * The method updates the session status to computing.
+     */
+    private SessionWrapper getAvailableSession(int zkVersion, long oldestUpdateTimeNs) {
+      for (SessionWrapper sw : sessionWrapperSet) {
+        if (sw.status == Status.EXECUTING && sw.getLastUpdateTime() >= oldestUpdateTimeNs && sw.zkVersion == zkVersion) {
+          sw.status = Status.COMPUTING;
+          return sw;
+        }
+      }
+      return null;
+    }
+
+    /**
+     * Returns true if there's a session in the cache that could be returned (if it was free). This is required to
+     * know if there's any point in waiting or if a new session should better be created right away.
+     */
+    private boolean hasNonExpiredSession(int zkVersion, long oldestUpdateTimeNs) {
+      for (SessionWrapper sw : sessionWrapperSet) {
+        if (sw.getLastUpdateTime() >= oldestUpdateTimeNs && sw.zkVersion == zkVersion) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     private SessionWrapper createSession(SolrCloudManager cloudManager) throws InterruptedException, IOException {
-      synchronized (lockObj) {
+      if (log.isDebugEnabled()) {
         log.debug("Creating a new session");
+      }
+      synchronized (lockObj) {
         Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
-        log.debug("New session created ");
-        this.sessionWrapper = new SessionWrapper(session, this);
-        this.sessionWrapper.status = Status.COMPUTING;
+        SessionWrapper sessionWrapper = new SessionWrapper(session, this);
+        if (log.isDebugEnabled()) {
+          log.debug("New session created, " + sessionWrapper.getCreateTime());
+        }
+        sessionWrapperSet.add(sessionWrapper);
         return sessionWrapper;
       }
     }
-
-
   }
 
   /**
@@ -542,22 +588,21 @@ public class PolicyHelper {
 
 
   public static class SessionWrapper {
-    public static final SessionWrapper DEFAULT_INSTANCE = new SessionWrapper(null, null);
-
-    static {
-      DEFAULT_INSTANCE.status = Status.NULL;
-      DEFAULT_INSTANCE.createTime = -1L;
-      DEFAULT_INSTANCE.lastUpdateTime = -1L;
-    }
-
-    private long createTime;
+    private final long createTime;
     private long lastUpdateTime;
     private Policy.Session session;
     public Status status;
     private final SessionRef ref;
-    private AtomicInteger refCount = new AtomicInteger();
+    /**
+     * Number of commands currently using the session in {@link Status#EXECUTING}. There is one <b>additional</b> command
+     * using the session and updating it if {@link #status} is {@link Status#COMPUTING}
+     */
+    private final AtomicInteger refCount = new AtomicInteger();
     public final long zkVersion;
 
+    /**
+     * Nanoseconds (since/to some arbitrary time) when the session got created. Also used in logs (only in logs!) to identify the session.
+     */
     public long getCreateTime() {
       return createTime;
     }
@@ -567,27 +612,22 @@ public class PolicyHelper {
     }
 
     public SessionWrapper(Policy.Session session, SessionRef ref) {
-      lastUpdateTime = createTime = session != null ?
-          session.cloudManager.getTimeSource().getTimeNs() :
-          TimeSource.NANO_TIME.getTimeNs();
+      createTime = session.cloudManager.getTimeSource().getTimeNs();
+      lastUpdateTime = createTime;
       this.session = session;
-      this.status = Status.UNUSED;
+      this.status = Status.COMPUTING; // Created for being used, so COMPUTING right away
       this.ref = ref;
-      this.zkVersion = session == null ?
-          0 :
-          session.getPolicy().getZkVersion();
+      this.zkVersion = session.getPolicy().getZkVersion();
     }
 
     public Policy.Session get() {
       return session;
     }
 
-    public SessionWrapper update(Policy.Session session) {
-      this.lastUpdateTime = session != null ?
-          session.cloudManager.getTimeSource().getTimeNs() :
-          TimeSource.NANO_TIME.getTimeNs();
+    public void update(Policy.Session session) {
+      // JMM multithreaded access issue on lastUpdateTime.
+      this.lastUpdateTime = session.cloudManager.getTimeSource().getTimeNs();
       this.session = session;
-      return this;
     }
 
     public int getRefCount() {
@@ -599,17 +639,20 @@ public class PolicyHelper {
      * ensure that this is done after computing the suggestions
      */
     public void returnSession(Policy.Session session) {
+      if (this.status != Status.COMPUTING) {
+        log.warn("returning session {} not in state COMPUTING", this.getCreateTime());
+      }
+
       this.update(session);
       refCount.incrementAndGet();
       ref.returnSession(this);
-
     }
 
     //all ops are executed now it can be destroyed
     public void release() {
-      refCount.decrementAndGet();
-      ref.release(this);
-
+      if (refCount.decrementAndGet() <= 0) {
+        ref.release(this);
+      }
     }
   }
 }
