@@ -221,6 +221,8 @@ Bug Fixes
 * SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
   when combined with allBuckets:true.  (Michael Gibney, hossman)
 
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
 
 Other Changes
 ---------------------
