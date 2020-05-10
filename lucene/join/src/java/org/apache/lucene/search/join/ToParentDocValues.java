@@ -190,9 +190,17 @@ class ToParentDocValues extends DocIdSetIterator {
   @Override
   public int nextDoc() throws IOException {
     assert docID != NO_MORE_DOCS;
-    
+    // prev advanceExact might move it into mid-block - at child,
+    // that's weird, let's drag to next parent first
+    if (docID!=-1) {
+      docID=parents.nextSetBit(docID);
+    }
+    // ^ is noop if it's correctly set at parent.
+    if (docID == NO_MORE_DOCS) {
+      return NO_MORE_DOCS;
+    }
     assert children.docID()!=docID || docID==-1;
-    while (children.docID()<docID || docID==-1 || !advanceExactChildDV(children.docID())) {
+    while ((children.docID() != NO_MORE_DOCS) && (children.docID()<docID || docID==-1 || !advanceExactChildDV(children.docID()))) {
       children.nextDoc();
       if (children.docID() == NO_MORE_DOCS || advanceExactChildDV(children.docID())) {
         break;
