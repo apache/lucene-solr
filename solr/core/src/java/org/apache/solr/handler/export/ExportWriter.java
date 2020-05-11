@@ -24,7 +24,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -35,6 +37,18 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
@@ -85,23 +99,118 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
  */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
-  private static final int DOCUMENT_BATCH_SIZE = 30000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final int DOCUMENT_BATCH_SIZE = 30000;
+  private static final String EXPORT_WRITER_KEY = "__ew__";
+  private static final String DOCS_KEY = "_ew_docs_";
+  private static final String DOCS_INDEX_KEY = "_ew_docs_idx_";
+  private static final String LEAF_READERS_KEY = "_leaves_";
+
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
   final SolrQueryResponse res;
+  final StreamContext initialStreamContext;
+  StreamContext streamContext;
+  TupleStream tupleStream;
   FieldWriter[] fieldWriters;
   int totalHits = 0;
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
 
+  public static class ExportWriterStream extends TupleStream implements Expressible {
+    StreamContext context;
+    int pos;
+    SortDoc[] docs;
+    ExportWriter exportWriter;
+    List<LeafReaderContext> leaves;
 
-  public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt) {
+    public ExportWriterStream(StreamExpression expression, StreamFactory factory) throws IOException {
+
+    }
+
+    @Override
+    public void setStreamContext(StreamContext context) {
+      this.context = context;
+    }
+
+    @Override
+    public List<TupleStream> children() {
+      return null;
+    }
+
+    @Override
+    public void open() throws IOException {
+      docs = (SortDoc[]) context.get(DOCS_KEY);
+      int[] idx = (int[]) context.get(DOCS_INDEX_KEY);
+      exportWriter = (ExportWriter) context.get(EXPORT_WRITER_KEY);
+      leaves = (List<LeafReaderContext>) context.get(LEAF_READERS_KEY);
+      if (exportWriter == null || leaves == null || docs == null || idx == null || idx.length != 1) {
+        IOException e = new IOException("Stream initialization error, all of " +
+            LEAF_READERS_KEY + ", " + EXPORT_WRITER_KEY +
+            ", " + DOCS_KEY + " and " + DOCS_INDEX_KEY + " must be present");
+        SolrException.log(log, e);
+        throw e;
+      }
+      pos = idx[0];
+    }
+
+    @Override
+    public void close() throws IOException {
+      docs = null;
+    }
+
+    @Override
+    public Tuple read() throws IOException {
+      Tuple tuple;
+      if (pos >= 0) {
+        SortDoc s = docs[pos];
+        Map<String, Object>  map = new HashMap<>();
+        exportWriter.writeDoc(s, leaves, new EntryWriter() {
+          @Override
+          public EntryWriter put(CharSequence k, Object v) throws IOException {
+            map.put(k.toString(), v);
+            return this;
+          }
+        });
+        s.reset();
+        tuple = new Tuple(map);
+        pos--;
+      } else {
+        tuple = new Tuple();
+        tuple.EOF = true;
+      }
+      return tuple;
+    }
+
+    @Override
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    @Override
+    public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+      StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+      return expression;
+    }
+
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+      return new StreamExplanation(getStreamNodeId().toString())
+          .withFunctionName("input")
+          .withImplementingClass(this.getClass().getName())
+          .withExpressionType(Explanation.ExpressionType.STREAM_SOURCE)
+          .withExpression("--non-expressible--");
+    }
+  }
+
+
+  public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt, StreamContext initialStreamContext) {
     this.req = req;
     this.res = res;
     this.wt = wt;
-
+    this.initialStreamContext = initialStreamContext;
   }
 
   @Override
@@ -219,7 +328,33 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     String expr = params.get(StreamParams.EXPR);
     if (expr != null) {
+      StreamFactory streamFactory = initialStreamContext.getStreamFactory();
+      try {
+        StreamExpression streamExpression = StreamExpressionParser.parse(expr);
+        if (streamFactory.isEvaluator(streamExpression)) {
+          StreamExpression tupleExpression = new StreamExpression(StreamParams.TUPLE);
+          tupleExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, streamExpression));
+          tupleStream = streamFactory.constructStream(tupleExpression);
+        } else {
+          tupleStream = streamFactory.constructStream(streamExpression);
+        }
+      } catch (Exception e) {
+        writeException(e, writer, true);
+        return;
+      }
+      streamContext = new StreamContext();
+      streamContext.setRequestParams(params);
+      // nocommit enforce this?
+      streamContext.setLocal(true);
 
+      streamContext.workerID = 0;
+      streamContext.numWorkers = 1;
+      streamContext.setSolrClientCache(initialStreamContext.getSolrClientCache());
+      streamContext.setModelCache(initialStreamContext.getModelCache());
+      streamContext.setObjectCache(initialStreamContext.getObjectCache());
+      streamContext.put("core", req.getCore().getName());
+      streamContext.put("solr-core", req.getCore());
+      tupleStream.setStreamContext(streamContext);
     }
 
     writer.writeMap(m -> {
@@ -229,7 +364,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         mw.put("docs", (IteratorWriter) iw -> writeDocs(req, iw, sort));
       });
     });
-
+    if (tupleStream != null) {
+      tupleStream.close();
+      streamContext = null;
+    }
   }
 
   protected void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
@@ -263,12 +401,28 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   protected void addDocsToItemWriter(List<LeafReaderContext> leaves, IteratorWriter.ItemWriter writer, SortDoc[] docsToExport, int outDocsIndex) throws IOException {
     try {
-      for (int i = outDocsIndex; i >= 0; --i) {
-        SortDoc s = docsToExport[i];
-        writer.add((MapWriter) ew -> {
-          writeDoc(s, leaves, ew);
-          s.reset();
-        });
+      if (tupleStream != null) {
+        streamContext.put(DOCS_KEY, docsToExport);
+        streamContext.put(DOCS_INDEX_KEY, new int[] {outDocsIndex});
+        streamContext.put(EXPORT_WRITER_KEY, this);
+        streamContext.put(LEAF_READERS_KEY, leaves);
+        tupleStream.open();
+        for (;;) {
+          final Tuple t = tupleStream.read();
+          if (t.EOF) {
+            break;
+          }
+          writer.add((MapWriter) ew -> t.writeMap(ew));
+        }
+        tupleStream.close();
+      } else {
+        for (int i = outDocsIndex; i >= 0; --i) {
+          SortDoc s = docsToExport[i];
+          writer.add((MapWriter) ew -> {
+            writeDoc(s, leaves, ew);
+            s.reset();
+          });
+        }
       }
     } catch (Throwable e) {
       Throwable ex = e;
@@ -306,7 +460,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected void writeDoc(SortDoc sortDoc,
+  void writeDoc(SortDoc sortDoc,
                           List<LeafReaderContext> leaves,
                           EntryWriter ew) throws IOException {
 

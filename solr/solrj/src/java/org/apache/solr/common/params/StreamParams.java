@@ -31,4 +31,5 @@ public interface StreamParams {
   String RESULT_SET = "result-set";
   String EOF = "EOF";
   String EXCEPTION = "EXCEPTION";
+  String METRICS = "_METRICS_";
 }

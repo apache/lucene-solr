@@ -706,6 +706,15 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     validateSort(numDocs);
   }
 
+  @Test
+  public void testExpr() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createIndex();
+    String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc", "expr", "top(n=2,input(),sort=\"id desc\")"));
+    assertNotNull(resp);
+  }
+
   private void validateSort(int numDocs) throws Exception {
     // 10 fields
     List<String> fieldNames = new ArrayList<>(Arrays.asList("floatdv", "intdv", "stringdv", "longdv", "doubledv",

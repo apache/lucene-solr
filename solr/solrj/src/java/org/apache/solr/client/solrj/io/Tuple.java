@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.StreamParams;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -48,16 +49,16 @@ public class Tuple implements Cloneable, MapWriter {
   public List<String> fieldNames;
   public Map<String, String> fieldLabels;
 
-  public Tuple(){
+  public Tuple() {
     // just an empty tuple
   }
   
   public Tuple(Map fields) {
-    if(fields.containsKey("EOF")) {
+    if (fields.containsKey(StreamParams.EOF)) {
       EOF = true;
     }
 
-    if(fields.containsKey("EXCEPTION")){
+    if (fields.containsKey(StreamParams.EXCEPTION)) {
       EXCEPTION = true;
     }
 
@@ -80,16 +81,16 @@ public class Tuple implements Cloneable, MapWriter {
     return String.valueOf(this.fields.get(key));
   }
 
-  public String getException(){ return (String)this.fields.get("EXCEPTION"); }
+  public String getException() { return (String)this.fields.get(StreamParams.EXCEPTION); }
 
   public Long getLong(Object key) {
     Object o = this.fields.get(key);
 
-    if(o == null) {
+    if (o == null) {
       return null;
     }
 
-    if(o instanceof Long) {
+    if (o instanceof Long) {
       return (Long) o;
     } else if (o instanceof Number) {
       return ((Number)o).longValue();
@@ -149,11 +150,11 @@ public class Tuple implements Cloneable, MapWriter {
   public Double getDouble(Object key) {
     Object o = this.fields.get(key);
 
-    if(o == null) {
+    if (o == null) {
       return null;
     }
 
-    if(o instanceof Double) {
+    if (o instanceof Double) {
       return (Double)o;
     } else {
       //Attempt to parse the double
@@ -186,11 +187,11 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Map<String,Map> getMetrics() {
-    return (Map<String,Map>)this.fields.get("_METRICS_");
+    return (Map<String,Map>)this.fields.get(StreamParams.METRICS);
   }
 
   public void setMetrics(Map<String, Map> metrics) {
-    this.fields.put("_METRICS_", metrics);
+    this.fields.put(StreamParams.METRICS, metrics);
   }
 
   public Tuple clone() {
@@ -199,13 +200,13 @@ public class Tuple implements Cloneable, MapWriter {
     return clone;
   }
   
-  public void merge(Tuple other){
+  public void merge(Tuple other) {
     fields.putAll(other.getMap());
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    if(fieldNames == null) {
+    if (fieldNames == null) {
       fields.forEach((k, v) -> {
         try {
           ew.put((String) k, v);
@@ -214,7 +215,7 @@ public class Tuple implements Cloneable, MapWriter {
         }
       });
     } else {
-      for(String fieldName : fieldNames) {
+      for (String fieldName : fieldNames) {
         String label = fieldLabels.get(fieldName);
         ew.put(label, fields.get(label));
       }

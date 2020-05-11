@@ -94,6 +94,11 @@ public class StreamFactory implements Serializable {
     return this;
   }
 
+  public StreamFactory withoutFunctionName(String functionName) {
+    this.functionNames.remove(functionName);
+    return this;
+  }
+
 
   public StreamExpressionParameter getOperand(StreamExpression expression, int parameterIndex){
     if(null == expression.getParameters() || parameterIndex >= expression.getParameters().size()){
