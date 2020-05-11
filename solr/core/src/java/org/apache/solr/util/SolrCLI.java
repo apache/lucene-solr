@@ -680,10 +680,8 @@ public class SolrCLI implements CLIO {
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            if (log.isWarnEnabled()) {
-              log.warn("Request to {} failed due to: {}, sleeping for 5 seconds before re-trying the request ..."
-                  , getUrl, exc.getMessage());
-            }
+            log.warn("Request to {} failed due to: {}, sleeping for 5 seconds before re-trying the request ..."
+                , getUrl, exc.getMessage());
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) { Thread.interrupted(); }
@@ -1313,7 +1311,7 @@ public class SolrCLI implements CLIO {
           }
         }
       }
-      throw new TimeoutException("Did not see Solr at "+solrUrl+" come online within "+maxWaitSecs);
+      throw new TimeoutException("Did not see Solr at "+solrUrl+" come online within "+maxWaitSecs+" seconds!");
     }
 
     public Map<String,Object> getStatus(String solrUrl) throws Exception {
@@ -2823,11 +2821,9 @@ public class SolrCLI implements CLIO {
 
             if (configName.equals(zkStateReader.readConfigName(next))) {
               deleteConfig = false;
-              if (log.isWarnEnabled()) {
-                log.warn("Configuration directory {} is also being used by {}" +
-                        "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete."
-                    , configName, next);
-              }
+              log.warn("Configuration directory {} is also being used by {}{}"
+                  , configName, next
+                  , "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete.");
               break;
             }
           }

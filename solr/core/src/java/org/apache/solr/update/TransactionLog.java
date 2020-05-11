@@ -194,9 +194,7 @@ public class TransactionLog implements Closeable {
         }
       } else {
         if (start > 0) {
-          if (log.isWarnEnabled()) {
-            log.warn("New transaction log already exists:{} size={}", tlogFile, raf.length());
-          }
+          log.warn("New transaction log already exists:{} size={}", tlogFile, raf.length());
           return;
         }
        

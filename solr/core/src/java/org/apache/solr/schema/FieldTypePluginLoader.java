@@ -110,10 +110,8 @@ public final class FieldTypePluginLoader
     if (ft instanceof HasImplicitIndexAnalyzer) {
       ft.setIsExplicitAnalyzer(false);
       if (null != queryAnalyzer && null != analyzer) {
-        if (log.isWarnEnabled()) {
-          log.warn("Ignoring index-time analyzer for field: " + name);
-        }
-      } else if (null == queryAnalyzer) { // Accept non-query-time analyzer as a query-time analyzer 
+        log.warn("Ignoring index-time analyzer for field: {}", name);
+      } else if (null == queryAnalyzer) { // Accept non-query-time analyzer as a query-time analyzer
         queryAnalyzer = analyzer;
       }
       if (null != queryAnalyzer) {
@@ -406,12 +404,11 @@ public final class FieldTypePluginLoader
             SolrConfig.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
     if (!version.onOrAfter(Version.LUCENE_8_0_0)) {
-      if (log.isWarnEnabled()) {
-        log.warn("{} is using deprecated {}" +
-                " emulation. You should at some point declare and reindex to at least 8.0, because " +
-                "7.x emulation is deprecated and will be removed in 9.0"
-            , pluginClassName, version);
-      }
+      log.warn("{} is using deprecated {}"
+          + " emulation. You should at some point declare and reindex to at least 8.0, because "
+          + "7.x emulation is deprecated and will be removed in 9.0"
+          , pluginClassName
+          , version);
     }
     return version;
   }

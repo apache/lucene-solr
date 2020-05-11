@@ -62,7 +62,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : next;
+    return (log.isInfoEnabled() || slowUpdateThresholdMillis >= 0) ?
+        new LogUpdateProcessor(req, rsp, this, next) : next;
   }
   
   static class LogUpdateProcessor extends UpdateRequestProcessor {
@@ -178,7 +179,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     @Override
     public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
       if (logDebug) {
-        log.debug("PRE_UPDATE {}", cmd, req);
+        log.debug("PRE_UPDATE {} {}", cmd, req);
       }
       if (next != null) next.processRollback(cmd);
 
@@ -202,9 +203,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
         final long elapsed = (long) req.getRequestTimer().getTime();
         if (elapsed >= slowUpdateThresholdMillis) {
-          if (log.isWarnEnabled()) {
-            log.warn("slow: {}", getLogStringAndClearRspToLog());
-          }
+          log.warn("slow: {}", getLogStringAndClearRspToLog());
         }
       }
     }

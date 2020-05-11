@@ -104,7 +104,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // is implementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
+      log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", inputFactory);
     }
   }
 
@@ -304,7 +304,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
           text.setLength(0);
           String localName = reader.getLocalName();
           if (!"field".equals(localName)) {
-            log.warn("unexpected XML tag doc/" + localName);
+            log.warn("unexpected XML tag doc/{}", localName);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "unexpected XML tag doc/" + localName);
           }
 

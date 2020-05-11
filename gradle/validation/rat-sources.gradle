@@ -130,6 +130,7 @@ class RatTask extends DefaultTask {
     List<String> srcExcludes = [
         "**/TODO",
         "**/*.txt",
+        "**/*.md",
         "**/*.iml",
         "build/**"
     ]

@@ -71,6 +71,10 @@ public class GroupingSearch {
     this(new TermGroupSelector(groupField), null);
   }
 
+  public GroupingSearch(GroupSelector<?> groupSelector) {
+    this(groupSelector, null);
+  }
+
   /**
    * Constructs a <code>GroupingSearch</code> instance that groups documents by function using a {@link ValueSource}
    * instance.

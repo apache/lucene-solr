@@ -52,7 +52,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -98,6 +97,7 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
+import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
@@ -615,8 +615,8 @@ public class CoreContainer {
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
+    containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -651,8 +651,10 @@ public class CoreContainer {
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
       packageLoader = new PackageLoader(this);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
+      containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
+      ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
+      containerHandlers.getApiBag().registerObject(zookeeperReadAPI);
     }
 
     MDCLoggingContext.setNode(this);
@@ -894,13 +896,11 @@ public class CoreContainer {
 
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
-      if (log.isWarnEnabled()) {
-        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
-                "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
-                "external.  See https://s.apache.org/solrsecurity for more info",
+      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+          "external.  See https://s.apache.org/solrsecurity for more info",
             (authenticationPlugin != null) ? "enabled" : "disabled",
             (authorizationPlugin != null) ? "enabled" : "disabled");
-      }
     }
 
     if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
@@ -1378,10 +1378,8 @@ public class CoreContainer {
       case none:
         throw original;
       default:
-        if (log.isWarnEnabled()) {
-          log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
-              action, Arrays.asList(CoreInitFailedAction.values()));
-        }
+        log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
+            action, Arrays.asList(CoreInitFailedAction.values()));
         throw original;
     }
   }
@@ -1980,11 +1978,9 @@ public class CoreContainer {
     DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
     for (Replica rep : coll.getReplicas()) {
       if (coreName.equals(rep.getCoreName())) {
-        if (log.isWarnEnabled()) {
-          log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. " +
-                  "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1.",
-              rep.getCoreName(), rep.getName());
-        }
+        log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. {}"
+            , "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1."
+            , rep.getCoreName(), rep.getName());
         cd.getCloudDescriptor().setCoreNodeName(rep.getName());
         coresLocator.persist(this, cd);
         return true;

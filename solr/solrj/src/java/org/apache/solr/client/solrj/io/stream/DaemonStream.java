@@ -365,14 +365,14 @@ public class DaemonStream extends TupleStream implements Expressible {
             }
           } catch (IOException e) {
             exception = e;
-            log.error("Error in DaemonStream:" + id, e);
+            log.error("Error in DaemonStream: {}", id, e);
             ++errors;
             if (errors > 100) {
-              log.error("Too many consecutive errors. Stopping DaemonStream:" + id);
+              log.error("Too many consecutive errors. Stopping DaemonStream: {}", id);
               break OUTER;
             }
           } catch (Throwable t) {
-            log.error("Fatal Error in DaemonStream:" + id, t);
+            log.error("Fatal Error in DaemonStream: {}",  id, t);
             //For anything other then IOException break out of the loop and shutdown the thread.
             break OUTER;
           } finally {
@@ -381,7 +381,7 @@ public class DaemonStream extends TupleStream implements Expressible {
             } catch (IOException e1) {
               if (exception == null) {
                 exception = e1;
-                log.error("Error in DaemonStream:" + id, e1);
+                log.error("Error in DaemonStream: {}", id, e1);
                 break OUTER;
               }
             }
@@ -393,7 +393,7 @@ public class DaemonStream extends TupleStream implements Expressible {
           try {
             Thread.sleep(sleepMillis);
           } catch (InterruptedException e) {
-            log.error("Error in DaemonStream:" + id, e);
+            log.error("Error in DaemonStream:{}", id, e);
             break OUTER;
           }
         }
@@ -406,7 +406,7 @@ public class DaemonStream extends TupleStream implements Expressible {
         try {
           queue.put(tuple);
         } catch (InterruptedException e) {
-          log.error("Error in DaemonStream:"+id, e);
+          log.error("Error in DaemonStream:{}", id, e);
         }
       }
       setStopTime(new Date().getTime());

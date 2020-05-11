@@ -58,7 +58,7 @@ public class TriggerEventQueue {
       delegate.offer(data);
       return true;
     } catch (Exception e) {
-      log.warn("Exception adding event " + event + " to queue " + triggerName, e);
+      log.warn("Exception adding event {} to queue {}", event, triggerName, e);
       return false;
     }
   }
@@ -75,7 +75,7 @@ public class TriggerEventQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          log.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
+          log.warn("Invalid event data, ignoring: {}", new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
@@ -84,7 +84,7 @@ public class TriggerEventQueue {
       
     }
     catch (Exception e) {
-      log.warn("Exception peeking queue of trigger " + triggerName, e);
+      log.warn("Exception peeking queue of trigger {}", triggerName, e);
     }
     return null;
   }
@@ -101,12 +101,12 @@ public class TriggerEventQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          log.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
+          log.warn("Invalid event data, ignoring: {}", new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
     } catch (Exception e) {
-      log.warn("Exception polling queue of trigger " + triggerName, e);
+      log.warn("Exception polling queue of trigger {}", triggerName, e);
     }
     return null;
   }

@@ -51,10 +51,12 @@ API Changes
   factories to be compatible with Java Module System. This allows to load factories
   without META-INF/service from a Java module exposing the factory in the module
   descriptor. This breaks backwards compatibility as custom analysis factories
-  must now also implement the default constructor (see MIGRATE.txt).
+  must now also implement the default constructor (see MIGRATE.md).
   (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
+
+* LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
 
 Improvements
 
@@ -91,6 +93,9 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9354: Improvements to snowball french stopwords list, so that it is less
+  aggressive. (Philippe Ouellet)
+
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
@@ -115,6 +120,11 @@ Other
 * LUCENE-8656: Deprecations in FuzzyQuery and get compiler warnings out of 
   queryparser code (Alan Woodward, Erick Erickson)
 
+* LUCENE-9344: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-9267: Update MatchingQueries documentation to correct
+  time unit. (Pierre-Luc Perron via Mike Drob)
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
@@ -125,6 +135,27 @@ API Changes
 * LUCENE-9304: Removed ability to set DocumentsWriterPerThreadPool on IndexWriterConfig.
   The DocumentsWriterPerThreadPool is a packaged protected final class which made it impossible
   to customize. (Simon Willnauer)
+
+* LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
+  (Simon Willnauer)
+
+* LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
+
+* LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
+  interface that offers the basic methods to acquire pending merges, run the merge and do accounting 
+  around it. (Simon Willnauer)
+
+* LUCENE-9349: QueryVisitor.consumeTermsMatching() now takes a
+  Supplier<ByteRunAutomaton> to enable queries that build large automata to
+  provide them lazily.  TermsInSetQuery switches to using this method
+  to report matching terms. (Alan Woodward)
+
+* LUCENE-9366: DocValues.emptySortedNumeric() not longer takes a maxDoc parameter
+  (Alan Woodward)
+
+* LUCENE-7822: CodecUtil#checkFooter(IndexInput, Throwable) now throws a
+  CorruptIndexException if checksums mismatch or if checksums can't be verified.
+  (Martin Amirault, Adrien Grand)
 
 New Features
 ---------------------
@@ -146,6 +177,9 @@ Improvements
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
   snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
 
+* LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
+  (Tomás Fernández Löbbe)
+
 Optimizations
 ---------------------
 
@@ -166,6 +200,13 @@ Optimizations
   computed at deserialization time, therefore we can be more selective when decoding points of a triangle.
   (Ignacio Vera)
 
+* LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
+  (Ignacio Vera)
+
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
@@ -184,6 +225,18 @@ Bug Fixes
 * LUCENE-9133: Fix for potential NPE in TermFilteredPresearcher for empty fields (Marvin Justice via Mike Drob)
 
 * LUCENE-9309: Wait for #addIndexes merges when aborting merges. (Simon Willnauer)
+
+* LUCENE-9337: Ensure CMS updates it's thread accounting datastructures consistently.
+  CMS today releases it's lock after finishing a merge before it re-acquires it to update
+  the thread accounting datastructures. This causes threading issues where concurrently
+  finishing threads fail to pick up pending merges causing potential thread starvation on
+  forceMerge calls. (Simon Willnauer)
+
+* LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
+  implementation. (Pierre-Luc Perron, Alan Woodward)
+
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
 
 Other
 ---------------------
@@ -206,6 +259,13 @@ Other
 
 * LUCENE-9191: Make LineFileDocs's random seeking more efficient, making tests using LineFileDocs faster (Robert Muir,
   Mike McCandless)
+
+* LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
+  Adrien Grand)
+
+Build
+
+* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
 
 ======================= Lucene 8.5.1 =======================
 

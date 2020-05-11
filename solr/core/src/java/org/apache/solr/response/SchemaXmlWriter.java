@@ -466,6 +466,11 @@ public class SchemaXmlWriter extends TextResponseWriter {
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
     // no-op
   }
+  
+  @Override
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
+    // no-op
+  }
 
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {

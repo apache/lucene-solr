@@ -41,7 +41,7 @@ task assemblePackaging(type: Sync) {
     include "exampledocs/**"
     include "files/**"
     include "films/**"
-    include "README.txt"
+    include "README.md"
     exclude "**/*.jar"
   })
 

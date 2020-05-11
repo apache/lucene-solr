@@ -33,27 +33,24 @@ public class DocIdAugmenterFactory extends TransformerFactory
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     return new DocIdAugmenter( field );
   }
-}
 
-class DocIdAugmenter extends DocTransformer
-{
-  final String name;
+  private static class DocIdAugmenter extends DocTransformer {
+    final String name;
 
-  public DocIdAugmenter( String display )
-  {
-    this.name = display;
-  }
+    public DocIdAugmenter( String display ) {
+      this.name = display;
+    }
 
-  @Override
-  public String getName()
-  {
-    return name;
-  }
+    @Override
+    public String getName() {
+      return name;
+    }
 
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    assert -1 <= docid;
-    doc.setField( name, docid );
+    @Override
+    public void transform(SolrDocument doc, int docid) {
+      assert -1 <= docid;
+      doc.setField( name, docid );
+    }
   }
 }
 

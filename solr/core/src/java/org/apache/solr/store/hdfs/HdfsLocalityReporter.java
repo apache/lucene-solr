@@ -118,10 +118,8 @@ public class HdfsLocalityReporter implements SolrInfoBean {
               }
             }
           } catch (IOException e) {
-            if (log.isWarnEnabled()) {
-              log.warn("Could not retrieve locality information for {} due to exception: {}",
-                  hdfsDirectory.getHdfsDirPath(), e);
-            }
+            log.warn("Could not retrieve locality information for {} due to exception: {}",
+                hdfsDirectory.getHdfsDirPath(), e);
           }
         }
       }
@@ -152,7 +150,9 @@ public class HdfsLocalityReporter implements SolrInfoBean {
    */
   public void registerDirectory(HdfsDirectory dir) {
     if (log.isInfoEnabled()) {
-      log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath().toString());
+      if (log.isInfoEnabled()) {
+        log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath());
+      }
     }
     cache.put(dir, new ConcurrentHashMap<FileStatus, BlockLocation[]>());
   }

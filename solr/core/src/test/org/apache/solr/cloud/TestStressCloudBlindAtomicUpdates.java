@@ -270,7 +270,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     final int numDocsInIndex = (numDocsToCheck * DOC_ID_INCR);
     final AtomicLong[] expected = new AtomicLong[numDocsToCheck];
 
-    log.info("Testing " + numericFieldName + ": numDocsToCheck=" + numDocsToCheck + ", numDocsInIndex=" + numDocsInIndex + ", incr=" + DOC_ID_INCR);
+    log.info("Testing {}: numDocsToCheck={}, numDocsInIndex={}, incr={}"
+        , numericFieldName,  numDocsToCheck, numDocsInIndex, DOC_ID_INCR);
     
     // seed the index & keep track of what docs exist and with what values
     for (int id = 0; id < numDocsInIndex; id++) {

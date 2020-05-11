@@ -87,22 +87,22 @@ final class DocumentsWriterPerThread {
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
-    Analyzer analyzer;
+    final Analyzer analyzer;
     InfoStream infoStream;
     Similarity similarity;
     int docID;
     Iterable<? extends IndexableField> doc;
 
-    DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
+    DocState(DocumentsWriterPerThread docWriter, Analyzer analyzer, InfoStream infoStream) {
       this.docWriter = docWriter;
       this.infoStream = infoStream;
+      this.analyzer = analyzer;
     }
 
     public void clear() {
       // don't hold onto doc nor analyzer, in case it is
       // largish:
       doc = null;
-      analyzer = null;
     }
   }
 
@@ -150,14 +150,13 @@ final class DocumentsWriterPerThread {
   private final static boolean INFO_VERBOSE = false;
   final Codec codec;
   final TrackingDirectoryWrapper directory;
-  final Directory directoryOrig;
   final DocState docState;
-  final DocConsumer consumer;
+  private final DocConsumer consumer;
   final Counter bytesUsed;
   
   // Updates for our still-in-RAM (to be flushed next) segment
-  final BufferedUpdates pendingUpdates;
-  final SegmentInfo segmentInfo;     // Current segment we are working on
+  private final BufferedUpdates pendingUpdates;
+  private final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
   private SetOnce<Boolean> flushPending = new SetOnce<>();
   private volatile long lastCommittedBytesUsed;
@@ -180,15 +179,14 @@ final class DocumentsWriterPerThread {
   private int numDeletedDocIds = 0;
 
 
-  public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
+  DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
-    this.directoryOrig = directoryOrig;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = indexWriterConfig;
     this.infoStream = infoStream;
     this.codec = indexWriterConfig.getCodec();
-    this.docState = new DocState(this, infoStream);
+    this.docState = new DocState(this, indexWriterConfig.getAnalyzer(), infoStream);
     this.docState.similarity = indexWriterConfig.getSimilarity();
     this.pendingNumDocs = pendingNumDocs;
     bytesUsed = Counter.newCounter();
@@ -211,11 +209,11 @@ final class DocumentsWriterPerThread {
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
   }
   
-  public FieldInfos.Builder getFieldInfosBuilder() {
+  FieldInfos.Builder getFieldInfosBuilder() {
     return fieldInfos;
   }
 
-  public int getIndexCreatedVersionMajor() {
+  int getIndexCreatedVersionMajor() {
     return indexVersionCreated;
   }
 
@@ -236,11 +234,10 @@ final class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
+  long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
-      docState.analyzer = analyzer;
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
       }
@@ -481,7 +478,7 @@ final class DocumentsWriterPerThread {
   
   private final Set<String> filesToDelete = new HashSet<>();
   
-  public Set<String> pendingFilesToDelete() {
+  Set<String> pendingFilesToDelete() {
     return filesToDelete;
   }
 

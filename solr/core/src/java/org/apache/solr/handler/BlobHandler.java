@@ -124,7 +124,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
                   "q", "md5:" + md5,
                   "fl", "id,size,version,timestamp,blobName")),
               rsp);
-          log.warn("duplicate entry for blob :" + blobName);
+          log.warn("duplicate entry for blob : {}", blobName);
           return;
         }
 
@@ -149,9 +149,13 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+        if (log.isInfoEnabled()) {
+          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+        }
         indexMap(req, rsp, doc);
-        log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+        if (log.isInfoEnabled()) {
+          log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+        }
 
         break;
       }
@@ -244,9 +248,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = solrDoc;
-      log.info("Adding doc: " + doc);
+      log.info("Adding doc: {}", doc);
       processor.processAdd(cmd);
-      log.info("committing doc: " + doc);
+      log.info("committing doc: {}", doc);
       processor.processCommit(new CommitUpdateCommand(req, false));
       processor.finish();
     }

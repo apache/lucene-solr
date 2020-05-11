@@ -245,7 +245,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
     }
     if (log.isInfoEnabled()) {
-      log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+      log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
     }
   }
 

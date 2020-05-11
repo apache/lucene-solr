@@ -244,7 +244,9 @@ public class SimDistribStateManager implements DistribStateManager {
    */
   public void copyFrom(DistribStateManager other, boolean failOnExists) throws InterruptedException, IOException, KeeperException, AlreadyExistsException, BadVersionException {
     List<String> tree = other.listTree("/");
-    log.info("- copying " + tree.size() + " resources...");
+    if (log.isInfoEnabled()) {
+      log.info("- copying {} resources...", tree.size());
+    }
     // check if any node exists
     for (String path : tree) {
       if (hasData(path) && failOnExists) {

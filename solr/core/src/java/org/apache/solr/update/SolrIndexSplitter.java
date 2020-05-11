@@ -311,9 +311,8 @@ public class SolrIndexSplitter {
           t.resume();
           for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
             if (log.isInfoEnabled()) {
-              log.info("SolrIndexSplitter: partition #{} partitionCount={} segment #{} segmentCount={}"
-              , partitionNumber, numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "")
-              , segmentNumber, leaves.size());
+              log.info("SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}", partitionNumber, numPieces
+                  , (ranges != null ? " range=" + ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // logOk
             }
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
             iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));

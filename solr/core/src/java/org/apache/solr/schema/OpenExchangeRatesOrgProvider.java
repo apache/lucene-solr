@@ -249,9 +249,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
               }
               break;
             } else {
-              if (log.isWarnEnabled()) {
-                log.warn("Expected key, got {}", JSONParser.getEventString(ev));
-              }
+              log.warn("Expected key, got {}", JSONParser.getEventString(ev));
               break;
             }
              

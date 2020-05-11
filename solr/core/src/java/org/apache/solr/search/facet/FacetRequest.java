@@ -437,699 +437,693 @@ public abstract class FacetRequest {
   public abstract FacetMerger createFacetMerger(Object prototype);
   
   public abstract Map<String, Object> getFacetDescription();
-}
 
+  static class FacetContext {
+    // Context info for actually executing a local facet command
+    public static final int IS_SHARD=0x01;
+    public static final int IS_REFINEMENT=0x02;
+    public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
 
-class FacetContext {
-  // Context info for actually executing a local facet command
-  public static final int IS_SHARD=0x01;
-  public static final int IS_REFINEMENT=0x02;
-  public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
+    FacetProcessor processor;
+    Map<String,Object> facetInfo; // refinement info for this node
+    QueryContext qcontext;
+    SolrQueryRequest req;  // TODO: replace with params?
+    SolrIndexSearcher searcher;
+    Query filter;  // TODO: keep track of as a DocSet or as a Query?
+    DocSet base;
+    FacetContext parent;
+    int flags;
+    FacetDebugInfo debugInfo;
 
-  FacetProcessor processor;
-  Map<String,Object> facetInfo; // refinement info for this node
-  QueryContext qcontext;
-  SolrQueryRequest req;  // TODO: replace with params?
-  SolrIndexSearcher searcher;
-  Query filter;  // TODO: keep track of as a DocSet or as a Query?
-  DocSet base;
-  FacetContext parent;
-  int flags;
-  FacetDebugInfo debugInfo;
-  
-  public void setDebugInfo(FacetDebugInfo debugInfo) {
-    this.debugInfo = debugInfo;
-  }
-  
-  public FacetDebugInfo getDebugInfo() {
-    return debugInfo;
-  }
-  
-  public boolean isShard() {
-    return (flags & IS_SHARD) != 0;
-  }
-
-  /**
-   * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
-   * @param domain The resulting set of documents for this facet.
-   */
-  public FacetContext sub(Query filter, DocSet domain) {
-    FacetContext ctx = new FacetContext();
-    ctx.parent = this;
-    ctx.base = domain;
-    ctx.filter = filter;
-
-    // carry over from parent
-    ctx.flags = flags;
-    ctx.qcontext = qcontext;
-    ctx.req = req;
-    ctx.searcher = searcher;
-
-    return ctx;
-  }
-}
-
-
-abstract class FacetParser<FacetRequestT extends FacetRequest> {
-  protected FacetRequestT facet;
-  protected FacetParser parent;
-  protected String key;
-
-  public FacetParser(FacetParser parent,String key) {
-    this.parent = parent;
-    this.key = key;
-  }
-
-  public String getKey() {
-    return key;
-  }
-
-  public String getPathStr() {
-    if (parent == null) {
-      return "/" + key;
+    public void setDebugInfo(FacetDebugInfo debugInfo) {
+      this.debugInfo = debugInfo;
     }
-    return parent.getKey() + "/" + key;
+
+    public FacetDebugInfo getDebugInfo() {
+      return debugInfo;
+    }
+
+    public boolean isShard() {
+      return (flags & IS_SHARD) != 0;
+    }
+
+    /**
+     * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
+     * @param domain The resulting set of documents for this facet.
+     */
+    public FacetContext sub(Query filter, DocSet domain) {
+      FacetContext ctx = new FacetContext();
+      ctx.parent = this;
+      ctx.base = domain;
+      ctx.filter = filter;
+
+      // carry over from parent
+      ctx.flags = flags;
+      ctx.qcontext = qcontext;
+      ctx.req = req;
+      ctx.searcher = searcher;
+
+      return ctx;
+    }
   }
 
-  protected RuntimeException err(String msg) {
-    return new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg + " , path="+getPathStr());
-  }
+  abstract static class FacetParser<FacetRequestT extends FacetRequest> {
+    protected FacetRequestT facet;
+    protected FacetParser parent;
+    protected String key;
 
-  public abstract FacetRequest parse(Object o) throws SyntaxError;
+    public FacetParser(FacetParser parent, String key) {
+      this.parent = parent;
+      this.key = key;
+    }
 
-  // TODO: put the FacetRequest on the parser object?
-  public void parseSubs(Object o) throws SyntaxError {
-    if (o==null) return;
-    if (o instanceof Map) {
-      Map<String,Object> m = (Map<String, Object>) o;
-      for (Map.Entry<String,Object> entry : m.entrySet()) {
-        String key = entry.getKey();
-        Object value = entry.getValue();
+    public String getKey() {
+      return key;
+    }
 
-        if ("processEmpty".equals(key)) {
-          facet.processEmpty = getBoolean(m, "processEmpty", false);
-          continue;
-        }
-
-        // "my_prices" : { "range" : { "field":...
-        // key="my_prices", value={"range":..
-
-        Object parsedValue = parseFacetOrStat(key, value);
-
-        // TODO: have parseFacetOrStat directly add instead of return?
-        if (parsedValue instanceof FacetRequest) {
-          facet.addSubFacet(key, (FacetRequest)parsedValue);
-        } else if (parsedValue instanceof AggValueSource) {
-          facet.addStat(key, (AggValueSource)parsedValue);
-        } else {
-          throw err("Unknown facet type key=" + key + " class=" + (parsedValue == null ? "null" : parsedValue.getClass().getName()));
-        }
+    public String getPathStr() {
+      if (parent == null) {
+        return "/" + key;
       }
-    } else {
-      // facet : my_field?
-      throw err("Expected map for facet/stat");
-    }
-  }
-
-  public Object parseFacetOrStat(String key, Object o) throws SyntaxError {
-
-    if (o instanceof String) {
-      return parseStringFacetOrStat(key, (String)o);
+      return parent.getKey() + "/" + key;
     }
 
-    if (!(o instanceof Map)) {
-      throw err("expected Map but got " + o);
+    protected RuntimeException err(String msg) {
+      return new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg + " , path="+getPathStr());
     }
 
-    // The type can be in a one element map, or inside the args as the "type" field
-    // { "query" : "foo:bar" }
-    // { "range" : { "field":... } }
-    // { "type"  : range, field : myfield, ... }
-    Map<String,Object> m = (Map<String,Object>)o;
-    String type;
-    Object args;
+    public abstract FacetRequest parse(Object o) throws SyntaxError;
 
-    if (m.size() == 1) {
-      Map.Entry<String,Object> entry = m.entrySet().iterator().next();
-      type = entry.getKey();
-      args = entry.getValue();
-      // throw err("expected facet/stat type name, like {range:{... but got " + m);
-    } else {
-      // type should be inside the map as a parameter
-      Object typeObj = m.get("type");
-      if (!(typeObj instanceof String)) {
-          throw err("expected facet/stat type name, like {type:range, field:price, ...} but got " + typeObj);
-      }
-      type = (String)typeObj;
-      args = m;
-    }
+    // TODO: put the FacetRequest on the parser object?
+    public void parseSubs(Object o) throws SyntaxError {
+      if (o==null) return;
+      if (o instanceof Map) {
+        Map<String,Object> m = (Map<String, Object>) o;
+        for (Map.Entry<String,Object> entry : m.entrySet()) {
+          String key = entry.getKey();
+          Object value = entry.getValue();
 
-    return parseFacetOrStat(key, type, args);
-  }
+          if ("processEmpty".equals(key)) {
+            facet.processEmpty = getBoolean(m, "processEmpty", false);
+            continue;
+          }
 
-  public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
-    // TODO: a place to register all these facet types?
+          // "my_prices" : { "range" : { "field":...
+          // key="my_prices", value={"range":..
 
-    switch (type) {
-      case "field":
-      case "terms":
-        return new FacetFieldParser(this, key).parse(args);
-      case "query":
-        return new FacetQueryParser(this, key).parse(args);
-      case "range":
-        return new FacetRangeParser(this, key).parse(args);
-      case "heatmap":
-        return new FacetHeatmap.Parser(this, key).parse(args);
-      case "func":
-        return parseStat(key, args);
-    }
+          Object parsedValue = parseFacetOrStat(key, value);
 
-    throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
-  }
-
-  public Object parseStringFacetOrStat(String key, String s) throws SyntaxError {
-    // "avg(myfield)"
-    return parseStat(key, s);
-    // TODO - simple string representation of facets
-  }
-
-  /** Parses simple strings like "avg(x)" in the context of optional local params (may be null) */
-  private AggValueSource parseStatWithParams(String key, SolrParams localparams, String stat) throws SyntaxError {
-    SolrQueryRequest req = getSolrRequest();
-    FunctionQParser parser = new FunctionQParser(stat, localparams, req.getParams(), req);
-    AggValueSource agg = parser.parseAgg(FunctionQParser.FLAG_DEFAULT);
-    return agg;
-  }
-  
-  /** Parses simple strings like "avg(x)" or robust Maps that may contain local params */
-  private AggValueSource parseStat(String key, Object args) throws SyntaxError {
-    assert null != args;
-
-    if (args instanceof CharSequence) {
-      // Both of these variants are already unpacked for us in this case, and use no local params...
-      // 1) x:{func:'min(foo)'}
-      // 2) x:'min(foo)'
-      return parseStatWithParams(key, null, args.toString());
-    }
-    
-    if (args instanceof Map) {
-      final Map<String,Object> statMap = (Map<String,Object>)args;
-      return parseStatWithParams(key, jsonToSolrParams(statMap), statMap.get("func").toString());
-    }
-      
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                            "Stats must be specified as either a simple string, or a json Map");
-      
-  }
-
-
-  private FacetRequest.Domain getDomain() {
-    if (facet.domain == null) {
-      facet.domain = new FacetRequest.Domain();
-    }
-    return facet.domain;
-  }
-
-  protected void parseCommonParams(Object o) {
-    if (o instanceof Map) {
-      Map<String,Object> m = (Map<String,Object>)o;
-      List<String> excludeTags = getStringList(m, "excludeTags");
-      if (excludeTags != null) {
-        getDomain().excludeTags = excludeTags;
-      }
-
-      Object domainObj =  m.get("domain");
-      if (domainObj instanceof Map) {
-        Map<String, Object> domainMap = (Map<String, Object>)domainObj;
-        FacetRequest.Domain domain = getDomain();
-
-        excludeTags = getStringList(domainMap, "excludeTags");
-        if (excludeTags != null) {
-          domain.excludeTags = excludeTags;
-        }
-
-        if (domainMap.containsKey("query")) {
-          domain.explicitQueries = parseJSONQueryStruct(domainMap.get("query"));
-          if (null == domain.explicitQueries) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'query' domain can not be null or empty");
-          } else if (null != domain.excludeTags) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'query' domain can not be combined with 'excludeTags'");
+          // TODO: have parseFacetOrStat directly add instead of return?
+          if (parsedValue instanceof FacetRequest) {
+            facet.addSubFacet(key, (FacetRequest)parsedValue);
+          } else if (parsedValue instanceof AggValueSource) {
+            facet.addStat(key, (AggValueSource)parsedValue);
+          } else {
+            throw err("Unknown facet type key=" + key + " class=" + (parsedValue == null ? "null" : parsedValue.getClass().getName()));
           }
         }
-
-        String blockParent = getString(domainMap, "blockParent", null);
-        String blockChildren = getString(domainMap, "blockChildren", null);
-
-        if (blockParent != null) {
-          domain.toParent = true;
-          domain.parents = blockParent;
-        } else if (blockChildren != null) {
-          domain.toChildren = true;
-          domain.parents = blockChildren;
-        }
-          
-        FacetRequest.Domain.JoinField.createJoinField(domain, domainMap);
-        FacetRequest.Domain.GraphField.createGraphField(domain, domainMap);
-
-        Object filterOrList = domainMap.get("filter");
-        if (filterOrList != null) {
-          assert domain.filters == null;
-          domain.filters = parseJSONQueryStruct(filterOrList);
-        }
-
-      } else if (domainObj != null) {
-        throw err("Expected Map for 'domain', received " + domainObj.getClass().getSimpleName() + "=" + domainObj);
+      } else {
+        // facet : my_field?
+        throw err("Expected map for facet/stat");
       }
     }
-  }
 
-  /** returns null on null input, otherwise returns a list of the JSON query structures -- either
-   * directly from the raw (list) input, or if raw input is a not a list then it encapsulates 
-   * it in a new list.
-   */
-  private List<Object> parseJSONQueryStruct(Object raw) {
-    List<Object> result = null;
-    if (null == raw) {
+    public Object parseFacetOrStat(String key, Object o) throws SyntaxError {
+
+      if (o instanceof String) {
+        return parseStringFacetOrStat(key, (String)o);
+      }
+
+      if (!(o instanceof Map)) {
+        throw err("expected Map but got " + o);
+      }
+
+      // The type can be in a one element map, or inside the args as the "type" field
+      // { "query" : "foo:bar" }
+      // { "range" : { "field":... } }
+      // { "type"  : range, field : myfield, ... }
+      Map<String,Object> m = (Map<String,Object>)o;
+      String type;
+      Object args;
+
+      if (m.size() == 1) {
+        Map.Entry<String,Object> entry = m.entrySet().iterator().next();
+        type = entry.getKey();
+        args = entry.getValue();
+        // throw err("expected facet/stat type name, like {range:{... but got " + m);
+      } else {
+        // type should be inside the map as a parameter
+        Object typeObj = m.get("type");
+        if (!(typeObj instanceof String)) {
+            throw err("expected facet/stat type name, like {type:range, field:price, ...} but got " + typeObj);
+        }
+        type = (String)typeObj;
+        args = m;
+      }
+
+      return parseFacetOrStat(key, type, args);
+    }
+
+    public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
+      // TODO: a place to register all these facet types?
+
+      switch (type) {
+        case "field":
+        case "terms":
+          return new FacetFieldParser(this, key).parse(args);
+        case "query":
+          return new FacetQueryParser(this, key).parse(args);
+        case "range":
+          return new FacetRangeParser(this, key).parse(args);
+        case "heatmap":
+          return new FacetHeatmap.Parser(this, key).parse(args);
+        case "func":
+          return parseStat(key, args);
+      }
+
+      throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
+    }
+
+    public Object parseStringFacetOrStat(String key, String s) throws SyntaxError {
+      // "avg(myfield)"
+      return parseStat(key, s);
+      // TODO - simple string representation of facets
+    }
+
+    /** Parses simple strings like "avg(x)" in the context of optional local params (may be null) */
+    private AggValueSource parseStatWithParams(String key, SolrParams localparams, String stat) throws SyntaxError {
+      SolrQueryRequest req = getSolrRequest();
+      FunctionQParser parser = new FunctionQParser(stat, localparams, req.getParams(), req);
+      AggValueSource agg = parser.parseAgg(FunctionQParser.FLAG_DEFAULT);
+      return agg;
+    }
+
+    /** Parses simple strings like "avg(x)" or robust Maps that may contain local params */
+    private AggValueSource parseStat(String key, Object args) throws SyntaxError {
+      assert null != args;
+
+      if (args instanceof CharSequence) {
+        // Both of these variants are already unpacked for us in this case, and use no local params...
+        // 1) x:{func:'min(foo)'}
+        // 2) x:'min(foo)'
+        return parseStatWithParams(key, null, args.toString());
+      }
+
+      if (args instanceof Map) {
+        final Map<String,Object> statMap = (Map<String,Object>)args;
+        return parseStatWithParams(key, jsonToSolrParams(statMap), statMap.get("func").toString());
+      }
+
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              "Stats must be specified as either a simple string, or a json Map");
+
+    }
+
+
+    private Domain getDomain() {
+      if (facet.domain == null) {
+        facet.domain = new Domain();
+      }
+      return facet.domain;
+    }
+
+    protected void parseCommonParams(Object o) {
+      if (o instanceof Map) {
+        Map<String,Object> m = (Map<String,Object>)o;
+        List<String> excludeTags = getStringList(m, "excludeTags");
+        if (excludeTags != null) {
+          getDomain().excludeTags = excludeTags;
+        }
+
+        Object domainObj =  m.get("domain");
+        if (domainObj instanceof Map) {
+          Map<String, Object> domainMap = (Map<String, Object>)domainObj;
+          Domain domain = getDomain();
+
+          excludeTags = getStringList(domainMap, "excludeTags");
+          if (excludeTags != null) {
+            domain.excludeTags = excludeTags;
+          }
+
+          if (domainMap.containsKey("query")) {
+            domain.explicitQueries = parseJSONQueryStruct(domainMap.get("query"));
+            if (null == domain.explicitQueries) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                      "'query' domain can not be null or empty");
+            } else if (null != domain.excludeTags) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                      "'query' domain can not be combined with 'excludeTags'");
+            }
+          }
+
+          String blockParent = getString(domainMap, "blockParent", null);
+          String blockChildren = getString(domainMap, "blockChildren", null);
+
+          if (blockParent != null) {
+            domain.toParent = true;
+            domain.parents = blockParent;
+          } else if (blockChildren != null) {
+            domain.toChildren = true;
+            domain.parents = blockChildren;
+          }
+
+          Domain.JoinField.createJoinField(domain, domainMap);
+          Domain.GraphField.createGraphField(domain, domainMap);
+
+          Object filterOrList = domainMap.get("filter");
+          if (filterOrList != null) {
+            assert domain.filters == null;
+            domain.filters = parseJSONQueryStruct(filterOrList);
+          }
+
+        } else if (domainObj != null) {
+          throw err("Expected Map for 'domain', received " + domainObj.getClass().getSimpleName() + "=" + domainObj);
+        }
+      }
+    }
+
+    /** returns null on null input, otherwise returns a list of the JSON query structures -- either
+     * directly from the raw (list) input, or if raw input is a not a list then it encapsulates
+     * it in a new list.
+     */
+    private List<Object> parseJSONQueryStruct(Object raw) {
+      List<Object> result = null;
+      if (null == raw) {
+        return result;
+      } else if (raw instanceof List) {
+        result = (List<Object>) raw;
+      } else {
+        result = new ArrayList<>(1);
+        result.add(raw);
+      }
       return result;
-    } else if (raw instanceof List) {
-      result = (List<Object>) raw;
-    } else {
-      result = new ArrayList<>(1);
-      result.add(raw);
-    }
-    return result;
-  }
-
-  public String getField(Map<String,Object> args) {
-    Object fieldName = args.get("field"); // TODO: pull out into defined constant
-    if (fieldName == null) {
-      fieldName = args.get("f");  // short form
-    }
-    if (fieldName == null) {
-      throw err("Missing 'field'");
     }
 
-    if (!(fieldName instanceof String)) {
-      throw err("Expected string for 'field', got" + fieldName);
-    }
-
-    return (String)fieldName;
-  }
-
-
-  public Long getLongOrNull(Map<String,Object> args, String paramName, boolean required) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      if (required) {
-        throw err("Missing required parameter '" + paramName + "'");
+    public String getField(Map<String,Object> args) {
+      Object fieldName = args.get("field"); // TODO: pull out into defined constant
+      if (fieldName == null) {
+        fieldName = args.get("f");  // short form
       }
-      return null;
-    }
-    if (!(o instanceof Long || o instanceof Integer || o instanceof Short || o instanceof Byte)) {
-      throw err("Expected integer type for param '"+paramName + "' but got " + o);
-    }
-
-    return ((Number)o).longValue();
-  }
-
-  public long getLong(Map<String,Object> args, String paramName, long defVal) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      return defVal;
-    }
-    if (!(o instanceof Long || o instanceof Integer || o instanceof Short || o instanceof Byte)) {
-      throw err("Expected integer type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
-    }
-
-    return ((Number)o).longValue();
-  }
-
-  public Double getDoubleOrNull(Map<String,Object> args, String paramName, boolean required) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      if (required) {
-        throw err("Missing required parameter '" + paramName + "'");
-      }
-      return null;
-    }
-    if (!(o instanceof Number)) {
-      throw err("Expected double type for param '" + paramName + "' but got " + o);
-    }
-
-    return ((Number)o).doubleValue();
-  }
-
-  public boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      return defVal;
-    }
-    // TODO: should we be more flexible and accept things like "true" (strings)?
-    // Perhaps wait until the use case comes up.
-    if (!(o instanceof Boolean)) {
-      throw err("Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
-    }
-
-    return (Boolean)o;
-  }
-
-  public Boolean getBooleanOrNull(Map<String, Object> args, String paramName) {
-    Object o = args.get(paramName);
-
-    if (o != null && !(o instanceof Boolean)) {
-      throw err("Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
-    }
-    return (Boolean) o;
-  }
-
-
-  public String getString(Map<String,Object> args, String paramName, String defVal) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      return defVal;
-    }
-    if (!(o instanceof String)) {
-      throw err("Expected string type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
-    }
-
-    return (String)o;
-  }
-
-  public Object getVal(Map<String, Object> args, String paramName, boolean required) {
-    Object o = args.get(paramName);
-    if (o == null && required) {
-      throw err("Missing required parameter: '" + paramName + "'");
-    }
-    return o;
-  }
-
-  public List<String> getStringList(Map<String,Object> args, String paramName) {
-    return getStringList(args, paramName, true);
-  }
-
-  public List<String> getStringList(Map<String, Object> args, String paramName, boolean decode) {
-    Object o = args.get(paramName);
-    if (o == null) {
-      return null;
-    }
-    if (o instanceof List) {
-      return (List<String>)o;
-    }
-    if (o instanceof String) {
-      // TODO: SOLR-12539 handle spaces in b/w comma & value ie, should the values be trimmed before returning??
-      return StrUtils.splitSmart((String)o, ",", decode);
-    }
-
-    throw err("Expected list of string or comma separated string values for '" + paramName +
-        "', received " + o.getClass().getSimpleName() + "=" + o);
-  }
-
-  public IndexSchema getSchema() {
-    return parent.getSchema();
-  }
-
-  public SolrQueryRequest getSolrRequest() {
-    return parent.getSolrRequest();
-  }
-
-  /** 
-   * Helper that handles the possibility of map values being lists 
-   * NOTE: does *NOT* fail on map values that are sub-maps (ie: nested json objects)
-   */
-  public static SolrParams jsonToSolrParams(Map jsonObject) {
-    // HACK, but NamedList already handles the list processing for us...
-    NamedList<String> nl = new NamedList<>();
-    nl.addAll(jsonObject);
-    return SolrParams.toSolrParams(nl);
-  }
-}
-
-
-class FacetTopParser extends FacetParser<FacetQuery> {
-  private SolrQueryRequest req;
-
-  public FacetTopParser(SolrQueryRequest req) {
-    super(null, "facet");
-    this.facet = new FacetQuery();
-    this.req = req;
-  }
-
-  @Override
-  public FacetQuery parse(Object args) throws SyntaxError {
-    parseSubs(args);
-    return facet;
-  }
-
-  @Override
-  public SolrQueryRequest getSolrRequest() {
-    return req;
-  }
-
-  @Override
-  public IndexSchema getSchema() {
-    return req.getSchema();
-  }
-}
-
-class FacetQueryParser extends FacetParser<FacetQuery> {
-  public FacetQueryParser(FacetParser parent, String key) {
-    super(parent, key);
-    facet = new FacetQuery();
-  }
-
-  @Override
-  public FacetQuery parse(Object arg) throws SyntaxError {
-    parseCommonParams(arg);
-
-    String qstring = null;
-    if (arg instanceof String) {
-      // just the field name...
-      qstring = (String)arg;
-
-    } else if (arg instanceof Map) {
-      Map<String, Object> m = (Map<String, Object>) arg;
-      qstring = getString(m, "q", null);
-      if (qstring == null) {
-        qstring = getString(m, "query", null);
+      if (fieldName == null) {
+        throw err("Missing 'field'");
       }
 
-      // OK to parse subs before we have parsed our own query?
-      // as long as subs don't need to know about it.
-      parseSubs( m.get("facet") );
-    } else if (arg != null) {
-      // something lke json.facet.facet.query=2
-      throw err("Expected string/map for facet query, received " + arg.getClass().getSimpleName() + "=" + arg);
+      if (!(fieldName instanceof String)) {
+        throw err("Expected string for 'field', got" + fieldName);
+      }
+
+      return (String)fieldName;
     }
 
-    // TODO: substats that are from defaults!!!
 
-    if (qstring != null) {
-      QParser parser = QParser.getParser(qstring, getSolrRequest());
-      parser.setIsFilter(true);
-      facet.q = parser.getQuery();
+    public Long getLongOrNull(Map<String,Object> args, String paramName, boolean required) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        if (required) {
+          throw err("Missing required parameter '" + paramName + "'");
+        }
+        return null;
+      }
+      if (!(o instanceof Long || o instanceof Integer || o instanceof Short || o instanceof Byte)) {
+        throw err("Expected integer type for param '"+paramName + "' but got " + o);
+      }
+
+      return ((Number)o).longValue();
     }
 
-    return facet;
+    public long getLong(Map<String,Object> args, String paramName, long defVal) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        return defVal;
+      }
+      if (!(o instanceof Long || o instanceof Integer || o instanceof Short || o instanceof Byte)) {
+        throw err("Expected integer type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+      }
+
+      return ((Number)o).longValue();
+    }
+
+    public Double getDoubleOrNull(Map<String,Object> args, String paramName, boolean required) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        if (required) {
+          throw err("Missing required parameter '" + paramName + "'");
+        }
+        return null;
+      }
+      if (!(o instanceof Number)) {
+        throw err("Expected double type for param '" + paramName + "' but got " + o);
+      }
+
+      return ((Number)o).doubleValue();
+    }
+
+    public boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        return defVal;
+      }
+      // TODO: should we be more flexible and accept things like "true" (strings)?
+      // Perhaps wait until the use case comes up.
+      if (!(o instanceof Boolean)) {
+        throw err("Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+      }
+
+      return (Boolean)o;
+    }
+
+    public Boolean getBooleanOrNull(Map<String, Object> args, String paramName) {
+      Object o = args.get(paramName);
+
+      if (o != null && !(o instanceof Boolean)) {
+        throw err("Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+      }
+      return (Boolean) o;
+    }
+
+
+    public String getString(Map<String,Object> args, String paramName, String defVal) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        return defVal;
+      }
+      if (!(o instanceof String)) {
+        throw err("Expected string type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+      }
+
+      return (String)o;
+    }
+
+    public Object getVal(Map<String, Object> args, String paramName, boolean required) {
+      Object o = args.get(paramName);
+      if (o == null && required) {
+        throw err("Missing required parameter: '" + paramName + "'");
+      }
+      return o;
+    }
+
+    public List<String> getStringList(Map<String,Object> args, String paramName) {
+      return getStringList(args, paramName, true);
+    }
+
+    public List<String> getStringList(Map<String, Object> args, String paramName, boolean decode) {
+      Object o = args.get(paramName);
+      if (o == null) {
+        return null;
+      }
+      if (o instanceof List) {
+        return (List<String>)o;
+      }
+      if (o instanceof String) {
+        // TODO: SOLR-12539 handle spaces in b/w comma & value ie, should the values be trimmed before returning??
+        return StrUtils.splitSmart((String)o, ",", decode);
+      }
+
+      throw err("Expected list of string or comma separated string values for '" + paramName +
+          "', received " + o.getClass().getSimpleName() + "=" + o);
+    }
+
+    public IndexSchema getSchema() {
+      return parent.getSchema();
+    }
+
+    public SolrQueryRequest getSolrRequest() {
+      return parent.getSolrRequest();
+    }
+
+    /**
+     * Helper that handles the possibility of map values being lists
+     * NOTE: does *NOT* fail on map values that are sub-maps (ie: nested json objects)
+     */
+    public static SolrParams jsonToSolrParams(Map jsonObject) {
+      // HACK, but NamedList already handles the list processing for us...
+      NamedList<String> nl = new NamedList<>();
+      nl.addAll(jsonObject);
+      return SolrParams.toSolrParams(nl);
+    }
   }
-}
+
+  static class FacetTopParser extends FacetParser<FacetQuery> {
+    private SolrQueryRequest req;
+
+    public FacetTopParser(SolrQueryRequest req) {
+      super(null, "facet");
+      this.facet = new FacetQuery();
+      this.req = req;
+    }
+
+    @Override
+    public FacetQuery parse(Object args) throws SyntaxError {
+      parseSubs(args);
+      return facet;
+    }
+
+    @Override
+    public SolrQueryRequest getSolrRequest() {
+      return req;
+    }
+
+    @Override
+    public IndexSchema getSchema() {
+      return req.getSchema();
+    }
+  }
+
+  static class FacetQueryParser extends FacetParser<FacetQuery> {
+    public FacetQueryParser(FacetParser parent, String key) {
+      super(parent, key);
+      facet = new FacetQuery();
+    }
+
+    @Override
+    public FacetQuery parse(Object arg) throws SyntaxError {
+      parseCommonParams(arg);
+
+      String qstring = null;
+      if (arg instanceof String) {
+        // just the field name...
+        qstring = (String)arg;
+
+      } else if (arg instanceof Map) {
+        Map<String, Object> m = (Map<String, Object>) arg;
+        qstring = getString(m, "q", null);
+        if (qstring == null) {
+          qstring = getString(m, "query", null);
+        }
+
+        // OK to parse subs before we have parsed our own query?
+        // as long as subs don't need to know about it.
+        parseSubs( m.get("facet") );
+      } else if (arg != null) {
+        // something lke json.facet.facet.query=2
+        throw err("Expected string/map for facet query, received " + arg.getClass().getSimpleName() + "=" + arg);
+      }
+
+      // TODO: substats that are from defaults!!!
+
+      if (qstring != null) {
+        QParser parser = QParser.getParser(qstring, getSolrRequest());
+        parser.setIsFilter(true);
+        facet.q = parser.getQuery();
+      }
+
+      return facet;
+    }
+  }
 
 /*** not a separate type of parser for now...
-class FacetBlockParentParser extends FacetParser<FacetBlockParent> {
-  public FacetBlockParentParser(FacetParser parent, String key) {
-    super(parent, key);
-    facet = new FacetBlockParent();
-  }
+static class FacetBlockParentParser extends FacetParser<FacetBlockParent> {
+ public FacetBlockParentParser(FacetParser parent, String key) {
+ super(parent, key);
+ facet = new FacetBlockParent();
+ }
 
-  @Override
-  public FacetBlockParent parse(Object arg) throws SyntaxError {
-    parseCommonParams(arg);
+ @Override
+ public FacetBlockParent parse(Object arg) throws SyntaxError {
+ parseCommonParams(arg);
 
-    if (arg instanceof String) {
-      // just the field name...
-      facet.parents = (String)arg;
+ if (arg instanceof String) {
+ // just the field name...
+ facet.parents = (String)arg;
 
-    } else if (arg instanceof Map) {
-      Map<String, Object> m = (Map<String, Object>) arg;
-      facet.parents = getString(m, "parents", null);
+ } else if (arg instanceof Map) {
+ Map<String, Object> m = (Map<String, Object>) arg;
+ facet.parents = getString(m, "parents", null);
 
-      parseSubs( m.get("facet") );
+ parseSubs( m.get("facet") );
+ }
+
+ return facet;
+ }
+ }
+ ***/
+
+  static class FacetFieldParser extends FacetParser<FacetField> {
+    public FacetFieldParser(FacetParser parent, String key) {
+      super(parent, key);
+      facet = new FacetField();
     }
 
-    return facet;
-  }
-}
-***/
+    public FacetField parse(Object arg) throws SyntaxError {
+      parseCommonParams(arg);
+      if (arg instanceof String) {
+        // just the field name...
+        facet.field = (String)arg;
 
+      } else if (arg instanceof Map) {
+        Map<String, Object> m = (Map<String, Object>) arg;
+        facet.field = getField(m);
+        facet.offset = getLong(m, "offset", facet.offset);
+        facet.limit = getLong(m, "limit", facet.limit);
+        facet.overrequest = (int) getLong(m, "overrequest", facet.overrequest);
+        facet.overrefine = (int) getLong(m, "overrefine", facet.overrefine);
+        if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
+        facet.mincount = getLong(m, "mincount", facet.mincount);
+        facet.missing = getBoolean(m, "missing", facet.missing);
+        facet.numBuckets = getBoolean(m, "numBuckets", facet.numBuckets);
+        facet.prefix = getString(m, "prefix", facet.prefix);
+        facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
+        facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
+        facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
 
-class FacetFieldParser extends FacetParser<FacetField> {
-  public FacetFieldParser(FacetParser parent, String key) {
-    super(parent, key);
-    facet = new FacetField();
-  }
+        // TODO: pull up to higher level?
+        facet.refine = RefineMethod.fromObj(m.get("refine"));
 
-  public FacetField parse(Object arg) throws SyntaxError {
-    parseCommonParams(arg);
-    if (arg instanceof String) {
-      // just the field name...
-      facet.field = (String)arg;
-      
-    } else if (arg instanceof Map) {
-      Map<String, Object> m = (Map<String, Object>) arg;
-      facet.field = getField(m);
-      facet.offset = getLong(m, "offset", facet.offset);
-      facet.limit = getLong(m, "limit", facet.limit);
-      facet.overrequest = (int) getLong(m, "overrequest", facet.overrequest);
-      facet.overrefine = (int) getLong(m, "overrefine", facet.overrefine);
-      if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
-      facet.mincount = getLong(m, "mincount", facet.mincount);
-      facet.missing = getBoolean(m, "missing", facet.missing);
-      facet.numBuckets = getBoolean(m, "numBuckets", facet.numBuckets);
-      facet.prefix = getString(m, "prefix", facet.prefix);
-      facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
-      facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
-      facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+        facet.perSeg = getBooleanOrNull(m, "perSeg");
 
-      // TODO: pull up to higher level?
-      facet.refine = FacetField.RefineMethod.fromObj(m.get("refine"));
+        // facet.sort may depend on a facet stat...
+        // should we be parsing / validating this here, or in the execution environment?
+        Object o = m.get("facet");
+        parseSubs(o);
 
-      facet.perSeg = getBooleanOrNull(m, "perSeg");
+        facet.sort = parseAndValidateSort(facet, m, SORT);
+        facet.prelim_sort = parseAndValidateSort(facet, m, "prelim_sort");
+      } else if (arg != null) {
+        // something like json.facet.facet.field=2
+        throw err("Expected string/map for facet field, received " + arg.getClass().getSimpleName() + "=" + arg);
+      }
 
-      // facet.sort may depend on a facet stat...
-      // should we be parsing / validating this here, or in the execution environment?
-      Object o = m.get("facet");
-      parseSubs(o);
+      if (null == facet.sort) {
+        facet.sort = FacetSort.COUNT_DESC;
+      }
 
-      facet.sort = parseAndValidateSort(facet, m, SORT);
-      facet.prelim_sort = parseAndValidateSort(facet, m, "prelim_sort");
-    } else if (arg != null) {
-      // something like json.facet.facet.field=2
-      throw err("Expected string/map for facet field, received " + arg.getClass().getSimpleName() + "=" + arg);
+      return facet;
     }
 
-    if (null == facet.sort) {
-      facet.sort = FacetRequest.FacetSort.COUNT_DESC;
-    }
+    /**
+     * Parses, validates and returns the {@link FacetSort} for given sortParam
+     * and facet field
+     * <p>
+     *   Currently, supported sort specifications are 'mystat desc' OR {mystat: 'desc'}
+     *   index - This is equivalent to 'index asc'
+     *   count - This is equivalent to 'count desc'
+     * </p>
+     *
+     * @param facet {@link FacetField} for which sort needs to be parsed and validated
+     * @param args map containing the sortVal for given sortParam
+     * @param sortParam parameter for which sort needs to parsed and validated
+     * @return parsed facet sort
+     */
+    private static FacetSort parseAndValidateSort(FacetField facet, Map<String, Object> args, String sortParam) {
+      Object sort = args.get(sortParam);
+      if (sort == null) {
+        return null;
+      }
 
-    return facet;
-  }
+      FacetSort facetSort = null;
 
-  /**
-   * Parses, validates and returns the {@link FacetRequest.FacetSort} for given sortParam
-   * and facet field
-   * <p>
-   *   Currently, supported sort specifications are 'mystat desc' OR {mystat: 'desc'}
-   *   index - This is equivalent to 'index asc'
-   *   count - This is equivalent to 'count desc'
-   * </p>
-   *
-   * @param facet {@link FacetField} for which sort needs to be parsed and validated
-   * @param args map containing the sortVal for given sortParam
-   * @param sortParam parameter for which sort needs to parsed and validated
-   * @return parsed facet sort
-   */
-  private static FacetRequest.FacetSort parseAndValidateSort(FacetField facet, Map<String, Object> args, String sortParam) {
-    Object sort = args.get(sortParam);
-    if (sort == null) {
-      return null;
-    }
-
-    FacetRequest.FacetSort facetSort = null;
-
-    if (sort instanceof String) {
-      String sortStr = (String)sort;
-      if (sortStr.endsWith(" asc")) {
-        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
-            FacetRequest.SortDirection.asc);
-      } else if (sortStr.endsWith(" desc")) {
-        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
-            FacetRequest.SortDirection.desc);
+      if (sort instanceof String) {
+        String sortStr = (String)sort;
+        if (sortStr.endsWith(" asc")) {
+          facetSort =  new FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
+              SortDirection.asc);
+        } else if (sortStr.endsWith(" desc")) {
+          facetSort =  new FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
+              SortDirection.desc);
+        } else {
+          facetSort =  new FacetSort(sortStr,
+              // default direction for "index" is ascending
+              ("index".equals(sortStr)
+                  ? SortDirection.asc
+                  : SortDirection.desc));
+        }
+      } else if (sort instanceof Map) {
+        // { myvar : 'desc' }
+        Optional<Map.Entry<String,Object>> optional = ((Map<String,Object>)sort).entrySet().stream().findFirst();
+        if (optional.isPresent()) {
+          Map.Entry<String, Object> entry = optional.get();
+          facetSort = new FacetSort(entry.getKey(), SortDirection.fromObj(entry.getValue()));
+        }
       } else {
-        facetSort =  new FacetRequest.FacetSort(sortStr,
-            // default direction for "index" is ascending
-            ("index".equals(sortStr)
-                ? FacetRequest.SortDirection.asc
-                : FacetRequest.SortDirection.desc));
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Expected string/map for '" + sortParam +"', received "+ sort.getClass().getSimpleName() + "=" + sort);
       }
-    } else if (sort instanceof Map) {
-      // { myvar : 'desc' }
-      Optional<Map.Entry<String,Object>> optional = ((Map<String,Object>)sort).entrySet().stream().findFirst();
-      if (optional.isPresent()) {
-        Map.Entry<String, Object> entry = optional.get();
-        facetSort = new FacetRequest.FacetSort(entry.getKey(), FacetRequest.SortDirection.fromObj(entry.getValue()));
+
+      Map<String, AggValueSource> facetStats = facet.facetStats;
+      // validate facet sort
+      boolean isValidSort = facetSort == null ||
+          "index".equals(facetSort.sortVariable) ||
+          "count".equals(facetSort.sortVariable) ||
+          (facetStats != null && facetStats.containsKey(facetSort.sortVariable));
+
+      if (!isValidSort) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid " + sortParam + " option '" + sort + "' for field '" + facet.field + "'");
       }
-    } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Expected string/map for '" + sortParam +"', received "+ sort.getClass().getSimpleName() + "=" + sort);
+      return facetSort;
     }
 
-    Map<String, AggValueSource> facetStats = facet.facetStats;
-    // validate facet sort
-    boolean isValidSort = facetSort == null ||
-        "index".equals(facetSort.sortVariable) ||
-        "count".equals(facetSort.sortVariable) ||
-        (facetStats != null && facetStats.containsKey(facetSort.sortVariable));
-
-    if (!isValidSort) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid " + sortParam + " option '" + sort + "' for field '" + facet.field + "'");
-    }
-    return facetSort;
   }
 
-}
-
-
-
-class FacetRangeParser extends FacetParser<FacetRange> {
-  public FacetRangeParser(FacetParser parent, String key) {
-    super(parent, key);
-    facet = new FacetRange();
-  }
-
-  public FacetRange parse(Object arg) throws SyntaxError {
-    parseCommonParams(arg);
-
-    if (!(arg instanceof Map)) {
-      throw err("Missing range facet arguments");
+  static class FacetRangeParser extends FacetParser<FacetRange> {
+    public FacetRangeParser(FacetParser parent, String key) {
+      super(parent, key);
+      facet = new FacetRange();
     }
 
-    Map<String, Object> m = (Map<String, Object>) arg;
+    public FacetRange parse(Object arg) throws SyntaxError {
+      parseCommonParams(arg);
 
-    facet.field = getString(m, "field", null);
-    facet.ranges = getVal(m, "ranges", false);
-
-    boolean required = facet.ranges == null;
-    facet.start = getVal(m, "start", required);
-    facet.end = getVal(m, "end", required);
-    facet.gap = getVal(m, "gap", required);
-    facet.hardend = getBoolean(m, "hardend", facet.hardend);
-    facet.mincount = getLong(m, "mincount", 0);
-
-    // TODO: refactor list-of-options code
-
-    List<String> list = getStringList(m, "include", false);
-    String[] includeList = null;
-    if (list != null) {
-      includeList = list.toArray(new String[list.size()]);
-    }
-    facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
-    facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);
-
-    List<String> other = getStringList(m, "other", false);
-    if (other != null) {
-      for (String otherStr : other) {
-        facet.others.add( FacetParams.FacetRangeOther.get(otherStr) );
+      if (!(arg instanceof Map)) {
+        throw err("Missing range facet arguments");
       }
+
+      Map<String, Object> m = (Map<String, Object>) arg;
+
+      facet.field = getString(m, "field", null);
+      facet.ranges = getVal(m, "ranges", false);
+
+      boolean required = facet.ranges == null;
+      facet.start = getVal(m, "start", required);
+      facet.end = getVal(m, "end", required);
+      facet.gap = getVal(m, "gap", required);
+      facet.hardend = getBoolean(m, "hardend", facet.hardend);
+      facet.mincount = getLong(m, "mincount", 0);
+
+      // TODO: refactor list-of-options code
+
+      List<String> list = getStringList(m, "include", false);
+      String[] includeList = null;
+      if (list != null) {
+        includeList = list.toArray(new String[list.size()]);
+      }
+      facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
+      facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);
+
+      List<String> other = getStringList(m, "other", false);
+      if (other != null) {
+        for (String otherStr : other) {
+          facet.others.add( FacetParams.FacetRangeOther.get(otherStr) );
+        }
+      }
+
+      Object facetObj = m.get("facet");
+      parseSubs(facetObj);
+
+      return facet;
     }
 
-    Object facetObj = m.get("facet");
-    parseSubs(facetObj);
-
-    return facet;
   }
-
 }
 
 

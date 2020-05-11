@@ -32,9 +32,9 @@
               excludes="poms/**,**/*-src.jar,**/*-javadoc.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="LICENSE.txt,NOTICE.txt,README.txt,
-                        MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
-                        SYSTEM_REQUIREMENTS.txt,
+              includes="LICENSE.txt,NOTICE.txt,README.md,
+                        MIGRATE.md,JRE_VERSION_MIGRATION.md,
+                        SYSTEM_REQUIREMENTS.md,
                         CHANGES.txt,
                         **/lib/*.jar,
                         licenses/**,
@@ -229,8 +229,8 @@
     </xslt>
     
     <markdown todir="${javadoc.dir}">
-      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
-      <globmapper from="*.txt" to="*.html"/>
+      <fileset dir="." includes="MIGRATE.md,JRE_VERSION_MIGRATION.md,SYSTEM_REQUIREMENTS.md"/>
+      <globmapper from="*.md" to="*.html"/>
     </markdown>
 
     <copy todir="${javadoc.dir}">
