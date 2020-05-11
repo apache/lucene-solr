@@ -20,10 +20,17 @@ import java.io.IOException;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
+// nocommit: need class & method javadocs explaining purpose/usage
 interface SweepCountAware {
 
   boolean collectBase();
 
+  // nocommit: if SegCountGlobal & SegCountPerSeg both extend SegCounter,
+  // nocommit: and if SegCounter defines the common 'map' method,
+  // nocommit: and if 'map' is the only method the impls of 'registerCounts' (may) use,
+  // nocommit: then: why do we need a unique API/impl of registerCounts for each subclass of SegCounter?
+
+  
   int registerCounts(SegCountGlobal segCounts) throws IOException;
 
   int registerCounts(SegCountPerSeg segCounts) throws IOException;

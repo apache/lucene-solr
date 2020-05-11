@@ -307,10 +307,14 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     return ret;
   }
 
+  // nocommit: need class & method javadocs
+  // nocommit: would it make more sense for this API to live inside SweepCountAware
   static interface SegCounter {
     void map(int allIdx, int activeIdx);
   }
 
+  // nocommit: need class & method javadocs
+  // nocommit: would it make more sense for this API to live inside SweepCountAware
   static class SegCountGlobal implements SegCounter {
     private final CountSlotAcc[] allCounts;
     private final CountSlotAcc[] activeCounts;
@@ -337,6 +341,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     }
   }
 
+  // nocommit: need class & method javadocs
+  // nocommit: would it make more sense for this API to live inside SweepCountAware
   static class SegCountPerSeg implements SegCounter {
     protected final int[][] allSegCounts;
     private final int[][] activeSegCounts;
