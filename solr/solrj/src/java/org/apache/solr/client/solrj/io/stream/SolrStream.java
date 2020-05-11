@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -203,11 +204,11 @@ public class SolrStream extends TupleStream {
       if (fields == null) {
         //Return the EOF tuple.
         Map m = new HashMap();
-        m.put("EOF", true);
+        m.put(StreamParams.EOF, true);
         return new Tuple(m);
       } else {
 
-        String msg = (String) fields.get("EXCEPTION");
+        String msg = (String) fields.get(StreamParams.EXCEPTION);
         if (msg != null) {
           HandledException ioException = new HandledException(msg);
           throw ioException;

@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,6 +33,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class ExportHandler extends SearchHandler {
+
+  @Override
+  public void inform(SolrCore core) {
+    super.inform(core);
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {

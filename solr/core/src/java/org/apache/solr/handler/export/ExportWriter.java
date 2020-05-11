@@ -41,6 +41,7 @@ import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -214,6 +215,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     } catch (Exception e) {
       writeException(e, writer, true);
       return;
+    }
+
+    String expr = params.get(StreamParams.EXPR);
+    if (expr != null) {
+
     }
 
     writer.writeMap(m -> {
