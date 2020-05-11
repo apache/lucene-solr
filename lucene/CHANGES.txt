@@ -159,7 +159,9 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
+  (Alan Woodward)
 
 Improvements
 ---------------------
