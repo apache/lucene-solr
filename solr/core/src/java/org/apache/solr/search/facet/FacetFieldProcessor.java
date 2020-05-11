@@ -825,12 +825,17 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       assert slot != collectAccSlot || slot < 0;
       count++;
-      if (collectAcc != null) {
-        collectAcc.collect(doc, collectAccSlot, slotContext);
-      }
-      if (otherAccs != null) {
-        for (SlotAcc otherAcc : otherAccs) {
-          otherAcc.collect(doc, otherAccsSlot, slotContext);
+      if (collectAcc != null || otherAccs != null) {
+        IntFunction<SlotContext> allBucketsSlotContext = (slotNum) -> {
+          return slotContext.apply(slot);
+        };
+        if (collectAcc != null) {
+          collectAcc.collect(doc, collectAccSlot, allBucketsSlotContext);
+        }
+        if (otherAccs != null) {
+          for (SlotAcc otherAcc : otherAccs) {
+            otherAcc.collect(doc, otherAccsSlot, allBucketsSlotContext);
+          }
         }
       }
     }
