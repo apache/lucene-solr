@@ -24,12 +24,11 @@ import org.apache.lucene.store.DataOutput;
 
 // Inspired from https://fulmicoton.com/posts/bitpacking/
 // Encodes multiple integers in a long to get SIMD-like speedups.
-// If bitsPerValue <= 8 then we pack 8 ints per long
-// else if bitsPerValue <= 16 we pack 4 ints per long
-// else we pack 2 ints per long
-
 /**
  *  Primitive operations to achieve SIM-D like speed ups when encoding/decoding positive integers.
+ *  If bitsPerValue <= 8 then we pack 8 ints per long, a total of 16 long
+ *  else if bitsPerValue <= 16 we pack 4 ints per long, a total of 32 long
+ *  else we pack 2 ints per long, a total of 64 long
  *
  * @lucene.internal
  */
