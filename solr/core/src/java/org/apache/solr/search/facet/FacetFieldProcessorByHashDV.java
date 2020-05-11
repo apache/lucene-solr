@@ -326,7 +326,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     super.createCollectAcc(fcontext.base.size(), numSlots);
 
     if (freq.allBuckets) {
-      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0, null);
+      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
     }
   }
 

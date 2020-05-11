@@ -103,7 +103,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     if (refineResult != null) {
       if (freq.allBuckets) {
         createAccs(nDocs, 1);
-        allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0, (SweepingCountSlotAcc) countAcc);
+        allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
         collectDocs();
 
         SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
@@ -123,7 +123,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     createCollectAcc(nDocs, maxSlots);
 
     if (freq.allBuckets) {
-      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0, (SweepingCountSlotAcc) countAcc);
+      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
     }
 
     collectDocs();

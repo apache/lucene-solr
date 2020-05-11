@@ -791,6 +791,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
+        allBucketsAcc.sweepingCountAcc = sweepingCountAcc;
       }
       return true;
     }
@@ -803,15 +804,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int collectAccSlot;
     int otherAccsSlot;
     long count;
-    SweepingCountSlotAcc sweepingCountAcc;
+    SweepingCountSlotAcc sweepingCountAcc; // null unless/until sweeping is initialized
 
-    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot, SweepingCountSlotAcc sweepingCountAcc) {
+    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
       super(fcontext);
       this.collectAcc = collectAcc;
       this.collectAccSlot = collectAccSlot;
       this.otherAccs = otherAccs;
       this.otherAccsSlot = otherAccsSlot;
-      this.sweepingCountAcc = sweepingCountAcc;
     }
 
     public int getCollectAccSlot() { return collectAccSlot; }
