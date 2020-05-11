@@ -143,6 +143,9 @@ Other
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
+  equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
