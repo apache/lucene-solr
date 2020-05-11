@@ -59,11 +59,13 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     String newFieldType = "string";
     String newFieldValue = "xyz";
 
+    ignoreException("unknown field");
     assertFailedU("Should fail due to unknown field '" + newFieldName + "'", 
                   adoc("id", "1", newFieldName, newFieldValue));
+    unIgnoreException("unknown field");
 
     IndexSchema schema = h.getCore().getLatestSchema();
-    SchemaField newField = schema.newField(newFieldName, newFieldType, Collections.<String,Object>emptyMap());
+    SchemaField newField = schema.newField(newFieldName, newFieldType, Collections.emptyMap());
     IndexSchema newSchema = schema.addField(newField);
     h.getCore().setLatestSchema(newSchema);
     
@@ -74,7 +76,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
              "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-             "=={'response':{'numFound':1,'start':0,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+             "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
 
     assertU(commit());
 
@@ -83,6 +85,6 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-        "=={'response':{'numFound':1,'start':0,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+        "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
   }
 }
