@@ -70,6 +70,19 @@ public interface CollectionParams {
     }
   }
 
+  /**
+   * <p>(Mostly) Collection API actions that can be sent by nodes to the Overseer over the <code>/overseer/collection-queue-work</code>
+   * ZooKeeper queue.</p>
+   *
+   * <p>Some of these actions are also used over the cluster state update queue at <code>/overseer/queue</code>, and really
+   * another enum should have been created instead.</p>
+   *
+   * <p>The actions with that double role are:
+   * {@link CollectionAction#CREATE}, {@link CollectionAction#DELETE}, {@link CollectionAction#CREATESHARD},
+   * {@link CollectionAction#DELETESHARD}, {@link CollectionAction#ADDREPLICA}, {@link CollectionAction#ADDREPLICAPROP},
+   * {@link CollectionAction#DELETEREPLICAPROP}, {@link CollectionAction#BALANCESHARDUNIQUE},
+   * {@link CollectionAction#MODIFYCOLLECTION} and {@link CollectionAction#MIGRATESTATEFORMAT}.</p>
+   */
   enum CollectionAction {
     CREATE(true, LockLevel.COLLECTION),
     DELETE(true, LockLevel.COLLECTION),
