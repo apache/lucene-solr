@@ -460,7 +460,7 @@ public class PolicyHelper {
     }
 
 
-    public SessionWrapper get(SolrCloudManager cloudManager) throws IOException, InterruptedException {
+    public SessionWrapper get(SolrCloudManager cloudManager, boolean allowWait) throws IOException, InterruptedException {
       TimeSource timeSource = cloudManager.getTimeSource();
       long oldestUpdateTimeNs = TimeUnit.SECONDS.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS) - SESSION_EXPIRY;
       int zkVersion = cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion();
@@ -479,7 +479,7 @@ public class PolicyHelper {
             log.debug("reusing session {}", sw.getCreateTime());
           }
           return sw;
-        } else {
+        } else if (allowWait) {
           // No session available, but if we wait a bit, maybe one can become available
           // wait 1 to 10 secs in case a session is returned. Random to spread wakeup otherwise sessions not reused
           long waitForMs = (long) (Math.random() * 9 * 1000 + 1000);
@@ -509,6 +509,8 @@ public class PolicyHelper {
           } else {
             return createSession(cloudManager);
           }
+        } else {
+          return createSession(cloudManager);
         }
       }
     }
@@ -567,8 +569,12 @@ public class PolicyHelper {
    * 5) call {@link  SessionWrapper#release()}
    */
   public static SessionWrapper getSession(SolrCloudManager cloudManager) throws IOException, InterruptedException {
+    return getSession(cloudManager, true);
+  }
+
+  static SessionWrapper getSession(SolrCloudManager cloudManager, boolean allowWait) throws IOException, InterruptedException {
     SessionRef sessionRef = (SessionRef) cloudManager.getObjectCache().computeIfAbsent(SessionRef.class.getName(), s -> new SessionRef());
-    return sessionRef.get(cloudManager);
+    return sessionRef.get(cloudManager, allowWait);
   }
 
   /**

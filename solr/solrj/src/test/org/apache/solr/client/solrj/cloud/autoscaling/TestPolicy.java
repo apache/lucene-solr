@@ -1683,7 +1683,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     sessionWrapper.release();
     assertTrue(sessionRef.isEmpty());
     PolicyHelper.SessionWrapper s1 = PolicyHelper.getSession(solrCloudManager);
-//    assertEquals(sessionRef.getSessionWrapper().getCreateTime(), s1.getCreateTime());
     PolicyHelper.SessionWrapper[] s2 = new PolicyHelper.SessionWrapper[1];
     AtomicLong secondTime = new AtomicLong();
     Thread thread = new Thread(() -> {
@@ -1697,7 +1696,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     thread.start();
     Thread.sleep(50);
     long beforeReturn = System.nanoTime();
-//    assertEquals(s1.getCreateTime(), sessionRef.getSessionWrapper().getCreateTime());
     s1.returnSession(s1.get());
     assertEquals(1, s1.getRefCount());
     thread.join();
@@ -1714,6 +1712,62 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(sessionRef.isEmpty());
 
 
+  }
+
+  @Test
+  public void testMultiSessionsCache() throws IOException, InterruptedException {
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString(" {" +
+        "    'node1':{ 'node':'10.0.0.4:8987_solr', 'cores':1 }," +
+        "    'node2':{ 'node':'10.0.0.4:8989_solr', 'cores':1 }," +
+        "    'node3':{ 'node':'10.0.0.4:7574_solr', 'cores':1 }" +
+        "}");
+
+    Map policies = (Map) Utils.fromJSONString("{ 'cluster-preferences': [{ 'minimize': 'cores', 'precision': 1}]}");
+
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+    final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager(nodeValues, clusterState)) {
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        return delegatingDistribStateManager(config);
+      }
+    };
+
+    PolicyHelper.SessionWrapper s1 = PolicyHelper.getSession(solrCloudManager);
+    // Must skip the wait time otherwise test takes a few seconds to run and s1 is not returned now.
+    PolicyHelper.SessionWrapper s2 = PolicyHelper.getSession(solrCloudManager, false);
+    // Got two sessions, they are different
+    assertFalse(s1 == s2);
+
+    // Done COMPUTING with first session, it can be reused
+    s1.returnSession(s1.get());
+
+    PolicyHelper.SessionWrapper s3 = PolicyHelper.getSession(solrCloudManager);
+    // First session indeed reused when a new session is requested
+    assertTrue(s3 == s1);
+
+    // Done COMPUTING with second session, it can be reused
+    s2.returnSession(s2.get());
+
+    PolicyHelper.SessionWrapper s4 = PolicyHelper.getSession(solrCloudManager);
+    // Second session indeed reused when a new session is requested
+    assertTrue(s4 == s2);
+
+    s4.returnSession(s4.get());
+    s4.release();
+
+    s2.release();
+
+    s3.returnSession(s3.get());
+    s3.release();
+
+    PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
+
+    // First session not yet released so is still in the cache
+    assertFalse(sessionRef.isEmpty());
+
+    s1.release();
+
+    assertTrue(sessionRef.isEmpty());
   }
 
   private DistribStateManager delegatingDistribStateManager(AutoScalingConfig config) {
