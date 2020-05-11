@@ -59,11 +59,19 @@ public class CalciteSolrDriver extends Driver {
     if(schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    rootSchema.add(schemaName, new SolrSchema(info));
+    final SolrSchema solrSchema = new SolrSchema(info);
+    rootSchema.add(schemaName, solrSchema);
 
     // Set the default schema
     calciteConnection.setSchema(schemaName);
 
-    return connection;
+    return new FilterCalciteConnection(calciteConnection) {
+      @Override
+      public void close() throws SQLException {
+        solrSchema.close();
+        super.close();
+      }
+    };
   }
+
 }

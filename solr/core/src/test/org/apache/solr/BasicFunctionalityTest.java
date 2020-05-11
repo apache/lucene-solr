@@ -1017,7 +1017,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                  e.getMessage().contains(f));
     }
   }
-
+  
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
 
