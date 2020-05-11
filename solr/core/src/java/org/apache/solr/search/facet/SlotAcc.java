@@ -601,6 +601,7 @@ interface SweepableSlotAcc<T extends SlotAcc> {
   public T registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc);
 }
 
+// nocommit: need jdocs explaining purpose
 final class SweepCountAccStruct {
   final DocSet docSet;
   final boolean isBase;
@@ -627,8 +628,10 @@ final class SweepCountAccStruct {
  * Special CountSlotAcc used by processors that support sweeping to decide what to sweep over and how to
  * "collect" when doing the sweep.
  *
- * This class may be used by SweepableSlotAccs to register DocSet domains over which to sweep-collect
- * facet counts.
+ * This class may be used by {@link SweepableSlotAccs} to 
+ * {@link SweepingCountSlotAcc#add register DocSet domains} over which to sweep-collect facet counts.
+ *
+ * @see SweepableSlotAcc#registerSweepingAccs
  */
 class SweepingCountSlotAcc extends CountSlotArrAcc {
 
@@ -671,6 +674,7 @@ class SweepingCountSlotAcc extends CountSlotArrAcc {
     return ret.roCountAcc();
   }
 
+  // nocommit: need jdocs explaining purpose/usage/restrictions
   public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
     assert fromAcc.key.equals(toAcc.key);
     output.add(toAcc);
@@ -682,22 +686,29 @@ class SweepingCountSlotAcc extends CountSlotArrAcc {
     }
   }
 
+  /**
+   * Always populates the bucket with the current count for that slot.  If the count is positive, 
+   * or if <code>processEmpty==true</code>, then this method also populates the values from mapped 
+   * "output" accumulators.
+   *
+   * @see #setSweepValues
+   */
+  @Override
   public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
     super.setValues(bucket, slotNum);
-    if (getCount(slotNum) <= 0 && !fcontext.processor.freq.processEmpty) {
-      //nocommit: this is a hacky way to preserve the shortcircuit in FacetFieldProcessor.fillBucketFromSlot(...), which
-      //nocommit: prevents setting other stats, etc. *after* recording the count (zero, evidently, if we get to here).
-      //nocommit: is there another way to preserve this behavior?
-      return;
-    }
-    for (SlotAcc acc : output) {
-      acc.setValues(bucket, slotNum);
+    if (0 < getCount(slotNum) || fcontext.processor.freq.processEmpty) {
+      setSweepValues(bucket, slotNum);
     }
   }
 
-  /* There are some contexts (namely SpecialSlotAcc, for allBuckets, etc.) in which "base" count is tracked differently,
-   * via getSpecialCount(). For such cases, we need a method that lets us use this SweepingCountSlotAcc to
-   * coordinate calling setValues(...) on the sweeping output accs, while avoiding calling super.setValues(...) */
+  /**
+   * Populates the bucket with the values from all mapped "output" accumulators for the specified slot.
+   *
+   * This method exists because there are some contexts (namely SpecialSlotAcc, for allBuckets, etc.) in 
+   * which "base" count is tracked differently, via getSpecialCount(). For such cases, we need a method 
+   * that allows the caller to directly coordinate calling {@link SoltAcc#setValues} on the sweeping 
+   * output accs, while avoiding the inclusion of {@link CountSlotAcc#setValues CountSlotAcc.setValues}
+   */
   public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
     for (SlotAcc acc : output) {
       acc.setValues(bucket, slotNum);
