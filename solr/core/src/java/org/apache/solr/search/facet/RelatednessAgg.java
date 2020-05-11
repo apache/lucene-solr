@@ -166,9 +166,18 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
     
+    final int allBucketsSlot;
+    if (fcontext.processor instanceof FacetFieldProcessorByArray) {
+      allBucketsSlot = ((FacetFieldProcessorByArray) fcontext.processor).allBucketsSlot;
+    } else if (fcontext.processor instanceof FacetFieldProcessorByHashDV) {
+      allBucketsSlot = ((FacetFieldProcessorByHashDV) fcontext.processor).allBucketsSlot;
+    } else {
+      //nocommit: what about FacetFieldProcessorByEnumTermsStream? There's probably a better way to do this entirely?
+      allBucketsSlot = -1;
+    }
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet, allBucketsSlot);
   }
 
   @Override
@@ -261,12 +270,13 @@ public class RelatednessAgg extends AggValueSource {
   private static final class SKGSlotAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
+    private final int allBucketsSlot;
     private final DocSet fgSet;
     private final DocSet bgSet;
     private final long fgSize;
     private final long bgSize;
     public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
-                      final DocSet fgSet, final DocSet bgSet) throws IOException {
+                      final DocSet fgSet, final DocSet bgSet, int allBucketsSlot) throws IOException {
       super(fcontext);
       this.agg = agg;
       this.fgSet = fgSet;
@@ -274,6 +284,7 @@ public class RelatednessAgg extends AggValueSource {
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
+      this.allBucketsSlot = allBucketsSlot;
       this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
     }
@@ -437,8 +448,12 @@ public class RelatednessAgg extends AggValueSource {
 
       final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
-      slotVal.incCounts(fgSet.intersectionSize(slotSet),
-                        bgSet.intersectionSize(slotSet));
+      final int fgCountInc = fgSet.intersectionSize(slotSet);
+      final int bgCountInc = bgSet.intersectionSize(slotSet);
+      slotVal.incCounts(fgCountInc, bgCountInc);
+      if (allBucketsSlot >= 0) {
+        slotvalues[allBucketsSlot].incCounts(fgCountInc, bgCountInc);
+      }
       slotvalues[slot] = slotVal;
     }
 
@@ -450,7 +465,7 @@ public class RelatednessAgg extends AggValueSource {
       
       // so we only worry about ensuring that every "slot" / bucket is processed the first time
       // we're asked about it...
-      if (null == slotvalues[slot]) {
+      if (slot != allBucketsSlot && null == slotvalues[slot]) {
         processSlot(slot, slotContext);
       }
     }
@@ -494,14 +509,26 @@ public class RelatednessAgg extends AggValueSource {
       return res;
     }
 
+    // preserve allBucketsData to restore after resizing
+    private BucketData allBucketsData;
+
     @Override
     public void reset() {
       Arrays.fill(slotvalues, null);
+      if (allBucketsSlot >= 0) {
+        allBucketsData = new BucketData(agg);
+        allBucketsData.incSizes(fgSize, bgSize);
+        slotvalues[allBucketsSlot] = allBucketsData;
+      }
     }
 
     @Override
     public void resize(Resizer resizer) {
       slotvalues = resizer.resize(slotvalues, null);
+      if (allBucketsSlot >= 0) {
+        assert allBucketsData != null;
+        slotvalues[allBucketsSlot] = allBucketsData;
+      }
     }
 
     @Override
