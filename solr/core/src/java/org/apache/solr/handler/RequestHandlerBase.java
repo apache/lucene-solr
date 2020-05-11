@@ -54,7 +54,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
  */
 public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
 
-  protected NamedList initArgs = null;
+  protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
@@ -127,7 +127,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     initArgs = args;
 
     if (args != null) {
@@ -168,7 +168,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
-  public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
+  public static SolrParams getSolrParamsFromNamedList(NamedList<?> args, String key) {
     Object o = args.get(key);
     if (o != null && o instanceof NamedList) {
       return ((NamedList) o).toSolrParams();
@@ -176,7 +176,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return null;
   }
 
-  public NamedList getInitArgs() {
+  public NamedList<?> getInitArgs() {
     return initArgs;
   }
 
@@ -208,7 +208,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList header = rsp.getResponseHeader();
+      NamedList<?> header = rsp.getResponseHeader();
       if (header != null) {
         if (Boolean.TRUE.equals(header.getBooleanArg(
             SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {

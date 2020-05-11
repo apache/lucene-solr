@@ -82,7 +82,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @throws Exception When analysis fails.
    */
-  protected abstract NamedList doAnalysis(SolrQueryRequest req) throws Exception;
+  protected abstract NamedList<?> doAnalysis(SolrQueryRequest req) throws Exception;
 
   /**
    * Analyzes the given value using the given Analyzer.
@@ -99,7 +99,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
-        NamedList<List<NamedList>> namedList = new NamedList<>();
+        NamedList<List<NamedList<?>>> namedList = new NamedList<>();
         namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
         return namedList;
       } catch (IOException e) {
@@ -231,8 +231,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
-  private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
-    final List<NamedList> tokensNamedLists = new ArrayList<>();
+  private List<NamedList<?>> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
+    final List<NamedList<?>> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();
     final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
     

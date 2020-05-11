@@ -35,6 +35,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
+import org.apache.solr.search.facet.SlotAcc.DoubleFuncSlotAcc;
 import org.apache.solr.search.function.FieldNameValueSource;
 
 public class MinMaxAgg extends SimpleAggValueSource {
@@ -116,7 +117,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
   // TODO: can this be replaced by ComparableMerger?
-  private class NumericMerger extends FacetDoubleMerger {
+  private class NumericMerger extends FacetModule.FacetDoubleMerger {
     double val = Double.NaN;
 
     @Override
@@ -133,7 +134,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  private class ComparableMerger extends FacetSortableMerger {
+  private class ComparableMerger extends FacetModule.FacetSortableMerger {
     Comparable val;
     @Override
     public void merge(Object facetResult, Context mcontext) {
@@ -153,7 +154,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       // NOTE: we don't use the minmax multiplier here because we still want natural ordering between slots (i.e. min(field) asc and max(field) asc) both sort "A" before "Z")
       return this.val.compareTo(((ComparableMerger)other).val);
     }
@@ -239,7 +240,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotAcc.SlotContext> slotContext) throws IOException {
       double val = values.doubleVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 
@@ -260,7 +261,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  class LFuncAcc extends LongFuncSlotAcc {
+  class LFuncAcc extends SlotAcc.LongFuncSlotAcc {
     FixedBitSet exists;
     public LFuncAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
@@ -268,7 +269,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotAcc.SlotContext> slotContext) throws IOException {
       long val = values.longVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 
@@ -320,14 +321,14 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
   }
 
-  class DateFuncAcc extends LongFuncSlotAcc {
+  class DateFuncAcc extends SlotAcc.LongFuncSlotAcc {
     private static final long MISSING = Long.MIN_VALUE;
     public DateFuncAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, MISSING);
     }
 
     @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotAcc.SlotContext> slotContext) throws IOException {
       long val = values.longVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 

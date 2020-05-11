@@ -53,7 +53,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
-  CountSlotAcc countAcc;
+  SlotAcc.CountSlotAcc countAcc;
 
   FacetProcessor(FacetRequest.FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
@@ -307,7 +307,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
       countAcc.key = "count";
     }
 

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import java.io.IOException;
+
 /**
  * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
@@ -64,7 +66,7 @@ public interface SolrMetricProducer extends AutoCloseable {
    * obscure memory leaks.
    */
   @Override
-  default void close() throws Exception {
+  default void close() throws IOException {
     SolrMetricsContext context = getSolrMetricsContext();
     if (context == null) {
       return;

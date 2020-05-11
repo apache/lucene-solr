@@ -429,7 +429,7 @@ public class RelatednessAgg extends AggValueSource {
   /**
    * Merges in the per shard {@link BucketData} output into a unified {@link BucketData}
    */
-  private static final class Merger extends FacetSortableMerger {
+  private static final class Merger extends FacetModule.FacetSortableMerger {
     private final BucketData mergedData;
     public Merger(final RelatednessAgg agg) {
       this.mergedData = new BucketData(agg);
@@ -443,7 +443,7 @@ public class RelatednessAgg extends AggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       // NOTE: regardless of the SortDirection hint, we want normal comparison of the BucketData
       
       assert other instanceof Merger;

@@ -66,7 +66,7 @@ public class UniqueAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     long answer = -1;
     long sumUnique;
     Set<Object> values;
@@ -117,7 +117,7 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }

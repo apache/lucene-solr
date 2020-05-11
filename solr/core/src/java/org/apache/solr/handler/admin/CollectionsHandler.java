@@ -204,7 +204,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(NamedList<?> args) {
 
   }
 

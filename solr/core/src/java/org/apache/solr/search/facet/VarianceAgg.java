@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.FacetModule.FacetDoubleMerger;
 import org.apache.solr.search.function.FieldNameValueSource;
 
 
@@ -56,7 +57,7 @@ public class VarianceAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new VarianceSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.VarianceSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -89,7 +90,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }    
   }
 
-  class VarianceSortedNumericAcc extends SDVSortedNumericAcc {
+  class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
     public VarianceSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -101,7 +102,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  class VarianceSortedSetAcc extends SDVSortedSetAcc {
+  class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
     public VarianceSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -113,7 +114,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  class VarianceUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
+  class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
     public VarianceUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);

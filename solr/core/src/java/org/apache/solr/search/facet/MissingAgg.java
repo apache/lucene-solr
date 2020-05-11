@@ -61,10 +61,10 @@ public class MissingAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return new FacetModule.FacetLongMerger();
   }
 
-  class MissingSlotAcc extends LongFuncSlotAcc {
+  class MissingSlotAcc extends SlotAcc.LongFuncSlotAcc {
 
     public MissingSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
@@ -77,5 +77,4 @@ public class MissingAgg extends SimpleAggValueSource {
       }
     }
   }
-
 }

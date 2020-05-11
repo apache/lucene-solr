@@ -25,6 +25,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.SlotAcc.LongFuncSlotAcc;
 import org.apache.solr.search.function.FieldNameValueSource;
 
 /**
@@ -64,7 +65,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return new FacetModule.FacetLongMerger();
   }
 
   class CountValSlotAcc extends LongFuncSlotAcc {
@@ -81,7 +82,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedNumericDVAcc extends LongSortedNumericDVAcc {
+  class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
 
     public CountSortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -93,7 +94,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedSetDVAcc extends LongSortedSetDVAcc {
+  class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
 
     public CountSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);

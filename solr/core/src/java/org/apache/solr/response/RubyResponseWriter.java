@@ -23,15 +23,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class RubyResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
+  static String CONTENT_TYPE_RUBY_UTF8 = "text/x-ruby;charset=UTF-8";
 
   @Override
   public void init(NamedList n) {
     /* NOOP */
   }
-  
- @Override
-public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+
+  @Override
+  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     RubyWriter w = new RubyWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -44,51 +44,56 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_TEXT_UTF8;
   }
-}
 
-class RubyWriter extends NaNFloatWriter {
+  class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
 
-  @Override
-  protected String getNaN() { return "(0.0/0.0)"; }
-  @Override
-  protected String getInf() { return "(1.0/0.0)"; }
-
-  public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp);
-  }
-
-  @Override
-  public void writeNull(String name) throws IOException {
-    writer.write("nil");
-  }
-
-  @Override
-  public void writeKey(String fname, boolean needsEscaping) throws IOException {
-    writeStr(null, fname, needsEscaping);
-    writer.write('=');
-    writer.write('>');
-  }
-
-  @Override
-  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // Ruby doesn't do unicode escapes... so let the servlet container write raw UTF-8
-    // bytes into the string.
-    //
-    // Use single quoted strings for safety since no evaluation is done within them.
-    // Also, there are very few escapes recognized in a single quoted string, so
-    // only escape the backslash and single quote.
-    writer.write('\'');
-    if (needsEscaping) {
-      for (int i=0; i<val.length(); i++) {
-        char ch = val.charAt(i);
-        if (ch=='\'' || ch=='\\') {
-          writer.write('\\');
-        }
-        writer.write(ch);
-      }
-    } else {
-      writer.write(val);
+    @Override
+    protected String getNaN() {
+      return "(0.0/0.0)";
     }
-    writer.write('\'');
+
+    @Override
+    protected String getInf() {
+      return "(1.0/0.0)";
+    }
+
+    public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+      super(writer, req, rsp);
+    }
+
+    @Override
+    public void writeNull(String name) throws IOException {
+      writer.write("nil");
+    }
+
+    @Override
+    public void writeKey(String fname, boolean needsEscaping) throws IOException {
+      writeStr(null, fname, needsEscaping);
+      writer.write('=');
+      writer.write('>');
+    }
+
+    @Override
+    public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
+      // Ruby doesn't do unicode escapes... so let the servlet container write raw UTF-8
+      // bytes into the string.
+      //
+      // Use single quoted strings for safety since no evaluation is done within them.
+      // Also, there are very few escapes recognized in a single quoted string, so
+      // only escape the backslash and single quote.
+      writer.write('\'');
+      if (needsEscaping) {
+        for (int i = 0; i < val.length(); i++) {
+          char ch = val.charAt(i);
+          if (ch == '\'' || ch == '\\') {
+            writer.write('\\');
+          }
+          writer.write(ch);
+        }
+      } else {
+        writer.write(val);
+      }
+      writer.write('\'');
+    }
   }
 }

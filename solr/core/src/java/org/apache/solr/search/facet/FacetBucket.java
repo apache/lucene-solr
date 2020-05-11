@@ -24,14 +24,14 @@ import java.util.Map;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
-  final FacetBucketMerger parent;
+  final FacetModule.FacetBucketMerger parent;
   final Comparable bucketValue;
   final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
 
   long count;
   Map<String, FacetMerger> subs;
 
-  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue, FacetMerger.Context mcontext) {
+  public FacetBucket(FacetModule.FacetBucketMerger parent, Comparable bucketValue, FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
     this.bucketNumber = mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...

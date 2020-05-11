@@ -34,7 +34,7 @@ public class FacetQuery extends FacetRequest {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetQueryMerger(this);
+    return new FacetModule.FacetQueryMerger(this);
   }
   
   @Override
