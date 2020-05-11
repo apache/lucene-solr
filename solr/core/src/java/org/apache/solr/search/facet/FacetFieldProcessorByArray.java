@@ -34,6 +34,9 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
  * Base class for DV/UIF accumulating counts into an array by ordinal.  It's
  * for {@link org.apache.lucene.index.SortedDocValues} and {@link org.apache.lucene.index.SortedSetDocValues} only.
  * It can handle terms (strings), not numbers directly but those encoded as terms, and is multi-valued capable.
+ * By default, this class assumes subclasses can support sweeping collection unless subclasses initialize <code>countAcc</code> directly in their constructors.
+ * 
+ * @see SweepingCountSlotAcc
  */
 abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   BytesRefBuilder prefixRef;
@@ -57,6 +60,11 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   abstract protected BytesRef lookupOrd(int ord) throws IOException;
 
 
+  /**
+   * {@inheritDoc}
+   *
+   * This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
+   */
   @Override
   protected void createAccs(long docCount, int slotCount) throws IOException {
     if (countAcc == null) {
@@ -65,6 +73,11 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     super.createAccs(docCount, slotCount);
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
+   */
   @Override
   void createCollectAcc(int numDocs, int numSlots) throws IOException {
     if (countAcc == null) {
