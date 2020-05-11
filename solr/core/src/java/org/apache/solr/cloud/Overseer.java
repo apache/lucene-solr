@@ -112,23 +112,23 @@ import com.codahale.metrics.Timer;
  *   queue in ZooKeepeer,</li>
  *   <li>The {@link OverseerCollectionConfigSetProcessor} running on the Overseer node dequeues the message and using a
  *   thread from a thread pool hands it for processing to {@link OverseerCollectionMessageHandler},</li>
- *   <li>Command {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} then executes and does:</li>
+ *   <li>Command {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} then executes and does:
  *   <ol>
  *     <li>Update some state directly in ZooKeeper (creating collection znode),</li>
  *     <li>Compute replica placement on available nodes in the cluster,</li>
  *     <li>Enqueue a state change request for creating the <code>state.json</code> file for the collection in ZooKeeper.
  *     This is done by enqueuing a message in <code>/overseer/queue</code>,</li>
  *     <li>The command then waits for the update to be seen in ZooKeeper...</li>
- *   </ol>
+ *   </ol></li>
  *   <li>The {@link ClusterStateUpdater} (also running on the Overseer node) dequeues the state change message and creates the
  *   <code>state.json</code> file in ZooKeeper for the Collection. All the work of the cluster state updater
  *   (creations, updates, deletes) is done sequentially for the whole cluster by a single thread.</li>
  *   <li>The {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} sees the state change in
- *   ZooKeeper and:</li>
+ *   ZooKeeper and:
  *   <ol start="5">
  *     <li>Builds and sends requests to each node to create the appropriate cores for all the replicas of all shards
  *     of the collection.</li>
- *   </ol>
+ *   </ol></li>
  *   <li>The collection creation command has succeeded and the client receives a success return.</li>
  * </ol>
  *
