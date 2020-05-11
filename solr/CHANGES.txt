@@ -122,6 +122,11 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
+* SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
+  Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
+  value of matching documents in the response (numFound) will be an approximation.
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -193,6 +198,13 @@ Other Changes
 * SOLR-13886: HDFSSyncSliceTest and SyncSliceTest started failing frequently (Kevin Risden)
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
+
+* SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
+
+* SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
+  opening a new searcher have changed and include the autowarm time. (Erick Erickson)
+
+* SOLR-7880: Update commons-cli to 1.4 (Erick Erickson)
 
 ==================  8.5.1 ==================
 

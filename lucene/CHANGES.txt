@@ -150,6 +150,13 @@ API Changes
   provide them lazily.  TermsInSetQuery switches to using this method
   to report matching terms. (Alan Woodward)
 
+* LUCENE-9366: DocValues.emptySortedNumeric() not longer takes a maxDoc parameter
+  (Alan Woodward)
+
+* LUCENE-7822: CodecUtil#checkFooter(IndexInput, Throwable) now throws a
+  CorruptIndexException if checksums mismatch or if checksums can't be verified.
+  (Martin Amirault, Adrien Grand)
+
 New Features
 ---------------------
 
@@ -229,6 +236,9 @@ Bug Fixes
 
 * LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
   implementation. (Pierre-Luc Perron, Alan Woodward)
+
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
 
 Other
 ---------------------

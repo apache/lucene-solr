@@ -71,7 +71,7 @@ public class TestRealTimeGet extends TestRTGBase {
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
-        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[" +
         "      {" +
         "        'id':'1'}]" +
         "  }}}"
@@ -98,7 +98,7 @@ public class TestRealTimeGet extends TestRTGBase {
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
-        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[" +
         "      {" +
         "        'id':'1'}]" +
         "  }}}"
@@ -113,7 +113,7 @@ public class TestRealTimeGet extends TestRTGBase {
         ,"=={'doc':null}"
     );
     assertJQ(req("qt","/get","ids","1")
-        ,"=={'response':{'numFound':0,'start':0,'docs':[]}}"
+        ,"=={'response':{'numFound':0,'start':0,'numFoundExact':true,'docs':[]}}"
     );
 
 

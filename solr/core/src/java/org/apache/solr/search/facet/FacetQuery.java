@@ -49,7 +49,7 @@ public class FacetQuery extends FacetRequest {
 
 
 class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
-  FacetQueryProcessor(FacetContext fcontext, FacetQuery freq) {
+  FacetQueryProcessor(FacetRequest.FacetContext fcontext, FacetQuery freq) {
     super(fcontext, freq);
   }
 
@@ -61,7 +61,7 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
       // FIXME - what needs to be done here?
     }
     response = new SimpleOrderedMap<>();
-    fillBucket(response, freq.q, null, (fcontext.flags & FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
+    fillBucket(response, freq.q, null, (fcontext.flags & FacetRequest.FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
   }
 
 
