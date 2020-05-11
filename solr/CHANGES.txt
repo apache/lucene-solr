@@ -25,9 +25,6 @@ Improvements
 
 Other Changes
 ----------------------
-* SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
-  node with compression enabled (samuelgmartinez)
-
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -152,6 +149,9 @@ Bug Fixes
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
 * SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
+
+* SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
+  node with compression enabled (samuelgmartinez)
 
 Other Changes
 ---------------------
