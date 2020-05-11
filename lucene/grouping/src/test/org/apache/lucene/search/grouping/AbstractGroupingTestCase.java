@@ -16,6 +16,15 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -35,5 +44,41 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
       //randomValue = _TestUtil.randomSimpleString(random());
     } while ("".equals(randomValue));
     return randomValue;
+  }
+
+  protected static void assertScoreDocsEquals(ScoreDoc[] expected, ScoreDoc[] actual) {
+    assertEquals(expected.length, actual.length);
+    for (int i = 0; i < expected.length; i++) {
+      assertEquals(expected[i].doc, actual[i].doc);
+      assertEquals(expected[i].score, actual[i].score, 0);
+    }
+  }
+
+  protected static class Shard implements Closeable {
+
+    final Directory directory;
+    final RandomIndexWriter writer;
+    IndexSearcher searcher;
+
+    Shard() throws IOException {
+      this.directory = newDirectory();
+      this.writer = new RandomIndexWriter(random(), directory,
+          newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    }
+
+    IndexSearcher getIndexSearcher() throws IOException {
+      if (searcher == null) {
+        searcher = new IndexSearcher(this.writer.getReader());
+      }
+      return searcher;
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (searcher != null) {
+        searcher.getIndexReader().close();
+      }
+      IOUtils.close(writer, directory);
+    }
   }
 }

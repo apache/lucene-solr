@@ -150,9 +150,18 @@ API Changes
   provide them lazily.  TermsInSetQuery switches to using this method
   to report matching terms. (Alan Woodward)
 
+* LUCENE-9366: DocValues.emptySortedNumeric() not longer takes a maxDoc parameter
+  (Alan Woodward)
+
+* LUCENE-7822: CodecUtil#checkFooter(IndexInput, Throwable) now throws a
+  CorruptIndexException if checksums mismatch or if checksums can't be verified.
+  (Martin Amirault, Adrien Grand)
+
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
+  (Alan Woodward)
 
 Improvements
 ---------------------
@@ -193,6 +202,13 @@ Optimizations
   computed at deserialization time, therefore we can be more selective when decoding points of a triangle.
   (Ignacio Vera)
 
+* LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
+  (Ignacio Vera)
+
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
@@ -221,6 +237,9 @@ Bug Fixes
 * LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
   implementation. (Pierre-Luc Perron, Alan Woodward)
 
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
+
 Other
 ---------------------
 
@@ -245,6 +264,9 @@ Other
 
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
+
+* LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
+  equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
 
 Build
 

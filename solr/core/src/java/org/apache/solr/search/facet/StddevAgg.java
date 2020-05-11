@@ -32,7 +32,7 @@ public class StddevAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -92,7 +92,7 @@ public class StddevAgg extends SimpleAggValueSource {
 
   class StddevSortedNumericAcc extends SDVSortedNumericAcc {
 
-    public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -104,7 +104,7 @@ public class StddevAgg extends SimpleAggValueSource {
 
   class StddevSortedSetAcc extends SDVSortedSetAcc {
 
-    public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -116,7 +116,7 @@ public class StddevAgg extends SimpleAggValueSource {
 
   class StddevUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
 
-    public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 

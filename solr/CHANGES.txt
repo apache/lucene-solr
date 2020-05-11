@@ -67,6 +67,10 @@ Other Changes
 * SOLR-14412: Automatically set urlScheme to https when running secure solr with embedded zookeeper. (Mike Drob)
   Do not erroneously set solr.jetty.https.port system property when running in http mode (Upendra Penegalapati)
 
+* SOLR-14014: Introducing a system property that allows users to disable the Admin UI, which is enabled by default.
+  If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
+  `solr.in.sh`/`solr.in.cmd` at start. (marcussorealheis)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -118,6 +122,11 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
+* SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
+  Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
+  value of matching documents in the response (numFound) will be an approximation.
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -149,6 +158,8 @@ Bug Fixes
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
 * SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
+
+* SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
 
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez)
@@ -188,6 +199,15 @@ Other Changes
   SolrIndexSearcher.getDocSet(List<Query>) (processes some filter queries).  (David Smiley)
 
 * SOLR-13886: HDFSSyncSliceTest and SyncSliceTest started failing frequently (Kevin Risden)
+
+* SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
+
+* SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
+
+* SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
+  opening a new searcher have changed and include the autowarm time. (Erick Erickson)
+
+* SOLR-7880: Update commons-cli to 1.4 (Erick Erickson)
 
 ==================  8.5.1 ==================
 
