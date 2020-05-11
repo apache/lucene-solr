@@ -36,7 +36,7 @@ public abstract class UnInvertedFieldAcc extends SlotAcc implements UnInvertedFi
   UnInvertedField.DocToTerm docToTerm;
   SchemaField sf;
 
-  public UnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+  public UnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
     super(fcontext);
     this.sf = sf;
     uif = UnInvertedField.getUnInvertedField(sf.getName(), fcontext.qcontext.searcher());
@@ -58,7 +58,7 @@ abstract class DoubleUnInvertedFieldAcc extends UnInvertedFieldAcc {
   int currentSlot;
   double initialValue;
 
-  public DoubleUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
+  public DoubleUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
     super(fcontext, sf, numSlots);
     result = new double[numSlots];
     if (initialValue != 0) {
@@ -102,7 +102,7 @@ abstract class SDVUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
   int[] counts;
   double[] sum;
 
-  public SDVUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+  public SDVUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
     super(fcontext, sf, numSlots, 0);
     this.counts = new int[numSlots];
     this.sum = new double[numSlots];
