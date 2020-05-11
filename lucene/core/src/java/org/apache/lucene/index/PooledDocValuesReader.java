@@ -58,7 +58,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
   private final LeafReaderContext pooledContext;
   private final Predicate<String> fieldFilter;
 
-  private int currentDoc;
+  private int currentDoc = -1;
 
   /**
    * Creates a new PooledDocValuesReader, wrapping an existing reader context
@@ -211,6 +211,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     final NumericDocValues in;
     boolean positioned = false;
+    int realDoc = -1;
 
     private PooledNumeric(NumericDocValues in) {
       this.in = in;
@@ -218,7 +219,10 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     @Override
     public void advanceReal(int target) throws IOException {
-      positioned = in.advanceExact(target);
+      if (target > realDoc) {
+        realDoc = in.advance(target);
+      }
+      positioned = realDoc == target;
     }
 
     @Override
@@ -249,7 +253,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
       if (target != currentDoc) {
         throw new IllegalStateException("Pooled docvalues can only be advanced to their controlling doc " + target);
       }
-      return currentDoc;
+      return realDoc;
     }
 
     @Override
@@ -262,6 +266,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     final SortedNumericDocValues in;
     boolean positioned;
+    int realDoc = -1;
     long[] values = new long[1];
 
     private PooledSortedNumeric(SortedNumericDocValues in) {
@@ -270,7 +275,10 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     @Override
     public void advanceReal(int target) throws IOException {
-      positioned = in.advanceExact(target);
+      if (target > realDoc) {
+        realDoc = in.advance(target);
+      }
+      positioned = realDoc == target;
       if (positioned) {
         int c = in.docValueCount();
         values = ArrayUtil.grow(values, c);
@@ -321,7 +329,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
             throw new IllegalStateException("Pooled docvalues can only be advanced to their controlling doc " + target);
           }
           currentValue = 0;
-          return currentDoc;
+          return realDoc;
         }
 
         @Override
@@ -336,6 +344,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     final BinaryDocValues in;
     boolean positioned = false;
+    int realDoc = -1;
 
     private PooledBinary(BinaryDocValues in) {
       this.in = in;
@@ -348,7 +357,10 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     @Override
     public void advanceReal(int target) throws IOException {
-      positioned = in.advanceExact(target);
+      if (target > realDoc) {
+        realDoc = in.advance(target);
+      }
+      positioned = realDoc == target;
     }
 
     @Override
@@ -374,7 +386,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
       if (target != currentDoc) {
         throw new IllegalStateException("Pooled docvalues can only be advanced to their controlling doc " + target);
       }
-      return currentDoc;
+      return realDoc;
     }
 
     @Override
@@ -387,6 +399,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     final SortedDocValues in;
     boolean positioned = false;
+    int realDoc = -1;
 
     private PooledSorted(SortedDocValues in) {
       this.in = in;
@@ -409,7 +422,10 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     @Override
     public void advanceReal(int target) throws IOException {
-      positioned = in.advanceExact(target);
+      if (target > realDoc) {
+        realDoc = in.advance(target);
+      }
+      positioned = realDoc == target;
     }
 
     @Override
@@ -435,7 +451,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
       if (target != currentDoc) {
         throw new IllegalStateException("Pooled docvalues can only be advanced to their controlling doc " + target);
       }
-      return currentDoc;
+      return realDoc;
     }
 
     @Override
@@ -448,6 +464,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     final SortedSetDocValues in;
     boolean positioned = false;
+    int realDoc = -1;
     long[] ords = new long[1];
 
     private PooledSortedSet(SortedSetDocValues in) {
@@ -456,7 +473,10 @@ public class PooledDocValuesReader extends FilterLeafReader {
 
     @Override
     public void advanceReal(int target) throws IOException {
-      positioned = in.advanceExact(target);
+      if (target > realDoc) {
+        realDoc = in.advance(target);
+      }
+      positioned = realDoc == target;
       if (positioned) {
         int c = 0;
         long ord;
@@ -515,7 +535,7 @@ public class PooledDocValuesReader extends FilterLeafReader {
             throw new IllegalStateException("Pooled docvalues can only be advanced to their controlling doc " + target);
           }
           current = 0;
-          return currentDoc;
+          return realDoc;
         }
 
         @Override

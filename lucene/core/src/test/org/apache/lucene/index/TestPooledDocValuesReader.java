@@ -45,7 +45,7 @@ public class TestPooledDocValuesReader extends LuceneTestCase {
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      if (rarely() == false) {
+      if (rarely() == false && i > 1) {
         doc.add(new NumericDocValuesField("numeric1", random().nextLong()));
         int count = atLeast(3);
         for (int j = 0; j < count; j++) {
@@ -136,7 +136,7 @@ public class TestPooledDocValuesReader extends LuceneTestCase {
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      if (rarely() == false) {
+      if (rarely() == false && i > 0) {
         int valueCount = atLeast(1);
         for (int j = 0; j < valueCount; j++) {
           doc.add(new SortedNumericDocValuesField("numeric1", random().nextLong()));
@@ -212,7 +212,7 @@ public class TestPooledDocValuesReader extends LuceneTestCase {
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      if (rarely() == false) {
+      if (rarely() == false && i > 0) {
         doc.add(new BinaryDocValuesField("binary1", TestUtil.randomBinaryTerm(random())));
         doc.add(new BinaryDocValuesField("binary2", TestUtil.randomBinaryTerm(random())));
       }
@@ -279,7 +279,7 @@ public class TestPooledDocValuesReader extends LuceneTestCase {
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      if (rarely() == false) {
+      if (rarely() == false && i > 0) {
         doc.add(new SortedDocValuesField("sorted1", TestUtil.randomBinaryTerm(random())));
         doc.add(new SortedDocValuesField("sorted2", TestUtil.randomBinaryTerm(random())));
         int count = atLeast(3);
@@ -371,7 +371,7 @@ public class TestPooledDocValuesReader extends LuceneTestCase {
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      if (rarely() == false) {
+      if (rarely() == false && i > 0) {
         int valueCount = atLeast(1);
         for (int j = 0; j < valueCount; j++) {
           doc.add(new SortedSetDocValuesField("sorted1", TestUtil.randomBinaryTerm(random())));
