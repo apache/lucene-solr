@@ -316,7 +316,7 @@ class RenderJavadocTask extends DefaultTask {
   boolean linkJUnit = false;
   
   @Input
-  boolean relativeProjectLinks = true;
+  boolean relativeProjectLinks = false;
 
   @Input
   def linkProjects = [];
