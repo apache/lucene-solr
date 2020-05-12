@@ -91,6 +91,9 @@ Bug Fixes
 
 * SOLR-14463: Solr Admin ZkStatus page now works with ZK 3.6, without 'For input string: "null"' error (janhoy, Bernd Wahlen)
 
+* SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
+  node with compression enabled (samuelgmartinez via Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
