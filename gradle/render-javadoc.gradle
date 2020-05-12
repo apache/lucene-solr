@@ -63,12 +63,14 @@ allprojects {
   }
 }
 
-// Link up some offline docs for all documentation
+// Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
 def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
 def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
+    title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
+
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
@@ -266,7 +268,10 @@ class RenderJavadocTask extends DefaultTask {
   @InputFiles
   @Classpath
   FileCollection classpath
-  
+
+  @Input
+  String title
+
   @Input
   boolean linksource = false
 
@@ -302,12 +307,6 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
-    // escapes an option with single quotes or whitespace to be passed in the options.txt file for
-    def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
-
-    def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
-    def title = "${libName} ${project.version} ${project.name} API"
-
     def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
 
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
@@ -371,10 +370,19 @@ class RenderJavadocTask extends DefaultTask {
     opts << '-Xdoclint:all,-missing'
 
     // Temporary file that holds all javadoc options for the current task.
-    String optionsStr = opts.stream()
-      .map{ (it instanceof List) ? it.stream().map{it as String}.map(escapeJavadocOption).collect(Collectors.joining(' ')) : escapeJavadocOption(it as String)}
-      .collect(Collectors.joining('\n'));
-    optionsFile.write(optionsStr, 'UTF-8')
+    optionsFile.withWriter("UTF-8", { writer ->
+      // escapes an option with single quotes or whitespace to be passed in the options.txt file for
+      def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
+
+      opts.each { entry ->
+        if (entry instanceof List) {
+          writer.write(entry.collect { escapeJavadocOption(it as String) }.join(" "))
+        } else {
+          writer.write(escapeJavadocOption(entry as String))
+        }
+        writer.write('\n')
+      }
+    })
 
     def outputFile = project.file("${getTemporaryDir()}/javadoc-output.txt")
     def result
