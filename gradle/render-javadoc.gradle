@@ -60,6 +60,19 @@ allprojects {
   }
 }
 
+// Link up some offline docs for all documentation
+// (they may be unused but this doesn't do any harm).
+def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
+def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
+allprojects {
+  project.tasks.withType(RenderJavadocTask) {
+    offlineLinks += [
+        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
+        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+    ]
+  }
+}
+
 // Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
 // (by removing all the packages which are part of lucene-core)
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
@@ -118,7 +131,7 @@ configure(project(':lucene:demo')) {
        ':lucene:facet',
        ':lucene:expressions')
 
-    // We link the example source in the javadocs, as it's ref'ed elsewhere
+    // For the demo, we link the example source in the javadocs, as it's ref'ed elsewhere
     linksource = true
   }
 }
@@ -228,12 +241,6 @@ configure(project(':solr:contrib:dataimporthandler-extras')) {
   }
 }
 
-configure(project(':solr:test-framework')) {
-  project.tasks.withType(RenderJavadocTask) {
-    linkJUnit = true
-  }
-}
-
 // Disable Javadoc rendering for these projects.
 configure(subprojects.findAll { it.path in [
     ':solr:solr-ref-guide',
@@ -259,16 +266,16 @@ class RenderJavadocTask extends DefaultTask {
   
   @Input
   boolean linksource = false
-  
-  @Input
-  boolean linkJUnit = false
-  
+
   @Input
   boolean relativeProjectLinks = false
 
   @Input
   def linkedProjectNames = []
   def linkedProjects = []
+
+  @Input
+  def offlineLinks = [:]
 
   @Input
   def luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${project.baseVersion.replace(".", "_")}")
@@ -319,10 +326,6 @@ class RenderJavadocTask extends DefaultTask {
     
     def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
     def title = "${libName} ${project.version} ${project.name} API"
-    
-    // absolute urls for "-linkoffline" option
-    def javaSEDocUrl = "https://docs.oracle.com/en/java/javase/11/docs/api/"
-    def junitDocUrl = "https://junit.org/junit4/javadoc/4.12/"
 
     def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
 
@@ -357,16 +360,16 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
 
-    // resolve links to JavaSE and JUnit API
-    opts << [ '-linkoffline', javaSEDocUrl, project.project(':lucene').file('tools/javadoc/java11/') ]
-    if (linkJUnit) {
-      opts << [ '-linkoffline', junitDocUrl, project.project(':lucene').file('tools/javadoc/junit/') ]
-    }
-
     // Resolve inter-project links.
     linkedProjects.collect { otherProject ->
       def docdir = convertPath2Link(otherProject.path)
       opts << [ '-linkoffline', docdir, otherProject.tasks[name].outputDir ]
+    }
+
+    // Add offline links.
+    // TODO: add some sanity check/ validation here to ensure folder/package-list or folder/element-list is present?
+    offlineLinks.each { url, folder ->
+      opts << [ '-linkoffline', url, folder ]
     }
 
     opts << [ '--release', 11 ]
