@@ -24,9 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -102,6 +100,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int DOCUMENT_BATCH_SIZE = 30000;
+
   private static final String EXPORT_WRITER_KEY = "__ew__";
   private static final String DOCS_KEY = "_ew_docs_";
   private static final String DOCS_INDEX_KEY = "_ew_docs_idx_";
@@ -119,12 +118,27 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   PushWriter writer;
   private String wt;
 
+  private static class TupleEntryWriter implements EntryWriter {
+    Tuple tuple;
+
+    void setTuple(Tuple tuple) {
+      this.tuple = tuple;
+    }
+
+    @Override
+    public EntryWriter put(CharSequence k, Object v) throws IOException {
+      tuple.put(k, v);
+      return this;
+    }
+  }
+
   public static class ExportWriterStream extends TupleStream implements Expressible {
     StreamContext context;
     int pos;
     SortDoc[] docs;
     ExportWriter exportWriter;
     List<LeafReaderContext> leaves;
+    TupleEntryWriter entryWriter = new TupleEntryWriter();
 
     public ExportWriterStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
@@ -159,27 +173,22 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     @Override
     public void close() throws IOException {
       docs = null;
+      exportWriter = null;
+      leaves = null;
     }
 
     @Override
     public Tuple read() throws IOException {
       Tuple tuple;
       if (pos >= 0) {
+        tuple = new Tuple();
+        entryWriter.setTuple(tuple);
         SortDoc s = docs[pos];
-        Map<String, Object>  map = new HashMap<>();
-        exportWriter.writeDoc(s, leaves, new EntryWriter() {
-          @Override
-          public EntryWriter put(CharSequence k, Object v) throws IOException {
-            map.put(k.toString(), v);
-            return this;
-          }
-        });
+        exportWriter.writeDoc(s, leaves, entryWriter);
         s.reset();
-        tuple = new Tuple(map);
         pos--;
       } else {
-        tuple = new Tuple();
-        tuple.EOF = true;
+        tuple = Tuple.EOF();
       }
       return tuple;
     }

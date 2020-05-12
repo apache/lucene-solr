@@ -29,6 +29,8 @@ public interface StreamParams {
   String DOCS = "docs";
   String RETURN_VALUE = "return-value";
   String RESULT_SET = "result-set";
+
+  String RESPONSE_TIME = "RESPONSE_TIME";
   String EOF = "EOF";
   String EXCEPTION = "EXCEPTION";
   String METRICS = "_METRICS_";

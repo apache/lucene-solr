@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.StreamParams;
@@ -45,7 +46,7 @@ public class Tuple implements Cloneable, MapWriter {
   public boolean EOF;
   public boolean EXCEPTION;
 
-  public Map fields = new HashMap();
+  public Map<Object, Object> fields = new HashMap<>();
   public List<String> fieldNames;
   public Map<String, String> fieldLabels;
 
@@ -53,16 +54,20 @@ public class Tuple implements Cloneable, MapWriter {
     // just an empty tuple
   }
   
-  public Tuple(Map fields) {
-    if (fields.containsKey(StreamParams.EOF)) {
-      EOF = true;
+  public Tuple(Map<?, ?> fields) {
+    for (Map.Entry<?, ?> entry : fields.entrySet()) {
+      put(entry.getKey(), entry.getValue());
     }
+  }
 
-    if (fields.containsKey(StreamParams.EXCEPTION)) {
-      EXCEPTION = true;
+  public Tuple(Object... fields) {
+    Objects.requireNonNull(fields);
+    if ((fields.length % 2) != 0) {
+      throw new RuntimeException("must have a matching number of key-value pairs");
     }
-
-    this.fields.putAll(fields);
+    for (int i = 0; i < fields.length; i += 2) {
+      put(fields[i], fields[i + 1]);
+    }
   }
 
   public Object get(Object key) {
@@ -71,9 +76,15 @@ public class Tuple implements Cloneable, MapWriter {
 
   public void put(Object key, Object value) {
     this.fields.put(key, value);
+    if (key.equals(StreamParams.EOF)) {
+      EOF = true;
+    } else if (key.equals(StreamParams.EXCEPTION)) {
+      EXCEPTION = true;
+    }
+
   }
   
-  public void remove(Object key){
+  public void remove(Object key) {
     this.fields.remove(key);
   }
 
@@ -195,8 +206,8 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Tuple clone() {
-    HashMap m = new HashMap(fields);
-    Tuple clone = new Tuple(m);
+    Tuple clone = new Tuple();
+    clone.fields.putAll(fields);
     return clone;
   }
   
@@ -220,5 +231,20 @@ public class Tuple implements Cloneable, MapWriter {
         ew.put(label, fields.get(label));
       }
     }
+  }
+
+  public static Tuple EOF() {
+    Tuple tuple = new Tuple();
+    tuple.put((Object) StreamParams.EOF, true);
+    return tuple;
+  }
+
+  public static Tuple EXCEPTION(String msg, boolean eof) {
+    Tuple tuple = new Tuple();
+    tuple.put((Object) StreamParams.EXCEPTION, msg);
+    if (eof) {
+      tuple.put((Object) StreamParams.EOF, true);
+    }
+    return tuple;
   }
 }

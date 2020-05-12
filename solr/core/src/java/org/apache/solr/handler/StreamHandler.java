@@ -347,11 +347,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         msg = t.getMessage();
         t = t.getCause();
       }
-
-      Map m = new HashMap();
-      m.put(StreamParams.EOF, true);
-      m.put(StreamParams.EXCEPTION, msg);
-      return new Tuple(m);
+      return Tuple.EXCEPTION(msg, true);
     }
   }
 
@@ -393,9 +389,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       if (it.hasNext()) {
         return it.next().getInfo();
       } else {
-        Map m = new HashMap();
-        m.put(StreamParams.EOF, true);
-        return new Tuple(m);
+        return Tuple.EOF();
       }
     }
   }
@@ -437,14 +431,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     public Tuple read() {
       if (sendEOF) {
-        Map m = new HashMap();
-        m.put(StreamParams.EOF, true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
         sendEOF = true;
-        Map m = new HashMap();
-        m.put("DaemonOp", message);
-        return new Tuple(m);
+        return new Tuple("DaemonOp", message);
       }
     }
   }
@@ -493,7 +483,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put("RESPONSE_TIME", totalTime);
+        tuple.fields.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }
