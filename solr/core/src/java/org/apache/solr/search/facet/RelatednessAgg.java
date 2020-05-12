@@ -192,15 +192,17 @@ public class RelatednessAgg extends AggValueSource {
     private final long bgSize;
     private final ReadOnlyCountSlotAcc fgCount;
     private final ReadOnlyCountSlotAcc bgCount;
+    private final int allBucketsSlot;
     private double[] relatedness;
 
-    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
+    public SweepSKGSlotAcc(int allBucketsSlot, double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
       this.fgSize = fgSize;
       this.bgSize = bgSize;
       this.fgCount = fgCount;
       this.bgCount = bgCount;
+      this.allBucketsSlot = allBucketsSlot;
       relatedness = new double[numSlots];
       Arrays.fill(relatedness, 0, numSlots, Double.NaN);
     }
@@ -244,11 +246,37 @@ public class RelatednessAgg extends AggValueSource {
       return r;
     }
 
+    private BucketData cachedAllBuckets;
+
     @Override
     public Object getValue(int slotNum) {
-      BucketData slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
-      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
-      return res;
+      final BucketData slotVal;
+      if (slotNum != allBucketsSlot) {
+        slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      } else if (cachedAllBuckets != null) {
+        slotVal = cachedAllBuckets;
+      } else {
+        CountSlotAcc baseCountAcc = fcontext.processor.countAcc;
+        int fgCountAll = 0;
+        int bgCountAll = 0;
+        for (int i = 0; i < allBucketsSlot; i++) {
+          // for compatibility/consistency, only include counts for slots that would have been collected
+          // by non-sweep collection. This *looks* like it's related to minCount, but it is different.
+          if (baseCountAcc.getCount(i) > 0) {
+            fgCountAll += fgCount.getCount(i);
+            bgCountAll += bgCount.getCount(i);
+          }
+        }
+        final double allBucketsRelatedness;
+        if (minCount > 0 && (fgCountAll < minCount || bgCountAll < minCount)) {
+          allBucketsRelatedness = Double.NEGATIVE_INFINITY;
+        } else {
+          allBucketsRelatedness = computeRelatedness(fgCountAll, fgSize, bgCountAll, bgSize);
+        }
+        slotVal = new BucketData(fgCountAll, fgSize, bgCountAll, bgSize, allBucketsRelatedness);
+        cachedAllBuckets = slotVal;
+      }
+      return slotVal.externalize(fcontext.isShard());
     }
 
     @Override
@@ -302,7 +330,7 @@ public class RelatednessAgg extends AggValueSource {
       } else {
         final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(key + "!fg", fgSet, slotvalues.length);
         final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(key + "!bg", bgSet, slotvalues.length);
-        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
+        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(allBucketsSlot, agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
         readOnlyReplacement.key = key;
         baseSweepingAcc.registerMapping(this, readOnlyReplacement);
         return null;

@@ -468,6 +468,9 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     // It’s not an error for an ord to fall outside this range… we simply want to skip it.
     if (arrIdx >= 0 && arrIdx < nTerms) {
       segCounter.incrementCount(segOrd, arrIdx, 1, maxIdx);
+      if (allBucketsSlot >= 0) {
+        segCounter.incrementCount(-1, allBucketsSlot, 1, maxIdx);
+      }
       if (collectBase) {
         if (collectAcc != null) {
           collectAcc.collect(doc, arrIdx, slotContext);
