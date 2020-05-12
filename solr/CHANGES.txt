@@ -134,6 +134,9 @@ Other Changes
 
 * SOLR-7880: Update commons-cli to 1.4 (Erick Erickson)
 
+* SOLR-14226Fix or suppress 14 resource leak warnings in apache/solr/core (Andras Salaman via
+  Erick Erickson)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
