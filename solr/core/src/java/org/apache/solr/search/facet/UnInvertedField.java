@@ -454,6 +454,9 @@ public class UnInvertedField extends DocTermOrds {
         // handle the biggest terms
         DocSet termSet = searcher.getDocSet(tt.termQuery);
         DocSet intersection = termSet.intersection(docs);
+        if (intersection.size() == 0) {
+          continue;
+        }
         int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex,
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
         final int termOrd = tt.termNum - startTermIndex;
