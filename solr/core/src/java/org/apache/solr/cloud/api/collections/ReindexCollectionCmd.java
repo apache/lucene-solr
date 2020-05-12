@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -163,7 +162,6 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         Stream.of(Cmd.values()).collect(Collectors.toMap(Cmd::toLower, Function.identity())));
   }
 
-  private SolrClientCache solrClientCache;
   private String zkHost;
 
   public ReindexCollectionCmd(OverseerCollectionMessageHandler ocmh) {
@@ -268,7 +266,6 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     Exception exc = null;
     boolean createdTarget = false;
     try {
-      solrClientCache = new SolrClientCache(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
       zkHost = ocmh.zkStateReader.getZkClient().getZkServerAddress();
       // set the running flag
       reindexingState.clear();
@@ -504,7 +501,6 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       exc = e;
       aborted = true;
     } finally {
-      solrClientCache.close();
       if (aborted) {
         cleanup(collection, targetCollection, chkCollection, daemonUrl, targetCollection, createdTarget);
         if (exc != null) {
@@ -550,7 +546,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   }
 
   private long getNumberOfDocs(String collection) {
-    CloudSolrClient solrClient = solrClientCache.getCloudSolrClient(zkHost);
+    CloudSolrClient solrClient = ocmh.overseer.getCoreContainer().getSolrClientCache().getCloudSolrClient(zkHost);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(CommonParams.Q, "*:*");

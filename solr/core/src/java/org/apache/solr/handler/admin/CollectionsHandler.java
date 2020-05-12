@@ -545,7 +545,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
         props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
       }
-      new ColStatus(h.coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+      new ColStatus(h.coreContainer.getSolrClientCache(),
           h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());
       return null;
