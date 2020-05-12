@@ -53,7 +53,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -88,12 +87,12 @@ import static org.apache.solr.common.params.CommonParams.ID;
  */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
-  static SolrClientCache clientCache = new SolrClientCache();
-  static ModelCache modelCache = null;
-  static ConcurrentMap objectCache = new ConcurrentHashMap();
+  private ModelCache modelCache = null;
+  private ConcurrentMap objectCache = new ConcurrentHashMap();
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
   private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
   @Override
@@ -101,14 +100,15 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  public static SolrClientCache getClientCache() {
-    return clientCache;
+  public SolrClientCache getClientCache() {
+    return solrClientCache;
   }
 
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
+    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
 
     if (coreContainer.isZooKeeperAware()) {
@@ -118,24 +118,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       streamFactory.withDefaultZkHost(defaultZkhost);
       modelCache = new ModelCache(250,
           defaultZkhost,
-          clientCache);
+          solrClientCache);
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
     addExpressiblePlugins(streamFactory, core);
-
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        // To change body of implemented methods use File | Settings | File Templates.
-      }
-
-      @Override
-      public void postClose(SolrCore core) {
-        clientCache.close();
-      }
-    });
   }
 
   public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
@@ -226,7 +214,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
-    context.setSolrClientCache(clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.setModelCache(modelCache);
     context.setObjectCache(objectCache);
     context.put("core", this.coreName);
