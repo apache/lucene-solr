@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 allprojects {
   plugins.withType(JavaPlugin) {
+    ext {
+      relativeDocPath = project.path.replaceFirst(":", "").replace(':', '/')
+    }
+
     // We disable the default javadoc task and have our own
     // javadoc rendering task below. The default javadoc task
     // will just invoke 'renderJavadoc' (to allow people to call
@@ -54,8 +58,7 @@ allprojects {
       relativeProjectLinks = true
 
       // TODO: proof of concept to place everything in one folder under root's build dir.
-      def relative = project.path.replaceFirst(":", "").replace(':', '/')
-      outputDir = rootProject.file("${rootProject.buildDir}/site-docs").toPath().resolve(relative).toFile()
+      outputDir = rootProject.file("${rootProject.buildDir}/site-docs").toPath().resolve(project.relativeDocPath).toFile()
     }
   }
 }
@@ -299,31 +302,9 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
-    def thispc = project.path.split(':').drop(1);
-    // Converts absolute project path (e.g., ":lucene:analysis:common") to 
-    // a link in the docs; relative to current, if needed for global documentation
-    def convertPath2Link = { path ->
-      def pc = path.split(':').drop(1);
-      if (relativeProjectLinks) {
-        int toDrop = 0;
-        for (int i = 0; i < Math.min(pc.size(), thispc.size()); i++) {
-          if (pc[i] == thispc[i]) {
-            toDrop++;
-          } else {
-            break;
-          }
-        }
-        // only create relative path if there is actually anything removed from beginning (this implies absolute link solr -> lucene):
-        if (toDrop > 0) {
-          return Collections.nCopies(thispc.size() - toDrop, '..').plus(pc.drop(toDrop) as List).join('/').concat('/');
-        } 
-      }
-      return "${(pc[0] == 'lucene') ? luceneDocUrl : solrDocUrl}/${pc.drop(1).join('/')}/"
-    }
-
     // escapes an option with single quotes or whitespace to be passed in the options.txt file for
     def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
-    
+
     def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
     def title = "${libName} ${project.version} ${project.name} API"
 
@@ -360,15 +341,29 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
 
+    def allOfflineLinks = [:]
+    allOfflineLinks.putAll(offlineLinks)
+
     // Resolve inter-project links.
     linkedProjects.collect { otherProject ->
-      def docdir = convertPath2Link(otherProject.path)
-      opts << [ '-linkoffline', docdir, otherProject.tasks[name].outputDir ]
+      // For relative links we compute the actual relative link between projects.
+      // TODO: if we don't want relative Solr-Lucene links we need to add a condition here
+      // and it'll just render as an offline link.
+      if (relativeProjectLinks) {
+        def pathTo = otherProject.tasks[name].outputDir.toPath().toAbsolutePath()
+        def pathFrom = outputDir.toPath().toAbsolutePath()
+        def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
+        opts << [ '-link', relative ]
+      } else {
+        // For absolute links, we determine the target URL by assembling the full URL.
+        def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
+        allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherProject.tasks[name].outputDir)
+      }
     }
 
     // Add offline links.
     // TODO: add some sanity check/ validation here to ensure folder/package-list or folder/element-list is present?
-    offlineLinks.each { url, folder ->
+    allOfflineLinks.each { url, folder ->
       opts << [ '-linkoffline', url, folder ]
     }
 
