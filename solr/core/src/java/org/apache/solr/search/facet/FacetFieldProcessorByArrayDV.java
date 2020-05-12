@@ -330,6 +330,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     }
 
     public final void incrementCount(int segOrd, int globalOrd, int inc, int maxIdx) {
+      // nocommit: segOrd is (ultimately) unused?
       int i = maxIdx;
       do {
         incrementIdxCount(i, segOrd, globalOrd, inc);

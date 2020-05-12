@@ -85,6 +85,12 @@ final class UnionDISI extends SweepDISI {
     return collectBase;
   }
 
+  // nocommit: even if there are reasons why SweepCountAware should define 2 distinct registerCounts methods
+  // nocommit: since the impls here are idenitcal, and only depend on the common SegCounter.map method, we
+  // nocommit: might as well refactor these identical impls to just be stubs that call a new
+  // nocommit: 'private int _registerCounts(SegCounter)'
+  
+  
   @Override
   public int registerCounts(SegCountGlobal segCounter) throws IOException {
     int i = -1;

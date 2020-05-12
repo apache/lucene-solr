@@ -388,11 +388,19 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotQ) {
         slotSet = fcontext.base;
       } else {
+        // nocommit: having this "non slot specific" code in the processSlot method,
+        // nocommit: such that replaces the (default) minDfFilterCache value with a new hueristic defined
+        // nocommit: value after the first slot, seems overly-cleaver to the point of being confusing
+        // nocommit: at first glance.
+        // nocommit: it would be a lot cleaner & easier to understand if we encapsulate all the code
+        // nocomimt: that isn't slot specific into an isolated data-struct with it's own init method/logic
         switch (minDfFilterCache) {
           case ALWAYS_CACHE:
             break;
           case Integer.MIN_VALUE:
             if (fcontext.processor.freq instanceof FacetField) {
+              // nocommit: need to ensure we have good whitebox tests of the caching effects when
+              // nocommit: using relatedness() under multiple types of parent facets
               FacetField ffield = (FacetField)fcontext.processor.freq;
               noCacheQ = new WrappedQuery(null);
               noCacheQ.setCache(false);
@@ -414,6 +422,10 @@ public class RelatednessAgg extends AggValueSource {
             }
           default:
             if (!(slotQ instanceof TermQuery) || shouldCache(((TermQuery)slotQ).getTerm().bytes())) {
+              // nocommit: if we're going to unwrap the (common case) TermQueries to get the Term
+              // nocommit: so shouldCache() can use the TermEnum check their DF, why not just
+              // nocommit: use SolrIndexSearcer.getDocSet(DocsEnumState) using DocsEnumState.minSetSizeCached ?
+              // nocommit: (just like FacetFieldProcessorByEnumTermsStream)
               break;
             }
           case Integer.MAX_VALUE:
