@@ -18,46 +18,23 @@
 package org.apache.solr.cloud.autoscaling;
 
 
-import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
-import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.SolrResourceLoader;
 
+import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+
+/**
+ * This class configures the parent ComputePlanAction to compute plan
+ * only for collections which have autoAddReplicas=true.
+ */
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
 
   @Override
-  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) throws IOException {
-    // for backward compatibility
-    ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
-    String autoAddReplicas = stateProvider.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
-    if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
-      return NoneSuggester.get(session);
-    }
-
-    Suggester suggester = super.getSuggester(session, event, context, cloudManager);
-    ClusterState clusterState;
-    try {
-      clusterState = stateProvider.getClusterState();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception getting cluster state", e);
-    }
-
-    boolean anyCollections = false;
-    for (DocCollection collection: clusterState.getCollectionsMap().values()) {
-      if (collection.getAutoAddReplicas()) {
-        anyCollections = true;
-        suggester.hint(Suggester.Hint.COLL, collection.getName());
-      }
-    }
-
-    if (!anyCollections) return NoneSuggester.get(session);
-    return suggester;
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    properties.put("collections", Collections.singletonMap(AUTO_ADD_REPLICAS, "true"));
+    super.configure(loader, cloudManager, properties);
   }
 }

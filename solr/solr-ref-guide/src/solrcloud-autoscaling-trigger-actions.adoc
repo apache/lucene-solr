@@ -29,12 +29,13 @@ commands which can re-balance the cluster in response to trigger events.
 The following parameters are configurable:
 
 `collections`::
-A comma-separated list of collection names. If this list is not empty then
-the computed operations will only calculate collection operations that affect
-listed collections and ignore any other collection operations for collections
+A comma-separated list of collection names. This can also be a selector on the collection property e.g. `collections: {'policy': 'my_custom_policy'}` will match all collections which use the policy named `my_customer_policy`.
+
+If a non-empty list or selector is specified then the computed operations will only calculate collection operations that affect
+matched collections and ignore any other collection operations for collections
 not listed here. Note that non-collection operations are not affected by this.
 
-Example configuration:
+Example configurations:
 
 [source,json]
 ----
@@ -48,11 +49,11 @@ Example configuration:
    {
     "name" : "compute_plan",
     "class" : "solr.ComputePlanAction",
-    "collections" : "test1,test2",
+    "collections" : "test1,test2"
    },
    {
     "name" : "execute_plan",
-    "class" : "solr.ExecutePlanAction",
+    "class" : "solr.ExecutePlanAction"
    }
   ]
  }
@@ -62,6 +63,31 @@ Example configuration:
 In this example only collections `test1` and `test2` will be potentially
 replicated / moved to an added node, other collections will be ignored even
 if they cause policy violations.
+
+[source,json]
+----
+{
+ "set-trigger" : {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s",
+  "enabled" : true,
+  "actions" : [
+   {
+    "name" : "compute_plan",
+    "class" : "solr.ComputePlanAction",
+    "collections" : {"policy": "my_policy"}
+   },
+   {
+    "name" : "execute_plan",
+    "class" : "solr.ExecutePlanAction"
+   }
+  ]
+ }
+}
+----
+
+In this example only collections which use the `my_policy` as their autoscaling policy will be potentially replicated / moved to an added node, other collections will be ignored even if they cause policy violations.
 
 == Execute Plan Action
 
