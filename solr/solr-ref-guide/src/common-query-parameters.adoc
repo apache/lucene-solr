@@ -381,11 +381,11 @@ q=quick brown fox&minExactHits=100&rows=10
 "response": {
     "numFound": 153,
     "start": 0,
-    "hitCountExact": false,
+    "numFoundExact": false,
     "docs": Array[10]
 ...
 ----
-Since `hitCountExact=false`, we know the number of documents matching the query is greater or equal to 153. If we specify a higher value for `minExactHits`:
+Since `numFoundExact=false`, we know the number of documents matching the query is greater or equal to 153. If we specify a higher value for `minExactHits`:
 
 [source,text]
 q=quick brown fox&minExactHits=200&rows=10
@@ -395,7 +395,7 @@ q=quick brown fox&minExactHits=200&rows=10
 "response": {
     "numFound": 163,
     "start": 0,
-    "hitCountExact": true,
+    "numFoundExact": true,
     "docs": Array[10]
 ...
 ----
