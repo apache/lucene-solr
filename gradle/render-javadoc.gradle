@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 allprojects {
   plugins.withType(JavaPlugin) {
-
     // We disable the default javadoc task and have our own
     // javadoc rendering task below. The default javadoc task
     // will just invoke 'renderJavadoc' (to allow people to call
@@ -32,7 +31,7 @@ allprojects {
       dependsOn "renderJavadoc"
     }
 
-    task renderJavadoc(type:RenderJavadocTask) {
+    task renderJavadoc(type: RenderJavadocTask) {
       description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
       group "documentation"
 
@@ -42,260 +41,209 @@ allprojects {
       outputDir = project.javadoc.destinationDir;
       classpath = sourceSets.main.compileClasspath;
     }
+
+    task renderSiteJavadoc(type: RenderJavadocTask) {
+      description "Generates Javadoc API documentation for the site (relative links)."
+      group "documentation"
+
+      dependsOn sourceSets.main.compileClasspath
+
+      srcDirSet = sourceSets.main.java;
+      classpath = sourceSets.main.compileClasspath;
+
+      relativeProjectLinks = true
+
+      // TODO: proof of concept to place everything in one folder under root's build dir.
+      def relative = project.path.replaceFirst(":", "").replace(':', '/')
+      outputDir = rootProject.file("${rootProject.buildDir}/site-docs").toPath().resolve(relative).toFile()
+    }
   }
 }
 
+// Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
+// (by removing all the packages which are part of lucene-core)
+// See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
 configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lucene:core' }) {
-
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:core'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-
-      doLast {
-        // fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly (by removing all the packages which are part of lucene-core)
-        // problem description: [https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106]
-        Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
-        File elementFile = file("${outputDir}/element-list");
-        List elements = elementFile.readLines('UTF-8');
-        elements.removeAll{ luceneCorePackages.contains(it) }
-        elementFile.write(elements.join('\n').concat('\n'), 'UTF-8');
-      }
+  project.tasks.withType(RenderJavadocTask) {
+    doLast {
+      Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
+      File elementFile = file("${outputDir}/element-list");
+      List elements = elementFile.readLines('UTF-8');
+      elements.removeAll(luceneCorePackages)
+      elementFile.write(elements.join('\n').concat('\n'), 'UTF-8');
     }
+  }
+}
+
+// Add cross-project documentation task dependencies and link generation.
+configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lucene:core' }) {
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:core')
   }
 }
 
 configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') && it.path != ':lucene:analysis:common'}) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:analysis:common'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:analysis:common')
   }
 }
 
 configure(project(':lucene:benchmark')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:memory',
-       ':lucene:highlighter',
-       ':lucene:analysis:common',
-       ':lucene:queryparser',
-       ':lucene:facet',
-       ':lucene:spatial-extras'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+        ':lucene:memory',
+        ':lucene:highlighter',
+        ':lucene:analysis:common',
+        ':lucene:queryparser',
+        ':lucene:facet',
+        ':lucene:spatial-extras')
   }
 }
 
 configure(project(':lucene:classification')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:queries', ':lucene:analysis:common', ':lucene:grouping'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+       ':lucene:queries',
+       ':lucene:analysis:common',
+       ':lucene:grouping')
   }
 }
 
 configure(project(':lucene:demo')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:analysis:common',
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+       ':lucene:analysis:common',
        ':lucene:queryparser',
        ':lucene:queries',
        ':lucene:facet',
-       ':lucene:expressions'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
+       ':lucene:expressions')
 
-      // we link the example source in the javadocs, as it's ref'ed elsewhere
-      linksource = true
-    }
+    // We link the example source in the javadocs, as it's ref'ed elsewhere
+    linksource = true
   }
 }
 
 configure(project(':lucene:grouping')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:queries'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:queries')
   }
 }
 
 configure(project(':lucene:highlighter')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:memory'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:memory')
   }
 }
 
 configure(project(':lucene:monitor')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:memory', ':lucene:analysis:common', ':lucene:queryparser'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+        ':lucene:memory',
+        ':lucene:analysis:common',
+        ':lucene:queryparser')
   }
 }
 
 configure(project(':lucene:queryparser')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:queries', ':lucene:sandbox'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+        ':lucene:queries',
+        ':lucene:sandbox'
+    )
   }
 }
 
 configure(project(':lucene:replicator')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:facet'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:facet')
   }
 }
 
 configure(project(':lucene:spatial-extras')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:spatial3d'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:spatial3d')
   }
 }
 
 configure(project(':lucene:suggest')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':lucene:analysis:common'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:analysis:common')
   }
 }
 
 configure(project(':lucene:test-framework')) {
-  plugins.withType(JavaPlugin) {
-
-    renderJavadoc {
-      [':lucene:codecs'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-      linkJUnit = true
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':lucene:codecs')
   }
 }
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
-  plugins.withType(JavaPlugin) {
-    def hasJavdocsTask = project.tasks.collect { it.name }.contains('renderJavadoc')
-    if (hasJavdocsTask) {
-      renderJavadoc {
-        [':lucene:core',
-         ':lucene:analysis:common',
-         ':lucene:analysis:icu',
-         ':lucene:analysis:kuromoji',
-         ':lucene:analysis:nori',
-         ':lucene:analysis:morfologik',
-         ':lucene:analysis:phonetic',
-         ':lucene:analysis:smartcn',
-         ':lucene:analysis:stempel',
-         ':lucene:backward-codecs',
-         ':lucene:codecs',
-         ':lucene:expressions',
-         ':lucene:suggest',
-         ':lucene:grouping',
-         ':lucene:join',
-         ':lucene:queries',
-         ':lucene:queryparser',
-         ':lucene:highlighter',
-         ':lucene:memory',
-         ':lucene:misc',
-         ':lucene:classification',
-         ':lucene:spatial-extras'].collect { path ->
-          dependsOn "${path}:renderJavadoc"
-          linkProjects += [ path ]
-        }
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+        ':lucene:core',
+        ':lucene:analysis:common',
+        ':lucene:analysis:icu',
+        ':lucene:analysis:kuromoji',
+        ':lucene:analysis:nori',
+        ':lucene:analysis:morfologik',
+        ':lucene:analysis:phonetic',
+        ':lucene:analysis:smartcn',
+        ':lucene:analysis:stempel',
+        ':lucene:backward-codecs',
+        ':lucene:codecs',
+        ':lucene:expressions',
+        ':lucene:suggest',
+        ':lucene:grouping',
+        ':lucene:join',
+        ':lucene:queries',
+        ':lucene:queryparser',
+        ':lucene:highlighter',
+        ':lucene:memory',
+        ':lucene:misc',
+        ':lucene:classification',
+        ':lucene:spatial-extras'
+    )
   }
 }
 
 configure(project(':solr:core')) {
-  plugins.withType(JavaPlugin) {
-    // specialized to ONLY depend on solrj
-    renderJavadoc {
-      [':solr:solrj'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    // Specialized to ONLY depend on solrj
+    addLinkedProject(':solr:solrj')
   }
 }
 
 configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':solr:solrj', ':solr:core'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(
+        ':solr:solrj',
+        ':solr:core'
+    )
   }
 }
 
 configure(project(':solr:contrib:dataimporthandler-extras')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      [':solr:contrib:dataimporthandler'].collect { path ->
-        dependsOn "${path}:renderJavadoc"
-        linkProjects += [ path ]
-      }
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    addLinkedProject(':solr:contrib:dataimporthandler')
   }
 }
 
 configure(project(':solr:test-framework')) {
-  plugins.withType(JavaPlugin) {
-    renderJavadoc {
-      linkJUnit = true
-    }
+  project.tasks.withType(RenderJavadocTask) {
+    linkJUnit = true
   }
 }
 
-
-configure(subprojects.findAll { it.path in [':solr:solr-ref-guide', ':solr:server', ':solr:webapp']}) {
-  afterEvaluate {
-    project.tasks.findByPath("renderJavadoc").enabled = false
+// Disable Javadoc rendering for these projects.
+configure(subprojects.findAll { it.path in [
+    ':solr:solr-ref-guide',
+    ':solr:server',
+    ':solr:webapp']}) {
+  project.tasks.withType(RenderJavadocTask) {
+    enabled = false
   }
 }
+
 
 class RenderJavadocTask extends DefaultTask {
   @InputFiles
@@ -303,30 +251,45 @@ class RenderJavadocTask extends DefaultTask {
   SourceDirectorySet srcDirSet;
   
   @OutputDirectory
-  File outputDir;
-  
+  File outputDir
+
   @InputFiles
   @Classpath
-  FileCollection classpath;
+  FileCollection classpath
   
   @Input
-  boolean linksource = false;
+  boolean linksource = false
   
   @Input
-  boolean linkJUnit = false;
+  boolean linkJUnit = false
   
   @Input
-  boolean relativeProjectLinks = false;
+  boolean relativeProjectLinks = false
 
   @Input
-  def linkProjects = [];
-  
+  def linkedProjectNames = []
+  def linkedProjects = []
+
   @Input
   def luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${project.baseVersion.replace(".", "_")}")
 
   @Input
   def solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${project.baseVersion.replace(".", "_")}")
-  
+
+  public addLinkedProject(String... projectPaths) {
+    projectPaths.each { otherProjectPath ->
+      // We want to depend on the task of the same name in the other project.
+      def myName = name
+      def otherProject = project.findProject(otherProjectPath)
+      def otherTasks = otherProject.tasks.matching { it.name == myName }
+      dependsOn otherTasks
+
+      // Create a cross-link between documentation.
+      linkedProjects.add(otherProject)
+      linkedProjectNames.add(otherProjectPath)
+    }
+  }
+
   @TaskAction
   public void render() {
     def thispc = project.path.split(':').drop(1);
@@ -399,11 +362,11 @@ class RenderJavadocTask extends DefaultTask {
     if (linkJUnit) {
       opts << [ '-linkoffline', junitDocUrl, project.project(':lucene').file('tools/javadoc/junit/') ]
     }
-    // resolve inter-project links
-    linkProjects.collect { path ->
-      def docdir = convertPath2Link(path)
-      logger.warn(docdir as String);
-      opts << [ '-linkoffline', docdir, project.project(path).tasks[name].outputDir ]
+
+    // Resolve inter-project links.
+    linkedProjects.collect { otherProject ->
+      def docdir = convertPath2Link(otherProject.path)
+      opts << [ '-linkoffline', docdir, otherProject.tasks[name].outputDir ]
     }
 
     opts << [ '--release', 11 ]
