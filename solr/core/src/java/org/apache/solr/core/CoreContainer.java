@@ -102,6 +102,7 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -652,6 +653,9 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    // initialize CalciteSolrDriver instance to use this solrClientCache
+    CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
     solrCores.load(loader);
 

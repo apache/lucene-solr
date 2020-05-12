@@ -43,12 +43,13 @@ import com.google.common.collect.ImmutableMap;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
-  final SolrClientCache solrClientCache = new SolrClientCache();
+  final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
 
-  SolrSchema(Properties properties) {
+  SolrSchema(Properties properties, SolrClientCache solrClientCache) {
     super();
     this.properties = properties;
+    this.solrClientCache = solrClientCache;
   }
 
   public SolrClientCache getSolrClientCache() {
@@ -57,7 +58,6 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   @Override
   public void close() {
-    solrClientCache.close();
     isClosed = true;
   }
 
