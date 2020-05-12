@@ -354,18 +354,6 @@ class RenderJavadocTask extends DefaultTask {
     // escapes an option with single quotes or whitespace to be passed in the options.txt file for
     def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
     
-    def relativizeURL = { String from, String to ->
-      URI fromUri = URI.create(from).normalize();
-      URI toUri = URI.create(to).normalize();
-      if (fromUri.scheme != toUri.scheme || fromUri.authority != toUri.authority) {
-        return to;
-      }
-      // because URI#relativice can't handle relative paths, we use Path class as workaround
-      Path fromPath = Paths.get("./${fromUri.path}");
-      Path toPath = Paths.get("./${toUri.path}");
-      return fromPath.relativize(toPath).toString().replace(File.separator, '/')
-    }
-
     def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
     def title = "${libName} ${project.version} ${project.name} API"
     
