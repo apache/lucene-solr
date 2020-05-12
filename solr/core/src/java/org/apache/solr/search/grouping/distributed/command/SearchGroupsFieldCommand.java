@@ -30,11 +30,11 @@ import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TermGroupSelector;
-import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
+import org.apache.solr.search.grouping.ValueSourceGroupSelector;
 
 /**
  * Creates all the collectors needed for the first phase and how to handle the results.

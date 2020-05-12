@@ -34,12 +34,12 @@ import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.grouping.TopGroupsCollector;
-import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
+import org.apache.solr.search.grouping.ValueSourceGroupSelector;
 
 /**
  * Defines all collectors for retrieving the second phase and how to handle the collector result.

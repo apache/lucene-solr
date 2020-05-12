@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.grouping;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +38,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -47,7 +45,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
-import org.apache.lucene.util.mutable.MutableValueStr;
 
 public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
@@ -120,7 +117,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
-    Comparator<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> cmp = (groupCount1, groupCount2) -> {
+    Comparator<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> cmp = (groupCount1, groupCount2) -> {
       if (groupCount1.groupValue == null) {
         if (groupCount2.groupValue == null) {
           return 0;
@@ -134,42 +131,45 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     };
 
     // === Search for content:random
-    FirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
+    FirstPassGroupingCollector<BytesRef> firstCollector
+        = new FirstPassGroupingCollector<>(new TermGroupSelector(GROUP_FIELD), new Sort(), 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), firstCollector);
-    DistinctValuesCollector<Comparable<Object>, Comparable<Object>> distinctValuesCollector
-        = createDistinctCountCollector(firstCollector, COUNT_FIELD);
+    Collection<SearchGroup<BytesRef>> searchGroups = firstCollector.getTopGroups(0);
+    DistinctValuesCollector<BytesRef, BytesRef> distinctValuesCollector
+        = new DistinctValuesCollector<>(firstCollector.getGroupSelector(), searchGroups, new TermGroupSelector(COUNT_FIELD));
     indexSearcher.search(new TermQuery(new Term("content", "random")), distinctValuesCollector);
 
-    List<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> gcs = distinctValuesCollector.getGroups();
+    List<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> gcs = distinctValuesCollector.getGroups();
     Collections.sort(gcs, cmp);
     assertEquals(4, gcs.size());
 
     compareNull(gcs.get(0).groupValue);
-    List<Comparable<?>> countValues = new ArrayList<Comparable<?>>(gcs.get(0).uniqueValues);
+    List<BytesRef> countValues = new ArrayList<>(gcs.get(0).uniqueValues);
     assertEquals(1, countValues.size());
     compare("1", countValues.get(0));
 
     compare("1", gcs.get(1).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(1).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(1).uniqueValues);
     Collections.sort(countValues, nullComparator);
     assertEquals(2, countValues.size());
     compare("1", countValues.get(0));
     compare("2", countValues.get(1));
 
     compare("2", gcs.get(2).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(2).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(2).uniqueValues);
     assertEquals(1, countValues.size());
     compareNull(countValues.get(0));
 
     compare("3", gcs.get(3).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(3).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(3).uniqueValues);
     assertEquals(1, countValues.size());
     compare("1", countValues.get(0));
 
     // === Search for content:some
-    firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
+    firstCollector = new FirstPassGroupingCollector<>(new TermGroupSelector(GROUP_FIELD), new Sort(), 10);
     indexSearcher.search(new TermQuery(new Term("content", "some")), firstCollector);
-    distinctValuesCollector = createDistinctCountCollector(firstCollector, COUNT_FIELD);
+    distinctValuesCollector
+        = new DistinctValuesCollector<>(firstCollector.getGroupSelector(), firstCollector.getTopGroups(0), new TermGroupSelector(COUNT_FIELD));
     indexSearcher.search(new TermQuery(new Term("content", "some")), distinctValuesCollector);
 
     gcs = distinctValuesCollector.getGroups();
@@ -177,26 +177,27 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     assertEquals(3, gcs.size());
 
     compare("1", gcs.get(0).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(0).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(0).uniqueValues);
     assertEquals(2, countValues.size());
     Collections.sort(countValues, nullComparator);
     compare("1", countValues.get(0));
     compare("2", countValues.get(1));
 
     compare("2", gcs.get(1).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(1).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(1).uniqueValues);
     assertEquals(1, countValues.size());
     compareNull(countValues.get(0));
 
     compare("3", gcs.get(2).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(2).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(2).uniqueValues);
     assertEquals(1, countValues.size());
     compare("1", countValues.get(0));
 
      // === Search for content:blob
-    firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
+    firstCollector = new FirstPassGroupingCollector<>(new TermGroupSelector(GROUP_FIELD), new Sort(), 10);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), firstCollector);
-    distinctValuesCollector = createDistinctCountCollector(firstCollector, COUNT_FIELD);
+    distinctValuesCollector
+        = new DistinctValuesCollector<>(firstCollector.getGroupSelector(), firstCollector.getTopGroups(0), new TermGroupSelector(COUNT_FIELD));
     indexSearcher.search(new TermQuery(new Term("content", "blob")), distinctValuesCollector);
 
     gcs = distinctValuesCollector.getGroups();
@@ -204,13 +205,13 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     assertEquals(2, gcs.size());
 
     compare("1", gcs.get(0).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(0).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(0).uniqueValues);
     // B/c the only one document matched with blob inside the author 1 group
     assertEquals(1, countValues.size());
     compare("1", countValues.get(0));
 
     compare("3", gcs.get(1).groupValue);
-    countValues = new ArrayList<Comparable<?>>(gcs.get(1).uniqueValues);
+    countValues = new ArrayList<>(gcs.get(1).uniqueValues);
     assertEquals(1, countValues.size());
     compare("1", countValues.get(0));
 
@@ -229,15 +230,14 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         Sort groupSort = new Sort(new SortField("id", SortField.Type.STRING));
         int topN = 1 + random.nextInt(10);
 
-        List<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> expectedResult = createExpectedResult(context, term, groupSort, topN);
+        List<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> expectedResult = createExpectedResult(context, term, groupSort, topN);
 
-        FirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(groupSort, GROUP_FIELD, topN);
+        FirstPassGroupingCollector<BytesRef> firstCollector = new FirstPassGroupingCollector<>(new TermGroupSelector(GROUP_FIELD), new Sort(), topN);
         searcher.search(new TermQuery(new Term("content", term)), firstCollector);
-        DistinctValuesCollector<Comparable<Object>, Comparable<Object>> distinctValuesCollector
-            = createDistinctCountCollector(firstCollector, COUNT_FIELD);
+        DistinctValuesCollector<BytesRef, BytesRef> distinctValuesCollector
+            = new DistinctValuesCollector<>(firstCollector.getGroupSelector(), firstCollector.getTopGroups(0), new TermGroupSelector(COUNT_FIELD));
         searcher.search(new TermQuery(new Term("content", term)), distinctValuesCollector);
-        @SuppressWarnings("unchecked")
-        List<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> actualResult = distinctValuesCollector.getGroups();
+        List<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> actualResult = distinctValuesCollector.getGroups();
 
         if (VERBOSE) {
           System.out.println("Index iter=" + indexIter);
@@ -254,13 +254,13 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
         assertEquals(expectedResult.size(), actualResult.size());
         for (int i = 0; i < expectedResult.size(); i++) {
-          DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>> expected = expectedResult.get(i);
-          DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>> actual = actualResult.get(i);
+          DistinctValuesCollector.GroupCount<BytesRef, BytesRef> expected = expectedResult.get(i);
+          DistinctValuesCollector.GroupCount<BytesRef, BytesRef> actual = actualResult.get(i);
           assertValues(expected.groupValue, actual.groupValue);
           assertEquals(expected.uniqueValues.size(), actual.uniqueValues.size());
-          List<Comparable<?>> expectedUniqueValues = new ArrayList<>(expected.uniqueValues);
+          List<BytesRef> expectedUniqueValues = new ArrayList<>(expected.uniqueValues);
           Collections.sort(expectedUniqueValues, nullComparator);
-          List<Comparable<?>> actualUniqueValues = new ArrayList<>(actual.uniqueValues);
+          List<BytesRef> actualUniqueValues = new ArrayList<>(actual.uniqueValues);
           Collections.sort(actualUniqueValues, nullComparator);
           for (int j = 0; j < expectedUniqueValues.size(); j++) {
             assertValues(expectedUniqueValues.get(j), actualUniqueValues.get(j));
@@ -272,9 +272,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     }
   }
 
-  private void printGroups(List<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> results) {
+  private void printGroups(List<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> results) {
     for(int i=0;i<results.size();i++) {
-      DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>> group = results.get(i);
+      DistinctValuesCollector.GroupCount<BytesRef, BytesRef> group = results.get(i);
       Object gv = group.groupValue;
       if (gv instanceof BytesRef) {
         System.out.println(i + ": groupValue=" + ((BytesRef) gv).utf8ToString());
@@ -291,28 +291,16 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     }
   }
 
-  private void assertValues(Object expected, Object actual) {
+  private void assertValues(BytesRef expected, BytesRef actual) {
     if (expected == null) {
       compareNull(actual);
     } else {
-      compare(((BytesRef) expected).utf8ToString(), actual);
+      compare(expected.utf8ToString(), actual);
     }
   }
   
-  private void compare(String expected, Object groupValue) {
-    if (BytesRef.class.isAssignableFrom(groupValue.getClass())) {
-      assertEquals(expected, ((BytesRef) groupValue).utf8ToString());
-    } else if (Double.class.isAssignableFrom(groupValue.getClass())) {
-      assertEquals(Double.parseDouble(expected), groupValue);
-    } else if (Long.class.isAssignableFrom(groupValue.getClass())) {
-      assertEquals(Long.parseLong(expected), groupValue);
-    } else if (MutableValue.class.isAssignableFrom(groupValue.getClass())) {
-      MutableValueStr mutableValue = new MutableValueStr();
-      mutableValue.value.copyChars(expected);
-      assertEquals(mutableValue, groupValue);
-    } else {
-      fail();
-    }
+  private void compare(String expected, BytesRef groupValue) {
+    assertEquals(expected, groupValue.utf8ToString());
   }
 
   private void compareNull(Object groupValue) {
@@ -339,31 +327,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private <T extends Comparable<Object>, R extends Comparable<Object>> DistinctValuesCollector<T, R> createDistinctCountCollector(FirstPassGroupingCollector<T> firstPassGroupingCollector,
-                                                                                         String countField) throws IOException {
-    Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0);
-    GroupSelector<T> selector = firstPassGroupingCollector.getGroupSelector();
-    if (ValueSourceGroupSelector.class.isAssignableFrom(selector.getClass())) {
-      GroupSelector gs = new ValueSourceGroupSelector(new BytesRefFieldSource(countField), new HashMap<>());
-      return new DistinctValuesCollector<>(selector, searchGroups, gs);
-    } else {
-      GroupSelector ts = new TermGroupSelector(countField);
-      return new DistinctValuesCollector<>(selector, searchGroups, ts);
-    }
-  }
-
-  @SuppressWarnings({"unchecked","rawtypes"})
-  private <T> FirstPassGroupingCollector<T> createRandomFirstPassCollector(Sort groupSort, String groupField, int topNGroups) throws IOException {
-    Random random = random();
-    if (random.nextBoolean()) {
-      return (FirstPassGroupingCollector<T>) new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(new BytesRefFieldSource(groupField), new HashMap<>()), groupSort, topNGroups);
-    } else {
-      return (FirstPassGroupingCollector<T>) new FirstPassGroupingCollector<>(new TermGroupSelector(groupField), groupSort, topNGroups);
-    }
-  }
-
-  @SuppressWarnings({"unchecked","rawtypes"})
-  private List<DistinctValuesCollector.GroupCount<Comparable<Object>, Comparable<Object>>> createExpectedResult(IndexContext context, String term, Sort groupSort, int topN) {
+  private List<DistinctValuesCollector.GroupCount<BytesRef, BytesRef>> createExpectedResult(IndexContext context, String term, Sort groupSort, int topN) {
     List result = new ArrayList();
     Map<String, Set<String>> groupCounts = context.searchTermToGroupCounts.get(term);
     int i = 0;
