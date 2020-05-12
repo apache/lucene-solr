@@ -204,6 +204,11 @@ Other Changes
 * SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
   opening a new searcher have changed and include the autowarm time. (Erick Erickson)
 
+* SOLR-7880: Update commons-cli to 1.4 (Erick Erickson)
+
+* SOLR-14226Fix or suppress 14 resource leak warnings in apache/solr/core (Andras Salaman via
+  Erick Erickson)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
