@@ -89,6 +89,8 @@ Bug Fixes
 
 * SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
 
+* SOLR-14463: Solr Admin ZkStatus page now works with ZK 3.6, without 'For input string: "null"' error (janhoy, Bernd Wahlen)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
