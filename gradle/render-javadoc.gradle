@@ -358,8 +358,12 @@ class RenderJavadocTask extends DefaultTask {
     }
 
     // Add offline links.
-    // TODO: add some sanity check/ validation here to ensure dir/package-list or dir/element-list is present?
     allOfflineLinks.each { url, dir ->
+      // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
+      if (!project.file("$dir/package-list").exists() &&
+          !project.file("$dir/element-list").exists()) {
+        throw new GradleException("Expected pre-rendered package-list or element-list at ${dir}.")
+      }
       opts << [ '-linkoffline', url, dir ]
     }
 
