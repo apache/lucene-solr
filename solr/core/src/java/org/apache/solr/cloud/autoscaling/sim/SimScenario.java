@@ -1108,7 +1108,7 @@ public class SimScenario implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     if (cluster != null) {
       cluster.close();
       cluster = null;
