@@ -1,6 +1,5 @@
 = How to Contribute to Solr Documentation
-:page-tocclass: right
-:page-toclevels: 3
+:toclevels: 2
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,16 +25,13 @@ The following sections give an overview of how to work with AsciiDoc-format file
 
 Once you have a patch you'd like to contribute, you can submit it with a JIRA issue, the same as any other patch. See also the Solr wiki section on https://cwiki.apache.org/confluence/display/solr/HowToContribute[How To Contribute] for information on submitting patches.
 
-== Working with AsciiDoc Files
-include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
+// These pages cover AsciiDoc syntax and tools
+include::meta-docs/asciidoc-syntax.adoc[leveloffset=+1]
 
-include::meta-docs/editing-tools.adoc[leveloffset=+2]
+include::meta-docs/editing-tools.adoc[leveloffset=+1]
 
-== Modifying the Publication Formats
-The Solr Reference Guide is published in HTML format, using Jekyll and some plugins.
+// This covers our Jekyll templates
+include::meta-docs/jekyll.adoc[leveloffset=+1]
 
-include::meta-docs/jekyll.adoc[leveloffset=+2]
-
-== How to Publish the Guide
 // This is the how to publish section:
 include::meta-docs/publish.adoc[leveloffset=+1]

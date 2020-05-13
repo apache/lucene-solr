@@ -343,12 +343,44 @@ public final class ShapeField {
     bc = (bits & 1 << 4) == 1 << 4;
     ca = (bits & 1 << 5) == 1 << 5;
     triangle.setValues(aX, aY, ab, bX, bY, bc, cX, cY, ca);
+    resolveTriangleType(triangle);
+  }
+
+  private static void resolveTriangleType(DecodedTriangle triangle) {
+    if (triangle.aX == triangle.bX && triangle.aY == triangle.bY) {
+      if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
+        triangle.type = DecodedTriangle.TYPE.POINT;
+      } else {
+        triangle.bX = triangle.cX;
+        triangle.bY = triangle.cY;
+        triangle.cX = triangle.aX;
+        triangle.cY = triangle.aY;
+        triangle.type = DecodedTriangle.TYPE.LINE;
+      }
+    } else if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
+      triangle.type = DecodedTriangle.TYPE.LINE;
+    } else if (triangle.bX == triangle.cX && triangle.bY == triangle.cY) {
+      triangle.cX = triangle.aX;
+      triangle.cY = triangle.aY;
+      triangle.type = DecodedTriangle.TYPE.LINE;
+    } else {
+      triangle.type = DecodedTriangle.TYPE.TRIANGLE;
+    }
   }
 
   /**
    * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], DecodedTriangle)}.
    */
   public static class DecodedTriangle {
+    /** type of triangle */
+    public enum TYPE {
+      /** all coordinates are equal */
+      POINT,
+      /** first and third coordinates are equal */
+      LINE,
+      /** all coordinates are different */
+      TRIANGLE
+    }
     /** x coordinate, vertex one */
     public int aX;
     /** y coordinate, vertex one */
@@ -367,6 +399,8 @@ public final class ShapeField {
     public boolean bc;
     /** represent if edge ca belongs to original shape */
     public boolean ca;
+    /** triangle type */
+    public TYPE type;
 
     /** default xtor */
     public DecodedTriangle() {

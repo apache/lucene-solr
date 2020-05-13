@@ -53,7 +53,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -114,7 +114,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     NUM_THREADS = atLeast(3);
     EXEC_SERVICE = ExecutorUtil.newMDCAwareFixedThreadPool
-      (NUM_THREADS, new DefaultSolrThreadFactory(DEBUG_LABEL));
+      (NUM_THREADS, new SolrNamedThreadFactory(DEBUG_LABEL));
     
     // at least 2, but don't go crazy on nightly/test.multiplier with "atLeast()"
     final int numShards = TEST_NIGHTLY ? 5 : 2; 
@@ -270,7 +270,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     final int numDocsInIndex = (numDocsToCheck * DOC_ID_INCR);
     final AtomicLong[] expected = new AtomicLong[numDocsToCheck];
 
-    log.info("Testing " + numericFieldName + ": numDocsToCheck=" + numDocsToCheck + ", numDocsInIndex=" + numDocsInIndex + ", incr=" + DOC_ID_INCR);
+    log.info("Testing {}: numDocsToCheck={}, numDocsInIndex={}, incr={}"
+        , numericFieldName,  numDocsToCheck, numDocsInIndex, DOC_ID_INCR);
     
     // seed the index & keep track of what docs exist and with what values
     for (int id = 0; id < numDocsInIndex; id++) {

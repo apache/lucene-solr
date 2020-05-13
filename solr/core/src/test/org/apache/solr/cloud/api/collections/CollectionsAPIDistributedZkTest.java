@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -283,7 +284,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();
     String nn2 = cluster.getJettySolrRunner(1).getNodeName();
 
-    expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
           .setCreateNodeSet(nn1 + "," + nn2)
           .process(cluster.getSolrClient());

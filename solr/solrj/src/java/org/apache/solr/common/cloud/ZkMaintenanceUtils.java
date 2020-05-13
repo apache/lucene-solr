@@ -328,7 +328,7 @@ public class ZkMaintenanceUtils {
   private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
     if (data != null && data.length > 1) { // There are apparently basically empty ZNodes.
-      log.info("Writing file {}", file.toString());
+      log.info("Writing file {}", file);
       Files.write(file.toPath(), data);
       return data.length;
     }

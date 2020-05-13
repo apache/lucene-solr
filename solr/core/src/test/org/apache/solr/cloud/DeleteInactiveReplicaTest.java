@@ -81,7 +81,9 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
       return r == null || r.getState() != Replica.State.ACTIVE;
     });
 
-    log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
+    if (log.isInfoEnabled()) {
+      log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
+    }
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
     waitForState("Expected deleted replica " + replica.getName() + " to be removed from cluster state", collectionName, (n, c) -> {

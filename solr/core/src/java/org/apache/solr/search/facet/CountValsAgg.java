@@ -37,7 +37,7 @@ public class CountValsAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
     if (vs instanceof FieldNameValueSource) {
       String field = ((FieldNameValueSource)vs).getFieldName();
@@ -69,7 +69,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   class CountValSlotAcc extends LongFuncSlotAcc {
 
-    public CountValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+    public CountValSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
     }
 
@@ -83,7 +83,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   class CountSortedNumericDVAcc extends LongSortedNumericDVAcc {
 
-    public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -95,7 +95,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   class CountSortedSetDVAcc extends LongSortedSetDVAcc {
 
-    public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -111,7 +111,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     private int currentSlot;
     long[] result;
 
-    public CountMultiValuedAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountMultiValuedAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
       result = new long[numSlots];
     }

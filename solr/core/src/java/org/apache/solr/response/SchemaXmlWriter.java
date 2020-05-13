@@ -135,7 +135,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
           closeStartTag(true);
         }
       } else {
-        log.warn("Unknown schema component '" + schemaPropName + "'");
+        log.warn("Unknown schema component '{}'", schemaPropName);
       }
     }
     decLevel();
@@ -464,6 +464,11 @@ public class SchemaXmlWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
+    // no-op
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
     // no-op
   }
 

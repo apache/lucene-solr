@@ -44,7 +44,7 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       List<ControlData> testData = extractDataByKeyLookup(cache, fieldNames);
       compareData(data, testData);
     } catch (Exception e) {
-      log.warn("Exception thrown: " + e.toString());
+      log.warn("Exception thrown: {}", e);
       Assert.fail();
     } finally {
       try {
@@ -64,7 +64,7 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       List<ControlData> testData = extractDataInKeyOrder(cache, fieldNames);
       compareData(data, testData);
     } catch (Exception e) {
-      log.warn("Exception thrown: " + e.toString());
+      log.warn("Exception thrown: {}", e);
       Assert.fail();
     } finally {
       try {
@@ -180,7 +180,7 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       compareData(newControlData, testData);
 
     } catch (Exception e) {
-      log.warn("Exception thrown: " + e.toString());
+      log.warn("Exception thrown: {}", e);
       Assert.fail();
     } finally {
       try {

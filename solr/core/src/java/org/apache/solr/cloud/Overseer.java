@@ -149,7 +149,9 @@ public class Overseer implements SolrCloseable {
         isLeader = amILeader();  // not a no, not a yes, try ask again
       }
 
-      log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
+      if (log.isInfoEnabled()) {
+        log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
+      }
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
@@ -182,7 +184,9 @@ public class Overseer implements SolrCloseable {
               byte[] data = fallbackQueue.peek();
               while (fallbackQueueSize > 0 && data != null)  {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
+                if (log.isDebugEnabled()) {
+                  log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
+                }
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
@@ -239,7 +243,9 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                if (log.isDebugEnabled()) {
+                  log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                }
 
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
@@ -274,7 +280,9 @@ public class Overseer implements SolrCloseable {
           }
         }
       } finally {
-        log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+        if (log.isInfoEnabled()) {
+          log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+        }
         //do this in a separate thread because any wait is interrupted in this main thread
         new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
       }
@@ -306,7 +314,7 @@ public class Overseer implements SolrCloseable {
         // ZooKeeper in which case another Overseer should take over
         // TODO: if ordering for the message is not important, we could
         // track retries and put it back on the end of the queue
-        log.error("Overseer could not process the current clusterstate state update message, skipping the message: " + message, e);
+        log.error("Overseer could not process the current clusterstate state update message, skipping the message: {}", message, e);
         stats.error(operation);
       } finally {
         timerContext.stop();
@@ -346,7 +354,7 @@ public class Overseer implements SolrCloseable {
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
-            log.error("Could not delete my leader node "+path, e);
+            log.error("Could not delete my leader node {}", path, e);
           }
 
         } else{
@@ -419,7 +427,9 @@ public class Overseer implements SolrCloseable {
             return Collections.singletonList(new SliceMutator(getSolrCloudManager()).updateShardState(clusterState, message));
           case QUIT:
             if (myId.equals(message.get(ID))) {
-              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
+              if (log.isInfoEnabled()) {
+                log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
+              }
               overseerCollectionConfigSetProcessor.close();
               close();
             } else {
@@ -562,7 +572,7 @@ public class Overseer implements SolrCloseable {
     closed = false;
     doClose();
     stats = new Stats();
-    log.info("Overseer (id=" + id + ") starting");
+    log.info("Overseer (id={}) starting", id);
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
@@ -578,7 +588,7 @@ public class Overseer implements SolrCloseable {
 
     ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
     OverseerTriggerThread trigger = new OverseerTriggerThread(zkController.getCoreContainer().getResourceLoader(),
-        zkController.getSolrCloudManager(), config);
+        zkController.getSolrCloudManager());
     triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
 
     updaterThread.start();
@@ -745,7 +755,7 @@ public class Overseer implements SolrCloseable {
   
   public synchronized void close() {
     if (this.id != null) {
-      log.info("Overseer (id=" + id + ") closing");
+      log.info("Overseer (id={}) closing", id);
     }
     this.closed = true;
     doClose();

@@ -60,7 +60,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
         this.lastModifiedTime = syncData.timestamp;
       }
     } catch (IOException e) {
-      log.warn("Exception retrieving data from " + path + ", store will be readOnly", e);
+      log.warn("Exception retrieving data from {}, store will be readOnly", path, e);
       readOnly = true;
     }
     this.readOnly = readOnly;

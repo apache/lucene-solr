@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -36,15 +38,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.Operations;
 
@@ -515,53 +517,12 @@ public class TestFuzzyQuery extends LuceneTestCase {
     final String value = randomRealisticMultiByteUnicode(length);
 
     FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
-      new FuzzyQuery(new Term("field", value)).getTermsEnum(new Terms() {
-        @Override
-        public TermsEnum iterator() {
-          return TermsEnum.EMPTY;
-        }
-
-        @Override
-        public long size() {
-          return 0;
-        }
-
-        @Override
-        public long getSumTotalTermFreq() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getSumDocFreq() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getDocCount() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasFreqs() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasOffsets() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasPositions() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasPayloads() {
-          throw new UnsupportedOperationException();
-        }
-      });
+      new FuzzyAutomatonBuilder(value, 2, 0, true).buildMaxEditAutomaton();
     });
+    assertThat(expected.getMessage(), containsString(value));
+
+    expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class,
+        () -> new FuzzyAutomatonBuilder(value, 2, 0, true).buildAutomatonSet());
     assertThat(expected.getMessage(), containsString(value));
   }
 
@@ -776,5 +737,32 @@ public class TestFuzzyQuery extends LuceneTestCase {
       cp = ref.ints[ref.length++] = Character.codePointAt(s, i);
     }
     return ref;
+  }
+
+  public void testVisitor() {
+    FuzzyQuery q = new FuzzyQuery(new Term("field", "blob"), 2);
+    AtomicBoolean visited = new AtomicBoolean(false);
+    q.visit(new QueryVisitor() {
+      @Override
+      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+        visited.set(true);
+        ByteRunAutomaton a = automaton.get();
+        assertMatches(a, "blob");
+        assertMatches(a, "bolb");
+        assertMatches(a, "blobby");
+        assertNoMatches(a, "bolbby");
+      }
+    });
+    assertTrue(visited.get());
+  }
+
+  private static void assertMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertTrue(automaton.run(b.bytes, b.offset, b.length));
+  }
+
+  private static void assertNoMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertFalse(automaton.run(b.bytes, b.offset, b.length));
   }
 }

@@ -76,6 +76,23 @@ limitations under the License.
 WWW-Authenticate: {{wwwAuthHeader}}</pre>
     <hr/>
   </div>
+
+  <div ng-show="authScheme === 'Certificate'">
+    <h1>Certificate Authentication</h1>
+    <p>Your browser did not provide the required information to authenticate using PKI Certificates.
+      Please check that your computer has a valid PKI certificate for communicating with Solr,
+      and that your browser is properly configured to provide that certificate when required.
+      For more information, consult
+      <a href="https://lucene.apache.org/solr/guide/cert-authentication-plugin.html">
+        Solr's Certificate Authentication documentation
+      </a>.
+    </p>
+    The response from the server was:
+    <hr/>
+    <pre>HTTP 401 {{statusText}}
+WWW-Authenticate: {{wwwAuthHeader}}</pre>
+    <hr/>
+  </div>
   
   <div ng-show="authScheme === 'Bearer'">
     <h1>OpenID Connect (JWT) authentication</h1>

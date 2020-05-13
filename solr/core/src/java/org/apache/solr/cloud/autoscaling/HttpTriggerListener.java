@@ -158,7 +158,7 @@ public class HttpTriggerListener extends TriggerListenerBase {
     try {
       cloudManager.httpRequest(url, SolrRequest.METHOD.POST, headers, payload, timeout, followRedirects);
     } catch (IOException e) {
-      log.warn("Exception sending request for event " + event, e);
+      log.warn("Exception sending request for event {}", event, e);
     }
   }
 }

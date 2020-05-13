@@ -28,8 +28,6 @@ import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.ExpressionFactory;
 import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
-import org.apache.solr.client.solrj.io.ModelCache;
-import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -61,9 +59,6 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
   public static final String NAME = "/analytics";
   private IndexSchema indexSchema;
 
-  static SolrClientCache clientCache = new SolrClientCache();
-  static ModelCache modelCache = null;
-
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
@@ -72,7 +67,6 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
   @Override
   public void inform(SolrCore core) {
     core.registerResponseWriter(AnalyticsShardResponseWriter.NAME, new AnalyticsShardResponseWriter());
-
     indexSchema = core.getLatestSchema();
     AnalyticsRequestParser.init();
   }
