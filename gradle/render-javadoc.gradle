@@ -57,7 +57,7 @@ allprojects {
 
       relativeProjectLinks = true
 
-      // TODO: proof of concept to place everything in one folder under root's build dir.
+      // TODO: proof of concept to place everything in one dir under root's build dir.
       outputDir = rootProject.file("${rootProject.buildDir}/site-docs").toPath().resolve(project.relativeDocPath).toFile()
     }
   }
@@ -361,9 +361,9 @@ class RenderJavadocTask extends DefaultTask {
     }
 
     // Add offline links.
-    // TODO: add some sanity check/ validation here to ensure folder/package-list or folder/element-list is present?
-    allOfflineLinks.each { url, folder ->
-      opts << [ '-linkoffline', url, folder ]
+    // TODO: add some sanity check/ validation here to ensure dir/package-list or dir/element-list is present?
+    allOfflineLinks.each { url, dir ->
+      opts << [ '-linkoffline', url, dir ]
     }
 
     opts << [ '--release', 11 ]
