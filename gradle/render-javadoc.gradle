@@ -21,7 +21,7 @@
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
-      relativeDocPath = project.path.replaceFirst(":", "").replace(':', '/')
+      relativeDocPath = project.path.replaceFirst(/:\w+:/, "").replace(':', '/')
     }
 
     // We disable the default javadoc task and have our own
