@@ -310,6 +310,9 @@ class RenderJavadocTask extends DefaultTask {
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
     
+    // create the directory, so relative link calculation knows that it's a directory:
+    outputDir.mkdirs();
+    
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
