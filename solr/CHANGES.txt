@@ -17,6 +17,8 @@ New Features
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method

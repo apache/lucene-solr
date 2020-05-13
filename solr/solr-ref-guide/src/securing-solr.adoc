@@ -52,6 +52,7 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 // tag::list-of-authorization-plugins[]
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,External Role Rule-Based Authorization Plugin>>
 // end::list-of-authorization-plugins[]
 
 === Audit Logging Plugins

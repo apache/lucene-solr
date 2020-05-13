@@ -14,73 +14,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.security;
 
 import java.security.Principal;
-import java.util.Map;
 import java.util.Objects;
-
-import org.apache.http.util.Args;
+import java.util.Set;
 
 /**
- * Principal object that carries JWT token and claims for authenticated user.
+ * Type of Principal object that can contain also a list of roles the user has.
+ * One use case can be to keep track of user-role mappings in an Identity Server
+ * external to Solr and pass the information to Solr in a signed JWT token or in 
+ * another secure manner. The role information can then be used to authorize
+ * requests without the need to maintain or lookup what roles each user belongs to. 
  */
-public class JWTPrincipal implements Principal {
-  final String username;
-  String token;
-  Map<String,Object> claims;
+public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
+  private final String username;
+
+  private final Set<String> roles;
 
   /**
    * User principal with user name as well as one or more roles that he/she belong to
    * @param username string with user name for user
-   * @param token compact string representation of JWT token
-   * @param claims list of verified JWT claims as a map
+   * @param roles a set of roles that we know this user belongs to, or empty list for no roles
    */
-  public JWTPrincipal(final String username, String token, Map<String,Object> claims) {
+  public PrincipalWithUserRoles(final String username, Set<String> roles) {
     super();
-    Args.notNull(username, "User name");
-    Args.notNull(token, "JWT token");
-    Args.notNull(claims, "JWT claims");
-    this.token = token;
-    this.claims = claims;
+    Objects.requireNonNull(username, "User name was null");
+    Objects.requireNonNull(roles, "User roles was null");
     this.username = username;
+    this.roles = roles;
   }
 
+  /**
+   * Returns the name of this principal.
+   *
+   * @return the name of this principal.
+   */
   @Override
   public String getName() {
     return this.username;
   }
 
-  public String getToken() {
-    return token;
-  }
-
-  public Map<String, Object> getClaims() {
-    return claims;
+  /**
+   * Gets the list of roles
+   */
+  @Override
+  public Set<String> getVerifiedRoles() {
+    return roles;
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    JWTPrincipal that = (JWTPrincipal) o;
-    return Objects.equals(username, that.username) &&
-        Objects.equals(token, that.token) &&
-        Objects.equals(claims, that.claims);
+
+    PrincipalWithUserRoles that = (PrincipalWithUserRoles) o;
+
+    if (!username.equals(that.username)) return false;
+    return roles.equals(that.roles);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(username, token, claims);
+    int result = username.hashCode();
+    result = 31 * result + roles.hashCode();
+    return result;
   }
 
   @Override
   public String toString() {
-    return "JWTPrincipal{" +
+    return "PrincipalWithUserRoles{" +
         "username='" + username + '\'' +
-        ", token='" + "*****" + '\'' +
-        ", claims=" + claims +
+        ", roles=" + roles +
         '}';
   }
 }
