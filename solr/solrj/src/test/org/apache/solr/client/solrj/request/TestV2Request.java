@@ -135,7 +135,7 @@ public class TestV2Request extends SolrCloudTestCase {
                   "  }" +
                   "}" + ", 'something':'bogus'").build());
       assertFalse("The request failed", res1.get("responseHeader").toString().contains("status=0"));
-    }catch(BaseHttpSolrClient.RemoteExecutionException itsOk) {
+    } catch(BaseHttpSolrClient.RemoteExecutionException itsOk) {
     }
   }
 

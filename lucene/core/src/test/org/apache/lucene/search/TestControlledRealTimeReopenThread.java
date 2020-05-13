@@ -107,7 +107,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
-        assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals("generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtDeletes.release(s);
       }
@@ -131,7 +131,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got noDeletes searcher=" + s);
       }
       try {
-        assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals("generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtNoDeletes.release(s);
       }
@@ -155,7 +155,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got noDeletes searcher=" + s);
       }
       try {
-        assertEquals(1, s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals("generation: " + gen, 1, s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtNoDeletes.release(s);
       }
@@ -178,7 +178,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
-        assertEquals(1, s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals("generation: " + gen, 1, s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtDeletes.release(s);
       }

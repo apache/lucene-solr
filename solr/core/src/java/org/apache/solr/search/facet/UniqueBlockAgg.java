@@ -27,7 +27,7 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     protected int[] lastSeenValuesPerSlot;
 
-    protected UniqueBlockSlotAcc(FacetContext fcontext, SchemaField field, int numSlots)
+    protected UniqueBlockSlotAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots)
         throws IOException { //
       super(fcontext, field, /*numSlots suppressing inherited accumulator */0, null);
       counts = new int[numSlots];
@@ -62,7 +62,12 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     @Override
     public Object getValue(int slot) throws IOException {
-      return counts[slot];
+      return getNonShardValue(slot);
+    }
+
+    @Override
+    public long getNonShardValue(int slot) {
+      return (long)counts[slot];
     }
   }
 
@@ -74,7 +79,7 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
   }
 
   @Override
-  public abstract SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException ;
+  public abstract SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException ;
   
   @Override
   public FacetMerger createFacetMerger(Object prototype) {

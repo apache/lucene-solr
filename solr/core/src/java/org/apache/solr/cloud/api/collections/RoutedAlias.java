@@ -362,7 +362,7 @@ public abstract class RoutedAlias {
         try {
           ensureCollection(targetCollectionDesc.creationCollection, coreContainer);
         } catch (Exception e) {
-          log.error("Async creation of a collection for routed Alias " + this.getAliasName() + " failed!", e);
+          log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
       }, core);
     }

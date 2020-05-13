@@ -369,6 +369,9 @@ These commands allow registering more advanced customizations to Solr:
 * `add-runtimelib`
 * `update-runtimelib`
 * `delete-runtimelib`
+* `add-expressible`
+* `update-expressible`
+* `delete-expressible`
 
 ==== Examples of Handler and Component Commands
 
@@ -519,6 +522,35 @@ curl -X POST -H 'Content-type:application/json' -d '{
     "defaults": {"terms": true, "distrib":false},
     "components": ["terms"]
   }
+}' http://localhost:8983/api/collections/techproducts/config
+----
+====
+--
+
+Finally we will go ahead and remove the request handler via the `delete-requesthandler` command:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-handler]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' -d '{
+  "delete-requesthandler": "/myterms"
+}' http://localhost:8983/solr/techproducts/config
+----
+====
+
+[example.tab-pane#v2delete-handler]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' -d '{
+  "delete-requesthandler": "/myterms"
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====

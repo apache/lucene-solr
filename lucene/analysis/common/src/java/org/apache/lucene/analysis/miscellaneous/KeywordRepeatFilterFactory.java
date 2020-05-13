@@ -44,6 +44,11 @@ public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KeywordRepeatFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new KeywordRepeatFilter(input);

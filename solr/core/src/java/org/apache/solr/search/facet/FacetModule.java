@@ -125,17 +125,17 @@ public class FacetModule extends SearchComponent {
 
     boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
 
-    FacetContext fcontext = new FacetContext();
+    FacetRequest.FacetContext fcontext = new FacetRequest.FacetContext();
     fcontext.base = rb.getResults().docSet;
     fcontext.req = rb.req;
     fcontext.searcher = rb.req.getSearcher();
     fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
     if (isShard) {
-      fcontext.flags |= FacetContext.IS_SHARD;
+      fcontext.flags |= FacetRequest.FacetContext.IS_SHARD;
       fcontext.facetInfo = facetState.facetInfo.isEmpty() ? null : (Map<String,Object>)facetState.facetInfo.get(FACET_REFINE);
       if (fcontext.facetInfo != null) {
-        fcontext.flags |= FacetContext.IS_REFINEMENT;
-        fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
+        fcontext.flags |= FacetRequest.FacetContext.IS_REFINEMENT;
+        fcontext.flags |= FacetRequest.FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
       }
     }
     if (rb.isDebug()) {

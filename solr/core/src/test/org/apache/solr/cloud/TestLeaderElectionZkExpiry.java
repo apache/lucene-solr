@@ -19,14 +19,12 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -55,12 +53,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           .setLeaderConflictResolveWait(180000)
           .setLeaderVoteWait(180000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, new CurrentCoreDescriptorProvider() {
-        @Override
-        public List<CoreDescriptor> getCurrentDescriptors() {
-          return Collections.EMPTY_LIST;
-        }
-      });
+      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
       try {
         Thread killer = new Thread() {
           @Override
@@ -84,7 +77,9 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           try {
             String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
             if (leaderNode != null && !leaderNode.trim().isEmpty()) {
-              log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+              if (log.isInfoEnabled()) {
+                log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+              }
               found = true;
               break;
             }

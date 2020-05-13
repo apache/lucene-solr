@@ -105,7 +105,12 @@ public class TermFilteredPresearcher extends Presearcher {
       DocumentQueryBuilder queryBuilder = getQueryBuilder();
       for (FieldInfo field : reader.getFieldInfos()) {
 
-        TokenStream ts = new TermsEnumTokenStream(reader.terms(field.name).iterator());
+        Terms terms = reader.terms(field.name);
+        if (terms == null) {
+          continue;
+        }
+
+        TokenStream ts = new TermsEnumTokenStream(terms.iterator());
         for (CustomQueryHandler handler : queryHandlers) {
           ts = handler.wrapTermStream(field.name, ts);
         }

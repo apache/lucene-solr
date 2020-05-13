@@ -49,7 +49,7 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -137,7 +137,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected ByteBuffer buf;
     protected double[] sortvals;
 
-    public Acc(ValueSource values, FacetContext fcontext, int numSlots) {
+    public Acc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
       digests = new AVLTreeDigest[numSlots];
     }
@@ -220,7 +220,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected ByteBuffer buf;
     double[] sortvals;
 
-    public BasePercentileDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public BasePercentileDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf);
       digests = new AVLTreeDigest[numSlots];
     }
@@ -289,7 +289,7 @@ public class PercentileAgg extends SimpleAggValueSource {
   class PercentileSortedNumericAcc extends BasePercentileDVAcc {
     SortedNumericDocValues values;
 
-    public PercentileSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -339,7 +339,7 @@ public class PercentileAgg extends SimpleAggValueSource {
   class PercentileSortedSetAcc extends BasePercentileDVAcc {
     SortedSetDocValues values;
 
-    public PercentileSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -376,7 +376,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected double[] sortvals;
     private int currentSlot;
 
-    public PercentileUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
       digests = new AVLTreeDigest[numSlots];
     }

@@ -436,8 +436,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
-                  + searcher.count(new MatchAllDocsQuery()));
+              if (log.isDebugEnabled()) {
+                log.debug("{} synched {}", core.getCoreContainer().getZkController().getNodeName()
+                    , searcher.count(new MatchAllDocsQuery()));
+              }
             } finally {
               searchHolder.decref();
             }
@@ -472,8 +474,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
           // in case of leaderVoteWait timeout, a replica with lower term can win the election
           if (setTermToMax) {
-            log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " +
-                "without being up-to-date with the previous leader", coreNodeName);
+            log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) {}"
+                , "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
           super.runLeaderProcess(weAreReplacement, 0);
@@ -485,7 +487,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               return;
             }
           }
-          log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
+          if (log.isInfoEnabled()) {
+            log.info("I am the new leader: {} {}", ZkCoreNodeProps.getCoreUrl(leaderProps), shardId);
+          }
           
           // we made it as leader - send any recovery requests we need to
           syncStrategy.requestRecoveries();
@@ -500,7 +504,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           try (SolrCore core = cc.getCore(coreName)) {
             
             if (core == null) {
-              log.debug("SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
+              if (log.isDebugEnabled()) {
+                log.debug("SolrCore not found: {} in {}", coreName, cc.getLoadedCoreNames());
+              }
               return;
             }
             
@@ -532,8 +538,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     while (!isClosed && !cc.isShutDown()) {
       if (System.nanoTime() > timeoutAt) {
-        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (" +
-                "core_term:{}, highest_term:{})",
+        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
             timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
         return true;
       }
@@ -625,11 +630,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return true;
         } else {
           if (cnt % 40 == 0) {
-            log.info("Waiting until we see more replicas up for shard {}: total={}"
-              + " found={}"
-              + " timeoutin={}ms",
-                shardId, slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size(), found,
-                TimeUnit.MILLISECONDS.convert(timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));
+            if (log.isInfoEnabled()) {
+              log.info("Waiting until we see more replicas up for shard {}: total={} found={} timeoute in={}ms"
+                  , shardId, slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size(), found,
+                  TimeUnit.MILLISECONDS.convert(timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));
+            }
           }
         }
         
@@ -638,7 +643,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return false;
         }
       } else {
-        log.warn("Shard not found: " + shardId + " for collection " + collection);
+        log.warn("Shard not found: {} for collection {}", shardId, collection);
 
         return false;
 
@@ -676,13 +681,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         log.debug("All replicas are ready to participate in election.");
         return true;
       }
-      
     } else {
-      log.warn("Shard not found: " + shardId + " for collection " + collection);
-      
+      log.warn("Shard not found: {} for collection {}", shardId, collection);
       return false;
     }
-    
     return false;
   }
 

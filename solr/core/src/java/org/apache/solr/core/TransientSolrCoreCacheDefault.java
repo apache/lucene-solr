@@ -90,7 +90,9 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
-          log.info("Closing transient core [{}]", coreToClose.getName());
+          if (log.isInfoEnabled()) {
+            log.info("Closing transient core [{}]", coreToClose.getName());
+          }
           coreContainer.queueCoreToClose(coreToClose);
           return true;
         }

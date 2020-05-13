@@ -40,9 +40,14 @@ configure(rootProject) {
           "javadoc",
           "rat",
           "ecjLint",
-          "checkMissingDocs"
+          "checkMissingDocs",
+          "validateLogCalls"
       ]}
     }
   }
+
+  // Each validation task should be attached to check but make sure
+  // precommit() as a whole is a dependency on rootProject.check
+  check.dependsOn precommit
 }
 

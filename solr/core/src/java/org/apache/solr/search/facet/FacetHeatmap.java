@@ -401,7 +401,9 @@ public class FacetHeatmap extends FacetRequest {
     }
     byte[] bytes = PngHelper.writeImage(image);
     long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNano);
-    log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
+    if (log.isDebugEnabled()) {
+      log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
+    }
     if (debugInfo != null) {
       debugInfo.putInfoItem("heatmap png timing", durationMs);
     }

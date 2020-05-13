@@ -141,7 +141,7 @@ public class LockTree {
     void unlock(LockImpl lockObject) {
       if (myLock == lockObject) myLock = null;
       else {
-        log.info("Unlocked multiple times : {}", lockObject.toString());
+        log.info("Unlocked multiple times : {}", lockObject);
       }
     }
 
@@ -171,7 +171,7 @@ public class LockTree {
 
     void clear() {
       if (myLock != null) {
-        log.warn("lock_is_leaked at" + constructPath(new LinkedList<>()));
+        log.warn("lock_is_leaked at {}", constructPath(new LinkedList<>()));
         myLock = null;
       }
       for (Node node : children.values()) node.clear();

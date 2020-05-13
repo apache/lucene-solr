@@ -26,6 +26,7 @@ configure(rootProject) {
       ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
       ["LocalSettings", "help/localSettings.txt", "Local settings, overrides and build performance tweaks."],
       ["Git", "help/git.txt", "Git assistance and guides."],
+      ["ValidateLogCalls", "help/validateLogCalls.txt", "How to use logging calls efficiently."],
   ]
 
   helpFiles.each { section, path, sectionInfo ->
@@ -45,7 +46,7 @@ configure(rootProject) {
       println "guidelines, ant-equivalent commands etc. under help/*; or type:"
       helpFiles.each { section, path, sectionInfo ->
         println String.format(Locale.ROOT,
-            "  gradlew :help%-14s # %s", section, sectionInfo)
+            "  gradlew :help%-16s # %s", section, sectionInfo)
       }
     }
   }

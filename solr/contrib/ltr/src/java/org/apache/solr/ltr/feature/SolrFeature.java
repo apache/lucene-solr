@@ -23,22 +23,23 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+
 /**
  * This feature allows you to reuse any Solr query as a feature. The value
  * of the feature will be the score of the given query for the current document.
@@ -61,6 +62,8 @@ public class SolrFeature extends Feature {
   private String df;
   private String q;
   private List<String> fq;
+
+  // The setters will be invoked via reflection from the passed in params
 
   public String getDf() {
     return df;
@@ -109,7 +112,7 @@ public class SolrFeature extends Feature {
   public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
       SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
           throws IOException {
-    return new SolrFeatureWeight(searcher, request, originalQuery, efi);
+    return new SolrFeatureWeight((SolrIndexSearcher) searcher, request, originalQuery, efi);
   }
 
   @Override
@@ -120,67 +123,68 @@ public class SolrFeature extends Feature {
           ": Q or FQ must be provided");
     }
   }
+
   /**
    * Weight for a SolrFeature
    **/
   public class SolrFeatureWeight extends FeatureWeight {
-    final private Weight solrQueryWeight;
-    final private Query query;
-    final private List<Query> queryAndFilters;
+    private final Weight solrQueryWeight;
 
-    public SolrFeatureWeight(IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
+    public SolrFeatureWeight(SolrIndexSearcher searcher,
+                             SolrQueryRequest request, Query originalQuery, Map<String, String[]> efi) throws IOException {
       super(SolrFeature.this, searcher, request, originalQuery, efi);
       try {
-        String solrQuery = q;
-        final List<String> fqs = fq;
-
-        if ((solrQuery == null) || solrQuery.isEmpty()) {
-          solrQuery = "*:*";
-        }
-
-        solrQuery = macroExpander.expand(solrQuery);
-        if (solrQuery == null) {
-          throw new FeatureException(this.getClass().getSimpleName()+" requires efi parameter that was not passed in request.");
-        }
-
-        final SolrQueryRequest req = makeRequest(request.getCore(), solrQuery,
-            fqs, df);
+        final SolrQueryRequest req = makeRequest(request.getCore(), q, fq, df);
         if (req == null) {
           throw new IOException("ERROR: No parameters provided");
         }
 
+        // Build the scoring query
+        Query scoreQuery;
+        String qStr = q;
+        if (qStr == null || qStr.isEmpty()) {
+          scoreQuery = null; // ultimately behaves like MatchAllDocsQuery
+        } else {
+          qStr = macroExpander.expand(qStr);
+          if (qStr == null) {
+            throw new FeatureException(this.getClass().getSimpleName() + " requires efi parameter that was not passed in request.");
+          }
+          scoreQuery = QParser.getParser(qStr, req).getQuery();
+          // note: QParser can return a null Query sometimes, such as if the query is a stopword or just symbols
+          if (scoreQuery == null) {
+            scoreQuery = new MatchNoDocsQuery(); // debatable; all or none?
+          }
+        }
+
         // Build the filter queries
-        queryAndFilters = new ArrayList<Query>(); // If there are no fqs we just want an empty list
-        if (fqs != null) {
-          for (String fq : fqs) {
-            if ((fq != null) && (fq.trim().length() != 0)) {
-              fq = macroExpander.expand(fq);
-              if (fq == null) {
-                throw new FeatureException(this.getClass().getSimpleName()+" requires efi parameter that was not passed in request.");
+        Query filterDocSetQuery = null;
+        if (fq != null) {
+          List<Query> filterQueries = new ArrayList<>(); // If there are no fqs we just want an empty list
+          for (String fqStr : fq) {
+            if (fqStr != null) {
+              fqStr = macroExpander.expand(fqStr);
+              if (fqStr == null) {
+                throw new FeatureException(this.getClass().getSimpleName() + " requires efi parameter that was not passed in request.");
               }
-              final QParser fqp = QParser.getParser(fq, req);
-              final Query filterQuery = fqp.getQuery();
+              final Query filterQuery = QParser.getParser(fqStr, req).getQuery();
               if (filterQuery != null) {
-                queryAndFilters.add(filterQuery);
+                filterQueries.add(filterQuery);
               }
+            }
+          }
+
+          if (filterQueries.isEmpty() == false) { // TODO optimize getDocSet to make this check unnecessary SOLR-14376
+            DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+            if (filtersDocSet != searcher.getLiveDocSet()) {
+              filterDocSetQuery = filtersDocSet.getTopFilter();
             }
           }
         }
 
-        final QParser parser = QParser.getParser(solrQuery, req);
-        query = parser.parse();
+        Query query = QueryUtils.combineQueryAndFilter(scoreQuery, filterDocSetQuery);
 
-        // Query can be null if there was no input to parse, for instance if you
-        // make a phrase query with "to be", and the analyzer removes all the
-        // words
-        // leaving nothing for the phrase query to parse.
-        if (query != null) {
-          queryAndFilters.add(query);
-          solrQueryWeight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
-        } else {
-          solrQueryWeight = null;
-        }
+        solrQueryWeight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
+
       } catch (final SyntaxError e) {
         throw new FeatureException("Failed to parse feature query.", e);
       }
@@ -209,67 +213,26 @@ public class SolrFeature extends Feature {
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      Scorer solrScorer = null;
-      if (solrQueryWeight != null) {
-        solrScorer = solrQueryWeight.scorer(context);
-      }
-
-      final DocIdSetIterator idItr = getDocIdSetIteratorFromQueries(
-          queryAndFilters, context);
-      if (idItr != null) {
-        return solrScorer == null ? new ValueFeatureScorer(this, 1f, idItr)
-            : new SolrFeatureScorer(this, solrScorer,
-                new SolrFeatureScorerIterator(idItr, solrScorer.iterator()));
-      } else {
+      Scorer solrScorer = solrQueryWeight.scorer(context);
+      if (solrScorer == null) {
         return null;
       }
-    }
-
-    /**
-     * Given a list of Solr filters/queries, return a doc iterator that
-     * traverses over the documents that matched all the criteria of the
-     * queries.
-     *
-     * @param queries
-     *          Filtering criteria to match documents against
-     * @param context
-     *          Index reader
-     * @return DocIdSetIterator to traverse documents that matched all filter
-     *         criteria
-     */
-    private DocIdSetIterator getDocIdSetIteratorFromQueries(List<Query> queries,
-        LeafReaderContext context) throws IOException {
-      final SolrIndexSearcher.ProcessedFilter pf = ((SolrIndexSearcher) searcher)
-          .getProcessedFilter(null, queries);
-      final Bits liveDocs = context.reader().getLiveDocs();
-
-      DocIdSetIterator idIter = null;
-      if (pf.filter != null) {
-        final DocIdSet idSet = pf.filter.getDocIdSet(context, liveDocs);
-        if (idSet != null) {
-          idIter = idSet.iterator();
-        }
-      }
-
-      return idIter;
+      return new SolrFeatureScorer(this, solrScorer);
     }
 
     /**
      * Scorer for a SolrFeature
-     **/
-    public class SolrFeatureScorer extends FeatureScorer {
-      final private Scorer solrScorer;
+     */
+    public class SolrFeatureScorer extends FilterFeatureScorer {
 
-      public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer,
-          SolrFeatureScorerIterator itr) {
-        super(weight, itr);
-        this.solrScorer = solrScorer;
+      public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer) {
+        super(weight, solrScorer);
       }
 
       @Override
       public float score() throws IOException {
         try {
-          return solrScorer.score();
+          return in.score();
         } catch (UnsupportedOperationException e) {
           throw new FeatureException(
               e.toString() + ": " +
@@ -278,54 +241,6 @@ public class SolrFeature extends Feature {
         }
       }
 
-      @Override
-      public float getMaxScore(int upTo) throws IOException {
-        return Float.POSITIVE_INFINITY;
-      }
-    }
-
-    /**
-     * An iterator that allows to iterate only on the documents for which a feature has
-     * a value.
-     **/
-    public class SolrFeatureScorerIterator extends DocIdSetIterator {
-
-      final private DocIdSetIterator filterIterator;
-      final private DocIdSetIterator scorerFilter;
-
-      SolrFeatureScorerIterator(DocIdSetIterator filterIterator,
-          DocIdSetIterator scorerFilter) {
-        this.filterIterator = filterIterator;
-        this.scorerFilter = scorerFilter;
-      }
-
-      @Override
-      public int docID() {
-        return filterIterator.docID();
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        int docID = filterIterator.nextDoc();
-        scorerFilter.advance(docID);
-        return docID;
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        // We use iterator to catch the scorer up since
-        // that checks if the target id is in the query + all the filters
-        int docID = filterIterator.advance(target);
-        scorerFilter.advance(docID);
-        return docID;
-      }
-
-      @Override
-      public long cost() {
-        return filterIterator.cost() + scorerFilter.cost();
-      }
-
     }
   }
-
 }

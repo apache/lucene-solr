@@ -72,8 +72,8 @@ public class MoveReplicaSuggester extends Suggester {
 
           int result = -1;
           if (!force && srcRowModified.isLive && targetRow.isLive)  {
-            result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), true);
-            if (result == 0) result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), false);
+            result = tmpSession.getPolicy().getClusterPreferences().get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), true);
+            if (result == 0) result = tmpSession.getPolicy().getClusterPreferences().get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), false);
           }
 
           if (result <= 0) {

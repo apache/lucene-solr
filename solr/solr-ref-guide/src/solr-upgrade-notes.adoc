@@ -1,7 +1,6 @@
 = Solr Upgrade Notes
 :page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
-:page-toclevels: 3
-:page-tocclass: right
+:toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -121,7 +120,9 @@ This tool is not yet officially documented in the Reference Guide, but draft doc
 
 *Highlighting*
 
-Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`. See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`.
+See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
+Regardless of the settings, the passages may be sized differently than before.
 
 *Shared Library System Parameter*
 
