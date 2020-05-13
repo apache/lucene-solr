@@ -17,12 +17,9 @@
 
 package org.apache.solr.search.join;
 
-import java.util.HashSet;
-import java.util.List;
+import java.util.Set;
 
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -30,37 +27,20 @@ import org.apache.solr.search.QParserPlugin;
 /**
  * Cross-collection join filter.  Runs a query against a remote Solr collection to obtain a
  * set of join keys, then applies that set of join keys as a filter against the local collection.
- * <br>Example: {!xcjf collection="remoteCollection" from="fromField" to="toField" v="*:*"}
+ * <br>Example: {!join method=ccjoin fromIndex="remoteCollection" from="fromField" to="toField" v="*:*"}
  */
-public class XCJFQParserPlugin extends QParserPlugin {
-
-  public static final String NAME = "xcjf";
+public class CrossCollectionJoinQParserPlugin extends QParserPlugin {
 
   private String routerField;
-  private HashSet<String> solrUrlWhitelist;
+  private Set<String> solrUrlWhitelist;
+
+  public CrossCollectionJoinQParserPlugin(String routerField, Set<String> solrUrlWhitelist) {
+    this.routerField = routerField;
+    this.solrUrlWhitelist = solrUrlWhitelist;
+  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new XCJFQParser(qstr, localParams, params, req, routerField, solrUrlWhitelist);
-  }
-
-  @Override
-  public void init(NamedList args) {
-    routerField = (String) args.get("routerField");
-    solrUrlWhitelist = new HashSet<>();
-    if (args.get("solrUrl") != null) {
-      //noinspection unchecked
-      for (String s : (List<String>) args.get("solrUrl")) {
-        if (!StringUtils.isEmpty(s))
-          solrUrlWhitelist.add(s);
-      }
-    } else {
-      solrUrlWhitelist = null;
-    }
-  }
-
-  @Override
-  public String getName() {
-    return NAME;
+    return new CrossCollectionJoinQParser(qstr, localParams, params, req, routerField, solrUrlWhitelist);
   }
 }

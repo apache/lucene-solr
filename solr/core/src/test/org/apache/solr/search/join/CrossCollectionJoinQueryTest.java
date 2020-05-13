@@ -36,7 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class XCJFQueryTest extends SolrCloudTestCase {
+public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
   private static final int NUM_NODES = 3;
   private static final int NUM_SHARDS = 3;
@@ -48,15 +48,15 @@ public class XCJFQueryTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NUM_NODES)
-        .addConfig("xcjf", configset("xcjf"))
+        .addConfig("ccjoin", configset("ccjoin"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
 
 
-    CollectionAdminRequest.createCollection("products", "xcjf", NUM_SHARDS, NUM_REPLICAS)
+    CollectionAdminRequest.createCollection("products", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
+    CollectionAdminRequest.createCollection("parts", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
   }
@@ -127,82 +127,82 @@ public class XCJFQueryTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testXcjfRoutedCollection() throws Exception {
+  public void testCcJoinRoutedCollection() throws Exception {
     setupIndexes(true);
-    testXcjfQuery("{!xcjf collection=products from=product_id_i to=product_id_i}size_s:M",true);
+    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_i to=product_id_i}size_s:M",true);
     int i = 0;
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       i++;
       String url = runner.getBaseUrl().toString();
-      System.setProperty("test.xcjf.solr.url." + i, url);
+      System.setProperty("test.ccjoin.solr.url." + i, url);
     }
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
       Thread.sleep(10000);
 
-      testXcjfQuery("{!xcjf collection=products from=product_id_i to=product_id_i}size_s:M",true);
+      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_i to=product_id_i}size_s:M",true);
 
-      testXcjfQuery(String.format(Locale.ROOT,
-          "{!xcjf solrUrl=\"%s\" collection=products from=product_id_i to=product_id_i}size_s:M", getSolrUrl()),
+      testCcJoinQuery(String.format(Locale.ROOT,
+          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M", getSolrUrl()),
           true);
 
-      testXcjfQuery("{!xcjf collection=products from=product_id_l to=product_id_l}size_s:M",
+      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_l to=product_id_l}size_s:M",
           true);
-      testXcjfQuery(String.format(Locale.ROOT,
-          "{!xcjf solrUrl=\"%s\" collection=products from=product_id_l to=product_id_l}size_s:M",
+      testCcJoinQuery(String.format(Locale.ROOT,
+          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_l to=product_id_l}size_s:M",
           getSolrUrl()),
           true);
 
-      testXcjfQuery("{!xcjf collection=products from=product_id_s to=product_id_s}size_s:M",
+      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           true);
-      testXcjfQuery(String.format(Locale.ROOT,
-          "{!xcjf solrUrl=\"%s\" collection=products from=product_id_s to=product_id_s}size_s:M",
+      testCcJoinQuery(String.format(Locale.ROOT,
+          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           getSolrUrl()),
           true);
-      testXcjfQuery(String.format(Locale.ROOT,
-          "{!xcjf zkHost=\"%s\" collection=products from=product_id_s to=product_id_s}size_s:M",
+      testCcJoinQuery(String.format(Locale.ROOT,
+          "{!join method=ccjoin zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           cluster.getSolrClient().getZkHost()),
           true);
 
-      // Test the ability to set other parameters on xcjf and have them passed through
+      // Test the ability to set other parameters on ccjoin and have them passed through
       assertResultCount("parts",
-          "{!xcjf collection=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
+          "{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
           2, true);
       assertResultCount("parts",
           String.format(Locale.ROOT,
-              "{!xcjf solrUrl=\"%s\" collection=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
+              "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
               getSolrUrl()), 2, true);
     } finally {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         i++;
-        System.getProperties().remove("test.xcjf.solr.url." + i);
+        System.getProperties().remove("test.ccjoin.solr.url." + i);
       }
     }
   }
 
   @Test
-  public void testXcjfNonroutedCollection() throws Exception {
+  public void testCcJoinNonroutedCollection() throws Exception {
     setupIndexes(false);
 
     // This query will expect the collection to have been routed on product_id, so it should return
     // incomplete results.
-    testXcjfQuery("{!xcjf collection=products from=product_id_s to=product_id_s}size_s:M",
+    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
         false);
     // Now if we set routed=false we should get a complete set of results.
-    testXcjfQuery("{!xcjf collection=products from=product_id_s to=product_id_s routed=false}size_s:M",
+    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s routed=false}size_s:M",
         true);
-    // The xcjf_nonrouted query parser doesn't assume that the collection was routed on product_id,
+    // The ccjoin_nonrouted query parser doesn't assume that the collection was routed on product_id,
     // so we should get the full set of results.
-    testXcjfQuery("{!xcjf_nonrouted collection=products from=product_id_s to=product_id_s}size_s:M",
+    testCcJoinQuery("{!join_nonrouted method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
         true);
     // But if we set routed=true, we are now assuming again that the collection was routed on product_id,
     // so we should get incomplete results.
-    testXcjfQuery("{!xcjf_nonrouted collection=products from=product_id_s to=product_id_s routed=true}size_s:M",
+    testCcJoinQuery("{!join_nonrouted method=ccjoin fromIndex=products from=product_id_s to=product_id_s routed=true}size_s:M",
         false);
   }
 
@@ -214,12 +214,12 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     int i = 0;
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       i++;
-      System.setProperty("test.xcjf.solr.url." + i, runner.getBaseUrl().toString());
+      System.setProperty("test.ccjoin.solr.url." + i, runner.getBaseUrl().toString());
     }
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
@@ -232,9 +232,9 @@ public class XCJFQueryTest extends SolrCloudTestCase {
       // we expect an exception because bogus url isn't valid.
       try {
         // This should throw an exception.
-        // verify the xcfj_whitelist definition has the current valid urls and works.
-        testXcjfQuery(String.format(Locale.ROOT,
-            "{!xcjf_whitelist solrUrl=\"%s\" collection=products from=product_id_i to=product_id_i}size_s:M",
+        // verify the join plugin definition has the current valid urls and works.
+        testCcJoinQuery(String.format(Locale.ROOT,
+            "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
             "http://bogus.example.com:8983/solr"),
             true);
         fail("The query invovling bogus.example.com should not succeed");
@@ -244,21 +244,21 @@ public class XCJFQueryTest extends SolrCloudTestCase {
         assertTrue("message was " + message, message.contains("SyntaxError: Solr Url was not in the whitelist"));
       }
 
-      // verify the xcfj_whitelist definition has the current valid urls and works.
-      testXcjfQuery(String.format(Locale.ROOT,
-          "{!xcjf_whitelist solrUrl=\"%s\" collection=products from=product_id_i to=product_id_i}size_s:M",
+      // verify the join plugin definition has the current valid urls and works.
+      testCcJoinQuery(String.format(Locale.ROOT,
+          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
           getSolrUrl()),
           true);
 
     } finally {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         i++;
-        System.getProperties().remove("test.xcjf.solr.url." + i);
+        System.getProperties().remove("test.ccjoin.solr.url." + i);
       }
     }
   }
 
-  public void testXcjfQuery(String query, boolean expectFullResults) throws Exception {
+  public void testCcJoinQuery(String query, boolean expectFullResults) throws Exception {
     assertResultCount("parts", query, NUM_PRODUCTS / 2, expectFullResults);
   }
 
