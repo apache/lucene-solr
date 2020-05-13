@@ -84,6 +84,8 @@ New Features
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -107,6 +109,8 @@ Improvements
 * SOLR-12845: Add a default autoscaling cluster policy. (shalin, varunthacker, ab)
 
 * SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
+
+* SOLR-14423: Move static SolrClientCache from StreamHandler to CoreContainer for wider reuse and better life-cycle management. (ab)
 
 Optimizations
 ---------------------
@@ -160,6 +164,11 @@ Bug Fixes
 * SOLR-14421: New examples in solr.in.cmd in Solr 8.5 don't work as provided (Colvin Cowie via janhoy)
 
 * SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
+
+* SOLR-14463: Solr Admin ZkStatus page now works with ZK 3.6, without 'For input string: "null"' error (janhoy, Bernd Wahlen)
+
+* SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
+  node with compression enabled (samuelgmartinez via Houston Putman)
 
 Other Changes
 ---------------------
