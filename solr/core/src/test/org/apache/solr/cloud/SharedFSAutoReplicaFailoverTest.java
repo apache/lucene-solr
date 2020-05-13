@@ -57,7 +57,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -87,7 +87,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("testExecutor"));
+      new SolrNamedThreadFactory("testExecutor"));
   
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;

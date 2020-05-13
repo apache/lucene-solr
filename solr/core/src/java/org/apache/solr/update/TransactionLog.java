@@ -166,7 +166,8 @@ public class TransactionLog implements Closeable {
     boolean success = false;
     try {
       if (debug) {
-        log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
+        log.debug("New TransactionLog file= {}, exists={}, size={} openExisting={}"
+            , tlogFile, tlogFile.exists(), tlogFile.length(), openExisting);
       }
 
       // Parse tlog id from the filename
@@ -193,7 +194,7 @@ public class TransactionLog implements Closeable {
         }
       } else {
         if (start > 0) {
-          log.warn("New transaction log already exists:" + tlogFile + " size=" + raf.length());
+          log.warn("New transaction log already exists:{} size={}", tlogFile, raf.length());
           return;
         }
        
@@ -580,7 +581,7 @@ public class TransactionLog implements Closeable {
   public void close() {
     try {
       if (debug) {
-        log.debug("Closing tlog" + this);
+        log.debug("Closing tlog {}", this);
       }
 
       synchronized (this) {
@@ -605,7 +606,7 @@ public class TransactionLog implements Closeable {
 
   public void forceClose() {
     if (refcount.get() > 0) {
-      log.error("Error: Forcing close of " + this);
+      log.error("Error: Forcing close of {}", this);
       refcount.set(0);
       close();
     }
@@ -668,7 +669,7 @@ public class TransactionLog implements Closeable {
 
       synchronized (TransactionLog.this) {
         if (trace) {
-          log.trace("Reading log record.  pos="+pos+" currentSize="+fos.size());
+          log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
         }
 
         if (pos >= fos.size()) {

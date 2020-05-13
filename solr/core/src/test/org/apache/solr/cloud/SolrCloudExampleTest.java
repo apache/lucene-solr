@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.http.HttpEntity;
@@ -68,7 +69,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
@@ -97,7 +98,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     SolrCLI.CreateCollectionTool tool = new SolrCLI.CreateCollectionTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    log.info("Creating the '"+testCollectionName+"' collection using SolrCLI with: "+solrUrl);
+    log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue("Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
         cloudClient.getZkStateReader().getClusterState().hasCollection(testCollectionName));
@@ -139,7 +140,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                  expectedXmlFileCount, xmlFiles.size());
     
     for (File xml : xmlFiles) {
-      log.info("POSTing "+xml.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("POSTing {}", xml.getAbsolutePath());
+      }
       cloudClient.request(new StreamingUpdateRequest("/update",xml,"application/xml"));
     }
     cloudClient.commit();
@@ -155,14 +158,14 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
 
-    log.info("Updating Config for " + testCollectionName);
+    log.info("Updating Config for {}", testCollectionName);
     doTestConfigUpdate(testCollectionName, solrUrl);
 
-    log.info("Running healthcheck for " + testCollectionName);
+    log.info("Running healthcheck for {}", testCollectionName);
     doTestHealthcheck(testCollectionName, cloudClient.getZkHost());
 
     // verify the delete action works too
-    log.info("Running delete for "+testCollectionName);
+    log.info("Running delete for {}", testCollectionName);
     doTestDeleteAction(testCollectionName, solrUrl);
 
     log.info("testLoadDocsIntoGettingStartedCollection succeeded ... shutting down now!");
@@ -217,7 +220,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    log.info("Sending set-property '" + prop + "'=" + maxTime + " to SolrCLI.ConfigTool.");
+    log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
     assertTrue("Set config property failed!", tool.runTool(cli) == 0);
 
     configJson = SolrCLI.getJson(configUrl);
@@ -233,7 +236,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertEquals("Should have been able to get a value from the /query request handler",
         "explicit", SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
 
-    log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+    if (log.isInfoEnabled()) {
+      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+    }
 
     // Since it takes some time for this command to complete we need to make sure all the reloads for
     // all the cores have been done.

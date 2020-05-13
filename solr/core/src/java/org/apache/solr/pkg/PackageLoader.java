@@ -113,11 +113,15 @@ public class PackageLoader implements Closeable {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
-          log.info("Package {} is modified ", e.getKey());
+          if (log.isInfoEnabled()) {
+            log.info("Package {} is modified ", e.getKey());
+          }
           changed.put(e.getKey(), e.getValue());
         }
       } else {
-        log.info("A new package: {} introduced", e.getKey());
+        if (log.isInfoEnabled()) {
+          log.info("A new package: {} introduced", e.getKey());
+        }
         changed.put(e.getKey(), e.getValue());
       }
     }
@@ -172,7 +176,7 @@ public class PackageLoader implements Closeable {
           try {
             ver = new Version(this, v);
           } catch (Exception e) {
-            log.error("package could not be loaded "+ ver.toString(), e);
+            log.error("package could not be loaded {}", ver, e);
             continue;
           }
           myVersions.put(v.version, ver);

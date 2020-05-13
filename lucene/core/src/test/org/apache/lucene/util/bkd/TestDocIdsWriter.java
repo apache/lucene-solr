@@ -63,7 +63,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
-      BKDLeafBlock leafBlock = new BKDLeafBlock() {
+      BKDIndexWriter.BKDLeafBlock leafBlock = new BKDIndexWriter.BKDLeafBlock() {
         @Override
         public int count() {
           return ints.length;

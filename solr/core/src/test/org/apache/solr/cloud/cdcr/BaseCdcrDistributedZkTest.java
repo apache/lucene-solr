@@ -294,7 +294,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForCdcrStateReplication(String collection) throws Exception {
-    log.info("Wait for CDCR state to replicate - collection: " + collection);
+    log.info("Wait for CDCR state to replicate - collection: {}", collection);
 
     int cnt = 30;
     while (cnt > 0) {
@@ -321,7 +321,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
-    log.info("CDCR state is identical across nodes - collection: " + collection);
+    log.info("CDCR state is identical across nodes - collection: {}", collection);
   }
 
   /**
@@ -485,7 +485,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       res = new CollectionAdminResponse();
       res.setResponse(client.request(request));
     } catch (Exception e) {
-      log.warn("Error while deleting the collection " + collectionName, e);
+      log.warn("Error while deleting the collection {}", collectionName, e);
       return new CollectionAdminResponse();
     } finally {
       client.close();
@@ -499,7 +499,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       client.connect();
       ZkStateReader zkStateReader = client.getZkStateReader();
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, false, true, 15);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, true, 15);
     } finally {
       client.close();
     }

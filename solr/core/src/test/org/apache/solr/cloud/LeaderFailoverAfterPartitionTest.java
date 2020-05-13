@@ -52,7 +52,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // kill a leader and make sure recovery occurs as expected
     testRf3WithLeaderFailover();
@@ -142,7 +142,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     if (oldLeaderProxy != null) {
       oldLeaderProxy.close();      
     } else {
-      log.warn("No SocketProxy found for old leader node "+leaderNode);      
+      log.warn("No SocketProxy found for old leader node {}",leaderNode);
     }
 
     Thread.sleep(10000); // give chance for new leader to be elected.

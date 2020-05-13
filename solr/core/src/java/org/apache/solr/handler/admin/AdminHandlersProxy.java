@@ -90,7 +90,9 @@ public class AdminHandlersProxy {
       }       
       log.debug("Nodes requested: {}", nodes);
     }
-    log.debug(PARAM_NODES + " parameter {} specified on {} request", nodeNames, pathStr);
+    if (log.isDebugEnabled()) {
+      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
+    }
     
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
@@ -108,7 +110,9 @@ public class AdminHandlersProxy {
         log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
       }
     }
-    log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
+    if (log.isInfoEnabled()) {
+      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
+    }
     return true;
   } 
 

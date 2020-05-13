@@ -193,7 +193,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           (NAME+" sort param field \""+ sortFieldName+"\" can't be found in schema");
       }
     } catch (SyntaxError e) {
-      log.error("can't parse "+fp.getString(), e);
+      log.error("can't parse {}", fp.getString(), e);
       throw e;
     }
     return new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf);

@@ -44,11 +44,11 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public abstract class SlotAcc implements Closeable {
   String key; // todo...
-  protected final FacetContext fcontext;
+  protected final FacetRequest.FacetContext fcontext;
   protected LeafReaderContext currentReaderContext;
   protected int currentDocBase;
 
-  public SlotAcc(FacetContext fcontext) {
+  public SlotAcc(FacetRequest.FacetContext fcontext) {
     this.fcontext = fcontext;
   }
 
@@ -257,7 +257,7 @@ abstract class FuncSlotAcc extends SlotAcc {
   protected final ValueSource valueSource;
   protected FunctionValues values;
 
-  public FuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public FuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(fcontext);
     this.valueSource = values;
   }
@@ -279,11 +279,11 @@ abstract class DoubleFuncSlotAcc extends FuncSlotAcc {
   double[] result; // TODO: use DoubleArray
   double initialValue;
 
-  public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public DoubleFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     this(values, fcontext, numSlots, 0);
   }
 
-  public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, double initialValue) {
+  public DoubleFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots, double initialValue) {
     super(values, fcontext, numSlots);
     this.initialValue = initialValue;
     result = new double[numSlots];
@@ -317,7 +317,7 @@ abstract class LongFuncSlotAcc extends FuncSlotAcc {
   long[] result;
   long initialValue;
 
-  public LongFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, long initialValue) {
+  public LongFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots, long initialValue) {
     super(values, fcontext, numSlots);
     this.initialValue = initialValue;
     result = new long[numSlots];
@@ -351,7 +351,7 @@ abstract class IntSlotAcc extends SlotAcc {
   int[] result; // use LongArray32
   int initialValue;
 
-  public IntSlotAcc(FacetContext fcontext, int numSlots, int initialValue) {
+  public IntSlotAcc(FacetRequest.FacetContext fcontext, int numSlots, int initialValue) {
     super(fcontext);
     this.initialValue = initialValue;
     result = new int[numSlots];
@@ -382,7 +382,7 @@ abstract class IntSlotAcc extends SlotAcc {
 }
 
 class SumSlotAcc extends DoubleFuncSlotAcc {
-  public SumSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public SumSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(values, fcontext, numSlots);
   }
 
@@ -393,7 +393,7 @@ class SumSlotAcc extends DoubleFuncSlotAcc {
 }
 
 class SumsqSlotAcc extends DoubleFuncSlotAcc {
-  public SumsqSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public SumsqSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(values, fcontext, numSlots);
   }
 
@@ -409,7 +409,7 @@ class SumsqSlotAcc extends DoubleFuncSlotAcc {
 class AvgSlotAcc extends DoubleFuncSlotAcc {
   int[] counts;
 
-  public AvgSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public AvgSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(values, fcontext, numSlots);
     counts = new int[numSlots];
   }
@@ -463,7 +463,7 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
   int[] counts;
   double[] sum;
 
-  public VarianceSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public VarianceSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(values, fcontext, numSlots);
     counts = new int[numSlots];
     sum = new double[numSlots];
@@ -484,7 +484,7 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
   }
 
   private double variance(int slot) {
-    return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -520,7 +520,7 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   int[] counts;
   double[] sum;
 
-  public StddevSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  public StddevSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
     super(values, fcontext, numSlots);
     counts = new int[numSlots];
     sum = new double[numSlots];
@@ -541,7 +541,7 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   }
 
   private double stdDev(int slot) {
-    return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -574,21 +574,21 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
 }
 
 abstract class CountSlotAcc extends SlotAcc {
-  public CountSlotAcc(FacetContext fcontext) {
+  public CountSlotAcc(FacetRequest.FacetContext fcontext) {
     super(fcontext);
   }
 
-  public abstract void incrementCount(int slot, int count);
+  public abstract void incrementCount(int slot, long count);
 
-  public abstract int getCount(int slot);
+  public abstract long getCount(int slot);
 }
 
 class CountSlotArrAcc extends CountSlotAcc {
-  int[] result;
+  long[] result;
 
-  public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
+  public CountSlotArrAcc(FacetRequest.FacetContext fcontext, int numSlots) {
     super(fcontext);
-    result = new int[numSlots];
+    result = new long[numSlots];
   }
 
   @Override
@@ -600,7 +600,7 @@ class CountSlotArrAcc extends CountSlotAcc {
 
   @Override
   public int compare(int slotA, int slotB) {
-    return Integer.compare(result[slotA], result[slotB]);
+    return Long.compare(result[slotA], result[slotB]);
   }
 
   @Override
@@ -608,16 +608,18 @@ class CountSlotArrAcc extends CountSlotAcc {
     return result[slotNum];
   }
 
-  public void incrementCount(int slot, int count) {
+  @Override
+  public void incrementCount(int slot, long count) {
     result[slot] += count;
   }
 
-  public int getCount(int slot) {
+  @Override
+  public long getCount(int slot) {
     return result[slot];
   }
 
   // internal and expert
-  int[] getCountArray() {
+  long[] getCountArray() {
     return result;
   }
 
@@ -633,7 +635,7 @@ class CountSlotArrAcc extends CountSlotAcc {
 }
 
 class SortSlotAcc extends SlotAcc {
-  public SortSlotAcc(FacetContext fcontext) {
+  public SortSlotAcc(FacetRequest.FacetContext fcontext) {
     super(fcontext);
   }
 
@@ -642,6 +644,7 @@ class SortSlotAcc extends SlotAcc {
     // no-op
   }
 
+  @Override
   public int compare(int slotA, int slotB) {
     return slotA - slotB;
   }

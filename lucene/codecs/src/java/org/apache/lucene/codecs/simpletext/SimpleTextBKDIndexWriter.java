@@ -24,7 +24,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDIndexWriter;
-import org.apache.lucene.util.bkd.BKDLeafBlock;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_DOC_ID;
@@ -70,7 +69,8 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
   }
 
   @Override
-  public void writeIndex(BKDConfig config, int countPerLeaf, long[] leafBlockFPs, byte[] splitPackedValues, byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException {
+  public void writeIndex(BKDConfig config, BKDTreeLeafNodes leafNodes, byte[] minPackedValue,
+                         byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException {
     write(out, NUM_DATA_DIMS);
     writeInt(out, config.numDims);
     newline(out);
@@ -88,7 +88,7 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     newline(out);
 
     write(out, INDEX_COUNT);
-    writeInt(out, leafBlockFPs.length);
+    writeInt(out, leafNodes.numLeaves());
     newline(out);
 
     write(out, MIN_VALUE);
@@ -109,15 +109,15 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     writeInt(out, numberDocs);
     newline(out);
 
-    for(int i=0;i<leafBlockFPs.length;i++) {
+    for(int i=0;i<leafNodes.numLeaves();i++) {
       write(out, BLOCK_FP);
-      writeLong(out, leafBlockFPs[i]);
+      writeLong(out, leafNodes.getLeafLP(i));
       newline(out);
     }
 
-    assert (splitPackedValues.length % (1 + config.bytesPerDim)) == 0;
-    int count = splitPackedValues.length / (1 + config.bytesPerDim);
-    assert count == leafBlockFPs.length;
+   // assert ((leafNodes.numLeaves() - 1) % (1 + config.bytesPerDim)) == 0;
+    int count = (leafNodes.numLeaves() - 1);//  / (1 + config.bytesPerDim);
+   // assert count == leafNodes.numLeaves();
 
     write(out, SPLIT_COUNT);
     writeInt(out, count);
@@ -125,10 +125,10 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
 
     for(int i=0;i<count;i++) {
       write(out, SPLIT_DIM);
-      writeInt(out, splitPackedValues[i * (1 + config.bytesPerDim)] & 0xff);
+      writeInt(out, leafNodes.getSplitDimension(i));
       newline(out);
       write(out, SPLIT_VALUE);
-      br = new BytesRef(splitPackedValues, 1 + (i * (1 + config.bytesPerDim)), config.bytesPerDim);
+      br = leafNodes.getSplitValue(i);
       write(out, br.toString());
       newline(out);
     }

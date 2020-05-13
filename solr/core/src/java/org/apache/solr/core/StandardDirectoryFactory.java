@@ -60,7 +60,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       rawLockType = DirectoryFactory.LOCK_TYPE_NATIVE;
-      log.warn("No lockType configured, assuming '"+rawLockType+"'.");
+      log.warn("No lockType configured, assuming '{}'.", rawLockType);
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {

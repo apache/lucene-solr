@@ -26,7 +26,7 @@ class DocIdsWriter {
 
   private DocIdsWriter() {}
 
-  static void writeDocIds(BKDLeafBlock leafBlock, DataOutput out) throws IOException {
+  static void writeDocIds(BKDIndexWriter.BKDLeafBlock leafBlock, DataOutput out) throws IOException {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     final int count = leafBlock.count();

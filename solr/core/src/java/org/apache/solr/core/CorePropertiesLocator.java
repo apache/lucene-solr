@@ -144,7 +144,9 @@ public class CorePropertiesLocator implements CoresLocator {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
             if (cd != null) {
-              log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              if (log.isDebugEnabled()) {
+                log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              }
               cds.add(cd);
             }
             return FileVisitResult.SKIP_SIBLINGS;
@@ -167,9 +169,13 @@ public class CorePropertiesLocator implements CoresLocator {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
     }
-    log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    if (log.isInfoEnabled()) {
+      log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    }
     if (cds.size() > 0) {
-      log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      if (log.isInfoEnabled()) {
+        log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      }
     }
     return cds;
   }
@@ -190,7 +196,7 @@ public class CorePropertiesLocator implements CoresLocator {
       return ret;
     }
     catch (IOException e) {
-      log.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
+      log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
       return null;
     }
 

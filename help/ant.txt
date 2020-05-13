@@ -25,7 +25,7 @@ ant compile         => gradlew classes      [better: gradlew assemble]
 ant validate        => gradlew check
 ant test            => gradlew test
 
-ant jar-checksums   => gradlew updateLicenses
+ant jar-checksums   => gradlew updateLicenses [May need to run: gradlew --write-locks if changing depencencies]
 ant check-licenses  => gradlew licenses     [better: gradlew check -x test]
 ant clean-jars      => (NO REPLACEMENT)
 

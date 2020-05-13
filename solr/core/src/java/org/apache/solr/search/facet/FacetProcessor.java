@@ -47,7 +47,7 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
 /** Base abstraction for a class that computes facets. This is fairly internal to the module. */
 public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   SimpleOrderedMap<Object> response;
-  FacetContext fcontext;
+  FacetRequest.FacetContext fcontext;
   FacetRequestT freq;
 
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
@@ -55,7 +55,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   SlotAcc[] accs;
   CountSlotAcc countAcc;
 
-  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
+  FacetProcessor(FacetRequest.FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
     this.freq = freq;
     fcontext.processor = this;
@@ -74,7 +74,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     this.filter = fcontext.searcher.getDocSet(evalJSONFilterQueryStruct(fcontext, freq.domain.filters));
   }
   
-  private static List<Query> evalJSONFilterQueryStruct(FacetContext fcontext, List<Object> filters) throws IOException {
+  private static List<Query> evalJSONFilterQueryStruct(FacetRequest.FacetContext fcontext, List<Object> filters) throws IOException {
     List<Query> qlist = new ArrayList<>(filters.size());
     // TODO: prevent parsing filters each time!
     for (Object rawFilter : filters) {
@@ -226,7 +226,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     // now walk back up the context tree
     // TODO: we lose parent exclusions...
-    for (FacetContext curr = fcontext; curr != null; curr = curr.parent) {
+    for (FacetRequest.FacetContext curr = fcontext; curr != null; curr = curr.parent) {
       if (curr.filter != null) {
         qlist.add( curr.filter );
       }
@@ -290,19 +290,19 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     return appliedFilters;
   }
 
-  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, int docCount) throws IOException {
+  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount) throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
-    int collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
+    long collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
     countAcc.incrementCount(0, collected);
     assert collected == docCount;
     addStats(bucket, 0);
   }
 
-  protected void createAccs(int docCount, int slotCount) throws IOException {
+  protected void createAccs(long docCount, int slotCount) throws IOException {
     accMap = new LinkedHashMap<>();
 
     // allow a custom count acc to be used
@@ -332,8 +332,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    int count = 0;
+  long collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    long count = 0;
     SolrIndexSearcher searcher = fcontext.searcher;
 
     if (0 == docs.size()) {
@@ -392,7 +392,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   void addStats(SimpleOrderedMap<Object> target, int slotNum) throws IOException {
-    int count = countAcc.getCount(slotNum);
+    long count = countAcc.getCount(slotNum);
     target.add("count", count);
     if (count > 0 || freq.processEmpty) {
       for (SlotAcc acc : accs) {
@@ -405,7 +405,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     boolean needDocSet = (skip==false && freq.getFacetStats().size() > 0) || freq.getSubFacets().size() > 0;
 
-    int count;
+    long count;
 
     if (result != null) {
       count = result.size();
@@ -462,9 +462,9 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       if (skip && facetInfoSub == null) continue;
 
       // make a new context for each sub-facet since they can change the domain
-      FacetContext subContext = fcontext.sub(filter, domain);
+      FacetRequest.FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
-      if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
+      if (!skip) subContext.flags &= ~FacetRequest.FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
         FacetDebugInfo fdebug = new FacetDebugInfo();

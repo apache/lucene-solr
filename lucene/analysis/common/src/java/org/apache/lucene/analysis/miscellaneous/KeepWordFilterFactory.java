@@ -58,6 +58,11 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public KeepWordFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (wordFiles != null) {

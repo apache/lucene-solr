@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.security.PermissionNameProvider;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface EndPoint {
   SolrRequest.METHOD[] method();
 

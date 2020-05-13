@@ -17,8 +17,6 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
@@ -27,9 +25,9 @@ import java.util.Map;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -79,7 +77,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           this::collectionCreateSearchDeleteTwice);
       assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
     } finally {
@@ -141,7 +139,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     public void init(Map<String,Object> pluginConfig) {}
 
     @Override
-    public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
+    public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws Exception {
       if (expectedUsername == null) {
         filterChain.doFilter(request, response);
@@ -151,7 +149,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
-      log.info("Username: "+username+", password: "+password);
+      log.info("Username: {}, password: {}", username, password);
       if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
         return true;

@@ -68,7 +68,6 @@ public class Suggestion {
 
     public boolean hasTimedOut() {
       return session.cloudManager.getTimeSource().getTimeNs() >= endTime;
-
     }
 
     public boolean needMore() {

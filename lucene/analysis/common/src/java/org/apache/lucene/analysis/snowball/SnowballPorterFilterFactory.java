@@ -67,6 +67,11 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public SnowballPorterFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     String className = "org.tartarus.snowball.ext." + language + "Stemmer";

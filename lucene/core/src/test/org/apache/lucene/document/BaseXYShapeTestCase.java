@@ -228,8 +228,8 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
         float[] x = new float[p.numPoints() - 1];
         float[] y = new float[x.length];
         for (int i = 0; i < x.length; ++i) {
-          x[i] = (float)p.getPolyX(i);
-          y[i] = (float)p.getPolyY(i);
+          x[i] = p.getPolyX(i);
+          y[i] = p.getPolyY(i);
         }
         return new XYLine(x, y);
       }

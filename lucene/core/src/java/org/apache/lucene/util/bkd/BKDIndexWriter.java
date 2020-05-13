@@ -19,6 +19,8 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Serializes a KD tree in a index.
  *
@@ -31,9 +33,39 @@ public interface BKDIndexWriter {
 
 
   /** writes inner nodes in the index */
-  void writeIndex(BKDConfig config, int countPerLeaf, long[] leafBlockFPs, byte[] splitPackedValues,
+  void writeIndex(BKDConfig config, BKDTreeLeafNodes leafNodes,
                   byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException;
 
   /** return the current position of the index */
   long getFilePointer();
+
+  /** flat representation of a kd-tree */
+  interface BKDTreeLeafNodes {
+    /** number of leaf nodes */
+    int numLeaves();
+    /** pointer to the leaf node previously written. Leaves are order from
+     * left to right, so leaf at {@code index} 0 is the leftmost leaf and
+     * the the leaf at {@code numleaves()} -1 is the rightmost leaf */
+    long getLeafLP(int index);
+    /** split value between two leaves. The split value at position n corresponds to the
+     *  leaves at (n -1) and n. */
+    BytesRef getSplitValue(int index);
+    /** split dimension between two leaves. The split dimension at position n corresponds to the
+     *  leaves at (n -1) and n.*/
+    int getSplitDimension(int index);
+  }
+
+  /** It represents a leaf block on thr BKD tree.*/
+  interface BKDLeafBlock {
+
+    /** number of points on the leaf */
+    int count();
+
+    /** the point values of this leaf at a given position packed
+     * on a BytesRef */
+    BytesRef packedValue(int position);
+
+    /** the docId of this block at a given position */
+    int docId(int position);
+  }
 }

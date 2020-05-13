@@ -150,7 +150,9 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
 
     // Stop a node (that's safe to stop for the purposes of this test)
     final JettySolrRunner stoppedJetty = pickNodeToStop();
-    log.info("Stopping node " + stoppedJetty.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping node {}", stoppedJetty.getNodeName());
+    }
     cluster.stopJettySolrRunner(stoppedJetty);
     cluster.waitForJettyToStop(stoppedJetty);
     

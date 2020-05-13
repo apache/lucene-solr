@@ -298,17 +298,19 @@ public class SimScenario implements AutoCloseable {
       iterations = Integer.parseInt(params.get("iterations", "10"));
       for (int i = 0; i < iterations; i++) {
         if (scenario.abortLoop) {
-          log.info("        -- abortLoop requested, aborting after " + i + " iterations.");
+          log.info("        -- abortLoop requested, aborting after {} iterations.", i);
           return;
         }
         scenario.context.put(LOOP_ITER_PROP, String.valueOf(i));
-        log.info("   * iter " + (i + 1) + ":");
+        log.info("   * iter {} :", i + 1); // logOK
         for (SimOp op : ops) {
           op.prepareCurrentParams(scenario);
-          log.info("     - " + op.getClass().getSimpleName() + "\t" + op.params.toString());
+          if (log.isInfoEnabled()) {
+            log.info("     - {}\t{})", op.getClass().getSimpleName(), op.params);
+          }
           op.execute(scenario);
           if (scenario.abortLoop) {
-            log.info("        -- abortLoop requested, aborting after " + i + " iterations.");
+            log.info("        -- abortLoop requested, aborting after {} iterations.", i);
             return;
           }
         }
@@ -522,7 +524,9 @@ public class SimScenario implements AutoCloseable {
     public void execute(SimScenario scenario) throws Exception {
       List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(scenario.config, scenario.cluster);
       scenario.context.put(SUGGESTIONS_CTX_PROP, suggestions);
-      log.info("        - " + suggestions.size() + " suggestions");
+      if (log.isInfoEnabled()) {
+        log.info("        - {} suggestions", suggestions.size());
+      }
       if (suggestions.isEmpty()) {
         scenario.abortLoop = true;
       }
@@ -542,7 +546,7 @@ public class SimScenario implements AutoCloseable {
         if (operation == null) {
           unresolvedCount++;
           if (suggestion.getViolation() == null) {
-            log.error("       -- ignoring suggestion without violation and without operation: " + suggestion);
+            log.error("       -- ignoring suggestion without violation and without operation: {}", suggestion);
           }
           continue;
         }
@@ -555,7 +559,7 @@ public class SimScenario implements AutoCloseable {
         ReplicaInfo info = scenario.cluster.getSimClusterStateProvider().simGetReplicaInfo(
             params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
         if (info == null) {
-          log.error("Could not find ReplicaInfo for params: " + params);
+          log.error("Could not find ReplicaInfo for params: {}", params);
         } else if (scenario.verbose) {
           paramsMap.put("replicaInfo", info);
         } else if (info.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
@@ -564,12 +568,12 @@ public class SimScenario implements AutoCloseable {
         try {
           scenario.cluster.request(operation);
         } catch (Exception e) {
-          log.error("Aborting - error executing suggestion " + suggestion, e);
+          log.error("Aborting - error executing suggestion {}", suggestion, e);
           break;
         }
       }
       if (suggestions.size() > 0 && unresolvedCount == suggestions.size()) {
-        log.info("        -- aborting simulation, only " + unresolvedCount + " unresolved violations remain");
+        log.info("        -- aborting simulation, only {} unresolved violations remain.", unresolvedCount);
         scenario.abortLoop = true;
       }
     }
@@ -611,7 +615,7 @@ public class SimScenario implements AutoCloseable {
         String key = e.getKey();
         CollectionParams.CollectionAction a = CollectionParams.CollectionAction.get(key);
         if (a == null) {
-          log.warn("Invalid collection action " + key + ", skipping...");
+          log.warn("Invalid collection action {}, skipping...", key);
           return;
         }
         String[] values = e.getValue();
@@ -803,7 +807,9 @@ public class SimScenario implements AutoCloseable {
         values.put(key, val);
       }
       for (String node : nodes) {
-        scenario.cluster.getSimNodeStateProvider().simSetNodeValues(node, values);
+        Map<String, Object> newValues = new HashMap<>(scenario.cluster.getSimNodeStateProvider().simGetNodeValues(node));
+        newValues.putAll(values);
+        scenario.cluster.getSimNodeStateProvider().simSetNodeValues(node, newValues);
       }
     }
   }
@@ -996,12 +1002,12 @@ public class SimScenario implements AutoCloseable {
       // split on blank
       String[] parts = expr.split("\\s+");
       if (parts.length > 2) {
-        log.warn("Invalid line - wrong number of parts " + parts.length + ", skipping: " + line);
+        log.warn("Invalid line - wrong number of parts {}, skipping: {}", parts.length, line);
         continue;
       }
       SimAction action = SimAction.get(parts[0]);
       if (action == null) {
-        log.warn("Invalid scenario action " + parts[0] + ", skipping...");
+        log.warn("Invalid scenario action {}, skipping...", parts[0]);
         continue;
       }
       if (action == SimAction.LOOP_END) {
@@ -1074,11 +1080,13 @@ public class SimScenario implements AutoCloseable {
   public void run() throws Exception {
     for (int i = 0; i < ops.size(); i++) {
       if (abortScenario) {
-        log.info("-- abortScenario requested, aborting after " + i + " ops.");
+        log.info("-- abortScenario requested, aborting after {} ops.", i);
         return;
       }
       SimOp op = ops.get(i);
-      log.info((i + 1) + ".\t" + op.getClass().getSimpleName() + "\t" + op.initParams.toString());
+      if (log.isInfoEnabled()) {
+        log.info("{}.\t{}\t{}", i + 1, op.getClass().getSimpleName(), op.initParams); // logOk
+      }
       // substitute parameters based on the current context
       if (cluster != null && cluster.getLiveNodesSet().size() > 0) {
         context.put(LIVE_NODES_CTX_PROP, new ArrayList<>(cluster.getLiveNodesSet().get()));
@@ -1093,7 +1101,9 @@ public class SimScenario implements AutoCloseable {
         context.remove(OVERSEER_LEADER_CTX_PROP);
       }
       op.prepareCurrentParams(this);
-      log.info("\t\t" + op.getClass().getSimpleName() + "\t" + op.params.toString());
+      if (log.isInfoEnabled()) {
+        log.info("\t\t{}\t{}", op.getClass().getSimpleName(), op.params);
+      }
       op.execute(this);
     }
   }

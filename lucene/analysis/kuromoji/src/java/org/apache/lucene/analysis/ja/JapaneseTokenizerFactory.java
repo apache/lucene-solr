@@ -136,6 +136,11 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public JapaneseTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (userDictionaryPath != null) {

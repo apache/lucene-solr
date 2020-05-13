@@ -54,9 +54,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
@@ -349,7 +349,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
       1, 1, solrCluster.getSolrClient());
       });
@@ -375,7 +375,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String untrustedSuffix = "-untrusted";
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
-    Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
           1, 1, solrCluster.getSolrClient());
     });
@@ -500,10 +500,14 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
     File directory = TestDynamicLoading.getFile(directoryPath);
-    log.info("Directory: "+directory.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("Directory: {}", directory.getAbsolutePath());
+    }
     try {
       zip (directory, zipFile);
-      log.info("Zipfile: "+zipFile.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+      }
       return zipFile.getAbsolutePath();
     } catch (IOException e) {
       throw new RuntimeException(e);
