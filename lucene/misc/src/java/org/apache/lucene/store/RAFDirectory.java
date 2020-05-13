@@ -20,6 +20,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.SuppressForbidden;
@@ -136,28 +137,25 @@ public class RAFDirectory extends FSDirectory {
   
     /** IndexInput methods */
     @Override
-    protected void readInternal(byte[] b, int offset, int len)
-         throws IOException {
+    protected void readInternal(ByteBuffer b) throws IOException {
       synchronized (file) {
         long position = off + getFilePointer();
         file.seek(position);
-        int total = 0;
 
-        if (position + len > end) {
+        if (position + b.remaining() > end) {
           throw new EOFException("read past EOF: " + this);
         }
 
         try {
-          while (total < len) {
-            final int toRead = Math.min(CHUNK_SIZE, len - total);
-            final int i = file.read(b, offset + total, toRead);
+          while (b.hasRemaining()) {
+            final int toRead = Math.min(CHUNK_SIZE, b.remaining());
+            final int i = file.read(b.array(), b.position(), toRead);
             if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
-             throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " total: " + total + " chunkLen: " + toRead + " end: " + end);
+             throw new EOFException("read past EOF: " + this + " off: " + b.position() + " len: " + b.remaining() + " chunkLen: " + toRead + " end: " + end);
             }
             assert i > 0 : "RandomAccessFile.read with non zero-length toRead must always read at least one byte";
-            total += i;
+            b.position(b.position() + i);
           }
-          assert total == len;
         } catch (IOException ioe) {
           throw new IOException(ioe.getMessage() + ": " + this, ioe);
         }

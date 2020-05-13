@@ -74,7 +74,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
       zkClient.setData(path, bytes, false);
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);
-      log.warn("Could not persist properties to " + path + " :" + e.getClass(), e);
+      log.warn("Could not persist properties to {} : {}", path, e.getClass(), e);
     }
   }
   
@@ -88,7 +88,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
       }
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);
-      log.warn("Could not read DIH properties from " + path + " :" + e.getClass(), e);
+      log.warn("Could not read DIH properties from {} : {}", path, e.getClass(), e);
     }
     return propertiesToMap(props);
   }

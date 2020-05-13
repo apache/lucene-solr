@@ -390,7 +390,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
-              log.warn("error reading field: " + fieldName);
+              log.warn("error reading field: {}", fieldName);
             }
           }
         }
@@ -623,8 +623,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       return commit.getDirectory().fileLength(commit.getSegmentsFileName());
     } catch (NoSuchFileException okException) {
       log.debug("Unable to determine the (optional) fileSize for the current IndexReader's segments file because it is "
-                + "no longer in the Directory, this can happen if there are new commits since the Reader was opened",
-                okException);
+          + "no longer in the Directory, this can happen if there are new commits since the Reader was opened"
+          , okException);
     } catch (IOException strangeException) {
       log.warn("Ignoring IOException wile attempting to determine the (optional) fileSize stat for the current IndexReader's segments file",
                strangeException);

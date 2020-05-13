@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -209,7 +209,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort","n_tl1 asc", "fl","*,score"); 
     query("q","*:*", "sort","n_tl1 desc");
+    
     handle.put("maxScore", SKIPVAL);
+    testMinExactHits();
+    
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
     handle.remove("maxScore");
@@ -1057,7 +1060,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             "stats.field", tdate_a, 
             "stats.field", tdate_b,
             "stats.calcdistinct", "true");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException"))  {
         fail("NullPointerException with stats request on empty index");
       } else  {
@@ -1082,9 +1085,36 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals(new EnumFieldValue(11, "Critical"),
                  rsp.getFieldStatsInfo().get(fieldName).getMax());
 
-    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
+    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't guarantee order
     query("q", "*:*", "stats", "true", "stats.field", fieldName, 
           "stats.facet", fieldName);
+  }
+
+  private void testMinExactHits() throws Exception {
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "200", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "-1", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}id:1", CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "1");
+    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS,"2", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+  }
+  
+  private void assertIsExactHitCount(Object... requestParams) throws Exception {
+    QueryResponse response = query(requestParams);
+    assertNotNull("Expecting exact hit count in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    assertTrue("Expecting exact hit count in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+  }
+  
+  private void assertApproximatedHitCount(Object...requestParams) throws Exception {
+    handle.put("numFound", SKIPVAL);
+    QueryResponse response = query(requestParams);
+    assertNotNull("Expecting numFoundExact in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    assertFalse("Expecting aproximated results in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    handle.remove("numFound", SKIPVAL);
   }
 
   /** comparing results with facet.method=uif */

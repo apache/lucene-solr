@@ -238,7 +238,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
     /* Log the constructed connection string and then initialize. */
     final String zkHostString = zkBuilder.toString();
-    log.debug("Final constructed zkHost string: " + zkHostString);
+    log.debug("Final constructed zkHost string: {}", zkHostString);
     return zkHostString;
   }
 

@@ -63,12 +63,12 @@ public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
-    add("Tlog.*");
+    add("TLOG.*");
     add("CORE\\.fs.*");
     add("REPLICATION.*");
     add("INDEX\\.flush.*");
     add("INDEX\\.merge\\.major.*");
-    add("UPDATE\\./update/.*requests");
+    add("UPDATE\\./update.*requests");
     add("QUERY\\./select.*requests");
   }};
 
@@ -124,16 +124,16 @@ public class SolrShardReporter extends SolrCoreReporter {
       reporter.close();
     }
     if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
+      log.info("Reporter disabled for registry {}", registryName);
       return;
     }
     if (core.getCoreDescriptor().getCloudDescriptor() == null) {
       // not a cloud core
-      log.warn("Not initializing shard reporter for non-cloud core " + core.getName());
+      log.warn("Not initializing shard reporter for non-cloud core {}", core.getName());
       return;
     }
     if (period < 1) { // don't start it
-      log.warn("period=" + period + ", not starting shard reporter ");
+      log.warn("period={}, not starting shard reporter ", period);
       return;
     }
     // our id is coreNodeName
@@ -141,7 +141,7 @@ public class SolrShardReporter extends SolrCoreReporter {
     // target registry is the leaderRegistryName
     String groupId = core.getCoreMetricManager().getLeaderRegistryName();
     if (groupId == null) {
-      log.warn("No leaderRegistryName for core " + core + ", not starting the reporter...");
+      log.warn("No leaderRegistryName for core {}, not starting the reporter...", core);
       return;
     }
     SolrReporter.Report spec = new SolrReporter.Report(groupId, null, registryName, filters);
@@ -154,7 +154,7 @@ public class SolrShardReporter extends SolrCoreReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getSolrClientCache(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
@@ -176,12 +176,12 @@ public class SolrShardReporter extends SolrCoreReporter {
       DocCollection collection = state.getCollection(core.getCoreDescriptor().getCollectionName());
       Replica replica = collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
       if (replica == null) {
-        log.warn("No leader for " + collection.getName() + "/" + core.getCoreDescriptor().getCloudDescriptor().getShardId());
+        log.warn("No leader for {}/{}", collection.getName(), core.getCoreDescriptor().getCloudDescriptor().getShardId());
         return null;
       }
       String baseUrl = replica.getStr("base_url");
       if (baseUrl == null) {
-        log.warn("No base_url for replica " + replica);
+        log.warn("No base_url for replica {}", replica);
       }
       return baseUrl;
     }

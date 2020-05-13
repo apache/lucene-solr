@@ -122,7 +122,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
 
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
     //
     // we want to walk up the fcontext and inherit the queries from any ancestor SKGAgg
@@ -135,7 +135,7 @@ public class RelatednessAgg extends AggValueSource {
     
     List<Query> fgFilters = new ArrayList<Query>(3);
     fgFilters.add(fgQ);
-    for (FacetContext ctx = fcontext; ctx != null; ctx = ctx.parent) {
+    for (FacetRequest.FacetContext ctx = fcontext; ctx != null; ctx = ctx.parent) {
       if (null != ctx.filter) {
         fgFilters.add(ctx.filter);
       } else {
@@ -170,7 +170,7 @@ public class RelatednessAgg extends AggValueSource {
     private final DocSet bgSet;
     private final long fgSize;
     private final long bgSize;
-    public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
+    public SKGSlotAcc(final RelatednessAgg agg, final FacetRequest.FacetContext fcontext, final int numSlots,
                       final DocSet fgSet, final DocSet bgSet) throws IOException {
       super(fcontext);
       this.agg = agg;

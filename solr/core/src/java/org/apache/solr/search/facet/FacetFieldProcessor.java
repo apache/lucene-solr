@@ -41,7 +41,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
-import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+import static org.apache.solr.search.facet.FacetRequest.FacetContext.SKIP_FACET;
 
 /**
  * Facet processing based on field values. (not range nor by query)
@@ -69,7 +69,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   SpecialSlotAcc allBucketsAcc;  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
 
-  FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessor(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
     this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
@@ -108,7 +108,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /** This is used to create accs for second phase (or to create accs for all aggs) */
   @Override
-  protected void createAccs(int docCount, int slotCount) throws IOException {
+  protected void createAccs(long docCount, int slotCount) throws IOException {
     if (accMap == null) {
       accMap = new LinkedHashMap<>();
     }
@@ -295,7 +295,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
                                         IntFunction<Comparable> bucketValFromSlotNumFunc,
                                         Function<Comparable, String> fieldQueryValFunc) throws IOException {
     assert this.sortAcc != null;
-    int numBuckets = 0;
+    long numBuckets = 0;
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
 
@@ -347,7 +347,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       // screen out buckets not matching mincount
       if (effectiveMincount > 0) {
-        int count = countAcc.getCount(slotNum);
+        long count = countAcc.getCount(slotNum);
         if (count  < effectiveMincount) {
           if (count > 0)
             numBuckets++;  // Still increment numBuckets as long as we have some count.  This is for consistency between distrib and non-distrib mode.
@@ -387,7 +387,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     FacetDebugInfo fdebug = fcontext.getDebugInfo();
-    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
+    if (fdebug != null) fdebug.putInfoItem("numBuckets", numBuckets);
 
     if (freq.allBuckets) {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
@@ -507,7 +507,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot,
                                   SlotAcc resortAcc) throws IOException {
-    final int count = countAcc.getCount(slot.slot);
+    final long count = countAcc.getCount(slot.slot);
     target.add("count", count);
     if (count <= 0 && !freq.processEmpty) return;
 
@@ -645,14 +645,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
   
   @Override
-  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, int docCount) throws IOException {
+  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount) throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
     assert null != bucketQ;
-    int collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
+    long collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
 
     // countAcc.incrementCount(0, collected);  // should we set the counton the acc instead of just passing it?
 
@@ -661,7 +661,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   // overrides but with different signature!
-  private void addStats(SimpleOrderedMap<Object> target, int count, int slotNum) throws IOException {
+  private void addStats(SimpleOrderedMap<Object> target, long count, int slotNum) throws IOException {
     target.add("count", count);
     if (count > 0 || freq.processEmpty) {
       for (SlotAcc acc : accs) {
@@ -690,7 +690,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   static class MultiAcc extends SlotAcc {
     final SlotAcc[] subAccs;
 
-    MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
+    MultiAcc(FacetRequest.FacetContext fcontext, SlotAcc[] subAccs) {
       super(fcontext);
       this.subAccs = subAccs;
     }
@@ -749,7 +749,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int otherAccsSlot;
     long count;
 
-    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
+    SpecialSlotAcc(FacetRequest.FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
       super(fcontext);
       this.collectAcc = collectAcc;
       this.collectAccSlot = collectAccSlot;

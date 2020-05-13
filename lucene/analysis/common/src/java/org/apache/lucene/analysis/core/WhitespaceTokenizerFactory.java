@@ -75,6 +75,11 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public WhitespaceTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Tokenizer create(AttributeFactory factory) {
     switch (rule) {

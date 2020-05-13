@@ -32,6 +32,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -128,7 +129,7 @@ public class TestExpressionSorts extends LuceneTestCase {
         SortField s = original[i];
         Expression expr = JavascriptCompiler.compile(s.getField());
         SimpleBindings simpleBindings = new SimpleBindings();
-        simpleBindings.add(s);
+        simpleBindings.add(s.getField(), fromSortField(s));
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         mutated[i] = expr.getSortField(simpleBindings, reverse);
       } else {
@@ -144,6 +145,23 @@ public class TestExpressionSorts extends LuceneTestCase {
       expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
+    }
+  }
+
+  private DoubleValuesSource fromSortField(SortField field) {
+    switch(field.getType()) {
+      case INT:
+        return DoubleValuesSource.fromIntField(field.getField());
+      case LONG:
+        return DoubleValuesSource.fromLongField(field.getField());
+      case FLOAT:
+        return DoubleValuesSource.fromFloatField(field.getField());
+      case DOUBLE:
+        return DoubleValuesSource.fromDoubleField(field.getField());
+      case SCORE:
+        return DoubleValuesSource.SCORES;
+      default:
+        throw new UnsupportedOperationException();
     }
   }
 }

@@ -66,6 +66,11 @@ public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KoreanPartOfSpeechStopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream stream) {
       return new KoreanPartOfSpeechStopFilter(stream, stopTags);

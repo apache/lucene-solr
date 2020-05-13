@@ -32,7 +32,7 @@ public class StddevAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -86,43 +86,43 @@ public class StddevAgg extends SimpleAggValueSource {
     
     @Override
     protected double getDouble() {
-      return AggUtil.uncorrectedStdDev(sumSq, sum, count);
+      return AggUtil.stdDev(sumSq, sum, count);
     }    
   }
 
   class StddevSortedNumericAcc extends SDVSortedNumericAcc {
 
-    public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
   class StddevSortedSetAcc extends SDVSortedSetAcc {
 
-    public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
   class StddevUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
 
-    public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public StddevUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 }

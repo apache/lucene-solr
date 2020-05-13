@@ -92,7 +92,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);// TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Adding proxy for URL: {}. Proxy {}", jetty.getBaseUrl(), proxy.getUrl());
+      }
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }

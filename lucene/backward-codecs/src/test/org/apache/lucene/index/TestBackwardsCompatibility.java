@@ -301,7 +301,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "8.4.0-cfs",
     "8.4.0-nocfs",
     "8.4.1-cfs",
-    "8.4.1-nocfs"
+    "8.4.1-nocfs",
+    "8.5.0-cfs",
+    "8.5.0-nocfs",
+    "8.5.1-cfs",
+    "8.5.1-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -316,7 +320,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.8.3.0",
     "sorted.8.3.1",
     "sorted.8.4.0",
-    "sorted.8.4.1"
+    "sorted.8.4.1",
+    "sorted.8.5.0",
+    "sorted.8.5.1"
   };
 
   public static String[] getOldSortedNames() {
@@ -762,7 +768,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             writer.close();
           }
         }
-        writer = null;
       }
       
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -824,8 +829,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       w.addIndexes(oldDir);
       w.close();
-      targetDir.close();
 
+      SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
+      assertNull("none of the segments should have been upgraded",
+          si.asList().stream().filter( // depending on the MergePolicy we might see these segments merged away
+              sci -> sci.getId() != null && sci.info.getVersion().onOrAfter(Version.LUCENE_8_6_0) == false
+          ).findAny().orElse(null));
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
@@ -856,7 +865,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       TestUtil.addIndexesSlowly(w, reader);
       w.close();
       reader.close();
-            
+      SegmentInfos si = SegmentInfos.readLatestCommit(targetDir);
+      assertNull("all SCIs should have an id now",
+          si.asList().stream().filter(sci -> sci.getId() == null).findAny().orElse(null));
       targetDir.close();
     }
   }
@@ -1361,6 +1372,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
+  public void testSegmentCommitInfoId() throws IOException {
+    for (String name : oldNames) {
+      Directory dir = oldIndexDirs.get(name);
+      SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+      for (SegmentCommitInfo info : infos) {
+        if (info.info.getVersion().onOrAfter(Version.LUCENE_8_6_0)) {
+          assertNotNull(info.toString(), info.getId());
+        } else {
+          assertNull(info.toString(), info.getId());
+        }
+      }
+    }
+  }
+
   public void verifyUsesDefaultCodec(Directory dir, String name) throws Exception {
     DirectoryReader r = DirectoryReader.open(dir);
     for (LeafReaderContext context : r.leaves()) {
@@ -1386,6 +1411,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     for (SegmentCommitInfo si : infos) {
       assertEquals(Version.LATEST, si.info.getVersion());
+      assertNotNull(si.getId());
     }
     assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
     assertEquals(indexCreatedVersion, infos.getIndexCreatedVersionMajor());

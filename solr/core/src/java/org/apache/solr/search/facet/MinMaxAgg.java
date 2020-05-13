@@ -46,7 +46,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     SchemaField sf = null;
@@ -164,7 +164,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     private int currentSlot;
     int[] result;
 
-    public MinMaxUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public MinMaxUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
       result = new int[numSlots];
       Arrays.fill(result, MISSING);
@@ -234,7 +234,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
   class DFuncAcc extends DoubleFuncSlotAcc {
-    public DFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+    public DFuncAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, Double.NaN);
     }
 
@@ -262,7 +262,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
   class LFuncAcc extends LongFuncSlotAcc {
     FixedBitSet exists;
-    public LFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+    public LFuncAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
       exists = new FixedBitSet(numSlots);
     }
@@ -322,7 +322,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
   class DateFuncAcc extends LongFuncSlotAcc {
     private static final long MISSING = Long.MIN_VALUE;
-    public DateFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+    public DateFuncAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, MISSING);
     }
 
@@ -351,7 +351,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     SchemaField field;
     int[] slotOrd;
 
-    public OrdAcc(FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
+    public OrdAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
       super(fcontext);
       this.field = field;
       slotOrd = new int[numSlots];
@@ -394,7 +394,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     LongValues toGlobal;
     SortedDocValues subDv;
 
-    public SingleValuedOrdAcc(FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
+    public SingleValuedOrdAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
     }
 
@@ -450,7 +450,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     SortedSetDocValues subDv;
     long[] slotOrd;
 
-    public MinMaxSortedSetDVAcc(FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
+    public MinMaxSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots) throws IOException {
       super(fcontext, field);
       this.slotOrd = new long[numSlots];
       Arrays.fill(slotOrd, MISSING);

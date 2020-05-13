@@ -138,6 +138,8 @@ v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/H
 
 This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/health` or `solr/<core>/admin/health`).
 
+This endpoint also accepts additional request parameters. Please see {solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+
 === Analysis Handlers
 
 [horizontal]

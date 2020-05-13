@@ -47,7 +47,7 @@ public class Diagnostics {
       sb.append(info);
       // sb.append("\n");
     }
-    log.error(sb.toString());
+    log.error("{}", sb);
   }
 
 
