@@ -91,159 +91,6 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
   }
 }
 
-// Add cross-project documentation task dependencies and link generation.
-configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lucene:core' }) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:core')
-  }
-}
-
-configure(subprojects.findAll { it.path.startsWith(':lucene:analysis') && it.path != ':lucene:analysis:common'}) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:analysis:common')
-  }
-}
-
-configure(project(':lucene:benchmark')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-        ':lucene:memory',
-        ':lucene:highlighter',
-        ':lucene:analysis:common',
-        ':lucene:queryparser',
-        ':lucene:facet',
-        ':lucene:spatial-extras')
-  }
-}
-
-configure(project(':lucene:classification')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-       ':lucene:queries',
-       ':lucene:analysis:common',
-       ':lucene:grouping')
-  }
-}
-
-configure(project(':lucene:demo')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-       ':lucene:analysis:common',
-       ':lucene:queryparser',
-       ':lucene:queries',
-       ':lucene:facet',
-       ':lucene:expressions')
-
-    // For the demo, we link the example source in the javadocs, as it's ref'ed elsewhere
-    linksource = true
-  }
-}
-
-configure(project(':lucene:grouping')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:queries')
-  }
-}
-
-configure(project(':lucene:highlighter')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:memory')
-  }
-}
-
-configure(project(':lucene:monitor')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-        ':lucene:memory',
-        ':lucene:analysis:common',
-        ':lucene:queryparser')
-  }
-}
-
-configure(project(':lucene:queryparser')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-        ':lucene:queries',
-        ':lucene:sandbox'
-    )
-  }
-}
-
-configure(project(':lucene:replicator')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:facet')
-  }
-}
-
-configure(project(':lucene:spatial-extras')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:spatial3d')
-  }
-}
-
-configure(project(':lucene:suggest')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:analysis:common')
-  }
-}
-
-configure(project(':lucene:test-framework')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':lucene:codecs')
-  }
-}
-
-configure(subprojects.findAll { it.path.startsWith(':solr') }) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-        ':lucene:core',
-        ':lucene:analysis:common',
-        ':lucene:analysis:icu',
-        ':lucene:analysis:kuromoji',
-        ':lucene:analysis:nori',
-        ':lucene:analysis:morfologik',
-        ':lucene:analysis:phonetic',
-        ':lucene:analysis:smartcn',
-        ':lucene:analysis:stempel',
-        ':lucene:backward-codecs',
-        ':lucene:codecs',
-        ':lucene:expressions',
-        ':lucene:suggest',
-        ':lucene:grouping',
-        ':lucene:join',
-        ':lucene:queries',
-        ':lucene:queryparser',
-        ':lucene:highlighter',
-        ':lucene:memory',
-        ':lucene:misc',
-        ':lucene:classification',
-        ':lucene:spatial-extras'
-    )
-  }
-}
-
-configure(project(':solr:core')) {
-  project.tasks.withType(RenderJavadocTask) {
-    // Specialized to ONLY depend on solrj
-    addLinkedProject(':solr:solrj')
-  }
-}
-
-configure(subprojects.findAll { it.path.startsWith(':solr:contrib') }) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(
-        ':solr:solrj',
-        ':solr:core'
-    )
-  }
-}
-
-configure(project(':solr:contrib:dataimporthandler-extras')) {
-  project.tasks.withType(RenderJavadocTask) {
-    addLinkedProject(':solr:contrib:dataimporthandler')
-  }
-}
-
 // Disable Javadoc rendering for these projects.
 configure(subprojects.findAll { it.path in [
     ':solr:solr-ref-guide',
@@ -254,6 +101,19 @@ configure(subprojects.findAll { it.path in [
   }
 }
 
+// Add cross-project documentation task dependencies:
+// - each RenderJavaDocs task gets a dependency to all tasks with same name in its dependencies
+// - the dependency is using dependsOn with a closure to enable lazy evaluation
+configure(subprojects) {
+  project.tasks.withType(RenderJavadocTask) { task ->
+    task.dependsOn {
+      task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
+        def otherProject = dep.dependencyProject
+        return otherProject.tasks.findByName(task.name)
+      }
+    }
+  }
+}
 
 class RenderJavadocTask extends DefaultTask {
   @InputFiles
@@ -277,10 +137,6 @@ class RenderJavadocTask extends DefaultTask {
   boolean relativeProjectLinks = false
 
   @Input
-  def linkedProjectNames = []
-  def linkedProjects = []
-
-  @Input
   def offlineLinks = [:]
 
   @Input
@@ -288,20 +144,6 @@ class RenderJavadocTask extends DefaultTask {
 
   @Input
   def solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${project.baseVersion.replace(".", "_")}")
-
-  public addLinkedProject(String... projectPaths) {
-    projectPaths.each { otherProjectPath ->
-      // We want to depend on the task of the same name in the other project.
-      def myName = name
-      def otherProject = project.findProject(otherProjectPath)
-      def otherTasks = otherProject.tasks.matching { it.name == myName }
-      dependsOn otherTasks
-
-      // Create a cross-link between documentation.
-      linkedProjects.add(otherProject)
-      linkedProjectNames.add(otherProjectPath)
-    }
-  }
 
   @TaskAction
   public void render() {
@@ -344,22 +186,26 @@ class RenderJavadocTask extends DefaultTask {
     def allOfflineLinks = [:]
     allOfflineLinks.putAll(offlineLinks)
 
-    // Resolve inter-project links.
-    linkedProjects.collect { otherProject ->
+    // Resolve inter-project links:
+    // - find all (enabled) tasks this tasks depends on (with same name)
+    // - for each task get output dir to create relative or absolute link
+    def myTaskName = name
+    taskDependencies.getDependencies(this).findAll { it.name == myTaskName && it.enabled }.each { otherTask ->
+      def otherProject = otherTask.project
       // For relative links we compute the actual relative link between projects.
       def crossLuceneSolr = (otherProject.docroot != project.docroot)
       if (relativeProjectLinks && !crossLuceneSolr) {
-        def pathTo = otherProject.tasks[name].outputDir.toPath().toAbsolutePath()
+        def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
         def pathFrom = outputDir.toPath().toAbsolutePath()
         def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
         opts << [ '-link', relative ]
       } else {
         // For absolute links, we determine the target URL by assembling the full URL.
         def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
-        allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherProject.tasks[name].outputDir)
+        allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
       }
     }
-
+    
     // Add offline links.
     allOfflineLinks.each { url, dir ->
       // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
