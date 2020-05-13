@@ -22,9 +22,9 @@ configure(rootProject) {
 
     dependsOn allprojects.collect { prj ->
       prj.tasks.matching { task -> task.name in [
-        "changesToHtml"
+        "changesToHtml",
+        "renderSiteJavadoc"
         // TODO: "markdownToHtml"
-        // TODO: "gatherJavadocs"
       ]}
     }
   }
