@@ -91,6 +91,13 @@ configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lu
   }
 }
 
+configure(project(':lucene:demo')) {
+  project.tasks.withType(RenderJavadocTask) {
+    // For the demo, we link the example source in the javadocs, as it's ref'ed elsewhere
+    linksource = true
+  }
+}
+
 // Disable Javadoc rendering for these projects.
 configure(subprojects.findAll { it.path in [
     ':solr:solr-ref-guide',
