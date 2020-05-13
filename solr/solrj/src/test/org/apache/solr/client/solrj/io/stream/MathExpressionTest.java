@@ -4062,6 +4062,42 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals((double)out.get(20), 22.92, 0.009);
   }
 
+
+  @Test
+  public void testTimeDifferencingMatrix() throws Exception {
+    String cexpr = "let(echo=\"c, d\",\n" +
+        "               a=matrix(array(1,2,3,4,5),array(7.5,9,11,15.5,50.2)),\n" +
+        "               b=setColumnLabels(a, array(\"a\",\"b\",\"c\",\"d\",\"e\")),\n" +
+        "               c=diff(b, 2),\n" +
+        "               d=getColumnLabels(c))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("c");
+    List<String> columnsLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnsLabels.size(), 3);
+    assertEquals(columnsLabels.get(0), "c");
+    assertEquals(columnsLabels.get(1), "d");
+    assertEquals(columnsLabels.get(2), "e");
+    assertEquals(matrix.size(), 2);
+    List<Number> row1 = matrix.get(0);
+    List<Number> row2 = matrix.get(1);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 2.0, 0);
+    assertEquals(row1.get(1).doubleValue(), 2.0, 0);
+    assertEquals(row1.get(2).doubleValue(), 2.0, 0);
+    assertEquals(row2.size(), 3 );
+    assertEquals(row2.get(0).doubleValue(), 3.5, 0);
+    assertEquals(row2.get(1).doubleValue(), 6.5, 0);
+    assertEquals(row2.get(2).doubleValue(), 39.2, 0);
+  }
+
   @Test
   public void testTimeDifferencingDefaultLag() throws Exception {
     String cexpr = "diff(array(1709.0, 1621.0, 1973.0, 1812.0, 1975.0, 1862.0, 1940.0, 2013.0, 1596.0, 1725.0, 1676.0, 1814.0, 1615.0, 1557.0, 1891.0, 1956.0, 1885.0, 1623.0, 1903.0, 1997.0))";
