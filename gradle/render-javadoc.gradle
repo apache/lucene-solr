@@ -18,8 +18,6 @@
 // generate javadocs by calling javadoc tool
 // see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
 
-import java.util.stream.Collectors;
-
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
@@ -40,10 +38,10 @@ allprojects {
       group "documentation"
 
       dependsOn sourceSets.main.compileClasspath
-
-      srcDirSet = sourceSets.main.java;
-      outputDir = project.javadoc.destinationDir;
       classpath = sourceSets.main.compileClasspath;
+      srcDirSet = sourceSets.main.java;
+
+      outputDir = project.javadoc.destinationDir;
     }
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
@@ -51,14 +49,14 @@ allprojects {
       group "documentation"
 
       dependsOn sourceSets.main.compileClasspath
-
-      srcDirSet = sourceSets.main.java;
       classpath = sourceSets.main.compileClasspath;
+      srcDirSet = sourceSets.main.java;
 
       relativeProjectLinks = true
 
-      // TODO: proof of concept to place everything in one dir under root's build dir.
-      outputDir = rootProject.file("${rootProject.buildDir}/site-docs").toPath().resolve(project.relativeDocPath).toFile()
+      // Place the documentation under Lucene or Solr's documentation directory.
+      // docroot is defined in 'documentation.gradle'
+      outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
     }
   }
 }
@@ -346,9 +344,8 @@ class RenderJavadocTask extends DefaultTask {
     // Resolve inter-project links.
     linkedProjects.collect { otherProject ->
       // For relative links we compute the actual relative link between projects.
-      // TODO: if we don't want relative Solr-Lucene links we need to add a condition here
-      // and it'll just render as an offline link.
-      if (relativeProjectLinks) {
+      def crossLuceneSolr = (otherProject.docroot != project.docroot)
+      if (relativeProjectLinks && !crossLuceneSolr) {
         def pathTo = otherProject.tasks[name].outputDir.toPath().toAbsolutePath()
         def pathFrom = outputDir.toPath().toAbsolutePath()
         def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
