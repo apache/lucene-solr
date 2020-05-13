@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -66,9 +65,9 @@ public class ColStatus {
   public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(HttpClient httpClient, ClusterState clusterState, ZkNodeProps props) {
+  public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
     this.props = props;
-    this.solrClientCache = new SolrClientCache(httpClient);
+    this.solrClientCache = solrClientCache;
     this.clusterState = clusterState;
   }
 
