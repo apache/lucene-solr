@@ -290,6 +290,55 @@ import java.util.Set;
  * <td>(a single non-reserved character)</td>
  * <td></td>
  * </tr>
+ * 
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\d</b></code></td>
+ * <td>(a digit [0-9])</td>
+ * <td></td>
+ * </tr>
+ * 
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\D</b></code></td>
+ * <td>(a non-digit [^0-9])</td>
+ * <td></td>
+ * </tr>
+ * 
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\s</b></code></td>
+ * <td>(whitespace [ \t\n\r])</td>
+ * <td></td>
+ * </tr>
+ * 
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\S</b></code></td>
+ * <td>(non whitespace [^\s])</td>
+ * <td></td>
+ * </tr>
+ *  
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\w</b></code></td>
+ * <td>(a word character [a-zA-Z_0-9])</td>
+ * <td></td>
+ * </tr>
+ *  
+ * <tr>
+ * <td></td>
+ * <td>|</td>
+ * <td><code><b>\W</b></code></td>
+ * <td>(a non word character [^\w])</td>
+ * <td></td>
+ * </tr>
+ *  
  * <tr>
  * <td></td>
  * <td>|</td>
@@ -318,7 +367,7 @@ public class RegExp {
   
   enum Kind {
     REGEXP_UNION, REGEXP_CONCATENATION, REGEXP_INTERSECTION, REGEXP_OPTIONAL, REGEXP_REPEAT, REGEXP_REPEAT_MIN, REGEXP_REPEAT_MINMAX, REGEXP_COMPLEMENT, REGEXP_CHAR, REGEXP_CHAR_RANGE, REGEXP_ANYCHAR, REGEXP_EMPTY, REGEXP_STRING, REGEXP_ANYSTRING, REGEXP_AUTOMATON, REGEXP_INTERVAL,
-    REGEXP_SHORTHAND
+    REGEXP_PRE_CLASS
   }
   
   /**
@@ -507,7 +556,7 @@ public class RegExp {
     List<Automaton> list;
     Automaton a = null;
     switch (kind) {
-      case REGEXP_SHORTHAND:
+      case REGEXP_PRE_CLASS:
         RegExp expanded = expandPredefined();
         a = expanded.toAutomatonInternal(automata, automaton_provider, maxDeterminizedStates);
         break;
@@ -721,7 +770,7 @@ public class RegExp {
           b.append('0');
         b.append(s2).append(">");
         break;
-      case REGEXP_SHORTHAND:
+      case REGEXP_PRE_CLASS:
         b.append("\\").appendCodePoint(from);
         break;
     }
@@ -782,7 +831,7 @@ public class RegExp {
         b.appendCodePoint(c);
         b.append('\n');
         break;
-      case REGEXP_SHORTHAND:
+      case REGEXP_PRE_CLASS:
         b.append(indent);
         b.append(kind);
         b.append(" class=\\");
@@ -1153,7 +1202,7 @@ public class RegExp {
     if (match('\\')) {
       if (peek("dDwWsS")) {
         RegExp re =new RegExp();
-        re.kind = Kind.REGEXP_SHORTHAND;
+        re.kind = Kind.REGEXP_PRE_CLASS;
         re.from = next();
         return re;
       }
