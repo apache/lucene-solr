@@ -24,6 +24,7 @@ import com.vladsch.flexmark.util.sequence.Escaping;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
+import com.vladsch.flexmark.ext.attributes.AttributesExtension;
 
 buildscript {
   repositories {
@@ -34,24 +35,119 @@ buildscript {
     classpath "com.vladsch.flexmark:flexmark:${scriptDepVersions['flexmark']}"
     classpath "com.vladsch.flexmark:flexmark-ext-autolink:${scriptDepVersions['flexmark']}"
     classpath "com.vladsch.flexmark:flexmark-ext-abbreviation:${scriptDepVersions['flexmark']}"
+    classpath "com.vladsch.flexmark:flexmark-ext-attributes:${scriptDepVersions['flexmark']}"
   }
+}
+
+def getListOfProjectsAsMarkdown = { prefix ->
+  def projects = allprojects.findAll{ it.path.startsWith(prefix) && it.tasks.findByName('renderSiteJavadoc') }
+    .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
+      .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
+      .thenComparing(Comparator.comparing{ it.path }));
+  return projects.collect{ project ->
+    def text = "**[${project.path.substring(prefix.length()).replace(':','-')}](${project.relativeDocPath}/index.html):** ${project.description}"
+    if (project.name == 'core') {
+      text = text.concat(' {style="font-size:larger; margin-bottom:.5em"}')
+    }
+    return '* ' + text;
+  }.join('\n')
 }
 
 configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   task markdownToHtml(type: Copy) {
     filteringCharset = 'UTF-8'
     includeEmptyDirs = false
-    from('.') {            // lucene
+    into project.docroot
+    rename(/\.md$/, '.html')
+    filter(MarkdownFilter)
+  }
+}
+
+configure(project(':lucene')) {
+  markdownToHtml {
+    from('.') {
       include 'MIGRATE.md'
       include 'JRE_VERSION_MIGRATION.md'
       include 'SYSTEM_REQUIREMENTS.md'
     }
-    from('site') {         // solr
+  }
+  
+  task createDocumentationIndex {
+    def outputFile = file("${project.docroot}/index.html");
+    def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
+    
+    inputs.file(defaultCodecFile)
+    outputs.file(outputFile)
+    
+    doLast {
+      // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
+      def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
+      def matcher = regex.matcher(defaultCodecFile.getText('UTF-8'))
+      if (!matcher.find()) {
+        throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
+      }
+      def defaultCodecPackage = matcher.group(1).toLowerCase(Locale.ROOT)
+      def markdown = """
+        ![Apache Lucene Logo](lucene_green_300.gif)
+        
+        # Apache Lucene™ ${project.version} Documentation
+
+        Lucene is a Java full-text search engine. Lucene is not a complete application, 
+        but rather a code library and API that can easily be used to add search capabilities
+        to applications.
+        
+        This is the official documentation for **Apache Lucene ${project.version}**.
+        Additional documentation is available in the
+        [Wiki](https://cwiki.apache.org/confluence/display/lucene).
+        
+        ## Getting Started
+        
+        The following section is intended as a "getting started" guide. It has three
+        audiences: first-time users looking to install Apache Lucene in their
+        application; developers looking to modify or base the applications they develop
+        on Lucene; and developers looking to become involved in and contribute to the
+        development of Lucene. The goal is to help you "get started". It does not go into great depth
+        on some of the conceptual or inner details of Lucene:
+        
+        * [Lucene demo, its usage, and sources](demo/overview-summary.html#overview.description):
+          Tutorial and walk-through of the command-line Lucene demo.
+        * [Introduction to Lucene's APIs](core/overview-summary.html#overview.description):
+          High-level summary of the different Lucene packages. </li>
+        * [Analysis overview](core/org/apache/lucene/analysis/package-summary.html#package.description):
+          Introduction to Lucene's analysis API.  See also the
+          [TokenStream consumer workflow](core/org/apache/lucene/analysis/TokenStream.html).
+        
+        ## Reference Documents
+        
+        * [Changes](changes/Changes.html): List of changes in this release.
+        * [System Requirements](SYSTEM_REQUIREMENTS.html): Minimum and supported Java versions.
+        * [Migration Guide](MIGRATE.html): What changed in Lucene 8; how to migrate code from Lucene 7.x.
+        * [JRE Version Migration](JRE_VERSION_MIGRATION.html): Information about upgrading between major JRE versions.
+        * [File Formats](core/org/apache/lucene/codecs/${defaultCodecPackage}/package-summary.html#package.description):
+          Guide to the supported index format used by Lucene. This can be customized by using
+          <a href="core/org/apache/lucene/codecs/package-summary.html#package.description">an alternate codec</a>.
+        * [Search and Scoring in Lucene](core/org/apache/lucene/search/package-summary.html#package.description):
+          Introduction to how Lucene scores documents.
+        * [Classic Scoring Formula](core/org/apache/lucene/search/similarities/TFIDFSimilarity.html):
+          Formula of Lucene's classic [Vector Space](http://en.wikipedia.org/wiki/Vector_Space_Model) implementation
+          (look [here](core/org/apache/lucene/search/similarities/package-summary.html#package.description) for other models).
+        * [Classic QueryParser Syntax](queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package.description):
+          Overview of the Classic QueryParser's syntax and features.
+        
+        ## API Javadocs
+        
+      """.stripIndent().concat(getListOfProjectsAsMarkdown(':lucene:'))
+      project.docroot.mkdirs();
+      outputFile.write(MarkdownFilter.convert(markdown), 'UTF-8')
+    }
+  }
+}
+
+configure(project(':solr')) {
+  markdownToHtml {
+    from('site') {
       include '**/*.md'
     }
-    into project.docroot
-    rename(/\.md$/, '.html')
-    filter(MarkdownFilter)
   }
   
   task createDocumentationIndex {
@@ -61,7 +157,8 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
 
 class MarkdownFilter extends FilterReader {
   public MarkdownFilter(Reader reader) throws IOException {
-    // this is a hack: it reads whole file, converts it and provides result as a StringReader
+    // this is not really a filter: it reads whole file in ctor,
+    // converts it and provides result downstream as a StringReader
     super(new StringReader(convert(reader.text)));
   }
 
@@ -73,7 +170,7 @@ class MarkdownFilter extends FilterReader {
     // convert the markdown
     MutableDataSet options = new MutableDataSet();
     options.setFrom(ParserEmulationProfile.MARKDOWN);
-    options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create() ]);
+    options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create(), AttributesExtension.create() ]);
     options.set(HtmlRenderer.RENDER_HEADER_ID, true);
     options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
     Document parsed = Parser.builder(options).build().parse(markdownSource);
