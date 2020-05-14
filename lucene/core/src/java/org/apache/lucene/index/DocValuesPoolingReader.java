@@ -34,10 +34,13 @@ import org.apache.lucene.util.BytesRef;
 public class DocValuesPoolingReader extends FilterLeafReader {
 
   /** 
-   * Yields doc values for the given field name.
+   * Supplier for docValues.
    * */
   @FunctionalInterface
   protected interface DVSupplier<T extends DocIdSetIterator>{
+    /** 
+     * Yields doc values for the given field name.
+     * */
     T getDocValues(String field) throws IOException;
   } 
   
@@ -52,6 +55,9 @@ public class DocValuesPoolingReader extends FilterLeafReader {
     context = new LeafReaderContext(leafCtx.parent, this, leafCtx.ordInParent, leafCtx.docBaseInParent, leafCtx.ord, leafCtx.docBase);
   }
 
+  /**
+   * Provides context with the same values as the the wrapped one.
+   * */
   public LeafReaderContext getPoolingContext() {
     return context;
   }
