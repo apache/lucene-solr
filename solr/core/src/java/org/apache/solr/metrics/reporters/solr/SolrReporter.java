@@ -322,7 +322,26 @@ public class SolrReporter extends ScheduledReporter {
   private static final MetricRegistry dummyRegistry = new MetricRegistry();
 
   // back-compat constructor
-  @Deprecated(since = "8.6.0")
+
+  /**
+   * Create a SolrReporter instance.
+   * @param httpClient HttpClient to use for constructing SolrClient instances.
+   * @param urlProvider what URL to send to.
+   * @param metricManager metric manager
+   * @param metrics metric specifications to report
+   * @param handler handler name to report to
+   * @param reporterId my reporter id
+   * @param rateUnit rate unit
+   * @param durationUnit duration unit
+   * @param params request parameters
+   * @param skipHistograms if true then don't send histogram metrics
+   * @param skipAggregateValues if true then don't send aggregate metrics' individual values
+   * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
+   * @param compact if true then use compact representation.
+   *
+   * @deprecated use {@link SolrReporter#SolrReporter(SolrClientCache, boolean, Supplier, SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean, boolean, boolean)} instead.
+   */
+  @Deprecated
   public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
@@ -333,6 +352,22 @@ public class SolrReporter extends ScheduledReporter {
         params, skipHistograms, skipAggregateValues, cloudClient, compact);
   }
 
+  /**
+   * Create a SolrReporter instance.
+   * @param solrClientCache client cache to use for constructing SolrClient instances.
+   * @param urlProvider what URL to send to.
+   * @param metricManager metric manager
+   * @param metrics metric specifications to report
+   * @param handler handler name to report to
+   * @param reporterId my reporter id
+   * @param rateUnit rate unit
+   * @param durationUnit duration unit
+   * @param params request parameters
+   * @param skipHistograms if true then don't send histogram metrics
+   * @param skipAggregateValues if true then don't send aggregate metrics' individual values
+   * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
+   * @param compact if true then use compact representation.
+   */
   public SolrReporter(SolrClientCache solrClientCache, boolean closeClientCache,
                       Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,

@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.mutable.MutableValue;
 
 /**
@@ -57,6 +58,9 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
   }
 
   @Override
+  public void setScorer(Scorable scorer) throws IOException { }
+
+  @Override
   public State advanceTo(int doc) throws IOException {
     this.filler.fillValue(doc);
     if (secondPassGroups != null) {
@@ -67,7 +71,7 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
   }
 
   @Override
-  public MutableValue currentValue() {
+  public MutableValue currentValue() throws IOException {
     return filler.getValue();
   }
 

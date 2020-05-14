@@ -108,6 +108,8 @@ Improvements
 
 * SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
 
+* SOLR-14423: Move static SolrClientCache from StreamHandler to CoreContainer for wider reuse and better life-cycle management. (ab)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -161,6 +163,11 @@ Bug Fixes
 
 * SOLR-14431: SegmentsInfoRequestHandler does not release IndexWriter (Tiziano Degaetano, ab)
 
+* SOLR-14463: Solr Admin ZkStatus page now works with ZK 3.6, without 'For input string: "null"' error (janhoy, Bernd Wahlen)
+
+* SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
+  node with compression enabled (samuelgmartinez via Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -205,6 +212,9 @@ Other Changes
   opening a new searcher have changed and include the autowarm time. (Erick Erickson)
 
 * SOLR-7880: Update commons-cli to 1.4 (Erick Erickson)
+
+* SOLR-14226Fix or suppress 14 resource leak warnings in apache/solr/core (Andras Salaman via
+  Erick Erickson)
 
 ==================  8.5.1 ==================
 

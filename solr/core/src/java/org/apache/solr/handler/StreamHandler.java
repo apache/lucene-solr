@@ -88,8 +88,8 @@ import static org.apache.solr.common.params.CommonParams.ID;
  */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
-  private ModelCache modelCache = null;
-  private ConcurrentMap objectCache = new ConcurrentHashMap();
+  private ModelCache modelCache;
+  private ConcurrentMap objectCache;
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
@@ -101,25 +101,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  public SolrClientCache getClientCache() {
-    return solrClientCache;
-  }
-
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
     this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
-
+    String cacheKey = this.getClass().getName() + "_" + coreName + "_";
+    this.objectCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "objectCache",
+        ConcurrentHashMap.class, k-> new ConcurrentHashMap());
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
-      modelCache = new ModelCache(250,
-          defaultZkhost,
-          solrClientCache);
+      modelCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "modelCache",
+          ModelCache.class,
+          k -> new ModelCache(250, defaultZkhost, solrClientCache));
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
