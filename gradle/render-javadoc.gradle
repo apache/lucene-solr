@@ -153,7 +153,7 @@ class RenderJavadocTask extends DefaultTask {
   def solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${project.baseVersion.replace(".", "_")}")
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
-  private Set findPreviousRenderTasks() {
+  private Set findRenderTasksInDependencies() {
     Set found = []
     def collectDeps
     collectDeps = { task -> task.taskDependencies.getDependencies(task).findAll{ it.name == this.name && it.enabled && !found.contains(it) }.each{
@@ -206,10 +206,10 @@ class RenderJavadocTask extends DefaultTask {
     allOfflineLinks.putAll(offlineLinks)
 
     // Resolve inter-project links:
-    // - find all (enabled) tasks this tasks depends on (with same name), calling findPreviousRenderTasks()
+    // - find all (enabled) tasks this tasks depends on (with same name), calling findRenderTasksInDependencies()
     // - sort the tasks preferring those whose project name equals 'core', then lexigraphical by path
     // - for each task get output dir to create relative or absolute link
-    findPreviousRenderTasks()
+    findRenderTasksInDependencies()
       .sort(false, Comparator.comparing{ (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing{ it.path }))
       .each{ otherTask ->
         def otherProject = otherTask.project
