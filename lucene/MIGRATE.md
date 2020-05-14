@@ -1,5 +1,9 @@
 # Apache Lucene Migration Guide
 
+## RegExp certain regular expressions now match differently (LUCENE-9336)
+
+The commonly used regular expressions \w \W \d \D \s and \S now work the same way [Java Pattern](https://docs.oracle.com/javase/tutorial/essential/regex/pre_char_classes.html#CHART) matching works. Previously these expressions were (mis)interpreted as searches for the literal characters w, d, s etc. 
+
 ## NGramFilterFactory "keepShortTerm" option was fixed to "preserveOriginal" (LUCENE-9259)
 
 The factory option name to output the original term was corrected in accordance with its Javadoc.
