@@ -26,7 +26,6 @@ import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.util.sequence.Escaping;
 import groovy.text.SimpleTemplateEngine;
-import java.nio.charset.StandardCharsets;
 
 buildscript {
   repositories {
