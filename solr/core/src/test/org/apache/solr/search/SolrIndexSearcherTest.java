@@ -17,30 +17,48 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
 
 public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
-  
+
   private final static int NUM_DOCS = 20;
 
   @BeforeClass
   public static void setUpClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
     for (int i = 0 ; i < NUM_DOCS ; i ++) {
-      assertU(adoc("id", String.valueOf(i), "field1_s", "foo", "field2_s", String.valueOf(i % 2), "field3_s", String.valueOf(i)));
-      assertU(commit());
+      assertU(adoc("id", String.valueOf(i),
+          "field1_s", "foo",
+          "field2_s", String.valueOf(i % 2),
+          "field3_i_dvo", String.valueOf(i),
+          "field4_t", numbersTo(i)));
+      assertU(commit()); //commit inside the loop to get multiple segments
     }
   }
   
+  private static String numbersTo(int i) {
+    StringBuilder numbers = new StringBuilder();
+    for (int j = 0; j <= i ; j++) {
+      numbers.append(String.valueOf(j) + " ");
+    }
+    return numbers.toString();
+  }
+
   @Before
   public void setUp() throws Exception {
-    assertU(adoc("id", "1", "field1_s", "foo", "field2_s", "1", "field3_s", "1"));
+    assertU(adoc("id", "1",
+        "field1_s", "foo",
+        "field2_s", "1",
+        "field3_i_dvo", "1",
+        "field4_t", numbersTo(1)));
     assertU(commit());
     super.setUp();
   }
@@ -175,7 +193,6 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       cmd.setNeedDocSet(true);
       cmd.setMinExactHits(2);
       cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      searcher.search(new QueryResult(), cmd);
       QueryResult qr = new QueryResult();
       searcher.search(qr, cmd);
       assertMatchesEqual(NUM_DOCS, qr);
@@ -189,11 +206,94 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       cmd.setMinExactHits(2);
       cmd.setFlags(SolrIndexSearcher.GET_SCORES);
       cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      searcher.search(new QueryResult(), cmd);
       QueryResult qr = new QueryResult();
       searcher.search(qr, cmd);
       assertMatchesGraterThan(NUM_DOCS, qr);
       assertNotEquals(Float.NaN, qr.getDocList().maxScore());
+      return null;
+    });
+  }
+  
+  public void testMinExactWithFilters() throws Exception {
+    
+    h.getCore().withSearcher(searcher -> {
+      //Sanity Check - No Filter
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(1);
+      cmd.setLen(1);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesGraterThan(NUM_DOCS, qr);
+      return null;
+    });
+    
+    
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(1);
+      cmd.setLen(1);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      FunctionRangeQuery filterQuery = new FunctionRangeQuery(new ValueSourceRangeFilter(new IntFieldSource("field3_i_dvo"), "19", "19", true, true));
+      cmd.setFilterList(filterQuery);
+      filterQuery.setCache(false);
+      filterQuery.setCost(0);
+      assertNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesEqual(1, qr);
+      return null;
+    });
+  }
+  
+  public void testMinExactWithPostFilters() throws Exception {
+    h.getCore().withSearcher(searcher -> {
+      //Sanity Check - No Filter
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(1);
+      cmd.setLen(1);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesGraterThan(NUM_DOCS, qr);
+      return null;
+    });
+    
+    
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(1);
+      cmd.setLen(1);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      FunctionRangeQuery filterQuery = new FunctionRangeQuery(new ValueSourceRangeFilter(new IntFieldSource("field3_i_dvo"), "19", "19", true, true));
+      filterQuery.setCost(101);
+      filterQuery.setCache(false);
+      cmd.setFilterList(filterQuery);
+      assertNotNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesEqual(1, qr);
+      return null;
+    });
+    
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = new QueryCommand();
+      cmd.setMinExactHits(1);
+      cmd.setLen(1);
+      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      FunctionRangeQuery filterQuery = new FunctionRangeQuery(new ValueSourceRangeFilter(new IntFieldSource("field3_i_dvo"), "0", "19", true, true));
+      filterQuery.setCost(101);
+      filterQuery.setCache(false);
+      cmd.setFilterList(filterQuery);
+      assertNotNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertMatchesGraterThan(NUM_DOCS, qr);
       return null;
     });
   }
