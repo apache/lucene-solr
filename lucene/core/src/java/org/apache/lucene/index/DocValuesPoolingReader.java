@@ -33,6 +33,9 @@ import org.apache.lucene.util.BytesRef;
  * */
 public class DocValuesPoolingReader extends FilterLeafReader {
 
+  /** 
+   * Yields doc values for the given field name.
+   * */
   @FunctionalInterface
   protected interface DVSupplier<T extends DocIdSetIterator>{
     T getDocValues(String field) throws IOException;
@@ -53,6 +56,9 @@ public class DocValuesPoolingReader extends FilterLeafReader {
     return context;
   }
   
+  /**
+   * mimics {@link Map#computeIfAbsent(Object, java.util.function.Function)} backed on internal docvalues cache 
+   * */
   @SuppressWarnings("unchecked")
   protected <T extends DocIdSetIterator> T computeIfAbsent(String field, DVSupplier<T> supplier) throws IOException {
     T dv;
