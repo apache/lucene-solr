@@ -107,8 +107,12 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     //System.out.println("R: addAll nodeID=" + nodeID);
 
     if (nodeID >= leafNodeOffset) {
-      //System.out.println("ADDALL");
-      visitDocIDs(state.in, leafBlockFPs[nodeID-leafNodeOffset], state.visitor);
+      int leafID = nodeID - leafNodeOffset;
+      // In the unbalanced case it's possible the left most node only has one child:
+      if (leafID < leafBlockFPs.length) {
+        //System.out.println("ADDALL");
+        visitDocIDs(state.in, leafBlockFPs[leafID], state.visitor);
+      }
       // TODO: we can assert that the first value here in fact matches what the index claimed?
     } else {
       addAll(state, 2*nodeID);
@@ -206,7 +210,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
       
       // Non-leaf node: recurse on the split left and right nodes
 
-      int address = nodeID * bytesPerIndexEntry;
+      int address = (nodeID - 1) * bytesPerIndexEntry;
       int splitDim;
       if (numIndexDims == 1) {
         splitDim = 0;
@@ -255,7 +259,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
       
       // Non-leaf node: recurse on the split left and right nodes
 
-      int address = nodeID * bytesPerIndexEntry;
+      int address = (nodeID - 1) * bytesPerIndexEntry;
       int splitDim;
       if (numIndexDims == 1) {
         splitDim = 0;

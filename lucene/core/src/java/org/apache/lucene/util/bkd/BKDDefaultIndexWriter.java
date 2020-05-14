@@ -151,7 +151,7 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
         writeBuffer.writeVLong(delta);
       }
 
-      int numLeftLeafNodes = BKDWriter.getNumLeftLeafNodes(numLeaves);
+      int numLeftLeafNodes = BKDIndexWriter.getNumLeftLeafNodes(numLeaves);
       final int rightOffset = leavesOffset + numLeftLeafNodes;
       final int splitOffset = rightOffset - 1;
 

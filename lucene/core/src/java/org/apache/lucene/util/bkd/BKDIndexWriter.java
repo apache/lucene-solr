@@ -39,6 +39,24 @@ public interface BKDIndexWriter {
   /** return the current position of the index */
   long getFilePointer();
 
+
+  static int getNumLeftLeafNodes(int numLeaves) {
+    assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
+    // return the level that can be filled with this number of leaves
+    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
+    // how many leaf nodes are in the full level
+    int leavesFullLevel = 1 << lastFullLevel;
+    // half of the leaf nodes from the full level goes to the left
+    int numLeftLeafNodes = leavesFullLevel / 2;
+    // leaf nodes that do not fit in the full level
+    int unbalancedLeafNodes = numLeaves - leavesFullLevel;
+    // distribute unbalanced leaf nodes
+    numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
+    // we should always place unbalanced leaf nodes on the left
+    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes && numLeftLeafNodes <= 2L * (numLeaves - numLeftLeafNodes);
+    return numLeftLeafNodes;
+  }
+
   /** flat representation of a kd-tree */
   interface BKDTreeLeafNodes {
     /** number of leaf nodes */

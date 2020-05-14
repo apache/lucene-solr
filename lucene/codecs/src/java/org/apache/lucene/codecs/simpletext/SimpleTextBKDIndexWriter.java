@@ -109,28 +109,57 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     writeInt(out, numberDocs);
     newline(out);
 
-    for(int i=0;i<leafNodes.numLeaves();i++) {
+    // we might need to rotate the leaf nodes
+    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(leafNodes.numLeaves());
+    int leavesFullLevel = 1 << lastFullLevel;
+    int leavesPartialLevel = 2 * (leafNodes.numLeaves() - leavesFullLevel);
+
+    for(int i = leavesPartialLevel; i < leafNodes.numLeaves() ; i++) {
+      write(out, BLOCK_FP);
+      writeLong(out, leafNodes.getLeafLP(i));
+      newline(out);
+    }
+    for(int i = 0; i < leavesPartialLevel ; i++) {
       write(out, BLOCK_FP);
       writeLong(out, leafNodes.getLeafLP(i));
       newline(out);
     }
 
-   // assert ((leafNodes.numLeaves() - 1) % (1 + config.bytesPerDim)) == 0;
-    int count = (leafNodes.numLeaves() - 1);//  / (1 + config.bytesPerDim);
-   // assert count == leafNodes.numLeaves();
-
     write(out, SPLIT_COUNT);
-    writeInt(out, count);
+    writeInt(out, leafNodes.numLeaves() - 1);
     newline(out);
 
-    for(int i=0;i<count;i++) {
+    // rotate tree
+    int[] splitPos = new int[leafNodes.numLeaves() - 1];
+    int count = rotateTree(1, 0, leafNodes.numLeaves(), splitPos) ;
+    assert count == splitPos.length;
+
+    for (int  i = 0; i < splitPos.length; i ++) {
       write(out, SPLIT_DIM);
-      writeInt(out, leafNodes.getSplitDimension(i));
+      writeInt(out, leafNodes.getSplitDimension(splitPos[i]));
       newline(out);
       write(out, SPLIT_VALUE);
-      br = leafNodes.getSplitValue(i);
+      br = leafNodes.getSplitValue(splitPos[i]);
       write(out, br.toString());
       newline(out);
+    }
+
+  }
+
+  private int rotateTree(int nodeID, int leavesOffset, int numLeaves, int[] splitPos) throws IOException {
+    if (numLeaves == 1) {
+      return 0;
+    } else {
+      int numLeftLeafNodes = BKDIndexWriter.getNumLeftLeafNodes(numLeaves);
+      final int rightOffset = leavesOffset + numLeftLeafNodes;
+      final int splitOffset = rightOffset - 1;
+      splitPos[nodeID - 1] = splitOffset;
+
+      int count = 1;
+      count += rotateTree(2 * nodeID, leavesOffset, numLeftLeafNodes, splitPos);
+      count += rotateTree(2 * nodeID + 1, rightOffset, numLeaves - numLeftLeafNodes, splitPos);
+
+      return count;
     }
   }
 

@@ -644,23 +644,6 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  static int getNumLeftLeafNodes(int numLeaves) {
-    assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
-    // return the level that can be filled with this number of leaves
-    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
-    // how many leaf nodes are in the full level
-    int leavesFullLevel = 1 << lastFullLevel;
-    // half of the leaf nodes from the full level goes to the left
-    int numLeftLeafNodes = leavesFullLevel / 2;
-    // leaf nodes that do not fit in the full level
-    int unbalancedLeafNodes = numLeaves - leavesFullLevel;
-    // distribute unbalanced leaf nodes
-    numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
-    // we should always place unbalanced leaf nodes on the left
-    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes && numLeftLeafNodes <= 2L * (numLeaves - numLeftLeafNodes);
-    return numLeftLeafNodes;
-  }
-
   // TODO: if we fixed each partition step to just record the file offset at the "split point", we could probably handle variable length
   // encoding and not have our own ByteSequencesReader/Writer
 
@@ -1023,7 +1006,7 @@ public class BKDWriter implements Closeable {
       }
 
       // How many leaves will be in the left tree:
-      int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
+      int numLeftLeafNodes = BKDIndexWriter.getNumLeftLeafNodes(numLeaves);
       // How many points will be in the left tree:
       final int mid = from + numLeftLeafNodes * config.maxPointsInLeafNode;
 
@@ -1198,7 +1181,7 @@ public class BKDWriter implements Closeable {
       assert numLeaves <= leafBlockFPs.length : "numLeaves=" + numLeaves + " leafBlockFPs.length=" + leafBlockFPs.length;
 
       // How many leaves will be in the left tree:
-      final int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
+      final int numLeftLeafNodes = BKDIndexWriter.getNumLeftLeafNodes(numLeaves);
       // How many points will be in the left tree:
       final long leftCount = numLeftLeafNodes * config.maxPointsInLeafNode;
 
