@@ -110,8 +110,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final SolrQueryRequest req;
   final SolrQueryResponse res;
   final StreamContext initialStreamContext;
+  StreamExpression streamExpression;
   StreamContext streamContext;
-  TupleStream tupleStream;
   FieldWriter[] fieldWriters;
   int totalHits = 0;
   FixedBitSet[] sets = null;
@@ -339,13 +339,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     if (expr != null) {
       StreamFactory streamFactory = initialStreamContext.getStreamFactory();
       try {
-        StreamExpression streamExpression = StreamExpressionParser.parse(expr);
-        if (streamFactory.isEvaluator(streamExpression)) {
-          StreamExpression tupleExpression = new StreamExpression(StreamParams.TUPLE);
-          tupleExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, streamExpression));
-          tupleStream = streamFactory.constructStream(tupleExpression);
+        StreamExpression expression = StreamExpressionParser.parse(expr);
+        if (streamFactory.isEvaluator(expression)) {
+          streamExpression = new StreamExpression(StreamParams.TUPLE);
+          streamExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, expression));
         } else {
-          tupleStream = streamFactory.constructStream(streamExpression);
+          streamExpression = expression;
         }
       } catch (Exception e) {
         writeException(e, writer, true);
@@ -363,7 +362,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       streamContext.setObjectCache(initialStreamContext.getObjectCache());
       streamContext.put("core", req.getCore().getName());
       streamContext.put("solr-core", req.getCore());
-      tupleStream.setStreamContext(streamContext);
     }
 
     writer.writeMap(m -> {
@@ -373,10 +371,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         mw.put("docs", (IteratorWriter) iw -> writeDocs(req, iw, sort));
       });
     });
-    if (tupleStream != null) {
-      tupleStream.close();
+    if (streamContext != null) {
       streamContext = null;
     }
+  }
+
+  private TupleStream createTupleStream() throws Exception {
+    StreamFactory streamFactory = initialStreamContext.getStreamFactory();
+    TupleStream tupleStream = streamFactory.constructStream(streamExpression);
+    tupleStream.setStreamContext(streamContext);
+    return tupleStream;
   }
 
   protected void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
@@ -410,14 +414,18 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   protected void addDocsToItemWriter(List<LeafReaderContext> leaves, IteratorWriter.ItemWriter writer, SortDoc[] docsToExport, int outDocsIndex) throws IOException {
     try {
-      if (tupleStream != null) {
+      if (streamExpression != null) {
         streamContext.put(DOCS_KEY, docsToExport);
         streamContext.put(DOCS_INDEX_KEY, new int[] {outDocsIndex});
         streamContext.put(EXPORT_WRITER_KEY, this);
         streamContext.put(LEAF_READERS_KEY, leaves);
+        TupleStream tupleStream = createTupleStream();
         tupleStream.open();
         for (;;) {
           final Tuple t = tupleStream.read();
+          if (t == null) {
+            break;
+          }
           if (t.EOF) {
             break;
           }

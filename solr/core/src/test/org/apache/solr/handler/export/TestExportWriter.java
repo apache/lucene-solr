@@ -706,11 +706,30 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     validateSort(numDocs);
   }
 
+  private void createLargeIndex() throws Exception {
+    int BATCH_SIZE = 1000;
+    int NUM_BATCHES = 100;
+    SolrInputDocument[] docs = new SolrInputDocument[BATCH_SIZE];
+    for (int i = 0; i < NUM_BATCHES; i++) {
+      for (int j = 0; j < BATCH_SIZE; j++) {
+        docs[j] = new SolrInputDocument(
+            "id", String.valueOf(i * BATCH_SIZE + j),
+            "batch_i_p", String.valueOf(i),
+            "random_i_p", String.valueOf(random().nextInt(BATCH_SIZE)),
+            "sortabledv", TestUtil.randomSimpleString(random(), 3, 5),
+            "small_i_p", String.valueOf((i + j) % 7)
+            );
+      }
+      updateJ(jsonAdd(docs), null);
+    }
+    assertU(commit());
+  }
+
   @Test
   public void testExpr() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());
-    createIndex();
+    createLargeIndex();
     String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc", "expr", "top(n=2,input(),sort=\"id desc\")"));
     assertNotNull(resp);
   }
