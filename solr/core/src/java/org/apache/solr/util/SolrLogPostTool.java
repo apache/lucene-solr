@@ -18,9 +18,12 @@ package org.apache.solr.util;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.URLDecoder;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -29,6 +32,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.handler.component.ShardRequest;
+
 
 
 /**
@@ -309,6 +314,7 @@ public class SolrLogPostTool {
       return doc;
     }
 
+
     private SolrInputDocument parseNewSearch(String line) {
 
       SolrInputDocument doc = new SolrInputDocument();
@@ -492,7 +498,7 @@ public class SolrLogPostTool {
           doc.addField("shards_s", "true");
         }
 
-        if(parts[0].equals("ids") && ! isRTGRequest(doc)) {
+        if(parts[0].equals("ids") && !isRTGRequest(doc)) {
           doc.addField("ids_s", "true");
         }
 
@@ -510,12 +516,24 @@ public class SolrLogPostTool {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("facet_s", dr);
         }
-      }
 
+        if(parts[0].equals("shards.purpose")) {
+          try {
+            int purpose = Integer.parseInt(parts[1]);
+            String[] purposes = getRequestPurposeNames(purpose);
+            for (String p : purposes) {
+              doc.addField("purpose_ss", p);
+            }
+          } catch(Throwable e) {
+            //We'll just sit on this for now and not interrupt the load for this one field.
+          }
+        }
+      }
 
       //Special params used to determine what stage a query is.
       //So we populate with defaults.
       //The absence of the distrib params means its a distributed query.
+
 
       if(doc.getField("distrib_s") == null) {
         doc.addField("distrib_s", "true");
@@ -537,5 +555,54 @@ public class SolrLogPostTool {
 
       return "/get".equals(path.getValue());
     }
+  }
+
+  private static final Map<Integer, String> purposes;
+  protected static final String UNKNOWN_VALUE = "Unknown";
+  private static final String[] purposeUnknown = new String[] { UNKNOWN_VALUE };
+
+  public static String[] getRequestPurposeNames(Integer reqPurpose) {
+    if (reqPurpose != null) {
+      int valid = 0;
+      for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+        if ((reqPurpose & entry.getKey()) != 0) {
+          valid++;
+        }
+      }
+      if (valid == 0) {
+        return purposeUnknown;
+      } else {
+        String[] result = new String[valid];
+        int i = 0;
+        for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+          if ((reqPurpose & entry.getKey()) != 0) {
+            result[i] = entry.getValue();
+            i++;
+          }
+        }
+        return result;
+      }
+    }
+    return purposeUnknown;
+  }
+
+  static {
+    Map<Integer, String> map = new TreeMap<>();
+    map.put(ShardRequest.PURPOSE_PRIVATE, "PRIVATE");
+    map.put(ShardRequest.PURPOSE_GET_TOP_IDS, "GET_TOP_IDS");
+    map.put(ShardRequest.PURPOSE_REFINE_TOP_IDS, "REFINE_TOP_IDS");
+    map.put(ShardRequest.PURPOSE_GET_FACETS, "GET_FACETS");
+    map.put(ShardRequest.PURPOSE_REFINE_FACETS, "REFINE_FACETS");
+    map.put(ShardRequest.PURPOSE_GET_FIELDS, "GET_FIELDS");
+    map.put(ShardRequest.PURPOSE_GET_HIGHLIGHTS, "GET_HIGHLIGHTS");
+    map.put(ShardRequest.PURPOSE_GET_DEBUG, "GET_DEBUG");
+    map.put(ShardRequest.PURPOSE_GET_STATS, "GET_STATS");
+    map.put(ShardRequest.PURPOSE_GET_TERMS, "GET_TERMS");
+    map.put(ShardRequest.PURPOSE_GET_TOP_GROUPS, "GET_TOP_GROUPS");
+    map.put(ShardRequest.PURPOSE_GET_MLT_RESULTS, "GET_MLT_RESULTS");
+    map.put(ShardRequest.PURPOSE_REFINE_PIVOT_FACETS, "REFINE_PIVOT_FACETS");
+    map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
+    map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
+    purposes = Collections.unmodifiableMap(map);
   }
 }

@@ -84,6 +84,10 @@ New Features
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
+* SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -109,6 +113,8 @@ Improvements
 * SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
 
 * SOLR-14423: Move static SolrClientCache from StreamHandler to CoreContainer for wider reuse and better life-cycle management. (ab)
+
+* SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
 Optimizations
 ---------------------
