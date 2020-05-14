@@ -91,7 +91,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     // Add a PULL replica so that there's a tie for "last place"
     replicas.add(
         new Replica(
-            "node4",
+            "node5",
             map(
                 ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node5",
