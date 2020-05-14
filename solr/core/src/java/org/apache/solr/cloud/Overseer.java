@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -88,8 +89,7 @@ import com.codahale.metrics.Timer;
  *
  * <p>The Overseer deals with:</p>
  * <ul>
- *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper (or previously the
- *   <code>clusterstate.json</code>), see {@link ClusterStateUpdater},</li>
+ *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper, see {@link ClusterStateUpdater},</li>
  *   <li>Collection API implementation, including Autoscaling replica placement computation, see
  *   {@link OverseerCollectionConfigSetProcessor} and {@link OverseerCollectionMessageHandler} (and the example below),</li>
  *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link OverseerConfigSetMessageHandler},</li>
@@ -110,9 +110,10 @@ import com.codahale.metrics.Timer;
  *   <li>Client uses the Collection API with <code>CREATE</code> action and reaches a node of the cluster,</li>
  *   <li>The node (via {@link CollectionsHandler}) enqueues the request into the <code>/overseer/collection-queue-work</code>
  *   queue in ZooKeepeer,</li>
- *   <li>The {@link OverseerCollectionConfigSetProcessor} running on the Overseer node dequeues the message and using a
- *   thread from a thread pool hands it for processing to {@link OverseerCollectionMessageHandler},</li>
- *   <li>Command {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} then executes and does:
+ *   <li>The {@link OverseerCollectionConfigSetProcessor} running on the Overseer node dequeues the message and using an
+ *   executor service with a maximum pool size of {@link OverseerTaskProcessor#MAX_PARALLEL_TASKS} hands it for processing
+ *   to {@link OverseerCollectionMessageHandler},</li>
+ *   <li>Command {@link CreateCollectionCmd} then executes and does:
  *   <ol>
  *     <li>Update some state directly in ZooKeeper (creating collection znode),</li>
  *     <li>Compute replica placement on available nodes in the cluster,</li>
@@ -123,16 +124,17 @@ import com.codahale.metrics.Timer;
  *   <li>The {@link ClusterStateUpdater} (also running on the Overseer node) dequeues the state change message and creates the
  *   <code>state.json</code> file in ZooKeeper for the Collection. All the work of the cluster state updater
  *   (creations, updates, deletes) is done sequentially for the whole cluster by a single thread.</li>
- *   <li>The {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} sees the state change in
+ *   <li>The {@link CreateCollectionCmd} sees the state change in
  *   ZooKeeper and:
  *   <ol start="5">
  *     <li>Builds and sends requests to each node to create the appropriate cores for all the replicas of all shards
- *     of the collection.</li>
+ *     of the collection. Nodes create the replicas and set them to {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}.</li>
  *   </ol></li>
- *   <li>The collection creation command has succeeded and the client receives a success return.</li>
+ *   <li>The collection creation command has succeeded from the Overseer perspective,</li>
+ *   <li>{@link CollectionsHandler} checks the replicas in Zookeeper and verifies they are all
+ *   {@link org.apache.solr.common.cloud.Replica.State#ACTIVE},</li>
+ *   <li>The client receives a success return.</li>
  * </ol>
- *
- * See also <a href="https://docs.google.com/document/d/1KTHq3noZBVUQ7QNuBGEhujZ_duwTVpAsvN3Nz5anQUY/">Overseer google doc</a>.
  */
 public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
