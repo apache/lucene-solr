@@ -26,12 +26,15 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -77,7 +80,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
-    @Test
+  @Test
   public void testAnalyzeEvaluator() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();
@@ -3922,13 +3925,30 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(stddev.doubleValue() == 0);
   }
 
+  // NOTE: cache evaluators work only locally, on
+  // the same node where the replica that executes
+  // the stream is located
   @Test
   public void testCache() throws Exception {
     String cexpr = "putCache(\"space1\", \"key1\", dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    // find a node with a replica
+    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
+    DocCollection coll = clusterState.getCollection(collection);
+    String node = coll.getReplicas().iterator().next().getNodeName();
+    String url = null;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getNodeName().equals(node)) {
+        url = jetty.getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+        break;
+      }
+    }
+    if (url == null) {
+      fail("unable to find a node with replica");
+    }
     TupleStream solrStream = new SolrStream(url, paramsLoc);
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);

@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -358,7 +359,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       // See comment in ClusteringComponent#finishStage().
       if (produceSummary && docIds != null) {
         docsHolder[0] = docIds.get(sdoc).intValue();
-        DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f);
+        DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f, TotalHits.Relation.EQUAL_TO);
         NamedList<Object> highlights = highlighter.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
         if (highlights != null && highlights.size() == 1) {
           // should only be one value given our setup

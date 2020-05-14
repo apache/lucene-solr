@@ -148,13 +148,13 @@ public class TestCodecUtil extends LuceneTestCase {
     // bogusly read a byte too far (can happen)
     input.readByte();
     Exception mine = new RuntimeException("fake exception");
-    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
+    CorruptIndexException expected = expectThrows(CorruptIndexException.class, () -> {
       CodecUtil.checkFooter(input, mine);
     });
-    assertEquals("fake exception", expected.getMessage());
+    assertTrue(expected.getMessage().contains("checksum status indeterminate"));
     Throwable suppressed[] = expected.getSuppressed();
     assertEquals(1, suppressed.length);
-    assertTrue(suppressed[0].getMessage().contains("checksum status indeterminate"));
+    assertEquals("fake exception", suppressed[0].getMessage());
     input.close();
   }
   
@@ -172,13 +172,13 @@ public class TestCodecUtil extends LuceneTestCase {
     CodecUtil.checkHeader(input, "FooBar", 5, 5);
     assertEquals("this is the data", input.readString());
     Exception mine = new RuntimeException("fake exception");
-    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
+    CorruptIndexException expected = expectThrows(CorruptIndexException.class, () -> {
       CodecUtil.checkFooter(input, mine);
     });
-    assertEquals("fake exception", expected.getMessage());
+    assertTrue(expected.getMessage().contains("checksum failed"));
     Throwable suppressed[] = expected.getSuppressed();
     assertEquals(1, suppressed.length);
-    assertTrue(suppressed[0].getMessage().contains("checksum failed"));
+    assertEquals("fake exception", suppressed[0].getMessage());
     input.close();
   }
   

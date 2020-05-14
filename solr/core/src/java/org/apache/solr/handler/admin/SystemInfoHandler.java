@@ -41,7 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
@@ -341,8 +341,8 @@ public class SystemInfoHandler extends RequestHandlerBase
       // Mapped roles for this principal
       AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
       if (auth != null) {
-        RuleBasedAuthorizationPlugin rbap = (RuleBasedAuthorizationPlugin) auth;
-        Set<String> roles = rbap.getRoles(username);
+        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+        Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
       }
     }

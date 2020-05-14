@@ -479,6 +479,9 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
           solrDocs.setNumFound((Long) list.get(0));
           solrDocs.setStart((Long) list.get(1));
           solrDocs.setMaxScore((Float) list.get(2));
+          if (list.size() > 3) { //needed for back compatibility
+            solrDocs.setNumFoundExact((Boolean)list.get(3));
+          }
         }
         List<SolrDocument> l =  codec.readArray(codec.dis, entry.size);
         solrDocs.addAll(l);
