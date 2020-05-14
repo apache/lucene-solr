@@ -60,6 +60,10 @@ API Changes
 
 Improvements
 
+* LUCENE-9336: RegExp query now supports \w \W \d \D \s \S expressions.
+  This is a break with previous behaviour where these were (mis)interpreted
+  as literally the characters w W d etc. (Mark Harwood)
+
 * LUCENE-8757: When provided with an ExecutorService to run queries across
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
