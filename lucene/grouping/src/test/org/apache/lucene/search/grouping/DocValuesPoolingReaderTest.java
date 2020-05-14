@@ -27,6 +27,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesPoolingReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -53,32 +54,36 @@ public class DocValuesPoolingReaderTest extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
-    doc.add(new BinaryDocValuesField("bin", new BytesRef("binary")));
-    doc.add(new BinaryDocValuesField("bin2", new BytesRef("binary2")));
-    
-    doc.add(new NumericDocValuesField("num", 1L));
-    doc.add(new NumericDocValuesField("num2", 2L));
-    
-    doc.add(new SortedNumericDocValuesField("sortnum", 3L));
-    doc.add(new SortedNumericDocValuesField("sortnum2", 4L));
-    
-    doc.add(new SortedDocValuesField("sort",  new BytesRef("sorted")));
-    doc.add(new SortedDocValuesField("sort2",  new BytesRef("sorted2")));
-    
-    doc.add(new SortedSetDocValuesField("sortset", new BytesRef("sortedset")));
-    doc.add(new SortedSetDocValuesField("sortset2", new BytesRef("sortedset2")));
-    
-    w.addDocument(doc);
-    w.commit();
+    for (int i=0; i<2; i++) {
+      Document doc = new Document();
+      doc.add(new BinaryDocValuesField("bin", new BytesRef("binary")));
+      doc.add(new BinaryDocValuesField("bin2", new BytesRef("binary2")));
+      
+      doc.add(new NumericDocValuesField("num", 1L));
+      doc.add(new NumericDocValuesField("num2", 2L));
+      
+      doc.add(new SortedNumericDocValuesField("sortnum", 3L));
+      doc.add(new SortedNumericDocValuesField("sortnum2", 4L));
+      
+      doc.add(new SortedDocValuesField("sort",  new BytesRef("sorted")));
+      doc.add(new SortedDocValuesField("sort2",  new BytesRef("sorted2")));
+      
+      doc.add(new SortedSetDocValuesField("sortset", new BytesRef("sortedset")));
+      doc.add(new SortedSetDocValuesField("sortset2", new BytesRef("sortedset2")));
+      
+      w.addDocument(doc);
+      w.commit();
+    }
     reader = w.getReader();
     w.close();
   }
   
   public void testDVCache() throws IOException {
     assertFalse(reader.leaves().isEmpty());
+    int baseDoc=0;
     for (LeafReaderContext leaf : reader.leaves()) {
-      final DocValuesPoolingReader caching = new DocValuesPoolingReader(leaf.reader());
+      assertEquals(baseDoc, leaf.docBase);
+      final DocValuesPoolingReader caching = new DocValuesPoolingReader(leaf);
       
       assertSame(assertBinaryDV(caching, "bin", "binary"), 
           caching.getBinaryDocValues("bin"));
@@ -104,6 +109,7 @@ public class DocValuesPoolingReaderTest extends LuceneTestCase {
           caching.getSortedSetDocValues("sortset"));
       assertSame(assertSortedSetDV(caching, "sortset2", "sortedset2"), 
           caching.getSortedSetDocValues("sortset2"));
+      baseDoc+=leaf.reader().maxDoc();
     }
   }
 

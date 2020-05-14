@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValuesPoolingReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
@@ -54,8 +54,6 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   // docBase and ord are misguiding
   protected LeafReaderContext context;
-  protected int contextDocBase;
-
   protected Scorable scorer;
 
   /**
@@ -92,7 +90,6 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     for (GroupHead groupHead : groupHeads) {
       bitSet.set(groupHead.doc);
     }
-
     return bitSet;
   }
 
@@ -134,7 +131,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     T groupValue = groupSelector.currentValue();
     if (heads.containsKey(groupValue) == false) {
       groupValue = groupSelector.copyValue();
-      heads.put(groupValue, newGroupHead(doc, groupValue, context, contextDocBase, scorer));
+      heads.put(groupValue, newGroupHead(doc, groupValue, context, scorer));
       return;
     }
 
@@ -165,15 +162,13 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
-    final LeafReader leafReader = context.reader();
     @SuppressWarnings("resource")
-    final LeafReaderContext singleThreadContext = 
-                          new DocValuesPoolingReader(leafReader).getContext();
+    final LeafReaderContext singleThreadContext = //context;
+                          new DocValuesPoolingReader(context).getPoolingContext();
     groupSelector.setNextReader(singleThreadContext);
     this.context = singleThreadContext;
-    this.contextDocBase = context.docBase;
     for (GroupHead<T> head : heads.values()) {
-      head.setNextReader(singleThreadContext, context.docBase);
+      head.setNextReader(singleThreadContext);
     }
   }
 
@@ -188,7 +183,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   /**
    * Create a new GroupHead for the given group value, initialized with a doc, context and scorer
    */
-  protected abstract GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, int contextDocBase, Scorable scorer) throws IOException;
+  protected abstract GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException;
 
   /**
    * Represents a group head. A group head is the most relevant document for a particular group.
@@ -216,8 +211,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     /**
      * Called for each segment
      */
-    protected void setNextReader(LeafReaderContext ordValsContext, int docBase) throws IOException {
-      this.docBase = docBase;
+    protected void setNextReader(LeafReaderContext ctx) throws IOException {
+      this.docBase = ctx.docBase;
     }
 
     /**
@@ -256,8 +251,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
 
     @Override
-    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext ctx, int ctxDocBase, Scorable scorer) throws IOException {
-      return new SortingGroupHead<>(sort, value, doc, ctx, ctxDocBase, scorer);
+    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext ctx, Scorable scorer) throws IOException {
+      return new SortingGroupHead<>(sort, value, doc, ctx, scorer);
     }
   }
 
@@ -266,8 +261,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     final FieldComparator[] comparators;
     final LeafFieldComparator[] leafComparators;
 
-    protected SortingGroupHead(Sort sort, T groupValue, int doc, LeafReaderContext context, int docBase, Scorable scorer) throws IOException {
-      super(groupValue, doc, docBase);
+    protected SortingGroupHead(Sort sort, T groupValue, int doc, LeafReaderContext context, Scorable scorer) throws IOException {
+      super(groupValue, doc, context.docBase);
       final SortField[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
       leafComparators = new LeafFieldComparator[sortFields.length];
@@ -281,10 +276,10 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
 
     @Override
-    protected void setNextReader(LeafReaderContext ordValsContext, int docBase) throws IOException {
-      super.setNextReader(ordValsContext, docBase);
+    public void setNextReader(LeafReaderContext ctx) throws IOException {
+      super.setNextReader(ctx);
       for (int i = 0; i < comparators.length; i++) {
-        leafComparators[i] = comparators[i].getLeafComparator(ordValsContext);
+        leafComparators[i] = comparators[i].getLeafComparator(ctx);
       }
     }
 
@@ -320,8 +315,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
 
     @Override
-    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, int docBase, Scorable scorer) throws IOException {
-      return new ScoringGroupHead<>(scorer, value, doc, docBase);
+    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException {
+      return new ScoringGroupHead<>(scorer, value, doc, context.docBase);
     }
   }
 

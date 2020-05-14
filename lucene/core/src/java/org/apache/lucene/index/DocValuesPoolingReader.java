@@ -14,21 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.grouping;
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -40,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
  * it looses baseDoc, ord from underneath context.
  * @lucene.experimental   
  * */
-class DocValuesPoolingReader extends FilterLeafReader {
+public class DocValuesPoolingReader extends FilterLeafReader {
 
   @FunctionalInterface
   interface DVSupplier<T extends DocIdSetIterator>{
@@ -48,17 +39,25 @@ class DocValuesPoolingReader extends FilterLeafReader {
   } 
   
   private Map<String, ? super DocIdSetIterator> cache = new HashMap<>();
+  private LeafReaderContext context;
 
-  DocValuesPoolingReader(LeafReader in) {
-    super(in);
+  public DocValuesPoolingReader(LeafReaderContext leafCtx) {
+    super(leafCtx.reader());
+    context = new LeafReaderContext(leafCtx.parent, this, leafCtx.ordInParent, leafCtx.docBaseInParent, leafCtx.ord, leafCtx.docBase);
   }
 
+  public LeafReaderContext getPoolingContext() {
+    return context;
+  }
+  
   @SuppressWarnings("unchecked")
   protected <T extends DocIdSetIterator> T computeIfAbsent(String field, DVSupplier<T> supplier) throws IOException {
     T dv;
     if ((dv = (T) cache.get(field)) == null) {
          dv = supplier.getDocValues(field);
-         cache.put(field, dv);
+         if (dv!=null) { // if (!dv.getClass().toString().contains("FieldCache")) { it make no sense to cache FieldCache, but it works.
+           cache.put(field, dv);
+         }
     }
     return dv;
   }
