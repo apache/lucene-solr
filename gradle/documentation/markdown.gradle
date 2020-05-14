@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.ast.Heading;
+import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
+import com.vladsch.flexmark.ext.attributes.AttributesExtension;
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.parser.ParserEmulationProfile;
-import com.vladsch.flexmark.util.sequence.Escaping;
+import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.data.MutableDataSet;
-import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
-import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
-import com.vladsch.flexmark.ext.attributes.AttributesExtension;
+import com.vladsch.flexmark.util.sequence.Escaping;
 
 buildscript {
   repositories {
@@ -33,9 +33,9 @@ buildscript {
 
   dependencies {
     classpath "com.vladsch.flexmark:flexmark:${scriptDepVersions['flexmark']}"
-    classpath "com.vladsch.flexmark:flexmark-ext-autolink:${scriptDepVersions['flexmark']}"
     classpath "com.vladsch.flexmark:flexmark-ext-abbreviation:${scriptDepVersions['flexmark']}"
     classpath "com.vladsch.flexmark:flexmark-ext-attributes:${scriptDepVersions['flexmark']}"
+    classpath "com.vladsch.flexmark:flexmark-ext-autolink:${scriptDepVersions['flexmark']}"
   }
 }
 
@@ -125,7 +125,7 @@ configure(project(':lucene')) {
         * [JRE Version Migration](JRE_VERSION_MIGRATION.html): Information about upgrading between major JRE versions.
         * [File Formats](core/org/apache/lucene/codecs/${defaultCodecPackage}/package-summary.html#package.description):
           Guide to the supported index format used by Lucene. This can be customized by using
-          <a href="core/org/apache/lucene/codecs/package-summary.html#package.description">an alternate codec</a>.
+          [an alternate codec](core/org/apache/lucene/codecs/package-summary.html#package.description).
         * [Search and Scoring in Lucene](core/org/apache/lucene/search/package-summary.html#package.description):
           Introduction to how Lucene scores documents.
         * [Classic Scoring Formula](core/org/apache/lucene/search/similarities/TFIDFSimilarity.html):
