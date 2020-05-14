@@ -195,9 +195,12 @@ class RenderJavadocTask extends DefaultTask {
 
     // Resolve inter-project links:
     // - find all (enabled) tasks this tasks depends on (with same name)
+    // - sort the tasks preferring those whose project name equals 'core', then lexigraphical by path
     // - for each task get output dir to create relative or absolute link
     def myTaskName = name
-    taskDependencies.getDependencies(this).findAll { it.name == myTaskName && it.enabled }.each { otherTask ->
+    taskDependencies.getDependencies(this).findAll { it.name == myTaskName && it.enabled }
+    .sort(false, Comparator.comparing{ (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing{ it.path }))
+    .each { otherTask ->
       def otherProject = otherTask.project
       // For relative links we compute the actual relative link between projects.
       def crossLuceneSolr = (otherProject.docroot != project.docroot)
