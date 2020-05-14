@@ -129,7 +129,7 @@ configure(project(':lucene')) {
         * [Search and Scoring in Lucene](core/org/apache/lucene/search/package-summary.html#package.description):
           Introduction to how Lucene scores documents.
         * [Classic Scoring Formula](core/org/apache/lucene/search/similarities/TFIDFSimilarity.html):
-          Formula of Lucene's classic [Vector Space](http://en.wikipedia.org/wiki/Vector_Space_Model) implementation
+          Formula of Lucene's classic [Vector Space](https://en.wikipedia.org/wiki/Vector_Space_Model) implementation
           (look [here](core/org/apache/lucene/search/similarities/package-summary.html#package.description) for other models).
         * [Classic QueryParser Syntax](queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package.description):
           Overview of the Classic QueryParser's syntax and features.
