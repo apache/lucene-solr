@@ -265,9 +265,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     if(tuples.hasNext()) {
       return tuples.next();
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      return new Tuple(map);
+      return Tuple.EOF();
     }
   }
 

@@ -198,7 +198,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     if(!table && !distribution && !clusters && !heat) {
       //Handle the vectors
       for (int i = 0; i < numTuples; i++) {
-        Tuple tuple = new Tuple(new HashMap());
+        Tuple tuple = new Tuple();
         for (Map.Entry<String, Object> entry : evaluated.entrySet()) {
           List l = (List) entry.getValue();
           tuple.put(entry.getKey(), l.get(i));
@@ -224,7 +224,7 @@ public class ZplotStream extends TupleStream implements Expressible {
           clusterNum++;
           List<KmeansEvaluator.ClusterPoint> points = c.getPoints();
           for (KmeansEvaluator.ClusterPoint p : points) {
-            Tuple tuple = new Tuple(new HashMap());
+            Tuple tuple = new Tuple();
             tuple.put("x", p.getPoint()[0]);
             tuple.put("y", p.getPoint()[1]);
             tuple.put("cluster", "cluster" + clusterNum);
@@ -239,7 +239,7 @@ public class ZplotStream extends TupleStream implements Expressible {
           clusterNum++;
           List<DbscanEvaluator.ClusterPoint> points = c.getPoints();
           for (DbscanEvaluator.ClusterPoint p : points) {
-            Tuple tuple = new Tuple(new HashMap());
+            Tuple tuple = new Tuple();
             tuple.put("x", p.getPoint()[0]);
             tuple.put("y", p.getPoint()[1]);
             tuple.put("cluster", "cluster" + clusterNum);
@@ -269,7 +269,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         for (int i = 0; i < x.length; i++) {
-          Tuple tuple = new Tuple(new HashMap());
+          Tuple tuple = new Tuple();
           if(!Double.isNaN(x[i])) {
             tuple.put("x", Precision.round(x[i], 2));
             if(y[i] == Double.NEGATIVE_INFINITY || y[i] == Double.POSITIVE_INFINITY) {
@@ -302,7 +302,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         for (int i = 0; i < x.length; i++) {
-          Tuple tuple = new Tuple(new HashMap());
+          Tuple tuple = new Tuple();
           tuple.put("x", x[i]);
           tuple.put("y", y[i]);
           outTuples.add(tuple);
@@ -314,14 +314,14 @@ public class ZplotStream extends TupleStream implements Expressible {
           Tuple tuple = tlist.get(0);
           if(tuple.fields.containsKey("N")) {
             for(Tuple t : tlist) {
-              Tuple outtuple = new Tuple(new HashMap());
+              Tuple outtuple = new Tuple();
               outtuple.put("x", Precision.round(((double)t.get("mean")), 2));
               outtuple.put("y", t.get("prob"));
               outTuples.add(outtuple);
             }
           } else if(tuple.fields.containsKey("count")) {
             for(Tuple t : tlist) {
-              Tuple outtuple = new Tuple(new HashMap());
+              Tuple outtuple = new Tuple();
               outtuple.put("x", t.get("value"));
               outtuple.put("y", t.get("pct"));
               outTuples.add(outtuple);
@@ -344,7 +344,7 @@ public class ZplotStream extends TupleStream implements Expressible {
           } else {
             rowLabel = Integer.toString(i);
           }
-          Tuple tuple = new Tuple(new HashMap());
+          Tuple tuple = new Tuple();
           tuple.put("rowLabel", rowLabel);
           double[] row = data[i];
           for (int j = 0; j < row.length; j++) {
@@ -378,7 +378,7 @@ public class ZplotStream extends TupleStream implements Expressible {
 
           double[] row = data[i];
           for (int j = 0; j < row.length; j++) {
-            Tuple tuple = new Tuple(new HashMap());
+            Tuple tuple = new Tuple();
             tuple.put("y", rowLabel);
             String colLabel = null;
             if (colLabels != null) {

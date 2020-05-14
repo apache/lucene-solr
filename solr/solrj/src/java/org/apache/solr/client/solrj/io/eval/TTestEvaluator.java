@@ -17,15 +17,14 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.inference.TTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -42,8 +41,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
   public Object doWork(Object value1, Object value2) throws IOException {
 
     TTest tTest = new TTest();
-    Map map = new HashMap();
-    Tuple tuple = new Tuple(map);
+    Tuple tuple = new Tuple();
     if(value1 instanceof Number) {
       double mean = ((Number) value1).doubleValue();
 
@@ -58,7 +56,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
         double pval = tTest.tTest(mean, samples);
 
         tuple.put("t-statistic", tstat);
-        tuple.put("p-value", pval);
+        tuple.put(StreamParams.P_VALUE, pval);
         return tuple;
       } else {
         throw new IOException("Second parameter for ttest must be a double array");
@@ -83,7 +81,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
         double tstat = tTest.t(samples1, samples2);
         double pval = tTest.tTest(samples1, samples2);
         tuple.put("t-statistic", tstat);
-        tuple.put("p-value", pval);
+        tuple.put(StreamParams.P_VALUE, pval);
         return tuple;
       } else {
         throw new IOException("Second parameter for ttest must be a double array");

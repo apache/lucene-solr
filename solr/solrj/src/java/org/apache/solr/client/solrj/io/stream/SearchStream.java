@@ -19,12 +19,10 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
@@ -208,17 +206,14 @@ public class SearchStream extends TupleStream implements Expressible  {
 
   public Tuple read() throws IOException {
     if(documentIterator.hasNext()) {
-      Map map = new HashMap();
+      Tuple tuple = new Tuple();
       SolrDocument doc = documentIterator.next();
       for(Entry<String, Object> entry : doc.entrySet()) {
-        map.put(entry.getKey(), entry.getValue());
+        tuple.put(entry.getKey(), entry.getValue());
       }
-      return new Tuple(map);
-    } else {
-      Map fields = new HashMap();
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
       return tuple;
+    } else {
+      return Tuple.EOF();
     }
   }
 

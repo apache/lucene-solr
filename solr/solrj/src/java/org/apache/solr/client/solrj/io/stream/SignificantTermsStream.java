@@ -335,9 +335,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           tuples.add(new Tuple(map));
         }
 
-        Map map = new HashMap();
-        map.put("EOF", true);
-        tuples.add(new Tuple(map));
+        tuples.add(Tuple.EOF());
         tupleIterator = tuples.iterator();
       }
 

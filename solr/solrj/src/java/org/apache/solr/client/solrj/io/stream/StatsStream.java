@@ -257,9 +257,7 @@ public class StatsStream extends TupleStream implements Expressible  {
       done = true;
       return tuple;
     } else {
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("EOF", true);
-      return new Tuple(fields);
+      return Tuple.EOF();
     }
   }
 
@@ -315,14 +313,13 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   private Tuple getTuple(NamedList response) {
-
-    Map<String, Object> map = new HashMap<>();
+    Tuple tuple = new Tuple();
     SolrDocumentList solrDocumentList = (SolrDocumentList) response.get("response");
 
     long count = solrDocumentList.getNumFound();
 
     if(doCount) {
-      map.put("count(*)", count);
+      tuple.put("count(*)", count);
     }
 
     if(count != 0) {
@@ -333,30 +330,29 @@ public class StatsStream extends TupleStream implements Expressible  {
         String field = statsFields.getName(i);
         NamedList theStats = (NamedList)statsFields.getVal(i);
         for(int s=0; s<theStats.size(); s++) {
-          addStat(map, field, theStats.getName(s), theStats.getVal(s));
+          addStat(tuple, field, theStats.getName(s), theStats.getVal(s));
         }
       }
     }
-
-    return new Tuple(map);
+    return tuple;
   }
 
   public int getCost() {
     return 0;
   }
 
-  private void addStat(Map<String, Object> map, String field, String stat, Object val) {
+  private void addStat(Tuple tuple, String field, String stat, Object val) {
     if(stat.equals("mean")) {
       String name = "avg("+field+")";
       Metric m = metricMap.get(name);
       if(m.outputLong) {
         Number num = (Number) val;
-        map.put(name, Math.round(num.doubleValue()));
+        tuple.put(name, Math.round(num.doubleValue()));
       } else {
-        map.put(name, val);
+        tuple.put(name, val);
       }
     } else {
-      map.put(stat+"("+field+")", val);
+      tuple.put(stat+"("+field+")", val);
     }
   }
 }

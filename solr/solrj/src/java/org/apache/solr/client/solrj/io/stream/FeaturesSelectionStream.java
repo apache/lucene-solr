@@ -362,21 +362,19 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
         for (Map.Entry<String, Double> termScore : termScores.entrySet()) {
           if (tuples.size() == numTerms) break;
           index++;
-          Map map = new HashMap();
-          map.put(ID, featureSet + "_" + index);
-          map.put("index_i", index);
-          map.put("term_s", termScore.getKey());
-          map.put("score_f", termScore.getValue());
-          map.put("featureSet_s", featureSet);
+          Tuple tuple = new Tuple();
+          tuple.put(ID, featureSet + "_" + index);
+          tuple.put("index_i", index);
+          tuple.put("term_s", termScore.getKey());
+          tuple.put("score_f", termScore.getValue());
+          tuple.put("featureSet_s", featureSet);
           long docFreq = docFreqs.get(termScore.getKey());
           double d = Math.log(((double)numDocs / (double)(docFreq + 1)));
-          map.put("idf_d", d);
-          tuples.add(new Tuple(map));
+          tuple.put("idf_d", d);
+          tuples.add(tuple);
         }
 
-        Map map = new HashMap();
-        map.put("EOF", true);
-        tuples.add(new Tuple(map));
+        tuples.add(Tuple.EOF());
 
         tupleIterator = tuples.iterator();
       }

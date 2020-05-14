@@ -237,15 +237,14 @@ public class RollupStream extends TupleStream implements Expressible {
       } else {
         Tuple t = null;
         if(currentMetrics != null) {
-          Map<String,Object> map = new HashMap<String,Object>();
+          t = new Tuple();
           for(Metric metric : currentMetrics) {
-            map.put(metric.getIdentifier(), metric.getValue());
+            t.put(metric.getIdentifier(), metric.getValue());
           }
 
           for(int i=0; i<buckets.length; i++) {
-            map.put(buckets[i].toString(), currentKey.getParts()[i]);
+            t.put(buckets[i].toString(), currentKey.getParts()[i]);
           }
-          t = new Tuple(map);
         }
 
         currentKey = hashKey;

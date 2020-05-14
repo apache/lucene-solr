@@ -328,10 +328,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       ++index;
       return tuple;
     } else {
-      Map fields = new HashMap();
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
-      return tuple;
+      return Tuple.EOF();
     }
   }
 
@@ -377,7 +374,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
                          String field,
                          Metric[] metrics) {
 
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
     NamedList facets = (NamedList)response.get("facets");
     fillTuples(tuples, tuple, facets, field, metrics);
   }

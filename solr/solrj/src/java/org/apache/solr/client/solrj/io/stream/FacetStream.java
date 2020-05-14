@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -592,15 +590,11 @@ public class FacetStream extends TupleStream implements Expressible  {
       ++index;
       return tuple;
     } else {
-      Map fields = new HashMap();
+      Tuple tuple = Tuple.EOF();
 
       if(bucketSizeLimit == Integer.MAX_VALUE) {
-        fields.put("totalRows", tuples.size());
+        tuple.put("totalRows", tuples.size());
       }
-
-      fields.put("EOF", true);
-
-      Tuple tuple = new Tuple(fields);
       return tuple;
     }
   }
@@ -728,7 +722,7 @@ public class FacetStream extends TupleStream implements Expressible  {
                                 Bucket[] buckets,
                                 Metric[] metrics) {
 
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
     NamedList facets = (NamedList)response.get("facets");
     fillTuples(0,
                tuples,

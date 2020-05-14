@@ -60,21 +60,15 @@ public class ExceptionStream extends TupleStream {
   public Tuple read() {
     if(openException != null) {
       //There was an exception during the open.
-      Map fields = new HashMap();
-      fields.put("EXCEPTION", openException.getMessage());
-      fields.put("EOF", true);
       SolrException.log(log, openException);
-      return new Tuple(fields);
+      return Tuple.EXCEPTION(openException.getMessage(), true);
     }
 
     try {
       return stream.read();
     } catch (Exception e) {
-      Map fields = new HashMap();
-      fields.put("EXCEPTION", e.getMessage());
-      fields.put("EOF", true);
       SolrException.log(log, e);
-      return new Tuple(fields);
+      return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
   

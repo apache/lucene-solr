@@ -152,9 +152,7 @@ public class TupStream extends TupleStream implements Expressible {
 
     if(unnestedTuples == null) {
       if (finished) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
         finished = true;
         if(unnestedTuple != null) {
@@ -167,9 +165,7 @@ public class TupStream extends TupleStream implements Expressible {
       if(unnestedTuples.hasNext()) {
         return unnestedTuples.next();
       } else {
-        Map<String, Object> m = new HashMap<>();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       }
     }
   }

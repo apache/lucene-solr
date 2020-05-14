@@ -203,9 +203,7 @@ public class SolrStream extends TupleStream {
 
       if (fields == null) {
         //Return the EOF tuple.
-        Map m = new HashMap();
-        m.put(StreamParams.EOF, true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
 
         String msg = (String) fields.get(StreamParams.EXCEPTION);

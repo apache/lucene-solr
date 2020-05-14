@@ -199,18 +199,16 @@ public class HashRollupStream extends TupleStream implements Expressible {
         if (tuple.EOF) {
           List tuples = new ArrayList();
           for(Map.Entry<HashKey, Metric[]> entry : metricMap.entrySet()) {
-            Map<String, Object> map = new HashMap<String, Object>();
+            Tuple t = new Tuple();
             Metric[] finishedMetrics = entry.getValue();
             for (Metric metric : finishedMetrics) {
-              map.put(metric.getIdentifier(), metric.getValue());
+              t.put(metric.getIdentifier(), metric.getValue());
             }
 
             HashKey hashKey = entry.getKey();
             for (int i = 0; i < buckets.length; i++) {
-              map.put(buckets[i].toString(), hashKey.getParts()[i]);
+              t.put(buckets[i].toString(), hashKey.getParts()[i]);
             }
-
-            Tuple t = new Tuple(map);
             tuples.add(t);
           }
           tuples.add(tuple);

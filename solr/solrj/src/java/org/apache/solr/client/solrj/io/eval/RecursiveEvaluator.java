@@ -22,8 +22,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -145,12 +143,12 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //can be contained within a tuple.
 
       Tuple tuple = (Tuple)value;
-      Map map = new HashMap();
+      Tuple newTuple = new Tuple();
       for(Object o : tuple.fields.keySet()) {
         Object v = tuple.fields.get(o);
-        map.put(o, normalizeOutputType(v));
+        newTuple.put(o, normalizeOutputType(v));
       }
-      return new Tuple(map);
+      return newTuple;
     }
     else{
       // anything else can just be returned as is

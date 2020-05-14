@@ -347,16 +347,16 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private Tuple createBatchSummaryTuple(int batchSize) {
     assert batchSize > 0;
-    Map m = new HashMap();
+    Tuple tuple = new Tuple();
     this.totalDocsIndex += batchSize;
     ++batchNumber;
-    m.put(BATCH_INDEXED_FIELD_NAME, batchSize);
-    m.put("totalIndexed", this.totalDocsIndex);
-    m.put("batchNumber", batchNumber);
-    if(coreName != null) {
-      m.put("worker", coreName);
+    tuple.put(BATCH_INDEXED_FIELD_NAME, batchSize);
+    tuple.put("totalIndexed", this.totalDocsIndex);
+    tuple.put("batchNumber", batchNumber);
+    if (coreName != null) {
+      tuple.put("worker", coreName);
     }
-    return new Tuple(m);
+    return tuple;
   }
 
 }

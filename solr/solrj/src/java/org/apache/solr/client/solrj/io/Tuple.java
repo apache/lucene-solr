@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.StreamParams;
@@ -46,7 +45,7 @@ public class Tuple implements Cloneable, MapWriter {
   public boolean EOF;
   public boolean EXCEPTION;
 
-  public Map<Object, Object> fields = new HashMap<>();
+  public Map<Object, Object> fields = new HashMap<>(2);
   public List<String> fieldNames;
   public Map<String, String> fieldLabels;
 
@@ -60,8 +59,15 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  /**
+   * Constructor that accepts an even number of arguments as key / value pairs.
+   * @param fields a list of key / value pairs, with keys at odd and values at
+   *               even positions.
+   */
   public Tuple(Object... fields) {
-    Objects.requireNonNull(fields);
+    if (fields == null) {
+      return;
+    }
     if ((fields.length % 2) != 0) {
       throw new RuntimeException("must have a matching number of key-value pairs");
     }
@@ -81,9 +87,8 @@ public class Tuple implements Cloneable, MapWriter {
     } else if (key.equals(StreamParams.EXCEPTION)) {
       EXCEPTION = true;
     }
-
   }
-  
+
   public void remove(Object key) {
     this.fields.remove(key);
   }
@@ -233,17 +238,25 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  /**
+   * Create a new empty tuple marked as EOF.
+   */
   public static Tuple EOF() {
     Tuple tuple = new Tuple();
-    tuple.put((Object) StreamParams.EOF, true);
+    tuple.put(StreamParams.EOF, true);
     return tuple;
   }
 
+  /**
+   * Create a new empty tuple marked as EXCEPTION, and optionally EOF.
+   * @param msg exception message
+   * @param eof if true the tuple will be marked as EOF
+   */
   public static Tuple EXCEPTION(String msg, boolean eof) {
     Tuple tuple = new Tuple();
-    tuple.put((Object) StreamParams.EXCEPTION, msg);
+    tuple.put(StreamParams.EXCEPTION, msg);
     if (eof) {
-      tuple.put((Object) StreamParams.EOF, true);
+      tuple.put(StreamParams.EOF, true);
     }
     return tuple;
   }

@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -202,11 +202,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     public Tuple read() {
-      String msg = e.getMessage();
-      Map m = new HashMap();
-      m.put("EOF", true);
-      m.put("EXCEPTION", msg);
-      return new Tuple(m);
+      return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
 
@@ -257,7 +253,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put("RESPONSE_TIME", totalTime);
+        tuple.fields.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }

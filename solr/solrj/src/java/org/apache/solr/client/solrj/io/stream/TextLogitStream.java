@@ -442,9 +442,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     try {
 
       if(++iteration > maxIterations) {
-        Map map = new HashMap();
-        map.put("EOF", true);
-        return new Tuple(map);
+        return Tuple.EOF();
       } else {
 
         if (this.idfs == null) {
@@ -560,14 +558,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     @Override
     public Tuple read() throws IOException {
-      HashMap map = new HashMap();
-      if(it.hasNext()) {
-        map.put("term_s",it.next());
-        map.put("score_f",1.0);
-        return new Tuple(map);
+      if (it.hasNext()) {
+        Tuple tuple = new Tuple();
+        tuple.put("term_s", it.next());
+        tuple.put("score_f", 1.0);
+        return tuple;
       } else {
-        map.put("EOF", true);
-        return new Tuple(map);
+        return Tuple.EOF();
       }
     }
 
@@ -650,13 +647,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
       List<Double> shardWeights = (List<Double>)logit.get("weights");
       double shardError = (double)logit.get("error");
 
-      Map map = new HashMap();
+      Tuple tuple = new Tuple();
 
-      map.put("error", shardError);
-      map.put("weights", shardWeights);
-      map.put("evaluation", logit.get("evaluation"));
+      tuple.put("error", shardError);
+      tuple.put("weights", shardWeights);
+      tuple.put("evaluation", logit.get("evaluation"));
 
-      return new Tuple(map);
+      return tuple;
     }
   }
 }
