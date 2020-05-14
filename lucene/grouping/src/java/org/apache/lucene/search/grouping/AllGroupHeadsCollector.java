@@ -52,7 +52,6 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   protected Map<T, GroupHead<T>> heads = new HashMap<>();
 
-  // docBase and ord are misguiding
   protected LeafReaderContext context;
   protected Scorable scorer;
 

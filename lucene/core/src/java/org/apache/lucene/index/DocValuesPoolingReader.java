@@ -34,13 +34,16 @@ import org.apache.lucene.util.BytesRef;
 public class DocValuesPoolingReader extends FilterLeafReader {
 
   @FunctionalInterface
-  interface DVSupplier<T extends DocIdSetIterator>{
+  protected interface DVSupplier<T extends DocIdSetIterator>{
     T getDocValues(String field) throws IOException;
   } 
   
-  private Map<String, ? super DocIdSetIterator> cache = new HashMap<>();
-  private LeafReaderContext context;
+  private final Map<String, ? super DocIdSetIterator> cache = new HashMap<>();
+  private final LeafReaderContext context;
 
+  /**
+   * Wraps the reader of the given context. Obtaining docBase and so ones from the given context
+   * */
   public DocValuesPoolingReader(LeafReaderContext leafCtx) {
     super(leafCtx.reader());
     context = new LeafReaderContext(leafCtx.parent, this, leafCtx.ordInParent, leafCtx.docBaseInParent, leafCtx.ord, leafCtx.docBase);
