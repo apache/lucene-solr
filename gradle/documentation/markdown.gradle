@@ -87,11 +87,8 @@ configure(project(':lucene')) {
       if (!matcher.find()) {
         throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
       }
-      def majorVersion = project.version.split(/\./)[0] as int;
       return [
         defaultCodecPackage : matcher.group(1).toLowerCase(Locale.ROOT),
-        version : project.version,
-        majorVersion : majorVersion,
         projectList : getListOfProjectsAsMarkdown(':lucene:')
       ]
     }
@@ -163,6 +160,12 @@ class MarkdownTemplateTask extends DefaultTask {
   public void transform() {
     def engine = new SimpleTemplateEngine();
     Map resolvedBinding = binding();
+    def majorVersion = project.version.split(/\./)[0] as int;
+    resolvedBinding += [
+      project : project, // not yet used
+      version : project.version,
+      majorVersion : majorVersion
+    ]
     String markdown = templateFile.withReader('UTF-8') {
       engine.createTemplate(it).make(resolvedBinding).toString();
     }
