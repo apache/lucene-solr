@@ -1206,7 +1206,19 @@ public class RegExp {
         re.from = next();
         return re;
       }
-    }    
+      
+      if (peek("\\")) {
+        return makeChar(next());
+      }
+
+      // From https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#bs
+      // "It is an error to use a backslash prior to any alphabetic character that does not denote an escaped
+      // construct;"
+      if (peek("abcefghijklmnopqrtuvxyz") || peek("ABCEFGHIJKLMNOPQRTUVXYZ")) {
+        throw new IllegalArgumentException("invalid character class \\" + next());
+      }
+    }
+      
     return null;
   }
   
