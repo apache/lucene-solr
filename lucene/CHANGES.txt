@@ -146,6 +146,8 @@ Other
 * LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
   equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
 
+* LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
