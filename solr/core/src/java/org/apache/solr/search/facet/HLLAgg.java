@@ -75,7 +75,7 @@ public class HLLAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     HLL aggregate = null;
     long answer = -1; // -1 means unset
 
@@ -109,7 +109,7 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }

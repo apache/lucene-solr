@@ -31,7 +31,7 @@ import java.util.Map;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
-abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetBucketMerger<FacetRequestT> {
+abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetModule.FacetBucketMerger<FacetRequestT> {
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
   BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
@@ -57,7 +57,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
   private static class SortVal implements Comparable<SortVal> {
     FacetBucket bucket;
-    FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
+    FacetModule.FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
     FacetRequest.SortDirection direction;
 
     @Override
@@ -140,7 +140,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         if (merger != null) {
           SortVal sv = new SortVal();
           sv.bucket = bucket;
-          sv.merger = (FacetSortableMerger)merger;
+          sv.merger = (FacetModule.FacetSortableMerger)merger;
           sv.direction = direction;
           // sv.pos = i;  // if we need position in the future...
           lst.add(sv);

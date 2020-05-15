@@ -46,7 +46,7 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
   }
 }
 
-class RubyWriter extends NaNFloatWriter {
+class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
 
   @Override
   protected String getNaN() { return "(0.0/0.0)"; }

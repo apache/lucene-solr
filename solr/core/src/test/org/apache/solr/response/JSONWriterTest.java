@@ -211,7 +211,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
 
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
     List<Method> allSuperClassMethods = new ArrayList<>();
@@ -256,7 +256,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testArrntvWriterLacksMethodsOfItsOwn() {
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
     // ArrayOfNamedValuePairJSONWriter is a simple sub-class
     // which should have (almost) no methods of its own

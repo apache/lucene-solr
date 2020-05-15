@@ -115,7 +115,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
       countAcc.key = "count";
     }
 
@@ -162,7 +162,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (indexOrderAcc == null) {
         // This sorting accumulator just goes by the slot number, so does not need to be collected
         // and hence does not need to find it's way into the accMap or accs array.
-        indexOrderAcc = new SortSlotAcc(fcontext);
+        indexOrderAcc = new SlotAcc.SortSlotAcc(fcontext);
       }
       return indexOrderAcc;
     }
@@ -178,7 +178,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // we always count...
     // allow a subclass to set a custom counter.
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, numSlots);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, numSlots);
     }
 
     sortAcc = getTrivialSortingSlotAcc(this.sort);

@@ -285,7 +285,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       }
     };
 
-    countAcc = new CountSlotAcc(fcontext) {
+    countAcc = new SlotAcc.CountSlotAcc(fcontext) {
       @Override
       public void incrementCount(int slot, long count) {
         throw new UnsupportedOperationException();

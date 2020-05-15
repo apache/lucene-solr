@@ -62,7 +62,7 @@ public class AvgAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new AvgSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.AvgSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -70,7 +70,7 @@ public class AvgAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetDoubleMerger {
+  private static class Merger extends FacetModule.FacetDoubleMerger {
     long num;
     double sum;
 
@@ -88,7 +88,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedNumericAcc extends DoubleSortedNumericDVAcc {
+  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
     int[] counts;
 
     public AvgSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -138,7 +138,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedSetAcc extends DoubleSortedSetDVAcc {
+  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
     int[] counts;
 
     public AvgSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -192,7 +192,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
+  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
     int[] counts;
 
     public AvgUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
