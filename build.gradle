@@ -29,6 +29,9 @@ plugins {
 // Project version.
 version = "9.0.0-SNAPSHOT"
 
+// General metadata.
+description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+
 // Propagate version and derived properties across projects.
 allprojects {
   version = rootProject.version
