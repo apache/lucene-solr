@@ -177,6 +177,9 @@ Bug Fixes
 * SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
   equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
 
+* SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
+  (Steve Molloy, Isabelle Giguere, David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
