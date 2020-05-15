@@ -39,35 +39,21 @@ public interface BKDIndexWriter {
   /** return the current position of the index */
   long getFilePointer();
 
-
-  static int getNumLeftLeafNodes(int numLeaves) {
-    assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
-    // return the level that can be filled with this number of leaves
-    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
-    // how many leaf nodes are in the full level
-    int leavesFullLevel = 1 << lastFullLevel;
-    // half of the leaf nodes from the full level goes to the left
-    int numLeftLeafNodes = leavesFullLevel / 2;
-    // leaf nodes that do not fit in the full level
-    int unbalancedLeafNodes = numLeaves - leavesFullLevel;
-    // distribute unbalanced leaf nodes
-    numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
-    // we should always place unbalanced leaf nodes on the left
-    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes && numLeftLeafNodes <= 2L * (numLeaves - numLeftLeafNodes);
-    return numLeftLeafNodes;
-  }
-
   /** flat representation of a kd-tree */
   interface BKDTreeLeafNodes {
+
     /** number of leaf nodes */
     int numLeaves();
+
     /** pointer to the leaf node previously written. Leaves are order from
      * left to right, so leaf at {@code index} 0 is the leftmost leaf and
      * the the leaf at {@code numleaves()} -1 is the rightmost leaf */
     long getLeafLP(int index);
+
     /** split value between two leaves. The split value at position n corresponds to the
      *  leaves at (n -1) and n. */
     BytesRef getSplitValue(int index);
+
     /** split dimension between two leaves. The split dimension at position n corresponds to the
      *  leaves at (n -1) and n.*/
     int getSplitDimension(int index);
@@ -85,5 +71,23 @@ public interface BKDIndexWriter {
 
     /** the docId of this block at a given position */
     int docId(int position);
+  }
+
+  /** Helper method to partition a number of leaf nodes on a semi-balance tree */
+  static int getNumLeftLeafNodes(int numLeaves) {
+    assert numLeaves > 1: "getNumLeftLeaveNodes() called with " + numLeaves;
+    // return the level that can be filled with this number of leaves
+    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
+    // how many leaf nodes are in the full level
+    int leavesFullLevel = 1 << lastFullLevel;
+    // half of the leaf nodes from the full level goes to the left
+    int numLeftLeafNodes = leavesFullLevel / 2;
+    // leaf nodes that do not fit in the full level
+    int unbalancedLeafNodes = numLeaves - leavesFullLevel;
+    // distribute unbalanced leaf nodes
+    numLeftLeafNodes += Math.min(unbalancedLeafNodes, numLeftLeafNodes);
+    // we should always place unbalanced leaf nodes on the left
+    assert numLeftLeafNodes >= numLeaves - numLeftLeafNodes && numLeftLeafNodes <= 2L * (numLeaves - numLeftLeafNodes);
+    return numLeftLeafNodes;
   }
 }
