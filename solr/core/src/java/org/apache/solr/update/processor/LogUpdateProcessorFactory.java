@@ -62,7 +62,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : next;
+    return (log.isInfoEnabled() || slowUpdateThresholdMillis >= 0) ?
+        new LogUpdateProcessor(req, rsp, this, next) : next;
   }
   
   static class LogUpdateProcessor extends UpdateRequestProcessor {

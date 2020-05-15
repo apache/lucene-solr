@@ -50,7 +50,7 @@ public class HLLAgg extends StrAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.getType().isPointField()) {
@@ -121,7 +121,7 @@ public class HLLAgg extends StrAggValueSource {
   abstract class BaseNumericAcc extends DocValuesAcc {
     HLL[] sets;
 
-    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public BaseNumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, fcontext.qcontext.searcher().getSchema().getField(field));
       sets = new HLL[numSlots];
     }
@@ -179,7 +179,7 @@ public class HLLAgg extends StrAggValueSource {
   class NumericAcc extends BaseNumericAcc {
     NumericDocValues values;
 
-    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public NumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
     }
 
@@ -205,7 +205,7 @@ public class HLLAgg extends StrAggValueSource {
   class SortedNumericAcc extends BaseNumericAcc {
     SortedNumericDocValues values;
 
-    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public SortedNumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
     }
 

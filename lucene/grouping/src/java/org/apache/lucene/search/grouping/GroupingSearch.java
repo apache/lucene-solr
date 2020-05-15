@@ -71,6 +71,10 @@ public class GroupingSearch {
     this(new TermGroupSelector(groupField), null);
   }
 
+  /**
+   * Constructs a <code>GroupingSearch</code> instance that groups documents using a {@link GroupSelector}
+   * @param groupSelector a {@link GroupSelector} that defines groups for this GroupingSearch
+   */
   public GroupingSearch(GroupSelector<?> groupSelector) {
     this(groupSelector, null);
   }
