@@ -49,11 +49,11 @@ public class CorePuller {
    * @param core core to be pulled
    * @param sharedShardName identifier for the shard index data located on a shared store
    * @param shardVersionMetadata metadata pointing to the version of shard's index in the shared store to be pulled
-   * @param isLeaderPulling whether pull is requested by a leader replica or not
+   * @param isLeaderInitiated whether pull is requested by a leader replica or not
    */
   public void pullCoreFromSharedStore(SolrCore core, String sharedShardName,
                                       SharedShardMetadataController.SharedShardVersionMetadata shardVersionMetadata,
-                                      boolean isLeaderPulling) {
+                                      boolean isLeaderInitiated) {
     CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
     String collectionName = cloudDescriptor.getCollectionName();
     String shardName = cloudDescriptor.getShardId();
@@ -65,7 +65,7 @@ public class CorePuller {
       if (SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE.equals(shardVersionMetadata.getMetadataSuffix())) {
         //no-op pull
         BlobCoreMetadata emptyBlobCoreMetadata = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedShardName);
-        concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, shardVersionMetadata, emptyBlobCoreMetadata, isLeaderPulling);
+        concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, shardVersionMetadata, emptyBlobCoreMetadata, isLeaderInitiated);
         log.info("Pull successful, nothing to pull, collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
         return;
       }
@@ -78,18 +78,18 @@ public class CorePuller {
         if (null == blobCoreMetadata) {
           // Zookepeer and blob are out of sync, could be due to eventual consistency model in blob or something else went wrong.
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "cannot get core.metadata file from shared store, blobCoreMetadataName=" + blobCoreMetadataName +
+              "core.metadata file needed for pull is missing from shared store, blobCoreMetadataName=" + blobCoreMetadataName +
                   " shard=" + shardName +
                   " collectionName=" + collectionName +
                   " sharedShardName=" + sharedShardName);
         } else if (blobCoreMetadata.getIsDeleted()) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "core.metadata file is marked deleted in shared store, blobCoreMetadataName=" + blobCoreMetadataName +
+              "core.metadata file needed for pull is marked deleted in shared store, blobCoreMetadataName=" + blobCoreMetadataName +
                   " shard=" + shardName +
                   " collectionName=" + collectionName +
                   " sharedShardName=" + sharedShardName);
         } else if (blobCoreMetadata.getIsCorrupt()) {
-          log.warn("core.Metadata file is marked corrupt, skipping sync, collection=" + collectionName +
+          log.warn("core.metadata file needed for pull is marked corrupt, skipping sync, collection=" + collectionName +
               " shard=" + shardName + " coreName=" + coreName + " sharedShardName=" + sharedShardName);
           return;
         }
@@ -112,7 +112,7 @@ public class CorePuller {
           CorePushPull cp = new CorePushPull(blobClient, deleteManager, pushPullData, resolutionResult, serverMetadata, blobCoreMetadata);
           cp.pullUpdateFromBlob(/* waitForSearcher */ true);
           concurrencyController.updateCoreVersionMetadata(pushPullData.getCollectionName(), pushPullData.getShardName(), pushPullData.getCoreName(),
-              shardVersionMetadata, blobCoreMetadata, isLeaderPulling);
+              shardVersionMetadata, blobCoreMetadata, isLeaderInitiated);
         } else {
           log.warn("Why there are no files to pull even when we do not match with the version in zk? " +
               "collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);

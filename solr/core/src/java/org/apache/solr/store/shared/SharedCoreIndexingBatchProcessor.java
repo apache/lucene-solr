@@ -81,7 +81,8 @@ public class SharedCoreIndexingBatchProcessor implements Closeable {
     }
 
     if (!Slice.State.ACTIVE.equals(shard.getState())) {
-      // unclear what this means, but logging a warning for now
+      // This happens when we buffer updates for a sub shard.
+      // SHARED replica should eventually stop supporting buffered updates and then this should become a real exception
       log.warn("Processing an indexing batch for a non-active shard," +
           " collection=" + collectionName + " shard=" + shardName + " core=" + core.getName());
     }
@@ -129,7 +130,7 @@ public class SharedCoreIndexingBatchProcessor implements Closeable {
     CoreContainer coreContainer = core.getCoreContainer();
     SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
     corePullLock = concurrencyController.getCorePullLock(collectionName, shardName, coreName);
-    // from this point on wards we should always exit this method with read lock (no matter failure or what)
+    // from this point onward we should always exit this method with read lock (no matter failure or what)
     try {
       concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreConcurrencyController.SharedCoreStage.INDEXING_BATCH_RECEIVED);
       state = IndexingBatchState.STARTED;

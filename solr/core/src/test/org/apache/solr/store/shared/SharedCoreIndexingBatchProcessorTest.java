@@ -211,19 +211,23 @@ public class SharedCoreIndexingBatchProcessorTest extends  SolrCloudSharedStoreT
   }
 
   /**
-   * Tests that an already committed indexing batch throws if a doc/deleted again.
+   * Tests that an already committed indexing batch throws if a doc is added/deleted again.
    */
   @Test
   public void testAddOrDeleteAfterCommitThrows() throws Exception {
     processAddOrDelete();
-    testAddOrDeleteAfterIsolatedCommitThrows();
+    commitAndThenAddOrDeleteDoc();
   }
 
   /**
-   * Tests that an already isolated committed indexing batch throws if a doc/deleted again.
+   * Tests that an already isolated committed indexing batch throws if a doc is added/deleted again.
    */
   @Test
   public void testAddOrDeleteAfterIsolatedCommitThrows() throws Exception {
+    commitAndThenAddOrDeleteDoc();
+  }
+
+  private void commitAndThenAddOrDeleteDoc() {
     processCommit();
     try {
       processAddOrDelete();
@@ -240,7 +244,7 @@ public class SharedCoreIndexingBatchProcessorTest extends  SolrCloudSharedStoreT
   @Test
   public void testCommitAfterCommitThrows() throws Exception {
     processAddOrDelete();
-    testCommitAfterIsolatedCommitThrows();
+    doDoubleCommit();
   }
 
   /**
@@ -248,6 +252,10 @@ public class SharedCoreIndexingBatchProcessorTest extends  SolrCloudSharedStoreT
    */
   @Test
   public void testCommitAfterIsolatedCommitThrows() throws Exception {
+    doDoubleCommit();
+  }
+
+  private void doDoubleCommit() {
     processCommit();
     try {
       processCommit();

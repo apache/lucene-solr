@@ -105,6 +105,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private LeaderRequestReplicationTracker leaderReplicationTracker;
 
   /**
+   * TODO: This class is not an ideal place to run start and end of an indexing batch logic. We are not sure if an other
+   *       processor in the chain before this would also need to pull from shared store. Therefore we might want to
+   *       find a better place earlier in the call stack. The challenge would be to do it efficiently i.e. we might not 
+   *       know before this processor if a batch contains any documents that are meant for this replica. But sacrificing 
+   *       that efficiency for a more correct place might be fair trade off. 
    * For {@link Replica.Type#SHARED} replica, it is necessary that we pull from the shared store at the start of
    * an indexing batch (if the core is stale). And we push to the shared store at the end of a successfully committed
    * indexing batch (we ensure that each batch has a hard commit). Details can be found in 
@@ -112,7 +117,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
    * In other words, we would like to call {@link SharedCoreIndexingBatchProcessor#startIndexingBatch()} at the start of
    * an indexing batch and {@link SharedCoreIndexingBatchProcessor#finishIndexingBatch()} at the end of a successfully
    * committed indexing batch.
-   * For that, we rely on first {@link #processAdd(AddUpdateCommand)} or {@link #processCommit(CommitUpdateCommand)}
+   * For that, we rely on first {@link #processAdd(AddUpdateCommand)} or {@link #processDelete(DeleteUpdateCommand)}
    * that is going to index the doc locally to identify the start of an indexing batch and 
    * end of {@link #processCommit(CommitUpdateCommand)} to identify the end of a successfully committed indexing batch.
    * Most of the logic is contained inside {@link SharedCoreIndexingBatchProcessor}. The only expectation from this class
@@ -190,6 +195,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // implicit, HttpSolrCall#addCommitIfAbsent) because that is how, at the end of an indexing batch, synchronous push
     // to shared store gets hold of the segment files on local disk. SHARED replica also does not support the notion of soft commit.
     // Therefore unlike NRT replica type we do not need to broadcast commit to the leaders of all the shards of a collection.
+    // 
+    // This means we won't support a client explicitly sending commit=true to a replica of a shard and having it route to
+    // the leader for SHARED replicas or clients sending commit=true for the purpose of refreshing all of the searchers 
+    // in their collection. Former is not needed because isolated commit is a no-op for SHARED replica and later is not supported 
+    // because SHARED replica has a different plan around opening of searchers https://issues.apache.org/jira/browse/SOLR-14339
     //
     // 2. <code>isLeader</code> is computed fresh each time an AddUpdateCommand/DeleteUpdateCommand belonging to the indexing
     // batch is processed. And finally it is recomputed in this method. It is possible that at the beginning of a batch
@@ -295,6 +305,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     checkReplicationTracker(cmd);
 
     // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
     if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
       getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
     }
@@ -378,6 +389,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     checkReplicationTracker(cmd);
 
     // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
     if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
       getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
     }
@@ -517,7 +529,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
 
-    // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally 
+    // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
     if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
       getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
     }
@@ -1321,10 +1334,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   private boolean isSharedCoreAddOrDeleteGoingToBeIndexedLocally() {
     // forwardToLeader: if true, then the update is going to be forwarded to its rightful leader.
-    //                  The doc being added or deleted might not even belongs to the current core's (req.getCore()) shard.
+    //                  The doc being added or deleted might not even belong to the current core's (req.getCore()) shard.
     // isLeader: if true, then the current core (req.getCore()) is the leader of the shard to which the doc being added or deleted belongs to.
     //           For SHARED replicas only leader replicas do local indexing. Follower SHARED replicas do not do any local 
-    //           indexing and there only job is to forward the updates to the leader replica.
+    //           indexing and their only job is to forward the add/delete updates to the leader replica.
     // isSubShardLeader: if true, then the current core (req.getCore()) is the leader of a sub shard being built.
     //                   Sub shard leaders only buffer the updates locally and apply them towards the end of a successful
     //                   split before the sub shard is declared active. It is at that point the sub shard is pushed to
