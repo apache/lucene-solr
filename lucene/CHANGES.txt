@@ -277,6 +277,8 @@ Other
 
 * LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
 
+* LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
+
 Build
 
 * Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
