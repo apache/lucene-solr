@@ -130,8 +130,7 @@ class RenderJavadocTask extends DefaultTask {
   @OutputDirectory
   File outputDir
 
-  @InputFiles
-  @Classpath
+  @CompileClasspath
   FileCollection classpath
 
   @Input

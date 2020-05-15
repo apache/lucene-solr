@@ -96,6 +96,27 @@ public class TestRegExp extends LuceneTestCase {
     }        
   }
 
+  public void testIllegalBackslashChars() {
+    String illegalChars = "abcefghijklmnopqrtuvxyzABCEFGHIJKLMNOPQRTUVXYZ";
+    for (int i = 0; i < illegalChars.length(); i++) {
+      String illegalExpression = "\\" + illegalChars.charAt(i);
+      IllegalArgumentException expected = expectThrows(
+          IllegalArgumentException.class, () -> {
+            new RegExp(illegalExpression);
+          }
+      );
+      assertTrue(expected.getMessage().contains("invalid character class"));
+    }
+  }
+
+  public void testLegalBackslashChars() {
+    String legalChars = "dDsSWw0123456789[]*&^$@!{}\\/";
+    for (int i = 0; i < legalChars.length(); i++) {
+      String legalExpression = "\\" + legalChars.charAt(i);
+      new RegExp(legalExpression);
+    }
+  }  
+  
   static String randomDocValue(int minLength) {
     String charPalette = "AAAaaaBbbCccc123456 \t";
     StringBuilder sb = new StringBuilder();

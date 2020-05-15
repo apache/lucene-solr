@@ -60,6 +60,9 @@ API Changes
 
 Improvements
 
+* LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
+  follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
+
 * LUCENE-9336: RegExp query now supports \w \W \d \D \s \S expressions.
   This is a break with previous behaviour where these were (mis)interpreted
   as literally the characters w W d etc. (Mark Harwood)
@@ -271,6 +274,10 @@ Other
 
 * LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
   equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
+
+* LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
+
+* LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
 
 Build
 
