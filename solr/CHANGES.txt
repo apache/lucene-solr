@@ -174,6 +174,9 @@ Bug Fixes
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez via Houston Putman)
 
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
