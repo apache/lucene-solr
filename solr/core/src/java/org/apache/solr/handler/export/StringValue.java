@@ -24,6 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
 class StringValue implements SortValue {
@@ -40,6 +41,10 @@ class StringValue implements SortValue {
   protected int lastDocID;
   private boolean present;
 
+  private BytesRef lastBytes;
+  private String lastString;
+  private int lastOrd = -1;
+
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
     this.docValues = globalDocValues;
@@ -50,6 +55,14 @@ class StringValue implements SortValue {
     this.comp = comp;
     this.currentOrd = comp.resetValue();
     this.present = false;
+  }
+
+  public String getLastString() {
+    return this.lastString;
+  }
+
+  public void setLastString(String lastString) {
+    this.lastString = lastString;
   }
 
   public StringValue copy() {
@@ -88,7 +101,14 @@ class StringValue implements SortValue {
 
   public Object getCurrentValue() throws IOException {
     assert present == true;
-    return docValues.lookupOrd(currentOrd);
+    if(currentOrd == lastOrd) {
+      return lastBytes;
+    } else {
+      lastBytes = docValues.lookupOrd(currentOrd);
+      lastOrd = currentOrd;
+      lastString = null;
+      return lastBytes;
+    }
   }
 
   public String getField() {

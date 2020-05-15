@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReader;
@@ -36,6 +37,9 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -52,6 +56,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -134,6 +139,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public static class ExportWriterStream extends TupleStream implements Expressible {
     StreamContext context;
+    StreamComparator streamComparator;
     int pos;
     SortDoc[] docs;
     ExportWriter exportWriter;
@@ -154,8 +160,36 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return null;
     }
 
+    private StreamComparator parseComp(String sort) throws IOException {
+
+      String[] sorts = sort.split(",");
+      StreamComparator[] comps = new StreamComparator[sorts.length];
+      for(int i=0; i<sorts.length; i++) {
+        String s = sorts[i];
+
+        String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+
+        if (spec.length != 2) {
+          throw new IOException("Invalid sort spec:" + s);
+        }
+
+        String fieldName = spec[0].trim();
+        String order = spec[1].trim();
+
+        comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+      }
+
+      if(comps.length > 1) {
+        return new MultipleFieldComparator(comps);
+      } else {
+        return comps[0];
+      }
+    }
+
     @Override
     public void open() throws IOException {
+      String sort = (String)context.get(CommonParams.SORT);
+      streamComparator = parseComp(sort);
       docs = (SortDoc[]) context.get(DOCS_KEY);
       int[] idx = (int[]) context.get(DOCS_INDEX_KEY);
       exportWriter = (ExportWriter) context.get(EXPORT_WRITER_KEY);
@@ -195,7 +229,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     @Override
     public StreamComparator getStreamSort() {
-      return null;
+      return streamComparator;
     }
 
     @Override
@@ -362,6 +396,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       streamContext.setObjectCache(initialStreamContext.getObjectCache());
       streamContext.put("core", req.getCore().getName());
       streamContext.put("solr-core", req.getCore());
+      streamContext.put(CommonParams.SORT, params.get(CommonParams.SORT));
     }
 
     writer.writeMap(m -> {
