@@ -73,30 +73,27 @@ configure(project(':lucene')) {
     }
   }
   
-  task createDocumentationIndex {
-    def outputFile = file("${project.docroot}/index.html");
+  task createDocumentationIndex(type: MarkdownTemplateTask) {
     def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
-    def templateFile = file('site/xsl/index.template.md')
-    
-    outputs.file(outputFile)
     inputs.file(defaultCodecFile)
-    inputs.file(templateFile)
+
+    outputFile = file("${project.docroot}/index.html")
+    templateFile = file('site/xsl/index.template.md')
     
-    doLast {
+    binding = {
       // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
       def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
       def matcher = regex.matcher(defaultCodecFile.getText('UTF-8'))
       if (!matcher.find()) {
         throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
       }
-      project.docroot.mkdirs();
       def majorVersion = project.version.split(/\./)[0] as int;
-      MarkdownFilter.processTemplate(templateFile, [
+      return [
         defaultCodecPackage : matcher.group(1).toLowerCase(Locale.ROOT),
         version : project.version,
         majorVersion : majorVersion,
         projectList : getListOfProjectsAsMarkdown(':lucene:')
-      ], outputFile);
+      ]
     }
   }
 }
@@ -113,8 +110,9 @@ configure(project(':solr')) {
   }
 }
 
+// filter that can be used with the "copy" task of Gradle that transforms Markdown files
+// from source location to HTML (adding HTML header, styling,...)
 class MarkdownFilter extends FilterReader {
-  private static def ENGINE = new SimpleTemplateEngine();
 
   public MarkdownFilter(Reader reader) throws IOException {
     // this is not really a filter: it reads whole file in ctor,
@@ -122,13 +120,6 @@ class MarkdownFilter extends FilterReader {
     super(new StringReader(convert(reader.text)));
   }
   
-  public static void processTemplate(File template, Map binding, File outputFile) {
-    String markdown = template.withReader('UTF-8') {
-      ENGINE.createTemplate(it).make(binding).toString();
-    }
-    outputFile.write(convert(markdown), 'UTF-8');
-  }
-
   public static String convert(String markdownSource) {
     // first replace LUCENE and SOLR issue numbers with a markdown link
     markdownSource = markdownSource.replaceAll(/(?s)\b(LUCENE|SOLR)\-\d+\b/,
@@ -155,3 +146,27 @@ class MarkdownFilter extends FilterReader {
   }
 }
 
+// Applies a binding of variables using a template and
+// produces Markdown, which is converted to HTML
+class MarkdownTemplateTask extends DefaultTask {
+
+  @InputFile
+  File templateFile
+
+  @OutputFile
+  File outputFile
+  
+  @Internal
+  Closure<Map> binding
+
+  @TaskAction
+  public void transform() {
+    def engine = new SimpleTemplateEngine();
+    Map resolvedBinding = binding();
+    String markdown = templateFile.withReader('UTF-8') {
+      engine.createTemplate(it).make(resolvedBinding).toString();
+    }
+    outputFile.getParentFile().mkdirs();
+    outputFile.write(MarkdownFilter.convert(markdown), 'UTF-8');
+  }
+}
