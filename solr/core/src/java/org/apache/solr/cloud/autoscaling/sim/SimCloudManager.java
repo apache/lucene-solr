@@ -791,12 +791,14 @@ public class SimCloudManager implements SolrCloudManager {
             if (metricsHistoryHandler != null) {
               metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           } else {
             if (metricsHandler != null) {
               metricsHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           }

@@ -259,14 +259,15 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-    // TODO: close Overseer
-    Overseer overseer = new Overseer((HttpShardHandler) new HttpShardHandlerFactory().getShardHandler(), updateShardHandler, "/admin/cores",
-        reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
-    overseer.close();
-    ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
-        address.replaceAll("/", "_"));
-    overseerElector.setup(ec);
-    overseerElector.joinElection(ec, false);
+    try (HttpShardHandlerFactory hshf = new HttpShardHandlerFactory()) {
+      Overseer overseer = new Overseer((HttpShardHandler) hshf.getShardHandler(), updateShardHandler, "/admin/cores",
+          reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
+      overseer.close();
+      ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
+          address.replaceAll("/", "_"));
+      overseerElector.setup(ec);
+      overseerElector.joinElection(ec, false);
+    }
     reader.close();
     return zkClient;
   }
