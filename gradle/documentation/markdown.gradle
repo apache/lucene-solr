@@ -154,12 +154,12 @@ class MarkdownTemplateTask extends DefaultTask {
   File outputFile
   
   @Internal
-  Closure<Map> binding
+  Closure<Map> binding = {}
 
   @TaskAction
   public void transform() {
     def engine = new SimpleTemplateEngine();
-    Map resolvedBinding = binding();
+    Map resolvedBinding = binding() ?: [:];
     def majorVersion = project.version.split(/\./)[0] as int;
     resolvedBinding += [
       project : project, // not yet used
