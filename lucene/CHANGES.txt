@@ -118,6 +118,9 @@ Bug fixes
 * LUCENE-9290: Don't assume that different XYPoint have different hash code
   (Ignacio Vera via Mike Drob)
 
+* LUCENE-9372: Fix paths for cygwin/msys before gradle wrapper jar lookup.
+  (Peter Barna)
+
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
