@@ -41,8 +41,9 @@ buildscript {
 }
 
 def getListOfProjectsAsMarkdown = { prefix ->
-  def projects = allprojects.findAll{ it.path.startsWith(prefix) && it.tasks.findByName('renderSiteJavadoc') }
+  def projects = allprojects.findAll{ it.path.startsWith(prefix) && it.tasks.findByName('renderSiteJavadoc')?.enabled }
     .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
+      .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
       .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
       .thenComparing(Comparator.comparing{ it.path }));
   return projects.collect{ project ->
