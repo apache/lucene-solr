@@ -13,6 +13,9 @@ Bug Fixes
 
 * SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
 
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
