@@ -103,6 +103,7 @@ apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/missing-docs-check.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
+apply from: file('gradle/validation/documentation-lint.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
@@ -134,4 +135,3 @@ apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/render-javadoc.gradle')
-apply from: file('gradle/validation/documentation-lint.gradle')  // should be placed here; needs to be evaluated after documentation.gradle
