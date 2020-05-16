@@ -46,6 +46,14 @@ ext {
     }
     return m[0][1]
   }()
+  // "majorVersion" is an integer with just the major version. Compute it.
+  majorVersion = {
+    def m = (version =~ /^(\d+)\.\d+\.\d+(-(.+))?/)
+    if (!m) {
+      throw GradleException("Can't strip version to just major version: " + rootProject.version)
+    }
+    return m[0][1] as int
+  }
 
   // Build timestamp.
   def tstamp = ZonedDateTime.now()

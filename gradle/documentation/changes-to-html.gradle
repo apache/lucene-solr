@@ -34,8 +34,6 @@ class ChangesToHtmlTask extends DefaultTask {
   @OutputDirectory
   File targetDir = project.file("${project.docroot}/changes")
 
-  def luceneDocUrl = "https://lucene.apache.org/core/${project.baseVersion.replace(".", "_")}/".toString()
-
   def loadVersions(File outfile) {
     // load version properties from DOAP RDF
     def prefix = "doap.${project.name}".toString()
@@ -60,7 +58,7 @@ class ChangesToHtmlTask extends DefaultTask {
         project.rootProject.file("${siteDir}/changes2html.pl").toString(),
         "${project.name}",
         versionsFile.toString(),
-        luceneDocUrl
+        project.luceneDocUrl.concat('/')
       ]
     }
 

@@ -1,12 +1,12 @@
 ![Apache Lucene Logo](lucene_green_300.gif)
 
-# Apache Lucene™ ${version} Documentation
+# Apache Lucene™ ${project.version} Documentation
 
 Lucene is a Java full-text search engine. Lucene is not a complete application, 
 but rather a code library and API that can easily be used to add search capabilities
 to applications.
 
-This is the official documentation for **Apache Lucene ${version}**.
+This is the official documentation for **Apache Lucene ${project.version}**.
 Additional documentation is available in the
 [Wiki](https://cwiki.apache.org/confluence/display/lucene).
 
@@ -31,8 +31,8 @@ on some of the conceptual or inner details of Lucene:
 
 * [Changes](changes/Changes.html): List of changes in this release.
 * [System Requirements](SYSTEM_REQUIREMENTS.html): Minimum and supported Java versions.
-* [Migration Guide](MIGRATE.html): What changed in Lucene ${majorVersion}; how to migrate code from
-  Lucene ${majorVersion-1}.x.
+* [Migration Guide](MIGRATE.html): What changed in Lucene ${project.majorVersion()}; how to migrate code from
+  Lucene ${project.majorVersion()-1}.x.
 * [JRE Version Migration](JRE_VERSION_MIGRATION.html): Information about upgrading between major JRE versions.
 * [File Formats](core/org/apache/lucene/codecs/${defaultCodecPackage}/package-summary.html#package.description):
   Guide to the supported index format used by Lucene. This can be customized by using

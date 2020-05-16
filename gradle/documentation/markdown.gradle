@@ -56,6 +56,8 @@ def getListOfProjectsAsMarkdown = { prefix ->
 
 configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   task markdownToHtml(type: Copy) {
+    dependsOn copyDocumentationAssets
+    
     filteringCharset = 'UTF-8'
     includeEmptyDirs = false
     into project.docroot
@@ -74,12 +76,14 @@ configure(project(':lucene')) {
   }
   
   task createDocumentationIndex(type: MarkdownTemplateTask) {
-    def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
-    inputs.file(defaultCodecFile)
+    dependsOn copyDocumentationAssets,markdownToHtml
 
     outputFile = file("${project.docroot}/index.html")
     templateFile = file('site/xsl/index.template.md')
     
+    def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
+    inputs.file(defaultCodecFile)
+
     binding = {
       // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
       def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
@@ -99,11 +103,28 @@ configure(project(':solr')) {
   markdownToHtml {
     from('site') {
       include '**/*.md'
+      exclude '**/*.template.md'
     }
   }
   
-  task createDocumentationIndex {
-    // nocommit: this needs to be implemented next
+  task createDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn copyDocumentationAssets,markdownToHtml
+  
+    outputFile = file("${project.docroot}/index.html")
+    templateFile = file('site/index.template.md')
+    
+    binding = {
+      return [
+        projectList : getListOfProjectsAsMarkdown(':solr:')
+      ]
+    }
+  }
+  
+  task createOnlineDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn copyOnlineDocumentationAssets
+  
+    outputFile = file("${project.docrootOnline}/index.html")
+    templateFile = file('site/online-link.template.md')
   }
 }
 
@@ -160,11 +181,8 @@ class MarkdownTemplateTask extends DefaultTask {
   public void transform() {
     def engine = new SimpleTemplateEngine();
     Map resolvedBinding = binding() ?: [:];
-    def majorVersion = project.version.split(/\./)[0] as int;
     resolvedBinding += [
-      project : project, // not yet used
-      version : project.version,
-      majorVersion : majorVersion
+      project : project
     ]
     String markdown = templateFile.withReader('UTF-8') {
       engine.createTemplate(it).make(resolvedBinding).toString();
