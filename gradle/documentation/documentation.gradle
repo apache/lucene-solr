@@ -29,17 +29,8 @@ configure(rootProject) {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn allprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name in [
-        "changesToHtml",
-        "renderSiteJavadoc",
-        "copyDocumentationAssets",
-        "copyOnlineDocumentationAssets",
-        "markdownToHtml",
-        "createDocumentationIndex",
-        "createOnlineDocumentationIndex"
-      ]}
-    }
+    dependsOn ':lucene:documentation'
+    dependsOn ':solr:documentation'
   }
 }
 
@@ -49,6 +40,17 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
     docroot = file("${buildDir}/documentation")
   }
   
+  task documentation() {
+    group = 'documentation'
+    description = "Generate ${project.name.capitalize()} documentation"
+
+    dependsOn subprojects.collect { prj ->
+      prj.tasks.matching { it.name == 'renderSiteJavadoc' }
+    }
+    dependsOn 'changesToHtml','copyDocumentationAssets',
+      'markdownToHtml','createDocumentationIndex'
+  }
+
   task copyDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
     from('site/html')      // lucene
@@ -63,6 +65,11 @@ configure(project(':solr')) {
     docrootOnline = file("${buildDir}/docs-online")
   }
 
+  documentation {
+    // for Solr we also have a page shipped with zip/tgz that just points to online web pages:
+    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+  }
+  
   task copyOnlineDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
     from('site/assets')
