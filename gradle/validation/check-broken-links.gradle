@@ -17,23 +17,21 @@
 
 configure(rootProject) {
 
-  task documentationLint {
+  task checkBrokenLinks {
     group 'Verification'
-    description 'Verify all documentation'
+    description 'Check broken links in the entire documentation'
 
     dependsOn ':lucene:checkBrokenLinks'
     dependsOn ':solr:checkBrokenLinks'
   }
-}
 
+}
 configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
 
   project.afterEvaluate {
     task checkBrokenLinks(type: CheckBrokenLinksTask) {
       docsDir = project.docroot
-      dependsOn subprojects.collect { prj ->
-        prj.tasks.matching { it.name == 'renderSiteJavadoc' }
-      }
+      dependsOn 'documentation'
     }
 
     // TODO: uncomment this line after fixing all broken links.
