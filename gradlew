@@ -103,6 +103,9 @@ location of your Java installation."
 fi
 
 # LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
+if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
+    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+fi
 GRADLE_WRAPPER_JAR=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 if ! $JAVACMD --source 11 $APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java $GRADLE_WRAPPER_JAR ; then
     exit $?
@@ -139,8 +142,6 @@ fi
 
 # For Cygwin or MSYS, switch paths to Windows format before running java
 if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
-    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
-    CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
     JAVACMD=`cygpath --unix "$JAVACMD"`
 
     # We build the pattern for arguments to be converted via cygpath

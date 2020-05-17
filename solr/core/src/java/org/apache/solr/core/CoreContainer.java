@@ -233,7 +233,7 @@ public class CoreContainer {
 
   private volatile SolrClientCache solrClientCache;
 
-  private volatile ObjectCache objectCache = new ObjectCache();
+  private final ObjectCache objectCache = new ObjectCache();
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -995,6 +995,8 @@ public class CoreContainer {
       }
       // Now clear all the cores that are being operated upon.
       solrCores.close();
+
+      objectCache.clear();
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it up if so.
       // Since all the pending operations queues have been drained, there should be nothing to do.

@@ -33,7 +33,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testQueryRecord() throws Exception{
-    String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
+    String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
@@ -53,6 +53,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField isShard = doc.getField("isShard_s");
     SolrInputField ids = doc.getField("ids_s");
     SolrInputField shards = doc.getField("shards_s");
+    SolrInputField purpose = doc.getField("purpose_ss");
+    Object[] purposes = purpose.getValues().toArray();
 
     assertEquals(query.getValue(), "*:*");
     assertEquals(date.getValue(), "2019-12-09T15:05:01.931");
@@ -69,6 +71,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(isShard.getValue(), "true");
     assertEquals(ids.getValue(), "false");
     assertEquals(shards.getValue(), "false");
+    assertEquals("GET_TOP_IDS", purposes[0].toString());
+    assertEquals("REFINE_FACETS", purposes[1].toString());
   }
 
   @Test
