@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Highlights search keywords in results'
+
 dependencies {
   api project(':lucene:core')
 
