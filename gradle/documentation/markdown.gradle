@@ -40,21 +40,6 @@ buildscript {
   }
 }
 
-def getListOfProjectsAsMarkdown = { prefix ->
-  def projects = allprojects.findAll{ it.path.startsWith(prefix) && it.tasks.findByName('renderSiteJavadoc')?.enabled }
-    .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
-      .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
-      .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
-      .thenComparing(Comparator.comparing{ it.path }));
-  return projects.collect{ project ->
-    def text = "**[${project.path.substring(prefix.length()).replace(':','-')}](${project.relativeDocPath}/index.html):** ${project.description}"
-    if (project.name == 'core') {
-      text = text.concat(' {style="font-size:larger; margin-bottom:.5em"}')
-    }
-    return '* ' + text;
-  }.join('\n')
-}
-
 configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   task markdownToHtml(type: Copy) {
     dependsOn copyDocumentationAssets
@@ -84,19 +69,21 @@ configure(project(':lucene')) {
     
     def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
     inputs.file(defaultCodecFile)
+    
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
 
-    binding = {
+    binding.put('defaultCodecPackage', providers.provider{
       // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
       def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
       def matcher = regex.matcher(defaultCodecFile.getText('UTF-8'))
       if (!matcher.find()) {
         throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
       }
-      return [
-        defaultCodecPackage : matcher.group(1).toLowerCase(Locale.ROOT),
-        projectList : getListOfProjectsAsMarkdown(':lucene:')
-      ]
-    }
+      return matcher.group(1).toLowerCase(Locale.ROOT)
+    })
+    
+    withProjectList()
   }
 }
 
@@ -114,11 +101,12 @@ configure(project(':solr')) {
     outputFile = file("${project.docroot}/index.html")
     templateFile = file('site/index.template.md')
     
-    binding = {
-      return [
-        projectList : getListOfProjectsAsMarkdown(':solr:')
-      ]
-    }
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrRefguideUrl', project.solrRefguideUrl)
+    inputs.property('luceneDocUrl', project.luceneDocUrl)
+    
+    withProjectList()
   }
   
   task createOnlineDocumentationIndex(type: MarkdownTemplateTask) {
@@ -126,6 +114,10 @@ configure(project(':solr')) {
   
     outputFile = file("${project.docrootOnline}/index.html")
     templateFile = file('site/online-link.template.md')
+
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrDocUrl', project.solrDocUrl)
   }
 }
 
@@ -175,14 +167,32 @@ class MarkdownTemplateTask extends DefaultTask {
   @OutputFile
   File outputFile
   
-  @Internal
-  Closure<Map> binding = {}
+  @Input
+  @Optional
+  final MapProperty<String,Object> binding = project.objects.mapProperty(String, Object)
+  
+  /** adds a property "projectList" containing all subprojects with javadocs as markdown bullet list */
+  void withProjectList() {
+    binding.put('projectList', project.providers.provider{
+      def projects = project.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
+        .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
+          .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
+          .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
+          .thenComparing(Comparator.comparing{ it.path }));
+      return projects.collect{ project ->
+        def text = "**[${project.relativeDocPath.replace('/','-')}](${project.relativeDocPath}/index.html):** ${project.description}"
+        if (project.name == 'core') {
+          text = text.concat(' {style="font-size:larger; margin-bottom:.5em"}')
+        }
+        return '* ' + text;
+      }.join('\n')
+    })
+  }
 
   @TaskAction
-  public void transform() {
+  void transform() {
     def engine = new SimpleTemplateEngine();
-    Map resolvedBinding = binding() ?: [:];
-    resolvedBinding += [
+    def resolvedBinding = binding.get() + [
       project : project
     ]
     String markdown = templateFile.withReader('UTF-8') {
