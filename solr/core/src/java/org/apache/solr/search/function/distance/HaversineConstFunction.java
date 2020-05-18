@@ -56,6 +56,7 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues latVals = latSource.getValues(context, readerContext);
     final FunctionValues lonVals = lonSource.getValues(context, readerContext);
@@ -84,6 +85,7 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     latSource.createWeight(context, searcher);
     lonSource.createWeight(context, searcher);
