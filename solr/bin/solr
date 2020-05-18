@@ -1976,8 +1976,8 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=('-DzkRun')
   fi
   
-  if [ -n "$SHARE_STORE_ENABLED" ]; then
-    CLOUD_MODE_OPTS+=("-DsharedStoreEnabled=$SHARE_STORE_ENABLED")
+  if [ -n "$SHARED_STORE_ENABLED" ]; then
+    CLOUD_MODE_OPTS+=("-DsharedStoreEnabled=$SHARED_STORE_ENABLED")
   fi
 
   # and if collection1 needs to be bootstrapped

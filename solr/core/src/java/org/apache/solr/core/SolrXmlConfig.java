@@ -97,12 +97,6 @@ public class SolrXmlConfig {
       }
       updateConfig = deprecatedUpdateConfig;
     }
-    
-    SharedStoreConfig sharedStoreConfig = null;
-    if (config.getNodeList("solr/sharedStore", false).getLength() > 0) {
-      sharedStoreConfig = loadSharedStoreConfig(readNodeListAsNamedList(config, 
-          "solr/sharedStore/*[@name]", "<sharedStore>"));
-    }
 
     NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
@@ -115,7 +109,6 @@ public class SolrXmlConfig {
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
-    configBuilder.setSharedStoreConfig(sharedStoreConfig);
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -567,18 +560,5 @@ public class SolrXmlConfig {
   private static PluginInfo getTracerPluginInfo(XmlConfigFile config) {
     Node node = config.getNode("solr/tracerConfig", false);
     return (node == null) ? null : new PluginInfo(node, "tracerConfig", false, true);
-  }
-  
-  private static SharedStoreConfig loadSharedStoreConfig(NamedList<Object> nl) {
-    if (nl == null) {
-      // shared store is not configured
-      return null;
-    } 
-    boolean enabled = Boolean.parseBoolean(
-        required("sharedStore", "sharedStoreEnabled", removeValue(nl, "sharedStoreEnabled")));
-    if (enabled) {
-      return new SharedStoreConfig();
-    }
-    return null;
   }
 }

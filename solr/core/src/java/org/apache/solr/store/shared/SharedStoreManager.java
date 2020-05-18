@@ -18,6 +18,7 @@ package org.apache.solr.store.shared;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SharedStoreConfig;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
@@ -42,8 +43,9 @@ public class SharedStoreManager {
   private CorePullTracker corePullTracker;
   private BlobCoreSyncer blobCoreSyncer;
   private SharedCoreConcurrencyController sharedCoreConcurrencyController;
+  private SharedStoreConfig config;
 
-  public SharedStoreManager(CoreContainer coreContainer) {
+  public SharedStoreManager(CoreContainer coreContainer, SharedStoreConfig config) {
     this.coreContainer = coreContainer;
     ZkController zkController = coreContainer.getZkController();
     
@@ -54,6 +56,7 @@ public class SharedStoreManager {
     sharedCoreConcurrencyController = new SharedCoreConcurrencyController();
     blobCoreSyncer = new BlobCoreSyncer();
     blobProcessUtil = new BlobProcessUtil();
+    this.config = config;
   }
   
   /**
@@ -93,6 +96,10 @@ public class SharedStoreManager {
   
   public CoreContainer getCoreContainer() {
     return coreContainer;
+  }
+  
+  public SharedStoreConfig getConfig() {
+    return config;
   }
   
   public void shutdown() {

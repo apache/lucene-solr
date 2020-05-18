@@ -739,9 +739,10 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
       
-      if (cfg.getSharedStoreConfig() != null) {
+      SharedStoreConfig sharedStoreConfig = new SharedStoreConfig();
+      if (sharedStoreConfig.isSharedStoreEnabled()) {
         log.info("Shared storage is enabled in Solr Cloud. Initiating SharedStoreManager.");
-        sharedStoreManager = new SharedStoreManager(this);
+        sharedStoreManager = new SharedStoreManager(this, sharedStoreConfig);
         sharedStoreManager.load();
       }
     }

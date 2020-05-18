@@ -87,29 +87,6 @@ public class SimpleSharedStorageCollectionTest extends SolrCloudSharedStoreTestC
   }
   
   /**
-   * Test that verifies that setting system property sharedStoreEnabled to false overrides 
-   * the sharedStore section in solr.xml assuming it is present and blob is initially enabled
-   */
-  @Test
-  public void testCreateCollectionSharedOveriddenDisabled() throws Exception {
-    System.setProperty("sharedStoreEnabled", "false");
-    setupCluster(1);
-    String collectionName = "BlobBasedCollectionName1";
-    CloudSolrClient cloudClient = cluster.getSolrClient();
-    
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 0).setSharedIndex(true).setSharedReplicas(1);
-    try {
-      create.process(cloudClient);
-      fail("Request should have failed");
-    } catch (SolrException ex) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-      assertTrue(ex.getMessage().contains("shared storage is not enabled"));
-    } catch (Exception ex) {
-      fail("Unexpected exception thrown " + ex.getMessage());
-    }
-  }
-  
-  /**
    * Test that verifies that common collection api commands that create new shards will
    * initiate the metadataSuffix node in ZooKeeper
    */
