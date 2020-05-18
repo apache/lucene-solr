@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -80,10 +81,16 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
   }
 
+  public EndPoint getEndPoint() {
+    return endPoint;
+  }
+
   public static List<Api> getApis(Object obj) {
-    Class<? extends Object> klas = obj.getClass();
+    return getApis(obj.getClass(), obj);
+  }
+  public static List<Api> getApis(Class<? extends Object> klas , Object obj) {
     if (!Modifier.isPublic(klas.getModifiers())) {
-      throw new RuntimeException(obj.getClass().getName() + " is not public");
+      throw new RuntimeException(klas.getName() + " is not public");
     }
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
@@ -100,7 +107,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
         }
       }
       if (commands.isEmpty()) {
-        throw new RuntimeException("No method with @Command in class: " + obj.getClass().getName());
+        throw new RuntimeException("No method with @Command in class: " + klas.getName());
       }
       SpecProvider specProvider = readSpec(endPoint, methods);
       return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
@@ -117,7 +124,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
         apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
       }
       if (apis.isEmpty()) {
-        throw new RuntimeException("Invalid Class : " + obj.getClass().getName() + " No @EndPoints");
+        throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
       }
       return apis;
     }

@@ -25,15 +25,13 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.util.Pair;
@@ -51,33 +49,26 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
-public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListener {
+public class CustomContainerPlugins implements ClusterPropertiesListener {
   private ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
-  //a unique path name such as POST a/b/c vs. APIs
-   private Map<String, ApiHolder> plugins = new HashMap<>();
-  private Map<String, String> pluginNameVsPath = new HashMap<>();
+
+  private Map<String, ApiInfo> currentPlugins = new HashMap();
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
     refresh();
     return false;
   }
-
-  @Override
-  public void writeMap(EntryWriter ew) {
-    plugins.forEach((s, apiHolder) -> ew.putNoEx(s, apiHolder.apiInfo));
-  }
-
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
   }
 
-  public void refresh() {
+  public synchronized void refresh() {
     Map<String, Object> pluginInfos = null;
     try {
       pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
@@ -85,119 +76,114 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       log.error("Could not read plugins data", e);
       return;
     }
-    if(pluginInfos.isEmpty()) return;
-
+    Map<String,PluginMeta> newState = new HashMap<>(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
-      PluginMeta info = null;
       try {
-        info = mapper.readValue(Utils.toJSON(e.getValue()), PluginMeta.class);
-      } catch (IOException ioException) {
-        log.error("Invalid apiInfo configuration :", ioException);
+        newState.put(e.getKey(),
+            mapper.readValue(Utils.toJSON(e.getValue()), PluginMeta.class));
+      } catch (Exception exp) {
+        log.error("Invalid apiInfo configuration :", exp);
       }
+    }
 
-      ApiInfo apiInfo = null;
-      try {
+    Map<String, PluginMeta> currentState = new HashMap<>();
+    for (Map.Entry<String, ApiInfo> e : currentPlugins.entrySet()) {
+      currentState.put(e.getKey(), e.getValue().info);
+    }
+    Map<String, Diff> diff = compareMaps(currentState, newState);
+    if (diff == null) return;//nothing has changed
+    for (Map.Entry<String, Diff> e : diff.entrySet()) {
+      if (e.getValue() == Diff.UNCHANGED) continue;
+      if (e.getValue() == Diff.REMOVED) {
+        ApiInfo apiInfo = currentPlugins.remove(e.getKey());
+        if (apiInfo == null) continue;
+        for (ApiHolder holder : apiInfo.holders) {
+          Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0], holder.api.getEndPoint().path()[0]);
+          if (old instanceof Closeable) {
+            closeWhileHandlingException((Closeable) old);
+          }
+        }
+      } else {
+        //ADDED or UPDATED
+        PluginMeta info = newState.get(e.getKey());
+        ApiInfo apiInfo = null;
         List<String> errs = new ArrayList<>();
         apiInfo = new ApiInfo(info, errs);
         if (!errs.isEmpty()) {
           log.error(StrUtils.join(errs, ','));
           continue;
         }
-      } catch (Exception ex) {
-        log.error("unable to instantiate apiInfo ", ex);
-        continue;
-      }
-
-      String path = pluginNameVsPath.get(e.getKey());
-      if (path == null) {
-        // there is a new apiInfo . let's register it
         try {
           apiInfo.init();
-          ApiHolder holder = new ApiHolder(apiInfo);
-          plugins.put(holder.key, holder);
-          pluginNameVsPath.put(apiInfo.info.name, holder.key);
-          containerApiBag.register(holder, Collections.EMPTY_MAP);
         } catch (Exception exp) {
           log.error("Cannot install apiInfo ", exp);
+          continue;
         }
-      } else {
-        ApiHolder old = plugins.get(apiInfo.key);
-        if (path.equals(apiInfo.key)) {
-          if (Objects.equals(info.version, old.apiInfo.info.version)) {
-            //this plugin uses the same version. No need to update
-            continue;
+        if (e.getValue() == Diff.ADDED) {
+          for (ApiHolder holder : apiInfo.holders) {
+            containerApiBag.register(holder, Collections.singletonMap("plugin-name", e.getKey()));
           }
-          //this apiInfo existed at the same path but uses a newer version of the package
-          //refresh the existing Api holder
-          try {
-            apiInfo.init();
-          } catch (Exception exception) {
-            log.error("Could not initialize Plugin", exception);
+          currentPlugins.put(e.getKey(), apiInfo);
+        } else {
+          ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
+          List<ApiHolder> replaced = new ArrayList<>();
+          for (ApiHolder holder : apiInfo.holders) {
+            Api oldApi = containerApiBag.lookup(holder.getPath(),
+                holder.getMethod().toString(), null);
+            if (oldApi instanceof ApiHolder) {
+              replaced.add((ApiHolder) oldApi);
+            }
+            containerApiBag.register(holder, Collections.singletonMap("plugin-name", e.getKey()));
           }
-          plugins.get(apiInfo.key).refresh(apiInfo);
-        } else {// the path is changed for the same apiInfo. it's not allowed
-          log.error("Cannot register the same apiInfo at a different path old path: " + path + "new path : " + apiInfo.key);
+          if (old != null) {
+            for (ApiHolder holder : old.holders) {
+              if (replaced.contains(holder)) continue;// this path is present in the new one as well. so it already got replaced
+              containerApiBag.unregister(holder.getMethod(), holder.getPath());
+            }
+            if (old instanceof Closeable) {
+              closeWhileHandlingException((Closeable) old);
+            }
+          }
         }
       }
-    }
-    Set<String> toBeRemoved = new HashSet<>();
-    for (String s : pluginNameVsPath.keySet()) {
-      if (!pluginInfos.containsKey(s)) {
-        toBeRemoved.add(s);
-      }
-    }
-    for (String s : toBeRemoved) {
-      String pathKey = pluginNameVsPath.remove(s);
-      ApiHolder holder = plugins.remove(pathKey);
-      if (holder != null) {
-        Api old = containerApiBag.unregister(holder.apiInfo.endPoint.method()[0], holder.apiInfo.endPoint.path()[0]);
-        if (old instanceof Closeable) {
-          closeWhileHandlingException((Closeable) old);
-        }
 
-      }
     }
   }
 
   private class ApiHolder extends Api {
-    private final String key;
-    private ApiInfo apiInfo;
+    final AnnotatedApi api;
 
-    protected ApiHolder(ApiInfo apiInfo) {
-      super(apiInfo.delegate);
-      this.apiInfo = apiInfo;
-      this.key = apiInfo.key;
+    protected ApiHolder(AnnotatedApi api) {
+      super(api);
+      this.api = api;
     }
 
     @Override
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-      apiInfo.delegate.call(req, rsp);
+      api.call(req, rsp);
     }
 
-    void refresh(ApiInfo info) {
-      this.apiInfo = info;
-      super.spec = info.delegate;
+    public String getPath(){
+      return api.getEndPoint().path()[0];
+    }
+
+    public SolrRequest.METHOD getMethod(){
+      return api.getEndPoint().method()[0];
+
     }
   }
 
-  public class ApiInfo implements ReflectMapWriter  {
-    /*This is the path at which this handler is
-     *
-     */
-    @JsonProperty
-    public String key;
+  public class ApiInfo implements ReflectMapWriter {
+    List<ApiHolder> holders;
     @JsonProperty
     private final PluginMeta info;
 
     @JsonProperty(value = "package")
     public final String pkg;
+
     private PackageLoader.Package.Version pkgVersion;
-    EndPoint endPoint;
-
     private Class klas;
-
-
-    private AnnotatedApi delegate;
+    Object instance;
 
 
     public ApiInfo(PluginMeta info, List<String> errs) {
@@ -211,7 +197,8 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
           return;
         }
         this.pkgVersion = p.getVersion(info.version);
-        if(pkgVersion == null) errs.add("No such package version:"+ pkg+":"+ info.version + " . available versions :"+ p.allVersions());
+        if (pkgVersion == null)
+          errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
         } catch (Exception e) {
@@ -233,25 +220,27 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
         return;
       }
 
-      endPoint = (EndPoint) klas.getAnnotation(EndPoint.class);
-      if (endPoint == null) {
-        errs.add("Invalid class, no @EndPoint annotation");
-        return;
+      try {
+        List apis = AnnotatedApi.getApis(klas, null);
+        for (Object api : apis) {
+          EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
+          if (endPoint.path().length > 1 || endPoint.method().length > 1) {
+            errs.add("Only one HTTP method and url supported for each API");
+          }
+          if (endPoint.method().length != 1 || endPoint.path().length != 1) {
+            errs.add("The @EndPint must have exactly one method and path attributes");
+          }
+          List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
+          if (pathSegments.size() < 2 || !ContainerPluginsApi.PLUGIN.equals(pathSegments.get(0))) {
+            errs.add("path must have a /plugin/ prefix ");
+          }
+
+        }
+      } catch (Exception e) {
+        errs.add(e.getMessage());
       }
-      if (endPoint.path().length > 1 || endPoint.method().length > 1) {
-        errs.add("Only one HTTP method and url supported for each API");
-        return;
-      }
-      if (endPoint.method().length != 1 || endPoint.path().length != 1) {
-        errs.add("The @EndPint must have exactly one method and path attributes");
-        return;
-      }
-      List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
-      if (pathSegments.size()<2 || !ContainerPluginsApi.PLUGIN.equals(pathSegments.get(0))) {
-        errs.add("path must have a /plugin/ prefix ");
-        return;
-      }
-      this.key = endPoint.method()[0].toString() + " " + endPoint.path()[0];
+      if (!errs.isEmpty()) return;
+
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length > 1 ||
           (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {
@@ -264,23 +253,54 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
       }
     }
 
-    public AnnotatedApi init() throws Exception {
-      if (delegate != null) return delegate;
-      Object instance =null;
+    public void init() throws Exception {
+      if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
-         instance =  constructor.newInstance();
+        instance = constructor.newInstance();
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
         instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
-      return delegate= (AnnotatedApi) AnnotatedApi.getApis(instance).get(0); //todo
+      this.holders = new ArrayList<>();
+      for (Api api : AnnotatedApi.getApis(instance)) {
+        holders.add(new ApiHolder((AnnotatedApi) api));
+      }
     }
   }
 
   public ApiInfo createInfo(PluginMeta info, List<String> errs) {
     return new ApiInfo(info, errs);
 
+  }
+
+  public enum Diff {
+    ADDED, REMOVED, UNCHANGED, UPDATED;
+  }
+
+  public static Map<String, Diff> compareMaps(Map<String,? extends Object> a, Map<String,? extends Object> b) {
+    if(a.isEmpty() && b.isEmpty()) return null;
+    Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
+    a.forEach((k, v) -> {
+      Object newVal = b.get(k);
+      if (newVal == null) {
+        result.put(k, Diff.REMOVED);
+        return;
+      }
+      result.put(k, Objects.equals(v, newVal) ?
+          Diff.UNCHANGED :
+          Diff.UPDATED);
+    });
+
+    b.forEach((k, v) -> {
+      if (a.get(k) == null) result.put(k, Diff.ADDED);
+    });
+
+    for (Diff value : result.values()) {
+      if (value != Diff.UNCHANGED) return result;
+    }
+
+    return null;
   }
 }

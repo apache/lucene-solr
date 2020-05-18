@@ -75,26 +75,31 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       PluginMeta plugin = new PluginMeta();
       plugin.name = "testplugin";
       plugin.klass = C2.class.getName();
+      //test with an invalid class
       V2Request req = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .withMethod(POST)
           .withPayload(singletonMap("add", plugin))
           .build();
-      expectError(req, cluster.getSolrClient(), errPath, "Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
+      expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
 
+      //test with an invalid class
       plugin.klass = C1.class.getName();
-      expectError(req, cluster.getSolrClient(), errPath, "Invalid class, no @EndPoint annotation");
+      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
 
+      //test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
       req.process(cluster.getSolrClient());
 
-      V2Response rsp = new V2Request.Builder("/cluster/plugin")
+      //just check if the plugin is indeed registered
+      V2Request readPluginState = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .withMethod(GET)
-          .build()
-          .process(cluster.getSolrClient());
+          .build();
+      V2Response rsp = readPluginState.process(cluster.getSolrClient());
       assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
 
+      //let's test the plugin
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/plugin/my/plugin")
               .forceV2(true)
@@ -102,6 +107,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/testkey", "testval"));
 
+      //now remove the plugin
       new V2Request.Builder("/cluster/plugin")
           .withMethod(POST)
           .forceV2(true)
@@ -109,12 +115,32 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
 
-      rsp = new V2Request.Builder("/cluster/plugin")
-          .forceV2(true)
-          .withMethod(GET)
-          .build()
-          .process(cluster.getSolrClient());
+      //verify it is removed
+      rsp = readPluginState.process(cluster.getSolrClient());
       assertEquals(null, rsp._get("/plugin/testplugin/class", null));
+
+      //test with a class  @EndPoint methods. This also uses a template in the path name
+      plugin.klass = C4.class.getName();
+      plugin.name = "my-random-name";
+      req.process(cluster.getSolrClient());
+
+      //let's test the plugin
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/plugin/my-random-name/my/plugin")
+              .forceV2(true)
+              .withMethod(GET)
+              .build().process(cluster.getSolrClient()),
+          ImmutableMap.of("/method.name", "m1"));
+
+  TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/plugin/my-random-name/their/plugin")
+              .forceV2(true)
+              .withMethod(GET)
+              .build().process(cluster.getSolrClient()),
+          ImmutableMap.of("/method.name", "m2"));
+
+
+
 
     } finally {
       cluster.shutdown();
@@ -138,6 +164,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
      TestPackages.postFileAndWait(cluster, "runtimecode/containerplugin.v.2.jar.bin", FILE2,
           "StR3DmqaUSL7qjDOeVEiCqE+ouiZAkW99fsL48F9oWG047o7NGgwwZ36iGgzDC3S2tPaFjRAd9Zg4UK7OZLQzg==");
 
+     // We have two versions of the plugin in 2 different jar files. they are already uploaded to the package store
       Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "mypkg";
@@ -158,6 +185,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               ":result:packages:mypkg[0]:files[0]", FILE1
           ));
 
+      // No lets create a plugin using v1 jar file
       PluginMeta plugin = new PluginMeta();
       plugin.name = "myplugin";
       plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -168,6 +196,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .withPayload(singletonMap("add", plugin))
           .build();
       req1.process(cluster.getSolrClient());
+      //verify the plugin creation
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/cluster/plugin").
               withMethod(GET)
@@ -176,6 +205,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               "/plugin/myplugin/class", plugin.klass,
               "/plugin/myplugin/version", plugin.version
           ));
+      //let's test this now
       Callable<NavigableObject> invokePlugin = () -> new V2Request.Builder("/plugin/my/path")
           .forceV2(true)
           .withMethod(GET)
@@ -184,10 +214,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           invokePlugin,
           ImmutableMap.of("/myplugin.version", "1.0"));
 
+      //now let's upload the jar file for version 2.0 of the plugin
       add.version = "2.0";
       add.files = List.of(FILE2);
       addPkgVersionReq.process(cluster.getSolrClient());
 
+      //here the plugin version is updated
       plugin.version = add.version;
       new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
@@ -196,6 +228,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .build()
       .process(cluster.getSolrClient());
 
+      //now verify if it is indeed updated
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/cluster/plugin").
               withMethod(GET)
@@ -204,6 +237,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               "/plugin/myplugin/class", plugin.klass,
               "/plugin/myplugin/version", "2.0"
           ));
+      // invoke the plugin and test thye output
       TestDistribPackageStore.assertResponseValues(10,
           invokePlugin,
           ImmutableMap.of("/myplugin.version", "2.0"));
@@ -233,6 +267,24 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     @Command
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("testkey", "testval");
+    }
+
+  }
+
+  public static class C4 {
+
+    @EndPoint(method = GET,
+        path = "/plugin/$plugin-name/my/plugin",
+        permission = PermissionNameProvider.Name.READ_PERM)
+    public void m1(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("method.name", "m1");
+    }
+
+    @EndPoint(method = GET,
+        path = "/plugin/$plugin-name/their/plugin",
+        permission = PermissionNameProvider.Name.READ_PERM)
+    public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("method.name", "m2");
     }
 
   }

@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.Objects;
+
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
@@ -29,4 +31,24 @@ public class PluginMeta implements ReflectMapWriter {
 
   @JsonProperty
   public String version;
+
+
+  public PluginMeta copy() {
+    PluginMeta result = new PluginMeta();
+    result.name = name;
+    result.klass = klass;
+    result.version = version;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof PluginMeta) {
+      PluginMeta that = (PluginMeta) obj;
+      return Objects.equals(this.name, that.name) &&
+          Objects.equals(this.klass, that.klass) &&
+          Objects.equals(this.version, that.version);
+    }
+    return false;
+  }
 }

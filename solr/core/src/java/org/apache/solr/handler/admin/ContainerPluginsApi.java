@@ -137,7 +137,7 @@ public class ContainerPluginsApi {
     }
     AnnotatedApi api = null ;
     try {
-      api =  apiInfo.init();
+      apiInfo.init();
     } catch (Exception e) {
       log.error("Error instantiating plugin ", e);
       errs.add(e.getMessage());
