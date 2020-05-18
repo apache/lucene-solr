@@ -64,7 +64,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -160,9 +159,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       propMap.put("fromApi", "true"); // mostly true.  Prevents autoCreated=true in the collection state.
-      if (properties.get(STATE_FORMAT) == null) {
-        propMap.put(STATE_FORMAT, "2");
-      }
       propMap.put(REPLICATION_FACTOR, numNrtReplicas);
       propMap.put(NRT_REPLICAS, numNrtReplicas);
       propMap.put(TLOG_REPLICAS, numTlogReplicas);

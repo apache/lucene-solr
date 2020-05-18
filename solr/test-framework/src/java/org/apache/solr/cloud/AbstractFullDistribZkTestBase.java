@@ -383,16 +383,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  protected String defaultStateFormat = String.valueOf( 1 + random().nextInt(2));
-
-  protected String getStateFormat()  {
-    String stateFormat = System.getProperty("tests.solr.stateFormat", null);
-    if (stateFormat != null)  {
-      defaultStateFormat = stateFormat;
-    }
-    return defaultStateFormat; // random
-  }
-
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
     List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
@@ -408,7 +398,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // jetty instances are started)
     assertEquals(0, CollectionAdminRequest
                  .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1) // not real rep factor!
-                 .setStateFormat(Integer.parseInt(getStateFormat()))
                  .setCreateNodeSet("") // empty node set prevents creation of cores
                  .process(cloudClient).getStatus());
     
@@ -1812,10 +1801,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
-    if ("1".equals(getStateFormat()) ) {
-      log.info("Creating collection with stateFormat=1: {}", collectionName);
-      params.set(DocCollection.STATE_FORMAT, "1");
-    }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 

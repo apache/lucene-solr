@@ -40,7 +40,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
@@ -99,13 +98,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testAsyncRequests() throws Exception {
-    boolean legacy = random().nextBoolean();
-    if (legacy) {
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
-    } else {
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
-    }
-    
     final String collection = "testAsyncOperations";
     final CloudSolrClient client = cluster.getSolrClient();
 
@@ -214,11 +206,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
-    if (!legacy) {
-      state = CollectionAdminRequest.deleteCollection(collection)
-          .processAndWait(client, MAX_TIMEOUT_SECONDS);
-      assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
-    }
+    state = CollectionAdminRequest.deleteCollection(collection)
+        .processAndWait(client, MAX_TIMEOUT_SECONDS);
+    assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }
 
   public void testAsyncIdRaceCondition() throws Exception {

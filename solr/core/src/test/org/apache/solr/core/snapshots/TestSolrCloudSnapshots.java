@@ -244,7 +244,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     CollectionAdminRequest.DeleteSnapshot deleteSnap = new CollectionAdminRequest.DeleteSnapshot(collectionName, commitName);
     deleteSnap.process(solrClient);
 
-    // Wait for a while so that the clusterstate.json updates are propagated to the client side.
+    // Wait for a while so that the cluster state updates are propagated to the client side.
     Thread.sleep(2000);
     collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
 

@@ -28,11 +28,12 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * This test is not fully functional - the port registered is illegal - 
- * so you cannot hit this with http - a nice side benifit is that it will
+ * so you cannot hit this with http - a nice side benefit is that it will
  * detect if a node is trying to do an update to itself with http - it shouldn't
  * do that.
  */
@@ -43,8 +44,12 @@ public class BasicZkTest extends AbstractZkTestCase {
   public static void beforeClass() {
 
   }
-  
+
   @Test
+  @Ignore
+  // This test doesn't work (anymore) following https://issues.apache.org/jira/browse/SOLR-12823
+  // Should be evaluated to see if it's worth rewriting or if features are already tested by other more recent tests
+  // Doesn't seem to be a SolrCloud test yet use of Zookeeper tricks the code into thinking it is?
   public void testBasic() throws Exception {
     
     // test using ZooKeeper

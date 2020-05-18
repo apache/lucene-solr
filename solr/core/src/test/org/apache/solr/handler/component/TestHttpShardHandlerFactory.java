@@ -140,7 +140,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
         "1.2.3.4:9000_",
         "1.2.3.4:9001_solr-2",
     }));
-    ClusterState cs = new ClusterState(0, liveNodes, new HashMap<>());
+    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
     WhitelistHostChecker checker = new WhitelistHostChecker(null, true);
     Set<String> hostSet = checker.generateWhitelistFromLiveNodes(cs);
     assertThat(hostSet.size(), is(3));

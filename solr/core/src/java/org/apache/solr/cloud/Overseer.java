@@ -35,7 +35,6 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -304,7 +303,7 @@ public class Overseer implements SolrCloseable {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
                 if (log.isDebugEnabled()) {
-                  log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                  log.debug("processMessage: queueSize: {}, message = {}", stateUpdateQueue.getZkStats().getQueueLength(), message);
                 }
 
                 processedNodes.add(head.first());
@@ -461,8 +460,6 @@ public class Overseer implements SolrCloseable {
           case MODIFYCOLLECTION:
             CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
             return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message));
-          case MIGRATESTATEFORMAT:
-            return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).migrateStateFormat(clusterState, message));
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());
@@ -1034,16 +1031,6 @@ public class Overseer implements SolrCloseable {
     }
   }
   
-  public static boolean isLegacy(ZkStateReader stateReader) {
-    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
-    return "true".equals(legacyProperty);
-  }
-
-  public static boolean isLegacy(ClusterStateProvider clusterStateProvider) {
-    String legacyProperty = clusterStateProvider.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
-    return "true".equals(legacyProperty);
-  }
-
   public ZkStateReader getZkStateReader() {
     return reader;
   }

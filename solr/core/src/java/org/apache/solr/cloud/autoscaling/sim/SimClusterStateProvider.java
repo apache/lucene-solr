@@ -232,7 +232,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
           DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
           String path = ZkStateReader.getCollectionPath(name);
-          coll = new DocCollection(name, slices, collProps, router, zkVersion + 1, path);
+          coll = new DocCollection(name, slices, collProps, router, zkVersion + 1);
           try {
             SimDistribStateManager stateManager = cloudManager.getSimDistribStateManager();
             byte[] data = Utils.toJSON(Collections.singletonMap(name, coll));
@@ -790,6 +790,33 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Save clusterstate.json to {@link DistribStateManager}.
+   * @return saved state
+   */
+  private ClusterState saveClusterState(ClusterState state) throws IOException {
+    ensureNotClosed();
+
+    // TODO: this method is emptied of its content in order to compile. We're not saving the cluster state that has to be saved collection per collection in separate state.json files.
+    // TODO: DO NOT CHECK THIS IN. Check with AB how to update sim to stateFormat 2
+
+//    byte[] data = Utils.toJSON(state);
+//    try {
+//      VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
+//      int version = oldData != null ? oldData.getVersion() : 0;
+//      assert clusterStateVersion == version : "local clusterStateVersion out of sync";
+//      stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
+//      log.debug("** saved cluster state version {}", version);
+//      clusterStateVersion++;
+//    } catch (Exception e) {
+//      throw new IOException(e);
+//    }
+    return state;
+  }
+
+  /**
+>>>>>>> SOLR-12823: remove /clusterstate.json
    * Delay an operation by a configured amount.
    * @param collection collection name
    * @param op operation name.
@@ -2491,7 +2518,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       lock.lockInterruptibly();
       try {
         Map<String, DocCollection> states = getCollectionStates();
-        ClusterState state = new ClusterState(0, liveNodes.get(), states);
+        ClusterState state = new ClusterState(liveNodes.get(), states);
         return state;
       } finally {
         lock.unlock();
