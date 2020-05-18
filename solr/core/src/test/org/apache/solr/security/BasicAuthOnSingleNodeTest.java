@@ -68,6 +68,22 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
     }
   }
 
+  @Test
+  public void testDeleteSecurityJsonZnode() throws Exception {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        .build()){
+      try {
+        new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
+        fail("Should throw exception due to authentication needed");
+      } catch (Exception e) { /* Ignore */ }
+
+      // Deleting security.json will disable security - before SOLR-9679 it would instead cause an exception
+      cluster.getZkClient().delete("/security.json", -1, false);
+
+      assertNotNull(new QueryRequest(params("q", "*:*")).process(client, COLLECTION));
+    }
+  }
+
   protected static final String STD_CONF = "{\n" +
       "  \"authentication\":{\n" +
       "   \"blockUnknown\": true,\n" +
