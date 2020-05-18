@@ -826,7 +826,7 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
-      customContainerPlugins.refresh(null);
+      customContainerPlugins.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);

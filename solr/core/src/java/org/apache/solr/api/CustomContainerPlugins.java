@@ -57,12 +57,13 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
 
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
-  private Map<String, ApiHolder> plugins = new HashMap<>();
+  //a unique path name such as POST a/b/c vs. APIs
+   private Map<String, ApiHolder> plugins = new HashMap<>();
   private Map<String, String> pluginNameVsPath = new HashMap<>();
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
-    refresh(null);
+    refresh();
     return false;
   }
 
@@ -76,7 +77,8 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     this.containerApiBag = apiBag;
   }
 
-  public void refresh(Map<String, Object> pluginInfos) {
+  public void refresh() {
+    Map<String, Object> pluginInfos = null;
     try {
       pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
     } catch (IOException e) {
@@ -130,7 +132,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
           try {
             apiInfo.init();
           } catch (Exception exception) {
-            log.error("COuld not inititlaize Plugin", exception);
+            log.error("Could not initialize Plugin", exception);
           }
           plugins.get(apiInfo.key).refresh(apiInfo);
         } else {// the path is changed for the same apiInfo. it's not allowed
@@ -161,7 +163,7 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
     private final String key;
     private ApiInfo apiInfo;
 
-    protected ApiHolder(ApiInfo apiInfo) throws Exception {
+    protected ApiHolder(ApiInfo apiInfo) {
       super(apiInfo.delegate);
       this.apiInfo = apiInfo;
       this.key = apiInfo.key;
@@ -264,15 +266,16 @@ public class CustomContainerPlugins implements MapWriter, ClusterPropertiesListe
 
     public AnnotatedApi init() throws Exception {
       if (delegate != null) return delegate;
+      Object instance =null;
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
-        return delegate = new AnnotatedApi(constructor.newInstance());
+         instance =  constructor.newInstance();
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
-        return delegate = new AnnotatedApi(constructor.newInstance(coreContainer));
+        instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
-
+      return delegate= (AnnotatedApi) AnnotatedApi.getApis(instance).get(0); //todo
     }
   }
 

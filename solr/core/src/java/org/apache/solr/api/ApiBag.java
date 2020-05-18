@@ -67,18 +67,24 @@ public class ApiBag {
     this.isCoreSpecific = isCoreSpecific;
   }
 
-  /** Register an Object with an annotated class using {@link EndPoint}
+  /**Register a POJO annotated with {@link EndPoint}
+   * @param o the instance to be used for invocations
    */
-  public synchronized void registerObject(Object o) {
-    AnnotatedApi api = new AnnotatedApi(o);
+  public synchronized List<Api> registerObject(Object o) {
+    List<Api> l = AnnotatedApi.getApis(o);
+    for (Api api : l) {
+      register(api, Collections.EMPTY_MAP);
+    }
+    return l;
+  }
+  public synchronized void register(Api api) {
     register(api, Collections.EMPTY_MAP);
   }
-
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
     try {
       validateAndRegister(api, nameSubstitutes);
     } catch (Exception e) {
-      log.error("Unable to register plugin:" + api.getClass().getName() + "with spec :" + Utils.toJSONString(api.getSpec()), e);
+      log.error("Unable to register plugin: {} with spec {} :", api.getClass().getName(), Utils.toJSONString(api.getSpec()), e);
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       } else {
@@ -142,7 +148,7 @@ public class ApiBag {
     registry.insert(copy, substitutes, introspect);
   }
 
-  public Api unregister(SolrRequest.METHOD method, String path) {
+  public synchronized Api unregister(SolrRequest.METHOD method, String path) {
     List<String> l = PathTrie.getPathSegments(path);
     List<String> introspectPath = new ArrayList<>(l);
     introspectPath.add("_introspect");
