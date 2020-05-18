@@ -238,10 +238,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     SegmentReader seg = null;
     for (LeafReaderContext lrc : leafContexts) {
       LeafReader leafReader = lrc.reader();
-      // unwrap
-      while (leafReader instanceof FilterLeafReader) {
-        leafReader = ((FilterLeafReader)leafReader).getDelegate();
-      }
+      leafReader = FilterLeafReader.unwrap(leafReader);
       if (leafReader instanceof SegmentReader) {
         SegmentReader sr = (SegmentReader)leafReader;
         if (sr.getSegmentInfo().info.equals(segmentCommitInfo.info)) {

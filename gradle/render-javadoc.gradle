@@ -130,8 +130,7 @@ class RenderJavadocTask extends DefaultTask {
   @OutputDirectory
   File outputDir
 
-  @InputFiles
-  @Classpath
+  @CompileClasspath
   FileCollection classpath
 
   @Input
@@ -147,10 +146,10 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${project.baseVersion.replace(".", "_")}")
+  def luceneDocUrl = "${->project.luceneDocUrl}"
 
   @Input
-  def solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${project.baseVersion.replace(".", "_")}")
+  def solrDocUrl = "${->project.solrDocUrl}"
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {

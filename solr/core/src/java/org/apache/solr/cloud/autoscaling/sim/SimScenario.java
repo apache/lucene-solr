@@ -405,8 +405,9 @@ public class SimScenario implements AutoCloseable {
         throw new IOException(SimAction.SAVE_SNAPSHOT + " must specify 'path'");
       }
       boolean redact = Boolean.parseBoolean(params.get("redact", "false"));
-      SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(scenario.cluster, null);
-      snapshotCloudManager.saveSnapshot(new File(path), true, redact);
+      try (SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(scenario.cluster, null)) {
+        snapshotCloudManager.saveSnapshot(new File(path), true, redact);
+      }
     }
   }
 
@@ -738,10 +739,10 @@ public class SimScenario implements AutoCloseable {
         }
       }
       final AutoScalingConfig.TriggerListenerConfig listenerConfig = new AutoScalingConfig.TriggerListenerConfig(name, cfgMap);
-      TriggerListener listener = new SimWaitListener(scenario.cluster.getTimeSource(), listenerConfig);
       if (scenario.context.containsKey("_sim_waitListener_" + trigger)) {
         throw new IOException("currently only one listener can be set per trigger. Trigger name: " + trigger);
       }
+      TriggerListener listener = new SimWaitListener(scenario.cluster.getTimeSource(), listenerConfig);
       scenario.context.put("_sim_waitListener_" + trigger, listener);
       scenario.cluster.getOverseerTriggerThread().getScheduledTriggers().addAdditionalListener(listener);
     }
@@ -977,6 +978,7 @@ public class SimScenario implements AutoCloseable {
         RedactionUtils.RedactionContext ctx = SimUtils.getRedactionContext(snapshotCloudManager.getClusterStateProvider().getClusterState());
         data = RedactionUtils.redactNames(ctx.getRedactions(), data);
       }
+      snapshotCloudManager.close();
       scenario.console.println(data);
     }
   }
@@ -988,6 +990,7 @@ public class SimScenario implements AutoCloseable {
    * @throws Exception on syntax errors
    */
   public static SimScenario load(String data) throws Exception {
+    @SuppressWarnings("resource")
     SimScenario scenario = new SimScenario();
     String[] lines = data.split("\\r?\\n");
     for (int i = 0; i < lines.length; i++) {
