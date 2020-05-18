@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.core.SharedStoreConfig.SharedSystemProperty;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.client.LocalStorageClient;
@@ -37,6 +38,7 @@ import org.apache.solr.store.blob.process.CorePullerFeeder;
 import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -75,6 +77,13 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
     }
   }
   
+  @AfterClass
+  public static void afterSharedStore() {
+    // clean up any properties used by shared storage tests
+    System.clearProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY);
+    System.clearProperty(SharedSystemProperty.SharedStoreEnabled.getPropertyName());
+  }
+  
   protected static void setupSharedCollectionWithShardNames(String collectionName, 
       int maxShardsPerNode, int numReplicas, String shardNames) throws Exception {
     CollectionAdminRequest.Create create = CollectionAdminRequest
@@ -96,9 +105,8 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
   protected static void setupCluster(int nodes) throws Exception {
     System.setProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, 
         blobDir.resolve(DEFAULT_BLOB_DIR_NAME).toString());
-    
+    System.setProperty(SharedSystemProperty.SharedStoreEnabled.getPropertyName(), "true");
     configureCluster(nodes)
-      .withSolrXml(TEST_PATH().resolve("solr-sharedstore.xml"))
       .addConfig("conf", configset("cloud-minimal"))
       .configure();
   }
@@ -107,6 +115,8 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
    * Spin up a {@link MiniSolrCloudCluster} with shared storage disabled
    */
   protected static void setupClusterSharedDisable(int nodes) throws Exception {
+    // make sure the feature is explicitly disabled in case programmer error results in the property remaining enabled
+    System.setProperty(SharedSystemProperty.SharedStoreEnabled.getPropertyName(), "false");
     configureCluster(nodes)
       .addConfig("conf", configset("cloud-minimal"))
       .configure();
