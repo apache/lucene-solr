@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +39,8 @@ import org.slf4j.LoggerFactory;
 
 
 public class SolrRequestInfo {
-  protected final static ThreadLocal<SolrRequestInfo> threadLocal = new ThreadLocal<>();
+
+  protected final static ThreadLocal<Stack<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(Stack::new);
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -52,35 +54,44 @@ public class SolrRequestInfo {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static SolrRequestInfo getRequestInfo() {
-    return threadLocal.get();
+    if (threadLocal.get().isEmpty()) return null;
+    return threadLocal.get().peek();
   }
 
   public static void setRequestInfo(SolrRequestInfo info) {
-    // TODO: temporary sanity check... this can be changed to just an assert in the future
-    SolrRequestInfo prev = threadLocal.get();
-    if (prev != null) {
-      log.error("Previous SolrRequestInfo was not closed!  req={}", prev.req.getOriginalParams());
-      log.error("prev == info : {}", prev.req == info.req, new RuntimeException());
+    if (info == null) {
+      throw new IllegalArgumentException("SolrRequestInfo is null");
+    } else {
+      threadLocal.get().push(info);
     }
-    assert prev == null;
-
-    threadLocal.set(info);
   }
 
   public static void clearRequestInfo() {
-    try {
-      SolrRequestInfo info = threadLocal.get();
-      if (info != null && info.closeHooks != null) {
-        for (Closeable hook : info.closeHooks) {
-          try {
-            hook.close();
-          } catch (Exception e) {
-            SolrException.log(log, "Exception during close hook", e);
-          }
+    if (threadLocal.get().isEmpty()) {
+      log.error("clearRequestInfo called too many times");
+    } else {
+      SolrRequestInfo info = threadLocal.get().pop();
+      closeHooks(info);
+    }
+  }
+
+  public static void reset() {
+    Stack<SolrRequestInfo> stack = threadLocal.get();
+    while (!stack.isEmpty()) {
+      SolrRequestInfo info = stack.pop();
+      closeHooks(info);
+    }
+  }
+
+  private static void closeHooks(SolrRequestInfo info) {
+    if (info != null && info.closeHooks != null) {
+      for (Closeable hook : info.closeHooks) {
+        try {
+          hook.close();
+        } catch (Exception e) {
+          SolrException.log(log, "Exception during close hook", e);
         }
       }
-    } finally {
-      threadLocal.remove();
     }
   }
 
@@ -188,7 +199,9 @@ public class SolrRequestInfo {
 
       @Override
       public void clean(AtomicReference ctx) {
-        SolrRequestInfo.clearRequestInfo();
+        if (ctx.get() != null) {
+          SolrRequestInfo.clearRequestInfo();
+        }
       }
     };
   }

@@ -79,6 +79,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -456,6 +457,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
+      SolrRequestInfo.reset();
     }
   }
   
