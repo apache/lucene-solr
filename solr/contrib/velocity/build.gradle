@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solr Velocity Response Writer'
+
 dependencies {
   implementation project(':solr:core')
 

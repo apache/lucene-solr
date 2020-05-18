@@ -84,6 +84,10 @@ New Features
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
+* SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -109,6 +113,8 @@ Improvements
 * SOLR-14433: Metrics: SolrShardReporter's default metrics list now includes TLOG and UPDATE./update (David Smiley)
 
 * SOLR-14423: Move static SolrClientCache from StreamHandler to CoreContainer for wider reuse and better life-cycle management. (ab)
+
+* SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
 Optimizations
 ---------------------
@@ -167,6 +173,12 @@ Bug Fixes
 
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez via Houston Putman)
+
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
+
+* SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
+  (Steve Molloy, Isabelle Giguere, David Smiley)
 
 Other Changes
 ---------------------

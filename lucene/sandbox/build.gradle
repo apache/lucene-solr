@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Various third party contributions and new ideas'
+
 dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')

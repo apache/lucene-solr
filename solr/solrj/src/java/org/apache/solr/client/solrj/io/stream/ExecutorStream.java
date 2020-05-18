@@ -187,6 +187,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       this.queue = queue;
       this.streamFactory = streamFactory;
       this.streamContext = new StreamContext();
+      this.streamContext.setObjectCache(streamContext.getObjectCache());
       this.streamContext.setSolrClientCache(streamContext.getSolrClientCache());
       this.streamContext.setModelCache(streamContext.getModelCache());
     }
