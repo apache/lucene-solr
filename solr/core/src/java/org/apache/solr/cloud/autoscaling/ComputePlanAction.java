@@ -80,7 +80,9 @@ public class ComputePlanAction extends TriggerActionBase {
 
   @Override
   public void process(TriggerEvent event, ActionContext context) throws Exception {
-    log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
+    if (log.isDebugEnabled()) {
+      log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
+    }
     SolrCloudManager cloudManager = context.getCloudManager();
     try {
       AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
@@ -133,11 +135,13 @@ public class ComputePlanAction extends TriggerActionBase {
 //              PolicyHelper.logState(cloudManager, initialSuggester);
               break;
             } else {
-              log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
+              log.info("Computed plan empty, remained {} requested ops to try.", opCount - opLimit);
               continue;
             }
           }
-          log.debug("Computed Plan: {}", operation.getParams());
+          if (log.isDebugEnabled()) {
+            log.debug("Computed Plan: {}", operation.getParams());
+          }
           if (!collections.isEmpty()) {
             String coll = operation.getParams().get(CoreAdminParams.COLLECTION);
             if (coll != null && !collections.contains(coll)) {
@@ -190,7 +194,7 @@ public class ComputePlanAction extends TriggerActionBase {
     try {
       return Integer.parseInt(String.valueOf(o));
     } catch (Exception e) {
-      log.warn("Invalid '" + AutoScalingParams.MAX_COMPUTE_OPERATIONS + "' event property: " + o + ", using default " + maxOp);
+      log.warn("Invalid '{}' event property: {}, using default {}", AutoScalingParams.MAX_COMPUTE_OPERATIONS, o, maxOp);
       return maxOp;
     }
   }

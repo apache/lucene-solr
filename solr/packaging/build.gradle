@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
 plugins {
   id 'base'
 }
+
+description = 'Solr packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
@@ -72,7 +73,7 @@ task toDir(type: Sync) {
     include "CHANGES.txt"
     include "LICENSE.txt"
     include "NOTICE.txt"
-    include "README.txt"
+    include "README.md"
   })
 
   from(project(":lucene").projectDir, {

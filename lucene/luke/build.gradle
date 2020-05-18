@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Luke - Lucene Toolbox'
+
 dependencies {
   api project(':lucene:core')
 

@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -117,7 +117,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     pluginConfig.remove(PARAM_NUM_THREADS);
     if (async) {
       queue = new ArrayBlockingQueue<>(blockingQueueSize);
-      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
+      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
       executorService.submit(this);
     }
     pluginConfig.remove("class");
@@ -180,7 +180,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       }
     } else {
       if (!queue.offer(event)) {
-        log.warn("Audit log async queue is full (size={}), not blocking since {}", blockingQueueSize, PARAM_BLOCKASYNC + "==false");
+        log.warn("Audit log async queue is full (size={}), not blocking since {}==false", blockingQueueSize, PARAM_BLOCKASYNC);
         numLost.mark();
       }
     }
@@ -225,7 +225,9 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   public boolean shouldLog(EventType eventType) {
     boolean shouldLog = eventTypes.contains(eventType.name()); 
     if (!shouldLog) {
-      log.debug("Event type {} is not configured for audit logging", eventType.name());
+      if (log.isDebugEnabled()) {
+        log.debug("Event type {} is not configured for audit logging", eventType.name());
+      }
     }
     return shouldLog;
   }
@@ -331,7 +333,9 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       int timeSlept = 0;
       while ((!queue.isEmpty() || auditsInFlight.get() > 0) && timeSlept < timeoutSeconds) {
         try {
-          log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.get());
+          if (log.isInfoEnabled()) {
+            log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.get());
+          }
           Thread.sleep(1000);
           timeSlept ++;
         } catch (InterruptedException ignored) {}

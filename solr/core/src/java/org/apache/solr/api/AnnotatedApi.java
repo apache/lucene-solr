@@ -92,6 +92,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     if (!Modifier.isPublic(klas.getModifiers())) {
       throw new RuntimeException(klas.getName() + " is not public");
     }
+
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
       List<Method> methods = new ArrayList<>();
@@ -126,6 +127,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       if (apis.isEmpty()) {
         throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
       }
+
       return apis;
     }
   }

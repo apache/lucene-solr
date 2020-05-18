@@ -256,19 +256,27 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       }
       try {
         if (lastActionExecutedAt.get() != 0)  {
-          log.info("last action at " + lastActionExecutedAt.get() + " time = " + cluster.getTimeSource().getTimeNs());
+          if (log.isInfoEnabled()) {
+            log.info("last action at {} time = {}", lastActionExecutedAt.get(), cluster.getTimeSource().getTimeNs());
+          }
           if (TimeUnit.NANOSECONDS.toMillis(cluster.getTimeSource().getTimeNs() - lastActionExecutedAt.get()) <
               TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS) - DELTA_MS) {
-            log.info("action executed again before minimum wait time from {}", event.getSource());
+            if (log.isInfoEnabled()) {
+              log.info("action executed again before minimum wait time from {}", event.getSource());
+            }
             fail("TriggerListener was fired before the throttling period");
           }
         }
         if (onlyOnce.compareAndSet(false, true)) {
-          log.info("action executed from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed from {}", event.getSource());
+          }
           lastActionExecutedAt.set(cluster.getTimeSource().getTimeNs());
           getTriggerFiredLatch().countDown();
         } else  {
-          log.info("action executed more than once from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed more than once from {}", event.getSource());
+          }
           fail("Trigger should not have fired more than once!");
         }
       } finally {

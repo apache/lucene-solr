@@ -143,7 +143,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
     }
 
-    log.info("time taken to execute {} queries is {} ms",count, timer.getTime());
+    if (log.isInfoEnabled()) {
+      log.info("time taken to execute {} queries is {} ms", count, timer.getTime());
+    }
 
   }
 
@@ -550,7 +552,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       assertTrue("Unexpected exception message: " + concurrentClient.lastError.getMessage(), 
           concurrentClient.lastError.getMessage().contains("Remote error message: Document contains multiple values for uniqueKey"));
     } else {
-      log.info("Ignoring update test for client:" + client.getClass().getName());
+      if (log.isInfoEnabled()) {
+        log.info("Ignoring update test for client: {}", client.getClass().getName());
+      }
     }
   }
   

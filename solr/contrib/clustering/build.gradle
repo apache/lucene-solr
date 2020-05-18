@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Clustering Integraton'
+
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')

@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +138,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrjNamedThreadFactory("ExecutorStream"));
+    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrNamedThreadFactory("ExecutorStream"));
     stream.open();
   }
 
@@ -187,6 +187,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       this.queue = queue;
       this.streamFactory = streamFactory;
       this.streamContext = new StreamContext();
+      this.streamContext.setObjectCache(streamContext.getObjectCache());
       this.streamContext.setSolrClientCache(streamContext.getSolrClientCache());
       this.streamContext.setModelCache(streamContext.getModelCache());
     }
@@ -214,7 +215,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
-        log.error("Executor Error: id="+id+" expr_s="+expr, e);
+        log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();

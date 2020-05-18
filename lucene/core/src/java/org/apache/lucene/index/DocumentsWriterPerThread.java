@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
@@ -86,22 +87,22 @@ final class DocumentsWriterPerThread {
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
-    Analyzer analyzer;
+    final Analyzer analyzer;
     InfoStream infoStream;
     Similarity similarity;
     int docID;
     Iterable<? extends IndexableField> doc;
 
-    DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
+    DocState(DocumentsWriterPerThread docWriter, Analyzer analyzer, InfoStream infoStream) {
       this.docWriter = docWriter;
       this.infoStream = infoStream;
+      this.analyzer = analyzer;
     }
 
     public void clear() {
       // don't hold onto doc nor analyzer, in case it is
       // largish:
       doc = null;
-      analyzer = null;
     }
   }
 
@@ -149,14 +150,13 @@ final class DocumentsWriterPerThread {
   private final static boolean INFO_VERBOSE = false;
   final Codec codec;
   final TrackingDirectoryWrapper directory;
-  final Directory directoryOrig;
   final DocState docState;
-  final DocConsumer consumer;
+  private final DocConsumer consumer;
   final Counter bytesUsed;
   
   // Updates for our still-in-RAM (to be flushed next) segment
-  final BufferedUpdates pendingUpdates;
-  final SegmentInfo segmentInfo;     // Current segment we are working on
+  private final BufferedUpdates pendingUpdates;
+  private final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
   private SetOnce<Boolean> flushPending = new SetOnce<>();
   private volatile long lastCommittedBytesUsed;
@@ -175,16 +175,18 @@ final class DocumentsWriterPerThread {
   private final boolean enableTestPoints;
   private final int indexVersionCreated;
   private final ReentrantLock lock = new ReentrantLock();
+  private int[] deleteDocIDs = new int[0];
+  private int numDeletedDocIds = 0;
 
-  public DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
+
+  DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
-    this.directoryOrig = directoryOrig;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = indexWriterConfig;
     this.infoStream = infoStream;
     this.codec = indexWriterConfig.getCodec();
-    this.docState = new DocState(this, infoStream);
+    this.docState = new DocState(this, indexWriterConfig.getAnalyzer(), infoStream);
     this.docState.similarity = indexWriterConfig.getSimilarity();
     this.pendingNumDocs = pendingNumDocs;
     bytesUsed = Counter.newCounter();
@@ -202,16 +204,16 @@ final class DocumentsWriterPerThread {
     }
     this.enableTestPoints = enableTestPoints;
     this.indexVersionCreated = indexVersionCreated;
-    // this should be the last call in the ctor 
+    // this should be the last call in the ctor
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
   }
   
-  public FieldInfos.Builder getFieldInfosBuilder() {
+  FieldInfos.Builder getFieldInfosBuilder() {
     return fieldInfos;
   }
 
-  public int getIndexCreatedVersionMajor() {
+  int getIndexCreatedVersionMajor() {
     return indexVersionCreated;
   }
 
@@ -232,11 +234,10 @@ final class DocumentsWriterPerThread {
     }
   }
 
-  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
+  long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
-      docState.analyzer = analyzer;
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + docState.docID + " seg=" + segmentInfo.name);
       }
@@ -313,9 +314,14 @@ final class DocumentsWriterPerThread {
   // we only mark these docs as deleted and turn it into a livedocs
   // during flush
   private void deleteLastDocs(int docCount) {
-    for (int docId = numDocsInRAM - docCount; docId < numDocsInRAM; docId++) {
-      pendingUpdates.addDocID(docId);
+    int from = numDocsInRAM-docCount;
+    int to = numDocsInRAM;
+    int size = deleteDocIDs.length;
+    deleteDocIDs = ArrayUtil.grow(deleteDocIDs, numDeletedDocIds + (to-from));
+    for (int docId = from; docId < to; docId++) {
+      deleteDocIDs[numDeletedDocIds++] = docId;
     }
+    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.SIZE);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -367,14 +373,16 @@ final class DocumentsWriterPerThread {
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
-    if (pendingUpdates.deleteDocIDs.size() > 0) {
+    if (numDeletedDocIds > 0) {
       flushState.liveDocs = new FixedBitSet(numDocsInRAM);
       flushState.liveDocs.set(0, numDocsInRAM);
-      for(int delDocID : pendingUpdates.deleteDocIDs) {
-        flushState.liveDocs.clear(delDocID);
+      for (int i = 0; i < numDeletedDocIds; i++) {
+        flushState.liveDocs.clear(deleteDocIDs[i]);
       }
-      flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.clearDeletedDocIds();
+      flushState.delCountOnFlush = numDeletedDocIds;
+      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.SIZE));
+      deleteDocIDs = null;
+
     }
 
     if (aborted) {
@@ -408,7 +416,7 @@ final class DocumentsWriterPerThread {
       pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
-      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L);
+      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L, StringHelper.randomId());
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
         infoStream.message("DWPT", "new segment has " + flushState.softDelCountOnFlush + " soft-deleted docs");
@@ -470,7 +478,7 @@ final class DocumentsWriterPerThread {
   
   private final Set<String> filesToDelete = new HashSet<>();
   
-  public Set<String> pendingFilesToDelete() {
+  Set<String> pendingFilesToDelete() {
     return filesToDelete;
   }
 
@@ -606,7 +614,7 @@ final class DocumentsWriterPerThread {
   public String toString() {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
       + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
-        + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
+        + numDocsInRAM + ", deleteQueue=" + deleteQueue + ", " + numDeletedDocIds + " deleted docIds" + "]";
   }
 
 

@@ -137,7 +137,7 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
             Collections.emptyMap(), // attributes
             null /* indexSort */);
         final List<SegmentCommitInfo> segments = new LinkedList<SegmentCommitInfo>();
-        segments.add(new SegmentCommitInfo(si, 0, 0, 0, 0, 0));
+        segments.add(new SegmentCommitInfo(si, 0, 0, 0, 0, 0, StringHelper.randomId()));
         ms.add(new MergePolicy.OneMerge(segments));
       }
     }

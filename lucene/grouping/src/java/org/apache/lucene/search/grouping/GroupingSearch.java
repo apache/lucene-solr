@@ -72,6 +72,14 @@ public class GroupingSearch {
   }
 
   /**
+   * Constructs a <code>GroupingSearch</code> instance that groups documents using a {@link GroupSelector}
+   * @param groupSelector a {@link GroupSelector} that defines groups for this GroupingSearch
+   */
+  public GroupingSearch(GroupSelector<?> groupSelector) {
+    this(groupSelector, null);
+  }
+
+  /**
    * Constructs a <code>GroupingSearch</code> instance that groups documents by function using a {@link ValueSource}
    * instance.
    *

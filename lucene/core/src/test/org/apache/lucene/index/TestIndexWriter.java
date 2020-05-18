@@ -44,6 +44,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -2397,7 +2399,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
-        public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+        public void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
           mergeStarted.countDown();
           try {
             closeStarted.await();
@@ -2405,7 +2407,7 @@ public class TestIndexWriter extends LuceneTestCase {
             Thread.currentThread().interrupt();
             throw new RuntimeException(ie);
           }
-          super.doMerge(writer, merge);
+          super.doMerge(mergeSource, merge);
         }
 
         @Override
@@ -2482,8 +2484,11 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(StringHelper.ID_LENGTH, id1.length);
     
     byte[] id2 = sis.info(0).info.getId();
+    byte[] sciId2 = sis.info(0).getId();
     assertNotNull(id2);
+    assertNotNull(sciId2);
     assertEquals(StringHelper.ID_LENGTH, id2.length);
+    assertEquals(StringHelper.ID_LENGTH, sciId2.length);
 
     // Make sure CheckIndex includes id output:
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -3443,12 +3448,12 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(new StringField("id", "doc-1", Field.Store.YES));
     writer.addDocument(d);
     writer.deleteDocuments(new Term("id", "doc-1"));
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.flush();
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.commit();
     assertFiles(writer);
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     IOUtils.close(writer, dir);
   }
 
@@ -3946,6 +3951,219 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       for (Thread thread : threads) {
         thread.join();
+      }
+    }
+  }
+
+  public void testMaxCompletedSequenceNumber() throws IOException, InterruptedException {
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());) {
+      assertEquals(1, writer.addDocument(new Document()));
+      assertEquals(2, writer.updateDocument(new Term("foo", "bar"), new Document()));
+      writer.flushNextBuffer();
+      assertEquals(3, writer.commit());
+      assertEquals(4, writer.addDocument(new Document()));
+      assertEquals(4, writer.getMaxCompletedSequenceNumber());
+      // commit moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(6, writer.commit());
+      assertEquals(6, writer.getMaxCompletedSequenceNumber());
+      assertEquals(7, writer.addDocument(new Document()));
+      writer.getReader().close();
+      // getReader moves seqNo by 2 since there is one DWPT that could still be in-flight
+      assertEquals(9, writer.getMaxCompletedSequenceNumber());
+    }
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+         SearcherManager manager = new SearcherManager(writer, new SearcherFactory())) {
+      CountDownLatch start = new CountDownLatch(1);
+      int numDocs = 100 + random().nextInt(500);
+      AtomicLong maxCompletedSeqID = new AtomicLong(-1);
+      Thread[] threads = new Thread[2 + random().nextInt(2)];
+      for (int i = 0; i < threads.length; i++) {
+        int idx = i;
+        threads[i] = new Thread(() -> {
+          try {
+            start.await();
+            for (int j = 0; j < numDocs; j++) {
+              Document doc = new Document();
+              String id = idx +"-"+j;
+              doc.add(new StringField("id", id, Field.Store.NO));
+              long seqNo = writer.addDocument(doc);
+              if (maxCompletedSeqID.get() < seqNo) {
+                long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+                manager.maybeRefreshBlocking();
+                maxCompletedSeqID.updateAndGet(oldVal-> Math.max(oldVal, maxCompletedSequenceNumber));
+              }
+              IndexSearcher acquire = manager.acquire();
+              try {
+                assertEquals(1, acquire.search(new TermQuery(new Term("id", id)), 10).totalHits.value);
+              } finally {
+                manager.release(acquire);
+              }
+            }
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+        });
+        threads[i].start();
+      }
+      start.countDown();
+      for (int i = 0; i < threads.length; i++) {
+        threads[i].join();
+      }
+    }
+  }
+
+  public void testEnsureMaxSeqNoIsAccurateDuringFlush() throws IOException, InterruptedException {
+    AtomicReference<CountDownLatch> waitRef = new AtomicReference<>(new CountDownLatch(0));
+    AtomicReference<CountDownLatch> arrivedRef = new AtomicReference<>(new CountDownLatch(0));
+    InfoStream stream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if ("TP".equals(component) && "DocumentsWriterPerThread addDocuments start".equals(message)) {
+          try {
+            arrivedRef.get().countDown();
+            waitRef.get().await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
+          }
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return "TP".equals(component);
+      }
+
+      @Override
+      public void close() throws IOException {
+      }
+    };
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setInfoStream(stream);
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, indexWriterConfig) {
+           @Override
+           protected boolean isEnableTestPoints() {
+             return true;
+           }
+         }) {
+      // we produce once DWPT with 1 doc
+      writer.addDocument(new Document());
+      assertEquals(1, writer.docWriter.perThreadPool.size());
+      long maxCompletedSequenceNumber = writer.getMaxCompletedSequenceNumber();
+      // safe the seqNo and use the latches to block this DWPT such that a refresh must wait for it
+      waitRef.set(new CountDownLatch(1));
+      arrivedRef.set(new CountDownLatch(1));
+      Thread waiterThread = new Thread(() -> {
+        try {
+          writer.addDocument(new Document());
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      waiterThread.start();
+      arrivedRef.get().await();
+      Thread refreshThread = new Thread(() -> {
+        try {
+          writer.getReader().close();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      });
+      DocumentsWriterDeleteQueue deleteQueue = writer.docWriter.deleteQueue;
+      refreshThread.start();
+      // now we wait until the refresh has swapped the deleted queue and assert that
+      // we see an accurate seqId
+      while (writer.docWriter.deleteQueue == deleteQueue) {
+        Thread.yield(); // busy wait for refresh to swap the queue
+      }
+      try {
+        assertEquals(maxCompletedSequenceNumber, writer.getMaxCompletedSequenceNumber());
+      } finally {
+        waitRef.get().countDown();
+        waiterThread.join();
+        refreshThread.join();
+      }
+      assertEquals(maxCompletedSequenceNumber+2, writer.getMaxCompletedSequenceNumber());
+    }
+  }
+
+  public void testSegmentCommitInfoId() throws IOException {
+    try (Directory dir = newDirectory()) {
+      SegmentInfos segmentCommitInfos;
+      try (IndexWriter writer = new IndexWriter(dir,
+          new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        Document doc = new Document();
+        doc.add(new NumericDocValuesField("num", 1));
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(doc);
+        doc = new Document();
+        doc.add(new NumericDocValuesField("num", 1));
+        doc.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(doc);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        byte[] id = segmentCommitInfos.info(0).getId();
+        byte[] segInfoId = segmentCommitInfos.info(0).info.getId();
+
+        writer.updateNumericDocValue(new Term("id", "1"), "num", 2);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(1, segmentCommitInfos.size());
+        assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+        id = segmentCommitInfos.info(0).getId();
+        writer.addDocument(new Document()); // second segment
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(2, segmentCommitInfos.size());
+        assertEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+
+        doc = new Document();
+        doc.add(new NumericDocValuesField("num", 5));
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.updateDocument(new Term("id", "1"), doc);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        assertEquals(3, segmentCommitInfos.size());
+        assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(segmentCommitInfos.info(0).getId()));
+        assertEquals(StringHelper.idToString(segInfoId), StringHelper.idToString(segmentCommitInfos.info(0).info.getId()));
+      }
+
+      try (Directory dir2 = newDirectory();
+           IndexWriter writer2 = new IndexWriter(dir2,
+               new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        writer2.addIndexes(dir);
+        writer2.commit();
+        SegmentInfos infos2 = SegmentInfos.readLatestCommit(dir2);
+        assertEquals(infos2.size(), segmentCommitInfos.size());
+        for (int i = 0; i < infos2.size(); i++) {
+          assertEquals(StringHelper.idToString(infos2.info(i).getId()), StringHelper.idToString(segmentCommitInfos.info(i).getId()));
+          assertEquals(StringHelper.idToString(infos2.info(i).info.getId()), StringHelper.idToString(segmentCommitInfos.info(i).info.getId()));
+        }
+      }
+    }
+
+    Set<String> ids = new HashSet<>();
+    for (int i = 0; i < 2; i++) {
+      try (Directory dir = newDirectory();
+           IndexWriter writer = new IndexWriter(dir,
+               new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        Document doc = new Document();
+        doc.add(new NumericDocValuesField("num", 1));
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(doc);
+        writer.commit();
+        SegmentInfos segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        String id = StringHelper.idToString(segmentCommitInfos.info(0).getId());
+        assertTrue(ids.add(id));
+        writer.updateNumericDocValue(new Term("id", "1"), "num", 2);
+        writer.commit();
+        segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
+        id = StringHelper.idToString(segmentCommitInfos.info(0).getId());
+        assertTrue(ids.add(id));
       }
     }
   }

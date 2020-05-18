@@ -69,7 +69,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -324,7 +324,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     testDone = true;
 
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (ZkController zkController : zkControllers) {
       customThreadPool.submit( () -> zkController.close());
@@ -352,7 +352,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
-    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
 
     for (Overseer overseer : overseers) {
@@ -558,7 +558,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       }
     }
-    log.warn("Timeout waiting for collections: " + Arrays.asList(collections) + " state:" + stateReader.getClusterState());
+    log.warn("Timeout waiting for collections: {} state: {}"
+        , Arrays.asList(collections), stateReader.getClusterState());
   }
 
   @Test
@@ -1163,7 +1164,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
         if (Arrays.binarySearch(interestingOps, op) < 0)
           continue;
         Stats.Stat stat = entry.getValue();
-        log.info("op: {}, success: {}, failure: {}", op, stat.success.get(), stat.errors.get());
+        if (log.isInfoEnabled()) {
+          log.info("op: {}, success: {}, failure: {}", op, stat.success.get(), stat.errors.get());
+        }
         Timer timer = stat.requestTime;
         printTimingStats(timer);
       }
@@ -1177,15 +1180,17 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private void printTimingStats(Timer timer) {
     Snapshot snapshot = timer.getSnapshot();
-    log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
-    log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate());
-    log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate());
-    log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean()));
-    log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian()));
-    log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile()));
-    log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile()));
-    log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile()));
-    log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile()));
+    if (log.isInfoEnabled()) {
+      log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
+      log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate()); // logOk
+      log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate()); // logOk
+      log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean())); // logOk
+      log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian())); // logOk
+      log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile())); // logOk
+      log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile())); // logOk
+      log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile())); // logOk
+      log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile())); // logOk
+    }
   }
 
   private static long nsToMs(double ns) {

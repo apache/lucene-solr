@@ -325,7 +325,7 @@ public class CdcrUpdateLog extends UpdateLog {
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
     if (debug) {
-      log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", existing tlogs=" + Arrays.asList(tlogFiles) + ", next id=" + id);
+      log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}", tlogDir, Arrays.asList(tlogFiles), id);
     }
 
     TransactionLog oldLog = null;

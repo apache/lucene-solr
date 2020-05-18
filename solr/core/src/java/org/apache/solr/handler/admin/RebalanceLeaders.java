@@ -137,7 +137,7 @@ class RebalanceLeaders {
     for (Slice slice : dc.getSlices()) {
       ensurePreferredIsLeader(slice);
       if (asyncRequests.size() == max) {
-        log.info("Queued " + max + " leader reassignments, waiting for some to complete.");
+        log.info("Queued {} leader reassignments, waiting for some to complete.", max);
         keepGoing = waitAsyncRequests(maxWaitSecs, false);
         if (keepGoing == false) {
           break; // If we've waited longer than specified, don't continue to wait!
@@ -150,7 +150,7 @@ class RebalanceLeaders {
     if (keepGoing == true) {
       log.info("All leader reassignments completed.");
     } else {
-      log.warn("Exceeded specified timeout of ." + maxWaitSecs + "' all leaders may not have been reassigned");
+      log.warn("Exceeded specified timeout of '{}' all leaders may not have been reassigned'", maxWaitSecs);
     }
 
     checkLeaderStatus();
@@ -276,8 +276,8 @@ class RebalanceLeaders {
   // if there's only one we can't change anything.
   private boolean electionQueueInBadState(List<String> electionNodes, Slice slice, Replica replica) {
     if (electionNodes.size() < 2) { // if there's only one node in the queue, should already be leader and we shouldn't be here anyway.
-      log.warn("Rebalancing leaders and slice {} has less than two elements in the leader " +
-          "election queue, but replica {} doesn't think it's the leader.", slice.getName(), replica.getName());
+      log.warn("Rebalancing leaders and slice {} has less than two elements in the leader election queue, but replica {} doesn't think it's the leader."
+          , slice.getName(), replica.getName());
       return true;
     }
 
@@ -464,7 +464,9 @@ class RebalanceLeaders {
       successes = new SimpleOrderedMap();
       results.add("successes", successes);
     }
-    log.info("Successfully changed leader of shard {} to replica {}", slice.getName(), replica.getName());
+    if (log.isInfoEnabled()) {
+      log.info("Successfully changed leader of shard {} to replica {}", slice.getName(), replica.getName());
+    }
     SimpleOrderedMap res = new SimpleOrderedMap();
     res.add("status", "success");
     res.add("msg", "Successfully changed leader of slice " + slice.getName() + " to " + replica.getName());
@@ -482,7 +484,9 @@ class RebalanceLeaders {
     results.add("failures", fails);
 
     for (Map.Entry<String, String> ent : pendingOps.entrySet()) {
-      log.info("Failed to change leader of shard {} to replica {}", ent.getKey(), ent.getValue());
+      if (log.isInfoEnabled()) {
+        log.info("Failed to change leader of shard {} to replica {}", ent.getKey(), ent.getValue());
+      }
       SimpleOrderedMap res = new SimpleOrderedMap();
       res.add("status", "failed");
       res.add("msg", String.format(Locale.ROOT, "Could not change leder for slice %s to %s", ent.getKey(), ent.getValue()));

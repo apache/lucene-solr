@@ -133,7 +133,7 @@ public class V2HttpCall extends HttpSolrCall {
         core = cores.getCore(origCorename);
       }
       if (core == null) {
-        log.error(">> path: '" + path + "'");
+        log.error(">> path: '{}'", path);
         if (path.endsWith(CommonParams.INTROSPECT)) {
           initAdminRequest(path);
           return;

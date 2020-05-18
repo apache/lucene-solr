@@ -38,7 +38,7 @@ With the exception of in-place updates, the whole block must be updated or delet
  * The schema must include an indexed field `\_root_`. Solr automatically populates this with the value of the top/parent ID. +
  `<field name="\_root_" type="string" indexed="true" stored="false" docValues="false" />`
  ** `\_root_` must be set either as stored (stored="true") or doc values (docValues="true") to enable
-    <<updating-parts-of-documents#updating-child-documents, atomic updates of nested documents>>.
+    <<updating-parts-of-documents#updating-child-documents, atomic updates of nested documents>>. Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
  * `\_nest_path_` is populated by Solr automatically with the path of the document in the hierarchy for non-root documents. This field is optional. +
  `<fieldType name="\_nest_path_" class="solr.NestPathField" />
   <field name="\_nest_path_" type="_nest_path_" />`
