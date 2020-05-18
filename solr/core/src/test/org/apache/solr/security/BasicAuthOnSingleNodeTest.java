@@ -19,11 +19,11 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,13 +45,13 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
+  }
 
-    JettySolrRunner jetty = cluster.getJettySolrRunner(0);
-    jetty.stop();
-    cluster.waitForJettyToStop(jetty);
-    jetty.start();
-    cluster.waitForAllNodes(30);
-    cluster.waitForActiveCollection(COLLECTION, 4, 4);
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    cluster.shutdown();
+    super.tearDown();
   }
 
   @Test
