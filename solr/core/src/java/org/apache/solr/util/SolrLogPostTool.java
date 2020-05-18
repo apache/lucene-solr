@@ -27,6 +27,8 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -100,9 +102,7 @@ public class SolrLogPostTool {
             doc.addField("file_s", fileName);
             request.add(doc);
             if (rec == 300) {
-              CLIO.out("Sending batch of 300 log records...");
-              request.process(client);
-              CLIO.out("Batch sent");
+              sendBatch(client, request, false /* normal batch */);
               request = new UpdateRequest();
               rec = 0;
             }
@@ -113,14 +113,32 @@ public class SolrLogPostTool {
       }
 
       if (rec > 0) {
-        //Process last batch
-        CLIO.out("Sending last batch ...");
-        request.process(client);
-        client.commit();
-        CLIO.out("Committed");
+        sendBatch(client, request, true /* last batch */);
       }
     } finally {
       client.close();
+    }
+  }
+
+  private static void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest) throws SolrServerException, IOException {
+    final String beginMessage = lastRequest ? "Sending last batch ..." : "Sending batch of 300 log records...";
+    CLIO.out(beginMessage);
+    try {
+      request.process(client);
+      CLIO.out("Batch sent");
+    } catch (Exception e) {
+      CLIO.err("Batch sending failed: " + e.getMessage());
+      e.printStackTrace(CLIO.getErrStream());
+    }
+
+    if (lastRequest) {
+      try {
+        client.commit();
+        CLIO.out("Committed");
+      } catch (Exception e) {
+        CLIO.err("Unable to commit documents: " + e.getMessage());
+        e.printStackTrace(CLIO.getErrStream());
+      }
     }
   }
 
