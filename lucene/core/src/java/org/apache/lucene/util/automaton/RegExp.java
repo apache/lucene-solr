@@ -524,15 +524,15 @@ public class RegExp {
     this.originalString = null;
     this.kind = kind;
     this.flags = 0;
-    this.exp1=exp1;
-    this.exp2=exp2;
+    this.exp1 = exp1;
+    this.exp2 = exp2;
     this.s = s;
     this.c = c;
-    this.min =min;
+    this.min = min;
     this.max = max;
     this.digits = digits;
     this.from = from;
-    this.to =to;
+    this.to = to;
   }
 
   // Simplified construction of container nodes
