@@ -146,10 +146,10 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = project.luceneDocUrl
+  def luceneDocUrl = "${->project.luceneDocUrl}"
 
   @Input
-  def solrDocUrl = project.solrDocUrl
+  def solrDocUrl = "${->project.solrDocUrl}"
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
