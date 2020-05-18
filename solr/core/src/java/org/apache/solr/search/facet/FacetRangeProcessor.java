@@ -31,7 +31,7 @@ import org.apache.solr.util.DateMathParser;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.solr.search.facet.FacetRequest.FacetContext.SKIP_FACET;
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   // TODO: the code paths for initial faceting, vs refinement, are very different...
@@ -66,7 +66,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    */
   Comparable actual_end = null; // null until/unless we need it
 
-  FacetRangeProcessor(FacetRequest.FacetContext fcontext, FacetRange freq) {
+  FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
     include = freq.include;
     sf = fcontext.searcher.getSchema().getField(freq.field);

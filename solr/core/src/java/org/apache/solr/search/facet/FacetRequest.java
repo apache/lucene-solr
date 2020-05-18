@@ -434,56 +434,6 @@ public abstract class FacetRequest {
   
   public abstract Map<String, Object> getFacetDescription();
 
-  static class FacetContext {
-    // Context info for actually executing a local facet command
-    public static final int IS_SHARD=0x01;
-    public static final int IS_REFINEMENT=0x02;
-    public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
-
-    FacetProcessor<?> processor;
-    Map<String,Object> facetInfo; // refinement info for this node
-    QueryContext qcontext;
-    SolrQueryRequest req;  // TODO: replace with params?
-    SolrIndexSearcher searcher;
-    Query filter;  // TODO: keep track of as a DocSet or as a Query?
-    DocSet base;
-    FacetContext parent;
-    int flags;
-    FacetDebugInfo debugInfo;
-
-    public void setDebugInfo(FacetDebugInfo debugInfo) {
-      this.debugInfo = debugInfo;
-    }
-
-    public FacetDebugInfo getDebugInfo() {
-      return debugInfo;
-    }
-
-    public boolean isShard() {
-      return (flags & IS_SHARD) != 0;
-    }
-
-    /**
-     * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
-     * @param domain The resulting set of documents for this facet.
-     */
-    public FacetContext sub(Query filter, DocSet domain) {
-      FacetContext ctx = new FacetContext();
-      ctx.parent = this;
-      ctx.base = domain;
-      ctx.filter = filter;
-
-      // carry over from parent
-      ctx.flags = flags;
-      ctx.qcontext = qcontext;
-      ctx.req = req;
-      ctx.searcher = searcher;
-
-      return ctx;
-    }
-  }
-
-
   static class FacetTopParser extends FacetParser<FacetQuery> {
     private SolrQueryRequest req;
 

@@ -39,7 +39,7 @@ import org.apache.solr.schema.SchemaField;
 public abstract class DocValuesAcc extends SlotAcc {
   SchemaField sf;
 
-  public DocValuesAcc(FacetRequest.FacetContext fcontext, SchemaField sf) throws IOException {
+  public DocValuesAcc(FacetContext fcontext, SchemaField sf) throws IOException {
     super(fcontext);
     this.sf = sf;
   }
@@ -66,7 +66,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   abstract class NumericDVAcc extends DocValuesAcc {
     NumericDocValues values;
 
-    public NumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf) throws IOException {
+    public NumericDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
       super(fcontext, sf);
     }
 
@@ -88,7 +88,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   abstract static class SortedNumericDVAcc extends DocValuesAcc {
     SortedNumericDocValues values;
 
-    public SortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf);
     }
 
@@ -108,7 +108,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     long[] result;
     long initialValue;
 
-    public LongSortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public LongSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       this.result = new long[numSlots];
       this.initialValue = initialValue;
@@ -143,7 +143,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     double[] result;
     double initialValue;
 
-    public DoubleSortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
+    public DoubleSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       this.result = new double[numSlots];
       this.initialValue = initialValue;
@@ -200,7 +200,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     int[] counts;
     double[] sum;
 
-    public SDVSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SDVSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
       this.sum = new double[numSlots];
@@ -257,7 +257,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   abstract class SortedDVAcc extends DocValuesAcc {
     SortedDocValues values;
 
-    public SortedDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf) throws IOException {
+    public SortedDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
       super(fcontext, sf);
     }
 
@@ -279,7 +279,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   abstract static class SortedSetDVAcc extends DocValuesAcc {
     SortedSetDocValues values;
 
-    public SortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf);
     }
 
@@ -299,7 +299,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     long[] result;
     long initialValue;
 
-    public LongSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public LongSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       result = new long[numSlots];
       this.initialValue = initialValue;
@@ -333,7 +333,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     double[] result;
     double initialValue;
 
-    public DoubleSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public DoubleSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       result = new double[numSlots];
       this.initialValue = initialValue;
@@ -370,7 +370,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     int[] counts;
     double[] sum;
 
-    public SDVSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SDVSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
       this.sum = new double[numSlots];

@@ -31,7 +31,7 @@ public class VarianceAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -91,7 +91,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
   class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
-    public VarianceSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -103,7 +103,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
   class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
-    public VarianceSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -115,7 +115,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
   class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
-    public VarianceUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 

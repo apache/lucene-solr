@@ -44,11 +44,11 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public abstract class SlotAcc implements Closeable {
   String key; // todo...
-  protected final FacetRequest.FacetContext fcontext;
+  protected final FacetContext fcontext;
   protected LeafReaderContext currentReaderContext;
   protected int currentDocBase;
 
-  public SlotAcc(FacetRequest.FacetContext fcontext) {
+  public SlotAcc(FacetContext fcontext) {
     this.fcontext = fcontext;
   }
 
@@ -268,7 +268,7 @@ public abstract class SlotAcc implements Closeable {
     protected final ValueSource valueSource;
     protected FunctionValues values;
 
-    public FuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public FuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(fcontext);
       this.valueSource = values;
     }
@@ -290,11 +290,11 @@ public abstract class SlotAcc implements Closeable {
     double[] result; // TODO: use DoubleArray
     double initialValue;
 
-    public DoubleFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       this(values, fcontext, numSlots, 0);
     }
 
-    public DoubleFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots, double initialValue) {
+    public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, double initialValue) {
       super(values, fcontext, numSlots);
       this.initialValue = initialValue;
       result = new double[numSlots];
@@ -328,7 +328,7 @@ public abstract class SlotAcc implements Closeable {
     long[] result;
     long initialValue;
 
-    public LongFuncSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots, long initialValue) {
+    public LongFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, long initialValue) {
       super(values, fcontext, numSlots);
       this.initialValue = initialValue;
       result = new long[numSlots];
@@ -362,7 +362,7 @@ public abstract class SlotAcc implements Closeable {
     int[] result; // use LongArray32
     int initialValue;
 
-    public IntSlotAcc(FacetRequest.FacetContext fcontext, int numSlots, int initialValue) {
+    public IntSlotAcc(FacetContext fcontext, int numSlots, int initialValue) {
       super(fcontext);
       this.initialValue = initialValue;
       result = new int[numSlots];
@@ -393,7 +393,7 @@ public abstract class SlotAcc implements Closeable {
   }
 
   static class SumSlotAcc extends DoubleFuncSlotAcc {
-    public SumSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public SumSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
     }
 
@@ -404,7 +404,7 @@ public abstract class SlotAcc implements Closeable {
   }
 
   static class SumsqSlotAcc extends DoubleFuncSlotAcc {
-    public SumsqSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public SumsqSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
     }
 
@@ -420,7 +420,7 @@ public abstract class SlotAcc implements Closeable {
   static class AvgSlotAcc extends DoubleFuncSlotAcc {
     int[] counts;
 
-    public AvgSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public AvgSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
       counts = new int[numSlots];
     }
@@ -474,7 +474,7 @@ public abstract class SlotAcc implements Closeable {
     int[] counts;
     double[] sum;
 
-    public VarianceSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public VarianceSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
       counts = new int[numSlots];
       sum = new double[numSlots];
@@ -531,7 +531,7 @@ public abstract class SlotAcc implements Closeable {
     int[] counts;
     double[] sum;
 
-    public StddevSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public StddevSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
       counts = new int[numSlots];
       sum = new double[numSlots];
@@ -586,7 +586,7 @@ public abstract class SlotAcc implements Closeable {
   }
 
   abstract static class CountSlotAcc extends SlotAcc {
-    public CountSlotAcc(FacetRequest.FacetContext fcontext) {
+    public CountSlotAcc(FacetContext fcontext) {
       super(fcontext);
     }
 
@@ -598,7 +598,7 @@ public abstract class SlotAcc implements Closeable {
   static class CountSlotArrAcc extends CountSlotAcc {
     long[] result;
 
-    public CountSlotArrAcc(FacetRequest.FacetContext fcontext, int numSlots) {
+    public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
       super(fcontext);
       result = new long[numSlots];
     }
@@ -647,7 +647,7 @@ public abstract class SlotAcc implements Closeable {
   }
 
   static class SortSlotAcc extends SlotAcc {
-    public SortSlotAcc(FacetRequest.FacetContext fcontext) {
+    public SortSlotAcc(FacetContext fcontext) {
       super(fcontext);
     }
 

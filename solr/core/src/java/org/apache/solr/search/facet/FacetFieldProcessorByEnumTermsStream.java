@@ -72,7 +72,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
   
   LeafReaderContext[] leaves;
 
-  FacetFieldProcessorByEnumTermsStream(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByEnumTermsStream(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
   }
 

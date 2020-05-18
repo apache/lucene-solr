@@ -41,7 +41,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
-import static org.apache.solr.search.facet.FacetRequest.FacetContext.SKIP_FACET;
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 /**
  * Facet processing based on field values. (not range nor by query)
@@ -69,7 +69,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   SpecialSlotAcc allBucketsAcc;  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
 
-  FacetFieldProcessor(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
     this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
@@ -690,7 +690,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   static class MultiAcc extends SlotAcc {
     final SlotAcc[] subAccs;
 
-    MultiAcc(FacetRequest.FacetContext fcontext, SlotAcc[] subAccs) {
+    MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
       super(fcontext);
       this.subAccs = subAccs;
     }
@@ -749,7 +749,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int otherAccsSlot;
     long count;
 
-    SpecialSlotAcc(FacetRequest.FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
+    SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
       super(fcontext);
       this.collectAcc = collectAcc;
       this.collectAccSlot = collectAccSlot;

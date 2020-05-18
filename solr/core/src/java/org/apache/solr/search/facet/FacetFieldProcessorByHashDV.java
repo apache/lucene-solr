@@ -189,7 +189,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
   LongCounts table;
   int allBucketsSlot = -1;
 
-  FacetFieldProcessorByHashDV(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByHashDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     if (freq.mincount == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
