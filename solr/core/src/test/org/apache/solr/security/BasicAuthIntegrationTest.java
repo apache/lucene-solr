@@ -262,8 +262,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         assertTrue(obj.containsKey("uptime"));
         assertTrue(obj.containsKey("memory"));
       } catch (Exception e) {
-        log.error("RunExampleTool failed due to: " + e +
-            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+        log.error("RunExampleTool failed due to: {}; stdout from tool prior to failure: {}"
+            , e, baos.toString(StandardCharsets.UTF_8.name())); // logOk
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));

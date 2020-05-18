@@ -56,7 +56,9 @@ public class SSLCredentialProviderFactory {
 
   public List<SSLCredentialProvider> getProviders() {
     ArrayList<SSLCredentialProvider> providers = new ArrayList<>();
-    log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    if (log.isDebugEnabled()) {
+      log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    }
     String classPrefix = "class://";
     for (String provider : providerChain.split(";")) {
       if (defaultProviders.containsKey(provider)) {

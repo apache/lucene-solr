@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -137,7 +138,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {
-          log.warn("Error reading a field : " + o, e);
+          log.warn("Error reading a field : {}", o, e);
         }
       }
       return o;
@@ -164,7 +165,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      List l = new ArrayList(3);
+      List<Object> l = new ArrayList<>(4);
       l.add((long) ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
       
@@ -173,6 +174,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         maxScore = ctx.getDocList().maxScore();
       }
       l.add(maxScore);
+      l.add(ctx.getDocList().hitCountRelation() == TotalHits.Relation.EQUAL_TO);
       codec.writeArray(l);
       
       // this is a seprate function so that streaming responses can use just that part

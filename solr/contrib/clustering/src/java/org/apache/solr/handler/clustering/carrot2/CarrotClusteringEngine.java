@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -153,15 +154,16 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Load Carrot2-Workbench exported attribute XMLs based on the 'name' attribute
     // of this component. This by-name convention lookup is used to simplify configuring algorithms.
     String componentName = initParams.get(ClusteringEngine.ENGINE_NAME);
-    log.info("Initializing Clustering Engine '" +
-        MoreObjects.firstNonNull(componentName, "<no 'name' attribute>") + "'");
+    if (log.isInfoEnabled()) {
+      log.info("Initializing Clustering Engine '{}'", MoreObjects.firstNonNull(componentName, "<no 'name' attribute>"));
+    }
 
     if (!Strings.isNullOrEmpty(componentName)) {
       IResource[] attributeXmls = resourceLookup.getAll(componentName + "-attributes.xml");
       if (attributeXmls.length > 0) {
         if (attributeXmls.length > 1) {
-          log.warn("More than one attribute file found, first one will be used: " 
-              + Arrays.toString(attributeXmls));
+          log.warn("More than one attribute file found, first one will be used: {}"
+              , Arrays.toString(attributeXmls)); // logOk
         }
 
         withContextClassLoader(core.getResourceLoader().getClassLoader(), () -> {
@@ -308,8 +310,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
           languageCodeMap.put(split[0], split[1]);
         } else {
-          log.warn("Unsupported format for " + CarrotParams.LANGUAGE_CODE_MAP
-              + ": '" + pair + "'. Skipping this mapping.");
+          log.warn("Unsupported format for {}: '{}'. Skipping this mapping."
+              , CarrotParams.LANGUAGE_CODE_MAP, pair);
         }
       }
     }
@@ -357,7 +359,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       // See comment in ClusteringComponent#finishStage().
       if (produceSummary && docIds != null) {
         docsHolder[0] = docIds.get(sdoc).intValue();
-        DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f);
+        DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f, TotalHits.Relation.EQUAL_TO);
         NamedList<Object> highlights = highlighter.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
         if (highlights != null && highlights.size() == 1) {
           // should only be one value given our setup
@@ -457,8 +459,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
           customFields.put(split[0], split[1]);
         } else {
-          log.warn("Unsupported format for " + CarrotParams.CUSTOM_FIELD_NAME
-              + ": '" + customFieldSpec + "'. Skipping this field definition.");
+          log.warn("Unsupported format for {}: '{}'. Skipping this field definition."
+              , CarrotParams.CUSTOM_FIELD_NAME, customFieldSpec);
         }
       }
     }

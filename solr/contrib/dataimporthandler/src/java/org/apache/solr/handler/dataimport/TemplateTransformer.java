@@ -76,8 +76,8 @@ public class TemplateTransformer extends Transformer {
       }
       for (String v : variables) {
         if (resolver.resolve(v) == null) {
-          log.warn("Unable to resolve variable: " + v
-                  + " while parsing expression: " + expr);
+          log.warn("Unable to resolve variable: {} while parsing expression: {}"
+              ,v , expr);
           resolvable = false;
         }
       }

@@ -106,7 +106,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(cloudManager.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }

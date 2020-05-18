@@ -1,5 +1,5 @@
 = Configuring Authentication, Authorization and Audit Logging
-:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin, rule-based-authorization-plugin, jwt-authentication-plugin
+:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin,  jwt-authentication-plugin, cert-authentication-plugin, rule-based-authorization-plugin, audit-logging
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

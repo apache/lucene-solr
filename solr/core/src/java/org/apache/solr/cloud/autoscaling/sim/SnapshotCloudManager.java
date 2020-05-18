@@ -194,7 +194,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
           ReplicaInfo info = nodeStateProvider.getReplicaInfo(
               params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
           if (info == null) {
-            log.warn("Can't find ReplicaInfo for suggested operation: " + s);
+            log.warn("Can't find ReplicaInfo for suggested operation: {}", s);
           } else {
             map.put("replica", info);
           }

@@ -114,7 +114,7 @@ public class ExecutorUtil {
    * Create a cached thread pool using a named thread factory
    */
   public static ExecutorService newMDCAwareCachedThreadPool(String name) {
-    return newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(name));
+    return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
   /**

@@ -1,0 +1,82 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Configures JAR manifest entries
+
+allprojects {
+    // Declare these inline for now. Don't know if it makes sense to declare them
+    // per-project.
+    def title;
+    def implementationTitle;
+    def legaleseDir;
+    if (project.path.startsWith(":lucene")) {
+        implementationTitle = "org.apache.lucene"
+        title = "Lucene Search Engine: ${project.name}"
+        legaleseDir = project(":lucene").projectDir
+    } else {
+        implementationTitle = "org.apache.solr"
+        title = "Apache Solr Search Server: ${project.name}"
+        legaleseDir = project(":solr").projectDir
+    }
+
+    // Apply the manifest to any JAR or WAR file created by any project,
+    // excluding those explicitly listed.
+    tasks.withType(Jar)
+            .matching { t -> !["sourcesJar", "javadocJar"].contains(t.name) }
+            .configureEach { task ->
+                // Compute git status once on the root project prior to assembling manifest.
+                dependsOn ":gitStatus"
+
+                // Because git status is a task we must defer computing this
+                // until status has been computed. We do this with a provider.
+                def implementationVersion = provider {
+                    // LUCENE-9310: gitRev should always be there but IntelliJ does something
+                    // awkward on import and resolves provider properties even though task dependencies
+                    // have not been run yet?
+                    def gitRev = rootProject.hasProperty("gitRev") ? rootProject.gitRev : ""
+                    "${project.version} ${gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
+                }
+
+                manifest {
+                    attributes([
+                            "Extension-Name"        : implementationTitle,
+
+                            "Implementation-Vendor" : "The Apache Software Foundation",
+                            "Implementation-Title"  : implementationTitle,
+                            "Implementation-Version": implementationVersion,
+
+                            "Specification-Vendor"  : "The Apache Software Foundation",
+                            "Specification-Version" : project.baseVersion,
+                            "Specification-Title"   : title,
+
+                            "X-Compile-Source-JDK"  : "${project.sourceCompatibility}",
+                            "X-Compile-Target-JDK"  : "${project.targetCompatibility}",
+
+                            "X-Build-JDK"           : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+                            "X-Build-OS"            : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+                    ])
+                }
+
+                // Copy legalese into META-INF.
+                metaInf {
+                    from(legaleseDir, {
+                      include "LICENSE.txt"
+                      include "NOTICE.txt"
+                    })
+                }
+            }
+}

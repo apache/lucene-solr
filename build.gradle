@@ -21,17 +21,41 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '2.7' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.0' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
   id "de.undercouch.download" version "4.0.2" apply false
 }
 
-// Project version and main properties. Applies to all projects.
+// Project version.
+version = "9.0.0-SNAPSHOT"
+
+// General metadata.
+description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+
+// Propagate version and derived properties across projects.
 allprojects {
-  version = "9.0.0-SNAPSHOT"
+  version = rootProject.version
 }
 
 ext {
+  // "base" version is stripped of the qualifier. Compute it.
+  baseVersion = {
+    def m = (version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
+    if (!m) {
+      throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
+    }
+    return m[0][1]
+  }()
+  // "majorVersion" is an integer with just the major version. Compute it.
+  majorVersion = {
+    def m = (version =~ /^(\d+)\.\d+\.\d+(-(.+))?/)
+    if (!m) {
+      throw GradleException("Can't strip version to just major version: " + rootProject.version)
+    }
+    return m[0][1] as int
+  }
+
+  // Build timestamp.
   def tstamp = ZonedDateTime.now()
   buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
@@ -45,6 +69,7 @@ ext {
       "javacc": "5.0",
       "jflex": "1.7.0",
       "jgit": "5.3.0.201903130848-r",
+      "flexmark": "0.61.24",
   ]
 }
 
@@ -64,18 +89,17 @@ apply from: file('gradle/ant-compat/folder-layout.gradle')
 // (java, tests)
 apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
-apply from: file('gradle/defaults-javadoc.gradle')
-apply from: file('gradle/render-javadoc.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/runtime-jvm-support.gradle')
+apply from: file('gradle/jar-manifest.gradle')
 
 // Maven publishing.
 apply from: file('gradle/maven/defaults-maven.gradle')
 
-// IDE settings and specials.
-apply from: file('gradle/defaults-idea.gradle')
+// IDE support, settings and specials.
+apply from: file('gradle/ide/intellij-idea.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
@@ -90,6 +114,7 @@ apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/missing-docs-check.gradle')
+apply from: file('gradle/validation/validate-log-calls.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
@@ -117,3 +142,8 @@ apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
 apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')
+
+apply from: file('gradle/documentation/documentation.gradle')
+apply from: file('gradle/documentation/changes-to-html.gradle')
+apply from: file('gradle/documentation/markdown.gradle')
+apply from: file('gradle/render-javadoc.gradle')

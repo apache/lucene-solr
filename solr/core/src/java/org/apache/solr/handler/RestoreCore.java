@@ -84,7 +84,7 @@ public class RestoreCore implements Callable<Boolean> {
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
           } catch (Exception e) {
-            log.warn("Could not read checksum from index file: " + filename, e);
+            log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
           IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);

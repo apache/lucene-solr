@@ -316,11 +316,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     
     String err = JSONTestUtil.match("/", actual, expected, 0.0);
     if (err != null) {
-      log.error("ERROR: mismatch facet response: " + err +
-          "\n expected =" + expected +
-          "\n response = " + actual +
-          "\n request = " + params
-      );
+      log.error("ERROR: mismatch facet response: {}\n expected ={}\n response = {}\n request = {}"
+          , err, expected, actual, params);
       fail(err);
     }
   }

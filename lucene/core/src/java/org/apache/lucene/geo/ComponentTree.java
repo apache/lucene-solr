@@ -96,27 +96,104 @@ final class ComponentTree implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double aX, double aY, double bX, double bY) {
     if (minY <= this.maxY && minX <= this.maxX) {
-      Relation relation = component.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      if(component.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+        return true;
       }
       if (left != null) {
-        relation = left.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
+        if (left.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+          return true;
         }
       }
       if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
-        relation = right.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
+        if (right.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+          return true;
         }
       }
     }
-    return Relation.CELL_OUTSIDE_QUERY;
+    return false;
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                              double aX, double aY, double bX, double bY) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinPoint is not supported for shapes with more than one component");
+    }
+    return component.withinPoint(x, y);
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                   double aX, double aY, boolean ab, double bX, double bY) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinLine is not supported for shapes with more than one component");
+    }
+    return component.withinLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY);
   }
 
   @Override

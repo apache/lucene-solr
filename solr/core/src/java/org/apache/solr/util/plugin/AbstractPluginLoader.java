@@ -155,7 +155,9 @@ public abstract class AbstractPluginLoader<T>
           }
 
           T plugin = create(loader, name, className, node);
-          log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
+          if (log.isDebugEnabled()) {
+            log.debug("created {}: {}", ((name != null) ? name : ""), plugin.getClass().getName());
+          }
           
           // Either initialize now or wait till everything has been registered
           if( preRegister ) {
@@ -231,7 +233,9 @@ public abstract class AbstractPluginLoader<T>
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
       plugin = create(loader, name, className, node);
-      log.debug("created " + name + ": " + plugin.getClass().getName());
+      if (log.isDebugEnabled()) {
+        log.debug("created {}: {}", name, plugin.getClass().getName());
+      }
 
       // Either initialize now or wait till everything has been registered
       if (preRegister) {

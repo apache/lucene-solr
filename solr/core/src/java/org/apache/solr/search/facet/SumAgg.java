@@ -34,7 +34,7 @@ public class SumAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -82,7 +82,7 @@ public class SumAgg extends SimpleAggValueSource {
 
   class SumSortedNumericAcc extends DoubleSortedNumericDVAcc {
 
-    public SumSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -97,7 +97,7 @@ public class SumAgg extends SimpleAggValueSource {
 
   class SumSortedSetAcc extends DoubleSortedSetDVAcc {
 
-    public SumSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -115,7 +115,7 @@ public class SumAgg extends SimpleAggValueSource {
 
   class SumUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
 
-    public SumUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 

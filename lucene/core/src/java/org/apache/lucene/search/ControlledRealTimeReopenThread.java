@@ -78,17 +78,19 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
   private class HandleRefresh implements ReferenceManager.RefreshListener {
     @Override
     public void beforeRefresh() {
+      // Save the gen as of when we started the reopen; the
+      // listener (HandleRefresh above) copies this to
+      // searchingGen once the reopen completes:
+      refreshStartGen = writer.getMaxCompletedSequenceNumber();
     }
 
     @Override
     public void afterRefresh(boolean didRefresh) {
-      refreshDone();
+      synchronized (ControlledRealTimeReopenThread.this) {
+        searchingGen = refreshStartGen;
+        ControlledRealTimeReopenThread.this.notifyAll();
+      }
     }
-  }
-
-  private synchronized void refreshDone() {
-    searchingGen = refreshStartGen;
-    notifyAll();
   }
 
   @Override
@@ -228,10 +230,6 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       }
 
       lastReopenStartNS = System.nanoTime();
-      // Save the gen as of when we started the reopen; the
-      // listener (HandleRefresh above) copies this to
-      // searchingGen once the reopen completes:
-      refreshStartGen = writer.getMaxCompletedSequenceNumber();
       try {
         manager.maybeRefreshBlocking();
       } catch (IOException ioe) {

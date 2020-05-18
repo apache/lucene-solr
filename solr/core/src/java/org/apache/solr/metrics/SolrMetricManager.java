@@ -702,8 +702,8 @@ public class SolrMetricManager {
     if (context != null) {
       context.registerMetricName(fullName);
     }
-    synchronized (metricRegistry) {
-      if (force && metricRegistry.getMetrics().containsKey(fullName)) {
+    synchronized (metricRegistry) { // prevent race; register() throws if metric is already present
+      if (force) { // must remove any existing one if present
         metricRegistry.remove(fullName);
       }
       metricRegistry.register(fullName, metric);
@@ -909,7 +909,7 @@ public class SolrMetricManager {
       try {
         loadReporter(registryName, loader, coreContainer, solrCore, info, tag);
       } catch (Exception e) {
-        log.warn("Error loading metrics reporter, plugin info: " + info, e);
+        log.warn("Error loading metrics reporter, plugin info: {}", info, e);
       }
     }
   }
@@ -967,10 +967,7 @@ public class SolrMetricManager {
         new Object[]{this, registry}
     );
     // prepare MDC for plugins that want to use its properties
-    MDCLoggingContext.setNode(coreContainer);
-    if (solrCore != null) {
-      MDCLoggingContext.setCore(solrCore);
-    }
+    MDCLoggingContext.setCoreDescriptor(coreContainer, solrCore == null ? null : solrCore.getCoreDescriptor());
     if (tag != null) {
       // add instance tag to MDC
       MDC.put("tag", "t:" + tag);
@@ -1011,7 +1008,7 @@ public class SolrMetricManager {
       }
       SolrMetricReporter oldReporter = perRegistry.get(name);
       if (oldReporter != null) { // close it
-        log.info("Replacing existing reporter '" + name + "' in registry '" + registry + "': " + oldReporter.toString());
+        log.info("Replacing existing reporter '{}' in registry'{}': {}", name, registry, oldReporter);
         oldReporter.close();
       }
       perRegistry.put(name, reporter);
@@ -1035,11 +1032,11 @@ public class SolrMetricManager {
     registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: " + registry);
+        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
         return false;
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
+      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return false;
     }
     try {
@@ -1057,7 +1054,7 @@ public class SolrMetricManager {
       try {
         reporter.close();
       } catch (Exception e) {
-        log.warn("Error closing metric reporter, registry=" + registry + ", name=" + name, e);
+        log.warn("Error closing metric reporter, registry={}, name={}", registry, name, e);
       }
       return true;
     } finally {
@@ -1088,14 +1085,14 @@ public class SolrMetricManager {
     registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: " + registry);
+        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
         return Collections.emptySet();
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
+      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptySet();
     }
-    log.info("Closing metric reporters for registry=" + registry + ", tag=" + tag);
+    log.info("Closing metric reporters for registry={} tag={}", registry, tag);
     try {
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {
@@ -1109,7 +1106,7 @@ public class SolrMetricManager {
           try {
             reporter.close();
           } catch (IOException ioe) {
-            log.warn("Exception closing reporter " + reporter, ioe);
+            log.warn("Exception closing reporter {}", reporter, ioe);
           }
           removed.add(name);
         });
@@ -1136,11 +1133,11 @@ public class SolrMetricManager {
     registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: " + registry);
+        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
         return Collections.emptyMap();
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
+      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptyMap();
     }
     try {
@@ -1222,7 +1219,7 @@ public class SolrMetricManager {
       try {
         loadReporter(registryName, core, info, core.getMetricTag());
       } catch (Exception e) {
-        log.warn("Could not load shard reporter, pluginInfo=" + info, e);
+        log.warn("Could not load shard reporter, pluginInfo={}", info, e);
       }
     }
   }
@@ -1244,7 +1241,7 @@ public class SolrMetricManager {
       try {
         loadReporter(registryName, cc, info);
       } catch (Exception e) {
-        log.warn("Could not load cluster reporter, pluginInfo=" + info, e);
+        log.warn("Could not load cluster reporter, pluginInfo={}", info, e);
       }
     }
   }

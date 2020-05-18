@@ -245,7 +245,7 @@ public abstract class PrimaryNode extends Node {
     // Serialize the SegmentInfos.
     ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
     try (ByteBuffersIndexOutput tmpIndexOutput = new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
-      infos.write(dir, tmpIndexOutput);
+      infos.write(tmpIndexOutput);
     }
     byte[] infosBytes = buffer.toArrayCopy();
 

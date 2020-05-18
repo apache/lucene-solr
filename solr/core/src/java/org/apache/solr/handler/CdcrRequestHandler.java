@@ -70,7 +70,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -407,7 +407,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     DocCollection docCollection = cstate.getCollectionOrNull(collection);
     Collection<Slice> shards = docCollection == null? null : docCollection.getActiveSlices();
 
-    ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("parallelCdcrExecutor"));
+    ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("parallelCdcrExecutor"));
 
     long checkpoint = Long.MAX_VALUE;
     try {

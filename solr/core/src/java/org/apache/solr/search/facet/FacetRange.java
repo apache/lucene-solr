@@ -43,7 +43,7 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.util.DateMathParser;
 
-import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+import static org.apache.solr.search.facet.FacetRequest.FacetContext.SKIP_FACET;
 
 public class FacetRange extends FacetRequestSorted {
   static final String ACTUAL_END_JSON_KEY = "_actual_end";
@@ -123,7 +123,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    */
   Comparable actual_end = null; // null until/unless we need it
 
-  FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
+  FacetRangeProcessor(FacetRequest.FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
     include = freq.include;
     sf = fcontext.searcher.getSchema().getField(freq.field);
@@ -578,7 +578,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     filters[slot] = rangeQ;
     intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
-    int num = collect(intersection, slot, slotNum -> { return new SlotContext(rangeQ); });
+    long num = collect(intersection, slot, slotNum -> { return new SlotContext(rangeQ); });
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
 
