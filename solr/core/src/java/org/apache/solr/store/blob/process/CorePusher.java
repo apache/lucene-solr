@@ -18,12 +18,12 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Locale;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
@@ -46,32 +46,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class executes synchronous pushes of core updates to blob store. See the implementation of asynchronous pulls
- * in {@link CorePullerFeeder}.
+ * This class executes synchronous pushes of core updates to the shared store.
  * 
- * Pushes will be triggered from {@link CoreUpdateTracker}, which Solr code notifies when a shard's index data has 
- * changed locally and needs to be persisted to a shared store (blob store). 
+ * Pushes will be triggered at the end of an indexing batch when a shard's index data has 
+ * changed locally and needs to be persisted to the shared store. 
  */
 public class CorePusher {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainer coreContainer;
-
-  public CorePusher(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
+  /**
+   * Pushes a core to the shared store.
+   * @param core core to be pushed
+   * @param sharedShardName identifier for the shard index data located on the shared store
+   */
+  public void pushCoreToSharedStore(SolrCore core, String sharedShardName) {
+    CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+    String collectionName = cloudDescriptor.getCollectionName();
+    String shardName = cloudDescriptor.getShardId();
+    String coreName = core.getName();
+    try {
+      log.info("Initiating push for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+      PushPullData pushPullData = new PushPullData.Builder()
+          .setCollectionName(collectionName)
+          .setShardName(shardName)
+          .setCoreName(coreName)
+          .setSharedStoreName(sharedShardName)
+          .build();
+      pushCoreToSharedStore(core, pushPullData);
+    } catch (Exception ex) {
+      // wrap every thrown exception in a solr exception
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to the shared store," +
+          " collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName, ex);
+    }
   }
 
   /**
-   * Pushes the local core updates to the Blob store and logs whether the push succeeded or failed.
+   * Pushes the local core updates to the shared store and logs whether the push succeeded or failed.
    */
-  public void pushCoreToBlob(PushPullData pushPullData) throws Exception {
-    BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider();
-    CoreStorageClient blobClient = blobProvider.getClient();
-    BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
+  private void pushCoreToSharedStore(SolrCore core, PushPullData pushPullData) throws Exception {
     try {
-      String shardName = pushPullData.getShardName();
+      CoreContainer coreContainer = core.getCoreContainer();
       String collectionName = pushPullData.getCollectionName();
+      String shardName = pushPullData.getShardName();
       String coreName = pushPullData.getCoreName();
       SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
       ReentrantLock corePushLock = concurrencyController.getCorePushLock(collectionName, shardName, coreName);
@@ -94,10 +111,6 @@ public class CorePusher {
       corePushLock.lock();
       try {
         long lockAcquisitionTime = BlobStoreUtils.getCurrentTimeMs() - startTimeMs;
-        SolrCore core = coreContainer.getCore(coreName);
-        if (core == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
-        }
         try {
           concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_STARTED);
 
@@ -112,7 +125,7 @@ public class CorePusher {
             // This can happen if another indexing batch comes in and acquires the push lock first and ends up pushing segments 
             // produced by this indexing batch.
             // This optimization saves us from creating somewhat expensive ServerSideMetadata.
-            // Note1! At this point we might not be the leader and shared store might have already received pushes from
+            // Note1! At this point we might not be the leader and the shared store might have already received pushes from
             //        new leader. It is still ok to declare success since our indexing batch was correctly pushed earlier
             //        by another thread before the new leader could have pushed its batches.
             // Note2! It is important to note that we are piggybacking on cached BlobCoreMetadata's generation number here.
@@ -121,15 +134,13 @@ public class CorePusher {
             //        successful pull. But that is not necessary since local core will be on blobCoreMetadata's generation
             //        number after pull and on push blobCoreMetadata get generation number from local core.
             //        The reason it is important to call it out here is that BlobCoreMetadata' generation also gets
-            //        persisted to shared store which is not the requirement for this optimization.
-            log.info(String.format(Locale.ROOT,
-                "Nothing to push, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
+            //        persisted to the shared store which is not the requirement for this optimization.
+            log.info("Nothing to push, pushLockTime=" + lockAcquisitionTime + " pushPullData=" + pushPullData.toString());
             return;
           }
 
-          log.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
-          // Resolve the differences (if any) between the local shard index data and shard index data on shared store
-          // Reserving the commit point so it can be saved while pushing files to Blob store.
+          // Resolve the differences (if any) between the local shard index data and shard index data on the shared store
+          // Reserving the commit point so it can be saved while pushing files to the shared store.
           // We don't need to compute a directory hash for the push scenario as we only need it to verify local 
           // index changes during pull
           ServerSideMetadata localCoreMetadata = new ServerSideMetadata(coreName, coreContainer, 
@@ -138,12 +149,14 @@ public class CorePusher {
               localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
 
           if (resolutionResult.getFilesToPush().isEmpty()) {
-            log.warn(String.format(Locale.ROOT,
-                "Why there is nothing to push even when there is a newer commit point since last push," +
-                " pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
+            log.warn("Why there is nothing to push even when there is a newer commit point since last push," +
+                " pushLockTime=" + lockAcquisitionTime + " pushPullData=" + pushPullData.toString());
             return;
           }
 
+          BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider();
+          CoreStorageClient blobClient = blobProvider.getClient();
+          BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
           String newMetadataSuffix = BlobStoreUtils.generateMetadataSuffix();
           // begin the push process 
           CorePushPull pushPull = new CorePushPull(blobClient, deleteManager, pushPullData, resolutionResult, localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
@@ -153,7 +166,7 @@ public class CorePusher {
           SharedShardMetadataController shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
           SharedShardVersionMetadata newShardVersionMetadata = null;
           try {
-            newShardVersionMetadata = shardSharedMetadataController.updateMetadataValueWithVersion(pushPullData.getCollectionName(), pushPullData.getShardName(),
+            newShardVersionMetadata = shardSharedMetadataController.updateMetadataValueWithVersion(collectionName, shardName,
                 newMetadataSuffix, coreVersionMetadata.getVersion());
           } catch (Exception ex) {
             boolean isVersionMismatch = false;
@@ -167,7 +180,7 @@ public class CorePusher {
             }
             if (isVersionMismatch) {
               // conditional update of zookeeper failed, take away soft guarantee of equality.
-              // That will make sure before processing next indexing batch, we sync with zookeeper and pull from shared store.
+              // That will make sure before processing next indexing batch, we sync with zookeeper and pull from the shared store.
               concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, false);
             }
             throw ex;
@@ -176,34 +189,27 @@ public class CorePusher {
 
           assert newMetadataSuffix.equals(newShardVersionMetadata.getMetadataSuffix());
           // after successful update to zookeeper, update core version metadata with new version info
-          // and we can also give soft guarantee that core is up to date w.r.to shared store, until unless failures happen and leadership changes 
+          // and we can also give soft guarantee that core is up to date w.r.to the shared store, until unless failures happen and leadership changes 
           concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, newShardVersionMetadata, blobCoreMetadata, /* softGuaranteeOfEquality */ true);
           concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_CACHE_UPDATE_FINISHED);
-          log.info(String.format(Locale.ROOT,
-              "Successfully pushed to shared store, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
+          log.info("Successfully pushed to the shared store," +
+              " pushLockTime=" + lockAcquisitionTime + " pushPullData=" + pushPullData.toString());
         } finally {
             concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_FINISHED);
-            core.close();
         }
       } finally {
         corePushLock.unlock();
       }
       // TODO - make error handling a little nicer?
     } catch (InterruptedException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher was interrupted while pushing to blob store", e);
-    } catch (IndexNotFoundException infe) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher failed because the core " + pushPullData.getCoreName() +
-          " for the shard " + pushPullData.getShardName() + " was not found", infe);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher was interrupted while pushing to the shared store", e);
     } catch (SolrException e) {
       Throwable t = e.getCause();
       if (t instanceof BadVersionException) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher failed to push because the node "
-            + "version doesn't match.", t);
+            + "version doesn't match, requestedVersion=" + ((BadVersionException) t).getRequested(), t);
       }
       throw e;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher failed to push shard index for "
-          + pushPullData.getShardName() + " due to unexpected exception", e);
     }
   }
 }

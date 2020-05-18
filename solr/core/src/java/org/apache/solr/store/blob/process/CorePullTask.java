@@ -215,6 +215,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
     }
 
+    // TODO: Consider using CorePuller here. It will require some refactoring in both the places.
     SharedCoreConcurrencyController concurrencyController = storeManager.getSharedCoreConcurrencyController();
     CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
     // Auxiliary information related to pull outcome. It can be metadata resolver message which can be null or exception detail in case of failure 

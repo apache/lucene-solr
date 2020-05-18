@@ -37,7 +37,7 @@ import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.process.CorePullerFeeder;
 import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
-import org.junit.After;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -70,8 +70,8 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
     blobDir = createTempDir("tempDir");
   }
   
-  @After
-  public void cleanupBlobDirectory() throws Exception {
+  @AfterClass
+  public static void cleanupBlobDirectory() throws Exception {
     if (blobDir != null) {
       FileUtils.cleanDirectory(blobDir.toFile());
     }

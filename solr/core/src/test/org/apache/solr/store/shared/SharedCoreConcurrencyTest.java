@@ -595,7 +595,7 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
       public void recordState(String collectionName, String shardName, String coreName, SharedCoreStage stage) {
         super.recordState(collectionName, shardName, coreName, stage);
         ConcurrentLinkedQueue<String> coreConcurrencyStages = coreConcurrencyStagesMap.computeIfAbsent(coreName, k -> new ConcurrentLinkedQueue<>());
-        coreConcurrencyStages.add(Thread.currentThread().getId() + "." + stage.name());
+        coreConcurrencyStages.add(Thread.currentThread().getName() + "." + stage.name());
       }
     };
     setupTestSharedConcurrencyControllerForNode(concurrencyController, solrProcess);

@@ -26,12 +26,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -61,13 +59,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.store.blob.process.CoreUpdateTracker;
-import org.apache.solr.store.blob.util.BlobStoreUtils;
-import org.apache.solr.store.shared.SharedCoreConcurrencyController;
-import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
-import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
-import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
-import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
+import org.apache.solr.store.shared.SharedCoreIndexingBatchProcessor;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -92,8 +84,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private Set<String> skippedCoreNodeNames;
   private final String collection;
   private boolean readOnlyCollection = false;
-  private CoreUpdateTracker sharedCoreTracker;
-  private ReentrantReadWriteLock corePullLock;
 
   // The cached immutable clusterState for the update... usually refreshed for each individual update.
   // Different parts of this class used to request current clusterState views, which lead to subtle bugs and race conditions
@@ -114,16 +104,34 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private RollupRequestReplicationTracker rollupReplicationTracker;
   private LeaderRequestReplicationTracker leaderReplicationTracker;
 
+  /**
+   * TODO: This class is not an ideal place to run start and end of an indexing batch logic. We are not sure if an other
+   *       processor in the chain before this would also need to pull from shared store. Therefore we might want to
+   *       find a better place earlier in the call stack. The challenge would be to do it efficiently i.e. we might not 
+   *       know before this processor if a batch contains any documents that are meant for this replica. But sacrificing 
+   *       that efficiency for a more correct place might be fair trade off. 
+   * For {@link Replica.Type#SHARED} replica, it is necessary that we pull from the shared store at the start of
+   * an indexing batch (if the core is stale). And we push to the shared store at the end of a successfully committed
+   * indexing batch (we ensure that each batch has a hard commit). Details can be found in 
+   * {@link org.apache.solr.store.shared.SharedCoreConcurrencyController}.
+   * In other words, we would like to call {@link SharedCoreIndexingBatchProcessor#startIndexingBatch()} at the start of
+   * an indexing batch and {@link SharedCoreIndexingBatchProcessor#finishIndexingBatch()} at the end of a successfully
+   * committed indexing batch.
+   * For that, we rely on first {@link #processAdd(AddUpdateCommand)} or {@link #processDelete(DeleteUpdateCommand)}
+   * that is going to index the doc locally to identify the start of an indexing batch and 
+   * end of {@link #processCommit(CommitUpdateCommand)} to identify the end of a successfully committed indexing batch.
+   * Most of the logic is contained inside {@link SharedCoreIndexingBatchProcessor}. The only expectation from this class
+   * is to call {@link SharedCoreIndexingBatchProcessor#addOrDeleteGoingToBeIndexedLocally()} and 
+   * {@link SharedCoreIndexingBatchProcessor#hardCommitCompletedLocally()} appropriately.
+   * This logic is built upon the assumption/understanding that all the documents of an indexing batch are processed by 
+   * single instance of this class and that instance is consumed by a single thread. 
+   */
+  private SharedCoreIndexingBatchProcessor sharedCoreIndexingBatchProcessor;
+  
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    this(req,rsp,next, new CoreUpdateTracker(req.getCore().getCoreContainer()));
-  }
-
-  @VisibleForTesting
-  protected DistributedZkUpdateProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, UpdateRequestProcessor next, CoreUpdateTracker sharedCoreTracker) {
     super(req, rsp, next);
     CoreContainer cc = req.getCore().getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
@@ -138,12 +146,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       readOnlyCollection = coll.isReadOnly();
       if (coll.getSharedIndex() && replicaType != Replica.Type.SHARED) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            String.format(Locale.ROOT, "Collections backed by shared store can only have replicas of type SHARED, " +
-                    "collection=%s, shard=%s core=%s replicaType=%s", 
-                collection, cloudDesc.getShardId(), req.getCore().getName(), replicaType.name()));
+            "Collections backed by shared store can only have replicas of type SHARED," +
+                " collection=" + collection + ", shard=" + cloudDesc.getShardId() +
+                " core=" + req.getCore().getName() + " replicaType=" + replicaType.name());
       }
     }
-    this.sharedCoreTracker = sharedCoreTracker;
   }
 
   private boolean isReadOnly() {
@@ -184,6 +191,35 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     updateCommand = cmd;
 
+    // 1. SHARED replica has a hard requirement of processing each indexing batch with a hard commit(either explicit or
+    // implicit, HttpSolrCall#addCommitIfAbsent) because that is how, at the end of an indexing batch, synchronous push
+    // to shared store gets hold of the segment files on local disk. SHARED replica also does not support the notion of soft commit.
+    // Therefore unlike NRT replica type we do not need to broadcast commit to the leaders of all the shards of a collection.
+    // 
+    // This means we won't support a client explicitly sending commit=true to a replica of a shard and having it route to
+    // the leader for SHARED replicas or clients sending commit=true for the purpose of refreshing all of the searchers 
+    // in their collection. Former is not needed because isolated commit is a no-op for SHARED replica and later is not supported 
+    // because SHARED replica has a different plan around opening of searchers https://issues.apache.org/jira/browse/SOLR-14339
+    //
+    // 2. <code>isLeader</code> is computed fresh each time an AddUpdateCommand/DeleteUpdateCommand belonging to the indexing
+    // batch is processed. And finally it is recomputed in this method. It is possible that at the beginning of a batch
+    // this replica was a leader and did process some AddUpdateCommand/DeleteUpdateCommand. But before reaching this 
+    // method lost the leadership. In that case we will still like to process the commit otherwise the indexing batch can
+    // succeed without pushing the changes to the shared store (data loss). Therefore, we are not restricting the 
+    // following logic to leaders only. SharedCoreIndexingBatchProcessor already handles the case where it will
+    // skip the push to the shared store if there was no AddUpdateCommand/DeleteUpdateCommand processed by it.
+    //
+    // Conclusion: For SHARED replica we only need to handle a hard commit locally and then push changed core to 
+    //             the shared store.
+    if (Replica.Type.SHARED.equals(replicaType)) {
+      if (!cmd.softCommit) {
+        // TODO: when implementing SOLR-14339 (SHARED replica's freshness) consider how can we set cmd.openSearcher=false 
+        doLocalCommit(cmd);
+        getSharedCoreIndexingBatchProcessor().hardCommitCompletedLocally();
+      }
+      return;
+    }
+
     List<SolrCmdDistributor.Node> nodes = null;
     Replica leaderReplica = null;
     zkCheck();
@@ -195,12 +231,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
-    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT, Replica.Type.SHARED), true);
+    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
     if (nodes == null) {
       // This could happen if there are only pull replicas
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + ", " + Replica.Type.NRT
-            + " or " + Replica.Type.SHARED);
+          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
     }
 
     nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
@@ -211,13 +246,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else if (replicaType == Replica.Type.NRT) {
         doLocalCommit(cmd);
-      } else if (replicaType == Replica.Type.SHARED) {
-        // If a replica is Replica.Type.SHARED then all are for the shard. These do not forward, data flows though shared storage.
-        // We really want to know if this happens, as it most likely means something went wrong elsewhere.
-        String message = "Unexpected indexing forwarding from leader to replicas for type " + Replica.Type.SHARED
-            + " collection " + collection + " leader " + leaderReplica.getCoreUrl() + " on " + leaderReplica.getNodeName();
-        log.error(message); // Remove if exception below ends up being logged.
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     } else {
       // zk
@@ -275,9 +303,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
-    // Update the local cores if needed.
-    if (replicaType.equals(Replica.Type.SHARED)) {
-      readFromSharedStoreIfNecessary();
+
+    // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
+    if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
+      getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
     }
 
     super.processAdd(cmd);
@@ -347,11 +377,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
-    // Update the local cores if needed.
-    if (replicaType.equals(Replica.Type.SHARED)) {
-      readFromSharedStoreIfNecessary();
-    }
-
     super.processDelete(cmd);
   }
 
@@ -362,6 +387,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
+
+    // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
+    if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
+      getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
+    }
 
     super.doDeleteById(cmd);
   }
@@ -497,6 +528,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
+
+    // this should be called after setupRequest(UpdateCommand) and before the doc is indexed locally
+    // because it needs to know whether current replica is leader or subShardLeader for the doc or not
+    if (isSharedCoreAddOrDeleteGoingToBeIndexedLocally()) {
+      getSharedCoreIndexingBatchProcessor().addOrDeleteGoingToBeIndexedLocally();
+    }
+
     super.doDeleteByQuery(cmd, replicas, coll);
   }
 
@@ -1065,17 +1103,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doClose() {
-    if (corePullLock != null) {
-      try {
-        SharedCoreConcurrencyController concurrencyController =
-            req.getCore().getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
-        concurrencyController.recordState(cloudDesc.getCollectionName(), cloudDesc.getShardId(), req.getCore().getName(),
-            SharedCoreStage.INDEXING_BATCH_FINISHED);
-      } catch (Exception ex) {
-        SolrException.log(log, "Error recording the finish of SHARED core indexing batch", ex);
-      }
-      // release read lock
-      corePullLock.readLock().unlock();
+    if (sharedCoreIndexingBatchProcessor != null) {
+      sharedCoreIndexingBatchProcessor.close();
     }
     if (cmdDistrib != null) {
       cmdDistrib.close();
@@ -1103,129 +1132,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super.processRollback(cmd);
   }
 
-
-  // TODO: Refactor most of shared replica logic out into a separate class.
-  private void writeToSharedStore() {
-    String collectionName = cloudDesc.getCollectionName();
-    String shardName = cloudDesc.getShardId();
-    String coreName = req.getCore().getName();
-    SharedCoreConcurrencyController concurrencyController = req.getCore().getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
-    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_INDEXING_FINISHED);
-
-    log.info("Attempting to initiate index update write to shared store for collection=" + collectionName +
-        " and shard=" + shardName + " using core=" + coreName);
-
-    sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(),
-        collectionName,
-        shardName,
-        coreName);
-  }
-
-  private void readFromSharedStoreIfNecessary() {
-    String collectionName = cloudDesc.getCollectionName();
-    String shardName = cloudDesc.getShardId();
-    String coreName = req.getCore().getName();
-    assert Replica.Type.SHARED.equals(replicaType);
-    // Peers and subShardLeaders should only forward the update request to leader replica,
-    // hence not need to sync with the blob store at this point.
-    if (!isLeader || isSubShardLeader) {
-      return;
-    }
-
-    // this lock acquire/release logic is built on the assumption that one particular instance of this processor
-    // will solely be consumed by a single thread. And all the documents of indexing batch will be processed by this one instance. 
-    // Following pull logic should only run once before the first document of indexing batch(add/delete) is processed by this processor
-    if (corePullLock != null) {
-      // we already have a lock i.e. we have already read from the shared store (if needed)
-      return;
-    }
-
-    CoreContainer coreContainer = req.getCore().getCoreContainer();
-    SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
-    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.INDEXING_BATCH_RECEIVED);
-    corePullLock = concurrencyController.getCorePullLock(collectionName, shardName, coreName);
-    // from this point on wards we should always exit this method with read lock (no matter failure or what)
-    try {
-      SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-      /**
-       * we only need to sync if there is no soft guarantee of being in sync.
-       * if there is one we will rely on that, and if we turned out to be wrong indexing will fail at push time
-       * and will remove this guarantee in {@link CorePusher#pushCoreToBlob(PushPullData)}
-       */
-      if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-        SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
-        SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
-        if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
-          acquireWriteLockAndPull(collectionName, shardName, coreName, coreContainer);
-        }
-      }
-    } finally {
-      // acquire lock for the whole duration of update
-      // we should always leave with read lock acquired(failure or success), since it is the job of close method to release it
-      corePullLock.readLock().lock();
-      concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_INDEXING_STARTED);
-    }
-  }
-
-  private void acquireWriteLockAndPull(String collectionName, String shardName, String coreName, CoreContainer coreContainer) {
-    // There is a likelihood that many indexing requests came at once and realized we are out of sync.
-    // They all would try to acquire write lock. One of them makes progress to pull from shared store.
-    // After that regular indexing will see soft guarantee of equality and moves straight to indexing
-    // under read lock. Now it is possible that new indexing keeps coming in and read lock is never free.
-    // In that case the poor guys that came in earlier and wanted to pull will still be struggling(starving) to
-    // acquire write lock. Since we know that write lock is only needed by one to do the work, we will
-    // try time boxed acquisition and in case of failed acquisition we will see if some one else has already completed the pull.
-    // We will make few attempts before we bail out. Ideally bail out scenario should never happen.
-    // If it does then either we are too slow in pulling and can tune following parameters or something else is wrong.
-    int attempt = 1;
-    while (true) {
-      SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
-      try {
-        // try acquiring write lock
-        if (corePullLock.writeLock().tryLock(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK, TimeUnit.SECONDS)) {
-          try {
-            // while acquiring write lock things might have updated, should reestablish if pull is still needed
-            SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-            if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-              SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
-              SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
-              if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
-                BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, coreName, shardName, coreContainer, shardVersionMetadata, /* isLeaderSyncing */true);
-              }
-            }
-          } finally {
-            corePullLock.writeLock().unlock();
-          }
-          // write lock acquisition was successful and we are in sync with shared store
-          break;
-        } else {
-          // we could not acquire write lock but see if some other thread has already done the pulling
-          SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-          if (coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-            log.info(String.format(Locale.ROOT, "Indexing thread waited to acquire to write lock and could not. " +
-                    "But someone else has done the pulling so we are good. attempt=%s collection=%s shard=%s core=%s",
-                attempt, collectionName, shardName, coreName));
-            break;
-          }
-          // no one else has pulled yet either, lets make another attempt ourselves
-          attempt++;
-          if (attempt > SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, String.format(Locale.ROOT, 
-                    "Indexing thread failed to acquire write lock for pull in %s seconds. " +
-                    "And no one else either has done the pull during that time. collection=%s shard=%s core=%s",
-                Integer.toString(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK * SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK),
-                collectionName, shardName, coreName));
-          }
-        }
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, String.format(Locale.ROOT,
-            "Indexing thread interrupted while trying to acquire pull write lock." +
-            " collection=%s shard=%s core=%s", collectionName, shardName, coreName), ie);
-      }
-    }
-  }
-
   // TODO: optionally fail if n replicas are not reached...
   protected void doDistribFinish() {
     clusterState = zkController.getClusterState();
@@ -1238,50 +1144,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
     }
-
-    /**
-     *  Track the updated core for push to Blob store.
-     *
-     *  Only, the leader node pushes the updates to blob store but the leader can be change mid update,
-     *  so we don't stop peers from pushing updates to the blob store.
-     *
-     *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.
-     */
-    if (updateCommand != null &&
-        updateCommand.getClass() == CommitUpdateCommand.class &&
-        isLeader && replicaType.equals(Replica.Type.SHARED)
-        && !((CommitUpdateCommand) updateCommand).softCommit) {
-      if (corePullLock == null) {
-        // Since corePullLock is null, this update request has no document to add or delete i.e. it is an isolated commit.
-        // Few ways isolated commit can manifest:
-        // 1. Client does indexing for while before issuing a separate commit.
-        // 2. SolrJ client issuing a separate follow up commit command to affected shards than actual indexing request
-        //    even when SolrJ client's caller issued a single update command with commit=true.
-        // Shared replica has a hard requirement of processing each indexing batch with a hard commit(either explicit or
-        // implicit) because that is how, at the end of an indexing batch, synchronous push to shared store gets hold
-        // of the segment files on local disk.
-        // Therefore, isolated commits are meaningless for SHARED replicas and we can ignore writing to shared store. 
-        // If we ever need an isolated commit to write to shared store for some scenario, we should first understand if a 
-        // pull from shared store was done or not(why not) and push should happen under corePullLock.readLock()
-        log.info("Isolated commit encountered for a SHARED replica, ignoring writing to shared store. collection="
-            + cloudDesc.getCollectionName() + " shard=" + cloudDesc.getShardId() + " core=" + req.getCore().getName());
-      } else {
-        /*
-         * TODO SPLITSHARD triggers soft commits.
-         * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
-         * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
-         * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
-         * in the future (deeper in the stack)
-         */
-        writeToSharedStore();
-      }
-    }
-
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
     cmdDistrib.finish();
-
     List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 
@@ -1464,5 +1330,31 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
+  }
+
+  private boolean isSharedCoreAddOrDeleteGoingToBeIndexedLocally() {
+    // forwardToLeader: if true, then the update is going to be forwarded to its rightful leader.
+    //                  The doc being added or deleted might not even belong to the current core's (req.getCore()) shard.
+    // isLeader: if true, then the current core (req.getCore()) is the leader of the shard to which the doc being added or deleted belongs to.
+    //           For SHARED replicas only leader replicas do local indexing. Follower SHARED replicas do not do any local 
+    //           indexing and their only job is to forward the add/delete updates to the leader replica.
+    // isSubShardLeader: if true, then the current core (req.getCore()) is the leader of a sub shard being built.
+    //                   Sub shard leaders only buffer the updates locally and apply them towards the end of a successful
+    //                   split before the sub shard is declared active. It is at that point the sub shard is pushed to
+    //                   the shared store (org.apache.solr.handler.admin.RequestApplyUpdatesOp).
+    // Therefore, only the leader replicas of the SHARED active shards will process docs locally and thus need to pull/push
+    // from the shared store during indexing.
+    return Replica.Type.SHARED.equals(replicaType) && !forwardToLeader && isLeader && !isSubShardLeader;
+  }
+
+  @VisibleForTesting
+  public SharedCoreIndexingBatchProcessor getSharedCoreIndexingBatchProcessor() {
+    assert Replica.Type.SHARED.equals(replicaType);
+    
+    if(sharedCoreIndexingBatchProcessor == null) {
+      sharedCoreIndexingBatchProcessor = new SharedCoreIndexingBatchProcessor(req.getCore(), clusterState);
+    }
+
+    return sharedCoreIndexingBatchProcessor;
   }
 }

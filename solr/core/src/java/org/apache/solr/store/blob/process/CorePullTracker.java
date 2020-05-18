@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracks cores that are being queried and if necessary enqueues them for pull from blob store
+ * Tracks cores that are being queried and if necessary enqueues them for pull from the shared store
  */
 public class CorePullTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -78,29 +78,34 @@ public class CorePullTracker {
     String shardName = core.getCoreDescriptor().getCloudDescriptor().getShardId();
     DocCollection collection = cores.getZkController().getClusterState().getCollection(collectionName);
     Slice shard = collection.getSlicesMap().get(shardName);
-    if (shard != null) {
-      try {
-        if (!collection.getActiveSlices().contains(shard)) {
-          // unclear if there are side effects but logging for now
-          log.warn("Enqueueing a pull for shard " + shardName + " that is inactive!");
-        }
-        log.info("Enqueue a pull for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+    if (shard == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Pull request received for an unknown shard," +
+          " collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+    }
 
-        String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
-
-        PushPullData pushPullData = new PushPullData.Builder()
-            .setCollectionName(collectionName)
-            .setShardName(shardName)
-            .setCoreName(coreName)
-            .setSharedStoreName(sharedShardName)
-            .build();
-
-        enqueueForPullIfNecessary(requestPath, pushPullData);
-
-      } catch (Exception ex) {
-        // wrap every thrown exception in a solr exception
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
+    try {
+      if (!Slice.State.ACTIVE.equals(shard.getState())) {
+        // unclear what this means, but logging a warning for now
+        log.info("Enqueuing a pull for a non-active shard, collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+      } else {
+        log.info("Enqueuing a pull for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
       }
+
+      String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
+
+      PushPullData pushPullData = new PushPullData.Builder()
+          .setCollectionName(collectionName)
+          .setShardName(shardName)
+          .setCoreName(coreName)
+          .setSharedStoreName(sharedShardName)
+          .build();
+
+      enqueueForPullIfNecessary(requestPath, pushPullData);
+
+    } catch (Exception ex) {
+      // wrap every thrown exception in a solr exception
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error enqueueing a pull from the shared store," +
+          " collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName, ex);
     }
   }
 
@@ -120,7 +125,7 @@ public class CorePullTracker {
   /**
    * Enqueues a core for pull
    * 
-   * @param pushPullData pull request data required to interact with blob store
+   * @param pushPullData pull request data required to interact with the shared store
    * @param createCoreIfAbsent whether to create core before pulling if absent
    * @param waitForSearcher whether to wait for newly pulled contents be reflected through searcher 
    */
