@@ -28,22 +28,17 @@ configure(rootProject) {
 }
 configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
 
-  project.afterEvaluate {
-    task checkBrokenLinks(type: CheckBrokenLinksTask) {
-      docsDir = project.docroot
-      dependsOn 'documentation'
-    }
+  task checkBrokenLinks(type: CheckBrokenLinksTask, 'dependsOn': 'documentation')
 
-    // TODO: uncomment this line after fixing all broken links.
-    // (we can't fix the cross-project links until ant build is disabled.)
-    // check.dependsOn checkBrokenLinks
-  }
-
+  // TODO: uncomment this line after fixing all broken links.
+  // (we can't fix the cross-project links until ant build is disabled.)
+  // check.dependsOn checkBrokenLinks
 }
 
 class CheckBrokenLinksTask extends DefaultTask {
+
   @Input
-  File docsDir
+  Provider<File> docsDir = project.providers.provider { project.docroot }
 
   @TaskAction
   def check() {
@@ -58,7 +53,7 @@ class CheckBrokenLinksTask extends DefaultTask {
         args = [
           "-B",
           project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py").absolutePath,
-          docsDir.absolutePath
+          docsDir.get().absolutePath
         ]
       }
     }
