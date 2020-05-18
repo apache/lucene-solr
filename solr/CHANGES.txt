@@ -63,6 +63,9 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
+* SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
+  (David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
