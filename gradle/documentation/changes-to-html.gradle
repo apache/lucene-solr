@@ -32,7 +32,7 @@ class ChangesToHtmlTask extends DefaultTask {
   File siteDir = project.rootProject.file("lucene/site/changes")
 
   @OutputDirectory
-  File targetDir = project.file("${project.docroot}/changes")
+  Provider<File> targetDir = project.providers.provider { project.file("${project.docroot}/changes") }
 
   @Input
   def luceneDocUrl = "${->project.luceneDocUrl}"
@@ -52,7 +52,7 @@ class ChangesToHtmlTask extends DefaultTask {
     def result = project.exec {
       executable "perl"
       standardInput changesFile.newInputStream()
-      standardOutput project.file("${targetDir}/Changes.html").newOutputStream()
+      standardOutput project.file("${targetDir.get()}/Changes.html").newOutputStream()
       errorOutput = output
       ignoreExitValue = true
 
