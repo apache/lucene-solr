@@ -135,6 +135,9 @@ Optimizations
   value of matching documents in the response (numFound) will be an approximation.
   (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
 
+* SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
+  (David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
