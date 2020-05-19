@@ -37,8 +37,11 @@ configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
 
 class CheckBrokenLinksTask extends DefaultTask {
 
+  // wraps input directory location in DirectoryProperty so as to lazily evaluate 'docroot' property
+  // (see gradle/documentation/documentation.gradle)
   @InputDirectory
-  final Provider<File> docsDir = project.providers.provider { project.docroot }
+  final DirectoryProperty docsDir = project.objects.directoryProperty()
+    .fileProvider(project.providers.provider { project.docroot })
 
   @InputFile
   File script = project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py")
@@ -56,7 +59,7 @@ class CheckBrokenLinksTask extends DefaultTask {
         args = [
           "-B",
           script.absolutePath,
-          docsDir.get().absolutePath
+          docsDir.get().getAsFile()
         ]
       }
     }
