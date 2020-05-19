@@ -71,6 +71,9 @@ Other Changes
   If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
   `solr.in.sh`/`solr.in.cmd` at start. (marcussorealheis)
 
+* SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
+  instead it creates individual per-collection /state.json files (format 2). (ab)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
