@@ -235,7 +235,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
-        //create the replica in clusterstate (i.e. ZK) prior to creating the core.
+        // create the replica in the collection's state.json in ZK prior to creating the core.
         // Otherwise the core creation fails
         ZkNodeProps props = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),

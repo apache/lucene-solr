@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -507,8 +508,8 @@ public class ZkController implements Closeable {
 
       final byte[] data = zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null, true);
 
-      if (data.length < 5) {
-        // less than 5 chars is empty (it's likely just "{}"). This log will only occur once.
+      if (Arrays.equals("{}".getBytes(StandardCharsets.UTF_8), data)) {
+        // Empty json. This log will only occur once.
         log.warn("{} no longer supported starting with Solr 9. Found empty file on Zookeeper, deleting it.", ZkStateReader.UNSUPPORTED_CLUSTER_STATE);
         zkClient.delete(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, -1, true);
       } else {
@@ -522,6 +523,7 @@ public class ZkController implements Closeable {
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE, message);
       }
     } catch (KeeperException e) {
+      // Convert checked exception to one acceptable by the caller (see also init() further down)
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
