@@ -37,10 +37,10 @@ configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
 
 class CheckBrokenLinksTask extends DefaultTask {
 
-  @Input
+  @InputDirectory
   Provider<File> docsDir = project.providers.provider { project.docroot }
 
-  @Input
+  @InputFile
   File script = project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py")
 
   @TaskAction
