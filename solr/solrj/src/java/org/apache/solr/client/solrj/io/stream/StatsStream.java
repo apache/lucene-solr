@@ -303,7 +303,6 @@ public class StatsStream extends TupleStream implements Expressible  {
         ++metricCount;
       }
     }
-    //buf.append("}");
   }
 
   private void getTuples(NamedList response,
@@ -311,7 +310,6 @@ public class StatsStream extends TupleStream implements Expressible  {
 
     this.tuple = new Tuple(new HashMap());
     NamedList facets = (NamedList)response.get("facets");
-    System.out.println("###### Facets:"+facets);
     fillTuple(tuple, facets, metrics);
   }
 
