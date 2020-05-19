@@ -315,8 +315,43 @@ import java.util.Set;
  */
 public class RegExp {
   
-  enum Kind {
-    REGEXP_UNION, REGEXP_CONCATENATION, REGEXP_INTERSECTION, REGEXP_OPTIONAL, REGEXP_REPEAT, REGEXP_REPEAT_MIN, REGEXP_REPEAT_MINMAX, REGEXP_COMPLEMENT, REGEXP_CHAR, REGEXP_CHAR_RANGE, REGEXP_ANYCHAR, REGEXP_EMPTY, REGEXP_STRING, REGEXP_ANYSTRING, REGEXP_AUTOMATON, REGEXP_INTERVAL
+  /**
+   * The type of expression represented by a RegExp node.
+   */
+  public enum Kind {
+    /** The union of two expressions */
+    REGEXP_UNION, 
+    /** A sequence of two expressions */
+    REGEXP_CONCATENATION,
+    /** The intersection of two expressions */
+    REGEXP_INTERSECTION,
+    /** An optional expression */
+    REGEXP_OPTIONAL,
+    /** An expression that repeats */
+    REGEXP_REPEAT,
+    /** An expression that repeats a minimum number of times*/
+    REGEXP_REPEAT_MIN,
+    /** An expression that repeats a minimum and maximum number of times*/
+    REGEXP_REPEAT_MINMAX,
+    /** The complement of an expression */
+    REGEXP_COMPLEMENT,
+    /** A Character */
+    REGEXP_CHAR,
+    /** A Character range*/
+    REGEXP_CHAR_RANGE,
+    /** Any Character allowed*/
+    REGEXP_ANYCHAR,
+    /** An empty expression*/
+    REGEXP_EMPTY,
+    /** A string expression*/
+    REGEXP_STRING,
+    /** Any string allowed */
+    REGEXP_ANYSTRING,
+    /** An Automaton expression*/
+    REGEXP_AUTOMATON,
+    /** An Interval expression */
+    REGEXP_INTERVAL,
+    /** An expression for a pre-defined class e.g. \w */
   }
   
   /**
@@ -360,21 +395,37 @@ public class RegExp {
    */
   public static final int NONE = 0x0000;
 
+  //Immutable parsed state
+  /**
+   * The type of expression
+   */
+  public final Kind kind;
+  /**
+   * Child expressions held by a container type expression
+   */
+  public final RegExp exp1, exp2;
+  /**
+   * String expression
+   */
+  public final String s;
+  /**
+   *  Character expression
+   */
+  public final int c;
+  /**
+   * Limits for repeatable type expressions
+   */
+  public final int min, max, digits;
+  /**
+   * Extents for range type expressions
+   */
+  public final int from, to;
+
+  // Parser variables
   private final String originalString;
-  Kind kind;
-  RegExp exp1, exp2;
-  String s;
-  int c;
-  int min, max, digits;
-  int from, to;
-  
   int flags;
   int pos;
-  
-  RegExp() {
-    this.originalString = null;
-  }
-  
+    
   /**
    * Constructs new <code>RegExp</code> from a string. Same as
    * <code>RegExp(s, ALL)</code>.
@@ -417,6 +468,37 @@ public class RegExp {
     from = e.from;
     to = e.to;
   }
+  
+  RegExp(Kind kind, RegExp exp1, RegExp exp2, String s, int c, int min, int max, int digits, int from, int to){    
+    this.originalString = null;
+    this.kind = kind;
+    this.flags = 0;
+    this.exp1 = exp1;
+    this.exp2 = exp2;
+    this.s = s;
+    this.c = c;
+    this.min = min;
+    this.max = max;
+    this.digits = digits;
+    this.from = from;
+    this.to = to;
+  }
+
+  // Simplified construction of container nodes
+  static RegExp newContainerNode(Kind kind, RegExp exp1, RegExp exp2) {
+    return new RegExp(kind, exp1, exp2, null, 0, 0, 0, 0, 0, 0);
+  }
+
+  // Simplified construction of repeating nodes
+  static RegExp newRepeatingNode(Kind kind, RegExp exp,  int min, int max) {
+    return new RegExp(kind, exp, null, null, 0, min, max, 0, 0, 0);
+  }  
+  
+  
+  // Simplified construction of leaf nodes
+  static RegExp newLeafNode(Kind kind, String s, int c, int min, int max, int digits, int from, int to) {
+    return new RegExp(kind, null, null, s, c, min, max, digits, from, to);
+  }  
 
   /**
    * Constructs new <code>Automaton</code> from this <code>RegExp</code>. Same
@@ -854,34 +936,29 @@ public class RegExp {
   }
   
   static RegExp makeUnion(RegExp exp1, RegExp exp2) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_UNION;
-    r.exp1 = exp1;
-    r.exp2 = exp2;
-    return r;
+    return newContainerNode(Kind.REGEXP_UNION, exp1, exp2);
   }
   
   static RegExp makeConcatenation(RegExp exp1, RegExp exp2) {
     if ((exp1.kind == Kind.REGEXP_CHAR || exp1.kind == Kind.REGEXP_STRING)
         && (exp2.kind == Kind.REGEXP_CHAR || exp2.kind == Kind.REGEXP_STRING)) return makeString(
         exp1, exp2);
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_CONCATENATION;
+    RegExp rexp1, rexp2;
     if (exp1.kind == Kind.REGEXP_CONCATENATION
         && (exp1.exp2.kind == Kind.REGEXP_CHAR || exp1.exp2.kind == Kind.REGEXP_STRING)
         && (exp2.kind == Kind.REGEXP_CHAR || exp2.kind == Kind.REGEXP_STRING)) {
-      r.exp1 = exp1.exp1;
-      r.exp2 = makeString(exp1.exp2, exp2);
+      rexp1 = exp1.exp1;
+      rexp2 = makeString(exp1.exp2, exp2);
     } else if ((exp1.kind == Kind.REGEXP_CHAR || exp1.kind == Kind.REGEXP_STRING)
         && exp2.kind == Kind.REGEXP_CONCATENATION
         && (exp2.exp1.kind == Kind.REGEXP_CHAR || exp2.exp1.kind == Kind.REGEXP_STRING)) {
-      r.exp1 = makeString(exp1, exp2.exp1);
-      r.exp2 = exp2.exp2;
+      rexp1 = makeString(exp1, exp2.exp1);
+      rexp2 = exp2.exp2;
     } else {
-      r.exp1 = exp1;
-      r.exp2 = exp2;
+      rexp1 = exp1;
+      rexp2 = exp2;
     }
-    return r;
+    return newContainerNode(Kind.REGEXP_CONCATENATION, rexp1, rexp2);
   }
   
   static private RegExp makeString(RegExp exp1, RegExp exp2) {
@@ -894,107 +971,61 @@ public class RegExp {
   }
   
   static RegExp makeIntersection(RegExp exp1, RegExp exp2) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_INTERSECTION;
-    r.exp1 = exp1;
-    r.exp2 = exp2;
-    return r;
+    return newContainerNode(Kind.REGEXP_INTERSECTION, exp1, exp2);
   }
   
   static RegExp makeOptional(RegExp exp) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_OPTIONAL;
-    r.exp1 = exp;
-    return r;
+    return newContainerNode(Kind.REGEXP_OPTIONAL, exp, null);
   }
   
   static RegExp makeRepeat(RegExp exp) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_REPEAT;
-    r.exp1 = exp;
-    return r;
+    return newContainerNode(Kind.REGEXP_REPEAT, exp, null);
   }
   
   static RegExp makeRepeat(RegExp exp, int min) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_REPEAT_MIN;
-    r.exp1 = exp;
-    r.min = min;
-    return r;
+    return newRepeatingNode(Kind.REGEXP_REPEAT_MIN, exp, min, 0);
   }
   
   static RegExp makeRepeat(RegExp exp, int min, int max) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_REPEAT_MINMAX;
-    r.exp1 = exp;
-    r.min = min;
-    r.max = max;
-    return r;
+    return newRepeatingNode(Kind.REGEXP_REPEAT_MINMAX, exp, min, max);
   }
   
   static RegExp makeComplement(RegExp exp) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_COMPLEMENT;
-    r.exp1 = exp;
-    return r;
+    return newContainerNode(Kind.REGEXP_COMPLEMENT, exp, null);
   }
   
   static RegExp makeChar(int c) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_CHAR;
-    r.c = c;
-    return r;
+    return newLeafNode(Kind.REGEXP_CHAR, null, c, 0, 0, 0, 0, 0);
   }
   
   static RegExp makeCharRange(int from, int to) {
     if (from > to) 
       throw new IllegalArgumentException("invalid range: from (" + from + ") cannot be > to (" + to + ")");
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_CHAR_RANGE;
-    r.from = from;
-    r.to = to;
-    return r;
+    return newLeafNode(Kind.REGEXP_CHAR_RANGE, null, 0, 0, 0, 0, from, to);
   }
   
   static RegExp makeAnyChar() {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_ANYCHAR;
-    return r;
+    return newContainerNode(Kind.REGEXP_ANYCHAR, null, null);
   }
   
   static RegExp makeEmpty() {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_EMPTY;
-    return r;
+    return newContainerNode(Kind.REGEXP_EMPTY, null, null);
   }
   
   static RegExp makeString(String s) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_STRING;
-    r.s = s;
-    return r;
+    return newLeafNode(Kind.REGEXP_STRING, s, 0, 0, 0, 0, 0, 0);
   }
   
   static RegExp makeAnyString() {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_ANYSTRING;
-    return r;
+    return newContainerNode(Kind.REGEXP_ANYSTRING, null, null);
   }
   
   static RegExp makeAutomaton(String s) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_AUTOMATON;
-    r.s = s;
-    return r;
+    return newLeafNode(Kind.REGEXP_AUTOMATON, s, 0, 0, 0, 0, 0, 0);
   }
   
   static RegExp makeInterval(int min, int max, int digits) {
-    RegExp r = new RegExp();
-    r.kind = Kind.REGEXP_INTERVAL;
-    r.min = min;
-    r.max = max;
-    r.digits = digits;
-    return r;
+  return newLeafNode(Kind.REGEXP_INTERVAL, null, 0, min, max, digits, 0, 0);
   }
   
   private boolean peek(String s) {
