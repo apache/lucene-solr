@@ -77,7 +77,7 @@ public interface CollectionParams {
    * <p>Some of these actions are also used over the cluster state update queue at <code>/overseer/queue</code> and have a
    * different (though related) meaning there. These actions are:
    * {@link #CREATE}, {@link #DELETE}, {@link #CREATESHARD}, {@link #DELETESHARD}, {@link #ADDREPLICA}, {@link #ADDREPLICAPROP},
-   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE}, {@link #MODIFYCOLLECTION} and {@link #MIGRATESTATEFORMAT}.</p>
+   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE} and {@link #MODIFYCOLLECTION}.</p>
    */
   enum CollectionAction {
     CREATE(true, LockLevel.COLLECTION),
