@@ -335,7 +335,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   // *must* be called with runners monitor held, e.g. synchronized(runners){ addRunner() }
   private void addRunner() {
-    MDC.put("ConcurrentUpdateHttp2SolrClient.url", client.getBaseURL());
+    MDC.put("ConcurrentUpdateHttp2SolrClient.url", String.valueOf(client.getBaseURL())); // MDC can't have null value
     try {
       Runner r = new Runner();
       runners.add(r);
