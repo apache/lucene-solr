@@ -388,7 +388,7 @@ public class PolicyHelper {
   }
 
   /**
-   * This class stores sessions for sharing purposes. If a process requirees a session to
+   * This class stores sessions for sharing purposes. If a process requires a session to
    * compute operations:
    * <ol>
    * <li>see if there is an available non expired session in the cache,</li>
@@ -427,8 +427,8 @@ public class PolicyHelper {
       if (!present) {
         log.warn("released session {} not found in session set", sessionWrapper.getCreateTime());
       } else {
-        if (log.isDebugEnabled()) {
           TimeSource timeSource = sessionWrapper.session.cloudManager.getTimeSource();
+        if (log.isDebugEnabled()) {
           log.debug("final release, session {} lived a total of {}ms, ", sessionWrapper.getCreateTime(),
               timeElapsed(timeSource, TimeUnit.MILLISECONDS.convert(sessionWrapper.getCreateTime(), TimeUnit.NANOSECONDS), MILLISECONDS));
         }
@@ -467,7 +467,7 @@ public class PolicyHelper {
 
       synchronized (lockObj) {
         // If nothing in the cache can possibly work, create a new session
-        if (!hasNonExpiredSession(zkVersion, oldestUpdateTimeNs)) {
+        if (!hasCandidateSession(zkVersion, oldestUpdateTimeNs)) {
           return createSession(cloudManager);
         }
 
@@ -535,7 +535,7 @@ public class PolicyHelper {
      * Returns true if there's a session in the cache that could be returned (if it was free). This is required to
      * know if there's any point in waiting or if a new session should better be created right away.
      */
-    private boolean hasNonExpiredSession(int zkVersion, long oldestUpdateTimeNs) {
+    private boolean hasCandidateSession(int zkVersion, long oldestUpdateTimeNs) {
       for (SessionWrapper sw : sessionWrapperSet) {
         if (sw.getLastUpdateTime() >= oldestUpdateTimeNs && sw.zkVersion == zkVersion) {
           return true;
@@ -545,14 +545,14 @@ public class PolicyHelper {
     }
 
     private SessionWrapper createSession(SolrCloudManager cloudManager) throws InterruptedException, IOException {
-      if (log.isDebugEnabled()) {
-        log.debug("Creating a new session");
-      }
       synchronized (lockObj) {
+        if (log.isDebugEnabled()) {
+          log.debug("Creating a new session");
+        }
         Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
         SessionWrapper sessionWrapper = new SessionWrapper(session, this);
         if (log.isDebugEnabled()) {
-          log.debug("New session created, " + sessionWrapper.getCreateTime());
+          log.debug("New session created, {}", sessionWrapper.getCreateTime());
         }
         sessionWrapperSet.add(sessionWrapper);
         return sessionWrapper;
