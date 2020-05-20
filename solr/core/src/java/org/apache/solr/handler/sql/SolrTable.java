@@ -799,7 +799,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                   String collection,
                                   String query,
                                   List<Pair<String, String>> metricPairs,
-                                  List<Map.Entry<String, Class>> fields) {
+                                  List<Map.Entry<String, Class>> fields) throws IOException {
 
 
     Map<String, Class> fmap = new HashMap();

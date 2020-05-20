@@ -363,7 +363,13 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         if(metricCount>0) {
           buf.append(",");
         }
-        buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+        if(identifier.startsWith("per(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
+        } else if(identifier.startsWith("std(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+        } else {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+        }
         ++metricCount;
       }
     }

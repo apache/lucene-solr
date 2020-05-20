@@ -17,7 +17,9 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,8 +50,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
-* @since 6.0.0
-*/
+ * @since 6.6.0
+ */
 public class StatsStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
@@ -115,8 +117,7 @@ public class StatsStream extends TupleStream implements Expressible  {
       if(zkHost == null) {
         zkHost = factory.getDefaultZkHost();
       }
-    }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
+    } else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
       zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
     }
 
@@ -245,8 +246,6 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
     return builder.toString();
   }
-
-
 
   public void close() throws IOException {
 
