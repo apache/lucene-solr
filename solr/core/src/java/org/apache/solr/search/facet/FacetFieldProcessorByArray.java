@@ -135,7 +135,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   public IntFunction<SlotContext> slotContext = (slotNum) -> {
     try {
-      Object value = sf.getType().toObject(sf, lookupOrd(slotNum));
+      Object value = sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
       Query q = makeBucketQuery(valueObjToString(value));
       assert null != q : "null query for: '" + value + "'";
       return new SlotContext(q);

@@ -140,7 +140,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      resizer.resize(result, 0);
+      this.result = resizer.resize(result, 0);
     }
 
     @Override

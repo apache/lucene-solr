@@ -134,7 +134,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 
@@ -188,7 +188,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 
@@ -244,7 +244,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 }

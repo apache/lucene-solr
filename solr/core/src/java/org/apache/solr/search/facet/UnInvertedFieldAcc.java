@@ -91,7 +91,7 @@ abstract class DoubleUnInvertedFieldAcc extends UnInvertedFieldAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
+    this.result = resizer.resize(result, initialValue);
   }
 }
 
@@ -153,7 +153,7 @@ abstract class SDVUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
   @Override
   public void resize(Resizer resizer) {
     super.resize(resizer);
-    resizer.resize(counts, 0);
-    resizer.resize(sum, 0);
+    this.counts = resizer.resize(counts, 0);
+    this.sum = resizer.resize(sum, 0);
   }
 }
