@@ -221,7 +221,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      resizer.resize(result, MISSING);
+      this.result = resizer.resize(result, MISSING);
     }
 
     @Override
@@ -504,7 +504,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      resizer.resize(slotOrd, MISSING);
+      this.slotOrd = resizer.resize(slotOrd, MISSING);
     }
 
     @Override

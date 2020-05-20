@@ -134,7 +134,7 @@ abstract class LongSortedNumericDVAcc extends SortedNumericDVAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
+    this.result = resizer.resize(result, initialValue);
   }
 
 }
@@ -169,7 +169,7 @@ abstract class DoubleSortedNumericDVAcc extends SortedNumericDVAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
+    this.result = resizer.resize(result, initialValue);
   }
 
   /**
@@ -246,8 +246,8 @@ abstract class SDVSortedNumericAcc extends DoubleSortedNumericDVAcc {
   @Override
   public void resize(Resizer resizer) {
     super.resize(resizer);
-    resizer.resize(counts, 0);
-    resizer.resize(sum, 0);
+    this.counts = resizer.resize(counts, 0);
+    this.sum = resizer.resize(sum, 0);
   }
 }
 
@@ -325,7 +325,7 @@ abstract class LongSortedSetDVAcc extends SortedSetDVAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
+    this.result = resizer.resize(result, initialValue);
   }
 }
 
@@ -359,7 +359,7 @@ abstract class DoubleSortedSetDVAcc extends SortedSetDVAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
+    this.result = resizer.resize(result, initialValue);
   }
 }
 
@@ -419,7 +419,7 @@ abstract class SDVSortedSetAcc extends DoubleSortedSetDVAcc {
   @Override
   public void resize(Resizer resizer) {
     super.resize(resizer);
-    resizer.resize(counts, 0);
-    resizer.resize(sum, 0);
+    this.counts = resizer.resize(counts, 0);
+    this.sum = resizer.resize(sum, 0);
   }
 }

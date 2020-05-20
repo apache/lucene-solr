@@ -111,6 +111,12 @@ Bug Fixes
 * SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
   (Steve Molloy, Isabelle Giguere, David Smiley)
 
+* SOLR-14492: Fix ArrayIndexOutOfBoundsException in json.facet 'terms' when FacetFieldProcessorByHashDV is
+  used with aggregations over multivalued numeric fields (hossman)
+
+* SOLR-14477: Fix incorrect 'relatedness()' calculations in json.facet 'terms' when 'prefix' option is used
+  (hossman)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
