@@ -71,6 +71,9 @@ Other Changes
   If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
   `solr.in.sh`/`solr.in.cmd` at start. (marcussorealheis)
 
+* SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
+  instead it creates individual per-collection /state.json files (format 2). (ab)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -134,6 +137,9 @@ Optimizations
   Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
   value of matching documents in the response (numFound) will be an approximation.
   (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+
+* SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
+  (David Smiley)
 
 Bug Fixes
 ---------------------
