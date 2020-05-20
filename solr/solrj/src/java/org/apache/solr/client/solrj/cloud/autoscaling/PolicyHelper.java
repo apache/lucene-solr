@@ -383,8 +383,14 @@ public class PolicyHelper {
   }
 
   public enum Status {
-    COMPUTING, // A command is actively using and modifying the session to compute placements
-    EXECUTING // A command is not done yet processing its changes but no longer uses the session
+    /**
+     * A command is actively using and modifying the session to compute placements
+     */
+    COMPUTING,
+    /**
+     * A command is not done yet processing its changes but no longer updates or even uses the session
+     */
+    EXECUTING
   }
 
   /**
@@ -401,9 +407,26 @@ public class PolicyHelper {
    * </ol>
    */
   static class SessionRef {
+    /**
+     * Lock protecting access to {@link #sessionWrapperSet} and to {@link #creationsInProgress}
+     */
     private final Object lockObj = new Object();
 
+    /**
+     * Sessions currently in use in {@link Status#COMPUTING} or {@link Status#EXECUTING} states. As soon as all
+     * uses of a session are over, that session is removed from this set. Sessions not actively in use are NOT kept around.
+     *
+     * <p>Access should only be done under the protection of {@link #lockObj}</p>
+     */
     private Set<SessionWrapper> sessionWrapperSet = Collections.newSetFromMap(new IdentityHashMap<>());
+
+
+    /**
+     * Number of sessions currently being created but not yeet present in {@link #sessionWrapperSet}.
+     *
+     * <p>Access should only be done under the protection of {@link #lockObj}</p>
+     */
+    private int creationsInProgress = 0;
 
     public SessionRef() {
     }
@@ -446,6 +469,7 @@ public class PolicyHelper {
         present = sessionWrapperSet.contains(sessionWrapper);
 
         // wake up single thread waiting for a session return (ok if not woken up, wait is short)
+        // Important to wake up a single one, otherwise of multiple waiting threads, all but one will immediately create new sessions
         lockObj.notify();
       }
 
@@ -459,33 +483,51 @@ public class PolicyHelper {
       }
     }
 
-
+    /**
+     * <p>Method returning an available session that can be used for {@link Status#COMPUTING}, either from the
+     * {@link #sessionWrapperSet} cache or by creating a new one. The status of the returned session is set to {@link Status#COMPUTING}.</p>
+     *
+     * Some waiting is done in two cases:
+     * <ul>
+     *   <li>A candidate session is present in {@link #sessionWrapperSet} but is still {@link Status#COMPUTING}, a random wait
+     *   is observed to see if the session gets freed to save a session creation and allow session reuse,</li>
+     *   <li>It is necessary to create a new session but there are already sessions in the process of being created, a
+     *   random wait is observed (if no waiting already occurred waiting for a session to become free) before creation
+     *   takes place, just in case one of the created sessions got used then {@link #returnSession(SessionWrapper)} in the meantime.</li>
+     * </ul>
+     *
+     * The random wait prevents the "thundering herd" effect when all threads needing a session at the same time create a new
+     * one even though some differentiated waits could have led to better reuse and less session creations.
+     *
+     * @param allowWait usually <code>true</code> except in tests that know there's no point in waiting because nothing
+     *                  will happen...
+     */
     public SessionWrapper get(SolrCloudManager cloudManager, boolean allowWait) throws IOException, InterruptedException {
       TimeSource timeSource = cloudManager.getTimeSource();
       long oldestUpdateTimeNs = TimeUnit.SECONDS.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS) - SESSION_EXPIRY;
       int zkVersion = cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion();
 
       synchronized (lockObj) {
-        // If nothing in the cache can possibly work, create a new session
-        if (!hasCandidateSession(zkVersion, oldestUpdateTimeNs)) {
-          return createSession(cloudManager);
-        }
-
-        // Try to find a session available right away
         SessionWrapper sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
 
+        // Best case scenario: an available session
         if (sw != null) {
           if (log.isDebugEnabled()) {
             log.debug("reusing session {}", sw.getCreateTime());
           }
           return sw;
-        } else if (allowWait) {
-          // No session available, but if we wait a bit, maybe one can become available
-          // wait 1 to 10 secs in case a session is returned. Random to spread wakeup otherwise sessions not reused
-          long waitForMs = (long) (Math.random() * 9 * 1000 + 1000);
+        }
+
+        // Wait for a while before deciding what to do if waiting could help...
+        if ((creationsInProgress != 0 || hasCandidateSession(zkVersion, oldestUpdateTimeNs)) && allowWait) {
+          // Either an existing session might be returned and become usable while we wait, or a session in the process of being
+          // created might finish creation, be used then returned and become usable. So we wait.
+          // wait 1 to 10 secs. Random to help spread wakeups.
+          long waitForMs = (long) (Math.random() * 9 * 1000) + 1000;
 
           if (log.isDebugEnabled()) {
-            log.debug("No sessions are available, all busy COMPUTING. starting wait of {}ms", waitForMs);
+            log.debug("No sessions are available, all busy COMPUTING (or {} creations in progress). starting wait of {}ms",
+                creationsInProgress, waitForMs);
           }
           long waitStart = time(timeSource, MILLISECONDS);
           try {
@@ -493,34 +535,55 @@ public class PolicyHelper {
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
           }
-
           if (log.isDebugEnabled()) {
             log.debug("out of waiting. wait of {}ms, actual time elapsed {}ms", waitForMs, timeElapsed(timeSource, waitStart, MILLISECONDS));
           }
+        }
 
-          // Try again to find an available session
-          sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
+        // We've waited (or not), now we can either reuse immediately an available session, or immediately create a new one
+        sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
 
-          if (sw != null) {
-            if (log.isDebugEnabled()) {
-              log.debug("Wait over. reusing an existing session {}", sw.getCreateTime());
-            }
-            return sw;
-          } else {
-            return createSession(cloudManager);
+        // Second best case scenario: an available session
+        if (sw != null) {
+          if (log.isDebugEnabled()) {
+            log.debug("reusing session {} after wait", sw.getCreateTime());
           }
-        } else {
-          return createSession(cloudManager);
+          return sw;
+        }
+
+        // We're going to create a new Session OUTSIDE of the critical section because session creation can take quite some time
+        creationsInProgress++;
+      }
+
+      SessionWrapper newSessionWrapper = null;
+      try {
+        if (log.isDebugEnabled()) {
+          log.debug("Creating a new session");
+        }
+        Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
+        newSessionWrapper = new SessionWrapper(session, this);
+        if (log.isDebugEnabled()) {
+          log.debug("New session created, {}", newSessionWrapper.getCreateTime());
+        }
+        return newSessionWrapper;
+      } finally {
+        synchronized (lockObj) {
+          creationsInProgress--;
+
+          if (newSessionWrapper != null) {
+            // Session created successfully
+            sessionWrapperSet.add(newSessionWrapper);
+          }
         }
       }
     }
 
     /**
-     * Returns an available session from the cache (the best one once cache strategies are defined), or null if no session
-     * from the cache is available (i.e. all are still COMPUTING, are too old, wrong zk version or the cache is empty).<p>
-     * This method must be called while holding the monitor on {@link #lockObj}.<p>
-     * The method updates the session status to computing.
-     */
+       * Returns an available session from the cache (the best one once cache strategies are defined), or null if no session
+       * from the cache is available (i.e. all are still COMPUTING, are too old, wrong zk version or the cache is empty).<p>
+       * This method must be called while holding the monitor on {@link #lockObj}.<p>
+       * The method updates the session status to computing.
+       */
     private SessionWrapper getAvailableSession(int zkVersion, long oldestUpdateTimeNs) {
       for (SessionWrapper sw : sessionWrapperSet) {
         if (sw.status == Status.EXECUTING && sw.getLastUpdateTime() >= oldestUpdateTimeNs && sw.zkVersion == zkVersion) {
@@ -542,21 +605,6 @@ public class PolicyHelper {
         }
       }
       return false;
-    }
-
-    private SessionWrapper createSession(SolrCloudManager cloudManager) throws InterruptedException, IOException {
-      synchronized (lockObj) {
-        if (log.isDebugEnabled()) {
-          log.debug("Creating a new session");
-        }
-        Policy.Session session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
-        SessionWrapper sessionWrapper = new SessionWrapper(session, this);
-        if (log.isDebugEnabled()) {
-          log.debug("New session created, {}", sessionWrapper.getCreateTime());
-        }
-        sessionWrapperSet.add(sessionWrapper);
-        return sessionWrapper;
-      }
     }
   }
 
