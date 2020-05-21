@@ -338,7 +338,7 @@ public class SimpleFacets {
     @SuppressWarnings({"rawtypes"})
     AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
-    return collector.getGroupCount();
+    return (int) collector.getGroupCount();
   }
 
   enum FacetMethod {

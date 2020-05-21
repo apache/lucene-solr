@@ -3,3 +3,4 @@
 * Expose DocValuesTermsCollector and TermsQuery (Jaime Yap)
 * SOLR-13684: failOnVersionConflicts param should be added to the DistributedUpdateProcessor whitelist params (noble)
 * FullStory: Add simple PrometheusMetricsServlet (Clay Goddard)
+* LUCENE-9302, SOLR-14381: Grouping to use long instead of int to avoid overflows (Ishan Chattopadhyaya)

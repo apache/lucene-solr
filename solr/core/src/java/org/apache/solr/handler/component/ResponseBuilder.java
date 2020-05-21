@@ -186,12 +186,12 @@ public class ResponseBuilder
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
-  public final Map<String, Integer> mergedGroupCounts = new HashMap<>();
+  public final Map<String, Long> mergedGroupCounts = new HashMap<>();
   public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards = new HashMap<>();
   public final Map<String, TopGroups<BytesRef>> mergedTopGroups = new HashMap<>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<>();
   public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<>();
-  public int totalHitCount; // Hit count used when distributed grouping is performed.
+  public long totalHitCount; // Hit count used when distributed grouping is performed.
   // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed for the second phase.
   public int firstPhaseElapsedTime;
 

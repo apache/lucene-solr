@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -62,10 +63,10 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
         NamedList<Object> command = new SimpleOrderedMap<>();
-        command.add("matches", rb.totalHitCount);
-        Integer totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
+        command.add("matches", Utils.intIfNotOverflown(rb.totalHitCount));
+        Long totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
         if (totalGroupCount != null) {
-          command.add("ngroups", totalGroupCount);
+          command.add("ngroups", Utils.intIfNotOverflown(totalGroupCount));
         }
 
         List<NamedList<Object>> groups = new ArrayList<>();
@@ -102,7 +103,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
       } else if (QueryCommandResult.class.isInstance(value)) {
         QueryCommandResult queryCommandResult = (QueryCommandResult) value;
         NamedList<Object> command = new SimpleOrderedMap<>();
-        command.add("matches", queryCommandResult.getMatches());
+        command.add("matches", Utils.intIfNotOverflown(queryCommandResult.getMatches()));
         SolrDocumentList docList = new SolrDocumentList();
         TopDocs topDocs = queryCommandResult.getTopDocs();
         assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;

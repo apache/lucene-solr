@@ -314,8 +314,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
-    int matches = (Integer) nl.getVal(0);
-    int groupCount = (Integer) nl.get("ngroups");
+    long matches = ((Number) nl.getVal(0)).longValue();
+    long groupCount = ((Number) nl.get("ngroups")).longValue();
     assertEquals(100 * shardsArr.length, matches);
     assertEquals(shardsArr.length, groupCount);
 

@@ -124,7 +124,7 @@ public class CommandHandler {
   private final boolean truncateGroups;
   private final boolean includeHitCount;
   private boolean partialResults = false;
-  private int totalHitCount;
+  private long totalHitCount;
 
   private DocSet docSet;
 
@@ -249,7 +249,7 @@ public class CommandHandler {
     }
   }
 
-  public int getTotalHitCount() {
+  public long getTotalHitCount() {
     return totalHitCount;
   }
 }

@@ -64,6 +64,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
@@ -1339,7 +1340,7 @@ public class QueryComponent extends SearchComponent
     SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
 
     rsp.add("firstPhase", commandHandler.processResult(result, serializer));
-    rsp.add("totalHitCount", commandHandler.getTotalHitCount());
+    rsp.add("totalHitCount", Utils.intIfNotOverflown(commandHandler.getTotalHitCount()));
     rb.setResult(result);
   }
 

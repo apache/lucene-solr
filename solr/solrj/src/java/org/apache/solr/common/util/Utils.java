@@ -219,6 +219,18 @@ public class Utils {
     return writer;
   }
 
+  /**
+   * Given long integer, return an integer or a long integer
+   * depending upon whether it overflows the integer range.
+   */
+  static public Number intIfNotOverflown(long n) {
+    if (((int) n) == n){
+      return Integer.valueOf((int)n);
+    } else {
+      return Long.valueOf(n);
+    }
+  }
+
   private static class MapWriterJSONWriter extends JSONWriter {
 
     public MapWriterJSONWriter(CharArr out, int indentSize) {
