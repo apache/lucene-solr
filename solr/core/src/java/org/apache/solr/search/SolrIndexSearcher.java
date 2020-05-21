@@ -161,13 +161,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
         SolrQueryTimeoutImpl.getInstance());
   }
-
+  
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
    * into consideration both the explicitly provided collector and postFilter as well as any needed collector wrappers
    * for dealing with options specified in the QueryCommand.
+   * @return The collector used for search
    */
-  private void buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
+  private Collector buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
       DelegatingCollector postFilter) throws IOException {
 
     EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
@@ -217,6 +218,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
     }
+    return collector;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
@@ -1577,11 +1579,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
-      buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
+      ScoreMode scoreModeUsed = buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
-      hitsRelation = topDocs.totalHits.relation;
+      if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
+        hitsRelation = TotalHits.Relation.EQUAL_TO;
+      } else {
+        hitsRelation = topDocs.totalHits.relation;
+      }
       if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
