@@ -1041,7 +1041,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testMinExactHitsDisabledByCollapse() throws Exception {
+  public void testMinExactCountDisabledByCollapse() throws Exception {
     int numDocs = 10;
     String collapseFieldInt = "field_ti_dv";
     String collapseFieldFloat = "field_tf_dv";
@@ -1060,7 +1060,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       assertQ(req(
           "q", "{!cache=false}field_s:1",
           "rows", "1",
-          "minExactHits", "1",
+          "minExactCount", "1",
           // this collapse will end up matching all docs
           "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
           ),"//*[@numFoundExact='true']"
