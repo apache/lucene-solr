@@ -192,6 +192,9 @@ Bug Fixes
 * SOLR-14477: Fix incorrect 'relatedness()' calculations in json.facet 'terms' when 'prefix' option is used
   (hossman)
 
+* SOLR-14504: ZkController LiveNodesListener has NullPointerException in startup race.
+  (Colvin Cowie via ab)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
