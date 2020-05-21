@@ -362,7 +362,7 @@ class ExclusiveSliceProperty {
       this.replica = replica;
     }
     public String toString() {
-      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator()).append("******EOE20 starting toString of SliceReplica");
+      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator());
       sb.append("    :").append(System.lineSeparator()).append("slice: ").append(slice.toString()).append(System.lineSeparator()).append("      replica: ").append(replica.toString()).append(System.lineSeparator());
       return sb.toString();
     }

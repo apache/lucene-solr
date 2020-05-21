@@ -37,7 +37,7 @@ public class AvgAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -62,7 +62,7 @@ public class AvgAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new AvgSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.AvgSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -70,12 +70,13 @@ public class AvgAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetDoubleMerger {
+  private static class Merger extends FacetModule.FacetDoubleMerger {
     long num;
     double sum;
 
     @Override
     public void merge(Object facetResult, Context mcontext1) {
+      @SuppressWarnings({"unchecked"})
       List<Number> numberList = (List<Number>) facetResult;
       num += numberList.get(0).longValue();
       sum += numberList.get(1).doubleValue();
@@ -88,10 +89,10 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedNumericAcc extends DoubleSortedNumericDVAcc {
+  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
     int[] counts;
 
-    public AvgSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
     }
@@ -114,6 +115,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -134,14 +136,14 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 
-  class AvgSortedSetAcc extends DoubleSortedSetDVAcc {
+  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
     int[] counts;
 
-    public AvgSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public AvgSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
     }
@@ -168,6 +170,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -188,14 +191,14 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 
-  class AvgUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
+  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
     int[] counts;
 
-    public AvgUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
     }
@@ -224,6 +227,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -244,7 +248,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      resizer.resize(counts, 0);
+      this.counts = resizer.resize(counts, 0);
     }
   }
 }
