@@ -92,125 +92,96 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         );
   }
   
-  private void assertMatchesEqual(int expectedCount, QueryResult qr) {
+  private void assertMatchesEqual(int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd) throws IOException {
+    QueryResult qr = new QueryResult();
+    searcher.search(qr, cmd);
     assertEquals(expectedCount, qr.getDocList().matches());
     assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
   }
   
-  private void assertMatchesGraterThan(int expectedCount, QueryResult qr) {
+  private QueryResult assertMatchesGreaterThan(int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd) throws IOException {
+    QueryResult qr = new QueryResult();
+    searcher.search(qr, cmd);
     assertTrue("Expecting returned matches to be greater than " + expectedCount + " but got " + qr.getDocList().matches(),
         expectedCount >= qr.getDocList().matches());
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+    return qr;
   }
   
   public void testLowMinExactHitsGeneratesApproximation() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(NUM_DOCS / 2);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       return null;
     });
     
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      // We need to disable cache, otherwise the search will be done for 20 docs (cache window size) which brings up the minExactHits
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field2_s", "1")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS/2, qr);
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field2_s", "1");
+      assertMatchesGreaterThan(NUM_DOCS/2, searcher, cmd);
       return null;
     });
   }
-  
+
   public void testHighMinExactHitsGeneratesExactCount() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(NUM_DOCS);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(NUM_DOCS, qr);
+      QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 10, "field1_s", "foo");
+      assertMatchesEqual(NUM_DOCS, searcher, cmd);
       return null;
     });
     
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(NUM_DOCS);
-      cmd.setQuery(new TermQuery(new Term("field2_s", "1")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(NUM_DOCS/2, qr);
+      QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 10, "field2_s", "1");
+      assertMatchesEqual(NUM_DOCS/2, searcher, cmd);
       return null;
     });
   }
+
+  
   
   public void testLowMinExactHitsWithQueryResultCache() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(NUM_DOCS / 2);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
+      QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       searcher.search(new QueryResult(), cmd);
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       return null;
     });
   }
   
   public void testHighMinExactHitsWithQueryResultCache() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(NUM_DOCS);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
+      QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 2, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       searcher.search(new QueryResult(), cmd);
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(NUM_DOCS, qr);
+      assertMatchesEqual(NUM_DOCS, searcher, cmd);
       return null;
     });
   }
   
   public void testMinExactHitsMoreRows() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(2);
-      cmd.setLen(NUM_DOCS);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(NUM_DOCS, qr);
+      QueryCommand cmd = createBasicQueryCommand(2, NUM_DOCS, "field1_s", "foo");
+      assertMatchesEqual(NUM_DOCS, searcher, cmd);
       return null;
     });
   }
   
   public void testMinExactHitsMatchWithDocSet() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
+      QueryCommand cmd = createBasicQueryCommand(2, 2, "field1_s", "foo");
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
+      
       cmd.setNeedDocSet(true);
-      cmd.setMinExactHits(2);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(NUM_DOCS, qr);
+      assertMatchesEqual(NUM_DOCS, searcher, cmd);
       return null;
     });
   }
   
   public void testMinExactHitsWithMaxScoreRequested() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(2);
+      QueryCommand cmd = createBasicQueryCommand(2, 2, "field1_s", "foo");
       cmd.setFlags(SolrIndexSearcher.GET_SCORES);
-      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      QueryResult qr = assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       assertNotEquals(Float.NaN, qr.getDocList().maxScore());
       return null;
     });
@@ -220,30 +191,18 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     
     h.getCore().withSearcher(searcher -> {
       //Sanity Check - No Filter
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       return null;
     });
     
     
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
       Query filterQuery = new TermQuery(new Term("field4_t", "19"));
       cmd.setFilterList(filterQuery);
       assertNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(1, qr);
+      assertMatchesEqual(1, searcher, cmd);
       return null;
     });
   }
@@ -251,59 +210,69 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   public void testMinExactWithPostFilters() throws Exception {
     h.getCore().withSearcher(searcher -> {
       //Sanity Check - No Filter
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       return null;
     });
     
     
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
       MockPostFilter filterQuery = new MockPostFilter(1, 101);
       cmd.setFilterList(filterQuery);
       assertNotNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesEqual(1, qr);
+      assertMatchesEqual(1, searcher, cmd);
       return null;
     });
     
     h.getCore().withSearcher(searcher -> {
-      QueryCommand cmd = new QueryCommand();
-      cmd.setMinExactHits(1);
-      cmd.setLen(1);
-      cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-      cmd.setQuery(new TermQuery(new Term("field4_t", "0")));
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
       MockPostFilter filterQuery = new MockPostFilter(100, 101);
       cmd.setFilterList(filterQuery);
       assertNotNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
-      QueryResult qr = new QueryResult();
-      searcher.search(qr, cmd);
-      assertMatchesGraterThan(NUM_DOCS, qr);
+      assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       return null;
     });
+    
+  }
+  
+  public void testMinExactWithPostFilterThatChangesScoreMode() throws Exception {
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(1, 1, "field4_t", "0");
+      // Use ScoreMode.COMPLETE for the PostFilter
+      MockPostFilter filterQuery = new MockPostFilter(100, 101, ScoreMode.COMPLETE);
+      cmd.setFilterList(filterQuery);
+      assertNotNull(searcher.getProcessedFilter(null, cmd.getFilterList()).postFilter);
+      assertMatchesEqual(NUM_DOCS, searcher, cmd);
+      return null;
+    });
+  }
+
+  private QueryCommand createBasicQueryCommand(int minExactHits, int length, String field, String q) {
+    QueryCommand cmd = new QueryCommand();
+    cmd.setMinExactHits(minExactHits);
+    cmd.setLen(length);
+    cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+    cmd.setQuery(new TermQuery(new Term(field, q)));
+    return cmd;
   }
   
   private final static class MockPostFilter  extends TermQuery implements PostFilter {
     
     private final int cost;
     private final int maxDocsToCollect;
-
-    public MockPostFilter(int maxDocsToCollect, int cost) {
+    private final ScoreMode scoreMode;
+    
+    public MockPostFilter(int maxDocsToCollect, int cost, ScoreMode scoreMode) {
       super(new Term("foo", "bar"));//The term won't really be used. just the collector
       assert cost > 100;
       this.cost = cost;
       this.maxDocsToCollect = maxDocsToCollect;
+      this.scoreMode = scoreMode;
+    }
+
+    public MockPostFilter(int maxDocsToCollect, int cost) {
+      this(maxDocsToCollect, cost, null);
     }
     
     @Override
@@ -345,6 +314,14 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
           if (++collected <= maxDocsToCollect) {
             super.collect(doc);
           }
+        }
+        
+        @Override
+        public ScoreMode scoreMode() {
+          if (scoreMode != null) {
+            return scoreMode;
+          }
+          return super.scoreMode();
         }
       };
     }
