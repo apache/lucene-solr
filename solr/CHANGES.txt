@@ -136,7 +136,7 @@ Optimizations
 * SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
   Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
   value of matching documents in the response (numFound) will be an approximation.
-  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe, David Smiley)
 
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
