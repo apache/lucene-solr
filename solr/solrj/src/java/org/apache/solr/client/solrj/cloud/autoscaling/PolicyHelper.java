@@ -422,7 +422,7 @@ public class PolicyHelper {
 
 
     /**
-     * Number of sessions currently being created but not yeet present in {@link #sessionWrapperSet}.
+     * Number of sessions currently being created but not yet present in {@link #sessionWrapperSet}.
      *
      * <p>Access should only be done under the protection of {@link #lockObj}</p>
      */
@@ -450,10 +450,11 @@ public class PolicyHelper {
       if (!present) {
         log.warn("released session {} not found in session set", sessionWrapper.getCreateTime());
       } else {
-          TimeSource timeSource = sessionWrapper.session.cloudManager.getTimeSource();
         if (log.isDebugEnabled()) {
+          TimeSource timeSource = sessionWrapper.session.cloudManager.getTimeSource();
           log.debug("final release, session {} lived a total of {}ms, ", sessionWrapper.getCreateTime(),
-              timeElapsed(timeSource, TimeUnit.MILLISECONDS.convert(sessionWrapper.getCreateTime(), TimeUnit.NANOSECONDS), MILLISECONDS));
+              timeElapsed(timeSource, TimeUnit.MILLISECONDS.convert(sessionWrapper.getCreateTime(),
+                  TimeUnit.NANOSECONDS), MILLISECONDS)); // logOk
         }
       }
     }
@@ -538,17 +539,17 @@ public class PolicyHelper {
           if (log.isDebugEnabled()) {
             log.debug("out of waiting. wait of {}ms, actual time elapsed {}ms", waitForMs, timeElapsed(timeSource, waitStart, MILLISECONDS));
           }
-        }
 
-        // We've waited (or not), now we can either reuse immediately an available session, or immediately create a new one
-        sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
+          // We've waited, now we can either reuse immediately an available session, or immediately create a new one
+          sw = getAvailableSession(zkVersion, oldestUpdateTimeNs);
 
-        // Second best case scenario: an available session
-        if (sw != null) {
-          if (log.isDebugEnabled()) {
-            log.debug("reusing session {} after wait", sw.getCreateTime());
+          // Second best case scenario: an available session
+          if (sw != null) {
+            if (log.isDebugEnabled()) {
+              log.debug("reusing session {} after wait", sw.getCreateTime());
+            }
+            return sw;
           }
-          return sw;
         }
 
         // We're going to create a new Session OUTSIDE of the critical section because session creation can take quite some time
