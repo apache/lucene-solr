@@ -137,7 +137,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assert minIters <= iter;
   }
   
-  public void testMinExactHits() {
+  public void testMinExactCount() {
     int[] nums = smallArrayOfRandomNumbers();
     final Query base = new FlatHashTermQuery("base");
     assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),

@@ -65,27 +65,27 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     super.setUp();
   }
   
-  public void testMinExactHitsLongValue() {
+  public void testMinExactCountLongValue() {
     assertQ("test query on empty index",
         req("q", "field1_s:foo", 
-            "minExactHits", Long.toString(10L * Integer.MAX_VALUE),
+            "minExactCount", Long.toString(10L * Integer.MAX_VALUE),
             "rows", "2")
         ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
         );
   }
   
-  public void testMinExactHits() {
-    assertQ("minExactHits is lower than numFound,should produce approximated results",
+  public void testMinExactCount() {
+    assertQ("minExactCount is lower than numFound,should produce approximated results",
             req("q", "field1_s:foo", 
-                "minExactHits", "2",
+                "minExactCount", "2",
                 "rows", "2")
             ,"//*[@numFoundExact='false']"
             ,"//*[@numFound<='" + NUM_DOCS + "']"
             );
-    assertQ("minExactHits is higher than numFound,should produce exact results",
+    assertQ("minExactCount is higher than numFound,should produce exact results",
         req("q", "field1_s:foo", 
-            "minExactHits", "200",
+            "minExactCount", "200",
             "rows", "2")
         ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']"
@@ -108,7 +108,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     return qr;
   }
   
-  public void testLowMinExactHitsGeneratesApproximation() throws IOException {
+  public void testLowMinExactCountGeneratesApproximation() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
       assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
@@ -122,7 +122,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
 
-  public void testHighMinExactHitsGeneratesExactCount() throws IOException {
+  public void testHighMinExactCountGeneratesExactCount() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 10, "field1_s", "foo");
       assertMatchesEqual(NUM_DOCS, searcher, cmd);
@@ -138,7 +138,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   
   
-  public void testLowMinExactHitsWithQueryResultCache() throws IOException {
+  public void testLowMinExactCountWithQueryResultCache() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
       cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
@@ -148,7 +148,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
-  public void testHighMinExactHitsWithQueryResultCache() throws IOException {
+  public void testHighMinExactCountWithQueryResultCache() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 2, "field1_s", "foo");
       cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
@@ -158,7 +158,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
-  public void testMinExactHitsMoreRows() throws IOException {
+  public void testMinExactCountMoreRows() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(2, NUM_DOCS, "field1_s", "foo");
       assertMatchesEqual(NUM_DOCS, searcher, cmd);
@@ -166,7 +166,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
-  public void testMinExactHitsMatchWithDocSet() throws IOException {
+  public void testMinExactCountMatchWithDocSet() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(2, 2, "field1_s", "foo");
       assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
@@ -177,7 +177,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
-  public void testMinExactHitsWithMaxScoreRequested() throws IOException {
+  public void testMinExactCountWithMaxScoreRequested() throws IOException {
     h.getCore().withSearcher(searcher -> {
       QueryCommand cmd = createBasicQueryCommand(2, 2, "field1_s", "foo");
       cmd.setFlags(SolrIndexSearcher.GET_SCORES);
@@ -248,9 +248,9 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
 
-  private QueryCommand createBasicQueryCommand(int minExactHits, int length, String field, String q) {
+  private QueryCommand createBasicQueryCommand(int minExactCount, int length, String field, String q) {
     QueryCommand cmd = new QueryCommand();
-    cmd.setMinExactHits(minExactHits);
+    cmd.setMinExactCount(minExactCount);
     cmd.setLen(length);
     cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
     cmd.setQuery(new TermQuery(new Term(field, q)));

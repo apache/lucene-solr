@@ -1305,7 +1305,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         && (flags & (NO_CHECK_QCACHE | NO_SET_QCACHE)) != ((NO_CHECK_QCACHE | NO_SET_QCACHE))) {
       // all of the current flags can be reused during warming,
       // so set all of them on the cache key.
-      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactHits());
+      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactCount());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 
@@ -1482,7 +1482,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *          The Command whose properties should determine the type of TopDocsCollector to use.
    */
   private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
-    int minNumFound = cmd.getMinExactHits();
+    int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
       RankQuery rq = (RankQuery) q;
@@ -1625,7 +1625,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
-    cmd.setMinExactHits(Integer.MAX_VALUE);// We need the full DocSet
+    cmd.setMinExactCount(Integer.MAX_VALUE);// We need the full DocSet
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
