@@ -35,7 +35,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
-  public UniqueSlotAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
@@ -74,6 +74,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return res;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
     if (ords == null) return HLLAgg.NO_VALUES;
@@ -97,6 +98,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return map;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardValue(int slot) throws IOException {
     if (factory != null) return getShardHLL(slot);
     FixedBitSet ords = arr[slot];

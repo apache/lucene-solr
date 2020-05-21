@@ -33,7 +33,7 @@ public class SumsqAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -58,7 +58,7 @@ public class SumsqAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new SumsqSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.SumsqSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -66,9 +66,9 @@ public class SumsqAgg extends SimpleAggValueSource {
     return new SumAgg.Merger();
   }
 
-  class SumSqSortedNumericAcc extends DoubleSortedNumericDVAcc {
+  class SumSqSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
 
-    public SumSqSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSqSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -81,9 +81,9 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSqSortedSetAcc extends DoubleSortedSetDVAcc {
+  class SumSqSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
 
-    public SumSqSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSqSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -99,9 +99,9 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSqUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
+  class SumSqUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
 
-    public SumSqUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SumSqUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 

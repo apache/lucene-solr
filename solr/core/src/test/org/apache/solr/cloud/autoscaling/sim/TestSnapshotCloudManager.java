@@ -258,10 +258,10 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     if (!treeOne.equals(treeTwo)) {
       List<String> t1 = new ArrayList<>(treeOne);
       t1.removeAll(treeTwo);
-      log.warn("Only in tree one: " + t1);
+      log.warn("Only in tree one: {}", t1);
       List<String> t2 = new ArrayList<>(treeTwo);
       t2.removeAll(treeOne);
-      log.warn("Only in tree two: " + t2);
+      log.warn("Only in tree two: {}", t2);
     }
     assertEquals(treeOne, treeTwo);
     for (String path : treeOne) {

@@ -136,7 +136,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     try {
       int nShards = responsesAndTests.length / 2;
       Object jsonFacet = Utils.fromJSONString(facet);
-      FacetRequest.FacetParser parser = new FacetRequest.FacetTopParser(req);
+      FacetParser parser = new FacetRequest.FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
       FacetMerger merger = null;
