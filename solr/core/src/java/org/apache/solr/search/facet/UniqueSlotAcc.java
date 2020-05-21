@@ -64,6 +64,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return bs==null ? 0 : bs.cardinality();
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
     if (ords == null) return HLLAgg.NO_VALUES;
@@ -87,6 +88,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return map;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardValue(int slot) throws IOException {
     if (factory != null) return getShardHLL(slot);
     FixedBitSet ords = arr[slot];

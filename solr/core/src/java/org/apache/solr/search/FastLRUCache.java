@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -297,7 +298,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     SolrCache.super.close();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());

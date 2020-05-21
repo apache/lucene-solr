@@ -53,7 +53,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
-  CountSlotAcc countAcc;
+  SlotAcc.CountSlotAcc countAcc;
 
   FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
@@ -61,7 +61,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.processor = this;
   }
 
-  public Object getResponse() {
+  public org.apache.solr.common.MapWriter getResponse() {
     return response;
   }
 
@@ -82,6 +82,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         qlist.add(parserFilter((String) rawFilter, fcontext.req));
       } else if (rawFilter instanceof Map) {
 
+        @SuppressWarnings({"unchecked"})
         Map<String,Object> m = (Map<String, Object>) rawFilter;
         String type;
         Object args;
@@ -181,6 +182,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       return;
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map tagMap = (Map) fcontext.req.getContext().get("tags");
     if (tagMap == null) {
       // no filters were tagged
@@ -307,7 +309,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
       countAcc.key = "count";
     }
 
@@ -438,6 +440,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;

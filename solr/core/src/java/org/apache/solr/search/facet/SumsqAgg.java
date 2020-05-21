@@ -58,7 +58,7 @@ public class SumsqAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new SumsqSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.SumsqSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -66,7 +66,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     return new SumAgg.Merger();
   }
 
-  class SumSqSortedNumericAcc extends DoubleSortedNumericDVAcc {
+  class SumSqSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
 
     public SumSqSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -81,7 +81,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSqSortedSetAcc extends DoubleSortedSetDVAcc {
+  class SumSqSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
 
     public SumSqSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -99,7 +99,7 @@ public class SumsqAgg extends SimpleAggValueSource {
     }
   }
 
-  class SumSqUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
+  class SumSqUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
 
     public SumSqUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);

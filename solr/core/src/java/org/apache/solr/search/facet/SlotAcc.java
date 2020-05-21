@@ -68,28 +68,28 @@ public abstract class SlotAcc implements Closeable {
   }
 
   /**
-   * All subclasses must override this method to collect documents.  This method is called by the 
-   * default impl of {@link #collect(DocSet,int,IntFunction)} but it's also neccessary if this accumulator 
+   * All subclasses must override this method to collect documents.  This method is called by the
+   * default impl of {@link #collect(DocSet, int, IntFunction)} but it's also neccessary if this accumulator
    * is used for sorting.
    *
-   * @param doc Single Segment docId (relative to the current {@link LeafReaderContext} to collect
-   * @param slot The slot number to collect this document in
-   * @param slotContext A callback that can be used for Accumulators that would like additional info 
-   *        about the current slot -- the {@link IntFunction} is only garunteed to be valid for 
-   *        the current slot, and the {@link SlotContext} returned is only valid for the duration 
-   *        of the <code>collect()</code> call.
+   * @param doc         Single Segment docId (relative to the current {@link LeafReaderContext} to collect
+   * @param slot        The slot number to collect this document in
+   * @param slotContext A callback that can be used for Accumulators that would like additional info
+   *                    about the current slot -- the {@link IntFunction} is only garunteed to be valid for
+   *                    the current slot, and the {@link SlotContext} returned is only valid for the duration
+   *                    of the <code>collect()</code> call.
    */
   public abstract void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException;
 
   /**
-   * Bulk collection of all documents in a slot.  The default implementation calls {@link #collect(int,int,IntFunction)}
+   * Bulk collection of all documents in a slot.  The default implementation calls {@link #collect(int, int, IntFunction)}
    *
-   * @param docs (global) Documents to collect
-   * @param slot The slot number to collect these documents in
-   * @param slotContext A callback that can be used for Accumulators that would like additional info 
-   *        about the current slot -- the {@link IntFunction} is only garunteed to be valid for 
-   *        the current slot, and the {@link SlotContext} returned is only valid for the duration 
-   *        of the <code>collect()</code> call.
+   * @param docs        (global) Documents to collect
+   * @param slot        The slot number to collect these documents in
+   * @param slotContext A callback that can be used for Accumulators that would like additional info
+   *                    about the current slot -- the {@link IntFunction} is only garunteed to be valid for
+   *                    the current slot, and the {@link SlotContext} returned is only valid for the duration
+   *                    of the <code>collect()</code> call.
    */
   public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     int count = 0;
@@ -101,7 +101,7 @@ public abstract class SlotAcc implements Closeable {
     int segBase = 0;
     int segMax;
     int adjustedMax = 0;
-    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext();) {
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
       final int doc = docsIt.nextDoc();
       if (doc >= adjustedMax) {
         do {
@@ -135,16 +135,24 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  /** Called to reset the acc to a fresh state, ready for reuse */
+  /**
+   * Called to reset the acc to a fresh state, ready for reuse
+   */
   public abstract void reset() throws IOException;
 
-  /** Typically called from setNextReader to reset docValue iterators */
-  protected void resetIterators() throws IOException {};
+  /**
+   * Typically called from setNextReader to reset docValue iterators
+   */
+  protected void resetIterators() throws IOException {
+  }
+
+  ;
 
   public abstract void resize(Resizer resizer);
 
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+  }
 
   public static abstract class Resizer {
     public abstract int getNewSize();
@@ -206,7 +214,7 @@ public abstract class SlotAcc implements Closeable {
       FixedBitSet values = new FixedBitSet(getNewSize());
       int oldSize = old.length();
 
-      for(int oldSlot = 0;;) {
+      for (int oldSlot = 0; ; ) {
         oldSlot = values.nextSetBit(oldSlot);
         if (oldSlot == DocIdSetIterator.NO_MORE_DOCS) break;
         int newSlot = getNewSlot(oldSlot);
@@ -218,6 +226,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     public <T> T[] resize(T[] old, T defaultValue) {
+      @SuppressWarnings({"unchecked"})
       T[] values = (T[]) Array.newInstance(old.getClass().getComponentType(), getNewSize());
       if (defaultValue != null) {
         Arrays.fill(values, 0, values.length, defaultValue);
@@ -237,37 +246,39 @@ public abstract class SlotAcc implements Closeable {
   } // end class Resizer
 
   /**
-   * Incapsulates information about the current slot, for Accumulators that may want 
+   * Incapsulates information about the current slot, for Accumulators that may want
    * additional info during collection.
    */
   public static final class SlotContext {
     private final Query slotQuery;
+
     public SlotContext(Query slotQuery) {
       this.slotQuery = slotQuery;
     }
+
     public Query getSlotQuery() {
       return slotQuery;
     }
   }
-}
 
-// TODO: we should really have a decoupled value provider...
+
+  // TODO: we should really have a decoupled value provider...
 // This would enhance reuse and also prevent multiple lookups of same value across diff stats
-abstract class FuncSlotAcc extends SlotAcc {
-  protected final ValueSource valueSource;
-  protected FunctionValues values;
+  abstract static class FuncSlotAcc extends SlotAcc {
+    protected final ValueSource valueSource;
+    protected FunctionValues values;
 
   public FuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(fcontext);
-    this.valueSource = values;
-  }
+      super(fcontext);
+      this.valueSource = values;
+    }
 
-  @Override
-  public void setNextReader(LeafReaderContext readerContext) throws IOException {
-    super.setNextReader(readerContext);
-    values = valueSource.getValues(fcontext.qcontext, readerContext);
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      super.setNextReader(readerContext);
+      values = valueSource.getValues(fcontext.qcontext, readerContext);
+    }
   }
-}
 
 // have a version that counts the number of times a Slot has been hit? (for avg... what else?)
 
@@ -275,390 +286,392 @@ abstract class FuncSlotAcc extends SlotAcc {
 // double-slot-func -> func-slot -> slot -> acc
 // double-slot-func -> double-slot -> slot -> acc
 
-abstract class DoubleFuncSlotAcc extends FuncSlotAcc {
-  double[] result; // TODO: use DoubleArray
-  double initialValue;
+  abstract static class DoubleFuncSlotAcc extends FuncSlotAcc {
+    double[] result; // TODO: use DoubleArray
+    double initialValue;
 
   public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    this(values, fcontext, numSlots, 0);
-  }
+      this(values, fcontext, numSlots, 0);
+    }
 
   public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, double initialValue) {
-    super(values, fcontext, numSlots);
-    this.initialValue = initialValue;
-    result = new double[numSlots];
-    if (initialValue != 0) {
-      reset();
+      super(values, fcontext, numSlots);
+      this.initialValue = initialValue;
+      result = new double[numSlots];
+      if (initialValue != 0) {
+        reset();
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(result[slotA], result[slotB]);
+    }
+
+    @Override
+    public Object getValue(int slot) {
+      return result[slot];
+    }
+
+    @Override
+    public void reset() {
+      Arrays.fill(result, initialValue);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      result = resizer.resize(result, initialValue);
     }
   }
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(result[slotA], result[slotB]);
-  }
-
-  @Override
-  public Object getValue(int slot) {
-    return result[slot];
-  }
-
-  @Override
-  public void reset() {
-    Arrays.fill(result, initialValue);
-  }
-
-  @Override
-  public void resize(Resizer resizer) {
-    result = resizer.resize(result, initialValue);
-  }
-}
-
-abstract class LongFuncSlotAcc extends FuncSlotAcc {
-  long[] result;
-  long initialValue;
+  abstract static class LongFuncSlotAcc extends FuncSlotAcc {
+    long[] result;
+    long initialValue;
 
   public LongFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, long initialValue) {
-    super(values, fcontext, numSlots);
-    this.initialValue = initialValue;
-    result = new long[numSlots];
-    if (initialValue != 0) {
-      reset();
+      super(values, fcontext, numSlots);
+      this.initialValue = initialValue;
+      result = new long[numSlots];
+      if (initialValue != 0) {
+        reset();
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Long.compare(result[slotA], result[slotB]);
+    }
+
+    @Override
+    public Object getValue(int slot) {
+      return result[slot];
+    }
+
+    @Override
+    public void reset() {
+      Arrays.fill(result, initialValue);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      result = resizer.resize(result, initialValue);
     }
   }
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Long.compare(result[slotA], result[slotB]);
-  }
-
-  @Override
-  public Object getValue(int slot) {
-    return result[slot];
-  }
-
-  @Override
-  public void reset() {
-    Arrays.fill(result, initialValue);
-  }
-
-  @Override
-  public void resize(Resizer resizer) {
-    result = resizer.resize(result, initialValue);
-  }
-}
-
-abstract class IntSlotAcc extends SlotAcc {
-  int[] result; // use LongArray32
-  int initialValue;
+  abstract class IntSlotAcc extends SlotAcc {
+    int[] result; // use LongArray32
+    int initialValue;
 
   public IntSlotAcc(FacetContext fcontext, int numSlots, int initialValue) {
-    super(fcontext);
-    this.initialValue = initialValue;
-    result = new int[numSlots];
-    if (initialValue != 0) {
-      reset();
+      super(fcontext);
+      this.initialValue = initialValue;
+      result = new int[numSlots];
+      if (initialValue != 0) {
+        reset();
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Integer.compare(result[slotA], result[slotB]);
+    }
+
+    @Override
+    public Object getValue(int slot) {
+      return result[slot];
+    }
+
+    @Override
+    public void reset() {
+      Arrays.fill(result, initialValue);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      result = resizer.resize(result, initialValue);
     }
   }
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Integer.compare(result[slotA], result[slotB]);
+  static class SumSlotAcc extends DoubleFuncSlotAcc {
+    public SumSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+      super(values, fcontext, numSlots);
+    }
+
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+      double val = values.doubleVal(doc); // todo: worth trying to share this value across multiple stats that need it?
+      result[slotNum] += val;
+    }
   }
 
-  @Override
-  public Object getValue(int slot) {
-    return result[slot];
+  static class SumsqSlotAcc extends DoubleFuncSlotAcc {
+    public SumsqSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+      super(values, fcontext, numSlots);
+    }
+
+    @Override
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+      double val = values.doubleVal(doc);
+      val = val * val;
+      result[slotNum] += val;
+    }
   }
 
-  @Override
-  public void reset() {
-    Arrays.fill(result, initialValue);
-  }
 
-  @Override
-  public void resize(Resizer resizer) {
-    result = resizer.resize(result, initialValue);
-  }
-}
-
-class SumSlotAcc extends DoubleFuncSlotAcc {
-  public SumSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots);
-  }
-
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
-    double val = values.doubleVal(doc); // todo: worth trying to share this value across multiple stats that need it?
-    result[slotNum] += val;
-  }
-}
-
-class SumsqSlotAcc extends DoubleFuncSlotAcc {
-  public SumsqSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots);
-  }
-
-  @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
-    double val = values.doubleVal(doc);
-    val = val * val;
-    result[slotNum] += val;
-  }
-}
-
-
-class AvgSlotAcc extends DoubleFuncSlotAcc {
-  int[] counts;
+  static class AvgSlotAcc extends DoubleFuncSlotAcc {
+    int[] counts;
 
   public AvgSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots);
-    counts = new int[numSlots];
-  }
+      super(values, fcontext, numSlots);
+      counts = new int[numSlots];
+    }
 
-  @Override
-  public void reset() {
-    super.reset();
-    for (int i = 0; i < counts.length; i++) {
-      counts[i] = 0;
+    @Override
+    public void reset() {
+      super.reset();
+      for (int i = 0; i < counts.length; i++) {
+        counts[i] = 0;
+      }
+    }
+
+    @Override
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+      double val = values.doubleVal(doc);
+      if (val != 0 || values.exists(doc)) {
+        result[slotNum] += val;
+        counts[slotNum] += 1;
+      }
+    }
+
+    private double avg(int slot) {
+      return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(avg(slotA), avg(slotB));
+    }
+
+    @Override
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+      ArrayList<Object> lst = new ArrayList<>(2);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        return lst;
+      } else {
+        return avg(slot);
+      }
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      counts = resizer.resize(counts, 0);
     }
   }
 
-  @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
-    double val = values.doubleVal(doc);
-    if (val != 0 || values.exists(doc)) {
-      result[slotNum] += val;
-      counts[slotNum] += 1;
-    }
-  }
-
-  private double avg(int slot) {
-    return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
-  }
-
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(avg(slotA), avg(slotB));
-  }
-
-  @Override
-  public Object getValue(int slot) {
-    if (fcontext.isShard()) {
-      ArrayList lst = new ArrayList(2);
-      lst.add(counts[slot]);
-      lst.add(result[slot]);
-      return lst;
-    } else {
-      return avg(slot);
-    }
-  }
-
-  @Override
-  public void resize(Resizer resizer) {
-    super.resize(resizer);
-    counts = resizer.resize(counts, 0);
-  }
-}
-
-class VarianceSlotAcc extends DoubleFuncSlotAcc {
-  int[] counts;
-  double[] sum;
+  static class VarianceSlotAcc extends DoubleFuncSlotAcc {
+    int[] counts;
+    double[] sum;
 
   public VarianceSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots);
-    counts = new int[numSlots];
-    sum = new double[numSlots];
-  }
+      super(values, fcontext, numSlots);
+      counts = new int[numSlots];
+      sum = new double[numSlots];
+    }
 
-  @Override
-  public void reset() {
-    super.reset();
-    Arrays.fill(counts, 0);
-    Arrays.fill(sum, 0);
-  }
+    @Override
+    public void reset() {
+      super.reset();
+      Arrays.fill(counts, 0);
+      Arrays.fill(sum, 0);
+    }
 
-  @Override
-  public void resize(Resizer resizer) {
-    super.resize(resizer);
-    this.counts = resizer.resize(this.counts, 0);
-    this.sum = resizer.resize(this.sum, 0);
-  }
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      this.counts = resizer.resize(this.counts, 0);
+      this.sum = resizer.resize(this.sum, 0);
+    }
 
-  private double variance(int slot) {
+    private double variance(int slot) {
     return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
-  }
+    }
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(this.variance(slotA), this.variance(slotB));
-  }
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(this.variance(slotA), this.variance(slotB));
+    }
 
-  @Override
-  public Object getValue(int slot) {
-    if (fcontext.isShard()) {
-      ArrayList lst = new ArrayList(3);
-      lst.add(counts[slot]);
-      lst.add(result[slot]);
-      lst.add(sum[slot]);
-      return lst;
-    } else {
-      return this.variance(slot);
+    @Override
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+      ArrayList<Object> lst = new ArrayList<>(3);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        lst.add(sum[slot]);
+        return lst;
+      } else {
+        return this.variance(slot);
+      }
+    }
+
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      double val = values.doubleVal(doc);
+      if (values.exists(doc)) {
+        counts[slot]++;
+        result[slot] += val * val;
+        sum[slot] += val;
+      }
     }
   }
 
-  @Override
-  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    double val = values.doubleVal(doc);
-    if (values.exists(doc)) {
-      counts[slot]++;
-      result[slot] += val * val;
-      sum[slot] += val;
-    }
-  }
-}
-
-class StddevSlotAcc extends DoubleFuncSlotAcc {
-  int[] counts;
-  double[] sum;
+  static class StddevSlotAcc extends DoubleFuncSlotAcc {
+    int[] counts;
+    double[] sum;
 
   public StddevSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots);
-    counts = new int[numSlots];
-    sum = new double[numSlots];
-  }
+      super(values, fcontext, numSlots);
+      counts = new int[numSlots];
+      sum = new double[numSlots];
+    }
 
-  @Override
-  public void reset() {
-    super.reset();
-    Arrays.fill(counts, 0);
-    Arrays.fill(sum, 0);
-  }
+    @Override
+    public void reset() {
+      super.reset();
+      Arrays.fill(counts, 0);
+      Arrays.fill(sum, 0);
+    }
 
-  @Override
-  public void resize(Resizer resizer) {
-    super.resize(resizer);
-    this.counts = resizer.resize(this.counts, 0);
-    this.result = resizer.resize(this.result, 0);
-  }
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      this.counts = resizer.resize(this.counts, 0);
+      this.result = resizer.resize(this.result, 0);
+    }
 
-  private double stdDev(int slot) {
+    private double stdDev(int slot) {
     return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
-  }
+    }
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(this.stdDev(slotA), this.stdDev(slotB));
-  }
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(this.stdDev(slotA), this.stdDev(slotB));
+    }
 
-  @Override
-  public Object getValue(int slot) {
-    if (fcontext.isShard()) {
-      ArrayList lst = new ArrayList(3);
-      lst.add(counts[slot]);
-      lst.add(result[slot]);
-      lst.add(sum[slot]);
-      return lst;
-    } else {
-      return this.stdDev(slot);
+    @Override
+    @SuppressWarnings({"unchecked"})
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+        ArrayList<Object> lst = new ArrayList<>(3);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        lst.add(sum[slot]);
+        return lst;
+      } else {
+        return this.stdDev(slot);
+      }
+    }
+
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      double val = values.doubleVal(doc);
+      if (values.exists(doc)) {
+        counts[slot]++;
+        result[slot] += val * val;
+        sum[slot] += val;
+      }
     }
   }
 
-  @Override
-  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    double val = values.doubleVal(doc);
-    if (values.exists(doc)) {
-      counts[slot]++;
-      result[slot] += val * val;
-      sum[slot] += val;
+  abstract static class CountSlotAcc extends SlotAcc {
+    public CountSlotAcc(FacetContext fcontext) {
+      super(fcontext);
     }
-  }
-}
-
-abstract class CountSlotAcc extends SlotAcc {
-  public CountSlotAcc(FacetContext fcontext) {
-    super(fcontext);
-  }
 
   public abstract void incrementCount(int slot, int count);
 
   public abstract int getCount(int slot);
-}
+  }
 
-class CountSlotArrAcc extends CountSlotAcc {
-  int[] result;
+  static class CountSlotArrAcc extends CountSlotAcc {
+    int[] result;
 
   public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
-    super(fcontext);
+      super(fcontext);
     result = new int[numSlots];
-  }
+    }
 
-  @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) {
-    // TODO: count arrays can use fewer bytes based on the number of docs in
-    // the base set (that's the upper bound for single valued) - look at ttf?
-    result[slotNum]++;
-  }
+    @Override
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) {
+      // TODO: count arrays can use fewer bytes based on the number of docs in
+      // the base set (that's the upper bound for single valued) - look at ttf?
+      result[slotNum]++;
+    }
 
-  @Override
-  public int compare(int slotA, int slotB) {
+    @Override
+    public int compare(int slotA, int slotB) {
     return Integer.compare(result[slotA], result[slotB]);
-  }
+    }
 
-  @Override
-  public Object getValue(int slotNum) throws IOException {
-    return result[slotNum];
-  }
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      return result[slotNum];
+    }
 
   public void incrementCount(int slot, int count) {
-    result[slot] += count;
-  }
+      result[slot] += count;
+    }
 
   public int getCount(int slot) {
-    return result[slot];
-  }
+      return result[slot];
+    }
 
-  // internal and expert
+    // internal and expert
   int[] getCountArray() {
-    return result;
+      return result;
+    }
+
+    @Override
+    public void reset() {
+      Arrays.fill(result, 0);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      result = resizer.resize(result, 0);
+    }
   }
 
-  @Override
-  public void reset() {
-    Arrays.fill(result, 0);
-  }
+  static class SortSlotAcc extends SlotAcc {
+    public SortSlotAcc(FacetContext fcontext) {
+      super(fcontext);
+    }
 
-  @Override
-  public void resize(Resizer resizer) {
-    result = resizer.resize(result, 0);
-  }
-}
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      // no-op
+    }
 
-class SortSlotAcc extends SlotAcc {
-  public SortSlotAcc(FacetContext fcontext) {
-    super(fcontext);
-  }
+    public int compare(int slotA, int slotB) {
+      return slotA - slotB;
+    }
 
-  @Override
-  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    // no-op
-  }
+    @Override
+    public Object getValue(int slotNum) {
+      return slotNum;
+    }
 
-  public int compare(int slotA, int slotB) {
-    return slotA - slotB;
-  }
+    @Override
+    public void reset() {
+      // no-op
+    }
 
-  @Override
-  public Object getValue(int slotNum) {
-    return slotNum;
-  }
-
-  @Override
-  public void reset() {
-    // no-op
-  }
-
-  @Override
-  public void resize(Resizer resizer) {
-    // sort slot only works with direct-mapped accumulators
-    throw new UnsupportedOperationException();
+    @Override
+    public void resize(Resizer resizer) {
+      // sort slot only works with direct-mapped accumulators
+      throw new UnsupportedOperationException();
+    }
   }
 }

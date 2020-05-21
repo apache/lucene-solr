@@ -67,7 +67,7 @@ public class UniqueAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     long answer = -1;
     long sumUnique;
     Set<Object> values;
@@ -76,6 +76,7 @@ public class UniqueAgg extends StrAggValueSource {
     long shardsMissingMax;
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       long unique = ((Number)map.get("unique")).longValue();
@@ -118,7 +119,7 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }
@@ -166,6 +167,7 @@ public class UniqueAgg extends StrAggValueSource {
       return set==null ? 0 : set.cardinality();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       LongSet set = sets[slot];
       int unique = getCardinality(slot);

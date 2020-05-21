@@ -315,7 +315,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCounts(FacetFieldProcessorByArrayUIF processor, CountSlotAcc counts) throws IOException {
+  private void getCounts(FacetFieldProcessorByArrayUIF processor, SlotAcc.CountSlotAcc counts) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -427,7 +427,7 @@ public class UnInvertedField extends DocTermOrds {
     DocSet docs = processor.fcontext.base;
 
     int uniqueTerms = 0;
-    final CountSlotAcc countAcc = processor.countAcc;
+    final SlotAcc.CountSlotAcc countAcc = processor.countAcc;
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import java.io.IOException;
+
 /**
  * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
@@ -86,9 +88,14 @@ public interface SolrMetricProducer extends AutoCloseable {
    * Implementations should always call <code>SolrMetricProducer.super.close()</code> to ensure that
    * metrics with the same life-cycle as this component are properly unregistered. This prevents
    * obscure memory leaks.
+   *
+   * from: https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html
+   * While this interface method is declared to throw Exception, implementers are strongly encouraged
+   * to declare concrete implementations of the close method to throw more specific exceptions, or to
+   * throw no exception at all if the close operation cannot fail.
    */
   @Override
-  default void close() throws Exception {
+  default void close() throws IOException {
     SolrMetricsContext context = getSolrMetricsContext();
     if (context == null) {
       return;

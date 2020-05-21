@@ -78,6 +78,6 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
   
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger() ;
+    return new FacetModule.FacetLongMerger() ;
   }
 }
