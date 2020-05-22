@@ -180,6 +180,11 @@ Other Changes
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
 
+* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
+  Erick Erickson)
+
+* SOLR-14495: Fix or suppress warnings in solr/search/function (Erick Erickson)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
