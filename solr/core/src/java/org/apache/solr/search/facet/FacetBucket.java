@@ -24,14 +24,17 @@ import java.util.Map;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
-  final FacetBucketMerger parent;
+  @SuppressWarnings("rawtypes")
+  final FacetModule.FacetBucketMerger parent;
+  @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
   final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
 
   long count;
   Map<String, FacetMerger> subs;
 
-  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue, FacetMerger.Context mcontext) {
+  public FacetBucket(@SuppressWarnings("rawtypes") FacetModule.FacetBucketMerger parent
+      , @SuppressWarnings("rawtypes") Comparable bucketValue, FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
     this.bucketNumber = mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...
@@ -66,7 +69,7 @@ public class FacetBucket {
     return merger;
   }
 
-  public void mergeBucket(SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
+  public void mergeBucket(@SuppressWarnings("rawtypes") SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
     // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
 
     mcontext.setShardFlag(bucketNumber);
@@ -93,6 +96,7 @@ public class FacetBucket {
   }
 
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public SimpleOrderedMap getMergedBucket() {
     SimpleOrderedMap out = new SimpleOrderedMap( (subs == null ? 0 : subs.size()) + 2 );
     if (bucketValue != null) {

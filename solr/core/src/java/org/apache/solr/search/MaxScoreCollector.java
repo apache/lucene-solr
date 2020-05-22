@@ -37,9 +37,7 @@ public class MaxScoreCollector extends SimpleCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    // Should be TOP_SCORES but this would wrap the scorer unnecessarily since
-    // this collector is only used in a MultiCollector.
-    return ScoreMode.COMPLETE;
+    return ScoreMode.TOP_SCORES;
   }
 
   @Override

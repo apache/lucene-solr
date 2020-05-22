@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solrj - Solr Java Client'
+
 dependencies {
   api 'org.slf4j:slf4j-api'
   implementation 'org.slf4j:jcl-over-slf4j'

@@ -60,6 +60,13 @@ API Changes
 
 Improvements
 
+* LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
+  follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
+
+* LUCENE-9336: RegExp query now supports \w \W \d \D \s \S expressions.
+  This is a break with previous behaviour where these were (mis)interpreted
+  as literally the characters w W d etc. (Mark Harwood)
+
 * LUCENE-8757: When provided with an ExecutorService to run queries across
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
@@ -110,6 +117,9 @@ Bug fixes
 
 * LUCENE-9290: Don't assume that different XYPoint have different hash code
   (Ignacio Vera via Mike Drob)
+
+* LUCENE-9372: Fix paths for cygwin/msys before gradle wrapper jar lookup.
+  (Peter Barna)
 
 Other
 
@@ -162,7 +172,9 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
+  (Alan Woodward)
 
 Improvements
 ---------------------
@@ -238,6 +250,9 @@ Bug Fixes
 * LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
   implementation. (Pierre-Luc Perron, Alan Woodward)
 
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
+
 Other
 ---------------------
 
@@ -263,9 +278,19 @@ Other
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
+  equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
+
+* LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
+
+* LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
+
 Build
 
 * Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
+
+* LUCENE-9376: Fix or suppress 20 resource leak precommit warnings in lucene/search
+  (Andras Salamon via Erick Erickson)
 
 ======================= Lucene 8.5.1 =======================
 

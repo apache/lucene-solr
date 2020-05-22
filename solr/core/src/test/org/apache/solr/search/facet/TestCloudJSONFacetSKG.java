@@ -46,6 +46,10 @@ import org.apache.solr.common.util.NamedList;
 import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
 import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
 
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
+import org.noggit.JSONWriter.Writable;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -73,6 +77,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * 
  * @see TestCloudJSONFacetJoinDomain
+ * @see TestCloudJSONFacetSKGEquiv
  */
 @Slow
 public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
@@ -87,9 +92,18 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   private static final int UNIQUE_FIELD_VALS = 50;
 
   /** Multivalued string field suffixes that can be randomized for testing diff facet/join code paths */
-  private static final String[] STR_FIELD_SUFFIXES = new String[] { "_ss", "_sds", "_sdsS" };
+  private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[]
+    { "_multi_ss", "_multi_sds", "_multi_sdsS" };
   /** Multivalued int field suffixes that can be randomized for testing diff facet/join code paths */
-  private static final String[] INT_FIELD_SUFFIXES = new String[] { "_is", "_ids", "_idsS" };
+  private static final String[] MULTI_INT_FIELD_SUFFIXES = new String[]
+    { "_multi_is", "_multi_ids", "_multi_idsS" };
+  
+  /** Single Valued string field suffixes that can be randomized for testing diff facet code paths */
+  private static final String[] SOLO_STR_FIELD_SUFFIXES = new String[]
+    { "_solo_s", "_solo_sd", "_solo_sdS" };
+  /** Single Valued int field suffixes that can be randomized for testing diff facet code paths */
+  private static final String[] SOLO_INT_FIELD_SUFFIXES = new String[]
+    { "_solo_i", "_solo_id", "_solo_idS" };
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
@@ -100,7 +114,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   private static void createMiniSolrCloudCluster() throws Exception {
     // sanity check constants
     assertTrue("bad test constants: some suffixes will never be tested",
-               (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
+               (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) &&
+               (MULTI_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM) &&
+               (SOLO_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) &&
+               (SOLO_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
     
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -152,9 +169,14 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
           
-          // for each fieldNum, there are actaully two fields: one string, and one integer
-          doc.addField(field(STR_FIELD_SUFFIXES, fieldNum), fieldValue);
-          doc.addField(field(INT_FIELD_SUFFIXES, fieldNum), fieldValue);
+          // multi valued: one string, and one integer
+          doc.addField(multiStrField(fieldNum), fieldValue);
+          doc.addField(multiIntField(fieldNum), fieldValue);
+        }
+        { // single valued: one string, and one integer
+          final String fieldValue = randFieldValue(fieldNum);
+          doc.addField(soloStrField(fieldNum), fieldValue);
+          doc.addField(soloIntField(fieldNum), fieldValue);
         }
       }
       CLOUD_CLIENT.add(doc);
@@ -172,8 +194,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * Given a (random) number, and a (static) array of possible suffixes returns a consistent field name that 
    * uses that number and one of hte specified suffixes in it's name.
    *
-   * @see #STR_FIELD_SUFFIXES
-   * @see #INT_FIELD_SUFFIXES
+   * @see #MULTI_STR_FIELD_SUFFIXES
+   * @see #MULTI_INT_FIELD_SUFFIXES
    * @see #MAX_FIELD_NUM
    * @see #randFieldValue
    */
@@ -183,11 +205,21 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
   }
-  private static String strfield(final int fieldNum) {
-    return field(STR_FIELD_SUFFIXES, fieldNum);
+  /** Given a (random) number, returns a consistent field name for a multi valued string field */
+  private static String multiStrField(final int fieldNum) {
+    return field(MULTI_STR_FIELD_SUFFIXES, fieldNum);
   }
-  private static String intfield(final int fieldNum) {
-    return field(INT_FIELD_SUFFIXES, fieldNum);
+  /** Given a (random) number, returns a consistent field name for a multi valued int field */
+  private static String multiIntField(final int fieldNum) {
+    return field(MULTI_INT_FIELD_SUFFIXES, fieldNum);
+  }
+  /** Given a (random) number, returns a consistent field name for a single valued string field */
+  private static String soloStrField(final int fieldNum) {
+    return field(SOLO_STR_FIELD_SUFFIXES, fieldNum);
+  }
+  /** Given a (random) number, returns a consistent field name for a single valued int field */
+  private static String soloIntField(final int fieldNum) {
+    return field(SOLO_INT_FIELD_SUFFIXES, fieldNum);
   }
 
   /**
@@ -224,19 +256,19 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   public void testBespoke() throws Exception {
     { // trivial single level facet
       Map<String,TermFacet> facets = new LinkedHashMap<>();
-      TermFacet top = new TermFacet(strfield(9), UNIQUE_FIELD_VALS, 0, null);
+      TermFacet top = new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, null);
       facets.put("top1", top);
       final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
-      assertFacetSKGsAreCorrect(maxBuckets, facets, strfield(7)+":11", strfield(5)+":9", "*:*");
+      assertFacetSKGsAreCorrect(maxBuckets, facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
       assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
     }
     
     { // trivial single level facet w/sorting on skg
       Map<String,TermFacet> facets = new LinkedHashMap<>();
-      TermFacet top = new TermFacet(strfield(9), UNIQUE_FIELD_VALS, 0, "skg desc");
+      TermFacet top = new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, "skg desc");
       facets.put("top2", top);
       final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
-      assertFacetSKGsAreCorrect(maxBuckets, facets, strfield(7)+":11", strfield(5)+":9", "*:*");
+      assertFacetSKGsAreCorrect(maxBuckets, facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
       assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
     }
 
@@ -249,9 +281,9 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // because it causes FacetField.returnsPartial() to be "true"
       for (int limit : new int[] { 999999999, -1 }) {
         Map<String,TermFacet> facets = new LinkedHashMap<>();
-        facets.put("top_facet_limit__" + limit, new TermFacet(strfield(9), limit, 0, "skg desc"));
+        facets.put("top_facet_limit__" + limit, new TermFacet(multiStrField(9), limit, 0, "skg desc"));
         final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
-        assertFacetSKGsAreCorrect(maxBuckets, facets, strfield(7)+":11", strfield(5)+":9", "*:*");
+        assertFacetSKGsAreCorrect(maxBuckets, facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
         assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
       }
     }
@@ -294,7 +326,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     for (int c = 0; c < numClauses; c++) {
       final int fieldNum = random().nextInt(MAX_FIELD_NUM);
       // keep queries simple, just use str fields - not point of test
-      clauses[c] = strfield(fieldNum) + ":" + randFieldValue(fieldNum);
+      clauses[c] = multiStrField(fieldNum) + ":" + randFieldValue(fieldNum);
     }
     return buildORQuery(clauses);
   }
@@ -319,7 +351,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final SolrParams baseParams = params("rows","0", "fore", foreQ, "back", backQ);
     
     final SolrParams facetParams = params("q", query,
-                                          "json.facet", ""+TermFacet.toJSONFacetParamValue(expected,null));
+                                          "json.facet", ""+TermFacet.toJSONFacetParamValue(expected));
     final SolrParams initParams = SolrParams.wrapAppended(facetParams, baseParams);
     
     log.info("Doing full run: {}", initParams);
@@ -367,6 +399,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
+      
       final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
       final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
@@ -464,74 +497,78 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                  skgBucket.get("relatedness"));
     
   }
-  
-  
+
   /**
    * Trivial data structure for modeling a simple terms facet that can be written out as a json.facet param.
    *
    * Doesn't do any string escaping or quoting, so don't use whitespace or reserved json characters
    */
-  private static final class TermFacet {
-    public final String field;
+  private static final class TermFacet implements Writable {
+
+    /** non-skg subfacets for use in verification */
     public final Map<String,TermFacet> subFacets = new LinkedHashMap<>();
-    public final Integer limit; // may be null
-    public final Integer overrequest; // may be null
-    public final String sort; // may be null
+    
+    private final Map<String,Object> jsonData = new LinkedHashMap<>();
+
+    public final String field;
+    /** 
+     * @param field must be non null
+     * @param options can set any of options used in a term facet other then field or (sub) facets
+     */
+    public TermFacet(final String field, final Map<String,Object> options) {
+      assert null != field;
+      this.field = field;
+      
+      jsonData.putAll(options);
+      
+      // we don't allow these to be overridden by options, so set them now...
+      jsonData.put("type", "terms");
+      jsonData.put("field", field);
+      // see class javadocs for why we always use refine:true & the query:'*:*' domain for this test.
+      jsonData.put("refine", true);
+      jsonData.put("domain", map("query","*:*"));
+      
+    }
+
+    /** all params except field can be null */
+    public TermFacet(String field, Integer limit, Integer overrequest, String sort) {
+      this(field, map("limit", limit, "overrequest", overrequest, "sort", sort));
+    }
+    
     /** Simplified constructor asks for limit = # unique vals */
     public TermFacet(String field) {
       this(field, UNIQUE_FIELD_VALS, 0, "skg desc"); 
       
     }
-    public TermFacet(String field, Integer limit, Integer overrequest, String sort) {
-      assert null != field;
-      this.field = field;
-      this.limit = limit;
-      this.overrequest = overrequest;
-      this.sort = sort;
+    @Override
+    public void write(JSONWriter writer) {
+      // we need to include both our "real" subfacets, along with our SKG stat and 'processEmpty'
+      // (we don't put these in 'subFacets' to help keep the verification code simpler
+      final Map<String,Object> sub = map("processEmpty", true,
+                                         "skg", "relatedness($fore,$back)");
+      sub.putAll(subFacets);
+      
+      final Map<String,Object> out = map("facet", sub);
+      out.putAll(jsonData);
+      
+      writer.write(out);
     }
 
-    /**
-     * recursively generates the <code>json.facet</code> param value to use for testing this facet
-     */
-    private CharSequence toJSONFacetParamValue() {
-      final String limitStr = (null == limit) ? "" : (", limit:" + limit);
-      final String overrequestStr = (null == overrequest) ? "" : (", overrequest:" + overrequest);
-      final String sortStr = (null == sort) ? "" : (", sort: '" + sort + "'");
-      final StringBuilder sb
-        = new StringBuilder("{ type:terms, field:" + field + limitStr + overrequestStr + sortStr);
-
-      // see class javadocs for why we always use refine:true & the query:'*:*' domain for this test.
-      sb.append(", refine: true, domain: { query: '*:*' }, facet:");
-      sb.append(toJSONFacetParamValue(subFacets, "skg : 'relatedness($fore,$back)'"));
-      sb.append("}");
-      return sb;
-    }
-    
     /**
      * Given a set of (possibly nested) facets, generates a suitable <code>json.facet</code> param value to 
      * use for testing them against in a solr request.
      */
-    public static CharSequence toJSONFacetParamValue(final Map<String,TermFacet> facets,
-                                                     final String extraJson) {
+    public static String toJSONFacetParamValue(final Map<String,TermFacet> facets) {
       assert null != facets;
-      if (0 == facets.size() && null == extraJson) {
-        return "";
-      }
-
-      StringBuilder sb = new StringBuilder("{ processEmpty: true, ");
-      for (String key : facets.keySet()) {
-        sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
-        sb.append(" ,");
-      }
-      if (null == extraJson) {
-        sb.setLength(sb.length() - 1);
-      } else {
-        sb.append(extraJson);
-      }
-      sb.append("}");
-      return sb;
+      assert ! facets.isEmpty();
+      
+      // see class javadocs for why we always want processEmpty
+      final Map<String,Object> jsonData = map("processEmpty", true);
+      jsonData.putAll(facets);
+      
+      return JSONUtil.toJSON(jsonData, -1); // no newlines
     }
-    
+
     /**
      * Factory method for generating some random facets.  
      *
@@ -545,12 +582,83 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       final int maxDepth = TestUtil.nextInt(random(), 0, (usually() ? 2 : 3));
       return buildRandomFacets(keyCounter, maxDepth);
     }
+    
+    /**
+     * picks a random field to facet on.
+     *
+     * @see #field
+     * @return field name, never null
+     */
+    public static String randomFacetField(final Random r) {
+      final int fieldNum = r.nextInt(MAX_FIELD_NUM);
+      switch(r.nextInt(4)) {
+        case 0: return multiStrField(fieldNum);
+        case 1: return multiIntField(fieldNum);
+        case 2: return soloStrField(fieldNum);
+        case 3: return soloIntField(fieldNum);
+        default: throw new RuntimeException("Broken case statement");
+      }
+    }
 
+    /**
+     * picks a random value for the "perSeg" param, biased in favor of interesting test cases
+     *
+     * @return a Boolean, may be null
+     */
+    public static Boolean randomPerSegParam(final Random r) {
+
+      switch(r.nextInt(4)) {
+        case 0: return true;
+        case 1: return false;
+        case 2: 
+        case 3: return null;
+        default: throw new RuntimeException("Broken case statement");
+      }
+    }
+    
+    /**
+     * picks a random value for the "prefix" param, biased in favor of interesting test cases
+     *
+     * @return a valid prefix value, may be null
+     */
+    public static String randomPrefixParam(final Random r, final String facetField) {
+      
+      if (facetField.contains("multi_i") || facetField.contains("solo_i")) {
+        // never used a prefix on a numeric field
+        return null;
+      }
+      assert (facetField.contains("multi_s") || facetField.contains("solo_s"))
+        : "possible facet fields have changed, breaking test";
+      
+      switch(r.nextInt(5)) {
+        case 0: return "2";
+        case 1: return "3";
+        case 2: 
+        case 3: 
+        case 4: return null;
+        default: throw new RuntimeException("Broken case statement");
+      }
+    }
+    
+    /**
+     * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.  
+     *
+     * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
+     * @see #randomSortParam
+     */
+    public static String randomPrelimSortParam(final Random r, final String sort) {
+
+      if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
+        return "count desc";
+      }
+      return null;
+    }
     /**
      * picks a random value for the "sort" param, biased in favor of interesting test cases
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
      * @see #randomLimitParam
+     * @see #randomPrelimSortParam
      */
     public static String randomSortParam(Random r) {
 
@@ -632,12 +740,17 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         if (keyCounter.get() < 3) { // a hard limit on the total number of facets (regardless of depth) to reduce OOM risk
           
           final String sort = randomSortParam(random());
-          final Integer limit = randomLimitParam(random(), sort);
-          final Integer overrequest = randomOverrequestParam(random());
-          final TermFacet facet =  new TermFacet(field((random().nextBoolean()
-                                                        ? STR_FIELD_SUFFIXES : INT_FIELD_SUFFIXES),
-                                                       random().nextInt(MAX_FIELD_NUM)),
-                                                 limit, overrequest, sort);
+          final String facetField = randomFacetField(random());
+          final TermFacet facet =  new TermFacet(facetField,
+                                                 map("sort", sort,
+                                                     "prelim_sort", randomPrelimSortParam(random(), sort),
+                                                     "limit", randomLimitParam(random(), sort),
+                                                     "overrequest", randomOverrequestParam(random()),
+                                                     "prefix", randomPrefixParam(random(), facetField),
+                                                     "perSeg", randomPerSegParam(random())));
+                                                     
+
+                                                 
           results.put("facet_" + keyCounter.incrementAndGet(), facet);
           if (0 < maxDepth) {
             // if we're going wide, don't go deep
@@ -674,6 +787,21 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
                                                         client.getZkStateReader(),
                                                         true, true, 330);
+  }
+  
+  /** helper macro: fails on null keys, skips pairs with null values  */
+  public static Map<String,Object> map(Object... pairs) {
+    if (0 != pairs.length % 2) throw new IllegalArgumentException("uneven number of arguments");
+    final Map<String,Object> map = new LinkedHashMap<>();
+    for (int i = 0; i < pairs.length; i+=2) {
+      final Object key = pairs[i];
+      final Object val = pairs[i+1];
+      if (null == key) throw new NullPointerException("arguemnt " + i);
+      if (null == val) continue;
+      
+      map.put(key.toString(), val);
+    }
+    return map;
   }
 
 }
