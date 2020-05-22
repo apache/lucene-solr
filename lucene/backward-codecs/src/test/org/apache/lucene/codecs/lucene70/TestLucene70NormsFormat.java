@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene70;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
 
@@ -37,6 +38,11 @@ public class TestLucene70NormsFormat extends BaseNormsFormatTestCase {
           return PostingsFormat.forName("Lucene84");
         }
       };
+    }
+
+    @Override
+    public SegmentInfoFormat segmentInfoFormat() {
+      return new Lucene70RWSegmentInfoFormat();
     }
   };
   
