@@ -30,7 +30,7 @@ class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
   UnInvertedField uif;
   TermsEnum te;
 
-  FacetFieldProcessorByArrayUIF(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByArrayUIF(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     if (! sf.isUninvertible()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

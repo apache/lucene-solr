@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 
 public class Lang {
@@ -103,6 +105,8 @@ public class Lang {
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
         .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("per", PercentileMetric.class)
+        .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
 
             // tuple manipulation operations

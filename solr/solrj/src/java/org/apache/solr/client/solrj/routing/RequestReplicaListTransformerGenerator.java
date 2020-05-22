@@ -158,7 +158,7 @@ public class RequestReplicaListTransformerGenerator {
         Object current;
         int idx = 1;
         int boundaryCount = 0;
-        int[] boundaries = new int[choices.size() - 1];
+        int[] boundaries = new int[choices.size()];
         do {
           current = iter.next();
           if (replicaComp.compare(prev, current) != 0) {
@@ -167,6 +167,7 @@ public class RequestReplicaListTransformerGenerator {
           prev = current;
           idx++;
         } while (iter.hasNext());
+        boundaries[boundaryCount++] = idx;
 
         // Finally inspect boundaries to apply base transformation, where necessary (separate phase to avoid ConcurrentModificationException)
         int startIdx = 0;

@@ -239,6 +239,39 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  public void testMultiValuedBucketReHashing() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    // we want a domain with a small number of documents, and more facet (point) values then docs so
+    // that we force dvhash to increase the number of slots via resize...
+    // (NOTE: normal resizing won't happen w/o at least 1024 slots, but test static overrides this to '2')
+    client.add(sdoc("id", "1",
+                    "f_sd", "qqq",
+                    "f_ids", "4", "f_ids", "2", "f_ids", "999",
+                    "x_ids", "3", "x_ids", "5", "x_ids", "7",
+                    "z_ids", "42"), null);
+    client.add(sdoc("id", "2",
+                    "f_sd", "nnn",
+                    "f_ids", "44", "f_ids", "22", "f_ids", "999",
+                    "x_ids", "33", "x_ids", "55", "x_ids", "77",
+                    "z_ids", "666"), null);
+    client.add(sdoc("id", "3",
+                    "f_sd", "ggg",
+                    "f_ids", "444", "f_ids", "222", "f_ids", "999",
+                    "x_ids", "333", "x_ids", "555", "x_ids", "777",
+                    "z_ids", "1010101"), null);
+    client.commit();
+
+    // faceting on a multivalued point field sorting on a stat...
+    assertJQ(req("rows", "0", "q", "id:[1 TO 2]", "json.facet"
+                 , "{ f : { type: terms, field: f_ids, limit: 1, sort: 'x desc', "
+                 + "        facet: { x : 'sum(x_ids)', z : 'min(z_ids)' } } }")
+             , "response/numFound==2"
+             , "facets/count==2"
+             , "facets/f=={buckets:[{ val:999, count:2, x:180.0, z:42 }]}"
+             );
+  }
+
   public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
     Client client = Client.localClient();
     indexSimple(client);
@@ -407,31 +440,53 @@ public class TestJsonFacets extends SolrTestCaseHS {
       // So all of these re/sort options should produce identical output (since the num buckets is < limit)
       // - Testing "index" sort allows the randomized use of "stream" processor as default to be tested.
       // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "defered" Agg
-      assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
-                   "fore", "where_s:NY", "back", "*:*",
-                   "json.facet", ""
-                   + "{x: { type: terms, field: 'cat_s', "+sort+", "
-                   + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
-               , "facets=={count:5, x:{ buckets:["
-               + "   { val:'A', count:2, y:5.0, z:2, "
-               + "     skg : { relatedness: 0.00554, "
-               //+ "             foreground_count: 1, "
-               //+ "             foreground_size: 2, "
-               //+ "             background_count: 2, "
-               //+ "             background_size: 6,"
-               + "             foreground_popularity: 0.16667,"
-               + "             background_popularity: 0.33333, },"
-               + "   }, "
-               + "   { val:'B', count:3, y:-3.0, z:-5, "
-               + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
-               //+ "             foreground_count: 1, "
-               //+ "             foreground_size: 2, "
-               //+ "             background_count: 3, "
-               //+ "             background_size: 6,"
-               + "             foreground_popularity: 0.16667,"
-               + "             background_popularity: 0.5 },"
-               + "   } ] } } "
-               );
+      for (String limit : Arrays.asList(", ", ", limit:5, ", ", limit:-1, ")) {
+        // results shouldn't change regardless of our limit param"
+        assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                     "fore", "where_s:NY", "back", "*:*",
+                     "json.facet", ""
+                     + "{x: { type: terms, field: 'cat_s', "+sort + limit
+                     + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
+                 , "facets=={count:5, x:{ buckets:["
+                 + "   { val:'A', count:2, y:5.0, z:2, "
+                 + "     skg : { relatedness: 0.00554, "
+                 //+ "             foreground_count: 1, "
+                 //+ "             foreground_size: 2, "
+                 //+ "             background_count: 2, "
+                 //+ "             background_size: 6,"
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.33333, },"
+                 + "   }, "
+                 + "   { val:'B', count:3, y:-3.0, z:-5, "
+                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                 //+ "             foreground_count: 1, "
+                 //+ "             foreground_size: 2, "
+                 //+ "             background_count: 3, "
+                 //+ "             background_size: 6,"
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.5 },"
+                 + "   } ] } } "
+                 );
+        // same query with a prefix of 'B' should produce only a single bucket with exact same results
+        assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                     "fore", "where_s:NY", "back", "*:*",
+                     "json.facet", ""
+                     + "{x: { type: terms, field: 'cat_s', prefix:'B', "+sort + limit
+                     + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
+                 , "facets=={count:5, x:{ buckets:["
+                 + "   { val:'B', count:3, y:-3.0, z:-5, "
+                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                 //+ "             foreground_count: 1, "
+                 //+ "             foreground_size: 2, "
+                 //+ "             background_count: 3, "
+                 //+ "             background_size: 6,"
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.5 },"
+                 + "   } ] } } "
+                 );
+
+        
+      }
     }
     
     // trivial sanity check that we can (re)sort on SKG after pre-sorting on count...

@@ -78,7 +78,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
     return new JSONWriter(writer, req, rsp);
   }
 
-}
+
 
 /**
  * Writes NamedLists directly as an array of NameTypeValue JSON objects...
@@ -248,9 +248,10 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 }
 
-abstract class NaNFloatWriter extends JSONWriter {
-  
+abstract static class NaNFloatWriter extends JSONWriter {
+
   abstract protected String getNaN();
+
   abstract protected String getInf();
 
   public NaNFloatWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -282,4 +283,5 @@ abstract class NaNFloatWriter extends JSONWriter {
       writeDouble(name, Double.toString(val));
     }
   }
+}
 }

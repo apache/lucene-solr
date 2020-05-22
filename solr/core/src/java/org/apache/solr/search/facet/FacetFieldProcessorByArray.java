@@ -28,7 +28,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
-import static org.apache.solr.search.facet.FacetRequest.FacetContext.SKIP_FACET;
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 /**
  * Base class for DV/UIF accumulating counts into an array by ordinal.  It's
@@ -45,7 +45,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
   int allBucketsSlot = -1;  // slot for the primary Accs (countAcc, collectAcc)
 
-  FacetFieldProcessorByArray(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByArray(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
   }
 
@@ -135,7 +135,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   public IntFunction<SlotContext> slotContext = (slotNum) -> {
     try {
-      Object value = sf.getType().toObject(sf, lookupOrd(slotNum));
+      Object value = sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
       Query q = makeBucketQuery(valueObjToString(value));
       assert null != q : "null query for: '" + value + "'";
       return new SlotContext(q);

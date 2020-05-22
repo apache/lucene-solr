@@ -950,7 +950,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", FOO_STRING_FIELD + ":Book1");
-    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
         ,"/response/result[@numFoundExact='false']"
     );
     params.set("group", true);
@@ -959,7 +959,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
     );
     
-    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
         ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
     );
     

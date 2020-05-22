@@ -2528,7 +2528,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         newSearcher.register(); // register subitems (caches)
 
         if (log.isInfoEnabled()) {
-          log.info("{} Registered new searcher autowarm time: {} ms", logid, newSearcher.getWarmupTime());
+          log.info("{} Registered new searcher autowarm time: {} ms: Collection: '{}'"
+              , logid, newSearcher.getWarmupTime()
+              , newSearcher.getCore().getCoreDescriptor().getCollectionName());
         }
 
       } catch (Exception e) {

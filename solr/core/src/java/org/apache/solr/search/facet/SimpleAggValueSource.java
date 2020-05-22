@@ -35,6 +35,7 @@ public abstract class SimpleAggValueSource extends AggValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException();
   }
