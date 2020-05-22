@@ -90,7 +90,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     }
     SimpleBindings bindings = new SimpleBindings();
     for (SortField sortField : sortFields) {
-      bindings.add(sortField.getField(), fromSortField(sortField));
+      bindings.add(sortField.name(), fromSortField(sortField));
     }
     return expression.getDoubleValuesSource(bindings).toLongValuesSource();
   }
@@ -98,13 +98,13 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
   private DoubleValuesSource fromSortField(SortField field) {
     switch(field.getType()) {
       case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
+        return DoubleValuesSource.fromIntField(field.name());
       case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
+        return DoubleValuesSource.fromLongField(field.name());
       case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
+        return DoubleValuesSource.fromFloatField(field.name());
       case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
+        return DoubleValuesSource.fromDoubleField(field.name());
       case SCORE:
         return DoubleValuesSource.SCORES;
       default:

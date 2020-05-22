@@ -130,7 +130,7 @@ public class TestExpressionSorts extends LuceneTestCase {
         SortField s = (SortField) original[i];
         Expression expr = JavascriptCompiler.compile(s.name());
         SimpleBindings simpleBindings = new SimpleBindings();
-        simpleBindings.add(s.getField(), fromSortField(s));
+        simpleBindings.add(s.name(), fromSortField(s));
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         mutated[i] = expr.getSortField(simpleBindings, reverse);
       } else {
@@ -152,13 +152,13 @@ public class TestExpressionSorts extends LuceneTestCase {
   private DoubleValuesSource fromSortField(SortField field) {
     switch(field.getType()) {
       case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
+        return DoubleValuesSource.fromIntField(field.name());
       case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
+        return DoubleValuesSource.fromLongField(field.name());
       case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
+        return DoubleValuesSource.fromFloatField(field.name());
       case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
+        return DoubleValuesSource.fromDoubleField(field.name());
       case SCORE:
         return DoubleValuesSource.SCORES;
       default:
