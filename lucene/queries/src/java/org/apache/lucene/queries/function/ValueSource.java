@@ -367,7 +367,7 @@ public abstract class ValueSource {
     public SortField rewrite(IndexSearcher searcher) throws IOException {
       Map context = newContext(searcher);
       createWeight(context, searcher);
-      return new SortField(field, new ValueSourceComparatorSource(context), getReverse());
+      return new SortField(getField(), new ValueSourceComparatorSource(context), getReverse());
     }
   }
 

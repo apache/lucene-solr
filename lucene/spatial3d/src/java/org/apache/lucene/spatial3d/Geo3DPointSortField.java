@@ -43,7 +43,7 @@ final class Geo3DPointSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new Geo3DPointDistanceComparator(field, planetModel, distanceShape, numHits);
+    return new Geo3DPointDistanceComparator(getField(), planetModel, distanceShape, numHits);
   }
 
   @Override
@@ -83,7 +83,7 @@ final class Geo3DPointSortField extends SortField {
     StringBuilder builder = new StringBuilder();
     builder.append("<distanceShape:");
     builder.append('"');
-    builder.append(field);
+    builder.append(getField());
     builder.append('"');
     builder.append(" shape=");
     builder.append(distanceShape);

@@ -1096,7 +1096,7 @@ public class QueryComponent extends SearchComponent
       // :TODO: would be simpler to always serialize every position of SortField[]
       if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-      final String sortFieldName = sortField.name();
+      final String sortFieldName = sortField.getField();
       final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
       assert sortFieldName.equals(valueFieldName)
         : "sortFieldValues name key does not match expected SortField.getField";
@@ -1105,14 +1105,14 @@ public class QueryComponent extends SearchComponent
 
       final SchemaField schemaField = schemaFields.get(sortFieldNum);
       if (null == schemaField) {
-        unmarshalledSortValsPerField.add(sortField.name(), sortVals);
+        unmarshalledSortValsPerField.add(sortField.getField(), sortVals);
       } else {
         FieldType fieldType = schemaField.getType();
         List unmarshalledSortVals = new ArrayList();
         for (Object sortVal : sortVals) {
           unmarshalledSortVals.add(fieldType.unmarshalSortValue(sortVal));
         }
-        unmarshalledSortValsPerField.add(sortField.name(), unmarshalledSortVals);
+        unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
       }
       marshalledFieldNum++;
     }

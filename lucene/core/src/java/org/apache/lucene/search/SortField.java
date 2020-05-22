@@ -235,6 +235,10 @@ public class SortField implements SortOrder {
     }
   }
 
+  public String getField() {
+    return name();
+  }
+
   /** Pass this to {@link #setMissingValue} to have missing
    *  string values sort first. */
   public final static Object STRING_FIRST = new Object() {

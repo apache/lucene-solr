@@ -78,6 +78,9 @@ public interface SortOrder {
    */
   IndexSorter getIndexSorter();
 
+  /**
+   * Sorts by document score
+   */
   SortOrder SCORE = new SortOrder() {
     @Override
     public boolean getReverse() {
@@ -105,6 +108,9 @@ public interface SortOrder {
     }
   };
 
+  /**
+   * Sorts by index order
+   */
   SortOrder DOC_ID = new SortOrder() {
     @Override
     public boolean getReverse() {

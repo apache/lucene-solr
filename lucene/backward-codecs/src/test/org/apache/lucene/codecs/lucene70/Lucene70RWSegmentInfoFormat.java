@@ -94,7 +94,7 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
         }
         SortField sortField = (SortField) indexSort.getSort()[i];
         SortField.Type sortType = sortField.getType();
-        output.writeString(sortField.name());
+        output.writeString(sortField.getField());
         int sortTypeID;
         switch (sortField.getType()) {
           case STRING:
@@ -175,7 +175,7 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
               } else if (missingValue == SortField.STRING_FIRST) {
                 output.writeByte((byte) 2);
               } else {
-                throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.name() + "\": " + missingValue);
+                throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.getField() + "\": " + missingValue);
               }
               break;
             case LONG:
