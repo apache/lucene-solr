@@ -119,6 +119,12 @@ Improvements
 
 * SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
+* SOLR-13325: ComputePlanAction now supports a collection selector of the form `collections: {policy: my_policy}`
+  which can be used to select multiple collections that match collection property/value pairs. This is useful to
+  maintain a whitelist of collections for which actions are taken without needing to hard code the collection names
+  themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
+  are not computed at all. (ab, shalin)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -233,6 +239,8 @@ Other Changes
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
+* SOLR-14461: Replaced commons-fileupload dependency with using Jetty's facilities. (David Smiley)
+
 * SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
 
 * SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
@@ -244,6 +252,13 @@ Other Changes
   Erick Erickson)
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
+
+
+* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
+  Erick Erickson)
+
+* SOLR-14495: Fix or suppress warnings in solr/search/function (Erick Erickson)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

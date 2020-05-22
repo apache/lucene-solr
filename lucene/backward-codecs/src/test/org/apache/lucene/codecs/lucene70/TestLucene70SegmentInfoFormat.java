@@ -14,15 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
+package org.apache.lucene.codecs.lucene70;
 
-import java.io.IOException;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
+import org.apache.lucene.util.Version;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.search.DocIdSetIterator;
+public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
-abstract class DocValuesWriter<T extends DocIdSetIterator> {
-  abstract void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer consumer) throws IOException;
-  abstract T getDocValues();
+  @Override
+  protected Version[] getVersions() {
+    return new Version[] { Version.LUCENE_8_4_0 };
+  }
+
+  @Override
+  protected Codec getCodec() {
+    return new FilterCodec("Lucene84", Codec.forName("Lucene84")) {
+      @Override
+      public SegmentInfoFormat segmentInfoFormat() {
+        return new Lucene70RWSegmentInfoFormat();
+      }
+    };
+  }
 }

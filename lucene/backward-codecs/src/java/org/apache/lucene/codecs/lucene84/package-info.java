@@ -14,22 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene70;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
-
-public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
-
-  @Override
-  protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
-  }
-
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
-  }
-}
+/**
+ * Components from the Lucene 8.4 index format.  See {@link org.apache.lucene.codecs.lucene86}
+ * for an overview of the current index format.
+ */
+package org.apache.lucene.codecs.lucene84;
