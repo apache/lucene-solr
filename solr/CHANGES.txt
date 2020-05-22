@@ -233,6 +233,8 @@ Other Changes
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
+* SOLR-14461: Replaced commons-fileupload dependency with using Jetty's facilities. (David Smiley)
+
 * SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
 
 * SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
@@ -244,6 +246,7 @@ Other Changes
   Erick Erickson)
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
