@@ -144,6 +144,10 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       searcher.search(new QueryResult(), cmd);
       assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
+      while (0 < cmd.getMinExactCount()) {
+        cmd.setMinExactCount(cmd.getMinExactCount() - 1);
+        assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
+      }
       return null;
     });
   }
@@ -154,6 +158,11 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       searcher.search(new QueryResult(), cmd);
       assertMatchesEqual(NUM_DOCS, searcher, cmd);
+      // caching does confer exact count benefits on subsequent requests with lower min exact hits
+      while (0 < cmd.getMinExactCount()) {
+        cmd.setMinExactCount(cmd.getMinExactCount() - 1);
+        assertMatchesEqual(NUM_DOCS, searcher, cmd);
+      }
       return null;
     });
   }

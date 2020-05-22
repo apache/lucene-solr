@@ -118,7 +118,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final boolean cachingEnabled;
   private final SolrCache<Query,DocSet> filterCache;
-  private final SolrCache<QueryResultKey,DocList> queryResultCache;
+
+  private static class QueryResultCacheEntry {
+    final DocList docList;
+    final int minExactCount;
+    QueryResultCacheEntry(DocList docList, int minExactCount) {
+      this.docList = docList;
+      this.minExactCount = minExactCount;
+    }
+  }
+  private final SolrCache<QueryResultKey,QueryResultCacheEntry> queryResultCache;
+
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
@@ -566,14 +576,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             nDocs = Math.min(oldnDocs, 40);
           }
 
-          int flags = NO_CHECK_QCACHE | key.nc_flags;
           QueryCommand qc = new QueryCommand();
           qc.setQuery(key.query)
               .setFilterList(key.filters)
               .setSort(key.sort)
               .setLen(nDocs)
               .setSupersetMaxDoc(nDocs)
-              .setFlags(flags);
+              .setMinExactCount(key.nc_minExactCount)
+              .setFlags(NO_CHECK_QCACHE | key.nc_flags);
           QueryResult qr = new QueryResult();
           newSearcher.getDocListC(qr, qc);
           return true;
@@ -1310,7 +1320,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // so set all of them on the cache key.
       key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactCount());
       if ((flags & NO_CHECK_QCACHE) == 0) {
-        superset = queryResultCache.get(key);
+        final QueryResultCacheEntry qrce = queryResultCache.get(key);
+        if (qrce != null &&
+            qrce.docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO &&
+            qrce.minExactCount >= key.nc_minExactCount) {
+          superset = qrce.docList;
+        } else {
+          superset = null;
+        }
 
         if (superset != null) {
           // check that the cache entry has scores recorded if we need them
@@ -1428,7 +1445,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // lastly, put the superset in the cache if the size is less than or equal
     // to queryResultMaxDocsCached
     if (key != null && superset.size() <= queryResultMaxDocsCached && !qr.isPartialResults()) {
-      queryResultCache.put(key, superset);
+      queryResultCache.put(key, new QueryResultCacheEntry(superset, key.nc_minExactCount));
     }
   }
 

@@ -142,9 +142,9 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     final Query base = new FlatHashTermQuery("base");
     assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10));
-    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 20));
-    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));//Integer.MAX_VALUE
     assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
