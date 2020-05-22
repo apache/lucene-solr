@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging, zookeeper-access-control
+:page-children: authentication-and-authorization-plugins, enabling-ssl, zookeeper-access-control
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,7 +26,7 @@ When planning how to secure Solr, you should consider which of the available fea
 
 == Encryption with TLS (SSL) Certificates
 
-Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
+Encrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
 
 See the page <<enabling-ssl.adoc#enabling-ssl,Enabling TLS (SSL)>> for details.
 
@@ -44,6 +44,7 @@ Authentication makes sure you know the identity of your users. The authenticatio
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
 * <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
+* <<cert-authentication-plugin.adoc#cert-authentication-plugin,Certificate Authentication Plugin>>
 // end::list-of-authentication-plugins[]
 
 === Authorization Plugins
@@ -52,6 +53,7 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 // tag::list-of-authorization-plugins[]
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,External Role Rule-Based Authorization Plugin>>
 // end::list-of-authorization-plugins[]
 
 === Audit Logging Plugins

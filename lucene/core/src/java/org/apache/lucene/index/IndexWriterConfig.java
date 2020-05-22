@@ -503,7 +503,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
           @Override
           public SortedNumericDocValues getSortedNumericDocValues(String field) {
             fields.add(field);
-            return DocValues.emptySortedNumeric(0);
+            return DocValues.emptySortedNumeric();
           }
 
           @Override
@@ -516,12 +516,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
           public FieldInfos getFieldInfos() {
             throw new UnsupportedOperationException();
           }
-
-          @Override
-          public int maxDoc() {
-            return 0;
-          }
-        });
+        }, 0);
       } catch (IOException e) {
         throw new UncheckedIOException(e);  // should never be thrown
       }

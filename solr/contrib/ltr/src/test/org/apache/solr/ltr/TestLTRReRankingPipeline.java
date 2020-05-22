@@ -248,8 +248,10 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
       hits = new TopDocs(hits.totalHits, slice);
       hits = rescorer.rescore(searcher, hits, topN);
       for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
-        log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)
-            .get("id"), j);
+        if (log.isInfoEnabled()) {
+          log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)
+              .get("id"), j);
+        }
 
         assertEquals(i,
             Integer.parseInt(searcher.doc(hits.scoreDocs[j].doc).get("id")));

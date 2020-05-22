@@ -16,11 +16,14 @@
  */
 package org.apache.solr.servlet;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -38,10 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -60,14 +59,21 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.tracing.GlobalTracer;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.MultiParts;
+import org.eclipse.jetty.server.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 
-public class SolrRequestParsers 
-{
+public class SolrRequestParsers {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";
   public static final String FORMDATA = "formdata";
@@ -92,9 +98,7 @@ public class SolrRequestParsers
 
   /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
   public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
-  
-  public static volatile SolrFileCleaningTracker fileCleaningTracker;
-  
+
   /**
    * Pass in an xml configuration.  A null configuration will enable
    * everything with maximum values.
@@ -534,29 +538,6 @@ public class SolrRequestParsers
     }
   }
 
-
-  /**
-   * Wrap a FileItem as a ContentStream
-   */
-  static class FileItemContentStream extends ContentStreamBase
-  {
-    private final FileItem item;
-    
-    public FileItemContentStream( FileItem f )
-    {
-      item = f;
-      contentType = item.getContentType();
-      name = item.getName();
-      sourceInfo = item.getFieldName();
-      size = item.getSize();
-    }
-      
-    @Override
-    public InputStream getStream() throws IOException {
-      return item.getInputStream();
-    }
-  }
-
   /**
    * The raw parser just uses the params directly
    */
@@ -571,58 +552,98 @@ public class SolrRequestParsers
     }
   }
 
-
-
   /**
    * Extract Multipart streams
    */
   static class MultipartRequestParser implements SolrRequestParser {
-    private final int uploadLimitKB;
-    private DiskFileItemFactory factory = new DiskFileItemFactory();
-    
-    public MultipartRequestParser(int limit) {
-      uploadLimitKB = limit;
+    private final MultipartConfigElement multipartConfigElement;
 
-      // Set factory constraints
-      FileCleaningTracker fct = fileCleaningTracker;
-      if (fct != null) {
-        factory.setFileCleaningTracker(fileCleaningTracker);
-      }
-      // TODO - configure factory.setSizeThreshold(yourMaxMemorySize);
-      // TODO - configure factory.setRepository(yourTempDirectory);
+    public MultipartRequestParser(int uploadLimitKB) {
+      multipartConfigElement = new MultipartConfigElement(
+          null, // temp dir (null=default)
+          -1, // maxFileSize  (-1=none)
+          uploadLimitKB * 1024, // maxRequestSize
+          100 * 1024 ); // fileSizeThreshold after which will go to disk
     }
     
     @Override
     public SolrParams parseParamsAndFillStreams(
         final HttpServletRequest req, ArrayList<ContentStream> streams) throws Exception {
-      if( !ServletFileUpload.isMultipartContent(req) ) {
+      if (!isMultipart(req)) {
         throw new SolrException( ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
       }
-      
+      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a Jetty class
+      req.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+
       MultiMapSolrParams params = parseQueryString( req.getQueryString() );
 
-      // Create a new file upload handler
-      ServletFileUpload upload = new ServletFileUpload(factory);
-      upload.setSizeMax( ((long) uploadLimitKB) * 1024L );
+      // IMPORTANT: the Parts will all have the delete() method called by cleanupMultipartFiles()
 
-      // Parse the request
-      List<FileItem> items = upload.parseRequest(req);
-      for (FileItem item : items) {
-        // If it's a form field, put it in our parameter map
-        if (item.isFormField()) {
+      for (Part part : req.getParts()) {
+        if (part.getSubmittedFileName() == null) { // thus a form field and not file upload
+          // If it's a form field, put it in our parameter map
+          String partAsString = org.apache.commons.io.IOUtils.toString(new PartContentStream(part).getReader());
           MultiMapSolrParams.addParam(
-            item.getFieldName().trim(),
-            item.getString(), params.getMap() );
-        }
-        // Add the stream
-        else {
-          streams.add( new FileItemContentStream( item ) );
+              part.getName().trim(),
+              partAsString, params.getMap() );
+        } else { // file upload
+          streams.add(new PartContentStream(part));
         }
       }
       return params;
     }
+
+    boolean isMultipart(HttpServletRequest req) {
+      // Jetty utilities
+      return MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(req.getContentType(), null));
+    }
+
+    /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
+    static class PartContentStream extends ContentStreamBase {
+      private final Part part;
+
+      public PartContentStream(Part part ) {
+        this.part = part;
+        contentType = part.getContentType();
+        name = part.getName();
+        sourceInfo = part.getSubmittedFileName();
+        size = part.getSize();
+      }
+
+      @Override
+      public InputStream getStream() throws IOException {
+        return part.getInputStream();
+      }
+    }
   }
 
+
+  /** Clean up any tmp files created by MultiPartInputStream. */
+  static void cleanupMultipartFiles(HttpServletRequest request) {
+    // See Jetty MultiPartCleanerListener from which we drew inspiration
+    MultiParts multiParts = (MultiParts) request.getAttribute(Request.MULTIPARTS);
+    if (multiParts == null || multiParts.getContext() != request.getServletContext()) {
+      return;
+    }
+
+    log.debug("Deleting multipart files");
+
+    Collection<Part> parts;
+    try {
+      parts = multiParts.getParts();
+    } catch (IOException e) {
+      log.warn("Errors deleting multipart tmp files", e);
+      return;
+    }
+
+    for (Part part : parts) {
+      try {
+        part.delete();
+      } catch (IOException e) {
+        log.warn("Errors deleting multipart tmp files", e);
+      }
+    }
+  }
 
   /**
    * Extract application/x-www-form-urlencoded form data for POST requests
@@ -791,7 +812,7 @@ public class SolrRequestParsers
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (ServletFileUpload.isMultipartContent(req)) {
+      if (multipart.isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

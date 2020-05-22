@@ -85,7 +85,7 @@ public class TestLang extends SolrTestCase {
       "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export",
       "zplot", "natural", "repeat", "movingMAD", "hashRollup", "noop", "var", "stddev", "recNum", "isNull",
       "notNull", "matches", "projectToBorder", "double", "long", "parseCSV", "parseTSV", "dateTime",
-       "split", "upper", "trim", "lower", "trunc", "cosine", "dbscan"};
+       "split", "upper", "trim", "lower", "trunc", "cosine", "dbscan", "per", "std"};
 
   @Test
   public void testLang() {

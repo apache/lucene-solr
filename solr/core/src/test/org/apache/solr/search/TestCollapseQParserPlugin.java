@@ -1039,4 +1039,33 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
         req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
   }
+  
+  @Test
+  public void testMinExactCountDisabledByCollapse() throws Exception {
+    int numDocs = 10;
+    String collapseFieldInt = "field_ti_dv";
+    String collapseFieldFloat = "field_tf_dv";
+    String collapseFieldString = "field_s_dv";
+    for (int i = 0 ; i < numDocs ; i ++) {
+      assertU(adoc(
+          "id", String.valueOf(i),
+          "field_s", String.valueOf(i % 2),
+          collapseFieldInt, String.valueOf(i),
+          collapseFieldFloat, String.valueOf(i),
+          collapseFieldString, String.valueOf(i)));
+        assertU(commit());
+    }
+    
+    for (String collapseField : new String[] {collapseFieldInt, collapseFieldFloat, collapseFieldString}) {
+      assertQ(req(
+          "q", "{!cache=false}field_s:1",
+          "rows", "1",
+          "minExactCount", "1",
+          // this collapse will end up matching all docs
+          "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
+          ),"//*[@numFoundExact='true']"
+          ,"//*[@numFound='" + (numDocs/2) + "']"
+          );
+    }
+  }
 }

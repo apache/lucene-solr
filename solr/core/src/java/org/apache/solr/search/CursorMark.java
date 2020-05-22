@@ -96,7 +96,7 @@ public final class CursorMark {
     }
 
     for (SortOrder sf : sort.getSort()) {
-      if (sf instanceof SortField && ((SortField)sf).getType().equals(SortField.Type.DOC)) {
+      if (SortField.isDoc(sf)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
                                 "Cursor functionality can not be used with internal doc ordering sort: _docid_");
       }

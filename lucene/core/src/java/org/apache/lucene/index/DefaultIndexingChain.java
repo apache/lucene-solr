@@ -621,7 +621,7 @@ final class DefaultIndexingChain extends DocConsumer {
           if (Objects.equals(field, fieldToValidate) && dvType != DocValuesType.SORTED_NUMERIC) {
             throw new IllegalArgumentException("SortField " + sortField + " expected field [" + field + "] to be SORTED_NUMERIC but it is [" + dvType + "]");
           }
-          return DocValues.emptySortedNumeric(0);
+          return DocValues.emptySortedNumeric();
         }
 
         @Override

@@ -133,7 +133,9 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("{} reset, new znode version {}", SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
+    }
 
     cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
@@ -291,20 +293,29 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         long currentTime = actionContext.getCloudManager().getTimeSource().getTimeNs();
         if (lastActionExecutedAt.get() != 0)  {
           long minDiff = TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS);
-          log.info("last action at " + lastActionExecutedAt.get() + " current time = " + currentTime +
-              "\nreal diff: " + (currentTime - lastActionExecutedAt.get()) +
-              "\n min diff: " + minDiff);
+          if (log.isInfoEnabled()) {
+            log.info("last action at {} current time = {}\nreal diff: {}\n min diff: {}"
+                , lastActionExecutedAt.get(), currentTime
+                , (currentTime - lastActionExecutedAt.get())
+                , minDiff);
+          }
           if (currentTime - lastActionExecutedAt.get() < minDiff) {
-            log.info("action executed again before minimum wait time from {}", event.getSource());
+            if (log.isInfoEnabled()) {
+              log.info("action executed again before minimum wait time from {}", event.getSource());
+            }
             fail("TriggerListener was fired before the throttling period");
           }
         }
         if (onlyOnce.compareAndSet(false, true)) {
-          log.info("action executed from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed from {}", event.getSource());
+          }
           lastActionExecutedAt.set(currentTime);
           getTriggerFiredLatch().countDown();
         } else  {
-          log.info("action executed more than once from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed more than once from {}", event.getSource());
+          }
           fail("Trigger should not have fired more than once!");
         }
       } finally {

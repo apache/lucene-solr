@@ -66,7 +66,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTAL
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
 /**
- *
+ * The <em>real</em> {@link NodeStateProvider}, which communicates with Solr via SolrJ.
  */
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -254,8 +254,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         prefixes.add("CONTAINER.fs.totalSpace");
       }
       if (requestedTags.contains(CORES)) {
-        groups.add("solr.core");
-        prefixes.add("CORE.coreName");
+        groups.add("solr.node");
+        prefixes.add("CONTAINER.cores");
       }
       if (requestedTags.contains(SYSLOADAVG)) {
         groups.add("solr.jvm");
@@ -273,30 +273,31 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
       try {
         SimpleSolrResponse rsp = snitchContext.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
+        NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
 
-        Map m = rsp.nl.asMap(4);
         if (requestedTags.contains(FREEDISK.tagName)) {
-          Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
+          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
           if (n != null) ctx.getTags().put(FREEDISK.tagName, FREEDISK.convertVal(n));
         }
         if (requestedTags.contains(TOTALDISK.tagName)) {
-          Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.totalSpace");
+          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
           if (n != null) ctx.getTags().put(TOTALDISK.tagName, TOTALDISK.convertVal(n));
         }
         if (requestedTags.contains(CORES)) {
+          NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
           int count = 0;
-          Map cores = (Map) m.get("metrics");
-          for (Object o : cores.keySet()) {
-            if (o.toString().startsWith("solr.core.")) count++;
+          for (String leafCoreMetricName : new String[]{"lazy", "loaded", "unloaded"}) {
+            Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
+            if (n != null) count += n.intValue();
           }
           ctx.getTags().put(CORES, count);
         }
         if (requestedTags.contains(SYSLOADAVG)) {
-          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/os.systemLoadAverage");
+          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
           if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
         }
         if (requestedTags.contains(HEAPUSAGE)) {
-          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/memory.heap.usage");
+          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");
           if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
@@ -360,7 +361,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           }
 
           if (hasIOExceptionCause) {
-            log.info("Error on getting remote info, trying again: {}", e.getMessage());
+            if (log.isInfoEnabled()) {
+              log.info("Error on getting remote info, trying again: {}", e.getMessage());
+            }
             Thread.sleep(500);
           } else {
             throw e;

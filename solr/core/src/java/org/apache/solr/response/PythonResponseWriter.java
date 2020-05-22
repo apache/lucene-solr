@@ -46,7 +46,7 @@ public class PythonResponseWriter implements QueryResponseWriter {
   }
 }
 
-class PythonWriter extends NaNFloatWriter {
+class PythonWriter extends JSONResponseWriter.NaNFloatWriter {
   @Override
   protected String getNaN() { return "float('NaN')"; }
   @Override

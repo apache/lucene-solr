@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -79,8 +80,61 @@ import org.slf4j.LoggerFactory;
 import com.codahale.metrics.Timer;
 
 /**
- * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
- * collections, shards, replicas and setting various properties.
+ * <p>Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
+ * collections, shards, replicas and setting various properties.</p>
+ *
+ * <p>The <b>Overseer</b> is a single elected node in the SolrCloud cluster that is in charge of interactions with
+ * ZooKeeper that require global synchronization. It also hosts the Collection API implementation and the
+ * Autoscaling framework.</p>
+ *
+ * <p>The Overseer deals with:</p>
+ * <ul>
+ *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper, see {@link ClusterStateUpdater},</li>
+ *   <li>Collection API implementation, including Autoscaling replica placement computation, see
+ *   {@link OverseerCollectionConfigSetProcessor} and {@link OverseerCollectionMessageHandler} (and the example below),</li>
+ *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link OverseerConfigSetMessageHandler},</li>
+ *   <li>Autoscaling triggers, see {@link org.apache.solr.cloud.autoscaling.OverseerTriggerThread}.</li>
+ * </ul>
+ *
+ * <p>The nodes in the cluster communicate with the Overseer over queues implemented in ZooKeeper. There are essentially
+ * two queues:</p>
+ * <ol>
+ *   <li>The <b>state update queue</b>, through which nodes request the Overseer to update the <code>state.json</code> file of a
+ *   Collection in ZooKeeper. This queue is in Zookeeper at <code>/overseer/queue</code>,</li>
+ *   <li>A queue shared between <b>Collection API and Config Set API</b> requests. This queue is in Zookeeper at
+ *   <code>/overseer/collection-queue-work</code>.</li>
+ * </ol>
+ *
+ * <p>An example of the steps involved in the Overseer processing a Collection creation API call:</p>
+ * <ol>
+ *   <li>Client uses the Collection API with <code>CREATE</code> action and reaches a node of the cluster,</li>
+ *   <li>The node (via {@link CollectionsHandler}) enqueues the request into the <code>/overseer/collection-queue-work</code>
+ *   queue in ZooKeepeer,</li>
+ *   <li>The {@link OverseerCollectionConfigSetProcessor} running on the Overseer node dequeues the message and using an
+ *   executor service with a maximum pool size of {@link OverseerTaskProcessor#MAX_PARALLEL_TASKS} hands it for processing
+ *   to {@link OverseerCollectionMessageHandler},</li>
+ *   <li>Command {@link CreateCollectionCmd} then executes and does:
+ *   <ol>
+ *     <li>Update some state directly in ZooKeeper (creating collection znode),</li>
+ *     <li>Compute replica placement on available nodes in the cluster,</li>
+ *     <li>Enqueue a state change request for creating the <code>state.json</code> file for the collection in ZooKeeper.
+ *     This is done by enqueuing a message in <code>/overseer/queue</code>,</li>
+ *     <li>The command then waits for the update to be seen in ZooKeeper...</li>
+ *   </ol></li>
+ *   <li>The {@link ClusterStateUpdater} (also running on the Overseer node) dequeues the state change message and creates the
+ *   <code>state.json</code> file in ZooKeeper for the Collection. All the work of the cluster state updater
+ *   (creations, updates, deletes) is done sequentially for the whole cluster by a single thread.</li>
+ *   <li>The {@link CreateCollectionCmd} sees the state change in
+ *   ZooKeeper and:
+ *   <ol start="5">
+ *     <li>Builds and sends requests to each node to create the appropriate cores for all the replicas of all shards
+ *     of the collection. Nodes create the replicas and set them to {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}.</li>
+ *   </ol></li>
+ *   <li>The collection creation command has succeeded from the Overseer perspective,</li>
+ *   <li>{@link CollectionsHandler} checks the replicas in Zookeeper and verifies they are all
+ *   {@link org.apache.solr.common.cloud.Replica.State#ACTIVE},</li>
+ *   <li>The client receives a success return.</li>
+ * </ol>
  */
 public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
@@ -97,6 +151,12 @@ public class Overseer implements SolrCloseable {
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
 
+  /**
+   * <p>This class is responsible for dequeueing state change requests from the ZooKeeper queue at <code>/overseer/queue</code>
+   * and executing the requested cluster change (essentially writing or updating <code>state.json</code> for a collection).</p>
+   *
+   * <p>The cluster state updater is a single thread dequeueing and executing requests.</p>
+   */
   private class ClusterStateUpdater implements Runnable, Closeable {
 
     private final ZkStateReader reader;
@@ -149,7 +209,9 @@ public class Overseer implements SolrCloseable {
         isLeader = amILeader();  // not a no, not a yes, try ask again
       }
 
-      log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
+      if (log.isInfoEnabled()) {
+        log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
+      }
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
@@ -182,7 +244,9 @@ public class Overseer implements SolrCloseable {
               byte[] data = fallbackQueue.peek();
               while (fallbackQueueSize > 0 && data != null)  {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
+                if (log.isDebugEnabled()) {
+                  log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
+                }
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
@@ -239,7 +303,9 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                if (log.isDebugEnabled()) {
+                  log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                }
 
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
@@ -274,7 +340,9 @@ public class Overseer implements SolrCloseable {
           }
         }
       } finally {
-        log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+        if (log.isInfoEnabled()) {
+          log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+        }
         //do this in a separate thread because any wait is interrupted in this main thread
         new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
       }
@@ -306,7 +374,7 @@ public class Overseer implements SolrCloseable {
         // ZooKeeper in which case another Overseer should take over
         // TODO: if ordering for the message is not important, we could
         // track retries and put it back on the end of the queue
-        log.error("Overseer could not process the current clusterstate state update message, skipping the message: " + message, e);
+        log.error("Overseer could not process the current clusterstate state update message, skipping the message: {}", message, e);
         stats.error(operation);
       } finally {
         timerContext.stop();
@@ -346,7 +414,7 @@ public class Overseer implements SolrCloseable {
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
-            log.error("Could not delete my leader node "+path, e);
+            log.error("Could not delete my leader node {}", path, e);
           }
 
         } else{
@@ -419,7 +487,9 @@ public class Overseer implements SolrCloseable {
             return Collections.singletonList(new SliceMutator(getSolrCloudManager()).updateShardState(clusterState, message));
           case QUIT:
             if (myId.equals(message.get(ID))) {
-              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
+              if (log.isInfoEnabled()) {
+                log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
+              }
               overseerCollectionConfigSetProcessor.close();
               close();
             } else {
@@ -562,7 +632,7 @@ public class Overseer implements SolrCloseable {
     closed = false;
     doClose();
     stats = new Stats();
-    log.info("Overseer (id=" + id + ") starting");
+    log.info("Overseer (id={}) starting", id);
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
@@ -745,7 +815,7 @@ public class Overseer implements SolrCloseable {
   
   public synchronized void close() {
     if (this.id != null) {
-      log.info("Overseer (id=" + id + ") closing");
+      log.info("Overseer (id={}) closing", id);
     }
     this.closed = true;
     doClose();

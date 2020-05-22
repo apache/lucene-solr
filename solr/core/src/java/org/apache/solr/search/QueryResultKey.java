@@ -38,18 +38,23 @@ public final class QueryResultKey implements Accountable {
   final SortOrder[] sfields;
   final List<Query> filters;
   final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
+  final int minExactCount;
 
   private final int hc;  // cached hashCode
   private final long ramBytesUsed; // cached
 
   private static SortField[] defaultSort = new SortField[0];
 
-
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
+    this(query, filters, sort, nc_flags, Integer.MAX_VALUE);
+  }
+
+  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
     this.query = query;
     this.sort = sort;
     this.filters = filters;
     this.nc_flags = nc_flags;
+    this.minExactCount = minExactCount;
 
     int h = query.hashCode();
 
@@ -69,6 +74,7 @@ public final class QueryResultKey implements Accountable {
         ramSfields += RamUsageEstimator.sizeOfObject(sf.name());
       }
     }
+    h = h*31 + minExactCount;
 
     hc = h;
 
@@ -100,6 +106,7 @@ public final class QueryResultKey implements Accountable {
     if (this.sfields.length != other.sfields.length) return false;
     if (!this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
+    if (this.minExactCount != other.minExactCount) return false;
 
     for (int i=0; i<sfields.length; i++) {
       SortOrder sf1 = this.sfields[i];

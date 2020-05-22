@@ -276,7 +276,9 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
         }
         index(SOURCE_COLLECTION, docs);
         numDocs.getAndAdd(10);
-        log.info("Sent batch of {} updates - numDocs:{}", docs.size(), numDocs);
+        if (log.isInfoEnabled()) {
+          log.info("Sent batch of {} updates - numDocs:{}", docs.size(), numDocs);
+        }
       }
       catch (Exception e) {
         throw new RuntimeException(e);

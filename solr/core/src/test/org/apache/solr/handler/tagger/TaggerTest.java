@@ -80,7 +80,7 @@ public class TaggerTest extends TaggerTestCase {
         "    </arr>\n" +
         "  </lst>\n" +
         "</arr>\n" +
-        "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\" numFoundExact=\"true\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
         "    <str name=\"name\">London Business School</str>\n" +
@@ -109,7 +109,7 @@ public class TaggerTest extends TaggerTestCase {
         "    </arr>\n" +
         "  </lst>\n" +
         "</arr>\n" +
-        "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\" numFoundExact=\"true\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
         "    <str name=\"name\">London Business School</str>\n" +
@@ -307,7 +307,7 @@ public class TaggerTest extends TaggerTestCase {
         "\n" +
         "<int name=\"tagsCount\">0</int>\n" +
         "<arr name=\"tags\"/>\n" +
-        "<result name=\"response\" numFound=\"0\" start=\"0\">\n" +
+        "<result name=\"response\" numFound=\"0\" start=\"0\" numFoundExact=\"true\">\n" +
         "</result>\n" +
         "</response>\n";
     assertEquals(expected, rspStr);

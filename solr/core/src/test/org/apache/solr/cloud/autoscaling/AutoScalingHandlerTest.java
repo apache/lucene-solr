@@ -874,12 +874,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
-    log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
-        .stream()
-        .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
+    if (log.isInfoEnabled()) {
+      log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
+          .stream()
+          .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
+    }
     JettySolrRunner runner1 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
-    log.info("started new jetty {}", runner1.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("started new jetty {}", runner1.getNodeName());
+    }
 
     response = waitForResponse(namedList -> {
           List l = (List) namedList._get("diagnostics/liveNodes",null);

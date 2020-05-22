@@ -181,7 +181,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param node node id
    */
   public void simRemoveNodeValues(String node) throws InterruptedException {
-    log.debug("--removing value for " + node);
+    log.debug("--removing value for {}", node);
     lock.lockInterruptibly();
     try {
       Map<String, Object> values = nodeValues.remove(node);
@@ -204,7 +204,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     try {
       AtomicBoolean updateRoles = new AtomicBoolean(false);
       myNodes.forEach(n -> {
-        log.debug("- removing dead node values: " + n);
+        log.debug("- removing dead node values: {}", n);
         Map<String, Object> vals = nodeValues.remove(n);
         if (vals.containsKey("nodeRole")) {
           updateRoles.set(true);
@@ -272,7 +272,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     for (String tag : tags) {
       Matcher m = METRIC_KEY_PATTERN.matcher(tag);
       if (!m.matches() || m.groupCount() < 2) {
-        log.warn("Invalid metrics: tag: " + tag);
+        log.warn("Invalid metrics: tag: {}", tag);
         continue;
       }
       String registryName = m.group(1);
@@ -284,7 +284,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
       m = REGISTRY_PATTERN.matcher(registryName);
 
       if (!m.matches()) {
-        log.warn("Invalid registry name: " + registryName);
+        log.warn("Invalid registry name: {}", registryName);
         continue;
       }
       String collection = m.group(1);
@@ -312,7 +312,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-    log.trace("-- requested values for " + node + ": " + tags);
+    log.trace("-- requested values for {}: {}", node, tags);
     if (!liveNodesSet.contains(node)) {
       throw new RuntimeException("non-live node " + node);
     }

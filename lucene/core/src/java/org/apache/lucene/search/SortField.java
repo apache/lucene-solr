@@ -187,16 +187,18 @@ public class SortField implements SortOrder {
   }
 
   protected static Type readType(DataInput in) throws IOException {
-    int type = in.readInt();
-    if (type >= Type.values().length) {
+    String type = in.readString();
+    try {
+      return Type.valueOf(type);
+    }
+    catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("Can't deserialize SortField - unknown type " + type);
     }
-    return Type.values()[type];
   }
 
   private void serialize(DataOutput out) throws IOException {
     out.writeString(field);
-    out.writeInt(type.ordinal());
+    out.writeString(type.toString());
     out.writeInt(reverse ? 1 : 0);
     if (missingValue == null) {
       out.writeInt(0);
@@ -493,6 +495,18 @@ public class SortField implements SortOrder {
   }
 
   @Override
+  /**
+   * Returns an {@link IndexSorter} used for sorting index segments by this SortField.
+   *
+   * If the SortField cannot be used for index sorting (for example, if it uses scores or
+   * other query-dependent values) then this method should return {@code null}
+   *
+   * SortFields that implement this method should also implement a companion
+   * {@link SortFieldProvider} to serialize and deserialize the sort in index segment
+   * headers
+   *
+   * @lucene.experimental
+   */
   public IndexSorter getIndexSorter() {
     switch (type) {
       case STRING:

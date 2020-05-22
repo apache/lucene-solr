@@ -68,7 +68,7 @@ public class SolrShardReporter extends SolrCoreReporter {
     add("REPLICATION.*");
     add("INDEX\\.flush.*");
     add("INDEX\\.merge\\.major.*");
-    add("UPDATE\\./update/.*requests");
+    add("UPDATE\\./update.*requests");
     add("QUERY\\./select.*requests");
   }};
 
@@ -154,7 +154,7 @@ public class SolrShardReporter extends SolrCoreReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getSolrClientCache(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }

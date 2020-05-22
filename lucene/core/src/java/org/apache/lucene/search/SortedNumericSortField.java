@@ -141,7 +141,7 @@ public class SortedNumericSortField extends SortField {
 
   private void serialize(DataOutput out) throws IOException {
     out.writeString(field);
-    out.writeInt(type.ordinal());
+    out.writeString(type.toString());
     out.writeInt(reverse ? 1 : 0);
     out.writeInt(selector.ordinal());
     if (missingValue == null) {
