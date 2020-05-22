@@ -366,7 +366,7 @@ public class QueryComponent extends SearchComponent
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
-    cmd.setMinExactHits(getMinExactHits(params));
+    cmd.setMinExactCount(getMinExactCount(params));
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -403,12 +403,12 @@ public class QueryComponent extends SearchComponent
     doProcessUngroupedSearch(rb, cmd, result);
   }
 
-  private int getMinExactHits(SolrParams params) {
-    long minExactHits = params.getLong(CommonParams.MIN_EXACT_HITS, Integer.MAX_VALUE);
-    if (minExactHits < 0 || minExactHits > Integer.MAX_VALUE) {
-      minExactHits = Integer.MAX_VALUE;
+  private int getMinExactCount(SolrParams params) {
+    long minExactCount = params.getLong(CommonParams.MIN_EXACT_COUNT, Integer.MAX_VALUE);
+    if (minExactCount < 0 || minExactCount > Integer.MAX_VALUE) {
+      minExactCount = Integer.MAX_VALUE;
     }
-    return (int)minExactHits;
+    return (int)minExactCount;
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
