@@ -153,7 +153,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     final TupleEntryWriter entryWriter = new TupleEntryWriter();
 
     public ExportWriterStream(StreamExpression expression, StreamFactory factory) throws IOException {
-
+      streamComparator = parseComp(factory.getDefaultSort());
     }
 
     @Override
@@ -194,8 +194,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     @Override
     public void open() throws IOException {
-      String sort = (String)context.get(CommonParams.SORT);
-      streamComparator = parseComp(sort);
       docs = (SortDoc[]) context.get(SORT_DOCS_KEY);
       queue = (SortQueue) context.get(SORT_QUEUE_KEY);
       sortDoc = (SortDoc) context.get(SORT_DOC_KEY);
@@ -379,6 +377,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     String expr = params.get(StreamParams.EXPR);
     if (expr != null) {
       StreamFactory streamFactory = initialStreamContext.getStreamFactory();
+      streamFactory.withDefaultSort(params.get(CommonParams.SORT));
       try {
         StreamExpression expression = StreamExpressionParser.parse(expr);
         if (streamFactory.isEvaluator(expression)) {
@@ -419,7 +418,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   private TupleStream createTupleStream() throws IOException {
-    StreamFactory streamFactory = initialStreamContext.getStreamFactory();
+    StreamFactory streamFactory = (StreamFactory)initialStreamContext.getStreamFactory().clone();
+    //Set the sort in the stream factory so it can be used during initialization.
+    streamFactory.withDefaultSort(((String)streamContext.get(CommonParams.SORT)));
     TupleStream tupleStream = streamFactory.constructStream(streamExpression);
     tupleStream.setStreamContext(streamContext);
     return tupleStream;

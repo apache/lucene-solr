@@ -49,10 +49,16 @@ public class StreamFactory implements Serializable {
   private transient HashMap<String,Supplier<Class<? extends Expressible>>> functionNames;
   private transient String defaultZkHost;
   private transient String defaultCollection;
+  private transient String defaultSort;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<>();
     functionNames = new HashMap<>();
+  }
+
+  public StreamFactory(HashMap<String,Supplier<Class<? extends Expressible>>> functionNames) {
+    this.functionNames = functionNames;
+    collectionZkHosts = new HashMap<>();
   }
   
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost){
@@ -68,6 +74,21 @@ public class StreamFactory implements Serializable {
   public StreamFactory withDefaultZkHost(String zkHost) {
     this.defaultZkHost = zkHost;
     return this;
+  }
+
+  public Object clone() {
+    //Shallow copy
+    StreamFactory clone = new StreamFactory(functionNames);
+    return clone.withCollectionZkHost(defaultCollection, defaultZkHost).withDefaultSort(defaultSort);
+  }
+
+  public StreamFactory withDefaultSort(String sort) {
+    this.defaultSort = sort;
+    return this;
+  }
+
+  public String getDefaultSort() {
+    return this.defaultSort;
   }
 
   public String getDefaultZkHost() {

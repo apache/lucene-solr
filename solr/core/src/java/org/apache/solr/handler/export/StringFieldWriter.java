@@ -86,7 +86,7 @@ class StringFieldWriter extends FieldWriter {
       }
 
       ew.put(this.field, v);
-      
+
     }
     return true;
   }
