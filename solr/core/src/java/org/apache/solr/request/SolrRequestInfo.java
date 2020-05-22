@@ -20,10 +20,11 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.ArrayDeque;
 import java.util.Date;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,7 +41,12 @@ import org.slf4j.LoggerFactory;
 
 public class SolrRequestInfo {
 
-  protected final static ThreadLocal<Stack<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(Stack::new);
+  protected final static int capacity = 150;
+
+  protected final static ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(() -> {
+    Deque<SolrRequestInfo> stack = new ArrayDeque<>(capacity);
+    return stack;
+  });
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -62,7 +68,11 @@ public class SolrRequestInfo {
     if (info == null) {
       throw new IllegalArgumentException("SolrRequestInfo is null");
     } else {
-      threadLocal.get().push(info);
+      if (threadLocal.get().size() <= capacity) {
+        threadLocal.get().push(info);
+      } else {
+        log.error("SolrRequestInfo Stack is full");
+      }
     }
   }
 
@@ -76,7 +86,7 @@ public class SolrRequestInfo {
   }
 
   public static void reset() {
-    Stack<SolrRequestInfo> stack = threadLocal.get();
+    Deque<SolrRequestInfo> stack = threadLocal.get();
     while (!stack.isEmpty()) {
       SolrRequestInfo info = stack.pop();
       closeHooks(info);
