@@ -178,16 +178,18 @@ public class SortField {
   }
 
   protected static Type readType(DataInput in) throws IOException {
-    int type = in.readInt();
-    if (type >= Type.values().length) {
+    String type = in.readString();
+    try {
+      return Type.valueOf(type);
+    }
+    catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("Can't deserialize SortField - unknown type " + type);
     }
-    return Type.values()[type];
   }
 
   private void serialize(DataOutput out) throws IOException {
     out.writeString(field);
-    out.writeInt(type.ordinal());
+    out.writeString(type.toString());
     out.writeInt(reverse ? 1 : 0);
     if (missingValue == null) {
       out.writeInt(0);
