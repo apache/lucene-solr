@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'System for benchmarking Lucene'
+
 dependencies {  
   api project(':lucene:core')
 

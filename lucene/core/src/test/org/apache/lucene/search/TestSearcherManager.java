@@ -310,6 +310,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
+    @SuppressWarnings("resource")
     SearcherManager sm = new SearcherManager(writer, false, false, new SearcherFactory());
     writer.addDocument(new Document());
     writer.commit();

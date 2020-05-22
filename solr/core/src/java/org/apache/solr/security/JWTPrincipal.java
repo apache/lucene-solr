@@ -17,7 +17,6 @@
 
 package org.apache.solr.security;
 
-import java.io.Serializable;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Objects;
@@ -27,8 +26,7 @@ import org.apache.http.util.Args;
 /**
  * Principal object that carries JWT token and claims for authenticated user.
  */
-public class JWTPrincipal implements Principal, Serializable {
-  private static final long serialVersionUID = 4144666467522831388L;
+public class JWTPrincipal implements Principal {
   final String username;
   String token;
   Map<String,Object> claims;

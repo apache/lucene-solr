@@ -761,7 +761,7 @@ public class TestSuggestField extends LuceneTestCase {
       }
       assertTrue("at least one of the entries should have the score", matched);
     }
-
+    lineFileDocs.close();
     reader.close();
     iw.close();
   }

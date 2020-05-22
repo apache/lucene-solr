@@ -99,10 +99,12 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
       HttpConfiguration configuration = new HttpConfiguration();
       configuration.setSecureScheme("https");
       configuration.addCustomizer(new SecureRequestCustomizer());
+      @SuppressWarnings("resource")
       ServerConnector c = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
           new HttpConnectionFactory(configuration));
       connector = c;
     } else {
+      @SuppressWarnings("resource")
       ServerConnector c = new ServerConnector(server, new HttpConnectionFactory());
       connector = c;
     }
