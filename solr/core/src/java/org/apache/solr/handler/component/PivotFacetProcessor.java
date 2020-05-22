@@ -74,7 +74,7 @@ public class PivotFacetProcessor extends SimpleFacets
     // rb._statsInfo may be null if stats=false, ie: refine requests
     // if that's the case, but we need to refine w/stats, then we'll lazy init our 
     // own instance of StatsInfo
-    StatsInfo statsInfo = rb._statsInfo; 
+    StatsComponent.StatsInfo statsInfo = rb._statsInfo;
 
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
     for (String pivotList : pivots) {
@@ -117,7 +117,7 @@ public class PivotFacetProcessor extends SimpleFacets
           // but stats component hasn't inited StatsInfo (because we
           // don't need/want top level stats when refining) so we lazy init
           // our own copy of StatsInfo
-          statsInfo = new StatsInfo(rb);
+          statsInfo = new StatsComponent.StatsInfo(rb);
         }
         statsFields = getTaggedStatsFields(statsInfo, statsLocalParam);
 
@@ -237,7 +237,7 @@ public class PivotFacetProcessor extends SimpleFacets
    *
    * @return A list of StatsFields to compute for this pivot, or the empty list if none
    */
-  private static List<StatsField> getTaggedStatsFields(StatsInfo statsInfo, 
+  private static List<StatsField> getTaggedStatsFields(StatsComponent.StatsInfo statsInfo,
                                                        String statsLocalParam) {
     if (null == statsLocalParam || null == statsInfo) {
       return Collections.emptyList();
