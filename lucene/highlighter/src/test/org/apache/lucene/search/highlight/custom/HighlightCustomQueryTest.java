@@ -105,17 +105,18 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
    */
   private String highlightField(Query query, String fieldName,
       String text) throws IOException, InvalidTokenOffsetsException {
-    TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE,
-        true, MockTokenFilter.ENGLISH_STOPSET).tokenStream(fieldName, text);
-    // Assuming "<B>", "</B>" used to highlight
-    SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
-    MyQueryScorer scorer = new MyQueryScorer(query, fieldName, FIELD_NAME);
-    Highlighter highlighter = new Highlighter(formatter, scorer);
-    highlighter.setTextFragmenter(new SimpleFragmenter(Integer.MAX_VALUE));
+    try (MockAnalyzer mockAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE,true,
+        MockTokenFilter.ENGLISH_STOPSET); TokenStream tokenStream = mockAnalyzer.tokenStream(fieldName, text)) {
+      // Assuming "<B>", "</B>" used to highlight
+      SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
+      MyQueryScorer scorer = new MyQueryScorer(query, fieldName, FIELD_NAME);
+      Highlighter highlighter = new Highlighter(formatter, scorer);
+      highlighter.setTextFragmenter(new SimpleFragmenter(Integer.MAX_VALUE));
 
-    String rv = highlighter.getBestFragments(tokenStream, text, 1,
-        "(FIELD TEXT TRUNCATED)");
-    return rv.length() == 0 ? text : rv;
+      String rv = highlighter.getBestFragments(tokenStream, text, 1,
+          "(FIELD TEXT TRUNCATED)");
+      return rv.length() == 0 ? text : rv;
+    }
   }
 
   public static class MyWeightedSpanTermExtractor extends

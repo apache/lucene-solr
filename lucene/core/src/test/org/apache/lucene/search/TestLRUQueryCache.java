@@ -181,14 +181,17 @@ public class TestLRUQueryCache extends LuceneTestCase {
       thread.join();
     }
 
-    if (error.get() != null) {
-      throw error.get();
+    try {
+      if (error.get() != null) {
+        throw error.get();
+      }
+      queryCache.assertConsistent();
+    } finally {
+      mgr.close();
+      w.close();
+      dir.close();
+      queryCache.assertConsistent();
     }
-    queryCache.assertConsistent();
-    mgr.close();
-    w.close();
-    dir.close();
-    queryCache.assertConsistent();
   }
 
   public void testLRUEviction() throws Exception {

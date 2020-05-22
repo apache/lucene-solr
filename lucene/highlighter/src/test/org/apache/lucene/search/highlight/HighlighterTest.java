@@ -1362,24 +1362,25 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         HashMap<String,String> synonyms = new HashMap<>();
         synonyms.put("football", "soccer,footie");
-        Analyzer analyzer = new SynonymAnalyzer(synonyms);
+        try (Analyzer analyzer = new SynonymAnalyzer(synonyms)) {
 
-        String s = "football-soccer in the euro 2004 footie competition";
+          String s = "football-soccer in the euro 2004 footie competition";
 
-        BooleanQuery.Builder query = new BooleanQuery.Builder();
-        query.add(new TermQuery(new Term("bookid", "football")), Occur.SHOULD);
-        query.add(new TermQuery(new Term("bookid", "soccer")), Occur.SHOULD);
-        query.add(new TermQuery(new Term("bookid", "footie")), Occur.SHOULD);
+          BooleanQuery.Builder query = new BooleanQuery.Builder();
+          query.add(new TermQuery(new Term("bookid", "football")), Occur.SHOULD);
+          query.add(new TermQuery(new Term("bookid", "soccer")), Occur.SHOULD);
+          query.add(new TermQuery(new Term("bookid", "footie")), Occur.SHOULD);
 
-        Highlighter highlighter = getHighlighter(query.build(), null, HighlighterTest.this);
+          Highlighter highlighter = getHighlighter(query.build(), null, HighlighterTest.this);
 
-        // Get 3 best fragments and separate with a "..."
-        TokenStream tokenStream = analyzer.tokenStream(null, s);
+          // Get 3 best fragments and separate with a "..."
+          TokenStream tokenStream = analyzer.tokenStream(null, s);
 
-        String result = highlighter.getBestFragments(tokenStream, s, 3, "...");
-        String expectedResult = "<B>football</B>-<B>soccer</B> in the euro 2004 <B>footie</B> competition";
-        assertTrue("overlapping analyzer should handle highlights OK, expected:" + expectedResult
-            + " actual:" + result, expectedResult.equals(result));
+          String result = highlighter.getBestFragments(tokenStream, s, 3, "...");
+          String expectedResult = "<B>football</B>-<B>soccer</B> in the euro 2004 <B>footie</B> competition";
+          assertTrue("overlapping analyzer should handle highlights OK, expected:" + expectedResult
+              + " actual:" + result, expectedResult.equals(result));
+        }
       }
 
     };

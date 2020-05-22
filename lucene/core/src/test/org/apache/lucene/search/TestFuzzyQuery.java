@@ -407,7 +407,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    MockAnalyzer analyzer = new MockAnalyzer(random());
     Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
@@ -439,6 +438,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
     assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
     r.close();
+    w.close();
     index.close();
   }
   
@@ -532,6 +532,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
       w.addDocument(doc);
     }
     DirectoryReader r = w.getReader();
+    w.close();
     //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
     int iters = atLeast(200);
@@ -609,7 +610,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
       }
     }
     
-    IOUtils.close(r, w, dir);
+    IOUtils.close(r, dir);
   }
 
   private static class TermAndScore implements Comparable<TermAndScore> {
