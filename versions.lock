@@ -49,7 +49,7 @@ com.vaadin.external.google:android-json:0.0.20131108.vaadin1 (1 constraints: 340
 commons-cli:commons-cli:1.4 (1 constraints: a9041e2c)
 commons-codec:commons-codec:1.13 (1 constraints: d904f430)
 commons-collections:commons-collections:3.2.2 (1 constraints: 09050236)
-commons-io:commons-io:2.6 (2 constraints: bf145380)
+commons-io:commons-io:2.6 (1 constraints: ac04232c)
 commons-logging:commons-logging:1.1.3 (2 constraints: c8149e7f)
 de.l3s.boilerpipe:boilerpipe:1.1.0 (1 constraints: 0405f335)
 io.dropwizard.metrics:metrics-core:4.1.5 (5 constraints: 2543e4c0)
