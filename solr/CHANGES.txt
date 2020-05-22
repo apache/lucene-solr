@@ -119,6 +119,12 @@ Improvements
 
 * SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
+* SOLR-13325: ComputePlanAction now supports a collection selector of the form `collections: {policy: my_policy}`
+  which can be used to select multiple collections that match collection property/value pairs. This is useful to
+  maintain a whitelist of collections for which actions are taken without needing to hard code the collection names
+  themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
+  are not computed at all. (ab, shalin)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
