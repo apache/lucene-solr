@@ -286,6 +286,9 @@ Build
 
 * Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
 
+* LUCENE-9376: Fix or suppress 20 resource leak precommit warnings in lucene/search
+  (Andras Salamon via Erick Erickson)
+
 ======================= Lucene 8.5.1 =======================
 
 Bug Fixes

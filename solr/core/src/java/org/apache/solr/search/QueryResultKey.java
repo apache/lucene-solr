@@ -37,7 +37,7 @@ public final class QueryResultKey implements Accountable {
   final SortField[] sfields;
   final List<Query> filters;
   final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
-  final int minExactHits;
+  final int minExactCount;
 
   private final int hc;  // cached hashCode
   private final long ramBytesUsed; // cached
@@ -48,12 +48,12 @@ public final class QueryResultKey implements Accountable {
     this(query, filters, sort, nc_flags, Integer.MAX_VALUE);
   }
 
-  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags, int minExactHits) {
+  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
     this.query = query;
     this.sort = sort;
     this.filters = filters;
     this.nc_flags = nc_flags;
-    this.minExactHits = minExactHits;
+    this.minExactCount = minExactCount;
 
     int h = query.hashCode();
 
@@ -70,7 +70,7 @@ public final class QueryResultKey implements Accountable {
       h = h*29 + sf.hashCode();
       ramSfields += BASE_SF_RAM_BYTES_USED + RamUsageEstimator.sizeOfObject(sf.getField());
     }
-    h = h*31 + minExactHits;
+    h = h*31 + minExactCount;
 
     hc = h;
 
@@ -102,7 +102,7 @@ public final class QueryResultKey implements Accountable {
     if (this.sfields.length != other.sfields.length) return false;
     if (!this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
-    if (this.minExactHits != other.minExactHits) return false;
+    if (this.minExactCount != other.minExactCount) return false;
 
     for (int i=0; i<sfields.length; i++) {
       SortField sf1 = this.sfields[i];

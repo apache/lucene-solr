@@ -133,10 +133,10 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
-* SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
+* SOLR-13289: When the "minExactCount" parameters is provided in queries and it's value is lower than the number of hits,
   Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
   value of matching documents in the response (numFound) will be an approximation.
-  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe, David Smiley)
 
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
@@ -191,6 +191,9 @@ Bug Fixes
 
 * SOLR-14477: Fix incorrect 'relatedness()' calculations in json.facet 'terms' when 'prefix' option is used
   (hossman)
+
+* SOLR-14504: ZkController LiveNodesListener has NullPointerException in startup race.
+  (Colvin Cowie via ab)
 
 Other Changes
 ---------------------
