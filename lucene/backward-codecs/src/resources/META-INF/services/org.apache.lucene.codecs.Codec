@@ -15,3 +15,4 @@
 
 org.apache.lucene.codecs.lucene70.Lucene70Codec
 org.apache.lucene.codecs.lucene80.Lucene80Codec
+org.apache.lucene.codecs.lucene84.Lucene84Codec

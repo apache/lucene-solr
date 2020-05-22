@@ -1190,7 +1190,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
-    iwc.setCodec(new FilterCodec("Lucene84", TestUtil.getDefaultCodec()) {
+    iwc.setCodec(new FilterCodec("Lucene86", TestUtil.getDefaultCodec()) {
       @Override
       public PointsFormat pointsFormat() {
         return new PointsFormat() {
