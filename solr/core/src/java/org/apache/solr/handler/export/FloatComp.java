@@ -19,26 +19,26 @@ package org.apache.solr.handler.export;
 
 interface FloatComp {
   int compare(float a, float b);
+
   float resetValue();
+
+  static class FloatAsc implements FloatComp {
+    public float resetValue() {
+      return Float.MAX_VALUE;
+    }
+
+    public int compare(float a, float b) {
+      return Float.compare(b, a);
+    }
+  }
+
+  static class FloatDesc implements FloatComp {
+    public float resetValue() {
+      return -Float.MAX_VALUE;
+    }
+
+    public int compare(float a, float b) {
+      return Float.compare(a, b);
+    }
+  }
 }
-
-class FloatAsc implements FloatComp {
-  public float resetValue() {
-    return Float.MAX_VALUE;
-  }
-
-  public int compare(float a, float b) {
-    return Float.compare(b, a);
-  }
-}
-
-class FloatDesc implements FloatComp {
-  public float resetValue() {
-    return -Float.MAX_VALUE;
-  }
-
-  public int compare(float a, float b) {
-    return Float.compare(a, b);
-  }
-}
-

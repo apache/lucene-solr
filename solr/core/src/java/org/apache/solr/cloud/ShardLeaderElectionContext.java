@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
@@ -42,6 +41,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

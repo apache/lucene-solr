@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.hadoop.fs.Path;
@@ -32,6 +33,15 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.OpResult.SetDataResult;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +90,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     super.cancelElection();
     synchronized (lock) {
       if (leaderZkNodeParentVersion != null) {
+        // no problem
+        // no problem
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
           // We do this by using a multi and ensuring the parent znode of the leader registration node
@@ -90,15 +102,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
-        } catch (KeeperException.NoNodeException nne) {
-          // no problem
-          log.debug("No leader registration node found to remove: {}", leaderPath);
-        } catch (KeeperException.BadVersionException bve) {
-          log.info("Cannot remove leader registration node because the current registered node is not ours: {}", leaderPath);
-          // no problem
         } catch (InterruptedException e) {
           throw e;
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
           SolrException.log(log, e);
         }
         leaderZkNodeParentVersion = null;
