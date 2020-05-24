@@ -659,8 +659,7 @@ public class TransactionLog implements Closeable {
     }
 
     // for classes that extend
-    protected LogReader() {
-    }
+    protected LogReader() {}
 
     /** Returns the next object from the log, or null if none available.
      *

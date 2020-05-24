@@ -178,7 +178,7 @@ public class ResponseBuilder
   public FacetComponent.FacetInfo _facetInfo;
   /* private... components that don't own these shouldn't use them */
   SolrDocumentList _responseDocs;
-  StatsComponent.StatsInfo _statsInfo;
+  StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
   Object _analyticsRequestManager;

@@ -134,14 +134,14 @@ public class PivotFacetHelper {
    * the shard response with the existing mergeStats
    *
    * @return the original <code>merged</code> Map after modifying, or a new Map if the <code>merged</code> param was originally null.
-   * @see StatsComponent.StatsInfo#getStatsField
+   * @see StatsInfo#getStatsField
    * @see StatsValuesFactory#createStatsValues
    * @see StatsValues#accumulate(NamedList)
    */
   public static Map<String,StatsValues> mergeStats
     (Map<String,StatsValues> merged, 
      NamedList<NamedList<NamedList<?>>> remoteWrapper, 
-     StatsComponent.StatsInfo statsInfo) {
+     StatsInfo statsInfo) {
 
     if (null == merged) merged = new LinkedHashMap<>();
 
