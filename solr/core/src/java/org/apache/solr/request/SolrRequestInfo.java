@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.ArrayDeque;
 import java.util.Date;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -41,12 +40,9 @@ import org.slf4j.LoggerFactory;
 
 public class SolrRequestInfo {
 
-  protected final static int capacity = 150;
+  protected final static int MAX_STACK_SIZE = 150;
 
-  protected final static ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(() -> {
-    Deque<SolrRequestInfo> stack = new ArrayDeque<>(capacity);
-    return stack;
-  });
+  protected final static ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(LinkedList::new);
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -64,11 +60,12 @@ public class SolrRequestInfo {
     return threadLocal.get().peek();
   }
 
+  /** Adds the SolrRequestInfo onto the stack provided that the stack is not reached MAX_STACK_SIZE */
   public static void setRequestInfo(SolrRequestInfo info) {
     if (info == null) {
       throw new IllegalArgumentException("SolrRequestInfo is null");
     } else {
-      if (threadLocal.get().size() <= capacity) {
+      if (threadLocal.get().size() <= MAX_STACK_SIZE) {
         threadLocal.get().push(info);
       } else {
         log.error("SolrRequestInfo Stack is full");
@@ -76,6 +73,7 @@ public class SolrRequestInfo {
     }
   }
 
+  /** Removes the most recent SolrRequestInfo from the stack */
   public static void clearRequestInfo() {
     if (threadLocal.get().isEmpty()) {
       log.error("clearRequestInfo called too many times");
@@ -85,6 +83,7 @@ public class SolrRequestInfo {
     }
   }
 
+  /** Removes all the SolrRequestInfos from the stack */
   public static void reset() {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     while (!stack.isEmpty()) {
