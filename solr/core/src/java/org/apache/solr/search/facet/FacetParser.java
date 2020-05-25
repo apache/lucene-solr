@@ -416,6 +416,8 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return SolrParams.toSolrParams(nl);
   }
 
+  // TODO Make this private (or at least not static) and introduce
+  // a newInstance method on FacetParser that returns one of these?
   static class FacetTopParser extends FacetParser<FacetQuery> {
     private SolrQueryRequest req;
 
