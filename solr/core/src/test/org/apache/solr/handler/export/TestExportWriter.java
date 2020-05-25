@@ -718,7 +718,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             "id", String.valueOf(i * BATCH_SIZE + j),
             "batch_i_p", String.valueOf(i),
             "random_i_p", String.valueOf(random().nextInt(BATCH_SIZE)),
-            "sortabledv", TestUtil.randomSimpleString(random(), 3, 5),
+            "sortabledv", TestUtil.randomSimpleString(random(), 2, 3),
+            "sortabledv_udvas", String.valueOf(random().nextInt(100)),
             "small_i_p", String.valueOf((i + j) % 7)
             );
       }
@@ -732,8 +733,29 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
     createLargeIndex();
-    String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc", "expr", "top(n=2,input(),sort=\"id desc\")"));
-    assertNotNull(resp);
+    SolrQueryRequest req = req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc", "expr", "top(n=2,input(),sort=\"id desc\")");
+    assertJQ(req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='99999'",
+        "response/docs/[1]/id=='99998'"
+        );
+    req = req("q", "*:*", "qt", "/export", "fl", "id,sortabledv_udvas", "sort", "sortabledv_udvas asc", "expr", "unique(input(),over=\"sortabledv_udvas\")");
+    String rsp = h.query(req);
+    Map<String, Object> rspMap = mapper.readValue(rsp, HashMap.class);
+    List<Map<String, Object>> docs = (List<Map<String, Object>>) Utils.getObjectByPath(rspMap, false, "/response/docs");
+    assertNotNull("missing document results: " + rspMap, docs);
+    assertEquals("wrong number of unique docs", 100, docs.size());
+    for (int i = 0; i < 99; i++) {
+      boolean found = false;
+      String si = String.valueOf(i);
+      for (int j = 0; j < docs.size(); j++) {
+        if (docs.get(j).get("sortabledv_udvas").equals(si)) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue("missing value " + i + " in results", found);
+    }
   }
 
   private void validateSort(int numDocs) throws Exception {

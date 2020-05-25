@@ -50,10 +50,10 @@ class StringValue implements SortValue {
   private int lastOrd = -1;
 
   // simple LRU cache for ord values
-  private static final int CACHE_SIZE = 20;
+  private static final int CACHE_SIZE = 100;
   private IntIntMap ordCache = new IntIntHashMap(CACHE_SIZE * 2);
   private IntDeque ordDeque = new IntArrayDeque(CACHE_SIZE);
-  protected int cacheHit, cacheMiss, cacheClear;
+  protected int cacheHit, cacheMiss, cacheEvict, cacheClear;
 
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
@@ -98,6 +98,7 @@ class StringValue implements SortValue {
         if (ordDeque.size() == CACHE_SIZE) {
           int remove = ordDeque.removeFirst();
           ordCache.remove(remove);
+          cacheEvict++;
         }
         ord = (int) toGlobal.get(docValues.ordValue());
         ordDeque.addLast(ord);
