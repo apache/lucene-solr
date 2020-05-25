@@ -17,7 +17,7 @@
 package org.apache.solr.common.params;
 
 /**
- * Stream Parameters and Properties.
+ * Streaming Expressions Parameters and Properties.
  */
 public interface StreamParams {
 

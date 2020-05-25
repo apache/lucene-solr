@@ -52,7 +52,11 @@ public class Tuple implements Cloneable, MapWriter {
   public Tuple() {
     // just an empty tuple
   }
-  
+
+  /**
+   * A copy constructor.
+   * @param fields map containing keys and values to be copied to this tuple
+   */
   public Tuple(Map<?, ?> fields) {
     for (Map.Entry<?, ?> entry : fields.entrySet()) {
       put(entry.getKey(), entry.getValue());

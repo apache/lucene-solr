@@ -511,8 +511,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       tupleStream.close();
     } else {
-      int count = 0;
-      while (count < totalHits) {
+      for (int count = 0; count < totalHits; ) {
         int outDocsIndex = fillOutDocs(leaves, sortDoc, queue, outDocs);
         count += (outDocsIndex + 1);
         addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex);
