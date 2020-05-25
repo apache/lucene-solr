@@ -32,6 +32,11 @@ class SingleValueSortDoc extends SortDoc {
     return null;
   }
 
+  @Override
+  public SortValue[] getSortValues() {
+    return new SortValue[] { value1 };
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;

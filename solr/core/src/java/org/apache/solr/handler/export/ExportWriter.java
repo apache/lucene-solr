@@ -517,6 +517,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex);
       }
     }
+    if (sortDoc != null) {
+      for (SortValue sv : sortDoc.getSortValues()) {
+        if (sv instanceof StringValue) {
+          StringValue stringValue = (StringValue) sv;
+          log.info(" - " + stringValue.field + ": cacheHit=" + stringValue.cacheHit +
+              ", cacheMiss=" + stringValue.cacheMiss + ", cacheClear=" + stringValue.cacheClear);
+        }
+      }
+    }
   }
 
   private int fillOutDocs(List<LeafReaderContext> leaves, SortDoc sortDoc,

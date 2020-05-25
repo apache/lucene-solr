@@ -42,6 +42,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestExportWriter extends SolrTestCaseJ4 {
+
+  private ObjectMapper mapper = new ObjectMapper();
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -755,7 +757,6 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String fieldsStr = String.join(",", fieldStrs); // fl :  field1, field2
 
     String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
-    ObjectMapper mapper = new ObjectMapper();
     HashMap respMap = mapper.readValue(resp, HashMap.class);
     List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
 

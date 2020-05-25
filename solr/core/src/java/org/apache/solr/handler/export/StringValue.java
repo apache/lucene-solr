@@ -19,6 +19,10 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 
+import com.carrotsearch.hppc.IntArrayDeque;
+import com.carrotsearch.hppc.IntDeque;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntIntMap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -44,6 +48,12 @@ class StringValue implements SortValue {
   private BytesRef lastBytes;
   private String lastString;
   private int lastOrd = -1;
+
+  // simple LRU cache for ord values
+  private static final int CACHE_SIZE = 20;
+  private IntIntMap ordCache = new IntIntHashMap(CACHE_SIZE * 2);
+  private IntDeque ordDeque = new IntArrayDeque(CACHE_SIZE);
+  protected int cacheHit, cacheMiss, cacheClear;
 
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
@@ -81,7 +91,21 @@ class StringValue implements SortValue {
     }
     if (docId == docValues.docID()) {
       present = true;
-      currentOrd = (int) toGlobal.get(docValues.ordValue());
+      int ord = ordCache.getOrDefault(docValues.ordValue(), -1);
+      if (ord == -1) { // cache miss
+        cacheMiss++;
+        // trim the cache if needed
+        if (ordDeque.size() == CACHE_SIZE) {
+          int remove = ordDeque.removeFirst();
+          ordCache.remove(remove);
+        }
+        ord = (int) toGlobal.get(docValues.ordValue());
+        ordDeque.addLast(ord);
+        ordCache.put(docValues.ordValue(), ord);
+      } else {
+        cacheHit++;
+      }
+      currentOrd = ord;
     } else {
       present = false;
       currentOrd = -1;
@@ -118,6 +142,9 @@ class StringValue implements SortValue {
   public void setNextReader(LeafReaderContext context) throws IOException {
     if (ordinalMap != null) {
       toGlobal = ordinalMap.getGlobalOrds(context.ord);
+      ordCache.clear();
+      ordDeque.clear();
+      cacheClear++;
     }
     docValues = DocValues.getSorted(context.reader(), field);
     lastDocID = 0;
@@ -126,6 +153,8 @@ class StringValue implements SortValue {
   public void reset() {
     this.currentOrd = comp.resetValue();
     this.present = false;
+    ordCache.clear();
+    ordDeque.clear();
   }
 
   public int compareTo(SortValue o) {
