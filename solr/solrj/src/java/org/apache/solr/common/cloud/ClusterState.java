@@ -220,10 +220,10 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return createFromData(version, stateMap, liveNodes);
+    return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
-  public static ClusterState createFromData(int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+  public static ClusterState createFromCollectionMap(int version, Map<String, Object> stateMap, Set<String> liveNodes) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();

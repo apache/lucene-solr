@@ -106,6 +106,14 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+
+    // Test if the collection is of stateFormat 1 (i.e. not 2) supported pre Solr 9, in which case can't restore it.
+    Object format = properties.get("stateFormat");
+    if (format != null && !"2".equals(format)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Collection " + backupCollection + " is in stateFormat=" + format +
+          " no longer supported in Solr 9 and above. It can't be restored. If it originates in Solr 8 you can restore" +
+          " it there, migrate it to stateFormat=2 and backup again, it will then be restorable on Solr 9");
+    }
     String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 

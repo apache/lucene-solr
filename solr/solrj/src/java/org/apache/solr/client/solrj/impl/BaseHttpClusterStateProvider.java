@@ -138,7 +138,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
-    ClusterState cs = ClusterState.createFromData(znodeVersion, collectionsMap, liveNodes);
+    ClusterState cs = ClusterState.createFromCollectionMap(znodeVersion, collectionsMap, liveNodes);
     if (clusterProperties != null) {
       Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
