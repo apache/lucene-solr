@@ -78,6 +78,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public DocIdSet getDocIdSet(final Map context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
     // NB the IndexSearcher parameter here can be null because Filter Weights don't
     // actually use it.
@@ -101,6 +102,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     valueSource.createWeight(context, searcher);
   }

@@ -1439,8 +1439,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // Test zero hits
     sParams = mapParams(CommonParams.QT, "/sql",
         "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
-            "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
-
+         "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
 
     tuples = getTuples(sParams, baseUrl);
 

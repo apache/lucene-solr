@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -150,7 +151,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
 
 
   /** Frees any non-memory resources */
-  default void close() throws Exception {
+  default void close() throws IOException {
     SolrInfoBean.super.close();
   }
 

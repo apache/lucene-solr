@@ -142,7 +142,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     if (oldLeaderProxy != null) {
       oldLeaderProxy.close();      
     } else {
-      log.warn("No SocketProxy found for old leader node "+leaderNode);      
+      log.warn("No SocketProxy found for old leader node {}",leaderNode);
     }
 
     Thread.sleep(10000); // give chance for new leader to be elected.

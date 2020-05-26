@@ -47,7 +47,16 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Used by {@link CoreContainer} to hold ZooKeeper / SolrCloud info, especially {@link ZkController}.
+ * Mainly it does some ZK initialization, and ensures a loading core registers in ZK.
+ * Even when in standalone mode, perhaps surprisingly, an instance of this class exists.
+ * If {@link #getZkController()} returns null then we're in standalone mode.
+ */
 public class ZkContainer {
+  // NOTE DWS: It's debatable if this in-between class is needed instead of folding it all into ZkController.
+  //  ZKC is huge though.
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected ZkController zkController;
@@ -180,6 +189,10 @@ public class ZkContainer {
   public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
 
   public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
+    if (zkController == null) {
+      return;
+    }
+
     CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
@@ -223,7 +236,6 @@ public class ZkContainer {
     } else {
       r.run();
     }
-
   }
   
   public ZkController getZkController() {

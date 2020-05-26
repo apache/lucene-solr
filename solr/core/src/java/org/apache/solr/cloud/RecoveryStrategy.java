@@ -641,9 +641,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
-          PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
-              leader.getCoreUrl(), ulog.getNumRecordsToKeep());
-          boolean syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+          boolean syncSuccess;
+          try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
+              leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
+            syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+          }
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

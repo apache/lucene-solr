@@ -160,7 +160,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     // paranoia, we *really* don't want to ever get "//" in a path...
     final String hc = hostContext.toString().replaceAll("\\/+","/");
 
-    log.info("Setting hostContext system property: " + hc);
+    log.info("Setting hostContext system property: {}", hc);
     System.setProperty("hostContext", hc);
   }
   
@@ -994,7 +994,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     handle.put("rf", SKIPVAL);
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.error("Mismatched responses:\n" + a + "\n" + b);
+      log.error("Mismatched responses:\n{}\n{}", a, b);
       Assert.fail(cmp);
     }
   }

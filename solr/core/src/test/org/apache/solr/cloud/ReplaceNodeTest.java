@@ -60,7 +60,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
     String coll = "replacenodetest_coll";
-    log.info("total_jettys: " + cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -89,7 +91,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
     
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
-    log.debug("### Before decommission: " + collection);
+    log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
@@ -111,13 +113,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     Thread.sleep(5000);
     collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
-    log.debug("### After decommission: " + collection);
+    log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }
-    log.debug("### Existing replicas on decommissioned node: " + replicas);
+    log.debug("### Existing replicas on decommissioned node: {}", replicas);
 
     //let's do it back - this time wait for recoveries
     CollectionAdminRequest.AsyncCollectionAdminRequest replaceNodeRequest = createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE);

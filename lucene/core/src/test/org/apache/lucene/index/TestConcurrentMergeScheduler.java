@@ -113,9 +113,13 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             ioe.printStackTrace(System.out);
           }
           failure.clearDoFail();
-          assertTrue(writer.isClosed());
+          // make sure we are closed or closing - if we are unlucky a merge does
+          // the actual closing for us. this is rare but might happen since the
+          // tragicEvent is checked by IFD and that might throw during a merge
+          expectThrows(AlreadyClosedException.class, writer::ensureOpen);
           // Abort should have closed the deleter:
           assertTrue(writer.isDeleterClosed());
+          writer.close(); // now wait for the close to actually happen if a merge thread did the close.
           break outer;
         }
       }

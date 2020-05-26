@@ -315,10 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn("You should not use LATEST as luceneMatchVersion property: {}{}{}"
-          , "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
-          , "sizable changes may happen. If precise back compatibility is important "
-          , "then you should instead explicitly specify an actual Lucene version.");
+      log.warn("You should not use LATEST as luceneMatchVersion property: "
+          + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          + "sizable changes may happen. If precise back compatibility is important "
+          + "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -755,7 +755,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       try {
         urls.addAll(SolrResourceLoader.getURLs(libPath));
       } catch (IOException e) {
-        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e);
       }
     }
 
@@ -781,14 +781,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           else
             urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
         } catch (IOException e) {
-          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
         }
       } else if (null != path) {
         final Path dir = instancePath.resolve(path);
         try {
           urls.add(dir.toUri().toURL());
         } catch (MalformedURLException e) {
-          log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
+          log.warn("Couldn't add file {} to classpath: {}", dir, e);
         }
       } else {
         throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
