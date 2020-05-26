@@ -300,7 +300,7 @@ public class BKDWriter implements Closeable {
             return false;
           }
           //System.out.println("  new block @ fp=" + state.in.getFilePointer());
-          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator);
+          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator, state.decoder);
           assert docsInBlock > 0;
           docBlockUpto = 0;
           bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, docsInBlock, new IntersectVisitor() {

@@ -24,7 +24,11 @@ import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
 
-  private DocIdsWriter() {}
+  private final long[] temp;
+
+  public  DocIdsWriter(int maxPointsInLeafNode) {
+    temp = new long[maxPointsInLeafNode / 2];
+  }
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
     // docs can be sorted either when all docs in a block have the same value
@@ -65,7 +69,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
@@ -90,18 +94,28 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; i++) {
+  void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+    in.readLELongs(temp, 0, count / 2);
+    int i;
+    int j;
+    for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
+      long l1 = Long.reverseBytes(temp[j]);
+      docIDs[i] = (int)(l1 >>> 32);
+      docIDs[i+1] = (int)(l1 & 0xFFFFFFFF);
+    }
+    for (;i < count; i++) {
       docIDs[i] = in.readInt();
     }
   }
 
-  private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+  private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+    in.readLELongs(temp, 0, 3 * (count / 8));
     int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+    int j;
+    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
+      long l1 = Long.reverseBytes(temp[j]);
+      long l2 = Long.reverseBytes(temp[j+1]);
+      long l3 = Long.reverseBytes(temp[j+2]);
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -117,7 +131,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
@@ -142,18 +156,28 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; i++) {
+  private void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    in.readLELongs(temp, 0, count / 2);
+    int i;
+    int j;
+    for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
+      long l1 = Long.reverseBytes(temp[j]);
+      visitor.visit((int)(l1 >>> 32));
+      visitor.visit((int)(l1 & 0xFFFFFFFF));
+    }
+    for (;i < count; i++) {
       visitor.visit(in.readInt());
     }
   }
 
-  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  private void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    in.readLELongs(temp, 0, 3 * (count / 8));
     int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+    int j;
+    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
+      long l1 = Long.reverseBytes(temp[j]);
+      long l2 = Long.reverseBytes(temp[j+1]);
+      long l3 = Long.reverseBytes(temp[j+2]);
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
