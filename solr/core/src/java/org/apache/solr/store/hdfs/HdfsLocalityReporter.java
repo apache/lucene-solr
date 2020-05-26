@@ -149,7 +149,11 @@ public class HdfsLocalityReporter implements SolrInfoBean {
    *          The directory to keep metrics on.
    */
   public void registerDirectory(HdfsDirectory dir) {
-    log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath().toString());
+    if (log.isInfoEnabled()) {
+      if (log.isInfoEnabled()) {
+        log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath());
+      }
+    }
     cache.put(dir, new ConcurrentHashMap<FileStatus, BlockLocation[]>());
   }
 

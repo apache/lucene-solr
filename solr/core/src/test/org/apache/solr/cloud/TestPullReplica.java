@@ -334,13 +334,17 @@ public class TestPullReplica extends SolrCloudTestCase {
         return false;
       }
       statesSeen.add(r.getState());
-      log.info("CollectionStateWatcher saw state: {}", r.getState());
+      if (log.isInfoEnabled()) {
+        log.info("CollectionStateWatcher saw state: {}", r.getState());
+      }
       return r.getState() == Replica.State.ACTIVE;
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStream(System.out);
-    log.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
+    if (log.isInfoEnabled()) {
+      log.info("Saw states: {}", Arrays.toString(statesSeen.toArray()));
+    }
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), 3, statesSeen.size());
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));

@@ -69,7 +69,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     final String AUTH = "user:pass";
 
     Path zkDir = createTempDir();
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -124,7 +124,6 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testSimpleUpdateACLs() throws KeeperException, InterruptedException {
     assertTrue("Initial create was in secure mode; please check the test", canRead(defaultClient, PATH));
     assertTrue("Credentialed client should always be able to read", canRead(credentialsClient, PATH));
@@ -209,6 +208,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void getConfig() {
+    // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data here
+    assertEquals("", defaultClient.getConfig());
+  }
+
+  @Test
   public void testCheckInterrupted() {
     assertFalse(Thread.currentThread().isInterrupted());
     SolrZkClient.checkInterrupted(new RuntimeException());
@@ -216,6 +221,4 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
   }
-
-
 }

@@ -57,7 +57,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -223,7 +223,7 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Used to submit notifications to Collection Properties watchers in order
    **/
-  private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("collectionPropsNotifications"));
+  private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("collectionPropsNotifications"));
 
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
@@ -286,6 +286,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * Returns config set name for collection.
+   * TODO move to DocCollection (state.json).
    *
    * @param collection to return config set name for
    */
@@ -297,10 +298,6 @@ public class ZkStateReader implements SolrCloseable {
     log.debug("Loading collection config from: [{}]", path);
 
     try {
-      if (zkClient.exists(path, true) == false) {
-        log.warn("No collection found at path {}.", path);
-        throw new KeeperException.NoNodeException("No collection found at path: " + path);
-      }
       byte[] data = zkClient.getData(path, null, null, true);
       if (data == null) {
         log.warn("No config data found at path {}.", path);
@@ -313,14 +310,6 @@ public class ZkStateReader implements SolrCloseable {
       if (configName == null) {
         log.warn("No config data found at path{}. ", path);
         throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      String configPath = CONFIGS_ZKNODE + "/" + configName;
-      if (zkClient.exists(configPath, true) == false) {
-        log.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
-        throw new KeeperException.NoNodeException("Specified config=[" + configName + "] does not exist in ZooKeeper at location=[" + configPath + "]");
-      } else {
-        log.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
       }
     } catch (InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
@@ -475,7 +464,9 @@ public class ZkStateReader implements SolrCloseable {
     DocCollection collection = clusterState.getCollectionOrNull(coll);
     if (collection == null) return null;
     if (collection.getZNodeVersion() < version) {
-      log.debug("Server older than client {}<{}", collection.getZNodeVersion(), version);
+      if (log.isDebugEnabled()) {
+        log.debug("Server older than client {}<{}", collection.getZNodeVersion(), version);
+      }
       DocCollection nu = getCollectionLive(this, coll);
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
@@ -492,7 +483,9 @@ public class ZkStateReader implements SolrCloseable {
       return null;
     }
 
-    log.debug("Wrong version from client [{}]!=[{}]", version, collection.getZNodeVersion());
+    if (log.isDebugEnabled()) {
+      log.debug("Wrong version from client [{}]!=[{}]", version, collection.getZNodeVersion());
+    }
 
     return collection.getZNodeVersion();
   }
@@ -600,12 +593,14 @@ public class ZkStateReader implements SolrCloseable {
 
     this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
 
-    log.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
-        legacyCollectionStates.keySet().size(),
-        collectionWatches.keySet().size(),
-        watchedCollectionStates.keySet().size(),
-        lazyCollectionStates.keySet().size(),
-        clusterState.getCollectionStates().size());
+    if (log.isDebugEnabled()) {
+      log.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
+          legacyCollectionStates.keySet().size(),
+          collectionWatches.keySet().size(),
+          watchedCollectionStates.keySet().size(),
+          lazyCollectionStates.keySet().size(),
+          clusterState.getCollectionStates().size());
+    }
 
     if (log.isTraceEnabled()) {
       log.trace("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
@@ -850,7 +845,9 @@ public class ZkStateReader implements SolrCloseable {
       }
     }
     if (oldLiveNodes.size() != newLiveNodes.size()) {
-      log.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+      if (log.isInfoEnabled()) {
+        log.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+      }
     }
     if (log.isDebugEnabled()) {
       log.debug("Updated live nodes from ZooKeeper... {} -> {}", oldLiveNodes, newLiveNodes);
@@ -1319,8 +1316,10 @@ public class ZkStateReader implements SolrCloseable {
       }
 
       Set<String> liveNodes = ZkStateReader.this.liveNodes;
-      log.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
-          event, coll, liveNodes.size());
+      if (log.isInfoEnabled()) {
+        log.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
+            event, coll, liveNodes.size());
+      }
 
       refreshAndWatch();
 
@@ -1527,7 +1526,9 @@ public class ZkStateReader implements SolrCloseable {
       if (EventType.None.equals(event.getType())) {
         return;
       }
-      log.debug("A live node change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodes.size());
+      if (log.isDebugEnabled()) {
+        log.debug("A live node change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodes.size());
+      }
       refreshAndWatch();
     }
 
@@ -1937,7 +1938,9 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection oldState = watchedCollectionStates.get(coll);
       if (oldState == null) {
         if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
-          log.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
+          if (log.isDebugEnabled()) {
+            log.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
+          }
           updated = true;
           break;
         }
@@ -1949,7 +1952,9 @@ public class ZkStateReader implements SolrCloseable {
           break;
         }
         if (watchedCollectionStates.replace(coll, oldState, newState)) {
-          log.debug("Updating data for [{}] from [{}] to [{}]", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
+          if (log.isDebugEnabled()) {
+            log.debug("Updating data for [{}] from [{}] to [{}]", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
+          }
           updated = true;
           break;
         }
@@ -2137,7 +2142,7 @@ public class ZkStateReader implements SolrCloseable {
             setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
             return;
           } catch (KeeperException.BadVersionException e) {
-            log.debug(e.toString(), e);
+            log.debug("{}", e, e);
             log.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
             // considered a backoff here, but we really do want to compete strongly since the normal case is
             // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.

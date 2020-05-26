@@ -17,8 +17,6 @@
 package org.apache.lucene.codecs.lucene80;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.search.DocIdSetIterator;
@@ -27,9 +25,11 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RandomAccessInput;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.TestUtil;
 
 // Copied from the lucene70 package for separation of codec-code
@@ -37,7 +37,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testEmpty() throws IOException {
     int maxDoc = TestUtil.nextInt(random(), 1, 100000);
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     try (Directory dir = newDirectory()) {
       doTest(set, dir);
     }
@@ -48,7 +48,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   public void testEmptyBlocks() throws IOException {
     final int B = 65536;
     int maxDoc = B*11;
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     // block 0: EMPTY
     set.set(B+5); // block 1: SPARSE
     // block 2: EMPTY
@@ -83,7 +83,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   public void testLastEmptyBlocks() throws IOException {
     final int B = 65536;
     int maxDoc = B*3;
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     for (int docID = 0 ; docID < B*2 ; docID++) { // first 2 blocks are ALL
       set.set(docID);
     }
@@ -96,7 +96,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   // Checks that advance after the end of the blocks has been reached has the correct behaviour
-  private void assertAdvanceBeyondEnd(FixedBitSet set, Directory dir) throws IOException {
+  private void assertAdvanceBeyondEnd(BitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     final byte denseRankPower = 9; // Not tested here so fixed to isolate factors
     long length;
@@ -127,7 +127,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   @Nightly
   public void testRandomBlocks() throws IOException {
     final int BLOCKS = 5;
-    FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
+    BitSet set = createSetWithRandomBlocks(BLOCKS);
     try (Directory dir = newDirectory()) {
       doTestAllSingleJump(set, dir);
     }
@@ -138,7 +138,7 @@ public class TestIndexedDISI extends LuceneTestCase {
     final int BLOCKS = 10;
     final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
 
-    FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
+    BitSet set = createSetWithRandomBlocks(BLOCKS);
     try (Directory dir = newDirectory()) {
       final int cardinality = set.cardinality();
       int jumpTableEntryCount;
@@ -158,9 +158,9 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
-  private FixedBitSet createSetWithRandomBlocks(int blockCount) {
+  private BitSet createSetWithRandomBlocks(int blockCount) {
     final int B = 65536;
-    FixedBitSet set = new FixedBitSet(blockCount * B);
+    BitSet set = new SparseFixedBitSet(blockCount * B);
     for (int block = 0; block < blockCount; block++) {
       switch (random().nextInt(4)) {
         case 0: { // EMPTY
@@ -191,7 +191,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
 
-  private void doTestAllSingleJump(FixedBitSet set, Directory dir) throws IOException {
+  private void doTestAllSingleJump(BitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
     long length;
@@ -222,7 +222,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testOneDoc() throws IOException {
     int maxDoc = TestUtil.nextInt(random(), 1, 100000);
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     set.set(random().nextInt(maxDoc));
     try (Directory dir = newDirectory()) {
       doTest(set, dir);
@@ -231,7 +231,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testTwoDocs() throws IOException {
     int maxDoc = TestUtil.nextInt(random(), 1, 100000);
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     set.set(random().nextInt(maxDoc));
     set.set(random().nextInt(maxDoc));
     try (Directory dir = newDirectory()) {
@@ -250,7 +250,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testHalfFull() throws IOException {
     int maxDoc = TestUtil.nextInt(random(), 1, 100000);
-    FixedBitSet set = new FixedBitSet(maxDoc);
+    BitSet set = new SparseFixedBitSet(maxDoc);
     for (int i = random().nextInt(2); i < maxDoc; i += TestUtil.nextInt(random(), 1, 3)) {
       set.set(i);
     }
@@ -371,7 +371,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   private void createAndOpenDISI(byte denseRankPowerWrite, byte denseRankPowerRead) throws IOException {
-    FixedBitSet set = new FixedBitSet(10);
+    BitSet set = new FixedBitSet(10);
     set.set(set.length()-1);
     try (Directory dir = newDirectory()) {
       long length;
@@ -423,24 +423,22 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void doTestRandom(Directory dir) throws IOException {
     Random random = random();
-    List<Integer> docs = new ArrayList<>();
     final int maxStep = TestUtil.nextInt(random, 1, 1 << TestUtil.nextInt(random, 2, 20));
     final int numDocs = TestUtil.nextInt(random, 1, Math.min(100000, Integer.MAX_VALUE / maxStep));
+    BitSet docs = new SparseFixedBitSet(numDocs * (maxStep + 1));
+    int lastDoc = -1;
     for (int doc = -1, i = 0; i < numDocs; ++i) {
       doc += TestUtil.nextInt(random, 1, maxStep);
-      docs.add(doc);
+      docs.set(doc);
+      lastDoc = doc;
     }
-    final int maxDoc = docs.get(docs.size() - 1) + TestUtil.nextInt(random, 1, 100);
+    final int maxDoc = lastDoc + TestUtil.nextInt(random, 1, 100);
 
-    FixedBitSet set = new FixedBitSet(maxDoc);
-    for (int doc : docs) {
-      set.set(doc);
-    }
-
+    BitSet set = BitSet.of(new BitSetIterator(docs, docs.approximateCardinality()), maxDoc);
     doTest(set, dir);
   }
 
-  private void doTest(FixedBitSet set, Directory dir) throws IOException {
+  private void doTest(BitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
     long length;

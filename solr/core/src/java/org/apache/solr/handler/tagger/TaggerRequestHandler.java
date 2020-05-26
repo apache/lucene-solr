@@ -47,6 +47,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -62,7 +63,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
@@ -166,69 +166,68 @@ public class TaggerRequestHandler extends RequestHandlerBase {
       Analyzer analyzer = req.getSchema().getField(indexedField).getType().getQueryAnalyzer();
       try (TokenStream tokenStream = analyzer.tokenStream("", inputReader)) {
         Terms terms = searcher.getSlowAtomicReader().terms(indexedField);
-        if (terms == null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "field " + indexedField + " has no indexed data");
-        Tagger tagger = new Tagger(terms, computeDocCorpus(req), tokenStream, tagClusterReducer,
-                skipAltTokens, ignoreStopWords) {
-          @SuppressWarnings("unchecked")
-          @Override
-          protected void tagCallback(int startOffset, int endOffset, Object docIdsKey) {
-            if (tags.size() >= tagsLimit)
-              return;
-            if (offsetCorrector != null) {
-              int[] offsetPair = offsetCorrector.correctPair(startOffset, endOffset);
-              if (offsetPair == null) {
-                log.debug("Discarded offsets [{}, {}] because couldn't balance XML.",
-                        startOffset, endOffset);
+        if (terms != null) {
+          Tagger tagger = new Tagger(terms, computeDocCorpus(req), tokenStream, tagClusterReducer,
+              skipAltTokens, ignoreStopWords) {
+            @SuppressWarnings("unchecked")
+            @Override
+            protected void tagCallback(int startOffset, int endOffset, Object docIdsKey) {
+              if (tags.size() >= tagsLimit)
                 return;
+              if (offsetCorrector != null) {
+                int[] offsetPair = offsetCorrector.correctPair(startOffset, endOffset);
+                if (offsetPair == null) {
+                  log.debug("Discarded offsets [{}, {}] because couldn't balance XML.",
+                      startOffset, endOffset);
+                  return;
+                }
+                startOffset = offsetPair[0];
+                endOffset = offsetPair[1];
               }
-              startOffset = offsetPair[0];
-              endOffset = offsetPair[1];
+
+              NamedList tag = new NamedList();
+              tag.add("startOffset", startOffset);
+              tag.add("endOffset", endOffset);
+              if (addMatchText)
+                tag.add("matchText", inputString.substring(startOffset, endOffset));
+              //below caches, and also flags matchDocIdsBS
+              tag.add("ids", lookupSchemaDocIds(docIdsKey));
+              tags.add(tag);
             }
 
-            NamedList tag = new NamedList();
-            tag.add("startOffset", startOffset);
-            tag.add("endOffset", endOffset);
-            if (addMatchText)
-              tag.add("matchText", inputString.substring(startOffset, endOffset));
-            //below caches, and also flags matchDocIdsBS
-            tag.add("ids", lookupSchemaDocIds(docIdsKey));
-            tags.add(tag);
-          }
+            Map<Object, List> docIdsListCache = new HashMap<>(2000);
 
-          Map<Object, List> docIdsListCache = new HashMap<>(2000);
+            ValueSourceAccessor uniqueKeyCache = new ValueSourceAccessor(searcher,
+                idSchemaField.getType().getValueSource(idSchemaField, null));
 
-          ValueSourceAccessor uniqueKeyCache = new ValueSourceAccessor(searcher,
-                  idSchemaField.getType().getValueSource(idSchemaField, null));
+            @SuppressWarnings("unchecked")
+            private List lookupSchemaDocIds(Object docIdsKey) {
+              List schemaDocIds = docIdsListCache.get(docIdsKey);
+              if (schemaDocIds != null)
+                return schemaDocIds;
+              IntsRef docIds = lookupDocIds(docIdsKey);
+              //translate lucene docIds to schema ids
+              schemaDocIds = new ArrayList(docIds.length);
+              for (int i = docIds.offset; i < docIds.offset + docIds.length; i++) {
+                int docId = docIds.ints[i];
+                assert i == docIds.offset || docIds.ints[i - 1] < docId : "not sorted?";
+                matchDocIdsBS.set(docId);//also, flip docid in bitset
+                try {
+                  schemaDocIds.add(uniqueKeyCache.objectVal(docId));//translates here
+                } catch (IOException e) {
+                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                }
+              }
+              assert !schemaDocIds.isEmpty();
 
-          @SuppressWarnings("unchecked")
-          private List lookupSchemaDocIds(Object docIdsKey) {
-            List schemaDocIds = docIdsListCache.get(docIdsKey);
-            if (schemaDocIds != null)
+              docIdsListCache.put(docIds, schemaDocIds);
               return schemaDocIds;
-            IntsRef docIds = lookupDocIds(docIdsKey);
-            //translate lucene docIds to schema ids
-            schemaDocIds = new ArrayList(docIds.length);
-            for (int i = docIds.offset; i < docIds.offset + docIds.length; i++) {
-              int docId = docIds.ints[i];
-              assert i == docIds.offset || docIds.ints[i - 1] < docId : "not sorted?";
-              matchDocIdsBS.set(docId);//also, flip docid in bitset
-              try {
-                schemaDocIds.add(uniqueKeyCache.objectVal(docId));//translates here
-              } catch (IOException e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-              }
             }
-            assert !schemaDocIds.isEmpty();
 
-            docIdsListCache.put(docIds, schemaDocIds);
-            return schemaDocIds;
-          }
-
-        };
-        tagger.enableDocIdsCache(2000);//TODO configurable
-        tagger.process();
+          };
+          tagger.enableDocIdsCache(2000);//TODO configurable
+          tagger.process();
+        }
       }
     } finally {
       inputReader.close();
@@ -286,7 +285,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     for (int i = 0; i < docIds.length; i++) {
       docIds[i] = docIdIter.nextDoc();
     }
-    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f);
+    return new DocSlice(0, docIds.length, docIds, null, matchDocs, 1f, TotalHits.Relation.EQUAL_TO);
   }
 
   private TagClusterReducer chooseTagClusterReducer(String overlaps) {
@@ -324,23 +323,8 @@ public class TaggerRequestHandler extends RequestHandlerBase {
       }
 
       final DocSet docSet = searcher.getDocSet(filterQueries);//hopefully in the cache
-      //note: before Solr 4.7 we could call docSet.getBits() but no longer.
-      if (docSet instanceof BitDocSet) {
-        docBits = ((BitDocSet)docSet).getBits();
-      } else {
-        docBits = new Bits() {
 
-          @Override
-          public boolean get(int index) {
-            return docSet.exists(index);
-          }
-
-          @Override
-          public int length() {
-            return searcher.maxDoc();
-          }
-        };
-      }
+      docBits = docSet.getBits();
     } else {
       docBits = searcher.getSlowAtomicReader().getLiveDocs();
     }

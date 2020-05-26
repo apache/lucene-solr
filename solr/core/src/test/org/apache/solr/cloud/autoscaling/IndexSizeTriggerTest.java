@@ -20,8 +20,10 @@ package org.apache.solr.cloud.autoscaling;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,7 +116,9 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   @After
   public void restoreDefaults() throws Exception {
     if (!realCluster) {
-      log.info(((SimCloudManager) cloudManager).dumpClusterState(true));
+      if (log.isInfoEnabled()) {
+        log.info(((SimCloudManager) cloudManager).dumpClusterState(true));
+      }
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simDeleteAllCollections();
       ((SimCloudManager) cloudManager).simClearSystemCollection();
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simResetLeaderThrottles();
@@ -237,7 +241,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }
@@ -735,6 +739,23 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     } catch (TriggerValidationException e) {
       assertTrue(e.getDetails().containsKey(IndexSizeTrigger.SPLIT_METHOD_PROP));
     }
+  }
+
+  // make sure all defined properties are added to valid properties (SOLR-13264)
+  @Test
+  public void testValidProperties() throws Exception {
+
+    final Set<String> propFields = new HashSet<>();
+
+    final TriggerBase trigger = new IndexSizeTrigger("index_size_trigger");
+    for (final Field field : trigger.getClass().getFields()) {
+      if (field.getName().endsWith("_PROP")) {
+        propFields.add(field.get(trigger).toString());
+      }
+    }
+    propFields.removeAll(trigger.getValidProperties());
+
+    assertTrue("Invalid _PROP constants: "+propFields.toString(), propFields.isEmpty());
   }
 
   private Map<String, Object> createTriggerProps(long waitForSeconds) {

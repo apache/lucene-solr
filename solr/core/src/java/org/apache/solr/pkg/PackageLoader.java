@@ -20,8 +20,8 @@ package org.apache.solr.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,11 +113,15 @@ public class PackageLoader implements Closeable {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
-          log.info("Package {} is modified ", e.getKey());
+          if (log.isInfoEnabled()) {
+            log.info("Package {} is modified ", e.getKey());
+          }
           changed.put(e.getKey(), e.getValue());
         }
       } else {
-        log.info("A new package: {} introduced", e.getKey());
+        if (log.isInfoEnabled()) {
+          log.info("A new package: {} introduced", e.getKey());
+        }
         changed.put(e.getKey(), e.getValue());
       }
     }
@@ -172,7 +176,7 @@ public class PackageLoader implements Closeable {
           try {
             ver = new Version(this, v);
           } catch (Exception e) {
-            log.error("package could not be loaded "+ ver.toString(), e);
+            log.error("package could not be loaded {}", ver, e);
             continue;
           }
           myVersions.put(v.version, ver);
@@ -265,15 +269,11 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        try {
-          loader = new SolrResourceLoader(
-              "PACKAGE_LOADER: " + parent.name() + ":" + version,
-              paths,
-              coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
-        } catch (MalformedURLException e) {
-          log.error("Could not load classloader ", e);
-        }
+        loader = new SolrResourceLoader(
+            "PACKAGE_LOADER: " + parent.name() + ":" + version,
+            paths,
+            Paths.get(coreContainer.getSolrHome()),
+            coreContainer.getResourceLoader().getClassLoader());
       }
 
       public String getVersion() {

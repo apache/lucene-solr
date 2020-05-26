@@ -59,7 +59,7 @@ public class ReporterClientCache<T> implements Closeable {
         item = clientProvider.get();
         cache.put(id, item);
       } catch (Exception e) {
-        log.warn("Error providing a new client for id=" + id, e);
+        log.warn("Error providing a new client for id={}", id, e);
         item = null;
       }
     }
@@ -75,7 +75,7 @@ public class ReporterClientCache<T> implements Closeable {
         try {
           ((Closeable)client).close();
         } catch (Exception e) {
-          log.warn("Error closing client " + client + ", ignoring...", e);
+          log.warn("Error closing client {}, ignoring...", client, e);
         }
       }
     }

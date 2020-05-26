@@ -832,7 +832,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         }
         
         assert uncompressedBlockLength <= uncompressedBlock.length;
-        LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock, 0);
+        LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock);
       }
       
       uncompressedBytesRef.offset = uncompressedDocStarts[docInBlockId];        

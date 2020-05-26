@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
+
+description = 'Lucene core library'
 
 dependencies {
   testImplementation project(':lucene:codecs')

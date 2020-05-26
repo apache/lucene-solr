@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -169,12 +170,13 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     }
 
     SolrResourceLoader loader = new SolrResourceLoader(tmpRoot);
+    loader.addToClassLoader(SolrResourceLoader.getURLs(lib));
 
-    // ./lib is accessible by default
+    // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
     // add inidividual jars from other paths
-    loader.addToClassLoader(otherLib.resolve("jar2.jar").toUri().toURL());
+    loader.addToClassLoader(Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 
     assertNotNull(loader.getClassLoader().getResource("explicitFile"));
     assertNull(loader.getClassLoader().getResource("otherFile"));
@@ -209,7 +211,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     loader.close();    
   }
 
-  public void testCacheWrongType() {
+  public void testCacheWrongType() throws Exception {
     clearCache();
 
     SolrResourceLoader loader = new SolrResourceLoader();
@@ -224,5 +226,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // This should work, but won't if earlier call succeeding corrupting the cache
     TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
     assertNotNull("Did not load Tokenizer after bad call earlier", tf);
+    loader.close();
   }
 }

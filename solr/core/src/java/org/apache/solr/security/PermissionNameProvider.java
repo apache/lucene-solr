@@ -38,6 +38,7 @@ public interface PermissionNameProvider {
     COLL_READ_PERM("collection-admin-read", null),
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
+    ZK_READ_PERM("zk-read", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),

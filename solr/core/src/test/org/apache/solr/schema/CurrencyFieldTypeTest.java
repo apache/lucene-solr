@@ -518,16 +518,16 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
                   "{ xxx : { type:range, field:" + fieldName + ", " +
                   "          start:'4.00"+suffix+"', gap:'1.00"+suffix+"', end:'11.00"+suffix+"', other:all } }")
               ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
-              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
-              ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='1']"
-              ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
-              ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
+              ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+              ,"//lst[@name='xxx']/lst[@name='before' ]/long[@name='count'][.='1']"
+              ,"//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']"
+              ,"//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='3']"
               );
     }
 
@@ -552,13 +552,13 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
                 "{ xxx : { type:range, mincount:1, field:" + fieldName +
                 ", start:'0.00,USD', gap:'1.00,USD', end:'11.00,USD', other:all } }")
             ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=4"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='3.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
-            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='0']"
-            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
-            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='4']"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='3.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/long[@name='count'][.='0']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='4']"
             );
 
     // NOTE: because of asymetric EUR exchange rate, these buckets are diff then the similar looking USD based request above
@@ -587,16 +587,16 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
             req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
                 "{ xxx : { type:range, field:" + fieldName + ", start:'8.00,EUR', gap:'2.00,EUR', end:'22.00,EUR', other:all } }")
             ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='10.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='12.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='14.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='16.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='18.00,EUR']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='20.00,EUR']]"
-            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='2']"
-            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
-            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='2']"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='8.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='10.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='12.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='14.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='16.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='18.00,EUR']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='20.00,EUR']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/long[@name='count'][.='2']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='2']"
             );
 
     
@@ -627,16 +627,16 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
             req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
                 "{ xxx : { type:range, field:" + fieldName + ", start:'2.00,GBP', gap:'0.50,GBP', end:'5.50,GBP', other:all } }")
             ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='2.00,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='2.50,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='3.00,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='3.50,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='4.00,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='4.50,GBP']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='5.00,GBP']]"
-            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='0']"
-            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='2']"
-            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='2.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='2.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='3.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='3.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='4.00,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='4.50,GBP']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='5.00,GBP']]"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/long[@name='count'][.='0']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='2']"
+            ,"//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='3']"
             );
 
     assertQ("Ensure that we can set a gap in a currency other than the start and end currencies (facet.range)",
@@ -663,17 +663,17 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
             req("fl", "*,score", "q", "*:*", "rows", "0", "json.facet",
                 "{ xxx : { type:range, field:" + fieldName + ", start:'4.00,USD', gap:'0.50,GBP', end:'11.00,USD', other:all } }")
             ,"count(//lst[@name='xxx']/arr[@name='buckets']/lst)=7"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
-            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='4.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='5.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='6.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='7.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='8.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='0']][str[@name='val'][.='9.00,USD']]"
+            ,"//lst[@name='xxx']/arr[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='10.00,USD']]"
             
-            ,"//lst[@name='xxx']/lst[@name='before' ]/int[@name='count'][.='1']"
-            ,"//lst[@name='xxx']/lst[@name='after'  ]/int[@name='count'][.='1']"
-            ,"//lst[@name='xxx']/lst[@name='between']/int[@name='count'][.='3']"
+            ,"//lst[@name='xxx']/lst[@name='before' ]/long[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='after'  ]/long[@name='count'][.='1']"
+            ,"//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='3']"
             );
 
     for (SolrParams facet : Arrays.asList(params("facet", "true",

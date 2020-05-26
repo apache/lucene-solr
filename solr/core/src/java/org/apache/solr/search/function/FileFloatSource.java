@@ -88,6 +88,8 @@ public class FileFloatSource extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
+
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
@@ -143,9 +145,13 @@ public class FileFloatSource extends ValueSource {
    * @param reader the IndexReader whose cache needs refreshing
    */
   public void refreshCache(IndexReader reader) {
-    log.info("Refreshing FileFloatSource cache for field {}", this.field.getName());
+    if (log.isInfoEnabled()) {
+      log.info("Refreshing FileFloatSource cache for field {}", this.field.getName());
+    }
     floatCache.refresh(reader, new Entry(this));
-    log.info("FileFloatSource cache for field {} reloaded", this.field.getName());
+    if (log.isInfoEnabled()) {
+      log.info("FileFloatSource cache for field {} reloaded", this.field.getName());
+    }
   }
 
   private final float[] getCachedFloats(IndexReader reader) {
@@ -161,29 +167,34 @@ public class FileFloatSource extends ValueSource {
 
   /** Internal cache. (from lucene FieldCache) */
   abstract static class Cache {
+    @SuppressWarnings({"rawtypes"})
     private final Map readerCache = new WeakHashMap();
 
     protected abstract Object createValue(IndexReader reader, Object key);
 
+    @SuppressWarnings({"unchecked"})
     public void refresh(IndexReader reader, Object key) {
       Object refreshedValues = createValue(reader, key);
       synchronized (readerCache) {
+        @SuppressWarnings({"rawtypes"})
         Map innerCache = (Map) readerCache.get(reader);
         if (innerCache == null) {
-          innerCache = new HashMap();
+          innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);
         }
         innerCache.put(key, refreshedValues);
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public Object get(IndexReader reader, Object key) {
+      @SuppressWarnings({"rawtypes"})
       Map innerCache;
       Object value;
       synchronized (readerCache) {
         innerCache = (Map) readerCache.get(reader);
         if (innerCache == null) {
-          innerCache = new HashMap();
+          innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);
           value = null;
         } else {
@@ -259,7 +270,7 @@ public class FileFloatSource extends ValueSource {
       is = VersionedFile.getLatestFile(ffs.dataDir, fname);
     } catch (IOException e) {
       // log, use defaults
-      log.error("Error opening external value source file: " +e);
+      log.error("Error opening external value source file: ", e);
       return vals;
     }
 
@@ -301,9 +312,8 @@ public class FileFloatSource extends ValueSource {
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
-            log.error( "Error loading external value source + fileName + " + e
-              + (otherErrors<10 ? "" : "\tSkipping future errors for this file.")
-            );
+            log.error("Error loading external value source + fileName + {}{}", e
+                , (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
           }
           continue;  // go to next line in file.. leave values as default.
         }
@@ -325,17 +335,16 @@ public class FileFloatSource extends ValueSource {
 
     } catch (IOException e) {
       // log, use defaults
-      log.error("Error loading external value source: " +e);
+      log.error("Error loading external value source: ", e);
     } finally {
       // swallow exceptions on close so we don't override any
       // exceptions that happened in the loop
       try{r.close();}catch(Exception e){}
     }
-
-    log.info("Loaded external value source " + fname
-      + (notFoundCount==0 ? "" : " :"+notFoundCount+" missing keys "+notFound)
-    );
-
+    if (log.isInfoEnabled()) {
+      String tmp = (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound);
+      log.info("Loaded external value source {}{}", fname, tmp);
+    }
     return vals;
   }
 

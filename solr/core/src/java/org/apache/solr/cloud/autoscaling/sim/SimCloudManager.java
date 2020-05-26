@@ -89,7 +89,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.MetricsHandler;
@@ -101,7 +100,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.MockSearchableSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,7 +181,6 @@ public class SimCloudManager implements SolrCloudManager {
     if (distribStateManager == null) {
       this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
       // init common paths
-      stateManager.makePath(ZkStateReader.CLUSTER_STATE);
       stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
       stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
       stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
@@ -199,12 +197,12 @@ public class SimCloudManager implements SolrCloudManager {
     // register common metrics
     metricTag = Integer.toHexString(hashCode());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
-    metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
-    metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
-    metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
-    metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
-    metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
-    metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+    metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "buffers");
+    metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "classes");
+    metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "os");
+    metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "gc");
+    metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "memory");
+    metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.REPLACE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
     MetricsMap sysprops = new MetricsMap((detailed, map) -> {
       System.getProperties().forEach((k, v) -> {
         map.put(String.valueOf(k), v);
@@ -262,14 +260,13 @@ public class SimCloudManager implements SolrCloudManager {
     this.clusterStateProvider = new SimClusterStateProvider(liveNodesSet, this);
     this.nodeStateProvider = new SimNodeStateProvider(liveNodesSet, this.stateManager, this.clusterStateProvider, null);
     this.queueFactory = new GenericDistributedQueueFactory(stateManager);
-    this.simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new DefaultSolrThreadFactory("simCloudManagerPool"));
+    this.simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new SolrNamedThreadFactory("simCloudManagerPool"));
 
     this.autoScalingHandler = new AutoScalingHandler(this, loader);
 
 
     triggerThreadGroup = new ThreadGroup("Simulated Overseer autoscaling triggers");
-    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this,
-        new CloudConfig.CloudConfigBuilder("nonexistent", 0, "sim").build());
+    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
   }
@@ -315,7 +312,7 @@ public class SimCloudManager implements SolrCloudManager {
       config = cloudManager.getDistribStateManager().getAutoScalingConfig();
     }
     Set<String> nodeTags = new HashSet<>(SimUtils.COMMON_NODE_TAGS);
-    nodeTags.addAll(config.getPolicy().getParams());
+    nodeTags.addAll(config.getPolicy().getParamNames());
     Set<String> replicaTags = new HashSet<>(SimUtils.COMMON_REPLICA_TAGS);
     replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     cloudManager.getSimClusterStateProvider().copyFrom(other.getClusterStateProvider());
@@ -478,7 +475,7 @@ public class SimCloudManager implements SolrCloudManager {
     String nodeId = (String)values.get(ImplicitSnitch.NODE);
     nodeStateProvider.simSetNodeValues(nodeId, values);
     clusterStateProvider.simAddNode(nodeId);
-    log.trace("-- added node " + nodeId);
+    log.trace("-- added node {}", nodeId);
     // initialize history handler if this is the first node
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
@@ -512,7 +509,7 @@ public class SimCloudManager implements SolrCloudManager {
         metricsHandler = null;
       }
     }
-    log.trace("-- removed node " + nodeId);
+    log.trace("-- removed node {}", nodeId);
   }
 
   /**
@@ -601,7 +598,7 @@ public class SimCloudManager implements SolrCloudManager {
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
     if (killNodeId != null) {
-      log.info("  = killing node " + killNodeId);
+      log.info("  = killing node {}", killNodeId);
       simRemoveNode(killNodeId, false);
     }
     objectCache.clear();
@@ -611,10 +608,9 @@ public class SimCloudManager implements SolrCloudManager {
     } catch (Exception e) {
       // ignore
     }
-    simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new DefaultSolrThreadFactory("simCloudManagerPool"));
+    simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new SolrNamedThreadFactory("simCloudManagerPool"));
 
-    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this,
-        new CloudConfig.CloudConfigBuilder("nonexistent", 0, "sim").build());
+    OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
 
@@ -750,8 +746,10 @@ public class SimCloudManager implements SolrCloudManager {
     // pay the penalty for remote request, at least 5 ms
     timeSource.sleep(5);
 
-    log.trace("--- got SolrRequest: " + req.getMethod() + " " + req.getPath() +
-        (req.getParams() != null ? " " + req.getParams() : ""));
+    if (log.isTraceEnabled()) {
+      log.trace("--- got SolrRequest: {} {} {}", req.getMethod(), req.getPath(),
+          (req.getParams() != null ? " " + req.getParams() : "")); // logOk
+    }
     if (req.getPath() != null) {
       if (req.getPath().startsWith("/admin/autoscaling") ||
           req.getPath().startsWith("/cluster/autoscaling") ||
@@ -791,18 +789,22 @@ public class SimCloudManager implements SolrCloudManager {
             if (metricsHistoryHandler != null) {
               metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           } else {
             if (metricsHandler != null) {
               metricsHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           }
         }
         if (queryResponse.getException() != null) {
-          log.debug("-- exception handling request", queryResponse.getException());
+          if (log.isDebugEnabled()) {
+            log.debug("-- exception handling request", queryResponse.getException());
+          }
           throw new IOException(queryResponse.getException());
         }
         SolrResponse rsp = new SolrResponseBase();
@@ -862,7 +864,9 @@ public class SimCloudManager implements SolrCloudManager {
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
-      log.trace("Invoking Collection Action :{} with params {}", action.toLower(), params.toQueryString());
+      if (log.isTraceEnabled()) {
+        log.trace("Invoking Collection Action :{} with params {}", action.toLower(), params.toQueryString());
+      }
       NamedList results = new NamedList();
       rsp.setResponse(results);
       incrementCount(action.name());

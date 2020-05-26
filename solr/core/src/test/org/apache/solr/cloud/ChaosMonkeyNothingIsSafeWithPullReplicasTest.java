@@ -250,7 +250,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       ChaosMonkey.wait(2000, DEFAULT_COLLECTION, zkStateReader);
       
       // wait until there are no recoveries...
-      waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
+      waitForThingsToLevelOut();
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -291,8 +291,10 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
           .getResults().getNumFound();
       
       assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
-      
-      log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+
+      if (log.isInfoEnabled()) {
+        log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION));
+      }
       
       if (VERBOSE) System.out.println("control docs:"
           + controlClient.query(new SolrQuery("*:*")).getResults()

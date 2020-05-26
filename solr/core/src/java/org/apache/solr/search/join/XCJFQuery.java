@@ -167,7 +167,7 @@ public class XCJFQuery extends Query {
     public DocSet getDocSet() throws IOException {
       Query query = getResultQuery(searcher.getSchema().getField(toField), false);
       if (query == null) {
-        return DocSet.EMPTY;
+        return DocSet.empty();
       }
       return DocSetUtil.createDocSet(searcher, query, null);
     }
@@ -261,7 +261,7 @@ public class XCJFQuery extends Query {
     }
 
     private DocSet getDocSet() throws IOException {
-      SolrClientCache solrClientCache = new SolrClientCache();
+      SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
       if (zkHost != null || solrUrl == null) {
         solrStream = createCloudSolrStream(solrClientCache);
@@ -276,7 +276,7 @@ public class XCJFQuery extends Query {
       } else {
         Terms terms = searcher.getSlowAtomicReader().terms(toField);
         if (terms == null) {
-          return DocSet.EMPTY;
+          return DocSet.empty();
         }
         collector = new TermsJoinKeyCollector(fieldType, terms, searcher);
       }
@@ -299,7 +299,6 @@ public class XCJFQuery extends Query {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
         solrStream.close();
-        solrClientCache.close();
       }
 
       return collector.getDocSet();

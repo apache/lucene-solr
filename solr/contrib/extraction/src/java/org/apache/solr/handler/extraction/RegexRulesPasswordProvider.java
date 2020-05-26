@@ -88,7 +88,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
           continue;
         int sep = line.indexOf("=");
         if(sep <= 0) {
-          log.warn("Wrong format of password line "+linenum);
+          log.warn("Wrong format of password line {}", linenum);
           continue;
         }
         String pass = line.substring(sep+1).trim();
@@ -97,7 +97,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
           Pattern pattern = Pattern.compile(regex);
           rules.put(pattern,  pass);
         } catch(PatternSyntaxException pse) {
-          log.warn("Key of line "+linenum+" was not a valid regex pattern", pse);
+          log.warn("Key of line {} was not a valid regex pattern{}", linenum, pse);
           continue;
         }
       }

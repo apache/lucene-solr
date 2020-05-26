@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.handler.StreamHandler;
 
 import java.io.IOException;
 import java.util.*;
@@ -160,7 +159,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
     StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(StreamHandler.getClientCache());
+    streamContext.setSolrClientCache(schema.getSolrClientCache());
     tupleStream.setStreamContext(streamContext);
 
     final TupleStream finalStream = tupleStream;
@@ -800,7 +799,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                   String collection,
                                   String query,
                                   List<Pair<String, String>> metricPairs,
-                                  List<Map.Entry<String, Class>> fields) {
+                                  List<Map.Entry<String, Class>> fields) throws IOException {
 
 
     Map<String, Class> fmap = new HashMap();

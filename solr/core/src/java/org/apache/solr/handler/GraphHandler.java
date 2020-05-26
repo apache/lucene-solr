@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
@@ -54,6 +55,28 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * <p>
+ * Solr Request Handler for graph traversal with streaming functions that responds with GraphML markup.
+ * </p>
+ * <p>
+ * It loads the default set of streaming expression functions via {@link org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
+ * </p>
+ * <p>
+ * To add additional functions, just define them as plugins in solrconfig.xml via
+ * {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * }
+ * </p>
+ * <p>
+ * The @deprecated configuration method as of Solr 8.5 is
+  * {@code
+ *  &lt;lst name="streamFunctions"&gt;
+ *    &lt;str name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt;
+ *    &lt;str name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt;
+ *  &lt;/lst&gt;
+  * }
+ *</p>
+ *
  * @since 6.1.0
  */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -61,6 +84,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -68,21 +92,11 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   }
 
   public void inform(SolrCore core) {
-
-    /* The stream factory will always contain the zkUrl for the given collection
-     * Adds default streams with their corresponding function names. These
-     * defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override
-     *  <lst name="streamFunctions">
-     *    <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *    <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
-     *  </lst>
-     * */
-
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
+    this.solrClientCache = coreContainer.getSolrClientCache();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
@@ -92,8 +106,12 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
+    StreamHandler.addExpressiblePlugins(streamFactory, core);
+
+    // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){
+      log.warn("solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings) {
         String key = functionMapping.getKey();
@@ -132,7 +150,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     StreamContext context = new StreamContext();
-    context.setSolrClientCache(StreamHandler.clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.put("core", this.coreName);
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);

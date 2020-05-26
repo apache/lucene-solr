@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -231,7 +232,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();

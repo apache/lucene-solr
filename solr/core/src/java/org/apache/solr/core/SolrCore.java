@@ -134,7 +134,6 @@ import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
@@ -158,7 +157,7 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -325,6 +324,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public IndexSchema getLatestSchema() {
     return schema;
+  }
+
+  /** The core's instance directory. */
+  public Path getInstancePath() {
+    return getCoreDescriptor().getInstanceDir();
   }
 
   /**
@@ -687,9 +691,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
-        core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
-            coreConfig.getIndexSchema(), coreConfig.getProperties(),
-            cd, updateHandler, solrDelPolicy, currentCore, true);
+        core = new SolrCore(coreContainer, getName(), coreConfig, cd, getDataDir(),
+            updateHandler, solrDelPolicy, currentCore, true);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -897,8 +900,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
-    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
-        cd, null, null, null, false);
+    this(coreContainer, cd.getName(), coreConfig, cd, null,
+        null, null, null, false);
   }
 
   public CoreContainer getCoreContainer() {
@@ -909,15 +912,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Creates a new core and register it in the list of cores. If a core with the
    * same name already exists, it will be stopped and replaced by this one.
-   *
-   * @param dataDir the index directory
-   * @param config  a solr config instance
-   * @param schema  a solr schema instance
-   * @since solr 1.3
    */
-  public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
-                  IndexSchema schema, NamedList configSetProperties,
-                  CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
+  private SolrCore(CoreContainer coreContainer, String name, ConfigSet configSet, CoreDescriptor coreDescriptor,
+                  String dataDir, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
@@ -927,18 +924,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
+      IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
-      MDCLoggingContext.setCore(this);
 
-      resourceLoader = config.getResourceLoader();
-      this.solrConfig = config;
-      this.configSetProperties = configSetProperties;
+      this.solrConfig = configSet.getSolrConfig();
+      this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
-      this.coreMetricManager = initCoreMetricManager(config);
+      this.coreMetricManager = initCoreMetricManager(solrConfig);
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
@@ -953,13 +950,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         isReloaded = true;
       }
 
-      this.dataDir = initDataDir(dataDir, config, coreDescriptor);
+      this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
       this.ulogDir = initUpdateLogDir(coreDescriptor);
 
-      log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
-          this.dataDir);
+      if (log.isInfoEnabled()) {
+        log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, getInstancePath(), this.dataDir);
+      }
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
+      setLatestSchema(schema);
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, null);
@@ -970,10 +969,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
-      initSchema(config, schema);
-
-      this.maxWarmingSearchers = config.maxWarmingSearchers;
-      this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
+      this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
+      this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
       initListeners();
 
@@ -1098,8 +1095,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
-        log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
-            "SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
+        log.warn("WARNING: RealTimeGetHandler is not registered at /get. SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
       }
 
       // ZK pre-register would have already happened so we read slice properties now
@@ -1155,20 +1151,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code>
-   * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
-   *
-   * @see IndexSchemaFactory
-   * @see #setLatestSchema
-   */
-  private void initSchema(SolrConfig config, IndexSchema schema) {
-    if (schema == null) {
-      schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
-    }
-    setLatestSchema(schema);
-  }
-
-  /**
    * Initializes the core's {@link SolrCoreMetricManager} with a given configuration.
    * If metric reporters are configured, they are also initialized for this core.
    *
@@ -1191,7 +1173,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    parentContext.gauge(() -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
@@ -1293,7 +1275,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
-    return SolrResourceLoader.normalizeDir(dataDir);
+    return SolrPaths.normalizeDir(dataDir);
   }
 
 
@@ -1389,7 +1371,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     close();
     while (!isClosed()) {
       final long milliSleep = 100;
-      log.info("Core {} is not yet closed, waiting {} ms before checking again.", getName(), milliSleep);
+      if (log.isInfoEnabled()) {
+        log.info("Core {} is not yet closed, waiting {} ms before checking again.", getName(), milliSleep);
+      }
       try {
         Thread.sleep(milliSleep);
       } catch (InterruptedException e) {
@@ -1445,9 +1429,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
       cache = createInitInstance(pluginInfo, StatsCache.class, null,
           LocalStatsCache.class.getName());
-      log.debug("Using statsCache impl: {}", cache.getClass().getName());
+      if (log.isDebugEnabled()) {
+        log.debug("Using statsCache impl: {}", cache.getClass().getName());
+      }
     } else {
-      log.debug("Using default statsCache cache: {}", LocalStatsCache.class.getName());
+      if (log.isDebugEnabled()) {
+        log.debug("Using default statsCache cache: {}", LocalStatsCache.class.getName());
+      }
       cache = new LocalStatsCache();
     }
     return cache;
@@ -1517,6 +1505,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void open() {
     refCount.incrementAndGet();
+    MDCLoggingContext.setCore(this);
   }
 
   /**
@@ -1546,6 +1535,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
+    MDCLoggingContext.clear(); // balance out open with close
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
@@ -1745,7 +1735,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       sb.append(o == null ? "(null)" : o.toString());
     }
     // System.out.println(sb.toString());
-    log.info(sb.toString());
+    log.info("{}", sb);
   }
 
 
@@ -1854,7 +1844,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
   final ExecutorService searcherExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new DefaultSolrThreadFactory("searcherExecutor"));
+      new SolrNamedThreadFactory("searcherExecutor"));
   private int onDeckSearchers;  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private Object searcherLock = new Object();  // the sync object for the searcher
@@ -1932,7 +1922,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throws IOException {
     IndexReader.CacheHelper cacheHelper = ctx.reader().getReaderCacheHelper();
     if (cacheHelper == null) {
-      log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      if (log.isDebugEnabled()) {
+        log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
       return IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
     }
 
@@ -1943,7 +1935,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // documents were deleted from segment for which fingerprint was cached
     //
     if (f == null || (f.getMaxInHash() > maxVersion) || (f.getNumDocs() != ctx.reader().numDocs())) {
-      log.debug("IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      if (log.isDebugEnabled()) {
+        log.debug("IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
       f = IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
       // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint
       if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
@@ -1952,9 +1946,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
     } else {
-      log.debug("IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      if (log.isDebugEnabled()) {
+        log.debug("IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
     }
-    log.debug("Cache Size: {}, Segments Size:{}", perSegmentFingerprintCache.size(), searcher.getTopReaderContext().leaves().size());
+    if (log.isDebugEnabled()) {
+      log.debug("Cache Size: {}, Segments Size:{}", perSegmentFingerprintCache.size(), searcher.getTopReaderContext().leaves().size());
+    }
     return f;
   }
 
@@ -2100,7 +2098,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             // but log a message about it to minimize confusion
 
             newestSearcher.incref();
-            log.debug("SolrIndexSearcher has not changed - not re-opening: {}", newestSearcher.get().getName());
+            if (log.isDebugEnabled()) {
+              log.debug("SolrIndexSearcher has not changed - not re-opening: {}", newestSearcher.get().getName());
+            }
             return newestSearcher;
 
           } // ELSE: open a new searcher against the old reader...
@@ -2236,7 +2236,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
-            log.info(SolrException.toStr(e));
+            if (log.isInfoEnabled()) {
+              log.info(SolrException.toStr(e));
+            }
           }
         }
 
@@ -2265,7 +2267,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
-            log.info(SolrException.toStr(e));
+            if (log.isInfoEnabled()) {
+              log.info(SolrException.toStr(e));
+            }
           }
           continue;  // go back to the top of the loop and retry
         } else if (onDeckSearchers > 1) {
@@ -2516,13 +2520,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
          // NOTE: this should not happen now - see close() for details.
          // *BUT* if we left it enabled, this could still happen before
          // close() stopped the executor - so disable this test for now.
-         log.error("Ignoring searcher register on closed core:" + newSearcher);
+         log.error("Ignoring searcher register on closed core:{}", newSearcher);
          _searcher.decref();
          }
          ***/
 
         newSearcher.register(); // register subitems (caches)
-        log.info("{}Registered new searcher {}", logid, newSearcher);
+
+        if (log.isInfoEnabled()) {
+          log.info("{} Registered new searcher autowarm time: {} ms: Collection: '{}'"
+              , logid, newSearcher.getWarmupTime()
+              , newSearcher.getCore().getCoreDescriptor().getCollectionName());
+        }
 
       } catch (Exception e) {
         // an exception in register() shouldn't be fatal.
@@ -3122,7 +3131,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return false;
       }
       if (stat.getVersion() > currentVersion) {
-        log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());
+        if (log.isDebugEnabled()) {
+          log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());
+        }
         return true;
       }
       return false;

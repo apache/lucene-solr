@@ -1,6 +1,5 @@
 = Stream Decorator Reference
-:page-tocclass: right
-:page-toclevels: 1
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -507,7 +506,7 @@ The effect of this is to push documents that match a specific query into another
 
 Push streaming can also be used for continuous background aggregation scenarios where aggregates are rolled up in the background at intervals and pushed to other Solr collections. Another use case is continuous background machine learning model optimization, where the optimized model is pushed to another Solr collection where it can be integrated into queries.
 
-The `/stream` handler supports a small set commands for listing and controlling daemon functions:
+The `/stream` handler supports a small <<stream-api.adoc#plugins,set of commands>> for listing and controlling daemon functions:
 
 [source,text]
 ----
@@ -597,7 +596,7 @@ daemonStream.close();
 
 == delete
 
-The `delete` function wraps another functions and uses the `id` and `\_version_` values found to sends the tuples to a SolrCloud collection as <<uploading-data-with-index-handlers.adoc#delete-operations,Delete By Id>> commands.
+The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as <<uploading-data-with-index-handlers.adoc#delete-operations,Delete By Id>> commands.
 
 This is similar to the `<<#update,update()>>` function described below.
 
@@ -605,7 +604,7 @@ This is similar to the `<<#update,update()>>` function described below.
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will deleted.
 * `batchSize`: (Mandatory) The indexing batch size.
-* `pruneVersionField`: (Optional, defaults to `false`) Wether to prune `\_version_` values from tuples
+* `pruneVersionField`: (Optional, defaults to `false`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
 === delete Syntax
@@ -626,11 +625,11 @@ The example above consumes the tuples returned by the `search` function against 
 
 [NOTE]
 ====
-Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false` -- preserving any `\_version_` values found in the inner stream when converting the tuples to "Delete By ID" requests, to ensure that using this stream will not (by default) result in deleting any documents that were updated _after_ the `search(...)` was executed, but _before_ the `delete(...)` processed that tuple (leveraging <<updating-parts-of-documents.adoc#optimistic-concurrency,Optimistic concurrency>> constraints).
+Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false` -- preserving any `\_version_` values found in the inner stream when converting the tuples to "Delete By ID" requests. This ensures that using this stream will not (by default) result in deleting any documents that were updated _after_ the `search(...)` was executed, but _before_ the `delete(...)` processed that tuple (leveraging <<updating-parts-of-documents.adoc#optimistic-concurrency,Optimistic concurrency>> constraints).
 
-Users who wish to ignore concurrent updates, and delete all matched documents should set `pruneVersionField=false` (or ensure that the inner stream tuples do not include any `\_version_` values).
+Users who wish to ignore concurrent updates and delete all matched documents should set `pruneVersionField=true` (or ensure that the inner stream tuples do not include any `\_version_` values).
 
-Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuraing the {solr-javadocs}/solr-core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
+Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuring the {solr-javadocs}/solr-core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
 ====
 
 

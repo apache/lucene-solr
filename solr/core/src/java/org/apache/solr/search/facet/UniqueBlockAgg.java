@@ -62,7 +62,12 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     @Override
     public Object getValue(int slot) throws IOException {
-      return counts[slot];
+      return getNonShardValue(slot);
+    }
+
+    @Override
+    public long getNonShardValue(int slot) {
+      return (long)counts[slot];
     }
   }
 
@@ -74,10 +79,10 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
   }
 
   @Override
-  public abstract SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException ;
+  public abstract SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException ;
   
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger() ;
+    return new FacetModule.FacetLongMerger() ;
   }
 }

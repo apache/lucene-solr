@@ -117,12 +117,12 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
 
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
     //
     // we want to walk up the fcontext and inherit the queries from any ancestor SKGAgg
@@ -253,6 +253,7 @@ public class RelatednessAgg extends AggValueSource {
         slotVal.incSizes(fgSize, bgSize);
       }
 
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
       return res;
     }
@@ -403,6 +404,8 @@ public class RelatednessAgg extends AggValueSource {
      * @see SlotAcc#getValue
      * @see Merger#getMergedResult
      */
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public SimpleOrderedMap externalize(final boolean isShardRequest) {
       SimpleOrderedMap result = new SimpleOrderedMap<Number>();
       
@@ -429,7 +432,7 @@ public class RelatednessAgg extends AggValueSource {
   /**
    * Merges in the per shard {@link BucketData} output into a unified {@link BucketData}
    */
-  private static final class Merger extends FacetSortableMerger {
+  private static final class Merger extends FacetModule.FacetSortableMerger {
     private final BucketData mergedData;
     public Merger(final RelatednessAgg agg) {
       this.mergedData = new BucketData(agg);
@@ -437,13 +440,14 @@ public class RelatednessAgg extends AggValueSource {
     
     @Override
     public void merge(Object facetResult, Context mcontext) {
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> shardData = (NamedList<Object>)facetResult;
       mergedData.incSizes((Long)shardData.remove(FG_SIZE), (Long)shardData.remove(BG_SIZE));
       mergedData.incCounts((Long)shardData.remove(FG_COUNT), (Long)shardData.remove(BG_COUNT));
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       // NOTE: regardless of the SortDirection hint, we want normal comparison of the BucketData
       
       assert other instanceof Merger;

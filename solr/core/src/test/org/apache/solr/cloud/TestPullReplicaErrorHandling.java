@@ -85,7 +85,9 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       cluster.startJettySolrRunner(jetty);
       cluster.waitForAllNodes(30);
       proxy.open(jetty.getBaseUrl().toURI());
-      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Adding proxy for URL: {}. Proxy: {}", jetty.getBaseUrl(), proxy.getUrl());
+      }
       proxies.put(proxy.getUrl(), proxy);
       jettys.put(proxy.getUrl(), jetty);
     }

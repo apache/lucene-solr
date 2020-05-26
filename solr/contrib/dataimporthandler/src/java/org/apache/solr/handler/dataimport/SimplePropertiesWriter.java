@@ -38,7 +38,7 @@ import java.util.Properties;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +126,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       SolrCore core = dataImporter.getCore();
       if (core == null) {
-        configDir = SolrResourceLoader.locateSolrHome().toString();
+        configDir = SolrPaths.locateSolrHome().toString();
       } else {
         configDir = core.getResourceLoader().getConfigDir();
       }
@@ -214,7 +214,7 @@ public class SimplePropertiesWriter extends DIHProperties {
       existingProps.putAll(newProps);
       propOutput = new OutputStreamWriter(new FileOutputStream(getPersistFile()), StandardCharsets.UTF_8);
       existingProps.store(propOutput, null);
-      log.info("Wrote last indexed time to " + filename);
+      log.info("Wrote last indexed time to {}", filename);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
           "Unable to persist Index Start Time", e);
@@ -235,9 +235,9 @@ public class SimplePropertiesWriter extends DIHProperties {
       filePath += filename;
       propInput = new FileInputStream(filePath);
       props.load(new InputStreamReader(propInput, StandardCharsets.UTF_8));
-      log.info("Read " + filename);
+      log.info("Read {}", filename);
     } catch (Exception e) {
-      log.warn("Unable to read: " + filename);
+      log.warn("Unable to read: {}", filename);
     } finally {
       IOUtils.closeWhileHandlingException(propInput);
     }    

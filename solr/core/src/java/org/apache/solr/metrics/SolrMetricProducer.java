@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import java.io.IOException;
+
 /**
  * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
