@@ -159,7 +159,6 @@ public abstract class FieldComparator<T> {
     protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
       return DocValues.getNumeric(context.reader(), field);
     }
-
   }
 
   /** Parses field's values as double (using {@link

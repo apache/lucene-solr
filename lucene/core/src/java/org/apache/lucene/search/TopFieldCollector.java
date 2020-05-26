@@ -340,7 +340,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       relevanceComparator = null;
       canSetMinScore = false;
       if (firstComparator instanceof FilteringFieldComparator) {
-        assert(hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE);
+        assert hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE;
         scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
       } else {
         scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;

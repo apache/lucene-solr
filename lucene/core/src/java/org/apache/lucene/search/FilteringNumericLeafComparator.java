@@ -31,7 +31,7 @@ import java.util.Arrays;
  * A {@code FilteringLeafFieldComparator} that provides a functionality to skip over non-competitive documents
  * for numeric fields indexed with points.
  */
-public abstract class FilteringNumericLeafComparator implements FilteringLeafFieldComparator {
+abstract class FilteringNumericLeafComparator implements FilteringLeafFieldComparator {
   protected final LeafFieldComparator in;
   protected final boolean reverse;
   protected final boolean singleSort;
@@ -232,7 +232,7 @@ public abstract class FilteringNumericLeafComparator implements FilteringLeafFie
   /**
    * A wrapper over double long comparator that adds a functionality to filter non-competitive docs.
    */
-  public static class FilteringLongLeafComparator extends FilteringNumericLeafComparator {
+  static class FilteringLongLeafComparator extends FilteringNumericLeafComparator {
     public FilteringLongLeafComparator(FieldComparator.LongComparator in, LeafReaderContext context,
         String field, boolean reverse, boolean singleSort, boolean hasTopValue) throws IOException {
       super(in, context, field, reverse, singleSort, hasTopValue, Long.BYTES);
@@ -260,7 +260,7 @@ public abstract class FilteringNumericLeafComparator implements FilteringLeafFie
   /**
    * A wrapper over integer leaf comparator that adds a functionality to filter non-competitive docs.
    */
-  public static class FilteringIntLeafComparator extends FilteringNumericLeafComparator {
+  static class FilteringIntLeafComparator extends FilteringNumericLeafComparator {
     public FilteringIntLeafComparator(FieldComparator.IntComparator in, LeafReaderContext context,
         String field, boolean reverse, boolean singleSort, boolean hasTopValue) throws IOException {
       super(in, context, field, reverse, singleSort, hasTopValue, Integer.BYTES);
@@ -288,7 +288,7 @@ public abstract class FilteringNumericLeafComparator implements FilteringLeafFie
   /**
    * A wrapper over double leaf comparator that adds a functionality to filter non-competitive docs.
    */
-  public static class FilteringDoubleLeafComparator extends FilteringNumericLeafComparator {
+  static class FilteringDoubleLeafComparator extends FilteringNumericLeafComparator {
     public FilteringDoubleLeafComparator(FieldComparator.DoubleComparator in, LeafReaderContext context,
         String field, boolean reverse, boolean singleSort, boolean hasTopValue) throws IOException {
       super(in, context, field, reverse, singleSort, hasTopValue, Double.BYTES);
@@ -314,7 +314,7 @@ public abstract class FilteringNumericLeafComparator implements FilteringLeafFie
   /**
    * A wrapper over float leaf comparator that adds a functionality to filter non-competitive docs.
    */
-  public static class FilteringFloatLeafComparator extends FilteringNumericLeafComparator {
+  static class FilteringFloatLeafComparator extends FilteringNumericLeafComparator {
     public FilteringFloatLeafComparator(FieldComparator.FloatComparator in, LeafReaderContext context,
         String field, boolean reverse, boolean singleSort, boolean hasTopValue) throws IOException {
       super(in, context, field, reverse, singleSort, hasTopValue, Float.BYTES);

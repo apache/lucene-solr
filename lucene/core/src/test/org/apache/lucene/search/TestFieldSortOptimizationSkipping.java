@@ -33,7 +33,7 @@ import java.io.IOException;
 
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
 
-public class TestSortOptimization extends LuceneTestCase {
+public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
 
   public void testLongSortOptimization() throws IOException {
 

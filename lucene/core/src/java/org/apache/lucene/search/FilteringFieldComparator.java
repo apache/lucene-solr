@@ -23,7 +23,7 @@ import java.io.IOException;
 /**
  * A wrapper over {@code FieldComparator} that provides a leaf comparator that can filter non-competitive docs.
  */
-public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
+abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
   protected final FieldComparator<T> in;
   protected final boolean reverse;
   // singleSort is true, if sort is based on a single sort field. As there are no other sorts configured
@@ -72,16 +72,17 @@ public abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
    * is not implemented for it
    */
   public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse, boolean singleSort) {
-    if (comparator instanceof FieldComparator.LongComparator){
+    Class<?> comparatorClass = comparator.getClass();
+    if (comparatorClass == FieldComparator.LongComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.LongComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.IntComparator){
+    if (comparatorClass == FieldComparator.IntComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.IntComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.DoubleComparator){
+    if (comparatorClass == FieldComparator.DoubleComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.DoubleComparator) comparator, reverse, singleSort);
     }
-    if (comparator instanceof FieldComparator.FloatComparator){
+    if (comparatorClass == FieldComparator.FloatComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.FloatComparator) comparator, reverse, singleSort);
     }
     return comparator;

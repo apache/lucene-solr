@@ -23,26 +23,30 @@ import java.io.IOException;
 /**
  * A wrapper over {@code NumericComparator} that provides a leaf comparator that can filter non-competitive docs.
  */
-public class FilteringNumericComparator<T extends Number> extends FilteringFieldComparator<T> {
+class FilteringNumericComparator<T extends Number> extends FilteringFieldComparator<T> {
   public FilteringNumericComparator(NumericComparator<T> in, boolean reverse, boolean singleSort) {
     super(in, reverse, singleSort);
   }
 
   @Override
   public final FilteringLeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-    ((NumericComparator) in).doSetNextReader(context);
-    if (in instanceof FieldComparator.LongComparator) {
-      return new FilteringNumericLeafComparator.FilteringLongLeafComparator((FieldComparator.LongComparator) in, context,
-          ((LongComparator) in).field, reverse, singleSort, hasTopValue);
-    } else if (in instanceof FieldComparator.IntComparator) {
-      return new FilteringNumericLeafComparator.FilteringIntLeafComparator((FieldComparator.IntComparator) in, context,
-          ((IntComparator) in).field, reverse, singleSort, hasTopValue);
-    } else if (in instanceof FieldComparator.DoubleComparator) {
-      return new FilteringNumericLeafComparator.FilteringDoubleLeafComparator((FieldComparator.DoubleComparator) in, context,
-          ((DoubleComparator) in).field, reverse, singleSort, hasTopValue);
-    } else { // instanceof FieldComparator.FloatComparator
-      return new FilteringNumericLeafComparator.FilteringFloatLeafComparator((FieldComparator.FloatComparator) in, context,
-          ((FloatComparator) in).field, reverse, singleSort, hasTopValue);
+    LeafFieldComparator inLeafComparator = in.getLeafComparator(context);
+    Class<?> comparatorClass = inLeafComparator.getClass();
+    if (comparatorClass == FieldComparator.LongComparator.class) {
+      return new FilteringNumericLeafComparator.FilteringLongLeafComparator((FieldComparator.LongComparator) inLeafComparator, context,
+          ((LongComparator) inLeafComparator).field, reverse, singleSort, hasTopValue);
+    } if (comparatorClass == FieldComparator.IntComparator.class) {
+      return new FilteringNumericLeafComparator.FilteringIntLeafComparator((FieldComparator.IntComparator) inLeafComparator, context,
+          ((IntComparator) inLeafComparator).field, reverse, singleSort, hasTopValue);
+    } else if (comparatorClass == FieldComparator.DoubleComparator.class) {
+      return new FilteringNumericLeafComparator.FilteringDoubleLeafComparator((FieldComparator.DoubleComparator) inLeafComparator, context,
+          ((DoubleComparator) inLeafComparator).field, reverse, singleSort, hasTopValue);
+    } else if (comparatorClass == FieldComparator.FloatComparator.class) {
+      return new FilteringNumericLeafComparator.FilteringFloatLeafComparator((FieldComparator.FloatComparator) inLeafComparator, context,
+          ((FloatComparator) inLeafComparator).field, reverse, singleSort, hasTopValue);
+    } else {
+      assert false: "Unexpected class for [FieldComparator]!";
+      return null;
     }
   }
 
