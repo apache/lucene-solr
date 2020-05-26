@@ -31,12 +31,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.beans.ResourcePoolConfig;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPool;
 import org.apache.solr.search.SolrCache;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +119,7 @@ public class DefaultResourceManager extends ResourceManager {
   protected void doInit() throws Exception {
     if (scheduledThreadPoolExecutor == null) {
       scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_NODE_POOLS.size(),
-          new DefaultSolrThreadFactory(getClass().getSimpleName()));
+          new SolrNamedThreadFactory(getClass().getSimpleName()));
       scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
       scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
       scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
