@@ -24,10 +24,7 @@ import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
 
-  private final long[] temp;
-
-  public  DocIdsWriter(int maxPointsInLeafNode) {
-    temp = new long[maxPointsInLeafNode / 2];
+  private DocIdsWriter() {
   }
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
@@ -69,17 +66,17 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  static void readInts(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
         readDeltaVInts(in, count, docIDs);
         break;
       case 32:
-        readInts32(in, count, docIDs);
+        readInts32(in, count, docIDs, tmp);
         break;
       case 24:
-        readInts24(in, count, docIDs);
+        readInts24(in, count, docIDs, tmp);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -94,12 +91,13 @@ class DocIdsWriter {
     }
   }
 
-  void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    in.readLELongs(temp, 0, count / 2);
+  private static void readInts32(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
+    assert tmp.length >= count / 2;
+    in.readLELongs(tmp, 0, count / 2);
     int i;
     int j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
-      long l1 = Long.reverseBytes(temp[j]);
+      long l1 = Long.reverseBytes(tmp[j]);
       docIDs[i] = (int)(l1 >>> 32);
       docIDs[i+1] = (int)(l1 & 0xFFFFFFFF);
     }
@@ -108,14 +106,15 @@ class DocIdsWriter {
     }
   }
 
-  private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    in.readLELongs(temp, 0, 3 * (count / 8));
+  private static void readInts24(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
+    assert tmp.length >= 3 * (count / 8);
+    in.readLELongs(tmp, 0, 3 * (count / 8));
     int i;
     int j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(temp[j]);
-      long l2 = Long.reverseBytes(temp[j+1]);
-      long l3 = Long.reverseBytes(temp[j+2]);
+      long l1 = Long.reverseBytes(tmp[j]);
+      long l2 = Long.reverseBytes(tmp[j+1]);
+      long l3 = Long.reverseBytes(tmp[j+2]);
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -131,17 +130,17 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
         readDeltaVInts(in, count, visitor);
         break;
       case 32:
-        readInts32(in, count, visitor);
+        readInts32(in, count, visitor, tmp);
         break;
       case 24:
-        readInts24(in, count, visitor);
+        readInts24(in, count, visitor, tmp);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -156,12 +155,13 @@ class DocIdsWriter {
     }
   }
 
-  private void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    in.readLELongs(temp, 0, count / 2);
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
+    assert tmp.length >= count / 2;
+    in.readLELongs(tmp, 0, count / 2);
     int i;
     int j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
-      long l1 = Long.reverseBytes(temp[j]);
+      long l1 = Long.reverseBytes(tmp[j]);
       visitor.visit((int)(l1 >>> 32));
       visitor.visit((int)(l1 & 0xFFFFFFFF));
     }
@@ -170,14 +170,15 @@ class DocIdsWriter {
     }
   }
 
-  private void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    in.readLELongs(temp, 0, 3 * (count / 8));
+  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
+    assert tmp.length >= 3 * (count / 8);
+    in.readLELongs(tmp, 0, 3 * (count / 8));
     int i;
     int j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(temp[j]);
-      long l2 = Long.reverseBytes(temp[j+1]);
-      long l3 = Long.reverseBytes(temp[j+2]);
+      long l1 = Long.reverseBytes(tmp[j]);
+      long l2 = Long.reverseBytes(tmp[j+1]);
+      long l3 = Long.reverseBytes(tmp[j+2]);
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
