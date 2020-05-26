@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-14495: Fix or suppress warnings in solr/search/function (Erick Erickson)
 
+* SOLR-14280: Improve error reporting in SolrConfig (Andras Salamon via Jason Gerlowski)
+
 ==================  8.5.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
