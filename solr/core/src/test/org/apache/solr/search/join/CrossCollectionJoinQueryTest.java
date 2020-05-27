@@ -129,7 +129,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
   @Test
   public void testCcJoinRoutedCollection() throws Exception {
     setupIndexes(true);
-    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_i to=product_id_i}size_s:M",true);
+    testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_i to=product_id_i}size_s:M", true);
     int i = 0;
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       i++;
@@ -145,37 +145,37 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
       Thread.sleep(10000);
 
-      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_i to=product_id_i}size_s:M",true);
+      testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_i to=product_id_i}size_s:M", true);
 
       testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M", getSolrUrl()),
+          "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M", getSolrUrl()),
           true);
 
-      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_l to=product_id_l}size_s:M",
+      testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_l to=product_id_l}size_s:M",
           true);
       testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_l to=product_id_l}size_s:M",
+          "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_l to=product_id_l}size_s:M",
           getSolrUrl()),
           true);
 
-      testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+      testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           true);
       testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+          "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           getSolrUrl()),
           true);
       testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=ccjoin zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+          "{!join method=crossCollection zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
           cluster.getSolrClient().getZkHost()),
           true);
 
-      // Test the ability to set other parameters on ccjoin and have them passed through
+      // Test the ability to set other parameters on crossCollection join and have them passed through
       assertResultCount("parts",
-          "{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
+          "{!join method=crossCollection fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
           2, true);
       assertResultCount("parts",
           String.format(Locale.ROOT,
-              "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
+              "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s fq=product_id_s:1}size_s:M",
               getSolrUrl()), 2, true);
     } finally {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
@@ -191,18 +191,18 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
     // This query will expect the collection to have been routed on product_id, so it should return
     // incomplete results.
-    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+    testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_s to=product_id_s}size_s:M",
         false);
     // Now if we set routed=false we should get a complete set of results.
-    testCcJoinQuery("{!join method=ccjoin fromIndex=products from=product_id_s to=product_id_s routed=false}size_s:M",
+    testCcJoinQuery("{!join method=crossCollection fromIndex=products from=product_id_s to=product_id_s routed=false}size_s:M",
         true);
-    // The ccjoin_nonrouted query parser doesn't assume that the collection was routed on product_id,
+    // The join_nonrouted query parser doesn't assume that the collection was routed on product_id,
     // so we should get the full set of results.
-    testCcJoinQuery("{!join_nonrouted method=ccjoin fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+    testCcJoinQuery("{!join_nonrouted method=crossCollection fromIndex=products from=product_id_s to=product_id_s}size_s:M",
         true);
     // But if we set routed=true, we are now assuming again that the collection was routed on product_id,
     // so we should get incomplete results.
-    testCcJoinQuery("{!join_nonrouted method=ccjoin fromIndex=products from=product_id_s to=product_id_s routed=true}size_s:M",
+    testCcJoinQuery("{!join_nonrouted method=crossCollection fromIndex=products from=product_id_s to=product_id_s routed=true}size_s:M",
         false);
   }
 
@@ -234,7 +234,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
         // This should throw an exception.
         // verify the join plugin definition has the current valid urls and works.
         testCcJoinQuery(String.format(Locale.ROOT,
-            "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+            "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
             "http://bogus.example.com:8983/solr"),
             true);
         fail("The query invovling bogus.example.com should not succeed");
@@ -246,7 +246,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
       // verify the join plugin definition has the current valid urls and works.
       testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=ccjoin solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+          "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
           getSolrUrl()),
           true);
 

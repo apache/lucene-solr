@@ -60,7 +60,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
-import org.apache.solr.search.join.CrossCollectionJoinQParserPlugin;
+import org.apache.solr.search.join.CrossCollectionJoinQParser;
 import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RTimer;
@@ -120,12 +120,11 @@ public class JoinQParserPlugin extends QParserPlugin {
         return q;
       }
     },
-    ccjoin {
+    crossCollection {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
-        return new CrossCollectionJoinQParserPlugin(plugin.routerField, plugin.solrUrlWhitelist)
-                .createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req)
-                .parse();
+        return new CrossCollectionJoinQParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req,
+                plugin.routerField, plugin.solrUrlWhitelist).parse();
       }
     };
 
