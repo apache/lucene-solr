@@ -102,8 +102,6 @@ Bug Fixes
 
 * SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
 
-* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
-
 * SOLR-14371: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin UI Zookeeper Status
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
@@ -115,9 +113,6 @@ Bug Fixes
 
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez via Houston Putman)
-
-* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
-  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
 
 * SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
   (Steve Molloy, Isabelle Giguere, David Smiley)
@@ -193,6 +188,18 @@ Other Changes
 * SOLR-14280: Improve error reporting in SolrConfig (Andras Salamon via Jason Gerlowski)
 
 * SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
+
+==================  8.5.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
+
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
 
 ==================  8.5.1 ==================
 
