@@ -1220,6 +1220,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=4]");
 
+      assertQ("test minShouldMatch (top level optional terms only) local mm=50%",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold'}")
+          , "*[count(//doc)=4]");
+
       assertQ("test minShouldMatch (top level optional terms only and sow=false)",
           req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
               "qf", "text_sw",
@@ -1236,12 +1240,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=3]");
 
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold -stockade'}")
+          , "*[count(//doc)=3]");
+
       assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
           req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
               "qf", "text_sw",
               "mm", "100%",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=100%)",
+          req("q", "{!edismax qf=text_sw mm=100% sow=" + sow + " v='stocks gold -stockade'}")
           , "*[count(//doc)=1]");
 
       assertQ("test minShouldMatch (top level required terms only)",
