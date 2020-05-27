@@ -160,6 +160,8 @@ Build
 * LUCENE-9376: Fix or suppress 20 resource leak precommit warnings in lucene/search
   (Andras Salamon via Erick Erickson)
 
+* LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
+
 ======================= Lucene 8.5.1 =======================
 
 Bug Fixes
