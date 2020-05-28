@@ -439,13 +439,20 @@ public class RegExp {
   /**
    * Allows case insensitive matching.
    */
-  public static final int CASE_INSENSITIVE = 0x0040;  
+  public static final int UNICODE_CASE_INSENSITIVE = 0x0040;  
   
   /**
    * Syntax flag, enables all optional regexp syntax
    * but preserves default setting of case sensitive matching. 
    */
-  public static final int ALL = 0xffff ^ CASE_INSENSITIVE ;
+  public static final int ALL = 0xffff ^ UNICODE_CASE_INSENSITIVE ;
+  
+  
+  /**
+   * Syntax flag, enables all optional regexp syntax
+   * and allows case insensitive matching. 
+   */
+  public static final int ALL_AND_CASE_INSENSITIVE = 0xffff;
   
   /**
    * Syntax flag, enables no optional regexp syntax.
@@ -709,7 +716,7 @@ public class RegExp {
         a = MinimizationOperations.minimize(a, maxDeterminizedStates);
         break;
       case REGEXP_CHAR:
-        if (check(CASE_INSENSITIVE)) {
+        if (check(UNICODE_CASE_INSENSITIVE)) {
           a = toCaseInsensitiveChar(c, maxDeterminizedStates);
         } else {
           a = Automata.makeChar(c);          
@@ -725,7 +732,7 @@ public class RegExp {
         a = Automata.makeEmpty();
         break;
       case REGEXP_STRING:
-        if (check(CASE_INSENSITIVE)) {
+        if (check(UNICODE_CASE_INSENSITIVE)) {
           a = toCaseInsensitiveString(maxDeterminizedStates);
         } else {
           a = Automata.makeString(s);
