@@ -88,10 +88,14 @@ public class TestRegExp extends LuceneTestCase {
     assertTrue(a.toString().length() > 0);
   }
   
+  
+  boolean caseSensitiveQuery = true;
+  
   public void testCoreJavaParity() {
     // Generate random doc values and random regular expressions
     // and check for same matching behaviour as Java's Pattern class.
     for (int i = 0; i < 1000; i++) {
+      caseSensitiveQuery = true;      
       checkRandomExpression(randomDocValue(1 + random().nextInt(30)));
     }        
   }
@@ -144,7 +148,7 @@ public class TestRegExp extends LuceneTestCase {
 
     // Modify the middle...
     String replacementPart = docValue.substring(substitutionPoint, substitutionPoint + substitutionLength);
-    int mutation = random().nextInt(13);
+    int mutation = random().nextInt(15);
     switch (mutation) {
       case 0:
         // OR with random alpha of same length
@@ -205,6 +209,25 @@ public class TestRegExp extends LuceneTestCase {
         // Make any whitespace chars replace by whitespace class
         result.append(replacementPart.replaceAll("\\s", "\\\\s"));
         break;
+      case 14:
+        // Switch case of characters
+        StringBuilder switchedCase = new StringBuilder();
+        replacementPart.codePoints().forEach(
+            p -> {
+              int switchedP = p;
+              if (Character.isLowerCase(p)) {
+                switchedP = Character.toUpperCase(p);
+              } else {
+                switchedP = Character.toLowerCase(p);                
+              }
+              switchedCase.appendCodePoint(switchedP);
+              if (p != switchedP) {
+                caseSensitiveQuery = false;
+              }
+            }
+        );        
+        result.append(switchedCase.toString());
+        break;
       default:
         break;
     }
@@ -215,11 +238,13 @@ public class TestRegExp extends LuceneTestCase {
 
     String regexPattern = result.toString();
     // Assert our randomly generated regex actually matches the provided raw input using java's expression matcher
-    Pattern pattern = Pattern.compile(regexPattern);
+    Pattern pattern = caseSensitiveQuery ? Pattern.compile(regexPattern): 
+                                           Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE); 
+                                             ;
     Matcher matcher = pattern.matcher(docValue);
     assertTrue("Java regex " + regexPattern + " did not match doc value " + docValue, matcher.matches());
 
-    RegExp regex = new RegExp(regexPattern);
+    RegExp regex = caseSensitiveQuery ? new RegExp(regexPattern) : new RegExp(regexPattern, RegExp.CASE_INSENSITIVE);
     Automaton automaton = regex.toAutomaton();
     ByteRunAutomaton bytesMatcher = new ByteRunAutomaton(automaton);
     BytesRef br = new BytesRef(docValue);
@@ -228,6 +253,16 @@ public class TestRegExp extends LuceneTestCase {
             + docValue.length(),
         bytesMatcher.run(br.bytes, br.offset, br.length)
     );
+    if (caseSensitiveQuery == false) {
+      RegExp caseSensitiveRegex = new RegExp(regexPattern);
+      Automaton csAutomaton = caseSensitiveRegex.toAutomaton();
+      ByteRunAutomaton csBytesMatcher = new ByteRunAutomaton(csAutomaton);
+      assertFalse(
+          "[" + regexPattern + "] with case sensitive setting should not match [" + docValue + "]", 
+          csBytesMatcher.run(br.bytes, br.offset, br.length)
+      );
+      
+    }
     return regexPattern;
   }
   
