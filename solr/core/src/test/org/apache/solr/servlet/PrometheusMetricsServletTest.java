@@ -18,11 +18,12 @@ package org.apache.solr.servlet;
 
 import java.io.PrintWriter;
 
+import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
 public class PrometheusMetricsServletTest {
   @Test
   public void testWriteMetrics() throws Exception {
-    PrometheusMetricsServlet.writeStats(new PrintWriter(System.out));
+    PrometheusMetricsServlet.writeStats(new PrintWriter(System.out), null);
   }
 }

@@ -32,6 +32,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.common.util.DOMUtil;
 import org.slf4j.Logger;
@@ -75,6 +76,7 @@ public class CacheConfig implements MapSerializable{
   @SuppressWarnings({"rawtypes"})
   public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
     this.clazz = () -> clazz;
+    this.cacheImpl = clazz.getName();
     this.args = args;
     this.regenerator = regenerator;
     this.nodeName = args.get(NAME);
@@ -166,8 +168,7 @@ public class CacheConfig implements MapSerializable{
     return config;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public SolrCache newInstance() {
+  public SolrCache newInstance(SolrCore core) {
     try {
       SolrCache cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
