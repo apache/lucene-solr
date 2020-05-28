@@ -2542,9 +2542,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         newSearcher.register(); // register subitems (caches)
 
         if (log.isInfoEnabled()) {
-          log.info("{} Registered new searcher autowarm time: {} ms: Collection: '{}'"
-              , logid, newSearcher.getWarmupTime()
-              , newSearcher.getCore().getCoreDescriptor().getCollectionName());
+          log.info("{} Registered new searcher autowarm time: {} ms", logid, newSearcher.getWarmupTime());
         }
 
       } catch (Exception e) {
