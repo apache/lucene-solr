@@ -29,94 +29,6 @@ import java.io.IOException;
 import java.util.Map;
 
 
-class ConstIntDocValues extends IntDocValues {
-  final int ival;
-  final float fval;
-  final double dval;
-  final long lval;
-  final String sval;
-  final ValueSource parent;
-
-  ConstIntDocValues(int val, ValueSource parent) {
-    super(parent);
-    ival = val;
-    fval = val;
-    dval = val;
-    lval = val;
-    sval = Integer.toString(val);
-    this.parent = parent;
-  }
-
-  @Override
-  public float floatVal(int doc) {
-    return fval;
-  }
-  @Override
-  public int intVal(int doc) {
-    return ival;
-  }
-  @Override
-  public long longVal(int doc) {
-    return lval;
-  }
-  @Override
-  public double doubleVal(int doc) {
-    return dval;
-  }
-  @Override
-  public String strVal(int doc) {
-    return sval;
-  }
-  @Override
-  public String toString(int doc) {
-    return parent.description() + '=' + sval;
-  }
-}
-
-class ConstDoubleDocValues extends DoubleDocValues {
-  final int ival;
-  final float fval;
-  final double dval;
-  final long lval;
-  final String sval;
-  final ValueSource parent;
-
-  ConstDoubleDocValues(double val, ValueSource parent) {
-    super(parent);
-    ival = (int)val;
-    fval = (float)val;
-    dval = val;
-    lval = (long)val;
-    sval = Double.toString(val);
-    this.parent = parent;
-  }
-
-  @Override
-  public float floatVal(int doc) {
-    return fval;
-  }
-  @Override
-  public int intVal(int doc) {
-    return ival;
-  }
-  @Override
-  public long longVal(int doc) {
-    return lval;
-  }
-  @Override
-  public double doubleVal(int doc) {
-    return dval;
-  }
-  @Override
-  public String strVal(int doc) {
-    return sval;
-  }
-  @Override
-  public String toString(int doc) {
-    return parent.description() + '=' + sval;
-  }
-}
-
 
 /**
  * <code>DocFreqValueSource</code> returns the number of documents containing the term.
@@ -166,6 +78,93 @@ public class DocFreqValueSource extends ValueSource {
     if (this.getClass() != o.getClass()) return false;
     DocFreqValueSource other = (DocFreqValueSource)o;
     return this.indexedField.equals(other.indexedField) && this.indexedBytes.equals(other.indexedBytes);
+  }
+  static class ConstIntDocValues extends IntDocValues {
+    final int ival;
+    final float fval;
+    final double dval;
+    final long lval;
+    final String sval;
+    final ValueSource parent;
+
+    ConstIntDocValues(int val, ValueSource parent) {
+      super(parent);
+      ival = val;
+      fval = val;
+      dval = val;
+      lval = val;
+      sval = Integer.toString(val);
+      this.parent = parent;
+    }
+
+    @Override
+    public float floatVal(int doc) {
+      return fval;
+    }
+    @Override
+    public int intVal(int doc) {
+      return ival;
+    }
+    @Override
+    public long longVal(int doc) {
+      return lval;
+    }
+    @Override
+    public double doubleVal(int doc) {
+      return dval;
+    }
+    @Override
+    public String strVal(int doc) {
+      return sval;
+    }
+    @Override
+    public String toString(int doc) {
+      return parent.description() + '=' + sval;
+    }
+  }
+
+  static class ConstDoubleDocValues extends DoubleDocValues {
+    final int ival;
+    final float fval;
+    final double dval;
+    final long lval;
+    final String sval;
+    final ValueSource parent;
+
+    ConstDoubleDocValues(double val, ValueSource parent) {
+      super(parent);
+      ival = (int)val;
+      fval = (float)val;
+      dval = val;
+      lval = (long)val;
+      sval = Double.toString(val);
+      this.parent = parent;
+    }
+
+    @Override
+    public float floatVal(int doc) {
+      return fval;
+    }
+    @Override
+    public int intVal(int doc) {
+      return ival;
+    }
+    @Override
+    public long longVal(int doc) {
+      return lval;
+    }
+    @Override
+    public double doubleVal(int doc) {
+      return dval;
+    }
+    @Override
+    public String strVal(int doc) {
+      return sval;
+    }
+    @Override
+    public String toString(int doc) {
+      return parent.description() + '=' + sval;
+    }
   }
 }
 

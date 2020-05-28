@@ -69,6 +69,13 @@
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
    <release>
        <Version>
+         <name>lucene-8.5.2</name>
+         <created>2020-05-26</created>
+         <revision>8.5.2</revision>
+       </Version>
+   </release>
+   <release>
+       <Version>
          <name>lucene-8.5.1</name>
          <created>2020-04-16</created>
          <revision>8.5.1</revision>
