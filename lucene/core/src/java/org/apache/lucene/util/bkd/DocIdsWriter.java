@@ -110,8 +110,7 @@ class DocIdsWriter {
   private static void readInts32(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
     assert tmp.length >= count / 2;
     in.readLELongs(tmp, 0, count / 2);
-    int i;
-    int j;
+    int i, j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       docIDs[i] = (int)(l1 >>> 32);
@@ -125,8 +124,7 @@ class DocIdsWriter {
   private static void readInts24(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
     assert tmp.length >= 3 * (count / 8);
     in.readLELongs(tmp, 0, 3 * (count / 8));
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
       long l1 = Long.reverseBytes(tmp[j]);
       long l2 = Long.reverseBytes(tmp[j+1]);
@@ -148,8 +146,7 @@ class DocIdsWriter {
   private static void readInts16(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
     assert tmp.length >=  count / 4;
     in.readLELongs(tmp, 0, count / 4);
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 3; i += 4, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       docIDs[i] =   (int) (l1 >>> 48) & 0xffff;
@@ -165,8 +162,7 @@ class DocIdsWriter {
   private static void readInts8(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
     assert tmp.length >=  count / 8;
     in.readLELongs(tmp, 0, count / 8);
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       docIDs[i] =   (int) (l1 >>> 56) & 0xff;
@@ -218,8 +214,7 @@ class DocIdsWriter {
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
     assert tmp.length >= count / 2;
     in.readLELongs(tmp, 0, count / 2);
-    int i;
-    int j;
+    int i, j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       visitor.visit((int)(l1 >>> 32));
@@ -233,8 +228,7 @@ class DocIdsWriter {
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
     assert tmp.length >= 3 * (count / 8);
     in.readLELongs(tmp, 0, 3 * (count / 8));
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
       long l1 = Long.reverseBytes(tmp[j]);
       long l2 = Long.reverseBytes(tmp[j+1]);
@@ -256,8 +250,7 @@ class DocIdsWriter {
   private static void readInts16(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
     assert tmp.length >=  count / 4;
     in.readLELongs(tmp, 0, count / 4);
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 3; i += 4, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       visitor.visit((int)(l1 >>> 48) & 0xffff);
@@ -273,8 +266,7 @@ class DocIdsWriter {
   private static void readInts8(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
     assert tmp.length >=  count / 8;
     in.readLELongs(tmp, 0, count / 8);
-    int i;
-    int j;
+    int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j++) {
       long l1 = Long.reverseBytes(tmp[j]);
       visitor.visit((int) (l1 >>> 56) & 0xff);
