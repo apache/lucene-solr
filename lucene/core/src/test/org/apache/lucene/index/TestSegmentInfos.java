@@ -31,6 +31,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -241,7 +242,9 @@ public class TestSegmentInfos extends LuceneTestCase {
     }
     assertTrue("No segments file found", corrupt);
 
-    expectThrows(CorruptIndexException.class, () -> SegmentInfos.readLatestCommit(corruptDir));
+    expectThrowsAnyOf(
+        Arrays.asList(CorruptIndexException.class, IndexFormatTooOldException.class, IndexFormatTooNewException.class),
+        () -> SegmentInfos.readLatestCommit(corruptDir));
     dir.close();
     corruptDir.close();
   }
