@@ -48,7 +48,7 @@ public class MaxDocValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    return new ConstIntDocValues(searcher.getIndexReader().maxDoc(), this);
+    return new DocFreqValueSource.ConstIntDocValues(searcher.getIndexReader().maxDoc(), this);
   }
 
   @Override

@@ -2097,6 +2097,14 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
+# Enable ADMIN UI by default, and give the option for users to disable it
+if [ "$SOLR_ADMIN_UI_DISABLED" == "true" ]; then
+  SOLR_ADMIN_UI="-DdisableAdminUI=true"
+  echo -e "ADMIN UI Disabled"
+else
+  SOLR_ADMIN_UI="-DdisableAdminUI=false"
+fi
+
 JAVA_MEM_OPTS=()
 if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
@@ -2208,7 +2216,7 @@ function start_solr() {
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"

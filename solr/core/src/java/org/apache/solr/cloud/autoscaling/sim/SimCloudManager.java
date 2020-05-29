@@ -181,7 +181,6 @@ public class SimCloudManager implements SolrCloudManager {
     if (distribStateManager == null) {
       this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
       // init common paths
-      stateManager.makePath(ZkStateReader.CLUSTER_STATE);
       stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
       stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
       stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
@@ -790,12 +789,14 @@ public class SimCloudManager implements SolrCloudManager {
             if (metricsHistoryHandler != null) {
               metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           } else {
             if (metricsHandler != null) {
               metricsHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           }

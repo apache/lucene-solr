@@ -53,7 +53,7 @@ public class IDFValueSource extends DocFreqValueSource {
     }
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     float idf = sim.idf(docfreq, searcher.getIndexReader().maxDoc());
-    return new ConstDoubleDocValues(idf, this);
+    return new DocFreqValueSource.ConstDoubleDocValues(idf, this);
   }
   
   // tries extra hard to cast the sim to TFIDFSimilarity

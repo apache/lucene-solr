@@ -350,8 +350,8 @@ public class TestOfflineSorter extends LuceneTestCase {
       IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
       writeAll(unsorted, generateFixed(5*1024));
 
-      // This corruption made OfflineSorter fail with its own exception, but we verify it also went and added (as suppressed) that the
-      // checksum was wrong:
+      // This corruption made OfflineSorter fail with its own exception, but we verify and throw a CorruptIndexException
+      // instead when checksums don't match.
       CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
           new OfflineSorter(dir, "foo").sort(unsorted.getName());
         });
