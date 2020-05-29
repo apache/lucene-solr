@@ -209,6 +209,36 @@ public final class LZ4 {
   }
 
   /**
+   * Hash table implementation that doesn't compress the input at all.
+   */
+  public static final class NoCompressionHashTable extends HashTable {
+
+    /** Sole constructor */
+    public NoCompressionHashTable() {}
+
+    @Override
+    void reset(byte[] b, int off, int len) {
+      // no-op
+    }
+
+    @Override
+    int get(int off) {
+      return -1;
+    }
+
+    @Override
+    int previous(int off) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    boolean assertReset() {
+      return true;
+    }
+
+  }
+
+  /**
    * Simple lossy {@link HashTable} that only stores the last ocurrence for
    * each hash on {@code 2^14} bytes of memory.
    */

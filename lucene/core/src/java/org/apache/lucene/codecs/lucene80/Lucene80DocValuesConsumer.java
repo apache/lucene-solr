@@ -53,7 +53,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.compress.LZ4;
-import org.apache.lucene.util.compress.LZ4.FastCompressionHashTable;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
 
@@ -361,7 +360,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   }
 
   class CompressedBinaryBlockWriter implements Closeable {
-    final FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();    
+    final LZ4.NoCompressionHashTable noCompHt = new LZ4.NoCompressionHashTable();
+    final LZ4.HighCompressionHashTable highCompHt = new LZ4.HighCompressionHashTable();
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
@@ -429,7 +429,18 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
           }
         }
         maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
-        LZ4.compress(block, 0, uncompressedBlockLength, data, ht);
+
+        // Compression proved to hurt latency in some cases, so we're only
+        // enabling it on long inputs for now. Can we reduce the compression
+        // overhead and enable compression again, e.g. by building shared
+        // dictionaries that allow decompressing one value at once instead of
+        // forcing 32 values to be decompressed even when you only need one?
+        if (uncompressedBlockLength >= 32 * numDocsInCurrentBlock) {
+          LZ4.compress(block, 0, uncompressedBlockLength, data, highCompHt);
+        } else {
+          LZ4.compress(block, 0, uncompressedBlockLength, data, noCompHt);
+        }
+
         numDocsInCurrentBlock = 0;
         // Ensure initialized with zeroes because full array is always written
         Arrays.fill(docLengths, 0);
