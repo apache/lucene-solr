@@ -125,6 +125,8 @@ Improvements
   themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
   are not computed at all. (ab, shalin)
 
+* SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -250,7 +252,6 @@ Other Changes
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
 
-
 * SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
   Erick Erickson)
 
@@ -260,6 +261,7 @@ Other Changes
 
 * SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
 
+* SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

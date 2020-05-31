@@ -152,6 +152,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param key property name
    * @param value property value.
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddNodeValue(String node, String key, Object value) throws InterruptedException {
     lock.lockInterruptibly();
     try {
@@ -341,7 +342,9 @@ public class SimNodeStateProvider implements NodeStateProvider {
     Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
     for (ReplicaInfo r : replicas) {
+      @SuppressWarnings({"unchecked"})
       Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
+      @SuppressWarnings({"unchecked"})
       List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
       // XXX filter out some properties?
       perShard.add(r);
