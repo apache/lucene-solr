@@ -34,11 +34,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -269,7 +272,7 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        loader = new SolrResourceLoader(
+        loader = new PackageResourceLoader(
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
             Paths.get(coreContainer.getSolrHome()),
@@ -299,6 +302,32 @@ public class PackageLoader implements Closeable {
       public String toString() {
         return jsonStr();
       }
+    }
+  }
+  static class PackageResourceLoader extends SolrResourceLoader {
+
+    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+      super(name, classpath, instanceDir, parent);
+    }
+
+    @Override
+    public <T> boolean addToCoreAware(T obj) {
+      //do not do anything
+      //this class is
+      return false;
+    }
+
+    @Override
+    public <T> boolean addToResourceLoaderAware(T obj) {
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        try {
+          ((ResourceLoaderAware) obj).inform(this);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
+     return true;
     }
   }
 

@@ -538,7 +538,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: " + cName + " in " + classLoader);
+              "Can not find class: " + cName + " in " + classLoader);
     }
 
     T obj = null;
@@ -566,25 +566,42 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName() + "'", e);
+              "Error instantiating class: '" + clazz.getName() + "'", e);
     }
 
-    if (!live) {
-      if (obj instanceof SolrCoreAware) {
-        assertAwareCompatibility(SolrCoreAware.class, obj);
-        waitingForCore.add((SolrCoreAware) obj);
-      }
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        waitingForResources.add((ResourceLoaderAware) obj);
-      }
+    addToCoreAware(obj);
+    addToResourceLoaderAware(obj);
+    if(!live) {
       if (obj instanceof SolrInfoBean) {
         //TODO: Assert here?
         infoMBeans.add((SolrInfoBean) obj);
       }
     }
-
     return obj;
+  }
+
+  public <T> boolean addToResourceLoaderAware(T obj) {
+    if (!live) {
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        waitingForResources.add((ResourceLoaderAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public <T> boolean addToCoreAware(T obj) {
+    if (!live) {
+      if (obj instanceof SolrCoreAware) {
+        assertAwareCompatibility(SolrCoreAware.class, obj);
+        waitingForCore.add((SolrCoreAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
 
@@ -713,7 +730,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  static void assertAwareCompatibility(Class aware, Object obj) {
+  public static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

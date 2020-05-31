@@ -17,15 +17,12 @@
 
 package org.apache.solr.pkg;
 
-import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RequestParams;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.*;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -117,6 +114,13 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
+    if (instance instanceof SolrCoreAware) {
+      SolrCoreAware coreAware = (SolrCoreAware) instance;
+      if (!core.getResourceLoader().addToCoreAware(coreAware)) {
+        //returns false if the core was fully initialized
+        coreAware.inform(core);
+      }
+    }
     T old = inst;
     inst = (T) instance;
     if (old instanceof AutoCloseable) {
