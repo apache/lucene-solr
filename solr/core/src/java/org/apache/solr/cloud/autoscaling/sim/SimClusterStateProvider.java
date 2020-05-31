@@ -199,6 +199,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Initialize from an existing cluster state
    * @param initialState initial cluster state
    */
+  @SuppressWarnings({"unchecked"})
   public void simSetClusterState(ClusterState initialState) throws Exception {
     lock.lockInterruptibly();
     try {
@@ -290,6 +291,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   // todo: maybe hook up DistribStateManager /clusterstate.json watchers?
 
   private ReplicaInfo getReplicaInfo(Replica r) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> list = nodeReplicaMap.computeIfAbsent
       (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (list) {
@@ -306,6 +308,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Add a new node to the cluster.
    * @param nodeId unique node id
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddNode(String nodeId) throws Exception {
     ensureNotClosed();
     if (liveNodes.contains(nodeId)) {
@@ -404,6 +407,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
+    @SuppressWarnings({"unchecked"})
     List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (replicas) {
       replicas.forEach(r -> {
@@ -469,6 +473,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message replica details
    * @param results result of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simAddReplica(ZkNodeProps message, NamedList results) throws Exception {
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
       results.add(CoreAdminParams.REQUESTID, message.getStr(CommonAdminParams.ASYNC));
@@ -526,6 +531,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param replicaInfo replica info
    * @param runLeaderElection if true then run a leader election after adding the replica.
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
     lock.lockInterruptibly();
@@ -624,6 +630,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     lock.lockInterruptibly();
     try {
+      @SuppressWarnings({"unchecked"})
       final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
         (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
       synchronized (replicas) {
@@ -882,6 +889,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param props collection details
    * @param results results of the operation.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateCollection(ZkNodeProps props, NamedList results) throws Exception {
     ensureNotClosed();
     if (props.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1066,6 +1074,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param async async id
    * @param results results of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteCollection(String collection, String async, NamedList results) throws Exception {
     ensureNotClosed();
     if (async != null) {
@@ -1153,6 +1162,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simMoveReplica(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1219,6 +1229,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1285,6 +1296,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simSplitShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1482,6 +1494,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1525,6 +1538,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void createSystemCollection() throws IOException {
     try {
 
@@ -1939,6 +1953,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Saves cluster properties to clusterprops.json.
    * @return current properties
    */
+  @SuppressWarnings({"unchecked"})
   private synchronized Map<String, Object> saveClusterProperties() throws Exception {
     if (lastSavedProperties != null && lastSavedProperties.equals(clusterProperties)) {
       return lastSavedProperties;
@@ -2175,6 +2190,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
     List<ReplicaInfo> infos = nodeReplicaMap.get(node);
     if (infos == null) {
@@ -2206,6 +2222,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @return copy of the list of replicas on that node, or empty list if none
    */
   public List<ReplicaInfo> simGetReplicaInfos(String node) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
       (node, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     // make a defensive copy to avoid ConcurrentModificationException
@@ -2449,7 +2466,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           Slice slice = new Slice(s, replicas, sliceProps, coll);
           slices.put(s, slice);
         });
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
         DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
         DocCollection dc = new DocCollection(coll, slices, collProps, router, clusterStateVersion, ZkStateReader.CLUSTER_STATE);

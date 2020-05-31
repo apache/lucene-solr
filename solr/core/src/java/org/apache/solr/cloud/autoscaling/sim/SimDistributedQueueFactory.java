@@ -184,6 +184,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void offer(byte[] data) throws Exception {
       Timer.Context time = stats.time(dir + "_offer");
       updateLock.lockInterruptibly();

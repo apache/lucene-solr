@@ -349,6 +349,7 @@ public class SimUtils {
    * @param req request
    * @return request payload and parameters converted to V1 params
    */
+  @SuppressWarnings({"unchecked"})
   public static ModifiableSolrParams v2AdminRequestToV1Params(V2Request req) {
     Map<String, Object> reqMap = new HashMap<>();
     req.toMap(reqMap);
