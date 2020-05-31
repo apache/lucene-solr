@@ -96,10 +96,10 @@ public class NodeConfig {
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
                      boolean fromZookeeper) {
     this.nodeName = nodeName;
-    this.coreRootDirectory = coreRootDirectory;
-    this.solrDataHome = solrDataHome;
+    this.coreRootDirectory = coreRootDirectory.toAbsolutePath();
+    this.solrDataHome = solrDataHome == null ? null : solrDataHome.toAbsolutePath();
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
-    this.configSetBaseDirectory = configSetBaseDirectory;
+    this.configSetBaseDirectory = configSetBaseDirectory.toAbsolutePath();
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
@@ -115,7 +115,7 @@ public class NodeConfig {
     this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
-    this.solrHome = solrHome;
+    this.solrHome = solrHome.toAbsolutePath();
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
@@ -134,10 +134,12 @@ public class NodeConfig {
     return nodeName;
   }
 
+  /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
   }
 
+  /** Absolute. */
   public Path getSolrDataHome() {
     return solrDataHome;
   }
@@ -208,6 +210,7 @@ public class NodeConfig {
     return managementPath;
   }
 
+  /** Absolute. */
   public Path getConfigSetBaseDirectory() {
     return configSetBaseDirectory;
   }

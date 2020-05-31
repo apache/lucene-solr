@@ -1762,6 +1762,7 @@ public class CoreContainer {
     return solrCores.getCoreDescriptor(coreName);
   }
 
+  /** Where cores are created (absolute). */
   public Path getCoreRootDirectory() {
     return cfg.getCoreRootDirectory();
   }
@@ -1918,6 +1919,7 @@ public class CoreContainer {
     return solrCores.getUnloadedCoreDescriptor(cname);
   }
 
+  /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
   //TODO return Path
   public String getSolrHome() {
     return solrHome.toString();
