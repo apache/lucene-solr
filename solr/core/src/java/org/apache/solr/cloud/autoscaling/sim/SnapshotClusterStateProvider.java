@@ -51,6 +51,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
     clusterProperties = new HashMap<>(other.getClusterProperties());
   }
 
+  @SuppressWarnings({"unchecked"})
   public SnapshotClusterStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
     liveNodes = Set.copyOf((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet()));
@@ -93,6 +94,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
       coll.write(writer);
       String json = out.toString();
       try {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> collMap = new LinkedHashMap<>((Map<String, Object>)Utils.fromJSON(json.getBytes("UTF-8")));
         collMap.put("zNodeVersion", coll.getZNodeVersion());
         collMap.put("zNode", coll.getZNode());
