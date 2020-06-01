@@ -19,32 +19,17 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RedactionUtils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
-import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +74,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
    */
   public SnapshotDistribStateManager(Map<String, Object> snapshot, AutoScalingConfig config) {
     snapshot.forEach((path, value) -> {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> map = (Map<String, Object>)value;
       Number version = (Number)map.getOrDefault("version", 0);
       String owner = (String)map.get("owner");
@@ -209,6 +195,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     VersionedData vd = dataMap.get(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     Map<String, Object> map = new HashMap<>();

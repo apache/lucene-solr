@@ -17,24 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,20 +30,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -66,34 +42,16 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.api.collections.AddReplicaCmd;
-import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
-import org.apache.solr.cloud.api.collections.CreateShardCmd;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
-import org.apache.solr.cloud.api.collections.SplitShardCmd;
+import org.apache.solr.cloud.api.collections.*;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ReplicaPosition;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonAdminParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
@@ -104,14 +62,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -171,6 +122,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       this.zkVersion = zkVersion;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public DocCollection getColl() throws InterruptedException, IOException {
       DocCollection dc = coll;
       if (dc != null) {
@@ -321,6 +273,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Initialize from an existing cluster state
    * @param initialState initial cluster state
    */
+  @SuppressWarnings({"unchecked"})
   public void simSetClusterState(ClusterState initialState) throws Exception {
     lock.lockInterruptibly();
     try {
@@ -412,6 +365,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   private ReplicaInfo getReplicaInfo(Replica r) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> list = nodeReplicaMap.computeIfAbsent
       (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (list) {
@@ -428,6 +382,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Add a new node to the cluster.
    * @param nodeId unique node id
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddNode(String nodeId) throws Exception {
     ensureNotClosed();
     if (liveNodes.contains(nodeId)) {
@@ -525,6 +480,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
+    @SuppressWarnings({"unchecked"})
     List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (replicas) {
       replicas.forEach(r -> {
@@ -590,6 +546,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message replica details
    * @param results result of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simAddReplica(ZkNodeProps message, NamedList results) throws Exception {
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
       results.add(CoreAdminParams.REQUESTID, message.getStr(CommonAdminParams.ASYNC));
@@ -647,6 +604,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param replicaInfo replica info
    * @param runLeaderElection if true then run a leader election after adding the replica.
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
     lock.lockInterruptibly();
@@ -745,6 +703,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     lock.lockInterruptibly();
     try {
+      @SuppressWarnings({"unchecked"})
       final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
         (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
       synchronized (replicas) {
@@ -983,6 +942,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param props collection details
    * @param results results of the operation.
    */
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateCollection(ZkNodeProps props, NamedList results) throws Exception {
     ensureNotClosed();
     if (props.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1160,6 +1121,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param async async id
    * @param results results of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteCollection(String collection, String async, NamedList results) throws Exception {
     ensureNotClosed();
     if (async != null) {
@@ -1254,6 +1216,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simMoveReplica(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1320,6 +1283,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1386,6 +1350,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simSplitShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1583,6 +1548,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1626,6 +1592,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void createSystemCollection() throws IOException {
     try {
 
@@ -2040,6 +2007,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Saves cluster properties to clusterprops.json.
    * @return current properties
    */
+  @SuppressWarnings({"unchecked"})
   private synchronized Map<String, Object> saveClusterProperties() throws Exception {
     if (lastSavedProperties != null && lastSavedProperties.equals(clusterProperties)) {
       return lastSavedProperties;
@@ -2276,6 +2244,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
     List<ReplicaInfo> infos = nodeReplicaMap.get(node);
     if (infos == null) {
@@ -2307,6 +2276,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @return copy of the list of replicas on that node, or empty list if none
    */
   public List<ReplicaInfo> simGetReplicaInfos(String node) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
       (node, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     // make a defensive copy to avoid ConcurrentModificationException

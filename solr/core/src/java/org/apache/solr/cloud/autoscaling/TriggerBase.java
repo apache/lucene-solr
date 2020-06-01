@@ -18,23 +18,14 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -109,6 +100,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     }
     this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
+    @SuppressWarnings({"unchecked"})
     List<Map<String, Object>> o = (List<Map<String, Object>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
@@ -243,6 +235,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
    * @see #getState
    * @lucene.internal
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String,Object> deepCopyState() {
     return Utils.getDeepCopy(getState(), 10, false, true);
   }
@@ -273,6 +266,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void restoreState() {
     byte[] data = null;
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + getName();

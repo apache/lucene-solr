@@ -18,15 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
+import java.util.*;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -51,6 +43,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
     clusterProperties = new HashMap<>(other.getClusterProperties());
   }
 
+  @SuppressWarnings({"unchecked"})
   public SnapshotClusterStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
     liveNodes = Set.copyOf((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet()));
@@ -93,6 +86,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
       coll.write(writer);
       String json = out.toString();
       try {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> collMap = new LinkedHashMap<>((Map<String, Object>)Utils.fromJSON(json.getBytes("UTF-8")));
         collMap.put("zNodeVersion", coll.getZNodeVersion());
         collMap.put("zNode", coll.getZNode());

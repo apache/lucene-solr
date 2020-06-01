@@ -16,17 +16,11 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
-
-import com.codahale.metrics.Timer;
-import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.cloud.Stats;
@@ -184,6 +175,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void offer(byte[] data) throws Exception {
       Timer.Context time = stats.time(dir + "_offer");
       updateLock.lockInterruptibly();

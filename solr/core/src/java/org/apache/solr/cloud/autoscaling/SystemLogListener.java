@@ -20,18 +20,10 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
-
+import java.util.*;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -80,6 +72,7 @@ public class SystemLogListener extends TriggerListenerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName, ActionContext context,
                Throwable error, String message) throws Exception {
     try {
@@ -153,6 +146,7 @@ public class SystemLogListener extends TriggerListenerBase {
     });
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void addOperations(SolrInputDocument doc, List<SolrRequest> operations) {
     if (operations == null || operations.isEmpty()) {
       return;

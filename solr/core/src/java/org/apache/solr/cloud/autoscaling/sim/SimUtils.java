@@ -19,26 +19,11 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.cloud.ClusterState;
@@ -349,6 +334,7 @@ public class SimUtils {
    * @param req request
    * @return request payload and parameters converted to V1 params
    */
+  @SuppressWarnings({"unchecked"})
   public static ModifiableSolrParams v2AdminRequestToV1Params(V2Request req) {
     Map<String, Object> reqMap = new HashMap<>();
     req.toMap(reqMap);

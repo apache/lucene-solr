@@ -17,42 +17,16 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.Reader;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -60,17 +34,8 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.CloudUtil;
-import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.AutoScaling;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
-import org.apache.solr.cloud.autoscaling.TriggerEvent;
-import org.apache.solr.cloud.autoscaling.TriggerListener;
-import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
-import org.apache.solr.common.params.AutoScalingParams;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.cloud.autoscaling.*;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -130,6 +95,7 @@ public class SimScenario implements AutoCloseable {
      * {@link #execute(SimScenario)}.
      * @param scenario current scenario
      */
+    @SuppressWarnings({"unchecked"})
     public void prepareCurrentParams(SimScenario scenario) {
       Properties props = new Properties();
       scenario.context.forEach((k, v) -> {
@@ -416,6 +382,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class LoadAutoscaling extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       Map<String, Object> map;
       boolean addDefaults = Boolean.parseBoolean(params.get("withDefaultTriggers", "true"));
@@ -540,9 +507,11 @@ public class SimScenario implements AutoCloseable {
   public static class ApplySuggestions extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
+      @SuppressWarnings({"unchecked"})
       List<Suggester.SuggestionInfo> suggestions = (List<Suggester.SuggestionInfo>) scenario.context.getOrDefault(SUGGESTIONS_CTX_PROP, Collections.emptyList());
       int unresolvedCount = 0;
       for (Suggester.SuggestionInfo suggestion : suggestions) {
+        @SuppressWarnings({"rawtypes"})
         SolrRequest operation = suggestion.getOperation();
         if (operation == null) {
           unresolvedCount++;
@@ -596,6 +565,7 @@ public class SimScenario implements AutoCloseable {
         req.setContentWriter(new RequestWriter.StringPayloadContentWriter(streamBody, "application/json"));
       }
       SolrResponse rsp = scenario.cluster.request(req);
+      @SuppressWarnings({"unchecked"})
       List<SolrResponse> responses = (List<SolrResponse>) scenario.context.computeIfAbsent(RESPONSES_CTX_PROP, Utils.NEW_ARRAYLIST_FUN);
       responses.add(rsp);
     }
@@ -705,6 +675,7 @@ public class SimScenario implements AutoCloseable {
   /**
    * Set a temporary listener to wait for a specific trigger event processing.
    */
+  @SuppressWarnings({"unchecked"})
   public static class SetEventListener extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
@@ -764,6 +735,7 @@ public class SimScenario implements AutoCloseable {
         listener.wait(waitSec);
         scenario.context.remove(TRIGGER_EVENT_PREFIX + trigger);
         if (listener.getEvent() != null) {
+          @SuppressWarnings({"unchecked"})
           Map<String, Object> ev = listener.getEvent().toMap(new LinkedHashMap<>());
           scenario.context.put(TRIGGER_EVENT_PREFIX + trigger, ev);
         }
@@ -941,6 +913,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class Dump extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       boolean redact = Boolean.parseBoolean(params.get("redact", "false"));
       boolean withData = Boolean.parseBoolean(params.get("withData", "false"));
