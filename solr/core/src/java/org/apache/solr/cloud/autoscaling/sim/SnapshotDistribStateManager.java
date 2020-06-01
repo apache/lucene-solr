@@ -89,6 +89,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
    */
   public SnapshotDistribStateManager(Map<String, Object> snapshot, AutoScalingConfig config) {
     snapshot.forEach((path, value) -> {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> map = (Map<String, Object>)value;
       Number version = (Number)map.getOrDefault("version", 0);
       String owner = (String)map.get("owner");
@@ -209,6 +210,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     VersionedData vd = dataMap.get(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     Map<String, Object> map = new HashMap<>();

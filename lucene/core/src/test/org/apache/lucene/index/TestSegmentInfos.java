@@ -18,15 +18,20 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -177,6 +182,65 @@ public class TestSegmentInfos extends LuceneTestCase {
       assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
       assertEquals("clone changed but shouldn't", StringHelper.idToString(id), StringHelper.idToString(clone.getId()));
     }
+  }
+
+  public void testBitFlippedTriggersCorruptIndexException() throws IOException {
+    BaseDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false);
+    byte id[] = StringHelper.randomId();
+    Codec codec = Codec.getDefault();
+
+    SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
+    SegmentInfo info = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, Codec.getDefault(),
+                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
+    sis.add(commitInfo);
+
+    info = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_1", 1, false, Codec.getDefault(),
+                           Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+    commitInfo = new SegmentCommitInfo(info, 0, 0,-1, -1, -1, StringHelper.randomId());
+    sis.add(commitInfo);
+
+    sis.commit(dir);
+
+    BaseDirectoryWrapper corruptDir = newDirectory();
+    corruptDir.setCheckIndexOnClose(false);
+    boolean corrupt = false;
+    for (String file : dir.listAll()) {
+      if (file.startsWith(IndexFileNames.SEGMENTS)) {
+        try (IndexInput in = dir.openInput(file, IOContext.DEFAULT);
+            IndexOutput out = corruptDir.createOutput(file, IOContext.DEFAULT)) {
+          final long corruptIndex = TestUtil.nextLong(random(), 0, in.length() - 1);
+          out.copyBytes(in, corruptIndex);
+          final int b = Byte.toUnsignedInt(in.readByte()) + TestUtil.nextInt(random(), 0x01, 0xff);
+          out.writeByte((byte) b);
+          out.copyBytes(in, in.length() - in.getFilePointer());
+        }
+        try (IndexInput in = corruptDir.openInput(file, IOContext.DEFAULT)) {
+          CodecUtil.checksumEntireFile(in);
+          if (VERBOSE) {
+            System.out.println("TEST: Altering the file did not update the checksum, aborting...");
+          }
+          return;
+        } catch (CorruptIndexException e) {
+          // ok
+        }
+        corrupt = true;
+      } else if (slowFileExists(corruptDir, file) == false) { // extraFS
+        corruptDir.copyFrom(dir, file, file, IOContext.DEFAULT);
+      }
+    }
+    assertTrue("No segments file found", corrupt);
+
+    expectThrowsAnyOf(
+        Arrays.asList(CorruptIndexException.class, IndexFormatTooOldException.class, IndexFormatTooNewException.class),
+        () -> SegmentInfos.readLatestCommit(corruptDir));
+    dir.close();
+    corruptDir.close();
   }
 }
 
