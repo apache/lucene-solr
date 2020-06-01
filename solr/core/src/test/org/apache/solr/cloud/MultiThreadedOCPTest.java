@@ -76,7 +76,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         distributedQueue.offer(Utils.toJSON(Utils.makeMap(
             "collection", "A_COLL",
             QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
-            ASYNC, String.valueOf(i),
+            ASYNC, Integer.toString(i),
 
             // third task waits for a long time, and thus blocks the queue for all other tasks for A_COLL.
             // Subsequent tasks as well as the first two only wait for 1ms
@@ -85,22 +85,13 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         log.info("MOCK task added {}", i);
       }
 
-      // Wait until we see the first two A_COLL tasks getting processed
-      boolean acoll0done = false, acoll1done = false;
-      for (int i = 0; i < 500; i++) {
-        if (!acoll0done) {
-          acoll0done = null != getStatusResponse("0", client).getResponse().get("MOCK_FINISHED");
-        }
-        if (!acoll1done) {
-          acoll1done = null != getStatusResponse("1", client).getResponse().get("MOCK_FINISHED");
-        }
-        if (acoll0done && acoll1done) break;
-        Thread.sleep(100);
-      }
-      assertTrue("Queue did not process first two tasks on A_COLL, can't run test", acoll0done && acoll1done);
+      // Wait until we see the second A_COLL task getting processed (assuming the first got processed as well)
+      Long task1CollA = waitForTaskToCompleted(client, 1);
+
+      assertNotNull("Queue did not process first two tasks on A_COLL, can't run test", task1CollA);
 
       // Make sure the long running task did not finish, otherwise no way the B_COLL task can be tested to run in parallel with it
-      assertNull("Long running task finished too early, can't test", getStatusResponse("2", client).getResponse().get("MOCK_FINISHED"));
+      assertNull("Long running task finished too early, can't test", checkTaskHasCompleted(client, 2));
 
       // Enqueue a task on another collection not competing with the lock on A_COLL and see that it can be executed right away
       distributedQueue.offer(Utils.toJSON(Utils.makeMap(
@@ -112,23 +103,41 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
       // We now check that either the B_COLL task has completed before the third (long running) task on A_COLL,
       // Or if both have completed (if this check got significantly delayed for some reason), we verify B_COLL was first.
-      Long acoll3 = null, bcoll = null;
-      for (int i = 0; i < 500; i++) {
-        if (acoll3 == null) {
-          acoll3 = (Long) getStatusResponse("2", client).getResponse().get("MOCK_FINISHED");
-        }
+      Long taskCollB = waitForTaskToCompleted(client, 200);
 
-        bcoll = (Long) getStatusResponse("200", client).getResponse().get("MOCK_FINISHED");
-
-        if (bcoll != null) break;
-        Thread.sleep(100);
-      }
+      // We do not wait for the long running task to finish, that would be a waste of time.
+      Long task2CollA = checkTaskHasCompleted(client, 2);
 
       // Given the wait delay (500 iterations of 100ms), the task has plenty of time to complete, so this is not expected.
-      assertNotNull("Task on  B_COLL did not complete, can't test", bcoll);
+      assertNotNull("Task on  B_COLL did not complete, can't test", taskCollB);
       // We didn't wait for the 3rd A_COLL task to complete (test can run quickly) but if it did, we expect the B_COLL to have finished first.
-      assertTrue("acoll3: " + acoll3 + " bcoll: " + bcoll, acoll3  == null || acoll3 > bcoll);
+      assertTrue("task2CollA: " + task2CollA + " taskCollB: " + taskCollB, task2CollA  == null || task2CollA > taskCollB);
     }
+  }
+
+  /**
+   * Verifies the status of an async task submitted to the Overseer Collection queue.
+   * @return <code>null</code> if the task has not completed, the completion timestamp if the task has completed
+   * (see {@link org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler#mockOperation}).
+   */
+  private Long checkTaskHasCompleted(SolrClient client, int requestId) throws IOException, SolrServerException {
+    return (Long) getStatusResponse(Integer.toString(requestId), client).getResponse().get("MOCK_FINISHED");
+  }
+
+  /**
+   * Waits until the specified async task has completed or time ran out.
+   * @return <code>null</code> if the task has not completed, the completion timestamp if the task has completed
+   */
+  private Long waitForTaskToCompleted(SolrClient client, int requestId) throws Exception {
+    for (int i = 0; i < 500; i++) {
+      Long task = checkTaskHasCompleted(client, requestId);
+      if (task != null) {
+        return task;
+      }
+      Thread.sleep(100);
+    }
+
+    return null;
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
