@@ -36,6 +36,7 @@ import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthentica
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
@@ -45,6 +46,7 @@ import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +97,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: "+e);
     }
   }
+
 
   @VisibleForTesting
   protected FilterConfig getInitFilterConfig(Map<String, Object> pluginConfig, boolean skipKerberosChecking) {
@@ -259,12 +262,36 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   }
 
   @Override
+  protected boolean interceptInternodeRequest(Request request) {
+    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
+        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
+      if (info.getUserPrincipal() != null) {
+        if (log.isInfoEnabled()) {
+          log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
+        }
+        request.header(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     return kerberosBuilder.getBuilder(builder);
   }
 
   @Override
   public void setup(Http2SolrClient client) {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request) {
+        interceptInternodeRequest(request);
+      }
+    };
+    client.addListenerFactory(() -> listener);
+
     kerberosBuilder.setup(client);
   }
 
