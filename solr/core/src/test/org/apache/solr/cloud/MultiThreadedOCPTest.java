@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -79,15 +78,31 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
             QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
             ASYNC, String.valueOf(i),
 
-            "sleep", (i == 0 ? "1000" : "1") //first task waits for 1 second, and thus blocking
-            // all other tasks. Subsequent tasks only wait for 1ms
+            // third task waits for a long time, and thus blocks the queue for all other tasks for A_COLL.
+            // Subsequent tasks as well as the first two only wait for 1ms
+            "sleep", (i == 2 ? "10000" : "1")
         )));
         log.info("MOCK task added {}", i);
-
       }
-      Thread.sleep(100);//wait and post the next message
 
-      //this is not going to be blocked because it operates on another collection
+      // Wait until we see the first two A_COLL tasks getting processed
+      boolean acoll0done = false, acoll1done = false;
+      for (int i = 0; i < 500; i++) {
+        if (!acoll0done) {
+          acoll0done = null != getStatusResponse("0", client).getResponse().get("MOCK_FINISHED");
+        }
+        if (!acoll1done) {
+          acoll1done = null != getStatusResponse("1", client).getResponse().get("MOCK_FINISHED");
+        }
+        if (acoll0done && acoll1done) break;
+        Thread.sleep(100);
+      }
+      assertTrue("Queue did not process first two tasks on A_COLL, can't run test", acoll0done && acoll1done);
+
+      // Make sure the long running task did not finish, otherwise no way the B_COLL task can be tested to run in parallel with it
+      assertNull("Long running task finished too early, can't test", getStatusResponse("2", client).getResponse().get("MOCK_FINISHED"));
+
+      // Enqueue a task on another collection not competing with the lock on A_COLL and see that it can be executed right away
       distributedQueue.offer(Utils.toJSON(Utils.makeMap(
           "collection", "B_COLL",
           QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
@@ -95,24 +110,25 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           "sleep", "1"
       )));
 
-
-      Long acoll = null, bcoll = null;
+      // We now check that either the B_COLL task has completed before the third (long running) task on A_COLL,
+      // Or if both have completed (if this check got significantly delayed for some reason), we verify B_COLL was first.
+      Long acoll3 = null, bcoll = null;
       for (int i = 0; i < 500; i++) {
-        if (bcoll == null) {
-          CollectionAdminResponse statusResponse = getStatusResponse("200", client);
-          bcoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
+        if (acoll3 == null) {
+          acoll3 = (Long) getStatusResponse("2", client).getResponse().get("MOCK_FINISHED");
         }
-        if (acoll == null) {
-          CollectionAdminResponse statusResponse = getStatusResponse("2", client);
-          acoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
-        }
-        if (acoll != null && bcoll != null) break;
+
+        bcoll = (Long) getStatusResponse("200", client).getResponse().get("MOCK_FINISHED");
+
+        if (bcoll != null) break;
         Thread.sleep(100);
       }
-      assertTrue(acoll != null && bcoll != null);
-      assertTrue("acoll: " + acoll + " bcoll: " + bcoll, acoll > bcoll);
-    }
 
+      // Given the wait delay (500 iterations of 100ms), the task has plenty of time to complete, so this is not expected.
+      assertNotNull("Task on  B_COLL did not complete, can't test", bcoll);
+      // We didn't wait for the 3rd A_COLL task to complete (test can run quickly) but if it did, we expect the B_COLL to have finished first.
+      assertTrue("acoll3: " + acoll3 + " bcoll: " + bcoll, acoll3  == null || acoll3 > bcoll);
+    }
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
