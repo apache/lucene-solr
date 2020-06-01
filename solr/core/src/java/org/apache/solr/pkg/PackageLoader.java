@@ -314,6 +314,11 @@ public class PackageLoader implements Closeable {
       // The caller should take care of that
       return false;
     }
+
+    @Override
+    public  <T> void addToInfoBeans(T obj) {
+      //do not do anything. It should be handled externally
+    }
   }
 
   private static String findBiggest(String lessThan, List<String> sortedList) {

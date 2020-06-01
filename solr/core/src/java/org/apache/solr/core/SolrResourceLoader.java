@@ -556,13 +556,17 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     addToCoreAware(obj);
     addToResourceLoaderAware(obj);
+    addToInfoBeans(obj);
+    return obj;
+  }
+
+  public <T> void addToInfoBeans(T obj) {
     if(!live) {
       if (obj instanceof SolrInfoBean) {
         //TODO: Assert here?
         infoMBeans.add((SolrInfoBean) obj);
       }
     }
-    return obj;
   }
 
   public <T> boolean addToResourceLoaderAware(T obj) {

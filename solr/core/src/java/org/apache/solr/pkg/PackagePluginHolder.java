@@ -144,6 +144,9 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
+    if (instance instanceof SolrInfoBean) {
+      core.getResourceLoader().addToInfoBeans(instance);
+    }
   }
 
 }
