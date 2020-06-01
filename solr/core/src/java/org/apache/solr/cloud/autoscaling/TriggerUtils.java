@@ -61,7 +61,6 @@ public class TriggerUtils {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void checkProperty(Map<String, Object> properties, Map<String, String> results, String name, boolean required, Class... acceptClasses) {
     Object value = properties.get(name);
     if (value == null) {

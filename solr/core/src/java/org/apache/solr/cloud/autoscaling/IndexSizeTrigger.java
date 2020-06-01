@@ -19,10 +19,19 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.Locale;
+
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
@@ -209,7 +218,6 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   protected void setState(Map<String, Object> state) {
     this.lastAboveEventMap.clear();
     this.lastBelowEventMap.clear();
@@ -240,7 +248,6 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void run() {
     synchronized(this) {
       if (isClosed) {

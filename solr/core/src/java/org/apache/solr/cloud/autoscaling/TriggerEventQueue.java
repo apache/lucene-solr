@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,6 @@ public class TriggerEventQueue {
           continue;
         }
         try {
-          @SuppressWarnings({"unchecked"})
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
@@ -98,7 +98,6 @@ public class TriggerEventQueue {
           continue;
         }
         try {
-          @SuppressWarnings({"unchecked"})
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {

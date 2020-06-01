@@ -20,12 +20,27 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,14 +55,17 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.ExecutePlanAction.waitForTaskToFinish;
-import static org.apache.solr.common.params.AutoScalingParams.*;
+import static org.apache.solr.common.params.AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_CORE_POOL_SIZE;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS;
 import static org.apache.solr.common.util.ExecutorUtil.awaitTermination;
 
 /**
@@ -302,7 +320,6 @@ public class ScheduledTriggers implements Closeable {
 
               ActionContext actionContext = new ActionContext(cloudManager, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
-                @SuppressWarnings({"unchecked"})
                 List<String> beforeActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
                 triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.BEFORE_ACTION, action.getName(), actionContext);
@@ -312,7 +329,6 @@ public class ScheduledTriggers implements Closeable {
                   triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
                   throw new TriggerActionException(event.getSource(), action.getName(), "Error processing action for trigger event: " + event, e);
                 }
-                @SuppressWarnings({"unchecked"})
                 List<String> afterActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.AFTER_ACTION.toString(), k -> new ArrayList<String>());
                 afterActions.add(action.getName());
                 triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
@@ -412,7 +428,6 @@ public class ScheduledTriggers implements Closeable {
               String path = parentPath + '/' + child;
               VersionedData data = stateManager.getData(path, null);
               if (data != null) {
-                @SuppressWarnings({"rawtypes"})
                 Map map = (Map) Utils.fromJSON(data.getData());
                 String requestid = (String) map.get("requestid");
                 try {

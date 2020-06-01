@@ -16,18 +16,25 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
@@ -273,22 +280,18 @@ public class SearchRateTrigger extends TriggerBase {
     lastNodeEvent.clear();
     lastShardEvent.clear();
     lastReplicaEvent.clear();
-    @SuppressWarnings({"unchecked"})
     Map<String, Long> collTimes = (Map<String, Long>)state.get("lastCollectionEvent");
     if (collTimes != null) {
       lastCollectionEvent.putAll(collTimes);
     }
-    @SuppressWarnings({"unchecked"})
     Map<String, Long> nodeTimes = (Map<String, Long>)state.get("lastNodeEvent");
     if (nodeTimes != null) {
       lastNodeEvent.putAll(nodeTimes);
     }
-    @SuppressWarnings({"unchecked"})
     Map<String, Long> shardTimes = (Map<String, Long>)state.get("lastShardEvent");
     if (shardTimes != null) {
       lastShardEvent.putAll(shardTimes);
     }
-    @SuppressWarnings({"unchecked"})
     Map<String, Long> replicaTimes = (Map<String, Long>)state.get("lastReplicaEvent");
     if (replicaTimes != null) {
       lastReplicaEvent.putAll(replicaTimes);
@@ -648,7 +651,6 @@ public class SearchRateTrigger extends TriggerBase {
   /**
    * This method implements a primitive form of proportional controller with a limiter.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addReplicaHints(String collection, String shard, double r, int replicationFactor, List<Pair<String, String>> hints) {
     int numReplicas = (int)Math.round((r - aboveRate) / (double) replicationFactor);
     // in one event add at least 1 replica

@@ -54,8 +54,6 @@ ext {
     }
     return m[0][1] as int
   }
-  // snapshot build marker used in scripts.
-  snapshotBuild = version.contains("SNAPSHOT")
 
   // Build timestamp.
   def tstamp = ZonedDateTime.now()

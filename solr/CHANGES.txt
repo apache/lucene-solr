@@ -200,11 +200,6 @@ Bug Fixes
 
 * SOLR-14498: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue. (Jakub Zytka, ab)
 
-* SOLR-14517: Dont ignore 'mm' localparam on edismax queries using operators (Yuriy Koval via Jason Gerlowski)
-
-* SOLR-14491: Intercepting internode requests in KerberosPlugin when HTTP/2 client is used (Ishan Chattopadhyaya, Moshe Bla)
-
-
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -257,6 +252,7 @@ Other Changes
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
 
+
 * SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
   Erick Erickson)
 
@@ -266,7 +262,6 @@ Other Changes
 
 * SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
 
-* SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -17,26 +17,46 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toSet;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.*;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -49,6 +69,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.AutoScalingParams.*;
 import static org.apache.solr.common.params.CommonParams.JSON;
@@ -98,7 +120,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
       String httpMethod = (String) req.getContext().get("httpMethod");
@@ -166,13 +187,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
-  @SuppressWarnings({"unchecked"})
   private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf, SolrParams params) {
     rsp.getValues().add("suggestions",
         PolicyHelper.getSuggestions(autoScalingConf, cloudManager, params));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)
       throws KeeperException, InterruptedException, IOException {
     while (true) {
@@ -250,13 +269,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig.withProperties(configProps);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
     Policy policy = autoScalingConf.getPolicy();
     rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, cloudManager));
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                    AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> clusterPolicy = (List<Map<String, Object>>) op.getCommandData();
@@ -276,7 +293,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                         AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> preferences = (List<Map<String, Object>>) op.getCommandData();
@@ -320,7 +336,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                               AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     Map<String, Object> policiesMap = op.getDataMap();
@@ -346,7 +361,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                 AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
@@ -379,7 +393,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                  AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
@@ -512,7 +525,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     // we're going to modify the op - use a copy

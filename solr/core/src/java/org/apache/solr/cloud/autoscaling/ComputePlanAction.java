@@ -17,12 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.*;
@@ -37,6 +31,13 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
 
@@ -71,7 +72,6 @@ public class ComputePlanAction extends TriggerActionBase {
         collectionsPredicate = whiteListedCollections::contains;
       }
     } else if (value instanceof Map) {
-      @SuppressWarnings({"unchecked"})
       Map<String, String> matchConditions = (Map<String, String>) value;
       collectionsPredicate = collectionName -> {
         try {
@@ -133,7 +133,6 @@ public class ComputePlanAction extends TriggerActionBase {
           if (Thread.currentThread().isInterrupted()) {
             throw new InterruptedException("stopping - thread was interrupted");
           }
-          @SuppressWarnings({"rawtypes"})
           SolrRequest operation = suggester.getSuggestion();
           opCount++;
           // prepare suggester for the next iteration
@@ -164,7 +163,6 @@ public class ComputePlanAction extends TriggerActionBase {
           }
           Map<String, Object> props = context.getProperties();
           props.compute("operations", (k, v) -> {
-            @SuppressWarnings({"unchecked", "rawtypes"})
             List<SolrRequest> operations = (List<SolrRequest>) v;
             if (operations == null) operations = new ArrayList<>();
             operations.add(operation);
@@ -213,7 +211,6 @@ public class ComputePlanAction extends TriggerActionBase {
   }
 
   protected int getRequestedNumOps(TriggerEvent event) {
-    @SuppressWarnings({"unchecked"})
     Collection<TriggerEvent.Op> ops = (Collection<TriggerEvent.Op>) event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
     if (ops.isEmpty()) {
       return -1;
@@ -236,7 +233,6 @@ public class ComputePlanAction extends TriggerActionBase {
       case SEARCHRATE:
       case METRIC:
       case INDEXSIZE:
-        @SuppressWarnings({"unchecked"})
         List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>)event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
         int start = (Integer)event.getProperty(START, 0);
         if (ops.isEmpty() || start >= ops.size()) {
@@ -245,7 +241,6 @@ public class ComputePlanAction extends TriggerActionBase {
         TriggerEvent.Op op = ops.get(start);
         suggester = session.getSuggester(op.getAction());
         if (suggester instanceof UnsupportedSuggester) {
-          @SuppressWarnings({"unchecked"})
           List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent(TriggerEvent.UNSUPPORTED_OPS, k -> new ArrayList<TriggerEvent.Op>());
           unsupportedOps.add(op);
         }
@@ -279,7 +274,6 @@ public class ComputePlanAction extends TriggerActionBase {
         return s;
       case DELETENODE:
         int start = (Integer)event.getProperty(START, 0);
-        @SuppressWarnings({"unchecked"})
         List<String> srcNodes = (List<String>) event.getProperty(NODE_NAMES);
         if (srcNodes.isEmpty() || start >= srcNodes.size()) {
           return NoneSuggester.get(session);

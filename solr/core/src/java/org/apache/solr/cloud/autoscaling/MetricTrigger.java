@@ -18,13 +18,20 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
@@ -38,7 +45,10 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.AutoScalingParams.*;
+import static org.apache.solr.common.params.AutoScalingParams.ABOVE;
+import static org.apache.solr.common.params.AutoScalingParams.BELOW;
+import static org.apache.solr.common.params.AutoScalingParams.METRIC;
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 public class MetricTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -81,7 +91,6 @@ public class MetricTrigger extends TriggerBase {
   @Override
   protected void setState(Map<String, Object> state) {
     lastNodeEvent.clear();
-    @SuppressWarnings({"unchecked"})
     Map<String, Long> nodeTimes = (Map<String, Long>) state.get("lastNodeEvent");
     if (nodeTimes != null) {
       lastNodeEvent.putAll(nodeTimes);

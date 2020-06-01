@@ -19,16 +19,21 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
@@ -71,7 +76,6 @@ public class ExecutePlanAction extends TriggerActionBase {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void process(TriggerEvent event, ActionContext context) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
@@ -159,7 +163,6 @@ public class ExecutePlanAction extends TriggerActionBase {
           }
           NamedList<Object> result = response.getResponse();
           context.getProperties().compute("responses", (s, o) -> {
-            @SuppressWarnings({"unchecked"})
             List<NamedList<Object>> responses = (List<NamedList<Object>>) o;
             if (responses == null)  responses = new ArrayList<>(operations.size());
             responses.add(result);

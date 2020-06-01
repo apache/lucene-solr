@@ -17,7 +17,15 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
@@ -51,7 +59,6 @@ public class TriggerEvent implements MapWriter {
       addHint(hint, hintValue);
     }
 
-    @SuppressWarnings({"unchecked"})
     public void addHint(Suggester.Hint hint, Object value) {
       hint.validator.accept(value);
       if (hint.multiValued) {
@@ -78,7 +85,6 @@ public class TriggerEvent implements MapWriter {
       ew.put("hints", hints);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static Op fromMap(Map<String, Object> map) {
       if (!map.containsKey("action")) {
         return null;
@@ -275,7 +281,6 @@ public class TriggerEvent implements MapWriter {
     return Utils.toJSONString(this);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static TriggerEvent fromMap(Map<String, Object> map) {
     String id = (String)map.get("id");
     String source = (String)map.get("source");
@@ -289,7 +294,6 @@ public class TriggerEvent implements MapWriter {
     return res;
   }
 
-  @SuppressWarnings({"unchecked"})
   public static void fixOps(String type, Map<String, Object> properties) {
     List<Object> ops = (List<Object>)properties.get(type);
     if (ops != null && !ops.isEmpty()) {

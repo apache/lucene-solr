@@ -18,7 +18,14 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,6 +33,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -144,7 +152,6 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param key property name
    * @param value property value.
    */
-  @SuppressWarnings({"unchecked"})
   public void simAddNodeValue(String node, String key, Object value) throws InterruptedException {
     lock.lockInterruptibly();
     try {
@@ -334,9 +341,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
     for (ReplicaInfo r : replicas) {
-      @SuppressWarnings({"unchecked"})
       Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
-      @SuppressWarnings({"unchecked"})
       List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
       // XXX filter out some properties?
       perShard.add(r);

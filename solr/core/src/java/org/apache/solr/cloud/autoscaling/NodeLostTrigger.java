@@ -19,8 +19,18 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.AlreadyClosedException;
@@ -33,7 +43,9 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.*;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
@@ -131,12 +143,10 @@ public class NodeLostTrigger extends TriggerBase {
   protected void setState(Map<String, Object> state) {
     this.lastLiveNodes.clear();
     this.nodeNameVsTimeRemoved.clear();
-    @SuppressWarnings({"unchecked"})
     Collection<String> lastLiveNodes = (Collection<String>)state.get("lastLiveNodes");
     if (lastLiveNodes != null) {
       this.lastLiveNodes.addAll(lastLiveNodes);
     }
-    @SuppressWarnings({"unchecked"})
     Map<String,Long> nodeNameVsTimeRemoved = (Map<String,Long>)state.get("nodeNameVsTimeRemoved");
     if (nodeNameVsTimeRemoved != null) {
       this.nodeNameVsTimeRemoved.putAll(nodeNameVsTimeRemoved);

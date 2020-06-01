@@ -17,9 +17,21 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -27,7 +39,11 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.*;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.cloud.ClusterState;
@@ -74,7 +90,6 @@ public class SnapshotCloudManager implements SolrCloudManager {
     SimUtils.checkConsistency(this, config);
   }
 
-  @SuppressWarnings({"unchecked"})
   public SnapshotCloudManager(Map<String, Object> snapshot) throws Exception {
     Objects.requireNonNull(snapshot);
     init(
@@ -105,7 +120,6 @@ public class SnapshotCloudManager implements SolrCloudManager {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public static SnapshotCloudManager readSnapshot(File sourceDir) throws Exception {
     if (!sourceDir.exists()) {
       throw new Exception("Source path doesn't exist: " + sourceDir);
@@ -227,7 +241,6 @@ public class SnapshotCloudManager implements SolrCloudManager {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public SolrResponse request(SolrRequest req) throws IOException {
     throw new UnsupportedOperationException("request");
   }
