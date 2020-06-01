@@ -17,27 +17,12 @@
 
 package org.apache.solr.api;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.ReflectMapWriter;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.*;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.pkg.PackageLoader;
@@ -46,6 +31,13 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
@@ -197,8 +189,10 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
           return;
         }
         this.pkgVersion = p.getVersion(info.version);
-        if (pkgVersion == null)
+        if (pkgVersion == null) {
           errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
+          return;
+        }
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
         } catch (Exception e) {
@@ -231,8 +225,9 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
             errs.add("The @EndPint must have exactly one method and path attributes");
           }
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
-          if (pathSegments.size() < 2 || !ContainerPluginsApi.PLUGIN.equals(pathSegments.get(0))) {
-            errs.add("path must have a /plugin/ prefix ");
+          PathTrie.replaceTemplates(pathSegments, Collections.singletonMap("plugin-name", info.name));
+          if (V2HttpCall.knownPrefixes.contains(pathSegments.get(0))) {
+            errs.add("path must not have a prefix: "+pathSegments.get(0));
           }
 
         }

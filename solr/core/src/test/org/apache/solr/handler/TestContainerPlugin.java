@@ -17,15 +17,12 @@
 
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
@@ -37,6 +34,7 @@ import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
+import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,6 +42,11 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -121,26 +124,26 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       //test with a class  @EndPoint methods. This also uses a template in the path name
       plugin.klass = C4.class.getName();
+      plugin.name = "collections";
+      expectError(req, cluster.getSolrClient(), errPath, "path must not have a prefix: collections");
+
       plugin.name = "my-random-name";
       req.process(cluster.getSolrClient());
 
       //let's test the plugin
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/plugin/my-random-name/my/plugin")
+          () -> new V2Request.Builder("/my-random-name/my/plugin")
               .forceV2(true)
               .withMethod(GET)
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m1"));
 
   TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/plugin/my-random-name/their/plugin")
+          () -> new V2Request.Builder("/my-random-name/their/plugin")
               .forceV2(true)
               .withMethod(GET)
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m2"));
-
-
-
 
     } finally {
       cluster.shutdown();
@@ -176,16 +179,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .build();
       addPkgVersionReq.process(cluster.getSolrClient());
 
-      TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/package").
-              withMethod(GET)
-              .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+      waitForAllNodesToSync(cluster, "/cluster/package", Utils.makeMap(
               ":result:packages:mypkg[0]:version", "1.0",
               ":result:packages:mypkg[0]:files[0]", FILE1
-          ));
+      ));
 
-      // No lets create a plugin using v1 jar file
+      // Now lets create a plugin using v1 jar file
       PluginMeta plugin = new PluginMeta();
       plugin.name = "myplugin";
       plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -274,14 +273,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   public static class C4 {
 
     @EndPoint(method = GET,
-        path = "/plugin/$plugin-name/my/plugin",
+        path = "$plugin-name/my/plugin",
         permission = PermissionNameProvider.Name.READ_PERM)
     public void m1(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("method.name", "m1");
     }
 
     @EndPoint(method = GET,
-        path = "/plugin/$plugin-name/their/plugin",
+        path = "$plugin-name/their/plugin",
         permission = PermissionNameProvider.Name.READ_PERM)
     public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("method.name", "m2");
@@ -289,6 +288,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   }
 
+    public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map expected ) throws Exception {
+        for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+            String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+            String url = baseUrl  + path + "?wt=javabin";
+            TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+        }
+    }
 
   private void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg) throws IOException, SolrServerException {
     try {

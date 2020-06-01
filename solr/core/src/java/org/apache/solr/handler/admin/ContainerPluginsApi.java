@@ -17,20 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.CustomContainerPlugins;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
+import org.apache.solr.api.*;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -44,6 +31,15 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
@@ -79,7 +75,7 @@ public class ContainerPluginsApi {
   public class Edit {
 
     @Command(name = "add")
-    public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta> payload) throws IOException {
+    public void add(PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
       validateConfig(payload, info);
       if(payload.hasError()) return;
@@ -94,7 +90,7 @@ public class ContainerPluginsApi {
     }
 
     @Command(name = "remove")
-    public void remove(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<String> payload) throws IOException {
+    public void remove(PayloadObj<String> payload) throws IOException {
       persistPlugins(map -> {
         if (map.remove(payload.get()) == null) {
           payload.addError("No such plugin: " + payload.get());
@@ -105,7 +101,7 @@ public class ContainerPluginsApi {
     }
 
     @Command(name = "update")
-    public void update(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta> payload) throws IOException {
+    public void update(PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
       validateConfig(payload, info);
       if(payload.hasError()) return;

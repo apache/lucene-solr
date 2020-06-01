@@ -17,11 +17,7 @@
 
 package org.apache.solr.common.util;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.emptyList;
@@ -52,7 +48,11 @@ public class PathTrie<T> {
       root.obj = o;
       return;
     }
+    replaceTemplates(parts, replacements);
+    root.insert(parts, o);
+  }
 
+  public static void replaceTemplates(List<String> parts, Map<String, String> replacements) {
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);
       if (part.charAt(0) == '$') {
@@ -64,8 +64,6 @@ public class PathTrie<T> {
         parts.set(i, replacement);
       }
     }
-
-    root.insert(parts, o);
   }
 
   // /a/b/c will be returned as ["a","b","c"]

@@ -18,18 +18,31 @@
 package org.apache.solr.api;
 
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
-public  class PayloadObj<T> extends CommandOperation {
+public class PayloadObj<T> extends CommandOperation {
 
-  private T obj;
+    private T obj;
+    final SolrQueryRequest req;
+    final SolrQueryResponse rsp;
 
+    public PayloadObj(String operationName, Object metaData, T obj, SolrQueryRequest req, SolrQueryResponse rsp) {
+        super(operationName, metaData);
+        this.obj = obj;
+        this.req = req;
+        this.rsp = rsp;
+    }
 
-  public PayloadObj(String operationName, Object metaData, T obj) {
-    super(operationName, metaData);
-    this.obj = obj;
-  }
+    public T get() {
+        return obj;
+    }
 
-  public T get(){
-    return obj;
-  }
+    public SolrQueryRequest getRequest() {
+        return req;
+    }
+
+    public SolrQueryResponse getResponse() {
+        return rsp;
+    }
 }

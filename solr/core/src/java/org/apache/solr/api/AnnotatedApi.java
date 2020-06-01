@@ -18,22 +18,6 @@
 package org.apache.solr.api;
 
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -49,6 +33,12 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.*;
+import java.util.*;
 
 /**
  * This class implements an Api just from  an annotated java class
@@ -225,30 +215,17 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
         this.method = method;
         Class<?>[] parameterTypes = method.getParameterTypes();
         paramsCount = parameterTypes.length;
-        if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
-          throw new RuntimeException("Invalid params for method " + method);
-        }
-        if (parameterTypes.length == 3) {
-          Type t = method.getGenericParameterTypes()[2];
-          if (t instanceof ParameterizedType) {
-            ParameterizedType typ = (ParameterizedType) t;
-            if (typ.getRawType() == PayloadObj.class) {
-              isWrappedInPayloadObj = true;
-              Type t1 = typ.getActualTypeArguments()[0];
-              if (t1 instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) t1;
-                c = (Class) parameterizedType.getRawType();
-              } else {
-                c = (Class) typ.getActualTypeArguments()[0];
-              }
-            }
-          } else {
-            c = (Class) t;
+        if (parameterTypes.length == 1) {
+          readPayloadType(method.getGenericParameterTypes()[0]);
+        } else if (parameterTypes.length == 3) {
+          if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
+            throw new RuntimeException("Invalid params for method " + method);
           }
+          Type t = method.getGenericParameterTypes()[2];
+          readPayloadType(t);
         }
         if (parameterTypes.length > 3) {
           throw new RuntimeException("Invalid params count for method " + method);
-
         }
       } else {
         throw new RuntimeException(method.toString() + " is not a public static method");
@@ -256,9 +233,41 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
     }
 
+    private void readPayloadType(Type t) {
+      if (t instanceof ParameterizedType) {
+        ParameterizedType typ = (ParameterizedType) t;
+        if (typ.getRawType() == PayloadObj.class) {
+          isWrappedInPayloadObj = true;
+          if(typ.getActualTypeArguments().length == 0){
+            //this is a raw type
+            c = Map.class;
+            return;
+          }
+          Type t1 = typ.getActualTypeArguments()[0];
+          if (t1 instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) t1;
+            c = (Class) parameterizedType.getRawType();
+          } else {
+            c = (Class) typ.getActualTypeArguments()[0];
+          }
+        }
+      } else {
+        c = (Class) t;
+      }
+    }
+
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
       try {
-        if (paramsCount == 2) {
+        if(paramsCount ==1) {
+          Object o = cmd.getCommandData();
+          if (o instanceof Map && c != null && c != Map.class) {
+            o = mapper.readValue(Utils.toJSONString(o), c);
+          }
+          PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
+          cmd = payloadObj;
+          method.invoke(obj, payloadObj);
+          checkForErrorInPayload(cmd);
+        } else if (paramsCount == 2) {
           method.invoke(obj, req, rsp);
         } else {
           Object o = cmd.getCommandData();
@@ -266,16 +275,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
             o = mapper.readValue(Utils.toJSONString(o), c);
           }
           if (isWrappedInPayloadObj) {
-            PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
             cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
           }
-          if (cmd.hasError()) {
-            throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error executing command",
-                CommandOperation.captureErrors(Collections.singletonList(cmd)));
-          }
+          checkForErrorInPayload(cmd);
         }
 
 
@@ -291,12 +297,21 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       }
 
     }
+
+    private void checkForErrorInPayload(CommandOperation cmd) {
+      if (cmd.hasError()) {
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error executing command",
+            CommandOperation.captureErrors(Collections.singletonList(cmd)));
+      }
+    }
   }
 
   public static Map<String, Object> createSchema(Method m) {
     Type[] types = m.getGenericParameterTypes();
-    if (types.length == 3) {
-      Type t = types[2];
+    Type t = null;
+    if (types.length == 3) t = types[2];
+    if(types.length == 1) t = types[0];
+    if (t != null) {
       if (t instanceof ParameterizedType) {
         ParameterizedType typ = (ParameterizedType) t;
         if (typ.getRawType() == PayloadObj.class) {
