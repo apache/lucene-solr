@@ -200,6 +200,12 @@ Bug Fixes
 
 * SOLR-14498: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue. (Jakub Zytka, ab)
 
+* SOLR-14517: Dont ignore 'mm' localparam on edismax queries using operators (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14491: Intercepting internode requests in KerberosPlugin when HTTP/2 client is used (Ishan Chattopadhyaya, Moshe Bla)
+
+* SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
