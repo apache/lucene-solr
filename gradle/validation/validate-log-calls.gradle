@@ -204,26 +204,25 @@ class ValidateLogCallsTask extends DefaultTask {
           reportViolation("Bad state, should be 0-1 in the switch statement") // make people aware the code sucks
           break
       }
-      switch (state) { // It's just easier to do this here rather than read another line in the switch above.
-        case 0: // Not collcting a log line
+
+      // It's just easier to do this here rather than read another line in the switch above.
+      if (state == 0) {
+          // Not collecting a log line
           prevLine = line.toLowerCase();
-          break;
-        case 1: // collecting a logging line.
-          break;
-        case 2: // We've collected the complete log line.
+      } else if (state == 1) {
+          // collecting a logging line.
+      } else if (state == 2) {
+          // We've collected the complete log line.
           checkLine(file, sb.toString(), lineNumber, prevLine)
           state = 0
-          break;
-        default:
-          break;
+      } else {
+          assert false
       }
     }
-    return
   }
 
   @TaskAction
   def checkLogLines() {
-
     project.sourceSets.each { srcSet ->
       srcSet.java.each { f ->
         checkFile(f)
