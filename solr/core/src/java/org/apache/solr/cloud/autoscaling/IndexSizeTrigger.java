@@ -218,6 +218,7 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   protected void setState(Map<String, Object> state) {
     this.lastAboveEventMap.clear();
     this.lastBelowEventMap.clear();
@@ -248,6 +249,7 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void run() {
     synchronized(this) {
       if (isClosed) {
