@@ -17,16 +17,6 @@
 
 package org.apache.solr.pkg;
 
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -35,6 +25,13 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
@@ -304,21 +301,18 @@ public class PackageLoader implements Closeable {
     @Override
     public <T> boolean addToCoreAware(T obj) {
       //do not do anything
-      //this class is
+      //this class is not aware of a SolrCore and it is totally not tied to
+      // the lifecycle of SolrCore. So, this returns 'false' & it should be
+      // taken care of by the caller
       return false;
     }
 
     @Override
     public <T> boolean addToResourceLoaderAware(T obj) {
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        try {
-          ((ResourceLoaderAware) obj).inform(this);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-      }
-     return true;
+      // do not do anything
+      // this should be invoked only after the init() is invoked.
+      // The caller should take care of that
+      return false;
     }
   }
 

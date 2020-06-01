@@ -17,12 +17,14 @@
 
 package org.apache.solr.pkg;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.*;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
 
 public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -95,7 +97,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
     if (pkgVersion != null) {
       if (newest == pkgVersion) {
-        //I'm already using the latest classloder in the package. nothing to do
+        //I'm already using the latest classloader in the package. nothing to do
         return;
       }
     }
@@ -114,13 +116,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
-    if (instance instanceof SolrCoreAware) {
-      SolrCoreAware coreAware = (SolrCoreAware) instance;
-      if (!core.getResourceLoader().addToCoreAware(coreAware)) {
-        //returns false if the core was fully initialized
-        coreAware.inform(core);
-      }
-    }
+    handleAwareCallbacks(newest.getLoader(), instance);
     T old = inst;
     inst = (T) instance;
     if (old instanceof AutoCloseable) {
@@ -129,6 +125,23 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
         closeable.close();
       } catch (Exception e) {
         log.error("error closing plugin", e);
+      }
+    }
+  }
+
+  private void handleAwareCallbacks(SolrResourceLoader loader, Object instance) {
+    if (instance instanceof SolrCoreAware) {
+      SolrCoreAware coreAware = (SolrCoreAware) instance;
+      if (!core.getResourceLoader().addToCoreAware(coreAware)) {
+        coreAware.inform(core);
+      }
+    }
+    if (instance instanceof ResourceLoaderAware) {
+      SolrResourceLoader.assertAwareCompatibility(ResourceLoaderAware.class, instance);
+      try {
+        ((ResourceLoaderAware) instance).inform(loader);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
   }
