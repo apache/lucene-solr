@@ -28,8 +28,17 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 public abstract class HashBasedRouter extends DocRouter {
 
+  private ImplicitDocRouter implicitRouter = new ImplicitDocRouter();
+
   @Override
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
+
+    //Try implicit router first
+    Slice slice = implicitRouter.getTargetSlice(id, sdoc, route, params, collection);
+    if(slice != null) {
+      return  slice;
+    }
+
     int hash;
     if (route != null) {
       hash = sliceHash(route, sdoc, params, collection);
