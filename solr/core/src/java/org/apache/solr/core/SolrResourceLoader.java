@@ -16,12 +16,7 @@
  */
 package org.apache.solr.core;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -34,24 +29,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -622,7 +606,46 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       }
     }
 
+    addToCoreAware(obj);
+    addToResourceLoaderAware(obj);
+    addToInfoBeans(obj);
     return obj;
+  }
+
+  public <T> void addToInfoBeans(T obj) {
+    if(!live) {
+      if (obj instanceof SolrInfoBean) {
+        infoMBeans.add((SolrInfoBean) obj);
+      }
+    }
+  }
+
+  public <T> boolean addToResourceLoaderAware(T obj) {
+    if (!live) {
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        waitingForResources.add((ResourceLoaderAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /** the inform() callback should be invoked on the listener.
+   * If this is 'live', the callback is not called so currently this returns 'false'
+   *
+   */
+  public <T> boolean addToCoreAware(T obj) {
+    if (!live) {
+      if (obj instanceof SolrCoreAware) {
+        assertAwareCompatibility(SolrCoreAware.class, obj);
+        waitingForCore.add((SolrCoreAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
 
@@ -760,7 +783,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  static void assertAwareCompatibility( Class aware, Object obj )
+  public static void assertAwareCompatibility( Class aware, Object obj )
   {
     Class[] valid = awareCompatibility.get( aware );
     if( valid == null ) {
