@@ -405,6 +405,7 @@ public class RegExp {
     REGEXP_PRE_CLASS
   }
   
+  //-----  Syntax flags ( <= 0xff )  ------
   /**
    * Syntax flag, enables intersection (<code>&amp;</code>).
    */
@@ -437,27 +438,22 @@ public class RegExp {
   public static final int INTERVAL = 0x0020;
   
   /**
-   * Allows case insensitive matching.
-   */
-  public static final int UNICODE_CASE_INSENSITIVE = 0x0040;  
-  
-  /**
    * Syntax flag, enables all optional regexp syntax
    * but preserves default setting of case sensitive matching. 
    */
-  public static final int ALL = 0xffff ^ UNICODE_CASE_INSENSITIVE ;
-  
-  
-  /**
-   * Syntax flag, enables all optional regexp syntax
-   * and allows case insensitive matching. 
-   */
-  public static final int ALL_AND_CASE_INSENSITIVE = 0xffff;
-  
+  public static final int ALL = 0xff;
+      
   /**
    * Syntax flag, enables no optional regexp syntax.
    */
   public static final int NONE = 0x0000;
+  
+  //-----  Non-syntax flags ( > 0xff )  ------
+  
+  /**
+   * Allows case insensitive matching.
+   */
+  public static final int UNICODE_CASE_INSENSITIVE = 0x0100;    
 
   //Immutable parsed state
   /**
@@ -503,6 +499,19 @@ public class RegExp {
   }
   
   /**
+   * Constructs new <code>RegExp</code> from a string. Same as
+   * <code>RegExp(s, ALL)</code>.
+   * 
+   * @param s regexp string
+   * @param caseSensitive case sensitive matching
+   * @exception IllegalArgumentException if an error occurred while parsing the
+   *              regular expression
+   */
+  public RegExp(String s, boolean caseSensitive) throws IllegalArgumentException {
+    this(s, ALL, caseSensitive);
+  }  
+  
+  /**
    * Constructs new <code>RegExp</code> from a string.
    * 
    * @param s regexp string
@@ -512,8 +521,28 @@ public class RegExp {
    *              regular expression
    */
   public RegExp(String s, int syntax_flags) throws IllegalArgumentException {
+    this(s, syntax_flags, true);
+  }
+  /**
+   * Constructs new <code>RegExp</code> from a string.
+   * 
+   * @param s regexp string
+   * @param syntax_flags boolean 'or' of optional syntax constructs to be
+   *          enabled
+   * @param caseSensitive case sensitive matching
+   * @exception IllegalArgumentException if an error occurred while parsing the
+   *              regular expression
+   */
+  public RegExp(String s, int syntax_flags, boolean caseSensitive) throws IllegalArgumentException {    
     originalString = s;
-    flags = syntax_flags;
+    // Trim any bits unrelated to syntax flags
+    syntax_flags  = syntax_flags & 0xff;
+    if (caseSensitive) {
+      flags = syntax_flags;
+    } else {      
+      // Add in the case-insensitive setting
+      flags = syntax_flags  | UNICODE_CASE_INSENSITIVE;
+    }
     RegExp e;
     if (s.length() == 0) e = makeString(flags, "");
     else {

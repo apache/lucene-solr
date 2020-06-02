@@ -244,8 +244,7 @@ public class TestRegExp extends LuceneTestCase {
     Matcher matcher = pattern.matcher(docValue);
     assertTrue("Java regex " + regexPattern + " did not match doc value " + docValue, matcher.matches());
 
-    RegExp regex = caseSensitiveQuery ? new RegExp(regexPattern) : new RegExp(regexPattern,  
-        RegExp.ALL | RegExp.UNICODE_CASE_INSENSITIVE);
+    RegExp regex =  new RegExp(regexPattern, RegExp.ALL, caseSensitiveQuery);
     Automaton automaton = regex.toAutomaton();
     ByteRunAutomaton bytesMatcher = new ByteRunAutomaton(automaton);
     BytesRef br = new BytesRef(docValue);
