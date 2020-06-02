@@ -45,6 +45,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);

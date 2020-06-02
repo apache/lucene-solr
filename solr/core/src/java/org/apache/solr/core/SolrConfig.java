@@ -368,11 +368,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static class SolrPluginInfo {
 
+    @SuppressWarnings({"rawtypes"})
     public final Class clazz;
     public final String tag;
     public final Set<PluginOpts> options;
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
       this.clazz = clz;
       this.tag = tag;
@@ -389,6 +391,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     InputStreamReader isr = null;
@@ -672,6 +675,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
@@ -706,6 +710,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
@@ -856,6 +861,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
@@ -914,6 +920,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
     for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
