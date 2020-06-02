@@ -117,7 +117,7 @@ public class NodeConfig {
     this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
-    this.solrHome = solrHome.toAbsolutePath();
+    this.solrHome = solrHome;
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
