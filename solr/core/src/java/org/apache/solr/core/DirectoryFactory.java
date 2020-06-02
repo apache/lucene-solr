@@ -55,7 +55,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
 
   protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
-  // May be set by sub classes as data root, in which case getDataHome will use it as base
+  // May be set by sub classes as data root, in which case getDataHome will use it as base.  Absolute.
   protected Path dataHomePath;
 
   // hint about what the directory contains - default is index directory
@@ -331,16 +331,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * @return a String with absolute path to data direcotry
    */
   public String getDataHome(CoreDescriptor cd) throws IOException {
-    String dataDir;
+    Path dataDir;
     if (dataHomePath != null) {
-      String instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1).toString();
-      dataDir = Paths.get(coreContainer.getSolrHome()).resolve(dataHomePath)
-          .resolve(instanceDirLastPath).resolve(cd.getDataDir()).toAbsolutePath().toString();
+      Path instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1);
+      dataDir = dataHomePath.resolve(instanceDirLastPath).resolve(cd.getDataDir());
     } else {
       // by default, we go off the instance directory
-      dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
+      dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
     }
-    return dataDir;
+    assert dataDir.isAbsolute();
+    return dataDir.toString();
   }
 
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
@@ -398,7 +398,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void initCoreContainer(CoreContainer cc) {
     this.coreContainer = cc;
     if (cc != null && cc.getConfig() != null) {
-      this.dataHomePath = cc.getConfig().getSolrDataHome();
+      this.dataHomePath = cc.getConfig().getSolrDataHome(); // absolute
     }
   }
   

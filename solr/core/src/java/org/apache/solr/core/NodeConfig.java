@@ -29,6 +29,7 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 
 
 public class NodeConfig {
+  // all Path fields here are absolute and normalized.
 
   private final String nodeName;
 
@@ -95,11 +96,12 @@ public class NodeConfig {
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
                      boolean fromZookeeper) {
+    // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
-    this.coreRootDirectory = coreRootDirectory.toAbsolutePath();
-    this.solrDataHome = solrDataHome == null ? null : solrDataHome.toAbsolutePath();
+    this.coreRootDirectory = coreRootDirectory;
+    this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
-    this.configSetBaseDirectory = configSetBaseDirectory.toAbsolutePath();
+    this.configSetBaseDirectory = configSetBaseDirectory;
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
@@ -262,7 +264,7 @@ public class NodeConfig {
   }
 
   public static class NodeConfigBuilder {
-
+    // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
     private Path solrDataHome;
@@ -317,26 +319,23 @@ public class NodeConfig {
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
       this.nodeName = nodeName;
-      this.solrHome = solrHome;
+      this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      String dataHomeProperty = System.getProperty(SolrXmlConfig.SOLR_DATA_HOME);
-      if (dataHomeProperty != null && !dataHomeProperty.isEmpty()) {
-        solrDataHome = solrHome.resolve(dataHomeProperty);
-      }
-      this.configSetBaseDirectory = solrHome.resolve("configsets");
+      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
-      this.coreRootDirectory = solrHome.resolve(coreRootDirectory);
+      this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
       return this;
     }
 
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
       // keep it null unless explicitly set to non-empty value
       if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
-        this.solrDataHome = solrHome.resolve(solrDataHomeString);
+        this.solrDataHome = solrHome.resolve(solrDataHomeString).normalize();
       }
       return this;
     }
