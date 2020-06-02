@@ -98,6 +98,18 @@ class JsonQueryConverter {
           qtype = map.keySet().iterator().next();
           // FUTURE: might want to recurse here instead to handle nested tags (and add tagName as a parameter?)
         }
+      } else {
+        if (qtype.equals("param")) {
+          boolean toplevel;
+          if (toplevel=(builder.length() == 0)) {
+            builder.append("{!v=");  
+          }
+          builder.append("$").append(map.get("param"));
+          if (toplevel) {
+            builder.append("}");
+          }
+          return;
+        }
       }
 
       StringBuilder subBuilder = useSubBuilder ? new StringBuilder() : builder;
@@ -114,26 +126,30 @@ class JsonQueryConverter {
         builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
       }
     } else {
-      for (Map.Entry<String, Object> entry : map.entrySet()) {
-        String key = entry.getKey();
-        if (entry.getValue() instanceof List) {
-          if (key.equals("query")) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Error when parsing json query, value of query field should not be a list, found : " + entry.getValue());
-          }
-          List l = (List) entry.getValue();
-          for (Object subVal : l) {
+      if(map.size()==1 && map.keySet().iterator().next().equals("param")) {
+        builder.append("v").append("=$").append(map.get("param")).append(" ");
+      } else {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+          String key = entry.getKey();
+          if (entry.getValue() instanceof List) {
+            if (key.equals("query")) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "Error when parsing json query, value of query field should not be a list, found : " + entry.getValue());
+            }
+            List l = (List) entry.getValue();
+            for (Object subVal : l) {
+              builder.append(key).append("=");
+              buildLocalParams(builder, subVal, true, additionalParams);
+              builder.append(" ");
+            }
+          } else {
+            if (key.equals("query")) {
+              key = "v";
+            }
             builder.append(key).append("=");
-            buildLocalParams(builder, subVal, true, additionalParams);
+            buildLocalParams(builder, entry.getValue(), true, additionalParams);
             builder.append(" ");
           }
-        } else {
-          if (key.equals("query")) {
-            key = "v";
-          }
-          builder.append(key).append("=");
-          buildLocalParams(builder, entry.getValue(), true, additionalParams);
-          builder.append(" ");
         }
       }
     }

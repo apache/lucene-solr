@@ -229,8 +229,8 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
       Pattern.compile("/autoscaling/triggerState/.*"),
       // some triggers may have run after the snapshot was taken
       Pattern.compile("/autoscaling/events/.*"),
-      // we always use format 1 in SimClusterStateProvider
       Pattern.compile("/clusterstate\\.json"),
+      Pattern.compile("/collections/[^/]+?/state.json"),
       // depending on the startup sequence leaders may differ
       Pattern.compile("/collections/[^/]+?/leader_elect/.*"),
       Pattern.compile("/collections/[^/]+?/leaders/.*"),
@@ -255,6 +255,14 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         .filter(STATE_FILTER_FUN).collect(Collectors.toList()));
     Collections.sort(treeOne);
     Collections.sort(treeTwo);
+    if (!treeOne.equals(treeTwo)) {
+      List<String> t1 = new ArrayList<>(treeOne);
+      t1.removeAll(treeTwo);
+      log.warn("Only in tree one: {}", t1);
+      List<String> t2 = new ArrayList<>(treeTwo);
+      t2.removeAll(treeOne);
+      log.warn("Only in tree two: {}", t2);
+    }
     assertEquals(treeOne, treeTwo);
     for (String path : treeOne) {
       VersionedData vd1 = one.getData(path);

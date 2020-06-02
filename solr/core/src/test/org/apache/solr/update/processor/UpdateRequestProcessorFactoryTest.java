@@ -162,7 +162,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
       // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
       assertTrue(name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),
-                 procs.get(procs.size()-1) instanceof RunUpdateProcessor );
+                 procs.get(procs.size()-1) instanceof RunUpdateProcessorFactory.RunUpdateProcessor );
 
       // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
 

@@ -130,6 +130,7 @@ public class SimScenario implements AutoCloseable {
      * {@link #execute(SimScenario)}.
      * @param scenario current scenario
      */
+    @SuppressWarnings({"unchecked"})
     public void prepareCurrentParams(SimScenario scenario) {
       Properties props = new Properties();
       scenario.context.forEach((k, v) -> {
@@ -416,6 +417,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class LoadAutoscaling extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       Map<String, Object> map;
       boolean addDefaults = Boolean.parseBoolean(params.get("withDefaultTriggers", "true"));
@@ -540,9 +542,11 @@ public class SimScenario implements AutoCloseable {
   public static class ApplySuggestions extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
+      @SuppressWarnings({"unchecked"})
       List<Suggester.SuggestionInfo> suggestions = (List<Suggester.SuggestionInfo>) scenario.context.getOrDefault(SUGGESTIONS_CTX_PROP, Collections.emptyList());
       int unresolvedCount = 0;
       for (Suggester.SuggestionInfo suggestion : suggestions) {
+        @SuppressWarnings({"rawtypes"})
         SolrRequest operation = suggestion.getOperation();
         if (operation == null) {
           unresolvedCount++;
@@ -596,6 +600,7 @@ public class SimScenario implements AutoCloseable {
         req.setContentWriter(new RequestWriter.StringPayloadContentWriter(streamBody, "application/json"));
       }
       SolrResponse rsp = scenario.cluster.request(req);
+      @SuppressWarnings({"unchecked"})
       List<SolrResponse> responses = (List<SolrResponse>) scenario.context.computeIfAbsent(RESPONSES_CTX_PROP, Utils.NEW_ARRAYLIST_FUN);
       responses.add(rsp);
     }
@@ -705,6 +710,7 @@ public class SimScenario implements AutoCloseable {
   /**
    * Set a temporary listener to wait for a specific trigger event processing.
    */
+  @SuppressWarnings({"unchecked"})
   public static class SetEventListener extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
@@ -764,6 +770,7 @@ public class SimScenario implements AutoCloseable {
         listener.wait(waitSec);
         scenario.context.remove(TRIGGER_EVENT_PREFIX + trigger);
         if (listener.getEvent() != null) {
+          @SuppressWarnings({"unchecked"})
           Map<String, Object> ev = listener.getEvent().toMap(new LinkedHashMap<>());
           scenario.context.put(TRIGGER_EVENT_PREFIX + trigger, ev);
         }
@@ -941,6 +948,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class Dump extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       boolean redact = Boolean.parseBoolean(params.get("redact", "false"));
       boolean withData = Boolean.parseBoolean(params.get("withData", "false"));

@@ -189,6 +189,7 @@ public class CoreContainer {
 
   private final OrderedExecutor replayUpdatesExecutor;
 
+  @SuppressWarnings({"rawtypes"})
   protected volatile LogWatcher logging = null;
 
   private volatile CloserThread backgroundCloser = null;
@@ -340,6 +341,7 @@ public class CoreContainer {
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
   }
 
+  @SuppressWarnings({"unchecked"})
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
     int newVersion = readVersion(authorizationConf);
@@ -374,6 +376,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
     auditConf = Utils.getDeepCopy(auditConf, 4);
     int newVersion = readVersion(auditConf);
@@ -409,6 +412,7 @@ public class CoreContainer {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
@@ -506,6 +510,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static int readVersion(Map<String, Object> conf) {
     if (conf == null) return -1;
     Map meta = (Map) conf.get("");
@@ -856,6 +861,7 @@ public class CoreContainer {
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
+  @SuppressWarnings({"unchecked"})
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
     Map<String, Object> initArgs;
@@ -908,6 +914,7 @@ public class CoreContainer {
   /**
    * Make sure securityConfHandler is initialized
    */
+  @SuppressWarnings({"unchecked"})
   private void reloadSecurityProperties() {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
@@ -1607,7 +1614,7 @@ public class CoreContainer {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
         if (!success && newCore != null && newCore.getOpenCount() > 0) {
@@ -1841,6 +1848,7 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
+  @SuppressWarnings({"rawtypes"})
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
     T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
@@ -1887,6 +1895,7 @@ public class CoreContainer {
     return cfg.getManagementPath();
   }
 
+  @SuppressWarnings({"rawtypes"})
   public LogWatcher getLogging() {
     return logging;
   }

@@ -15,31 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.export;
-
-interface LongComp {
-  int compare(long a, long b);
-  long resetValue();
-}
-
-class LongAsc implements LongComp {
-
-  public long resetValue() {
-    return Long.MAX_VALUE;
-  }
-
-  public int compare(long a, long b) {
-    return Long.compare(b, a);
-  }
-}
-
-class LongDesc implements LongComp {
-
-  public long resetValue() {
-    return Long.MIN_VALUE;
-  }
-
-  public int compare(long a, long b) {
-    return Long.compare(a, b);
-  }
-}
+/**
+ * Components from the Lucene 8.4 index format.  See {@link org.apache.lucene.codecs.lucene86}
+ * for an overview of the current index format.
+ */
+package org.apache.lucene.codecs.lucene84;

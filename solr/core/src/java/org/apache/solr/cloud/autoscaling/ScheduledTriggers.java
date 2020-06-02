@@ -320,6 +320,7 @@ public class ScheduledTriggers implements Closeable {
 
               ActionContext actionContext = new ActionContext(cloudManager, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
+                @SuppressWarnings({"unchecked"})
                 List<String> beforeActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
                 triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.BEFORE_ACTION, action.getName(), actionContext);
@@ -329,6 +330,7 @@ public class ScheduledTriggers implements Closeable {
                   triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
                   throw new TriggerActionException(event.getSource(), action.getName(), "Error processing action for trigger event: " + event, e);
                 }
+                @SuppressWarnings({"unchecked"})
                 List<String> afterActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.AFTER_ACTION.toString(), k -> new ArrayList<String>());
                 afterActions.add(action.getName());
                 triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
@@ -428,6 +430,7 @@ public class ScheduledTriggers implements Closeable {
               String path = parentPath + '/' + child;
               VersionedData data = stateManager.getData(path, null);
               if (data != null) {
+                @SuppressWarnings({"rawtypes"})
                 Map map = (Map) Utils.fromJSON(data.getData());
                 String requestid = (String) map.get("requestid");
                 try {

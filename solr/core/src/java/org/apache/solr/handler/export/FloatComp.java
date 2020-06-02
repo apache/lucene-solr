@@ -14,22 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene70;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
+package org.apache.solr.handler.export;
 
-public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
+interface FloatComp {
+  int compare(float a, float b);
 
-  @Override
-  protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
+  float resetValue();
+
+  static class FloatAsc implements FloatComp {
+    public float resetValue() {
+      return Float.MAX_VALUE;
+    }
+
+    public int compare(float a, float b) {
+      return Float.compare(b, a);
+    }
   }
 
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+  static class FloatDesc implements FloatComp {
+    public float resetValue() {
+      return -Float.MAX_VALUE;
+    }
+
+    public int compare(float a, float b) {
+      return Float.compare(a, b);
+    }
   }
 }

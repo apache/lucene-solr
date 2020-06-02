@@ -31,7 +31,7 @@ public class VarianceAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -56,7 +56,7 @@ public class VarianceAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new VarianceSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.VarianceSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -64,7 +64,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetDoubleMerger {
+  private static class Merger extends FacetModule.FacetDoubleMerger {
     long count;
     double sumSq;
     double sum;
@@ -89,9 +89,9 @@ public class VarianceAgg extends SimpleAggValueSource {
     }    
   }
 
-  class VarianceSortedNumericAcc extends SDVSortedNumericAcc {
+  class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
-    public VarianceSortedNumericAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -101,9 +101,9 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  class VarianceSortedSetAcc extends SDVSortedSetAcc {
+  class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
-    public VarianceSortedSetAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -113,9 +113,9 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
   }
 
-  class VarianceUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
+  class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
-    public VarianceUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public VarianceUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
     }
 

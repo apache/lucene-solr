@@ -36,7 +36,7 @@ public abstract class UnInvertedFieldAcc extends SlotAcc implements UnInvertedFi
   UnInvertedField.DocToTerm docToTerm;
   SchemaField sf;
 
-  public UnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+  public UnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
     super(fcontext);
     this.sf = sf;
     uif = UnInvertedField.getUnInvertedField(sf.getName(), fcontext.qcontext.searcher());
@@ -51,109 +51,111 @@ public abstract class UnInvertedFieldAcc extends SlotAcc implements UnInvertedFi
       docToTerm = null;
     }
   }
-}
 
-abstract class DoubleUnInvertedFieldAcc extends UnInvertedFieldAcc {
-  double[] result;
-  int currentSlot;
-  double initialValue;
 
-  public DoubleUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
-    super(fcontext, sf, numSlots);
-    result = new double[numSlots];
-    if (initialValue != 0) {
-      this.initialValue = initialValue;
+  abstract static class DoubleUnInvertedFieldAcc extends UnInvertedFieldAcc {
+    double[] result;
+    int currentSlot;
+    double initialValue;
+
+    public DoubleUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
+      super(fcontext, sf, numSlots);
+      result = new double[numSlots];
+      if (initialValue != 0) {
+        this.initialValue = initialValue;
+        Arrays.fill(result, initialValue);
+      }
+    }
+
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      this.currentSlot = slot;
+      docToTerm.getBigTerms(doc + currentDocBase, this);
+      docToTerm.getSmallTerms(doc + currentDocBase, this);
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(result[slotA], result[slotB]);
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      return result[slotNum];
+    }
+
+    @Override
+    public void reset() throws IOException {
       Arrays.fill(result, initialValue);
     }
-  }
 
-  @Override
-  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    this.currentSlot = slot;
-    docToTerm.getBigTerms(doc + currentDocBase, this);
-    docToTerm.getSmallTerms(doc + currentDocBase, this);
-  }
-
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(result[slotA], result[slotB]);
-  }
-
-  @Override
-  public Object getValue(int slotNum) throws IOException {
-    return result[slotNum];
-  }
-
-  @Override
-  public void reset() throws IOException {
-    Arrays.fill(result, initialValue);
-  }
-
-  @Override
-  public void resize(Resizer resizer) {
-    resizer.resize(result, initialValue);
-  }
-}
-
-/**
- * Base accumulator to compute standard deviation and variance for uninvertible fields
- */
-abstract class SDVUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
-  int[] counts;
-  double[] sum;
-
-  public SDVUnInvertedFieldAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
-    super(fcontext, sf, numSlots, 0);
-    this.counts = new int[numSlots];
-    this.sum = new double[numSlots];
-  }
-
-  @Override
-  public void call(int termNum) {
-    try {
-      BytesRef term = docToTerm.lookupOrd(termNum);
-      Object obj = sf.getType().toObject(sf, term);
-      double val = obj instanceof Date ? ((Date)obj).getTime(): ((Number)obj).doubleValue();
-      result[currentSlot] += val * val;
-      sum[currentSlot]+= val;
-      counts[currentSlot]++;
-    } catch (IOException e) {
-      // find a better way to do it
-      throw new UncheckedIOException(e);
+    @Override
+    public void resize(Resizer resizer) {
+    this.result = resizer.resize(result, initialValue);
     }
   }
 
-  protected abstract double computeVal(int slot);
+  /**
+   * Base accumulator to compute standard deviation and variance for uninvertible fields
+   */
+  abstract static class SDVUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
+    int[] counts;
+    double[] sum;
 
-  @Override
-  public int compare(int slotA, int slotB) {
-    return Double.compare(computeVal(slotA), computeVal(slotB));
-  }
-
-  @Override
-  public Object getValue(int slot) {
-    if (fcontext.isShard()) {
-      ArrayList lst = new ArrayList(3);
-      lst.add(counts[slot]);
-      lst.add(result[slot]);
-      lst.add(sum[slot]);
-      return lst;
-    } else {
-      return computeVal(slot);
+    public SDVUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+      this.counts = new int[numSlots];
+      this.sum = new double[numSlots];
     }
-  }
 
-  @Override
-  public void reset() throws IOException {
-    super.reset();
-    Arrays.fill(counts, 0);
-    Arrays.fill(sum, 0);
-  }
+    @Override
+    public void call(int termNum) {
+      try {
+        BytesRef term = docToTerm.lookupOrd(termNum);
+        Object obj = sf.getType().toObject(sf, term);
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
+        result[currentSlot] += val * val;
+        sum[currentSlot] += val;
+        counts[currentSlot]++;
+      } catch (IOException e) {
+        // find a better way to do it
+        throw new UncheckedIOException(e);
+      }
+    }
 
-  @Override
-  public void resize(Resizer resizer) {
-    super.resize(resizer);
-    resizer.resize(counts, 0);
-    resizer.resize(sum, 0);
+    protected abstract double computeVal(int slot);
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(computeVal(slotA), computeVal(slotB));
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+        ArrayList lst = new ArrayList(3);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        lst.add(sum[slot]);
+        return lst;
+      } else {
+        return computeVal(slot);
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      Arrays.fill(counts, 0);
+      Arrays.fill(sum, 0);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+    this.counts = resizer.resize(counts, 0);
+    this.sum = resizer.resize(sum, 0);
+    }
   }
 }

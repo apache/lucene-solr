@@ -54,6 +54,8 @@ ext {
     }
     return m[0][1] as int
   }
+  // snapshot build marker used in scripts.
+  snapshotBuild = version.contains("SNAPSHOT")
 
   // Build timestamp.
   def tstamp = ZonedDateTime.now()
@@ -115,6 +117,7 @@ apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/missing-docs-check.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
+apply from: file('gradle/validation/check-broken-links.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')

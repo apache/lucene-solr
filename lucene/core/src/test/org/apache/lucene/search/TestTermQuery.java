@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
@@ -47,9 +48,13 @@ public class TestTermQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(
         new TermQuery(new Term("foo", "bar")),
         new TermQuery(new Term("foo", "baz")));
+    final CompositeReaderContext context;
+    try (MultiReader multiReader = new MultiReader()) {
+      context = multiReader.getContext();
+    }
     QueryUtils.checkEqual(
         new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "bar"), TermStates.build(new MultiReader().getContext(), new Term("foo", "bar"), true)));
+        new TermQuery(new Term("foo", "bar"), TermStates.build(context, new Term("foo", "bar"), true)));
   }
 
   public void testCreateWeightDoesNotSeekIfScoresAreNotNeeded() throws IOException {

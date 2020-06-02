@@ -46,7 +46,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   SortedSetDocValues si;  // only used for term lookups (for both single and multi-valued)
   OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
 
-  FacetFieldProcessorByArrayDV(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByArrayDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     multiValuedField = sf.multiValued() || sf.getType().multiValuedFieldCache();
   }
