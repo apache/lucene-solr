@@ -48,7 +48,10 @@ import org.slf4j.LoggerFactory;
  */
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory implements UpdateRequestProcessorFactory.RunAlways {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
+  //delete query logger
+  private static final Logger deleteLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass()+ ".delete") ;
+
   int maxNumToLog = 10;
   int slowUpdateThresholdMillis = -1;
   @Override
@@ -65,7 +68,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     return (log.isInfoEnabled() || slowUpdateThresholdMillis >= 0) ?
         new LogUpdateProcessor(req, rsp, this, next) : next;
   }
-  
+
   static class LogUpdateProcessor extends UpdateRequestProcessor {
 
     private final SolrQueryRequest req;
@@ -95,7 +98,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
       this.toLog = new SimpleOrderedMap<>();
     }
-    
+
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       if (logDebug) {
@@ -200,10 +203,21 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
         log.info(getLogStringAndClearRspToLog());
       }
 
+      if (deleteLog.isInfoEnabled()) {
+        deleteLog.info(getLogStringAndClearRspToLog());
+      }
+
       if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
         final long elapsed = (long) req.getRequestTimer().getTime();
         if (elapsed >= slowUpdateThresholdMillis) {
           log.warn("slow: {}", getLogStringAndClearRspToLog());
+        }
+      }
+
+      if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
+        final long elapsed = (long) req.getRequestTimer().getTime();
+        if (elapsed >= slowUpdateThresholdMillis) {
+          deleteLog.warn("slow: " + getLogStringAndClearRspToLog());
         }
       }
     }
@@ -227,6 +241,3 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     }
   }
 }
-
-
-
