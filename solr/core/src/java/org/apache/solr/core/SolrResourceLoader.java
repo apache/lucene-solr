@@ -505,13 +505,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
   }
 
-  static final String empty[] = new String[0];
+  static final String[] empty = new String[0];
 
   @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
     return newInstance(name, expectedType, empty);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static final Class[] NO_CLASSES = new Class[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
@@ -519,6 +520,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
@@ -687,12 +689,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Keep a list of classes that are allowed to implement each 'Aware' interface
    */
+  @SuppressWarnings({"rawtypes"})
   private static final Map<Class, Class[]> awareCompatibility;
 
   static {
     awareCompatibility = new HashMap<>();
     awareCompatibility.put(
-        SolrCoreAware.class, new Class[]{
+        SolrCoreAware.class, new Class<?>[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CodecFactory.class,
@@ -708,7 +711,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     );
 
     awareCompatibility.put(
-        ResourceLoaderAware.class, new Class[]{
+        ResourceLoaderAware.class, new Class<?>[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CharFilterFactory.class,
@@ -723,6 +726,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Utility function to throw an exception if the class is invalid
    */
+  @SuppressWarnings({"rawtypes"})
   public static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {

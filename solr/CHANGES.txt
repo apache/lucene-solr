@@ -269,6 +269,9 @@ Other Changes
 * SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
 
 * SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
+
+* SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
