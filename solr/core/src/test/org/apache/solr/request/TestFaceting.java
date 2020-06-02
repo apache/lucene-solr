@@ -935,7 +935,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testFacetCountsWithMinExactHits() throws Exception {
+  public void testFacetCountsWithMinExactCount() throws Exception {
     final int NUM_DOCS = 20;
     for (int i = 0; i < NUM_DOCS ; i++) {
       assertU(adoc("id", String.valueOf(i), "title_ws", "Book1"));
@@ -950,8 +950,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
         ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']");
     
-    // It doesn't matter if we request minExactHits, when requesting facets, the numFound value is precise
-    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2"),
+    // It doesn't matter if we request minExactCount, when requesting facets, the numFound value is precise
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2"),
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1'][.='20']"
         ,"//*[@numFoundExact='true']"
         ,"//*[@numFound='" + NUM_DOCS + "']");

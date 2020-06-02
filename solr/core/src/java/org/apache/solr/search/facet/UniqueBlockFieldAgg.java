@@ -27,7 +27,7 @@ public class UniqueBlockFieldAgg extends UniqueBlockAgg {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     final String fieldName = getArg();
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(fieldName);
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {

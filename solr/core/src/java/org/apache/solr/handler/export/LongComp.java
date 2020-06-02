@@ -17,27 +17,30 @@
 
 package org.apache.solr.handler.export;
 
-interface DoubleComp {
-  int compare(double a, double b);
-  double resetValue();
-}
+interface LongComp {
+  int compare(long a, long b);
 
-class DoubleAsc implements DoubleComp {
-  public double resetValue() {
-    return Double.MAX_VALUE;
+  long resetValue();
+
+  static class LongAsc implements LongComp {
+
+    public long resetValue() {
+      return Long.MAX_VALUE;
+    }
+
+    public int compare(long a, long b) {
+      return Long.compare(b, a);
+    }
   }
 
-  public int compare(double a, double b) {
-    return Double.compare(b, a);
-  }
-}
+  static class LongDesc implements LongComp {
 
-class DoubleDesc implements DoubleComp {
-  public double resetValue() {
-    return -Double.MAX_VALUE;
-  }
+    public long resetValue() {
+      return Long.MIN_VALUE;
+    }
 
-  public int compare(double a, double b) {
-    return Double.compare(a, b);
+    public int compare(long a, long b) {
+      return Long.compare(a, b);
+    }
   }
 }

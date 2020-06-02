@@ -37,7 +37,7 @@ public class QueryCommand {
   private int supersetMaxDoc;
   private int flags;
   private long timeAllowed = -1;
-  private int minExactHits = Integer.MAX_VALUE;
+  private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   
   public CursorMark getCursorMark() {
@@ -184,12 +184,12 @@ public class QueryCommand {
     return this;
   }
 
-  public int getMinExactHits() {
-    return minExactHits;
+  public int getMinExactCount() {
+    return minExactCount;
   }
 
-  public QueryCommand setMinExactHits(int hits) {
-    this.minExactHits = hits;
+  public QueryCommand setMinExactCount(int count) {
+    this.minExactCount = count;
     return this;
   }
   

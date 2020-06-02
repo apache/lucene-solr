@@ -1016,7 +1016,7 @@ public class ZkController implements Closeable {
         log.warn("Unable to read autoscaling.json", e1);
       }
       if (createNodes) {
-        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", cloudManager.getTimeSource().getEpochTimeNs()));
+        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", getSolrCloudManager().getTimeSource().getEpochTimeNs()));
         for (String n : oldNodes) {
           String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
 
