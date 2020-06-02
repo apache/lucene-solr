@@ -403,6 +403,11 @@ class CSVWriter extends TabularResponseWriter {
   }
 
   @Override
+  public void writeByteString(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
   public void writeLong(String name, String val) throws IOException {
     printer.print(val, false);
   }

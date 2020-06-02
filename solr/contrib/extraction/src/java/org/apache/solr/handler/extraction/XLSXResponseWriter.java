@@ -330,7 +330,12 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   @Override
-  public void writeDate(String name, String val) throws IOException {
+  public void writeByteString(String name, String val) throws IOException {
+    wb.writeCell(val);
+  }
+
+  @Override
+  public void writeDate(String name, Date val) throws IOException {
     wb.writeCell(val);
   }
 }

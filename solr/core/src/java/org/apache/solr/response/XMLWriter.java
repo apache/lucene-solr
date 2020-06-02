@@ -337,6 +337,11 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeByteString(String name, String val) throws IOException {
+    writePrim("bytestring",name,val,false);
+  }
+
+  @Override
   public void writeLong(String name, String val) throws IOException {
     writePrim("long",name,val,false);
   }

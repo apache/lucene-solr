@@ -180,6 +180,12 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
+  public void writeByteString(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("bytestring");
+    super.writeByteString(name, val);
+  }
+
+  @Override
   public void writeFloat(String name, String val) throws IOException {
     ifNeededWriteTypeAndValueKey("float");
     super.writeFloat(name, val);
