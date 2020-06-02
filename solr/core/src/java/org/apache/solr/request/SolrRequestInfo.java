@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class SolrRequestInfo {
 
-  protected final static int MAX_STACK_SIZE = 150;
+  protected final static int MAX_STACK_SIZE = 10;
 
   protected final static ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(LinkedList::new);
 
@@ -86,10 +86,12 @@ public class SolrRequestInfo {
   /** Removes all the SolrRequestInfos from the stack */
   public static void reset() {
     Deque<SolrRequestInfo> stack = threadLocal.get();
+    boolean isEmpty = stack.isEmpty();
     while (!stack.isEmpty()) {
       SolrRequestInfo info = stack.pop();
       closeHooks(info);
     }
+    assert isEmpty : "SolrRequestInfo Stack should have been cleared.";
   }
 
   private static void closeHooks(SolrRequestInfo info) {
@@ -201,7 +203,6 @@ public class SolrRequestInfo {
       public void set(AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
-          ctx.set(null);
           SolrRequestInfo.setRequestInfo(me);
         }
       }
@@ -211,6 +212,7 @@ public class SolrRequestInfo {
         if (ctx.get() != null) {
           SolrRequestInfo.clearRequestInfo();
         }
+        SolrRequestInfo.reset();
       }
     };
   }

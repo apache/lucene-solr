@@ -145,6 +145,8 @@ public class HttpSolrCall {
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
   public static final Random random;
+
+  private boolean pushedSolrRequestInfo = false;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -413,6 +415,7 @@ public class HttpSolrCall {
         if (path.equals("/schema") || path.startsWith("/schema/")) {
           solrReq = parser.parse(core, path, req);
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+          pushedSolrRequestInfo = true;
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
@@ -563,6 +566,7 @@ public class HttpSolrCall {
           return RETURN;
         case REMOTEQUERY:
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
+          pushedSolrRequestInfo = true;
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -579,6 +583,7 @@ public class HttpSolrCall {
                * Content-Type)
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+            pushedSolrRequestInfo = true;
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
@@ -651,7 +656,9 @@ public class HttpSolrCall {
       try {
         if (core != null) core.close();
       } finally {
-        SolrRequestInfo.clearRequestInfo();
+        if (pushedSolrRequestInfo) {
+          SolrRequestInfo.clearRequestInfo();
+        }
       }
       AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
       if (authcPlugin != null) authcPlugin.closeRequest();
