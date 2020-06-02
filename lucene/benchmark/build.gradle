@@ -21,43 +21,41 @@ apply plugin: 'java'
 description = 'System for benchmarking Lucene'
 
 dependencies {  
-  compile project(':lucene:core')
+  implementation project(':lucene:core')
 
-  compile project(':lucene:analysis:common')
-  compile project(':lucene:facet')
-  compile project(':lucene:highlighter')
-  compile project(':lucene:queries')
-  compile project(':lucene:spatial-extras')
-  compile project(':lucene:queryparser')
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:facet')
+  implementation project(':lucene:highlighter')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:spatial-extras')
+  implementation project(':lucene:queryparser')
 
-  compile "org.apache.commons:commons-compress"
-  compile "com.ibm.icu:icu4j"
-  compile "org.locationtech.spatial4j:spatial4j"
-  compile("net.sourceforge.nekohtml:nekohtml", {
+  implementation "org.apache.commons:commons-compress"
+  implementation "com.ibm.icu:icu4j"
+  implementation "org.locationtech.spatial4j:spatial4j"
+  implementation("net.sourceforge.nekohtml:nekohtml", {
     exclude module: "xml-apis"
   })
 
-  runtime project(':lucene:analysis:icu')
+  runtimeOnly project(':lucene:analysis:icu')
 
-  testCompile project(':lucene:test-framework')
+  testImplementation project(':lucene:test-framework')
 }
 
-ext {
-  tempDir = file("temp")
-  workDir = file("work")
-}
+def tempDir = file("temp")
+def workDir = file("work")
 
 task run(type: JavaExec) {
   description "Run a perf test (optional: -PtaskAlg=conf/your-algorithm-file -PmaxHeapSize=1G)"
   main 'org.apache.lucene.benchmark.byTask.Benchmark'
   classpath sourceSets.main.runtimeClasspath
   // allow these to be specified on the CLI via -PtaskAlg=  for example
-  def taskAlg = project.properties['taskAlg'] ?: 'conf/micro-standard.alg'
+  def taskAlg = propertyOrDefault('taskAlg', 'conf/micro-standard.alg')
   args = [taskAlg]
 
-  maxHeapSize = project.properties['maxHeapSize'] ?: '1G'
+  maxHeapSize = propertyOrDefault('maxHeapSize', '1G')
 
-  String stdOutStr = project.properties['standardOutput']
+  String stdOutStr = propertyOrDefault('standardOutput', null)
   if (stdOutStr != null) {
     standardOutput = new File(stdOutStr).newOutputStream()
   }
@@ -75,66 +73,39 @@ perl -CSD scripts/collation.bm2jira.pl work/collation.benchmark.output.txt
  */
 
 /* Old "shingle" Ant target:
-gradle reuters run -PtaskAlg=conf/shingle.alg -PstandardOutput=work/shingle.benchmark.output.txt
+gradle getReuters run -PtaskAlg=conf/shingle.alg -PstandardOutput=work/shingle.benchmark.output.txt
 perl -CSD scripts/shingle.bm2jira.pl work/shingle.benchmark.output.txt
  */
 
 // The remaining tasks just get / extract / prepare data
 
 task getEnWiki(type: Download) {
-  src "https://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
-  dest file("$tempDir/${src.file.split('/').last()}")
+  def finalName = "enwiki-20070527-pages-articles.xml"
+  src "https://home.apache.org/~dsmiley/data/" + finalName + ".bz2"
+  dest file("$tempDir/" + finalName + ".bz2")
   overwrite false
   compress false
 
   doLast {
-    ant.bunzip2(src: dest, dest: tempDir) // will chop off .bz2
+    ant.bunzip2(src: dest, dest: tempDir)
   }
+  outputs.file file("$tempDir/$finalName")
 }
 
 task getGeoNames(type: Download) {
   // note: latest data is at: https://download.geonames.org/export/dump/allCountries.zip
   //       and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
   //       and then compress with: bzip2 -9 -k file_random.txt
-  src "https://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
-  dest file("$tempDir/${src.file.split('/').last()}")
+  def finalName = "geonames_20130921_randomOrder_allCountries.txt"
+  src "https://home.apache.org/~dsmiley/data/" + finalName + ".bz2"
+  dest file("$tempDir/" + finalName + ".bz2")
   overwrite false
   compress false
 
   doLast {
     ant.bunzip2(src: dest, dest: tempDir) // will chop off .bz2
   }
-}
-
-task getReuters(type: Download) {
-  // note: there is no HTTPS url and we don't care because this is merely test/perf data
-  src "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
-  dest file("$tempDir/${src.file.split('/').last()}")
-  overwrite false
-  compress false
-}
-task extractReuters(type: Copy) {
-  dependsOn getReuters
-  from(tarTree(getReuters.dest)) { // can expand a .gz on the fly
-    exclude '*.txt'
-  }
-  into file("$workDir/reuters")
-}
-task reuters(type: JavaExec) {
-  dependsOn extractReuters
-  def input = extractReuters.outputs.files[0]
-  def output = "$workDir/reuters-out"
-  inputs.dir(input)
-  outputs.dir(output)
-  main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
-  classpath = sourceSets.main.runtimeClasspath
-  jvmArgs = ['-Xmx1G']
-  args = [input, output]
-
-  doFirst {
-    file(output).deleteDir()
-    println "Extracting reuters to $output"
-  }
+  outputs.file file("$tempDir/$finalName")
 }
 
 task getTop100kWikiWordFiles(type: Download) {
@@ -143,10 +114,44 @@ task getTop100kWikiWordFiles(type: Download) {
   overwrite false
   compress false
 
+  def finalPath = file("$workDir/top100k-out")
+
   doLast {
-    copy {
+    project.sync {
       from tarTree(dest) // defined above.  Will decompress on the fly
-      into file("$workDir/top100k-out")
+      into finalPath
     }
   }
+  outputs.dir finalPath
+}
+
+task getReuters(type: Download) {
+  // note: there is no HTTPS url and we don't care because this is merely test/perf data
+  src "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
+  dest file("$tempDir/${src.file.split('/').last()}")
+  overwrite false
+  compress false
+
+  def untarPath = file("$workDir/reuters")
+  def finalPath = file("$workDir/reuters-out")
+  dependsOn sourceSets.main.runtimeClasspath
+
+  doLast {
+    project.sync {
+      from(tarTree(dest)) { // defined above.  Will decompress on the fly
+        exclude '*.txt'
+      }
+      into untarPath
+    }
+    println "Extracting reuters to $finalPath"
+    finalPath.deleteDir() // necessary
+    // TODO consider porting ExtractReuters to groovy?
+    project.javaexec {
+      main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
+      classpath = sourceSets.main.runtimeClasspath
+      maxHeapSize = '1G'
+      args = [untarPath, finalPath]
+    }
+  }
+  outputs.dir finalPath
 }
