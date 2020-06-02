@@ -69,6 +69,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   final Replica.Type type;
   Put put;
   boolean strict;
+  DataGrouping dataGrouping;
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
@@ -84,10 +85,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hasComputedValue = clause.hasComputedValue;
     this.strict = clause.strict;
     derivedFrom = clause.derivedFrom;
+    this.dataGrouping =clause.dataGrouping;
   }
 
   // internal use only
-  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent) {
+  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent, DataGrouping dataGrouping) {
     this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
@@ -145,6 +147,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
     doPostValidate(collection, shard, replica, tag, globalTag);
     hasComputedValue = hasComputedValue();
+
+    if(globalTag != null || tag.name.equals("node")){
+      dataGrouping = DataGrouping.NODE;
+    } else if(shard.val.toString().equals(ANY)){
+      dataGrouping = DataGrouping.COLL;
+    } else {
+      dataGrouping = DataGrouping.SHARD;
+    }
+
   }
 
   private boolean parseNodeset(Map<String, Object> m) {
@@ -660,17 +671,23 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public List<Violation> test(Policy.Session session, double[] deviations) {
     if (isPerCollectiontag()) {
       if(nodeSetPresent) {
-        if(put == Put.ON_EACH){
+        if(put == Put.ON_EACH) {
           return testPerNode(session, deviations) ;
         } else {
-          return testGroupNodes(session, deviations);
+          return session.perClauseData.computeViolations(session, this);
+          //return testGroupNodes(session, deviations);
         }
       }
+
+      if(tag.varType == Type.NODE){
+        return session.perClauseData.computeViolations(session, this);
+      }
+
 
       return tag.varType == Type.NODE ||
           (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
           testPerNode(session, deviations) :
-          testGroupNodes(session, deviations);
+         testGroupNodes(session, deviations);
     } else {
       ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
       Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
@@ -825,6 +842,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       }
       return null;
     }
+  }
+
+  enum DataGrouping {
+    COLL, SHARD, NODE,GLOBAL;
   }
 
 }
