@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene80;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
@@ -766,8 +768,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     private final IndexInput compressedData;
     // Cache of last uncompressed block 
     private long lastBlockId = -1;
-    private final int []uncompressedDocStarts;
-    private int uncompressedBlockLength = 0;        
+    private final long[] deltas;
+    private int uncompressedBlockLength;  
+    private int avgLength;
     private final byte[] uncompressedBlock;
     private final BytesRef uncompressedBytesRef;
     private final int docsPerChunk;
@@ -782,8 +785,104 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       uncompressedBytesRef = new BytesRef(uncompressedBlock);
       this.docsPerChunk = 1 << docsPerChunkShift;
       this.docsPerChunkShift = docsPerChunkShift;
-      uncompressedDocStarts = new int[docsPerChunk + 1];
+      deltas = new long[docsPerChunk];
+    }
+
+    private void decode32Bytes(long[] arr) {
+      for (int i = 0; i < 4; ++i) {
+        long l = arr[i];
+        arr[i] = (l >>> 56) & 0xFFL;
+        arr[4+i] = (l >>> 48) & 0xFFL;
+        arr[8+i] = (l >>> 40) & 0xFFL;
+        arr[12+i] = (l >>> 32) & 0xFFL;
+        arr[16+i] = (l >>> 24) & 0xFFL;
+        arr[20+i] = (l >>> 16) & 0xFFL;
+        arr[24+i] = (l >>> 8) & 0xFFL;
+        arr[28+i] = l & 0xFFL;
+      }
+    }
+
+    private void decode32Ints(long[] arr) {
+      for (int i = 0; i < 16; ++i) {
+        long l = arr[i];
+        arr[i] = l >>> 32;
+        arr[16 + i] = l & 0xFFFFFFFFL;
+      }
+    }
+
+    private void decodeBlock(int blockId) throws IOException {
+      long blockStartOffset = addresses.get(blockId);
+      compressedData.seek(blockStartOffset);
+
+      final long token = compressedData.readVLong();
+      uncompressedBlockLength = (int) (token >>> 6);
+      avgLength = uncompressedBlockLength >>> docsPerChunkShift;
+      final int numBits = (int) (token & 0x3f);
+      if (numBits > 8) {
+        compressedData.readLELongs(deltas, 0, 16);
+        decode32Ints(deltas);
+      } else if (numBits != 0) {
+        compressedData.readLELongs(deltas, 0, 4);
+        decode32Bytes(deltas);
+      } else {
+        Arrays.fill(deltas, 0);
+      }
+
+      if (uncompressedBlockLength == 0) {
+        uncompressedBytesRef.offset = 0;
+        uncompressedBytesRef.length = 0;
+      } else {
+        assert uncompressedBlockLength <= uncompressedBlock.length;
+        LZ4.decompress(compressedData, uncompressedBlockLength, uncompressedBlock);
+      }
+    }
+
+    BytesRef decode(int docNumber) throws IOException {
+      int blockId = docNumber >> docsPerChunkShift; 
+      int docInBlockId = docNumber % docsPerChunk;
+      assert docInBlockId < docsPerChunk;
       
+      
+      // already read and uncompressed?
+      if (blockId != lastBlockId) {
+        decodeBlock(blockId);
+        lastBlockId = blockId;
+      }
+
+      if (docInBlockId == 0) {
+        uncompressedBytesRef.offset = 0;
+      } else {
+        uncompressedBytesRef.offset = avgLength * docInBlockId + (int) BitUtil.zigZagDecode(deltas[docInBlockId-1]);
+      }
+      uncompressedBytesRef.length = avgLength * (docInBlockId+1) + (int) BitUtil.zigZagDecode(deltas[docInBlockId]) - uncompressedBytesRef.offset;
+      return uncompressedBytesRef;
+    }    
+  }
+
+  // Old decoding logic, that used delta compression with vints
+  class LegacyBinaryDecoder {
+    
+    private final LongValues addresses;
+    private final IndexInput compressedData;
+    // Cache of last uncompressed block 
+    private long lastBlockId = -1;
+    private final int []uncompressedDocStarts;
+    private int uncompressedBlockLength = 0;        
+    private final byte[] uncompressedBlock;
+    private final BytesRef uncompressedBytesRef;
+    private final int docsPerChunk;
+    private final int docsPerChunkShift;
+    
+    public LegacyBinaryDecoder(LongValues addresses, IndexInput compressedData, int biggestUncompressedBlockSize, int docsPerChunkShift) {
+      super();
+      this.addresses = addresses;
+      this.compressedData = compressedData;
+      // pre-allocate a byte array large enough for the biggest uncompressed block needed.
+      this.uncompressedBlock = new byte[biggestUncompressedBlockSize];
+      uncompressedBytesRef = new BytesRef(uncompressedBlock);
+      this.docsPerChunk = 1 << docsPerChunkShift;
+      this.docsPerChunkShift = docsPerChunkShift;
+      uncompressedDocStarts = new int[docsPerChunk + 1];
     }
 
 
@@ -840,7 +939,6 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       return uncompressedBytesRef;
     }    
   }
-  
 
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
@@ -856,28 +954,50 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       // dense
       final RandomAccessInput addressesData = this.data.randomAccessSlice(entry.addressesOffset, entry.addressesLength);
       final LongValues addresses = DirectMonotonicReader.getInstance(entry.addressesMeta, addressesData);
-      return new DenseBinaryDocValues(maxDoc) {
-        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
+      if (version < Lucene80DocValuesFormat.VERSION_BIN_LEN_COMPRESSED) {
+        return new DenseBinaryDocValues(maxDoc) {
+          LegacyBinaryDecoder decoder = new LegacyBinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
 
-        @Override
-        public BytesRef binaryValue() throws IOException {          
-          return decoder.decode(doc);
-        }
-      };
+          @Override
+          public BytesRef binaryValue() throws IOException {          
+            return decoder.decode(doc);
+          }
+        };
+      } else {
+        return new DenseBinaryDocValues(maxDoc) {
+          BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
+
+          @Override
+          public BytesRef binaryValue() throws IOException {          
+            return decoder.decode(doc);
+          }
+        };
+      }
     } else {
       // sparse
       final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
           entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
       final RandomAccessInput addressesData = this.data.randomAccessSlice(entry.addressesOffset, entry.addressesLength);
       final LongValues addresses = DirectMonotonicReader.getInstance(entry.addressesMeta, addressesData);
-      return new SparseBinaryDocValues(disi) {
-        BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
+      if (version < Lucene80DocValuesFormat.VERSION_BIN_LEN_COMPRESSED) {
+        return new SparseBinaryDocValues(disi) {
+          LegacyBinaryDecoder decoder = new LegacyBinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
 
-        @Override
-        public BytesRef binaryValue() throws IOException {
-          return decoder.decode(disi.index());
-        }
-      };
+          @Override
+          public BytesRef binaryValue() throws IOException {
+            return decoder.decode(disi.index());
+          }
+        };
+      } else {
+        return new SparseBinaryDocValues(disi) {
+          BinaryDecoder decoder = new BinaryDecoder(addresses, data.clone(), entry.maxUncompressedChunkSize, entry.docsPerChunkShift);
+
+          @Override
+          public BytesRef binaryValue() throws IOException {
+            return decoder.decode(disi.index());
+          }
+        };
+      }
     }
   }
 

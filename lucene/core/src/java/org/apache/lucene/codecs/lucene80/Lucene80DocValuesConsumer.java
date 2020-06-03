@@ -47,6 +47,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -365,7 +366,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
-    final int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
+    final long[] docLengths = new long[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
     byte[] block = BytesRef.EMPTY_BYTES;
     int totalChunks = 0;
     long maxPointer = 0;
@@ -399,35 +400,51 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       }      
     }
 
+    private void encode32Bytes(long[] arr) {
+      for (int i = 0; i < 4; ++i) {
+        arr[i] = (arr[i] << 56) | (arr[4+i] << 48) | (arr[8+i] << 40) | (arr[12+i] << 32) | (arr[16+i] << 24) | (arr[20+i] << 16) | (arr[24+i] << 8) | arr[28+i];
+      }
+    }
+
+    private void encode32Ints(long[] arr) {
+      for (int i = 0; i < 16; ++i) {
+        arr[i] = (arr[i] << 32) | arr[16+i];
+      }
+    }
+
     private void flushData() throws IOException {
       if (numDocsInCurrentBlock > 0) {
         // Write offset to this block to temporary offsets file
         totalChunks++;
         long thisBlockStartPointer = data.getFilePointer();
-        
-        // Optimisation - check if all lengths are same
-        boolean allLengthsSame = true;
-        for (int i = 1; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
-          if (docLengths[i] != docLengths[i-1]) {
-            allLengthsSame = false;
-            break;
+
+        final int avgLength = uncompressedBlockLength >>> Lucene80DocValuesFormat.BINARY_BLOCK_SHIFT;
+        int offset = 0;
+        for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
+          offset += docLengths[i];
+          docLengths[i] = BitUtil.zigZagEncode(offset - avgLength * (i + 1));
+        }
+        long maxDelta = 0;
+        for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
+          maxDelta = Math.max(docLengths[i], maxDelta);
+        }
+        int numBits = 64 - Long.numberOfLeadingZeros(maxDelta);
+        assert numBits <= 32;
+        data.writeVLong((((long) uncompressedBlockLength) << 6) | numBits);
+
+        if (numBits > 8) {
+          // encode deltas as ints
+          encode32Ints(docLengths);
+          for (int i = 0; i < 16; ++i) {
+            data.writeLong(Long.reverseBytes(docLengths[i]));
+          }
+        } else if (numBits != 0) {
+          encode32Bytes(docLengths);
+          for (int i = 0; i < 4; ++i) {
+            data.writeLong(Long.reverseBytes(docLengths[i]));
           }
         }
-        if (allLengthsSame) {
-            // Only write one value shifted. Steal a bit to indicate all other lengths are the same
-            int onlyOneLength = (docLengths[0] <<1) | 1;
-            data.writeVInt(onlyOneLength);
-        } else {
-          for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
-            if (i == 0) {
-              // Write first value shifted and steal a bit to indicate other lengths are to follow
-              int multipleLengths = (docLengths[0] <<1);
-              data.writeVInt(multipleLengths);              
-            } else {
-              data.writeVInt(docLengths[i]);
-            }
-          }
-        }
+
         maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
 
         // Compression proved to hurt latency in some cases, so we're only
