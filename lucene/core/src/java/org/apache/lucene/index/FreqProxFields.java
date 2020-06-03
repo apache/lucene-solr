@@ -39,7 +39,7 @@ class FreqProxFields extends Fields {
   public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
     // NOTE: fields are already sorted by field name
     for(FreqProxTermsWriterPerField field : fieldList) {
-      fields.put(field.fieldInfo.name, field);
+      fields.put(field.getFieldName(), field);
     }
   }
 
@@ -99,7 +99,7 @@ class FreqProxFields extends Fields {
   
     @Override
     public boolean hasFreqs() {
-      return terms.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;      
+      return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     }
 
     @Override
@@ -107,7 +107,7 @@ class FreqProxFields extends Fields {
       // NOTE: the in-memory buffer may have indexed offsets
       // because that's what FieldInfo said when we started,
       // but during indexing this may have been downgraded:
-      return terms.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;      
+      return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
   
     @Override
@@ -115,7 +115,7 @@ class FreqProxFields extends Fields {
       // NOTE: the in-memory buffer may have indexed positions
       // because that's what FieldInfo said when we started,
       // but during indexing this may have been downgraded:
-      return terms.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
   
     @Override
@@ -132,7 +132,7 @@ class FreqProxFields extends Fields {
     final int numTerms;
     int ord;
 
-    public FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
+    FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
       this.terms = terms;
       this.numTerms = terms.bytesHash.size();
       sortedTermIDs = terms.sortedTermIDs;

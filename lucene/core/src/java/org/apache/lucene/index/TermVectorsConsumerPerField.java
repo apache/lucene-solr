@@ -20,27 +20,37 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 
 final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   private TermVectorsPostingsArray termVectorsPostingsArray;
 
-  final TermVectorsConsumer termsWriter;
+  private final TermVectorsConsumer termsWriter;
+  private final FieldInvertState fieldState;
+  private final FieldInfo fieldInfo;
 
-  boolean doVectors;
-  boolean doVectorPositions;
-  boolean doVectorOffsets;
-  boolean doVectorPayloads;
+  private boolean doVectors;
+  private boolean doVectorPositions;
+  private boolean doVectorOffsets;
+  private boolean doVectorPayloads;
 
-  OffsetAttribute offsetAttribute;
-  PayloadAttribute payloadAttribute;
-  boolean hasPayloads; // if enabled, and we actually saw any for this field
+  private OffsetAttribute offsetAttribute;
+  private PayloadAttribute payloadAttribute;
+  private TermFrequencyAttribute termFreqAtt;
+  private final ByteBlockPool termBytePool;
 
-  public TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
-    super(2, invertState, termsWriter, null, fieldInfo);
-    this.termsWriter = termsWriter;
+  private boolean hasPayloads; // if enabled, and we actually saw any for this field
+
+  TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsHash, FieldInfo fieldInfo) {
+    super(2, termsHash.intPool, termsHash.bytePool, termsHash.termBytePool, termsHash.bytesUsed, null, fieldInfo.name, fieldInfo.getIndexOptions());
+    this.termsWriter = termsHash;
+    this.fieldInfo = fieldInfo;
+    this.fieldState = invertState;
+    termBytePool = termsHash.termBytePool;
   }
 
   /** Called once per field per document if term vectors
@@ -110,6 +120,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   @Override
   boolean start(IndexableField field, boolean first) {
     super.start(field, first);
+    termFreqAtt = fieldState.termFreqAttribute;
     assert field.fieldType().indexOptions() != IndexOptions.NONE;
 
     if (first) {
@@ -222,7 +233,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   }
 
   @Override
-  void newTerm(final int termID) {
+  void newTerm(final int termID, final int docID) {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID] = getTermFreq();
@@ -233,7 +244,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   }
 
   @Override
-  void addTerm(final int termID) {
+  void addTerm(final int termID, final int docID) {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID] += getTermFreq();
@@ -245,10 +256,10 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     int freq = termFreqAtt.getTermFrequency();
     if (freq != 1) {
       if (doVectorPositions) {
-        throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": cannot index term vector positions while using custom TermFrequencyAttribute");
+        throw new IllegalArgumentException("field \"" + getFieldName() + "\": cannot index term vector positions while using custom TermFrequencyAttribute");
       }
       if (doVectorOffsets) {
-        throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": cannot index term vector offsets while using custom TermFrequencyAttribute");
+        throw new IllegalArgumentException("field \"" + getFieldName() + "\": cannot index term vector offsets while using custom TermFrequencyAttribute");
       }
     }
 
@@ -266,7 +277,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   }
 
   static final class TermVectorsPostingsArray extends ParallelPostingsArray {
-    public TermVectorsPostingsArray(int size) {
+     TermVectorsPostingsArray(int size) {
       super(size);
       freqs = new int[size];
       lastOffsets = new int[size];
