@@ -405,7 +405,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
-      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME));
+      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
     }
     if (dataHomePath != null) {
       log.info("{} = {}", SolrXmlConfig.SOLR_DATA_HOME, dataHomePath);
