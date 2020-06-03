@@ -3169,13 +3169,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           // Resolve "live" SegmentInfos segments to their toCommit cloned equivalents, based on segment name.
           Set<String> mergedSegmentNames = new HashSet<>();
           for (SegmentCommitInfo sci : this.segments) {
-            deleter.decRef(sci.files());
             mergedSegmentNames.add(sci.info.name);
           }
           List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
           for (SegmentCommitInfo sci : toCommit) {
             if (mergedSegmentNames.contains(sci.info.name)) {
               toCommitMergedAwaySegments.add(sci);
+              deleter.decRef(sci.files());
             }
           }
           // Construct a OneMerge that applies to toCommit
@@ -4593,6 +4593,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
         commitMerge(merge, mergeState);
+        success = true;
         return 0;
       }
 
