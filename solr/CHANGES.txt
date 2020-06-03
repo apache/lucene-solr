@@ -21,6 +21,9 @@ New Features
 
 * SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
 
+* SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
+  timeseries Streaming Expressions (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
