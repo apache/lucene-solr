@@ -1082,7 +1082,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
      , "facets=={foo:555}"
      );
      ****/
-    for (String method : new String[]{"","dvhash","stream","uif","enum","stream","smart"}) {
+    for (String method : new String[]{"","dv", "dvhash","stream","uif","enum","stream","smart"}) {
       if (method.equals("")) {
         p.remove("terms");
       } else {
@@ -1362,17 +1362,24 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       );
 
       // test filling in missing "allBuckets"
-      client.testJQ(params(p, "q", "*:*",
+      client.testJQ(params(p, "q", "*:*", 
           "json.facet", "{" +
-              "  cat :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+              "  cat0:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+              ", cat1:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true, allBuckets:true, sort:'min asc', facet:{  min:'min(${num_d})' }  }" +
               ", cat2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true }  }  }" +
-              ", cat3:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{f:'sum(${num_d})'}   }  }  }" +
+              ", cat3:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{sum:'sum(${num_d})'}   }  }  }" +
+              ", cat4:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , sort:'sum asc', facet:{sum:'sum(${num_d})'}   }  }  }" +
+              // using overrefine only so we aren't fooled by 'local maximum' and ask all shards for 'B'
+              ", cat5:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true, overrefine:2, allBuckets:true,  sort:'min desc' facet:{  min:'min(${num_d})', xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true, facet:{sum:'sum(${num_d})'}   }  }  }" +
               "}"
           )
           , "facets=={ count:8" +
-              ", cat:{ allBuckets:{count:8}, buckets:[  {val:A, count:3, xy:{buckets:[{count:2, val:X}], allBuckets:{count:3}}}]  }" +
+              ",cat0:{ allBuckets:{count:8}, buckets:[  {val:A, count:3, xy:{buckets:[{count:2, val:X}], allBuckets:{count:3}}}]  }" +
+              ",cat1:{ allBuckets:{count:8, min:-19.0 }, buckets:[  {val:A, count:4, min:-19.0 }]  }" +
               ",cat2:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X}], allBuckets:{count:4}}}]  }" +
-              ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, f:23.0}], allBuckets:{count:4, f:4.0}}}]  }" +
+              ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, sum:23.0}], allBuckets:{count:4, sum:4.0}}}]  }" +
+              ",cat4:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:1, val:Y, sum:-19.0}], allBuckets:{count:4, sum:4.0}}}]  }" +
+              ",cat5:{ allBuckets:{count:8, min:-19.0 }, buckets:[  {val:B, count:4, min:-11.0, xy:{buckets:[{count:2, val:X, sum:6.0}], allBuckets:{count:4, sum:-2.0}}}]  }" +
               "}"
       );
 
