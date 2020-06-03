@@ -56,18 +56,21 @@ public class SolrRequestInfo {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static SolrRequestInfo getRequestInfo() {
-    if (threadLocal.get().isEmpty()) return null;
-    return threadLocal.get().peek();
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    if (stack.isEmpty()) return null;
+    return stack.peek();
   }
 
   /** Adds the SolrRequestInfo onto the stack provided that the stack is not reached MAX_STACK_SIZE */
   public static void setRequestInfo(SolrRequestInfo info) {
+    Deque<SolrRequestInfo> stack = threadLocal.get();
     if (info == null) {
       throw new IllegalArgumentException("SolrRequestInfo is null");
     } else {
-      if (threadLocal.get().size() <= MAX_STACK_SIZE) {
-        threadLocal.get().push(info);
+      if (stack.size() <= MAX_STACK_SIZE) {
+        stack.push(info);
       } else {
+        assert true : "SolrRequestInfo Stack is full";
         log.error("SolrRequestInfo Stack is full");
       }
     }
@@ -75,15 +78,19 @@ public class SolrRequestInfo {
 
   /** Removes the most recent SolrRequestInfo from the stack */
   public static void clearRequestInfo() {
-    if (threadLocal.get().isEmpty()) {
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    if (stack.isEmpty()) {
       log.error("clearRequestInfo called too many times");
     } else {
-      SolrRequestInfo info = threadLocal.get().pop();
+      SolrRequestInfo info = stack.pop();
       closeHooks(info);
     }
   }
 
-  /** Removes all the SolrRequestInfos from the stack */
+  /**
+   * This reset method is more of a protection mechanism as
+   * we expect it to be empty by now because all "set" calls need to be balanced with a "clear".
+   */
   public static void reset() {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     boolean isEmpty = stack.isEmpty();

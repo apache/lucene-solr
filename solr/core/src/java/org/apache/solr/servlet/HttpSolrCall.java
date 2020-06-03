@@ -146,7 +146,7 @@ public class HttpSolrCall {
 
   public static final Random random;
 
-  private boolean pushedSolrRequestInfo = false;
+  private boolean mustClearSolrRequestInfo = false;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -415,7 +415,7 @@ public class HttpSolrCall {
         if (path.equals("/schema") || path.startsWith("/schema/")) {
           solrReq = parser.parse(core, path, req);
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
-          pushedSolrRequestInfo = true;
+          mustClearSolrRequestInfo = true;
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
@@ -566,7 +566,7 @@ public class HttpSolrCall {
           return RETURN;
         case REMOTEQUERY:
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
-          pushedSolrRequestInfo = true;
+          mustClearSolrRequestInfo = true;
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -583,7 +583,7 @@ public class HttpSolrCall {
                * Content-Type)
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
-            pushedSolrRequestInfo = true;
+            mustClearSolrRequestInfo = true;
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
@@ -656,7 +656,7 @@ public class HttpSolrCall {
       try {
         if (core != null) core.close();
       } finally {
-        if (pushedSolrRequestInfo) {
+        if (mustClearSolrRequestInfo) {
           SolrRequestInfo.clearRequestInfo();
         }
       }
