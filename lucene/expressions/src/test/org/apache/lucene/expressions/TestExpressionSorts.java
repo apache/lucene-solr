@@ -38,6 +38,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -122,18 +123,18 @@ public class TestExpressionSorts extends LuceneTestCase {
     // make our actual sort, mutating original by replacing some of the 
     // sortfields with equivalent expressions
     
-    SortField original[] = sort.getSort();
+    SortOrder original[] = sort.getSort();
     SortField mutated[] = new SortField[original.length];
     for (int i = 0; i < mutated.length; i++) {
       if (random().nextInt(3) > 0) {
-        SortField s = original[i];
-        Expression expr = JavascriptCompiler.compile(s.getField());
+        SortField s = (SortField) original[i];
+        Expression expr = JavascriptCompiler.compile(s.name());
         SimpleBindings simpleBindings = new SimpleBindings();
-        simpleBindings.add(s.getField(), fromSortField(s));
+        simpleBindings.add(s.name(), fromSortField(s));
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         mutated[i] = expr.getSortField(simpleBindings, reverse);
       } else {
-        mutated[i] = original[i];
+        mutated[i] = (SortField) original[i];
       }
     }
     
@@ -151,13 +152,13 @@ public class TestExpressionSorts extends LuceneTestCase {
   private DoubleValuesSource fromSortField(SortField field) {
     switch(field.getType()) {
       case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
+        return DoubleValuesSource.fromIntField(field.name());
       case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
+        return DoubleValuesSource.fromLongField(field.name());
       case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
+        return DoubleValuesSource.fromFloatField(field.name());
       case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
+        return DoubleValuesSource.fromDoubleField(field.name());
       case SCORE:
         return DoubleValuesSource.SCORES;
       default:

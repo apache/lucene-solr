@@ -18,7 +18,7 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TotalHits;
@@ -41,16 +41,16 @@ public class TopGroups<T> {
   public final GroupDocs<T>[] groups;
 
   /** How groups are sorted against each other */
-  public final SortField[] groupSort;
+  public final SortOrder[] groupSort;
 
   /** How docs are sorted within each group */
-  public final SortField[] withinGroupSort;
+  public final SortOrder[] withinGroupSort;
 
   /** Highest score across all hits, or
    *  <code>Float.NaN</code> if scores were not computed. */
   public final float maxScore;
 
-  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<T>[] groups, float maxScore) {
+  public TopGroups(SortOrder[] groupSort, SortOrder[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<T>[] groups, float maxScore) {
     this.groupSort = groupSort;
     this.withinGroupSort = withinGroupSort;
     this.totalHitCount = totalHitCount;

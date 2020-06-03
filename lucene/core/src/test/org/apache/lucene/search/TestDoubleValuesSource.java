@@ -169,33 +169,33 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
   // Take a Sort, and replace any field sorts with Sortables
   Sort convertSortToSortable(Sort sort) {
-    SortField original[] = sort.getSort();
+    SortOrder original[] = sort.getSort();
     SortField mutated[] = new SortField[original.length];
     for (int i = 0; i < mutated.length; i++) {
       if (random().nextInt(3) > 0) {
-        SortField s = original[i];
+        SortField s = (SortField) original[i];
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         switch (s.getType()) {
           case INT:
-            mutated[i] = DoubleValuesSource.fromIntField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromIntField(s.name()).getSortField(reverse);
             break;
           case LONG:
-            mutated[i] = DoubleValuesSource.fromLongField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromLongField(s.name()).getSortField(reverse);
             break;
           case FLOAT:
-            mutated[i] = DoubleValuesSource.fromFloatField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromFloatField(s.name()).getSortField(reverse);
             break;
           case DOUBLE:
-            mutated[i] = DoubleValuesSource.fromDoubleField(s.getField()).getSortField(reverse);
+            mutated[i] = DoubleValuesSource.fromDoubleField(s.name()).getSortField(reverse);
             break;
           case SCORE:
             mutated[i] = DoubleValuesSource.SCORES.getSortField(reverse);
             break;
           default:
-            mutated[i] = original[i];
+            mutated[i] = (SortField) original[i];
         }
       } else {
-        mutated[i] = original[i];
+        mutated[i] = (SortField) original[i];
       }
     }
 

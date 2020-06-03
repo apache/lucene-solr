@@ -44,6 +44,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -465,17 +466,16 @@ public class QueryComponent extends SearchComponent
 
       SortSpec sortSpec = rb.getSortSpec();
       Sort sort = searcher.weightSort(sortSpec.getSort());
-      SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
+      SortOrder[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
       for (int fld = 0; fld < schemaFields.size(); fld++) {
         SchemaField schemaField = schemaFields.get(fld);
         FieldType ft = null == schemaField? null : schemaField.getType();
-        SortField sortField = sortFields[fld];
+        SortOrder sortField = sortFields[fld];
 
-        SortField.Type type = sortField.getType();
         // :TODO: would be simpler to always serialize every position of SortField[]
-        if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
+        if (SortField.isDoc(sortField) || SortField.isScore(sortField)) continue;
 
         FieldComparator<?> comparator = sortField.getComparator(1,0);
         LeafFieldComparator leafComparator = null;
@@ -512,7 +512,7 @@ public class QueryComponent extends SearchComponent
           vals[position] = val;
         }
 
-        sortVals.add(sortField.getField(), vals);
+        sortVals.add(sortField.name(), vals);
       }
       rsp.add("sort_values", sortVals);
     }catch(ExitableDirectoryReader.ExitingReaderException x) {
@@ -827,7 +827,7 @@ public class QueryComponent extends SearchComponent
       Sort sort = ss.getSort();
 
       SortField[] sortFields = null;
-      if(sort != null) sortFields = sort.getSort();
+      if(sort != null) sortFields = (SortField[]) sort.getSort();
       else {
         sortFields = new SortField[]{SortField.FIELD_SCORE};
       }
@@ -1062,14 +1062,14 @@ public class QueryComponent extends SearchComponent
         lastDoc = eachDoc;
       }
     }
-    SortField[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
+    SortOrder[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
     List<Object> nextCursorMarkValues = new ArrayList<>(sortFields.length);
-    for (SortField sf : sortFields) {
-      if (sf.getType().equals(SortField.Type.SCORE)) {
+    for (SortOrder sf : sortFields) {
+      if (SortField.isScore(sf)) {
         nextCursorMarkValues.add(lastDoc.score);
       } else {
-        assert null != sf.getField() : "SortField has null field";
-        List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.getField());
+        assert null != sf.name() : "SortField has null name";
+        List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.name());
         nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
       }
     }
@@ -1086,7 +1086,7 @@ public class QueryComponent extends SearchComponent
     if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
     
     List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-    SortField[] sortFields = sortSpec.getSort().getSort();
+    SortField[] sortFields = (SortField[]) sortSpec.getSort().getSort();
 
     int marshalledFieldNum = 0;
     for (int sortFieldNum = 0; sortFieldNum < sortFields.length; sortFieldNum++) {

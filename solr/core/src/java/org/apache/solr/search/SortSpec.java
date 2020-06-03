@@ -16,13 +16,12 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.solr.schema.SchemaField;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.lucene.search.Sort;
+import org.apache.solr.schema.SchemaField;
 /***
  * SortSpec encapsulates a Lucene Sort and a count of the number of documents
  * to return.
@@ -66,10 +65,7 @@ public class SortSpec
 
   public static boolean includesScore(Sort sort) {
     if (sort==null) return true;
-    for (SortField sf : sort.getSort()) {
-      if (sf.getType() == SortField.Type.SCORE) return true;
-    }
-    return false;
+    return sort.needsScores();
   }
 
   public boolean includesScore() {

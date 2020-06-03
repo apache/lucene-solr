@@ -58,7 +58,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
@@ -2630,7 +2630,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   private static class SortFieldsCompare {
     final private int numClauses;
-    final private SortField[] sorts;
+    final private SortOrder[] sorts;
     final private int[] reverseMul;
     final private FieldComparator[] fieldComparators;
     final private LeafFieldComparator[] leafFieldComparators;
@@ -2642,14 +2642,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used,
      * and an initial number of expected groups (will grow as needed).
      */
-    public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
+    public SortFieldsCompare(SortOrder[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
       fieldComparators = new FieldComparator[numClauses];
       leafFieldComparators = new LeafFieldComparator[numClauses];
       reverseMul = new int[numClauses];
       for (int clause = 0; clause < numClauses; clause++) {
-        SortField sf = sorts[clause];
+        SortOrder sf = sorts[clause];
         // we only need one slot for every comparator
         fieldComparators[clause] = sf.getComparator(1, clause);
         reverseMul[clause] = sf.getReverse() ? -1 : 1;

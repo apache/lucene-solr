@@ -19,7 +19,7 @@ package org.apache.solr.search.join;
 import java.util.Map;
 
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
@@ -94,7 +94,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       assertEq(parse(sortField), parse(sortField2));
     }
     
-    private void assertEq(SortField sortField, SortField sortField2) {
+    private void assertEq(SortOrder sortField, SortOrder sortField2) {
       assertEquals(sortField, sortField2);
       assertEquals(sortField.hashCode(), sortField2.hashCode());
     }
@@ -103,7 +103,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       assertFalse(parse(sortField).equals(parse(sortField2)));
     }
 
-    private SortField parse(String a) {
+    private SortOrder parse(String a) {
         final SolrQueryRequest req = req("q", "{!parent which=type_s1:parent}whatever_s1:foo",
             "q2", "{!parent which=type_s1:parent}nomater_s1:what",
             "notbjq", "foo_s1:bar");
@@ -112,7 +112,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
             req);
         assertNull(spec.getSchemaFields().get(0));
         final Sort sort = spec.getSort();
-        final SortField field = sort.getSort()[0];
+        final SortOrder field = sort.getSort()[0];
         assertNotNull(field);
         return field;
       } finally {

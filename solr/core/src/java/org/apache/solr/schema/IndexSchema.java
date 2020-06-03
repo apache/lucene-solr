@@ -48,6 +48,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.MapSerializable;
@@ -1223,6 +1225,16 @@ public class IndexSchema {
     }
 
     return f;
+  }
+
+  public SchemaField getFieldOrNull(SortOrder sortOrder) {
+    if (sortOrder instanceof SortField) {
+      String field = sortOrder.name();
+      if (field != null) {
+        return getFieldOrNull(field);
+      }
+    }
+    return null;
   }
 
   /**

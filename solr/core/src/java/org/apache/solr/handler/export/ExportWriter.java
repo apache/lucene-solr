@@ -31,7 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -388,14 +388,17 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return writers;
   }
 
-  private SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
+  private SortDoc getSortDoc(SolrIndexSearcher searcher, SortOrder[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];
     IndexSchema schema = searcher.getSchema();
     for (int i = 0; i < sortFields.length; ++i) {
-      SortField sf = sortFields[i];
-      String field = sf.getField();
+      SortOrder sf = sortFields[i];
       boolean reverse = sf.getReverse();
-      SchemaField schemaField = schema.getField(field);
+      SchemaField schemaField = schema.getFieldOrNull(sf);
+      if (schemaField == null) {
+        throw new IOException("No schema field for sort " + sf);
+      }
+      String field = schemaField.getName();
       FieldType ft = schemaField.getType();
 
       if (!schemaField.hasDocValues()) {

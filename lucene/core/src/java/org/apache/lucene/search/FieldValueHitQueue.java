@@ -24,8 +24,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Expert: A hit queue for sorting by hits by terms in more than one field.
- * 
- * @lucene.experimental
+ *
  * @since 2.9
  * @see IndexSearcher#search(Query,int,Sort)
  */
@@ -58,7 +57,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     private final int oneReverseMul;
     private final FieldComparator<?> oneComparator;
     
-    public OneComparatorFieldValueHitQueue(SortField[] fields, int size) {
+    public OneComparatorFieldValueHitQueue(SortOrder[] fields, int size) {
       super(fields, size);
 
       assert fields.length == 1;
@@ -95,7 +94,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    */
   private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
-    public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size) {
+    public MultiComparatorsFieldValueHitQueue(SortOrder[] fields, int size) {
       super(fields, size);
     }
   
@@ -121,7 +120,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
   
   // prevent instantiation and extension.
-  private FieldValueHitQueue(SortField[] fields, int size) {
+  private FieldValueHitQueue(SortOrder[] fields, int size) {
     super(size);
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
@@ -134,9 +133,9 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     comparators = new FieldComparator<?>[numComparators];
     reverseMul = new int[numComparators];
     for (int i = 0; i < numComparators; ++i) {
-      SortField field = fields[i];
+      SortOrder field = fields[i];
 
-      reverseMul[i] = field.reverse ? -1 : 1;
+      reverseMul[i] = field.getReverse() ? -1 : 1;
       comparators[i] = field.getComparator(size, i);
     }
   }
@@ -153,7 +152,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    * @param size
    *          The number of hits to retain. Must be greater than zero.
    */
-  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) {
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortOrder[] fields, int size) {
 
     if (fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -183,7 +182,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
 
   /** Stores the sort criteria being used. */
-  protected final SortField[] fields;
+  protected final SortOrder[] fields;
   protected final FieldComparator<?>[] comparators;
   protected final int[] reverseMul;
 
@@ -212,7 +211,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
 
   /** Returns the SortFields being used by this hit queue. */
-  SortField[] getFields() {
+  SortOrder[] getFields() {
     return fields;
   }
 }

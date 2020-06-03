@@ -29,7 +29,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 
 /**
  * Represents a group that is found during the first pass search.
@@ -167,11 +167,11 @@ public class SearchGroup<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public GroupComparator(Sort groupSort) {
-      final SortField[] sortFields = groupSort.getSort();
+      final SortOrder[] sortFields = groupSort.getSort();
       comparators = new FieldComparator[sortFields.length];
       reversed = new int[sortFields.length];
       for (int compIDX = 0; compIDX < sortFields.length; compIDX++) {
-        final SortField sortField = sortFields[compIDX];
+        final SortOrder sortField = sortFields[compIDX];
         comparators[compIDX] = sortField.getComparator(1, compIDX);
         reversed[compIDX] = sortField.getReverse() ? -1 : 1;
       }

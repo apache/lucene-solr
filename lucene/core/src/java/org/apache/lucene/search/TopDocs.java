@@ -145,11 +145,11 @@ public class TopDocs {
         }
       }
 
-      final SortField[] sortFields = sort.getSort();
+      final SortOrder[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
       reverseMul = new int[sortFields.length];
       for(int compIDX=0;compIDX<sortFields.length;compIDX++) {
-        final SortField sortField = sortFields[compIDX];
+        final SortOrder sortField = sortFields[compIDX];
         comparators[compIDX] = sortField.getComparator(1, compIDX);
         reverseMul[compIDX] = sortField.getReverse() ? -1 : 1;
       }

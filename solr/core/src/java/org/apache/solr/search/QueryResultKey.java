@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -34,7 +35,7 @@ public final class QueryResultKey implements Accountable {
 
   final Query query;
   final Sort sort;
-  final SortField[] sfields;
+  final SortOrder[] sfields;
   final List<Query> filters;
   final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
   final int minExactCount;
@@ -66,9 +67,12 @@ public final class QueryResultKey implements Accountable {
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
     long ramSfields = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-    for (SortField sf : sfields) {
+    for (SortOrder sf : sfields) {
       h = h*29 + sf.hashCode();
-      ramSfields += BASE_SF_RAM_BYTES_USED + RamUsageEstimator.sizeOfObject(sf.getField());
+      ramSfields += BASE_SF_RAM_BYTES_USED;
+      if (sf instanceof SortField) {
+        ramSfields += RamUsageEstimator.sizeOfObject(sf.name());
+      }
     }
     h = h*31 + minExactCount;
 
@@ -105,8 +109,8 @@ public final class QueryResultKey implements Accountable {
     if (this.minExactCount != other.minExactCount) return false;
 
     for (int i=0; i<sfields.length; i++) {
-      SortField sf1 = this.sfields[i];
-      SortField sf2 = other.sfields[i];
+      SortOrder sf1 = this.sfields[i];
+      SortOrder sf2 = other.sfields[i];
       if (!sf1.equals(sf2)) return false;
     }
 

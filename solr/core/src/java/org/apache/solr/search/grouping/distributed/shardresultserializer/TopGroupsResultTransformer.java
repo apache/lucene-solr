@@ -170,8 +170,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       if (sortValuesVal != null) {
         sortValues = ((List) sortValuesVal).toArray();
         for (int k = 0; k < sortValues.length; k++) {
-          SchemaField field = groupSort.getSort()[k].getField() != null
-              ? schema.getFieldOrNull(groupSort.getSort()[k].getField()) : null;
+          SchemaField field = schema.getFieldOrNull(groupSort.getSort()[k]);
           sortValues[k] = ShardResultTransformerUtils.unmarshalSortValue(sortValues[k], field);
         }
       } else {
@@ -219,7 +218,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         for (int j = 0; j < fieldDoc.fields.length; j++) {
           Object sortValue  = fieldDoc.fields[j];
           Sort withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort();
-          SchemaField field = withinGroupSort.getSort()[j].getField() != null ? schema.getFieldOrNull(withinGroupSort.getSort()[j].getField()) : null;
+          SchemaField field = schema.getFieldOrNull(withinGroupSort.getSort()[j]);
           if (field != null) {
             FieldType fieldType = field.getType();
             if (sortValue != null) {
@@ -272,8 +271,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       for (int j = 0; j < fieldDoc.fields.length; j++) {
         Object sortValue  = fieldDoc.fields[j];
         Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
-        SchemaField field = groupSort.getSort()[j].getField() != null
-                          ? schema.getFieldOrNull(groupSort.getSort()[j].getField()) : null;
+        SchemaField field = schema.getFieldOrNull(groupSort.getSort()[j]);
         convertedSortValues[j] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
       }
       document.add("sortValues", convertedSortValues);

@@ -38,7 +38,7 @@ import org.apache.lucene.util.NumericUtils;
  * @since   lucene 1.4
  * @see Sort
  */
-public class SortField {
+public class SortField implements SortOrder {
 
   /**
    * Specifies the type of the terms to be sorted, or special types such as CUSTOM
@@ -94,7 +94,15 @@ public class SortField {
   /** Represents sorting by document number (index order). */
   public static final SortField FIELD_DOC = new SortField(null, Type.DOC);
 
-  private String field;
+  public static boolean isScore(SortOrder so) {
+    return so == SortOrder.SCORE || (so instanceof SortField && ((SortField)so).getType() == Type.SCORE);
+  }
+
+  public static boolean isDoc(SortOrder so) {
+    return so == SortOrder.DOC_ID || (so instanceof SortField && ((SortField)so).getType() == Type.DOC);
+  }
+
+  protected String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
 
@@ -138,7 +146,7 @@ public class SortField {
     }
 
     @Override
-    public SortField readSortField(DataInput in) throws IOException {
+    public SortOrder readSortField(DataInput in) throws IOException {
       SortField sf = new SortField(in.readString(), readType(in), in.readInt() == 1);
       if (in.readInt() == 1) {
         // missing object
@@ -172,8 +180,9 @@ public class SortField {
     }
 
     @Override
-    public void writeSortField(SortField sf, DataOutput out) throws IOException {
-      sf.serialize(out);
+    public void writeSortField(SortOrder sf, DataOutput out) throws IOException {
+      assert sf instanceof SortField;
+      ((SortField)sf).serialize(out);
     }
   }
 
@@ -224,6 +233,10 @@ public class SortField {
           throw new IllegalArgumentException("Cannot serialize SortField of type " + type);
       }
     }
+  }
+
+  public String getField() {
+    return name();
   }
 
   /** Pass this to {@link #setMissingValue} to have missing
@@ -307,11 +320,8 @@ public class SortField {
     }
   }
 
-  /** Returns the name of the field.  Could return <code>null</code>
-   * if the sort is by SCORE or DOC.
-   * @return Name of field, possibly <code>null</code>.
-   */
-  public String getField() {
+  @Override
+  public String name() {
     return field;
   }
 
@@ -322,9 +332,7 @@ public class SortField {
     return type;
   }
 
-  /** Returns whether the sort should be reversed.
-   * @return  True if natural order should be reversed.
-   */
+  @Override
   public boolean getReverse() {
     return reverse;
   }
@@ -480,25 +488,17 @@ public class SortField {
     }
   }
 
-  /**
-   * Rewrites this SortField, returning a new SortField if a change is made.
-   * Subclasses should override this define their rewriting behavior when this
-   * SortField is of type {@link SortField.Type#REWRITEABLE}
-   *
-   * @param searcher IndexSearcher to use during rewriting
-   * @return New rewritten SortField, or {@code this} if nothing has changed.
-   * @throws IOException Can be thrown by the rewriting
-   * @lucene.experimental
-   */
+  @Override
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
   
-  /** Whether the relevance score is needed to sort documents. */
+  @Override
   public boolean needsScores() {
     return type == Type.SCORE;
   }
 
+  @Override
   /**
    * Returns an {@link IndexSorter} used for sorting index segments by this SortField.
    *

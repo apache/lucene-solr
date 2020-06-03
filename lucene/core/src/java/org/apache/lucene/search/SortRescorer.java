@@ -112,7 +112,7 @@ public class SortRescorer extends Rescorer {
     FieldDoc fieldDoc = (FieldDoc) hits.scoreDocs[0];
 
     // Add sort values:
-    SortField[] sortFields = sort.getSort();
+    SortOrder[] sortFields = sort.getSort();
     for(int i=0;i<sortFields.length;i++) {
       subs.add(Explanation.match(0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
     }

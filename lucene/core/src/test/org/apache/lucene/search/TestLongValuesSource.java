@@ -142,24 +142,24 @@ public class TestLongValuesSource extends LuceneTestCase {
 
   // Take a Sort, and replace any field sorts with Sortables
   Sort convertSortToSortable(Sort sort) {
-    SortField original[] = sort.getSort();
+    SortOrder original[] = sort.getSort();
     SortField mutated[] = new SortField[original.length];
     for (int i = 0; i < mutated.length; i++) {
       if (random().nextInt(3) > 0) {
-        SortField s = original[i];
+        SortField s = (SortField) original[i];
         boolean reverse = s.getType() == SortField.Type.SCORE || s.getReverse();
         switch (s.getType()) {
           case INT:
-            mutated[i] = LongValuesSource.fromIntField(s.getField()).getSortField(reverse);
+            mutated[i] = LongValuesSource.fromIntField(s.name()).getSortField(reverse);
             break;
           case LONG:
-            mutated[i] = LongValuesSource.fromLongField(s.getField()).getSortField(reverse);
+            mutated[i] = LongValuesSource.fromLongField(s.name()).getSortField(reverse);
             break;
           default:
-            mutated[i] = original[i];
+            mutated[i] = (SortField) original[i];
         }
       } else {
-        mutated[i] = original[i];
+        mutated[i] = (SortField) original[i];
       }
     }
 

@@ -105,7 +105,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getStringComparator(int numHits) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
+    return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST) {
 
       @Override
       protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
@@ -125,7 +125,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getIntComparator(int numHits) {
-    return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+    return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue) {
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -143,7 +143,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getLongComparator(int numHits) {
-    return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
+    return new FieldComparator.LongComparator(numHits, field, (Long) missingValue) {
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -161,7 +161,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getFloatComparator(int numHits) {
-    return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
+    return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue) {
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -185,7 +185,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getDoubleComparator(int numHits) {
-    return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+    return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue) {
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);

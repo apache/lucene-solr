@@ -35,14 +35,13 @@ public class TestSortedSetSortField extends LuceneTestCase {
     IndexSearcher empty = newSearcher(new MultiReader());
     Query query = new TermQuery(new Term("contents", "foo"));
   
-    Sort sort = new Sort();
-    sort.setSort(new SortedSetSortField("sortedset", false));
+    Sort sort = new Sort(new SortedSetSortField("sortedset", false));
     TopDocs td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
     
     // for an empty index, any selector should work
     for (SortedSetSelector.Type v : SortedSetSelector.Type.values()) {
-      sort.setSort(new SortedSetSortField("sortedset", false, v));
+      sort = new Sort(new SortedSetSortField("sortedset", false, v));
       td = empty.search(query, 10, sort, true);
       assertEquals(0, td.totalHits.value);
     }

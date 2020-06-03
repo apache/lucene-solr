@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -198,7 +198,7 @@ final class Sorter {
    * well, they will however be marked as deleted in the sorted view.
    */
   DocMap sort(LeafReader reader) throws IOException {
-    SortField[] fields = sort.getSort();
+    SortOrder[] fields = sort.getSort();
     final IndexSorter.DocComparator[] comparators = new IndexSorter.DocComparator[fields.length];
 
     for (int i = 0; i < fields.length; i++) {

@@ -89,7 +89,10 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
       int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
       output.writeVInt(numSortFields);
       for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
+        if (indexSort.getSort()[i] instanceof SortField == false) {
+          throw new IllegalArgumentException("Cannot serialize sorts that are not of type SortField");
+        }
+        SortField sortField = (SortField) indexSort.getSort()[i];
         SortField.Type sortType = sortField.getType();
         output.writeString(sortField.getField());
         int sortTypeID;

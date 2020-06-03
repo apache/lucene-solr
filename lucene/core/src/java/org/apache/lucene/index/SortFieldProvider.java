@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortOrder;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.NamedSPILoader;
@@ -74,7 +74,7 @@ public abstract class SortFieldProvider implements NamedSPILoader.NamedSPI {
   /**
    * Writes a SortField to a DataOutput
    */
-  public static void write(SortField sf, DataOutput output) throws IOException {
+  public static void write(SortOrder sf, DataOutput output) throws IOException {
     IndexSorter sorter = sf.getIndexSorter();
     if (sorter == null) {
       throw new IllegalArgumentException("Cannot serialize sort field " + sf);
@@ -106,13 +106,13 @@ public abstract class SortFieldProvider implements NamedSPILoader.NamedSPI {
   /**
    * Reads a SortField from serialized bytes
    */
-  public abstract SortField readSortField(DataInput in) throws IOException;
+  public abstract SortOrder readSortField(DataInput in) throws IOException;
 
   /**
    * Writes a SortField to a DataOutput
    *
    * This is used to record index sort information in segment headers
    */
-  public abstract void writeSortField(SortField sf, DataOutput out) throws IOException;
+  public abstract void writeSortField(SortOrder sf, DataOutput out) throws IOException;
 
 }
