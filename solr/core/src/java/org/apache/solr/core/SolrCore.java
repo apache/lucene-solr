@@ -328,7 +328,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return schema;
   }
 
-  /** The core's instance directory. */
+  /** The core's instance directory (absolute). */
   public Path getInstancePath() {
     return getCoreDescriptor().getInstanceDir();
   }
@@ -1361,7 +1361,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private String initUpdateLogDir(CoreDescriptor coreDescriptor) {
     String updateLogDir = coreDescriptor.getUlogDir();
     if (updateLogDir == null) {
-      updateLogDir = coreDescriptor.getInstanceDir().resolve(dataDir).normalize().toAbsolutePath().toString();
+      updateLogDir = coreDescriptor.getInstanceDir().resolve(dataDir).toString();
     }
     return updateLogDir;
   }
@@ -3020,7 +3020,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
-      File dataDir = new File(cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString());
+      File dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toFile();
       try {
         FileUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
