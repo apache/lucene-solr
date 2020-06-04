@@ -70,7 +70,7 @@ public class SolrRequestInfo {
       if (stack.size() <= MAX_STACK_SIZE) {
         stack.push(info);
       } else {
-        assert true : "SolrRequestInfo Stack is full";
+        assert false : "SolrRequestInfo Stack is full";
         log.error("SolrRequestInfo Stack is full");
       }
     }
@@ -80,6 +80,7 @@ public class SolrRequestInfo {
   public static void clearRequestInfo() {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (stack.isEmpty()) {
+      assert false : "clearRequestInfo called too many times";
       log.error("clearRequestInfo called too many times");
     } else {
       SolrRequestInfo info = stack.pop();
