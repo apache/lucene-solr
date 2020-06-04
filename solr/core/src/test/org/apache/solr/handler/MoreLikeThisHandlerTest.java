@@ -43,8 +43,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   public void testInterface() throws Exception
   {
     SolrCore core = h.getCore();
-    MoreLikeThisHandler mlt = new MoreLikeThisHandler();
-    
+
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     assertU(adoc("id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away", "foo_ti","10"));
@@ -63,7 +62,8 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     // requires 'q' or a single content stream
     SolrException ex = expectThrows(SolrException.class, () -> {
-      try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
+      try (MoreLikeThisHandler mlt = new MoreLikeThisHandler();
+           SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
         mlt.handleRequestBody(req, new SolrQueryResponse());
       }
     });
@@ -72,7 +72,8 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     // requires a single content stream (more than one is not supported).
     ex = expectThrows(SolrException.class, () -> {
-      try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
+      try (MoreLikeThisHandler mlt = new MoreLikeThisHandler();
+           SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
         ArrayList<ContentStream> streams = new ArrayList<>(2);
         streams.add(new ContentStreamBase.StringStream("hello"));
         streams.add(new ContentStreamBase.StringStream("there"));
@@ -153,8 +154,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   public void testMultifieldSimilarity() throws Exception
   {
     SolrCore core = h.getCore();
-    MoreLikeThisHandler mlt = new MoreLikeThisHandler();
-
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     assertU(adoc("id", "1", "name", "aaa bbb ccc", "subword", "        zzz"));

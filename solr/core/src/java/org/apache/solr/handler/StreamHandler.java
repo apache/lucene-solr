@@ -128,7 +128,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        @SuppressWarnings("resource")
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
         streamFactory.withFunctionName(pluginInfo.name,
             () -> holder.getClazz());
       } else {
@@ -188,6 +189,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
 
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    @SuppressWarnings("resource")
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
     if (zkController != null) {
