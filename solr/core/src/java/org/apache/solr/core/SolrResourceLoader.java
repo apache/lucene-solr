@@ -593,21 +593,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           "Error instantiating class: '" + clazz.getName()+"'", e);
     }
 
-    if (!live) {
-      if( obj instanceof SolrCoreAware ) {
-        assertAwareCompatibility( SolrCoreAware.class, obj );
-        waitingForCore.add( (SolrCoreAware)obj );
-      }
-      if( obj instanceof ResourceLoaderAware ) {
-        assertAwareCompatibility( ResourceLoaderAware.class, obj );
-        waitingForResources.add( (ResourceLoaderAware)obj );
-      }
-      if (obj instanceof SolrInfoBean){
-        //TODO: Assert here?
-        infoMBeans.add((SolrInfoBean) obj);
-      }
-    }
-
     addToCoreAware(obj);
     addToResourceLoaderAware(obj);
     addToInfoBeans(obj);
