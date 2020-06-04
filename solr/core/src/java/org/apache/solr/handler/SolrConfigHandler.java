@@ -561,7 +561,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           return overlay;
         }
         try {
-          new PluginBag.RuntimeLib(req.getCore()).init(new PluginInfo(info.tag, op.getDataMap()));
+          try (PluginBag.RuntimeLib rtl = new PluginBag.RuntimeLib(req.getCore())) {
+            rtl.init(new PluginInfo(info.tag, op.getDataMap()));
+          }
         } catch (Exception e) {
           op.addError(e.getMessage());
           log.error("can't load this plugin ", e);
@@ -599,6 +601,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         //this is not dynamically loaded so we can verify the class right away
         try {
           if(expected == Expressible.class) {
+            @SuppressWarnings("resource")
             SolrResourceLoader resourceLoader = info.pkgName == null ?
                 req.getCore().getResourceLoader() :
                 req.getCore().getResourceLoader(info.pkgName);

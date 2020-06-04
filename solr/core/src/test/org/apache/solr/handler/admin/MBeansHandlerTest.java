@@ -193,5 +193,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     reader.start();
     counter.await(30, TimeUnit.SECONDS);
     runSnapshots = false;
+    bean.close();
   }
 }

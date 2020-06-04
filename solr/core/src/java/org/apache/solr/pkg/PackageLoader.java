@@ -22,18 +22,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -269,7 +260,7 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        loader = new SolrResourceLoader(
+        loader = new PackageResourceLoader(
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
             Paths.get(coreContainer.getSolrHome()),
@@ -299,6 +290,34 @@ public class PackageLoader implements Closeable {
       public String toString() {
         return jsonStr();
       }
+    }
+  }
+  static class PackageResourceLoader extends SolrResourceLoader {
+
+    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+      super(name, classpath, instanceDir, parent);
+    }
+
+    @Override
+    public <T> boolean addToCoreAware(T obj) {
+      //do not do anything
+      //this class is not aware of a SolrCore and it is totally not tied to
+      // the lifecycle of SolrCore. So, this returns 'false' & it should be
+      // taken care of by the caller
+      return false;
+    }
+
+    @Override
+    public <T> boolean addToResourceLoaderAware(T obj) {
+      // do not do anything
+      // this should be invoked only after the init() is invoked.
+      // The caller should take care of that
+      return false;
+    }
+
+    @Override
+    public  <T> void addToInfoBeans(T obj) {
+      //do not do anything. It should be handled externally
     }
   }
 

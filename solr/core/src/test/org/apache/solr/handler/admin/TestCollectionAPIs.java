@@ -79,10 +79,12 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   public void testCommands() throws Exception {
-    MockCollectionsHandler collectionsHandler = new MockCollectionsHandler();
-    ApiBag apiBag = new ApiBag(false);
-    Collection<Api> apis = collectionsHandler.getApis();
-    for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+    ApiBag apiBag;
+    try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
+      apiBag = new ApiBag(false);
+      Collection<Api> apis = collectionsHandler.getApis();
+      for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+    }
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,

@@ -71,6 +71,7 @@ public class ColStatus {
     this.clusterState = clusterState;
   }
 
+  @SuppressWarnings({"unchecked"})
   public void getColStatus(NamedList<Object> results) {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);

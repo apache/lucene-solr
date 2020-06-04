@@ -54,7 +54,7 @@ public class ClusterStatus {
   }
 
   @SuppressWarnings("unchecked")
-  public void getClusterStatus(NamedList results)
+  public void getClusterStatus(@SuppressWarnings({"rawtypes"})NamedList results)
       throws KeeperException, InterruptedException {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
@@ -71,6 +71,7 @@ public class ClusterStatus {
       }
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map roles = null;
     if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
       roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
