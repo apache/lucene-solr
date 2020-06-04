@@ -24,11 +24,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -55,8 +53,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SlotAcc indexOrderAcc;
   int effectiveMincount;
   final boolean singlePassSlotAccCollection;
-  FacetRequest.FacetSort sort; // never null (may be the user's requested sort, or the prelim_sort)
-  FacetRequest.FacetSort resort; // typically null (unless the user specified a prelim_sort)
+  final FacetRequest.FacetSort sort; // never null (may be the user's requested sort, or the prelim_sort)
+  final FacetRequest.FacetSort resort; // typically null (unless the user specified a prelim_sort)
   
   final Map<String,AggValueSource> deferredAggs = new HashMap<String,AggValueSource>();
 
@@ -223,38 +221,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
       sortAcc = collectAcc;
       deferredAggs.remove(sort.sortVariable);
-    }
-    if (((FacetField)fcontext.processor.freq).allBuckets) {
-      //nocommit: when a component of allBuckets, RelatednessAgg must (I think?) be collected
-      //nocommit: across the full domain. This "if" block handles that case for
-      //nocommit: the purpose of illustrating the problem and "fixing" it so that tests pass
-      //nocommit: ... but there's almost certainly a more robust way to do this?
-      Iterator<Entry<String,AggValueSource>> iter = deferredAggs.entrySet().iterator();
-      while (iter.hasNext()) {
-        Entry<String,AggValueSource> e = iter.next();
-        AggValueSource agg = e.getValue();
-        if (agg instanceof RelatednessAgg) {
-          SlotAcc acc = agg.createSlotAcc(fcontext, numDocs, numSlots);
-          acc.key = e.getKey();
-          if (collectAcc == null) {
-            collectAcc = acc;
-          } else if (collectAcc instanceof MultiAcc) {
-            SlotAcc[] subAccs = ((MultiAcc)collectAcc).subAccs;
-            subAccs = ArrayUtil.growExact(subAccs, subAccs.length + 1);
-            subAccs[subAccs.length - 1] = acc;
-            collectAcc = new MultiAcc(collectAcc.fcontext, subAccs);
-          } else {
-            collectAcc = new MultiAcc(fcontext, new SlotAcc[] {collectAcc, acc});
-          }
-          if (this.resort != null && acc.key.equals(this.resort.sortVariable)) {
-            // since we must do full-domain collection of this acc, there's no point
-            // to prelim_sort -- just use this acc directly.
-            this.sort = this.resort;
-            this.resort = null;
-          }
-          iter.remove();
-        }
-      }
     }
 
     boolean needOtherAccs = freq.allBuckets;  // TODO: use for missing too...
@@ -859,17 +825,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       assert slot != collectAccSlot || slot < 0;
       count++;
-      if (collectAcc != null || otherAccs != null) {
-        IntFunction<SlotContext> allBucketsSlotContext = (slotNum) -> {
-          return slotContext.apply(slot);
-        };
-        if (collectAcc != null) {
-          collectAcc.collect(doc, collectAccSlot, allBucketsSlotContext);
-        }
-        if (otherAccs != null) {
-          for (SlotAcc otherAcc : otherAccs) {
-            otherAcc.collect(doc, otherAccsSlot, allBucketsSlotContext);
-          }
+      if (collectAcc != null) {
+        collectAcc.collect(doc, collectAccSlot, slotContext);
+      }
+      if (otherAccs != null) {
+        for (SlotAcc otherAcc : otherAccs) {
+          otherAcc.collect(doc, otherAccsSlot, slotContext);
         }
       }
     }

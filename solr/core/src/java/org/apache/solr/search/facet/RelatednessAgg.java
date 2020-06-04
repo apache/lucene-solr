@@ -166,18 +166,9 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
     
-    final int allBucketsSlot;
-    if (fcontext.processor instanceof FacetFieldProcessorByArray) {
-      allBucketsSlot = ((FacetFieldProcessorByArray) fcontext.processor).allBucketsSlot;
-    } else if (fcontext.processor instanceof FacetFieldProcessorByHashDV) {
-      allBucketsSlot = ((FacetFieldProcessorByHashDV) fcontext.processor).allBucketsSlot;
-    } else {
-      //nocommit: what about FacetFieldProcessorByEnumTermsStream? There's probably a better way to do this entirely?
-      allBucketsSlot = -1;
-    }
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet, allBucketsSlot);
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
   }
 
   @Override
@@ -192,17 +183,15 @@ public class RelatednessAgg extends AggValueSource {
     private final long bgSize;
     private final ReadOnlyCountSlotAcc fgCount;
     private final ReadOnlyCountSlotAcc bgCount;
-    private final int allBucketsSlot;
     private double[] relatedness;
 
-    public SweepSKGSlotAcc(int allBucketsSlot, double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
+    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
       this.fgSize = fgSize;
       this.bgSize = bgSize;
       this.fgCount = fgCount;
       this.bgCount = bgCount;
-      this.allBucketsSlot = allBucketsSlot;
       relatedness = new double[numSlots];
       Arrays.fill(relatedness, 0, numSlots, Double.NaN);
     }
@@ -246,37 +235,11 @@ public class RelatednessAgg extends AggValueSource {
       return r;
     }
 
-    private BucketData cachedAllBuckets;
-
     @Override
     public Object getValue(int slotNum) {
-      final BucketData slotVal;
-      if (slotNum != allBucketsSlot) {
-        slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
-      } else if (cachedAllBuckets != null) {
-        slotVal = cachedAllBuckets;
-      } else {
-        CountSlotAcc baseCountAcc = fcontext.processor.countAcc;
-        int fgCountAll = 0;
-        int bgCountAll = 0;
-        for (int i = 0; i < allBucketsSlot; i++) {
-          // for compatibility/consistency, only include counts for slots that would have been collected
-          // by non-sweep collection. This *looks* like it's related to minCount, but it is different.
-          if (baseCountAcc.getCount(i) > 0) {
-            fgCountAll += fgCount.getCount(i);
-            bgCountAll += bgCount.getCount(i);
-          }
-        }
-        final double allBucketsRelatedness;
-        if (minCount > 0 && (fgCountAll < minCount || bgCountAll < minCount)) {
-          allBucketsRelatedness = Double.NEGATIVE_INFINITY;
-        } else {
-          allBucketsRelatedness = computeRelatedness(fgCountAll, fgSize, bgCountAll, bgSize);
-        }
-        slotVal = new BucketData(fgCountAll, fgSize, bgCountAll, bgSize, allBucketsRelatedness);
-        cachedAllBuckets = slotVal;
-      }
-      return slotVal.externalize(fcontext.isShard());
+      BucketData slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
+      return res;
     }
 
     @Override
@@ -298,13 +261,12 @@ public class RelatednessAgg extends AggValueSource {
   private static final class SKGSlotAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
-    private final int allBucketsSlot;
     private final DocSet fgSet;
     private final DocSet bgSet;
     private final long fgSize;
     private final long bgSize;
     public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
-                      final DocSet fgSet, final DocSet bgSet, int allBucketsSlot) throws IOException {
+                      final DocSet fgSet, final DocSet bgSet) throws IOException {
       super(fcontext);
       this.agg = agg;
       this.fgSet = fgSet;
@@ -312,7 +274,6 @@ public class RelatednessAgg extends AggValueSource {
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
-      this.allBucketsSlot = allBucketsSlot;
       this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
     }
@@ -330,7 +291,7 @@ public class RelatednessAgg extends AggValueSource {
       } else {
         final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(key + "!fg", fgSet, slotvalues.length);
         final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(key + "!bg", bgSet, slotvalues.length);
-        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(allBucketsSlot, agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
+        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
         readOnlyReplacement.key = key;
         baseSweepingAcc.registerMapping(this, readOnlyReplacement);
         return null;
@@ -476,12 +437,8 @@ public class RelatednessAgg extends AggValueSource {
 
       final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
-      final int fgCountInc = fgSet.intersectionSize(slotSet);
-      final int bgCountInc = bgSet.intersectionSize(slotSet);
-      slotVal.incCounts(fgCountInc, bgCountInc);
-      if (allBucketsSlot >= 0) {
-        slotvalues[allBucketsSlot].incCounts(fgCountInc, bgCountInc);
-      }
+      slotVal.incCounts(fgSet.intersectionSize(slotSet),
+                        bgSet.intersectionSize(slotSet));
       slotvalues[slot] = slotVal;
     }
 
@@ -493,7 +450,7 @@ public class RelatednessAgg extends AggValueSource {
       
       // so we only worry about ensuring that every "slot" / bucket is processed the first time
       // we're asked about it...
-      if (slot != allBucketsSlot && null == slotvalues[slot]) {
+      if (null == slotvalues[slot]) {
         processSlot(slot, slotContext);
       }
     }
@@ -537,26 +494,14 @@ public class RelatednessAgg extends AggValueSource {
       return res;
     }
 
-    // preserve allBucketsData to restore after resizing
-    private BucketData allBucketsData;
-
     @Override
     public void reset() {
       Arrays.fill(slotvalues, null);
-      if (allBucketsSlot >= 0) {
-        allBucketsData = new BucketData(agg);
-        allBucketsData.incSizes(fgSize, bgSize);
-        slotvalues[allBucketsSlot] = allBucketsData;
-      }
     }
 
     @Override
     public void resize(Resizer resizer) {
       slotvalues = resizer.resize(slotvalues, null);
-      if (allBucketsSlot >= 0) {
-        assert allBucketsData != null;
-        slotvalues[allBucketsSlot] = allBucketsData;
-      }
     }
 
     @Override

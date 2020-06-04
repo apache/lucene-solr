@@ -282,7 +282,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
-                                         "method_val_allbuckets", "dv",
                                          "json.facet", Facet.toJSONFacetParamValue(facets)),
                                   baseParams);
       
@@ -315,7 +314,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
         final SolrParams params = SolrParams.wrapDefaults(params("method_val", "dvhash",
-                                                                 "method_val_allbuckets", "dvhash",
                                                                  "sweep_key", "sweep_collection",
                                                                  "sweep_val", "true"),
                                                           facetParams);
@@ -342,7 +340,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
-                                         "method_val_allbuckets", "dv",
                                          "json.facet", Facet.toJSONFacetParamValue(facets)),
                                   baseParams);
 
@@ -379,7 +376,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         facets.put("str", facet);
         final SolrParams facetParams
           = SolrParams.wrapDefaults(params("method_val", "dv",
-                                           "method_val_allbuckets", "dv",
                                            "json.facet", Facet.toJSONFacetParamValue(facets)),
                                     baseParams);
         
@@ -420,7 +416,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         
       final SolrParams facetParams
         = SolrParams.wrapDefaults(params("method_val", "dv",
-                                         "method_val_allbuckets", "dv",
                                          "json.facet", Facet.toJSONFacetParamValue(facets)),
                                   baseParams);
       // both default sweep option and explicit sweep should give same results...
@@ -529,9 +524,10 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
   }
 
   /** 
-   * See https://issues.apache.org/jira/browse/SOLR-14467. {@link TermFacet#buildRandom} 
-   * and {@link #testBespokeStructures} also do randomized testing of <code>allBuckets</code>
+   * If/when we can re-enable this test, make sure to update {@link TermFacet#buildRandom} 
+   * and {@link #testBespokeStructures} to start doing randomized testing of <code>allBuckets</code>
    */
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14467")
   public void testBespokeAllBuckets() throws Exception {
     { // single level facet w/sorting on skg and allBuckets
       Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -559,61 +555,46 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
         for (int limit : Arrays.asList(10, -1)) {
           for (String sort : Arrays.asList("count desc", "skg desc", "index asc")) {
             for (Boolean refine : Arrays.asList(false, true)) {
-              for (Boolean allBuckets : Arrays.asList(false, true)) {
-                { // 1 additional (non-sweeping) stat
-                  final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
-                                                                          "overrequest", 0,
-                                                                          "sort", sort,
-                                                                          "allBuckets", allBuckets,
-                                                                          "refine", refine));
-                  xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
-                  final Map<String,TermFacet> facets = new LinkedHashMap<>();
-                  facets.put("xxx1", xxx);
-                  assertFacetSKGsAreConsistent(facets,
-                                               buildORQuery(multiStrField(11) + ":55",
-                                                            multiStrField(0) + ":46"),
-                                               multiStrField(5)+":9", "*:*");
-                }
-                { // multiple SKGs
-                  final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
-                                                                          "overrequest", 0,
-                                                                          "sort", sort,
-                                                                          "allBuckets", allBuckets,
-                                                                          "refine", refine));
-                  xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
-                  final Map<String,TermFacet> facets = new LinkedHashMap<>();
-                  facets.put("xxx2", xxx);
-                  assertFacetSKGsAreConsistent(facets,
-                                               buildORQuery(multiStrField(11) + ":55",
-                                                            multiStrField(0) + ":46"),
-                                               multiStrField(5)+":9", "*:*");
-                }
-                { // multiple SKGs and a multiple non-sweeping stats
-                  final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
-                                                                          "overrequest", 0,
-                                                                          "sort", sort,
-                                                                          "allBuckets", allBuckets,
-                                                                          "refine", refine));
-                  if (allBuckets) {
-                    //nocommit: the "allBuckets && !sweep_collection" case results in re-ordering of
-                    //nocommit: stats, since full-domain collection is required (i.e., not otherAccs)
-                    //nocommit: For now, order stats in request to match the order resulting after such re-ordering.
-                    //nocommit: Alternative to special-case here would be to modify assertFacetSKGsAreConsistent()
-                    //nocommit: to not care about stat order?
-                    xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
-                    xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
-                  } else {
-                    xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
-                    xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
-                  }
-                  xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
-                  final Map<String,TermFacet> facets = new LinkedHashMap<>();
-                  facets.put("xxx3", xxx);
-                  assertFacetSKGsAreConsistent(facets,
-                                               buildORQuery(multiStrField(11) + ":55",
-                                                            multiStrField(0) + ":46"),
-                                               multiStrField(5)+":9", "*:*");
-                }
+              { // 1 additional (non-sweeping) stat
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
+                xxx.subFacets.put("min", new MinFacet(soloIntField(3)));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx1", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
+              }
+              { // multiple SKGs
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
+                xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx2", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
+              }
+              { // multiple SKGs and a multiple non-sweeping stats
+                final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
+                                                                        "overrequest", 0,
+                                                                        "sort", sort,
+                                                                        "refine", refine));
+                xxx.subFacets.put("minAAA", new MinFacet(soloIntField(3)));
+                xxx.subFacets.put("skg2", new RelatednessFacet(multiStrField(2)+":9", "*:*"));
+                xxx.subFacets.put("minBBB", new MinFacet(soloIntField(2)));
+                final Map<String,TermFacet> facets = new LinkedHashMap<>();
+                facets.put("xxx3", xxx);
+                assertFacetSKGsAreConsistent(facets,
+                                             buildORQuery(multiStrField(11) + ":55",
+                                                          multiStrField(0) + ":46"),
+                                             multiStrField(5)+":9", "*:*");
               }
             }
           }
@@ -660,6 +641,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     return "(" + String.join(" OR ", clauses) + ")";
   }
   
+  
   /**
    * Given a set of term facets, and top level query strings, asserts that 
    * the results of these queries are identical even when varying the <code>sweep_collection</code> param; 
@@ -684,11 +666,6 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
       for (FacetMethod method : EnumSet.allOf(FacetMethod.class)) {
         for (Boolean sweep : Arrays.asList(true, false, null)) {
           ModifiableSolrParams options = params("method_val", method.toString().toLowerCase(Locale.ROOT));
-          if (method != FacetMethod.ENUM && method != FacetMethod.STREAM) {
-            // enum/stream FacetMethod (when actually used, i.e., when sort="index asc|desc") silently
-            // ignores allBuckets, so special case this combination.
-            options.add("method_val_allbuckets", method.toString().toLowerCase(Locale.ROOT));
-          }
           if (null != sweep) {
             options.add("sweep_key", "sweep_collection");
             options.add("sweep_val", sweep.toString());
@@ -860,15 +837,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
     public TermFacet(final String field, final Map<String,Object> options) {
       assert null != field;
       
-      String sort = (String)options.get("sort");
-      Boolean allBuckets = (Boolean)options.get("allBuckets");
-      final String method;
-      if (sort != null && sort.startsWith("index") && allBuckets != null && allBuckets) {
-        method = "${method_val_allbuckets:smart}";
-      } else {
-        method = "${method_val:smart}";
-      }
-      jsonData.put("method", method);
+      jsonData.put("method", "${method_val:smart}");
       
       jsonData.putAll(options);
 
@@ -902,7 +871,7 @@ public class TestCloudJSONFacetSKGSweep extends SolrCloudTestCase {
                                "overrequest", randomOverrequestParam(random()),
                                "sort", sort,
                                "prelim_sort", randomPrelimSortParam(random(), sort),
-                               "allBuckets", randomAllBucketsParam(random()),
+                               // SOLR-14467 // "allBuckets", randomAllBucketsParam(random()),
                                "refine", randomRefineParam(random())));
     }
     

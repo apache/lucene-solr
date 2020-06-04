@@ -443,7 +443,6 @@ public class UnInvertedField extends DocTermOrds {
     int endTermIndex = processor.endTermIndex;
     int nTerms = processor.nTerms;
     DocSet docs = processor.fcontext.base;
-    final int allBucketsSlot = processor.allBucketsSlot;
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
@@ -454,22 +453,12 @@ public class UnInvertedField extends DocTermOrds {
         // handle the biggest terms
         DocSet termSet = searcher.getDocSet(tt.termQuery);
         DocSet intersection = termSet.intersection(docs);
-        if (intersection.size() == 0) {
-          continue;
-        }
         int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex,
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
         final int termOrd = tt.termNum - startTermIndex;
         countAcc.incrementCount(termOrd, collected);
-        if (allBucketsSlot >= 0) {
-          countAcc.incrementCount(allBucketsSlot, collected);
-        }
         for (SweepCountAccStruct entry : sweepCountAcc.others) {
-          final int intersectionSize = termSet.intersectionSize(entry.docSet);
-          entry.countAcc.incrementCount(termOrd, intersectionSize);
-          if (allBucketsSlot >= 0) {
-            entry.countAcc.incrementCount(allBucketsSlot, intersectionSize);
-          }
+          entry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
         }
         if (collected > 0) {
           uniqueTerms++;
@@ -536,9 +525,6 @@ public class UnInvertedField extends DocTermOrds {
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
             counts.incrementCount(-1, arrIdx, 1, maxIdx);
-            if (allBucketsSlot >= 0) {
-              counts.incrementCount(-1, allBucketsSlot, 1, maxIdx);
-            }
             if (collectBase) {
               processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
             }
@@ -555,9 +541,6 @@ public class UnInvertedField extends DocTermOrds {
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
                 counts.incrementCount(-1, arrIdx, 1, maxIdx);
-                if (allBucketsSlot >= 0) {
-                  counts.incrementCount(-1, allBucketsSlot, 1, maxIdx);
-                }
                 if (collectBase) {
                   processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
                 }
