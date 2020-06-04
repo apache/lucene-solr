@@ -118,7 +118,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   /**
    * Verifies the status of an async task submitted to the Overseer Collection queue.
    * @return <code>null</code> if the task has not completed, the completion timestamp if the task has completed
-   * (see {@link org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler#mockOperation}).
+   * (see mockOperation() in {@link org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler}).
    */
   private Long checkTaskHasCompleted(SolrClient client, int requestId) throws IOException, SolrServerException {
     return (Long) getStatusResponse(Integer.toString(requestId), client).getResponse().get("MOCK_FINISHED");
