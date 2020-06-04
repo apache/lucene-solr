@@ -170,6 +170,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initComponents() {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
@@ -279,6 +280,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();

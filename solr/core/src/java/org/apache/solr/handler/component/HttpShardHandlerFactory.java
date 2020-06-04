@@ -166,7 +166,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     // a little hack for backward-compatibility when we are moving from apache http client to jetty client
     return new HttpShardHandler(this, null) {
       @Override
-      protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
+      protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
         try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
           return client.request(req);
         }
@@ -212,7 +212,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
-  private void initReplicaListTransformers(NamedList routingConfig) {
+  @SuppressWarnings({"unchecked"})
+  private void initReplicaListTransformers(@SuppressWarnings({"rawtypes"})NamedList routingConfig) {
     String defaultRouting = null;
     ReplicaListTransformerFactory stableRltFactory = null;
     ReplicaListTransformerFactory defaultRltFactory;
@@ -253,6 +254,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
+    @SuppressWarnings({"rawtypes"})
     NamedList args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
@@ -330,9 +332,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientBuilderPlugin.setup(defaultClient);
   }
 
-  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
+      @SuppressWarnings({"unchecked"})
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }

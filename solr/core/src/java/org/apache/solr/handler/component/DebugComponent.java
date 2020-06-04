@@ -100,9 +100,11 @@ public class DebugComponent extends SearchComponent
         results = rb.getResults().docList;
       }
 
+      @SuppressWarnings({"rawtypes"})
       NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
           rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults());
       
+      @SuppressWarnings({"rawtypes"})
       NamedList info = rb.getDebugInfo();
       if( info == null ) {
         rb.setDebugInfo( stdinfo );
@@ -225,11 +227,13 @@ public class DebugComponent extends SearchComponent
   private final static Set<String> EXCLUDE_SET = Set.of("explain");
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void finishStage(ResponseBuilder rb) {
     if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 
+      @SuppressWarnings({"rawtypes"})
       Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
@@ -241,11 +245,14 @@ public class DebugComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
+          @SuppressWarnings({"rawtypes"})
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
+
           info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
+              @SuppressWarnings({"rawtypes"})
               NamedList sexplain = (NamedList)sdebug.get("explain");
               SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
@@ -306,6 +313,7 @@ public class DebugComponent extends SearchComponent
     return namedList;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected Object merge(Object source, Object dest, Set<String> exclude) {
     if (source == null) return dest;
     if (dest == null) {
