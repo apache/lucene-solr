@@ -103,7 +103,7 @@ public class SolrRequestInfo {
   }
 
   private static void closeHooks(SolrRequestInfo info) {
-    if (info != null && info.closeHooks != null) {
+    if (info.closeHooks != null) {
       for (Closeable hook : info.closeHooks) {
         try {
           hook.close();

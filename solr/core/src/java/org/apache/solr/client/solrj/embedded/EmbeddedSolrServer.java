@@ -71,7 +71,6 @@ public class EmbeddedSolrServer extends SolrClient {
   protected final String coreName;
   private final SolrRequestParsers _parser;
   private final RequestWriterSupplier supplier;
-  private boolean mustClearSolrRequestInfo = false;
 
   public enum RequestWriterSupplier {
     JavaBin(() -> new BinaryRequestWriter()), XML(() -> new RequestWriter());
@@ -225,7 +224,6 @@ public class EmbeddedSolrServer extends SolrClient {
       req.getContext().put("httpMethod", request.getMethod().name());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
-      mustClearSolrRequestInfo = true;
 
       core.execute(handler, req, rsp);
       checkForExceptions(rsp);
@@ -272,10 +270,11 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (Exception ex) {
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) req.close();
-      if (mustClearSolrRequestInfo) {
+      if (req != null) {
+        req.close();
         SolrRequestInfo.clearRequestInfo();
       }
+
     }
   }
 
