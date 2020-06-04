@@ -198,6 +198,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("metrics"));
     SimpleOrderedMap map = (SimpleOrderedMap) values.get("metrics");
     assertEquals(0, map.size());
+    handler.close();
   }
 
   @Test
@@ -214,6 +215,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Object o = nl.get("SEARCHER.new.errors");
     assertNotNull(o); // counter type
     assertTrue(o instanceof Number);
+    handler.close();
   }
 
   @Test
@@ -253,6 +255,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
       assertNotNull(map.get("inserts"));
       assertNotNull(map.get("size"));
     });
+    handler.close();
   }
 
   @Test
@@ -338,6 +341,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
+
+    handler.close();
   }
 
   @Test

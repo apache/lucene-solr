@@ -384,14 +384,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
+      IndexReader reader;
+      try (SolrQueryRequest req = req()) {
+        reader = req.getSearcher().getIndexReader();
+      }
+
       QueryElevationComponent comp = new QueryElevationComponent();
       comp.init(args);
       comp.inform(core);
 
-      SolrQueryRequest req = req();
-      IndexReader reader = req.getSearcher().getIndexReader();
       QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
-      req.close();
 
       // Make sure the boosts loaded properly
       assertEquals(11, elevationProvider.size());

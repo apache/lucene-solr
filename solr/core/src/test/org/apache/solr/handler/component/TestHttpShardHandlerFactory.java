@@ -79,6 +79,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
 
       // test that factory is HttpShardHandlerFactory with expected url reserve fraction
       assertTrue(factory instanceof HttpShardHandlerFactory);
+      @SuppressWarnings("resource")
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory)factory);
       assertEquals(expectedLoadBalancerRequestsMinimumAbsolute, httpShardHandlerFactory.permittedLoadBalancerRequestsMinimumAbsolute, 0.0);
       assertEquals(expectedLoadBalancerRequestsMaximumFraction, httpShardHandlerFactory.permittedLoadBalancerRequestsMaximumFraction, 0.0);
@@ -122,6 +123,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);
+      @SuppressWarnings("resource")
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory)factory);
       assertThat(httpShardHandlerFactory.getWhitelistHostChecker().getWhitelistHosts().size(), is(2));
       assertThat(httpShardHandlerFactory.getWhitelistHostChecker().getWhitelistHosts(), hasItem("abc:8983"));

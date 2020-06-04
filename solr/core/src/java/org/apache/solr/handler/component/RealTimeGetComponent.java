@@ -1116,9 +1116,12 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   public void processSyncWithLeader(ResponseBuilder rb, int nVersions, String syncWithLeader, List<Long> versions) {
-    PeerSyncWithLeader peerSync = new PeerSyncWithLeader(rb.req.getCore(), syncWithLeader, nVersions);
-    boolean success = peerSync.sync(versions).isSuccess();
-    rb.rsp.add("syncWithLeader", success);
+    try (PeerSyncWithLeader peerSync = new PeerSyncWithLeader(rb.req.getCore(), syncWithLeader, nVersions)) {
+      boolean success = peerSync.sync(versions).isSuccess();
+      rb.rsp.add("syncWithLeader", success);
+    } catch (IOException e) {
+      log.error("Error while closing", e);
+    }
   }
 
   
@@ -1137,12 +1140,13 @@ public class RealTimeGetComponent extends SearchComponent
     List<String> replicas = StrUtils.splitSmart(sync, ",", true);
     
     boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
-    
-    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess);
-    boolean success = peerSync.sync().isSuccess();
-    
-    // TODO: more complex response?
-    rb.rsp.add("sync", success);
+    try (PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess)) {
+      boolean success = peerSync.sync().isSuccess();
+      // TODO: more complex response?
+      rb.rsp.add("sync", success);
+    } catch (IOException e) {
+      log.error("Error while closing", e);
+    }
   }
   
 

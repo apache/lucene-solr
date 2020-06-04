@@ -193,6 +193,7 @@ public class IndexSizeEstimator {
     this.samplingPercent = percent;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Estimate estimate() throws Exception {
     Map<String, Object> details = new LinkedHashMap<>();
     Map<String, Object> summary = new LinkedHashMap<>();
@@ -243,6 +244,7 @@ public class IndexSizeEstimator {
     return new Estimate(fieldsBySize, typesBySize, withSummary ? newSummary : null, withDetails ? details : null);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void convert(Map<String, Object> result) {
     for (Map.Entry<String, Object> entry : result.entrySet()) {
       Object value = entry.getValue();
@@ -265,6 +267,7 @@ public class IndexSizeEstimator {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void estimateSummary(Map<String, Object> details, Map<String, Object> summary) {
     log.info("- preparing summary...");
     details.forEach((type, perType) -> {

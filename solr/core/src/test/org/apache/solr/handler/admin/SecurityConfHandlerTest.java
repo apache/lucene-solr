@@ -176,6 +176,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req, rsp);
     List l = (List) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
     assertEquals(1, l.size());
+    handler.close();
   }
 
 
@@ -267,7 +268,9 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
 
   public static void main(String[] args) throws Exception{
-    System.out.println(new MockSecurityHandler().getStandardJson());
+    try (MockSecurityHandler msh = new MockSecurityHandler()) {
+      System.out.println(msh.getStandardJson());
+    }
   }
 
 
