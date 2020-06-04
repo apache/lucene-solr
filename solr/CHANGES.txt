@@ -212,6 +212,8 @@ Other Changes
 
 * SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
 
+* SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
