@@ -453,7 +453,7 @@ public class RegExp {
   /**
    * Allows case insensitive matching.
    */
-  public static final int UNICODE_CASE_INSENSITIVE = 0x0100;    
+  static final int UNICODE_CASE_INSENSITIVE = 0x0100;    
 
   //Immutable parsed state
   /**
