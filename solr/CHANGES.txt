@@ -91,6 +91,9 @@ New Features
 
 * SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
 
+* SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
+  timeseries Streaming Expressions (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -126,6 +129,9 @@ Improvements
   are not computed at all. (ab, shalin)
 
 * SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
+* SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
+  (David Smiley, Yasufumi Mizoguchi)
 
 Optimizations
 ---------------------
@@ -206,6 +212,8 @@ Bug Fixes
 
 * SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
 
+* SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
+  (Michael Gibney, hossman)
 
 Other Changes
 ---------------------
@@ -271,6 +279,8 @@ Other Changes
 * SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
 
 * SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
+
+* SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
 
 ==================  8.5.2 ==================
 
