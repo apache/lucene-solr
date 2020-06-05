@@ -112,6 +112,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   protected void initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
