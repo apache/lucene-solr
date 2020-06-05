@@ -438,8 +438,7 @@ public class RegExp {
   public static final int INTERVAL = 0x0020;
   
   /**
-   * Syntax flag, enables all optional regexp syntax
-   * but preserves default setting of case sensitive matching. 
+   * Syntax flag, enables all optional regexp syntax.
    */
   public static final int ALL = 0xff;
       
