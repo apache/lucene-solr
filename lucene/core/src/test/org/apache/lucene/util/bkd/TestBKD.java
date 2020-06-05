@@ -791,7 +791,9 @@ public class TestBKD extends LuceneTestCase {
           readers.add(new BKDReader(in, in, in, randomBoolean()));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(out, out, out, docMaps, readers);
+        Runnable finalizer = w.merge(out, out, out, docMaps, readers);
+        indexFP = out.getFilePointer();
+        finalizer.run();
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);

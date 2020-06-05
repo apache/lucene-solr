@@ -14,9 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.lucene84;
 
-/** Remove this file when adding back compat codecs */
-public class Placeholder {
-  
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
+import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
+
+/**
+ * RW impersonation of {@link Lucene84Codec}.
+ */
+public class Lucene84RWCodec extends Lucene84Codec {
+
+  @Override
+  public PointsFormat pointsFormat() {
+    return new Lucene60RWPointsFormat();
+  }
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return new Lucene70RWSegmentInfoFormat();
+  }
+
 }

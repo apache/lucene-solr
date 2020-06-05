@@ -117,7 +117,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        if (finalizer != null) {
+          metaOut.writeInt(fieldInfo.number);
+          finalizer.run();
+        }
         return;
       }
 
@@ -224,7 +228,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
+            Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
+            if (finalizer != null) {
+              metaOut.writeInt(fieldInfo.number);
+              finalizer.run();
+            }
           }
         } else {
           mergeOneField(mergeState, fieldInfo);

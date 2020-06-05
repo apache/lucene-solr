@@ -63,12 +63,25 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
     boolean success = false;
     try {
       indexIn = readState.directory.openInput(indexFileName, readState.context);
+      CodecUtil.checkIndexHeader(indexIn,
+          Lucene86PointsFormat.INDEX_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_START,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          readState.segmentInfo.getId(),
+          readState.segmentSuffix);
+
       dataIn = readState.directory.openInput(dataFileName, readState.context);
+      CodecUtil.checkIndexHeader(dataIn,
+          Lucene86PointsFormat.DATA_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_START,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          readState.segmentInfo.getId(),
+          readState.segmentSuffix);
 
       try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
         try {
-          CodecUtil.checkIndexHeader(indexIn,
+          CodecUtil.checkIndexHeader(metaIn,
               Lucene86PointsFormat.META_CODEC_NAME,
               Lucene86PointsFormat.VERSION_START,
               Lucene86PointsFormat.VERSION_CURRENT,

@@ -18,6 +18,7 @@ package org.apache.lucene.util.bkd;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -394,7 +395,7 @@ public class BKDWriter implements Closeable {
    *  there is opportunity for reordering points before writing them to
    *  disk. This method does not use transient disk in order to reorder points.
    */
-  public long writeField(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues reader) throws IOException {
+  public Runnable writeField(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues reader) throws IOException {
     if (numDataDims == 1) {
       return writeField1Dim(metaOut, indexOut, dataOut, fieldName, reader);
     } else {
@@ -425,7 +426,7 @@ public class BKDWriter implements Closeable {
 
   /* In the 2+D case, we recursively pick the split dimension, compute the
    * median value and partition other values around it. */
-  private long writeFieldNDims(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues values) throws IOException {
+  private Runnable writeFieldNDims(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues values) throws IOException {
     if (pointCount != 0) {
       throw new IllegalStateException("cannot mix add and writeField");
     }
@@ -489,14 +490,18 @@ public class BKDWriter implements Closeable {
       }
     };
 
-    long indexFP = indexOut.getFilePointer();
-    writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
-    return indexFP;
+    return () -> {
+      try {
+        writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    };
   }
 
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
-  private long writeField1Dim(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues reader) throws IOException {
+  private Runnable writeField1Dim(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues reader) throws IOException {
     MutablePointsReaderUtils.sort(maxDoc, packedIndexBytesLength, reader, 0, Math.toIntExact(reader.size()));
 
     final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(metaOut, indexOut, dataOut);
@@ -525,7 +530,7 @@ public class BKDWriter implements Closeable {
   /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
    *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
    *  dimensional values were deleted. */
-  public long merge(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
+  public Runnable merge(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
     assert docMaps == null || readers.size() == docMaps.size();
 
     BKDMergeQueue queue = new BKDMergeQueue(bytesPerDim, readers.size());
@@ -633,7 +638,7 @@ public class BKDWriter implements Closeable {
       assert (lastDocID = docID) >= 0; // only assign when asserts are enabled
     }
 
-    public long finish() throws IOException {
+    public Runnable finish() throws IOException {
       if (leafCount > 0) {
         writeLeafBlock(leafCardinality);
         leafCardinality = 0;
@@ -641,7 +646,7 @@ public class BKDWriter implements Closeable {
       }
 
       if (valueCount == 0) {
-        return -1;
+        return null;
       }
 
       pointCount = valueCount;
@@ -673,8 +678,13 @@ public class BKDWriter implements Closeable {
           return leafBlockFPs.size();
         }
       };
-      writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
-      return indexFP;
+      return () -> {
+        try {
+          writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      };
     }
 
     private void writeLeafBlock(int leafCardinality) throws IOException {
@@ -1032,7 +1042,6 @@ public class BKDWriter implements Closeable {
   }
   
   private void writeIndex(IndexOutput metaOut, IndexOutput indexOut, int countPerLeaf, int numLeaves, byte[] packedIndex, long dataStartFP) throws IOException {
-    
     CodecUtil.writeHeader(metaOut, CODEC_NAME, VERSION_CURRENT);
     metaOut.writeVInt(numDataDims);
     metaOut.writeVInt(numIndexDims);
