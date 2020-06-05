@@ -80,6 +80,7 @@ public class SystemLogListener extends TriggerListenerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName, ActionContext context,
                Throwable error, String message) throws Exception {
     try {
@@ -153,6 +154,7 @@ public class SystemLogListener extends TriggerListenerBase {
     });
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void addOperations(SolrInputDocument doc, List<SolrRequest> operations) {
     if (operations == null || operations.isEmpty()) {
       return;

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
@@ -83,6 +84,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -94,6 +96,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
+    this.solrClientCache = coreContainer.getSolrClientCache();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
@@ -119,7 +122,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
               Expressible.class);
           streamFactory.withFunctionName(key, clazz);
         } else {
-          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+          @SuppressWarnings("resource")
+          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
           streamFactory.withFunctionName(key, () -> holder.getClazz());
         }
 
@@ -147,7 +151,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     StreamContext context = new StreamContext();
-    context.setSolrClientCache(StreamHandler.clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.put("core", this.coreName);
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);

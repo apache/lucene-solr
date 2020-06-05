@@ -43,7 +43,7 @@ public class NumDocsValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     // Searcher has no numdocs so we must use the reader instead
-    return new ConstIntDocValues(ReaderUtil.getTopLevelContext(readerContext).reader().numDocs(), this);
+    return new DocFreqValueSource.ConstIntDocValues(ReaderUtil.getTopLevelContext(readerContext).reader().numDocs(), this);
   }
 
   @Override

@@ -61,6 +61,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**
@@ -643,6 +644,7 @@ public class UnifiedHighlighter {
 
       batchDocIdx += fieldValsByDoc.size();
     }
+    IOUtils.close(indexReaderWithTermVecCache);
     assert docIdIter.docID() == DocIdSetIterator.NO_MORE_DOCS
         || docIdIter.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
 

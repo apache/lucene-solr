@@ -23,6 +23,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
 /** {@link UnInvertedField} implementation of field faceting.
  * It's a top-level term cache. */

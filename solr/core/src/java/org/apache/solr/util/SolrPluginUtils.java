@@ -196,18 +196,14 @@ public class SolrPluginUtils {
 
   }
 
+  private static final Pattern SPLIT_PATTERN = Pattern.compile("[\\s,]+"); // space or comma
 
-
-
-
-
-  private final static Pattern splitList=Pattern.compile(",| ");
-
-  /** Split a value that may contain a comma, space of bar separated list. */
-  public static String[] split(String value){
-     return splitList.split(value.trim(), 0);
+  /** Split a value between spaces and/or commas.  No need to trim anything. */
+  public static String[] split(String value) {
+    // TODO consider moving / adapting this into a new StrUtils.splitSmart variant?
+    // TODO deprecate; it's only used by two callers?
+    return SPLIT_PATTERN.split(value.trim());
   }
-
 
   /**
    * Pre-fetch documents into the index searcher's document cache.

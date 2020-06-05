@@ -18,17 +18,24 @@ package org.apache.solr.util;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.URLDecoder;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.handler.component.ShardRequest;
+
 
 
 /**
@@ -91,13 +98,11 @@ public class SolrLogPostTool {
 
             rec++;
             UUID id = UUID.randomUUID();
-            doc.addField("id", id.toString());
-            doc.addField("file_s", fileName);
+            doc.setField("id", id.toString());
+            doc.setField("file_s", fileName);
             request.add(doc);
             if (rec == 300) {
-              CLIO.out("Sending batch of 300 log records...");
-              request.process(client);
-              CLIO.out("Batch sent");
+              sendBatch(client, request, false /* normal batch */);
               request = new UpdateRequest();
               rec = 0;
             }
@@ -108,14 +113,32 @@ public class SolrLogPostTool {
       }
 
       if (rec > 0) {
-        //Process last batch
-        CLIO.out("Sending last batch ...");
-        request.process(client);
-        client.commit();
-        CLIO.out("Committed");
+        sendBatch(client, request, true /* last batch */);
       }
     } finally {
       client.close();
+    }
+  }
+
+  private static void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest) throws SolrServerException, IOException {
+    final String beginMessage = lastRequest ? "Sending last batch ..." : "Sending batch of 300 log records...";
+    CLIO.out(beginMessage);
+    try {
+      request.process(client);
+      CLIO.out("Batch sent");
+    } catch (Exception e) {
+      CLIO.err("Batch sending failed: " + e.getMessage());
+      e.printStackTrace(CLIO.getErrStream());
+    }
+
+    if (lastRequest) {
+      try {
+        client.commit();
+        CLIO.out("Committed");
+      } catch (Exception e) {
+        CLIO.err("Unable to commit documents: " + e.getMessage());
+        e.printStackTrace(CLIO.getErrStream());
+      }
     }
   }
 
@@ -223,50 +246,48 @@ public class SolrLogPostTool {
       return null;
     }
 
+    private void setFieldIfUnset(SolrInputDocument doc, String fieldName, String fieldValue) {
+      if (doc.containsKey(fieldName)) return;
+
+      doc.setField(fieldName, fieldValue);
+    }
+
     private SolrInputDocument parseError(String line, String trace) throws IOException {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parseDate(line));
-      doc.addField("type_s", "error");
-      doc.addField("line_t", line);
+      doc.setField("date_dt", parseDate(line));
+      doc.setField("type_s", "error");
+      doc.setField("line_t", line);
 
       //Don't include traces that have only the %html header.
       if(trace != null && trace.length() > 6) {
-        doc.addField("stack_t", trace);
+        doc.setField("stack_t", trace);
       }
 
       if(this.cause != null) {
-        doc.addField("root_cause_t", cause.replace("Caused by:", "").trim());
+        doc.setField("root_cause_t", cause.replace("Caused by:", "").trim());
       }
 
-      doc.addField("collection_s", parseCollection(line));
-      doc.addField("core_s", parseCore(line));
-      doc.addField("shard_s", parseShard(line));
-      doc.addField("replica_s", parseReplica(line));
+      doc.setField("collection_s", parseCollection(line));
+      doc.setField("core_s", parseCore(line));
+      doc.setField("shard_s", parseShard(line));
+      doc.setField("replica_s", parseReplica(line));
 
       return doc;
     }
 
     private SolrInputDocument parseCommit(String line) throws IOException {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parseDate(line));
-      doc.addField("type_s", "commit");
-      doc.addField("line_t", line);
-      if(line.contains("softCommit=true")) {
-        doc.addField("soft_commit_s", "true");
-      } else {
-        doc.addField("soft_commit_s", "false");
-      }
+      doc.setField("date_dt", parseDate(line));
+      doc.setField("type_s", "commit");
+      doc.setField("line_t", line);
+      doc.setField("soft_commit_s", Boolean.toString(line.contains("softCommit=true")));
 
-      if(line.contains("openSearcher=true")) {
-        doc.addField("open_searcher_s", "true");
-      } else {
-        doc.addField("open_searcher_s", "false");
-      }
+      doc.setField("open_searcher_s", Boolean.toString(line.contains("openSearcher=true")));
 
-      doc.addField("collection_s", parseCollection(line));
-      doc.addField("core_s", parseCore(line));
-      doc.addField("shard_s", parseShard(line));
-      doc.addField("replica_s", parseReplica(line));
+      doc.setField("collection_s", parseCollection(line));
+      doc.setField("core_s", parseCore(line));
+      doc.setField("shard_s", parseShard(line));
+      doc.setField("replica_s", parseReplica(line));
 
       return doc;
     }
@@ -274,48 +295,49 @@ public class SolrLogPostTool {
     private SolrInputDocument parseQueryRecord(String line) {
 
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parseDate(line));
-      doc.addField("qtime_i", parseQTime(line));
-      doc.addField("status_s", parseStatus(line));
+      doc.setField("date_dt", parseDate(line));
+      doc.setField("qtime_i", parseQTime(line));
+      doc.setField("status_s", parseStatus(line));
 
       String path = parsePath(line);
-      doc.addField("path_s", path);
+      doc.setField("path_s", path);
 
       if(line.contains("hits=")) {
-        doc.addField("hits_l", parseHits(line));
+        doc.setField("hits_l", parseHits(line));
       }
 
       String params = parseParams(line);
-      doc.addField("params_t", params);
+      doc.setField("params_t", params);
       addParams(doc, params);
 
-      doc.addField("collection_s", parseCollection(line));
-      doc.addField("core_s", parseCore(line));
-      doc.addField("node_s", parseNode(line));
-      doc.addField("shard_s", parseShard(line));
-      doc.addField("replica_s", parseReplica(line));
+      doc.setField("collection_s", parseCollection(line));
+      doc.setField("core_s", parseCore(line));
+      doc.setField("node_s", parseNode(line));
+      doc.setField("shard_s", parseShard(line));
+      doc.setField("replica_s", parseReplica(line));
 
 
       if(path != null && path.contains("/admin")) {
-        doc.addField("type_s", "admin");
+        doc.setField("type_s", "admin");
       } else if(path != null && params.contains("/replication")) {
-        doc.addField("type_s", "replication");
+        doc.setField("type_s", "replication");
       } else if (path != null && path.contains("/get")) {
-        doc.addField("type_s", "get");
+        doc.setField("type_s", "get");
       } else {
-        doc.addField("type_s", "query");
+        doc.setField("type_s", "query");
       }
 
       return doc;
     }
 
+
     private SolrInputDocument parseNewSearch(String line) {
 
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parseDate(line));
-      doc.addField("core_s", parseNewSearcherCore(line));
-      doc.addField("type_s", "newSearcher");
-      doc.addField("line_t", line);
+      doc.setField("date_dt", parseDate(line));
+      doc.setField("core_s", parseNewSearcherCore(line));
+      doc.setField("type_s", "newSearcher");
+      doc.setField("line_t", line);
 
       return doc;
     }
@@ -332,21 +354,21 @@ public class SolrLogPostTool {
 
     private SolrInputDocument parseUpdate(String line) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parseDate(line));
+      doc.setField("date_dt", parseDate(line));
 
       if(line.contains("deleteByQuery=")) {
-        doc.addField("type_s", "deleteByQuery");
+        doc.setField("type_s", "deleteByQuery");
       } else if(line.contains("delete=")) {
-        doc.addField("type_s", "delete");
+        doc.setField("type_s", "delete");
       } else {
-        doc.addField("type_s", "update");
+        doc.setField("type_s", "update");
       }
 
-      doc.addField("collection_s", parseCollection(line));
-      doc.addField("core_s", parseCore(line));
-      doc.addField("shard_s", parseShard(line));
-      doc.addField("replica_s", parseReplica(line));
-      doc.addField("line_t", line);
+      doc.setField("collection_s", parseCollection(line));
+      doc.setField("core_s", parseCore(line));
+      doc.setField("shard_s", parseShard(line));
+      doc.setField("replica_s", parseReplica(line));
+      doc.setField("line_t", line);
 
       return doc;
     }
@@ -468,66 +490,72 @@ public class SolrLogPostTool {
       return builder.toString();
     }
 
+    private void addOrReplaceFieldValue(SolrInputDocument doc, String fieldName, String fieldValue) {
+      doc.setField(fieldName, fieldValue);
+    }
+
     private void addParams(SolrInputDocument doc,  String params) {
       String[] pairs = params.split("&");
       for(String pair : pairs) {
         String[] parts = pair.split("=");
         if(parts.length == 2 && parts[0].equals("q")) {
           String dq = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("q_s", dq);
-          doc.addField("q_t", dq);
+          setFieldIfUnset(doc, "q_s", dq);
+          setFieldIfUnset(doc, "q_t", dq);
         }
 
         if(parts[0].equals("rows")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("rows_i", dr);
+          setFieldIfUnset(doc, "rows_i", dr);
         }
 
         if(parts[0].equals("distrib")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("distrib_s", dr);
+          setFieldIfUnset(doc, "distrib_s", dr);
         }
 
         if(parts[0].equals("shards")) {
-          doc.addField("shards_s", "true");
+          setFieldIfUnset(doc, "shards_s", "true");
         }
 
-        if(parts[0].equals("ids") && ! isRTGRequest(doc)) {
-          doc.addField("ids_s", "true");
+        if(parts[0].equals("ids") && !isRTGRequest(doc)) {
+          setFieldIfUnset(doc, "ids_s", "true");
         }
 
         if(parts[0].equals("isShard")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("isShard_s", dr);
+          setFieldIfUnset(doc, "isShard_s", dr);
         }
 
         if(parts[0].equals("wt")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("wt_s", dr);
+          setFieldIfUnset(doc, "wt_s", dr);
         }
 
         if(parts[0].equals("facet")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
-          doc.addField("facet_s", dr);
+          setFieldIfUnset(doc, "facet_s", dr);
+        }
+
+        if(parts[0].equals("shards.purpose")) {
+          try {
+            int purpose = Integer.parseInt(parts[1]);
+            String[] purposes = getRequestPurposeNames(purpose);
+            for (String p : purposes) {
+              doc.addField("purpose_ss", p);
+            }
+          } catch(Throwable e) {
+            //We'll just sit on this for now and not interrupt the load for this one field.
+          }
         }
       }
-
 
       //Special params used to determine what stage a query is.
       //So we populate with defaults.
       //The absence of the distrib params means its a distributed query.
-
-      if(doc.getField("distrib_s") == null) {
-        doc.addField("distrib_s", "true");
-      }
-
-      if(doc.getField("shards_s") == null) {
-        doc.addField("shards_s", "false");
-      }
-
-      if(doc.getField("ids_s") == null) {
-        doc.addField("ids_s", "false");
-      }
+      setFieldIfUnset(doc, "distrib_s", "true");
+      setFieldIfUnset(doc, "shards_s", "false");
+      setFieldIfUnset(doc, "ids_s", "false");
     }
 
     private boolean isRTGRequest(SolrInputDocument doc) {
@@ -537,5 +565,54 @@ public class SolrLogPostTool {
 
       return "/get".equals(path.getValue());
     }
+  }
+
+  private static final Map<Integer, String> purposes;
+  protected static final String UNKNOWN_VALUE = "Unknown";
+  private static final String[] purposeUnknown = new String[] { UNKNOWN_VALUE };
+
+  public static String[] getRequestPurposeNames(Integer reqPurpose) {
+    if (reqPurpose != null) {
+      int valid = 0;
+      for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+        if ((reqPurpose & entry.getKey()) != 0) {
+          valid++;
+        }
+      }
+      if (valid == 0) {
+        return purposeUnknown;
+      } else {
+        String[] result = new String[valid];
+        int i = 0;
+        for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+          if ((reqPurpose & entry.getKey()) != 0) {
+            result[i] = entry.getValue();
+            i++;
+          }
+        }
+        return result;
+      }
+    }
+    return purposeUnknown;
+  }
+
+  static {
+    Map<Integer, String> map = new TreeMap<>();
+    map.put(ShardRequest.PURPOSE_PRIVATE, "PRIVATE");
+    map.put(ShardRequest.PURPOSE_GET_TOP_IDS, "GET_TOP_IDS");
+    map.put(ShardRequest.PURPOSE_REFINE_TOP_IDS, "REFINE_TOP_IDS");
+    map.put(ShardRequest.PURPOSE_GET_FACETS, "GET_FACETS");
+    map.put(ShardRequest.PURPOSE_REFINE_FACETS, "REFINE_FACETS");
+    map.put(ShardRequest.PURPOSE_GET_FIELDS, "GET_FIELDS");
+    map.put(ShardRequest.PURPOSE_GET_HIGHLIGHTS, "GET_HIGHLIGHTS");
+    map.put(ShardRequest.PURPOSE_GET_DEBUG, "GET_DEBUG");
+    map.put(ShardRequest.PURPOSE_GET_STATS, "GET_STATS");
+    map.put(ShardRequest.PURPOSE_GET_TERMS, "GET_TERMS");
+    map.put(ShardRequest.PURPOSE_GET_TOP_GROUPS, "GET_TOP_GROUPS");
+    map.put(ShardRequest.PURPOSE_GET_MLT_RESULTS, "GET_MLT_RESULTS");
+    map.put(ShardRequest.PURPOSE_REFINE_PIVOT_FACETS, "REFINE_PIVOT_FACETS");
+    map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
+    map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
+    purposes = Collections.unmodifiableMap(map);
   }
 }

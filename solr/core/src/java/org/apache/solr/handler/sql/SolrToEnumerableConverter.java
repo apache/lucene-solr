@@ -62,12 +62,14 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final RelDataType rowType = getRowType();
     final PhysType physType = PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
     final Expression table = list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
+    @SuppressWarnings({"rawtypes"})
     final Expression fields =
         list.append("fields",
             constantArrayList(
                 Pair.zip(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
                     new AbstractList<Class>() {
                       @Override
+                      @SuppressWarnings({"rawtypes"})
                       public Class get(int index) {
                         return physType.fieldClass(index);
                       }
@@ -122,6 +124,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
    * E.g. {@code constantArrayList("x", "y")} returns
    * "Arrays.asList('x', 'y')".
    */
+  @SuppressWarnings({"rawtypes"})
   private static <T> MethodCallExpression constantArrayList(List<T> values, Class clazz) {
     return Expressions.call(BuiltInMethod.ARRAYS_AS_LIST.method,
         Expressions.newArrayInit(clazz, constantList(values)));

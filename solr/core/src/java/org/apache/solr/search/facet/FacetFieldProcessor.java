@@ -41,6 +41,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
@@ -116,7 +118,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
     }
 
     if (accs != null) {
@@ -162,7 +164,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (indexOrderAcc == null) {
         // This sorting accumulator just goes by the slot number, so does not need to be collected
         // and hence does not need to find it's way into the accMap or accs array.
-        indexOrderAcc = new SortSlotAcc(fcontext);
+        indexOrderAcc = new SlotAcc.SortSlotAcc(fcontext);
       }
       return indexOrderAcc;
     }
@@ -178,7 +180,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // we always count...
     // allow a subclass to set a custom counter.
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, numSlots);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, numSlots);
     }
 
     sortAcc = getTrivialSortingSlotAcc(this.sort);
@@ -292,8 +294,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
-                                        IntFunction<Comparable> bucketValFromSlotNumFunc,
-                                        Function<Comparable, String> fieldQueryValFunc) throws IOException {
+                                        @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
+                                        @SuppressWarnings("rawtypes") Function<Comparable, String> fieldQueryValFunc) throws IOException {
     assert this.sortAcc != null;
     long numBuckets = 0;
 
@@ -437,6 +439,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         sortedSlots = Arrays.copyOfRange(sortedSlots, off, endOffset);
       }
     }
+    @SuppressWarnings({"rawtypes"})
     List<SimpleOrderedMap> bucketList = new ArrayList<>(sortedSlots.length);
 
     for (Slot slot : sortedSlots) {
@@ -492,6 +495,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int slot;
 
     /** filled in only once we know the bucket will either be involved in resorting, or returned */
+    @SuppressWarnings({"rawtypes"})
     Comparable bucketVal;
 
     /** Filled in if and only if needed for resorting, deferred stats, or subfacets */
@@ -798,6 +802,23 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     return false;
   }
 
+  private static final SlotContext ALL_BUCKETS_SLOT_CONTEXT = new SlotContext(null) {
+    @Override
+    public Query getSlotQuery() {
+      throw new IllegalStateException("getSlotQuery() is mutually exclusive with isAllBuckets==true");
+    }
+    @Override
+    public boolean isAllBuckets() {
+      return true;
+    }
+  };
+  private static final IntFunction<SlotContext> ALL_BUCKETS_SLOT_FUNCTION = new IntFunction<SlotContext>() {
+    @Override
+    public SlotContext apply(int value) {
+      return ALL_BUCKETS_SLOT_CONTEXT;
+    }
+  };
+
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
     SlotAcc[] otherAccs;
@@ -826,11 +847,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       assert slot != collectAccSlot || slot < 0;
       count++;
       if (collectAcc != null) {
-        collectAcc.collect(doc, collectAccSlot, slotContext);
+        collectAcc.collect(doc, collectAccSlot, ALL_BUCKETS_SLOT_FUNCTION);
       }
       if (otherAccs != null) {
         for (SlotAcc otherAcc : otherAccs) {
-          otherAcc.collect(doc, otherAccsSlot, slotContext);
+          otherAcc.collect(doc, otherAccsSlot, ALL_BUCKETS_SLOT_FUNCTION);
         }
       }
     }
@@ -899,10 +920,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    "cat1":{"_l":["A"]}}}
    */
 
+  @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
     return list != null ? (List<T>)list : Collections.EMPTY_LIST;
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
@@ -934,6 +957,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     // The only difference between skip and missing is the value of "skip" passed to refineBucket
+
     for (List bucketAndFacetInfo : partial) {
       assert bucketAndFacetInfo.size() == 2;
       Object bucketVal = bucketAndFacetInfo.get(0);

@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 
 final class SingletonDISI extends SweepDISI {
 

@@ -21,6 +21,9 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
 public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
 

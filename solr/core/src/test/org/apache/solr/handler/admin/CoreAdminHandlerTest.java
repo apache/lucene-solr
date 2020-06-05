@@ -117,6 +117,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(dataDir, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    admin.close();
   }
 
   @Test
@@ -243,7 +244,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertNotNull("Core should have been renamed!", cd);
 
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
-
+    admin.close();
   }
 
   @Test
@@ -417,5 +418,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           , resp);
     });
     assertEquals("Expected error message for non-existent core.", "Missing required parameter: core", e.getMessage());
+    admin.close();
   }
 }

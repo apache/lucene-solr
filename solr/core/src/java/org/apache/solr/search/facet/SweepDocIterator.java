@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
 import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 
 abstract class SweepDocIterator implements DocIterator, SweepCountAware {
 

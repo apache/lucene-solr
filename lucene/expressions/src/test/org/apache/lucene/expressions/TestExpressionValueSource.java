@@ -28,8 +28,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestExpressionValueSource extends LuceneTestCase {
   DirectoryReader reader;
@@ -123,6 +126,61 @@ public class TestExpressionValueSource extends LuceneTestCase {
     bindings3.add("b", DoubleValuesSource.fromFloatField("b"));
     DoubleValuesSource vs4 = expr.getDoubleValuesSource(bindings3);
     assertFalse(vs1.equals(vs4));
+  }
+
+  public void testRewrite() throws Exception {
+    Expression expr = JavascriptCompiler.compile("a");
+
+    ExpressionValueSource rewritingExpressionSource = new ExpressionValueSource(
+            new DoubleValuesSource[]{createDoubleValuesSourceMock(true)},
+            expr,
+            false);
+    ExpressionValueSource notRewritingExpressionSource = new ExpressionValueSource(
+            new DoubleValuesSource[]{createDoubleValuesSourceMock(false)},
+            expr,
+            false);
+
+    assertNotSame(rewritingExpressionSource, rewritingExpressionSource.rewrite(null));
+    assertSame(notRewritingExpressionSource, notRewritingExpressionSource.rewrite(null));
+  }
+
+  private static DoubleValuesSource createDoubleValuesSourceMock(boolean rewriting) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return null;
+      }
+
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+
+      @Override
+      public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+        return rewriting ? createDoubleValuesSourceMock(true) : this;
+      }
+
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return false;
+      }
+
+      @Override
+      public String toString() {
+        return null;
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
+    };
   }
 
 }
