@@ -170,10 +170,10 @@ The API uses the Autoscaling framework to find nodes that can satisfy the disk r
 The name of the collection. This parameter is required.
 
 `shard`::
-The name of the shard that the replica belongs to. This parameter is required.
+The name of the shard for which a replica should be moved. Either this parameter or replica is required. If replica is specified, this parameter is ignored.
 
 `replica`::
-The name of the replica. This parameter is required.
+The name of the replica to move. Either this parameter or shard is required.
 
 `sourceNode`::
 The name of the node that contains the replica. This parameter is required.
