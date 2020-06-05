@@ -65,6 +65,8 @@ Improvements
 
 * LUCENE-9359: SegmentInfos#readCommit now always returns a
   CorruptIndexException if the content of the file is invalid. (Adrien Grand)
+  
+* LUCENE-9393: FunctionScoreQuery turns TOP_DOCS to COMPLETE in inner weights
 
 Optimizations
 ---------------------
