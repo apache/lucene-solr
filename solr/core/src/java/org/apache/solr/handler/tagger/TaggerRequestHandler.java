@@ -161,6 +161,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
     final SolrIndexSearcher searcher = req.getSearcher();
     final FixedBitSet matchDocIdsBS = new FixedBitSet(searcher.maxDoc());
+    @SuppressWarnings({"rawtypes"})
     final List tags = new ArrayList(2000);
 
     try {
@@ -186,6 +187,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
                 endOffset = offsetPair[1];
               }
 
+              @SuppressWarnings({"rawtypes"})
               NamedList tag = new NamedList();
               tag.add("startOffset", startOffset);
               tag.add("endOffset", endOffset);
@@ -196,19 +198,20 @@ public class TaggerRequestHandler extends RequestHandlerBase {
               tags.add(tag);
             }
 
+            @SuppressWarnings({"rawtypes"})
             Map<Object, List> docIdsListCache = new HashMap<>(2000);
 
             ValueSourceAccessor uniqueKeyCache = new ValueSourceAccessor(searcher,
                 idSchemaField.getType().getValueSource(idSchemaField, null));
 
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings({"unchecked", "rawtypes"})
             private List lookupSchemaDocIds(Object docIdsKey) {
               List schemaDocIds = docIdsListCache.get(docIdsKey);
               if (schemaDocIds != null)
                 return schemaDocIds;
               IntsRef docIds = lookupDocIds(docIdsKey);
               //translate lucene docIds to schema ids
-              schemaDocIds = new ArrayList(docIds.length);
+              schemaDocIds = new ArrayList<>(docIds.length);
               for (int i = docIds.offset; i < docIds.offset + docIds.length; i++) {
                 int docId = docIds.ints[i];
                 assert i == docIds.offset || docIds.ints[i - 1] < docId : "not sorted?";
@@ -365,6 +368,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
   static class ValueSourceAccessor {
     private final List<LeafReaderContext> readerContexts;
     private final ValueSource valueSource;
+    @SuppressWarnings({"rawtypes"})
     private final Map fContext;
     private final FunctionValues[] functionValuesPerSeg;
     private final int[] functionValuesDocIdPerSeg;

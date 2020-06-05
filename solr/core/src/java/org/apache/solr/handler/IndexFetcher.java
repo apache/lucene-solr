@@ -230,7 +230,7 @@ public class IndexFetcher {
     return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(), true);
   }
 
-  public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
+  public IndexFetcher(@SuppressWarnings({"rawtypes"})final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
     Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
@@ -272,7 +272,8 @@ public class IndexFetcher {
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
   
-  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  @SuppressWarnings({"unchecked"})
+  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
       T temp = (T) initArgs.get(configKey);
@@ -285,7 +286,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the master
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   NamedList getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
@@ -309,6 +310,7 @@ public class IndexFetcher {
   /**
    * Fetches the list of files in a given index commit point and updates internal list of files to download.
    */
+  @SuppressWarnings({"unchecked"})
   private void fetchFileList(long gen) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND,  CMD_GET_FILE_LIST);
@@ -324,6 +326,7 @@ public class IndexFetcher {
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
         .build()) {
+      @SuppressWarnings({"rawtypes"})
       NamedList response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
@@ -410,6 +413,7 @@ public class IndexFetcher {
         }
       }
       //get the current 'replicateable' index version in the master
+      @SuppressWarnings({"rawtypes"})
       NamedList response;
       try {
         response = getLatestVersion();
@@ -917,6 +921,7 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
+      @SuppressWarnings({"rawtypes"})
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
@@ -1481,11 +1486,14 @@ public class IndexFetcher {
    *
    * @return a list of configuration files which have changed on the master and need to be downloaded.
    */
+  @SuppressWarnings({"unchecked"})
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.EMPTY_LIST;
     //build a map with alias/name as the key
+    @SuppressWarnings({"rawtypes"})
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
+    @SuppressWarnings({"rawtypes"})
     NamedList names = new NamedList();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the slave
@@ -1562,6 +1570,7 @@ public class IndexFetcher {
     return timeElapsed;
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getTlogFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = tlogFilesToDownload;
@@ -1569,6 +1578,7 @@ public class IndexFetcher {
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getTlogFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = tlogFilesDownloaded;
@@ -1576,6 +1586,7 @@ public class IndexFetcher {
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
@@ -1583,6 +1594,7 @@ public class IndexFetcher {
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
@@ -1590,12 +1602,14 @@ public class IndexFetcher {
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
+  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
@@ -1857,6 +1871,7 @@ public class IndexFetcher {
       }
 
 
+      @SuppressWarnings({"rawtypes"})
       NamedList response;
       InputStream is = null;
 
@@ -1966,6 +1981,7 @@ public class IndexFetcher {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   NamedList getDetails() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
