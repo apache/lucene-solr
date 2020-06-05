@@ -664,10 +664,10 @@ public abstract class SlotAcc implements Closeable {
     final List<SweepCountAccStruct> others = new ArrayList<>();
     private final List<SlotAcc> output = new ArrayList<>();
 
-    SweepingCountSlotAcc(FacetContext fcontext, int numSlots, FacetFieldProcessor p) {
+    SweepingCountSlotAcc(FacetContext fcontext, int numSlots, FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
       super(fcontext, numSlots);
       this.p = p;
-      this.base = new SweepCountAccStruct(fcontext.base, true, this);
+      this.base = new SweepCountAccStruct(fcontext.base, true, baseCountAcc == null ? this : baseCountAcc);
       final FacetDebugInfo fdebug = fcontext.getDebugInfo();
       this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
       if (null != this.debug) {

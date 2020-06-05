@@ -68,9 +68,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   @Override
   protected void createAccs(long docCount, int slotCount) throws IOException {
-    if (countAcc == null) {
-      countAcc = new SweepingCountSlotAcc(fcontext, slotCount, this);
-    }
+    countAcc = new SweepingCountSlotAcc(fcontext, slotCount, this, countAcc);
     super.createAccs(docCount, slotCount);
   }
 
@@ -81,9 +79,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   @Override
   void createCollectAcc(int numDocs, int numSlots) throws IOException {
-    if (countAcc == null) {
-      countAcc = new SweepingCountSlotAcc(fcontext, numSlots, this);
-    }
+    countAcc = new SweepingCountSlotAcc(fcontext, numSlots, this, countAcc);
     super.createCollectAcc(numDocs, numSlots);
   }
 
