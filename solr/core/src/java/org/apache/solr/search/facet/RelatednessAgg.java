@@ -187,6 +187,10 @@ public class RelatednessAgg extends AggValueSource {
     private final ReadOnlyCountSlotAcc bgCount;
     private double[] relatedness;
 
+    private static final int NO_ALL_BUCKETS = -2;
+    private static final int ALL_BUCKETS_UNINITIALIZED = -1;
+    private int allBucketsSlot;
+
     public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
@@ -196,16 +200,17 @@ public class RelatednessAgg extends AggValueSource {
       this.bgCount = bgCount;
       relatedness = new double[numSlots];
       Arrays.fill(relatedness, 0, numSlots, Double.NaN);
+      this.allBucketsSlot =  ((FacetFieldProcessor)fcontext.processor).freq.allBuckets ? ALL_BUCKETS_UNINITIALIZED : NO_ALL_BUCKETS;;
     }
 
     @Override
     public void collect(int perSegDocId, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      //No-op
+      throw new UnsupportedOperationException("not supported");
     }
 
     @Override
     public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      return docs.size();
+      throw new UnsupportedOperationException("not supported");
     }
 
     private double getRelatedness(int slot) {
@@ -239,7 +244,18 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public Object getValue(int slotNum) {
-      BucketData slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      final BucketData slotVal;
+      if (allBucketsSlot == ALL_BUCKETS_UNINITIALIZED) {
+        //nocommit: we can't get this slotContext in collect, b/c the whole point of sweep collection is that the "collect"
+        //nocommit: methods aren't called. This is an awkward construction, but illustrates the problem by way of presenting
+        //nocommit: a crude solution?
+        allBucketsSlot = ((FacetFieldProcessor)fcontext.processor).allBucketsAcc.collectAccSlot;
+      }
+      if (slotNum == allBucketsSlot) {
+        slotVal = new BucketData(null);
+      } else {
+        slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      }
       SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
       return res;
     }
@@ -247,6 +263,9 @@ public class RelatednessAgg extends AggValueSource {
     @Override
     public void reset() throws IOException {
       Arrays.fill(relatedness, Double.NaN);
+      if (allBucketsSlot != NO_ALL_BUCKETS) {
+        allBucketsSlot = ALL_BUCKETS_UNINITIALIZED;
+      }
     }
 
     @Override
