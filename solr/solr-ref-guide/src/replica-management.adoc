@@ -162,8 +162,6 @@ This command moves a replica from one node to a new node. In case of shared file
 
 The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the replica to be moved but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
-`/admin/collections?action=MOVEREPLICA&collection=collection&shard=shard&replica=replica&sourceNode=nodeName&targetNode=nodeName`
-
 === MOVEREPLICA Parameters
 
 `collection`::
@@ -183,6 +181,69 @@ The name of the destination node. This parameter is required.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== Examples using MOVEREPLICA
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v2moveReplica]
+====
+[.tab-label]*V2 API*
+*Input*
+
+`POST /api/c/test2`
+
+[source,json]
+----
+{
+  "move-replica":{
+    "replica":"core_node6",
+    "sourceNode":"localhost:8982_sol",
+    "targetNode": "localhost:8983_solr"
+  }
+}
+----
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 3668
+    },
+    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
+}
+----
+====
+
+[example.tab-pane#v1createAlias]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&targetNode=localhost:8983_solr&fromNode=localhost:8982_solr&replica=core_node6
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 3668
+    },
+    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
+}
+----
+====
+--
+
 
 [[deletereplica]]
 == DELETEREPLICA: Delete a Replica
