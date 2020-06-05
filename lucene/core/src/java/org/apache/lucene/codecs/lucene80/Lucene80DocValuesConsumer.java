@@ -47,7 +47,6 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -63,6 +62,8 @@ import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_
 
 /** writer for {@link Lucene80DocValuesFormat} */
 final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Closeable {
+
+  private static final int BINARY_LENGTH_COMPRESSION_THRESHOLD = 32;
 
   IndexOutput data, meta;
   final int maxDoc;
@@ -366,7 +367,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
-    final long[] docLengths = new long[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
+    final int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
     byte[] block = BytesRef.EMPTY_BYTES;
     int totalChunks = 0;
     long maxPointer = 0;
@@ -400,18 +401,6 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       }      
     }
 
-    private void encode32Bytes(long[] arr) {
-      for (int i = 0; i < 4; ++i) {
-        arr[i] = (arr[i] << 56) | (arr[4+i] << 48) | (arr[8+i] << 40) | (arr[12+i] << 32) | (arr[16+i] << 24) | (arr[20+i] << 16) | (arr[24+i] << 8) | arr[28+i];
-      }
-    }
-
-    private void encode32Ints(long[] arr) {
-      for (int i = 0; i < 16; ++i) {
-        arr[i] = (arr[i] << 32) | arr[16+i];
-      }
-    }
-
     private void flushData() throws IOException {
       if (numDocsInCurrentBlock > 0) {
         // Write offset to this block to temporary offsets file
@@ -420,29 +409,33 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
         final int avgLength = uncompressedBlockLength >>> Lucene80DocValuesFormat.BINARY_BLOCK_SHIFT;
         int offset = 0;
+        // Turn docLengths into deltas from expected values from the average length
         for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
           offset += docLengths[i];
-          docLengths[i] = BitUtil.zigZagEncode(offset - avgLength * (i + 1));
+          docLengths[i] = offset - avgLength * (i + 1);
         }
-        long maxDelta = 0;
+        int numBytes = 0;
         for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
-          maxDelta = Math.max(docLengths[i], maxDelta);
+          if (docLengths[i] < Byte.MIN_VALUE || docLengths[i] > Byte.MAX_VALUE) {
+            numBytes = Integer.BYTES;
+            break;
+          } else if (docLengths[i] != 0) {
+            numBytes = Math.max(numBytes, Byte.BYTES);
+          }
         }
-        int numBits = 64 - Long.numberOfLeadingZeros(maxDelta);
-        assert numBits <= 32;
-        data.writeVLong((((long) uncompressedBlockLength) << 6) | numBits);
+        data.writeVLong((((long) uncompressedBlockLength) << 4) | numBytes);
 
-        if (numBits > 8) {
+        if (numBytes == Integer.BYTES) {
           // encode deltas as ints
-          encode32Ints(docLengths);
-          for (int i = 0; i < 16; ++i) {
-            data.writeLong(Long.reverseBytes(docLengths[i]));
+          for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
+            data.writeInt(Integer.reverseBytes(docLengths[i]));
           }
-        } else if (numBits != 0) {
-          encode32Bytes(docLengths);
-          for (int i = 0; i < 4; ++i) {
-            data.writeLong(Long.reverseBytes(docLengths[i]));
+        } else if (numBytes == 1) {
+          for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; ++i) {
+            data.writeByte((byte) docLengths[i]);
           }
+        } else if (numBytes != 0) {
+          throw new AssertionError();
         }
 
         maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
@@ -452,7 +445,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         // overhead and enable compression again, e.g. by building shared
         // dictionaries that allow decompressing one value at once instead of
         // forcing 32 values to be decompressed even when you only need one?
-        if (uncompressedBlockLength >= 32 * numDocsInCurrentBlock) {
+        if (uncompressedBlockLength >= BINARY_LENGTH_COMPRESSION_THRESHOLD * numDocsInCurrentBlock) {
           LZ4.compress(block, 0, uncompressedBlockLength, data, highCompHt);
         } else {
           LZ4.compress(block, 0, uncompressedBlockLength, data, noCompHt);

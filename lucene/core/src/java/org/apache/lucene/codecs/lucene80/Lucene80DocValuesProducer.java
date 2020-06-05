@@ -18,7 +18,8 @@ package org.apache.lucene.codecs.lucene80;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +44,6 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
@@ -768,7 +768,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     private final IndexInput compressedData;
     // Cache of last uncompressed block 
     private long lastBlockId = -1;
-    private final long[] deltas;
+    private final ByteBuffer deltas;
+    private int numBytes;
     private int uncompressedBlockLength;  
     private int avgLength;
     private final byte[] uncompressedBlock;
@@ -785,29 +786,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       uncompressedBytesRef = new BytesRef(uncompressedBlock);
       this.docsPerChunk = 1 << docsPerChunkShift;
       this.docsPerChunkShift = docsPerChunkShift;
-      deltas = new long[docsPerChunk];
-    }
-
-    private void decode32Bytes(long[] arr) {
-      for (int i = 0; i < 4; ++i) {
-        long l = arr[i];
-        arr[i] = (l >>> 56) & 0xFFL;
-        arr[4+i] = (l >>> 48) & 0xFFL;
-        arr[8+i] = (l >>> 40) & 0xFFL;
-        arr[12+i] = (l >>> 32) & 0xFFL;
-        arr[16+i] = (l >>> 24) & 0xFFL;
-        arr[20+i] = (l >>> 16) & 0xFFL;
-        arr[24+i] = (l >>> 8) & 0xFFL;
-        arr[28+i] = l & 0xFFL;
-      }
-    }
-
-    private void decode32Ints(long[] arr) {
-      for (int i = 0; i < 16; ++i) {
-        long l = arr[i];
-        arr[i] = l >>> 32;
-        arr[16 + i] = l & 0xFFFFFFFFL;
-      }
+      deltas = ByteBuffer.allocate((docsPerChunk + 1) * Integer.BYTES);
+      deltas.order(ByteOrder.LITTLE_ENDIAN);
     }
 
     private void decodeBlock(int blockId) throws IOException {
@@ -815,17 +795,21 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       compressedData.seek(blockStartOffset);
 
       final long token = compressedData.readVLong();
-      uncompressedBlockLength = (int) (token >>> 6);
+      uncompressedBlockLength = (int) (token >>> 4);
       avgLength = uncompressedBlockLength >>> docsPerChunkShift;
-      final int numBits = (int) (token & 0x3f);
-      if (numBits > 8) {
-        compressedData.readLELongs(deltas, 0, 16);
-        decode32Ints(deltas);
-      } else if (numBits != 0) {
-        compressedData.readLELongs(deltas, 0, 4);
-        decode32Bytes(deltas);
-      } else {
-        Arrays.fill(deltas, 0);
+      numBytes = (int) (token & 0x0f);
+      switch (numBytes) {
+        case Integer.BYTES:
+          deltas.putInt(0, (int) 0);
+          compressedData.readBytes(deltas.array(), Integer.BYTES, docsPerChunk * Integer.BYTES);
+          break;
+        case Byte.BYTES:
+          compressedData.readBytes(deltas.array(), Byte.BYTES, docsPerChunk * Byte.BYTES);
+          break;
+        case 0:
+          break;
+        default:
+          throw new CorruptIndexException("Invalid number of bytes: " + numBytes, compressedData);
       }
 
       if (uncompressedBlockLength == 0) {
@@ -849,12 +833,21 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         lastBlockId = blockId;
       }
 
-      if (docInBlockId == 0) {
-        uncompressedBytesRef.offset = 0;
-      } else {
-        uncompressedBytesRef.offset = avgLength * docInBlockId + (int) BitUtil.zigZagDecode(deltas[docInBlockId-1]);
+      int startDelta = 0, endDelta = 0;
+      switch (numBytes) {
+        case Integer.BYTES:
+          startDelta = deltas.getInt(docInBlockId * Integer.BYTES);
+          endDelta = deltas.getInt((docInBlockId + 1) * Integer.BYTES);
+          break;
+        case Byte.BYTES:
+          startDelta = deltas.get(docInBlockId);
+          endDelta = deltas.get(docInBlockId + 1);
+          break;
       }
-      uncompressedBytesRef.length = avgLength * (docInBlockId+1) + (int) BitUtil.zigZagDecode(deltas[docInBlockId]) - uncompressedBytesRef.offset;
+
+      uncompressedBytesRef.offset = docInBlockId * avgLength + startDelta;
+      uncompressedBytesRef.length = avgLength + endDelta - startDelta;
+
       return uncompressedBytesRef;
     }    
   }
