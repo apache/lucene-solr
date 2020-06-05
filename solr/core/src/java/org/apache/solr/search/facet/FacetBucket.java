@@ -106,7 +106,10 @@ public class FacetBucket {
     if (subs != null) {
       for (Map.Entry<String,FacetMerger> mergerEntry : subs.entrySet()) {
         FacetMerger subMerger = mergerEntry.getValue();
-        out.add(mergerEntry.getKey(), subMerger.getMergedResult());
+        Object mergedResult = subMerger.getMergedResult();
+        if (null != mergedResult) {
+          out.add(mergerEntry.getKey(), mergedResult);
+        }
       }
     }
 
