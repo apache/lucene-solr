@@ -490,7 +490,7 @@ public class BKDWriter implements Closeable {
     };
 
     long indexFP = indexOut.getFilePointer();
-    writeIndex(metaOut, maxPointsInLeafNode, leafNodes);
+    writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
     return indexFP;
   }
 
@@ -673,7 +673,7 @@ public class BKDWriter implements Closeable {
           return leafBlockFPs.size();
         }
       };
-      writeIndex(metaOut, maxPointsInLeafNode, leafNodes);
+      writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
       return indexFP;
     }
 
@@ -868,7 +868,7 @@ public class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = indexOut.getFilePointer();
-    writeIndex(metaOut, maxPointsInLeafNode, leafNodes);
+    writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
     return indexFP;
   }
 
@@ -1026,9 +1026,9 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private void writeIndex(IndexOutput out, int countPerLeaf, BKDTreeLeafNodes leafNodes) throws IOException {
+  private void writeIndex(IndexOutput metaOut, IndexOutput indexOut, int countPerLeaf, BKDTreeLeafNodes leafNodes, long dataStartFP) throws IOException {
     byte[] packedIndex = packIndex(leafNodes);
-    writeIndex(metaOut, indexOut, countPerLeaf, leafNodes.numLeaves(), packedIndex);
+    writeIndex(metaOut, indexOut, countPerLeaf, leafNodes.numLeaves(), packedIndex, dataStartFP);
   }
   
   private void writeIndex(IndexOutput metaOut, IndexOutput indexOut, int countPerLeaf, int numLeaves, byte[] packedIndex, long dataStartFP) throws IOException {
