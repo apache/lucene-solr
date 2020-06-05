@@ -50,6 +50,14 @@ public abstract class Scorable {
   }
 
   /**
+   * Returns the estimated cost of the {@link DocIdSetIterator} associated with this {@link Scorable}.
+   * 0 is the default value if the {@link Scorable} doesn't have any associated {@link DocIdSetIterator}.
+   */
+  public long iteratorCost() {
+    return 0;
+  }
+
+  /**
    * Returns child sub-scorers positioned on the current document
    * @lucene.experimental
    */

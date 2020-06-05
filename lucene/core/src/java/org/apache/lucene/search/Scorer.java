@@ -72,6 +72,14 @@ public abstract class Scorer extends Scorable {
   public abstract DocIdSetIterator iterator();
 
   /**
+   * Returns the estimated cost of the {@link DocIdSetIterator} associated with this {@link Scorer}.
+   */
+  @Override
+  public long iteratorCost() {
+    return iterator().cost();
+  }
+
+  /**
    * Optional method: Return a {@link TwoPhaseIterator} view of this
    * {@link Scorer}. A return value of {@code null} indicates that
    * two-phase iteration is not supported.
