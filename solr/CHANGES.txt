@@ -145,6 +145,10 @@ Bug Fixes
 * SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
   (Michael Gibney, hossman)
 
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid

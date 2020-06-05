@@ -743,6 +743,22 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
+  private static final SlotContext ALL_BUCKETS_SLOT_CONTEXT = new SlotContext(null) {
+    @Override
+    public Query getSlotQuery() {
+      throw new IllegalStateException("getSlotQuery() is mutually exclusive with isAllBuckets==true");
+    }
+    @Override
+    public boolean isAllBuckets() {
+      return true;
+    }
+  };
+  private static final IntFunction<SlotContext> ALL_BUCKETS_SLOT_FUNCTION = new IntFunction<SlotContext>() {
+    @Override
+    public SlotContext apply(int value) {
+      return ALL_BUCKETS_SLOT_CONTEXT;
+    }
+  };
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -771,11 +787,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       assert slot != collectAccSlot || slot < 0;
       count++;
       if (collectAcc != null) {
-        collectAcc.collect(doc, collectAccSlot, slotContext);
+        collectAcc.collect(doc, collectAccSlot, ALL_BUCKETS_SLOT_FUNCTION);
       }
       if (otherAccs != null) {
         for (SlotAcc otherAcc : otherAccs) {
-          otherAcc.collect(doc, otherAccsSlot, slotContext);
+          otherAcc.collect(doc, otherAccsSlot, ALL_BUCKETS_SLOT_FUNCTION);
         }
       }
     }
