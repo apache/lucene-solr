@@ -105,10 +105,10 @@ public final class FunctionScoreQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    ScoreMode sm = scoreMode;
-    if (scoreMode.needsScores() && source.needsScores() && scoreMode == ScoreMode.TOP_SCORES) {
+    ScoreMode sm;
+    if (scoreMode.needsScores() && source.needsScores()) {
       sm = ScoreMode.COMPLETE;
-    } else if (!scoreMode.needsScores() || !source.needsScores()) {
+    } else {
       sm = ScoreMode.COMPLETE_NO_SCORES;
     }
     Weight inner = in.createWeight(searcher, sm, 1f);
