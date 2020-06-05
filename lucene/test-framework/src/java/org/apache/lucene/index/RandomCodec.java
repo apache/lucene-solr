@@ -40,8 +40,8 @@ import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsReader;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsWriter;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
@@ -99,7 +99,7 @@ public class RandomCodec extends AssertingCodec {
 
         // Randomize how BKDWriter chooses its splits:
 
-        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
+        return new Lucene86PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
           @Override
           public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
@@ -133,7 +133,8 @@ public class RandomCodec extends AssertingCodec {
 
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
                 if (writer.getPointCount() > 0) {
-                  indexFPs.put(fieldInfo.name, writer.finish(dataOut, dataOut, dataOut));
+                  metaOut.writeInt(fieldInfo.number);
+                  writer.finish(metaOut, indexOut, dataOut);
                 }
               }
           }
@@ -142,7 +143,7 @@ public class RandomCodec extends AssertingCodec {
 
       @Override
       public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-        return new Lucene60PointsReader(readState);
+        return new Lucene86PointsReader(readState);
       }
     });
   }

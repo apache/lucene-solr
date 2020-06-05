@@ -39,7 +39,7 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
-/** Reads point values previously written with {@link Lucene60PointsWriter} */
+/** Reads point values previously written with Lucene60PointsWriter */
 public class Lucene60PointsReader extends PointsReader implements Closeable {
   final IndexInput dataIn;
   final SegmentReadState readState;
