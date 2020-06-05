@@ -85,28 +85,11 @@ templates:
     This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
     ----
     {%- endmacro %}
-  announce_tlp: |
-    ## {{ release_date | formatdate | default('<date>') }}, Apache Lucene {{ release_version }} and Apache Solr {{ release_version }} available
-
-    The Lucene PMC is pleased to announce the release of Apache® Lucene™ {{ release_version }} and Apache® Solr™ {{ release_version }}.
-
-    Lucene can be downloaded from <https://lucene.apache.org/core/downloads.html>
-    and Solr can be downloaded from <https://lucene.apache.org/solr/downloads.html>
-
-    ### Highlights of this Lucene release include:
-    
-    {% for line in load_lines(lucene_highlights_file) %}
-      {{ line }}
-    {%- endfor %}
-
-
-    ### Highlights of this Solr release include:
-
-    {% for line in load_lines(solr_highlights_file) %}
-      {{ line }}
-    {%- endfor %}
   announce_lucene: |
-    ## {{ release_date | formatdate | default('<date>') }}, Apache Lucene™ {{ release_version }} available
+    Title: Apache Lucene™ {{ release_version }} available
+    category: core/news
+    URL:
+    save_as:
 
     The Lucene PMC is pleased to announce the release of Apache Lucene {{ release_version }}.
 
@@ -118,16 +101,16 @@ templates:
 
     ### Lucene {{ release_version }} Release Highlights:
 
-    {% for line in load_lines(lucene_highlights_file) %}
-      {{ line }}
-    {%- endfor %}
-
+     * Feature 1 pasted from WIKI release notes
+     * Feature 2 ...
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
 
       <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr: |
-    ## {{ release_date | formatdate | default('<date>') }}, Apache Solr™ {{ release_version }} available
+    Title: Apache Solr™ {{ release_version }} available
+    category: solr/news
+    save_as:
 
     The Lucene PMC is pleased to announce the release of Apache Solr {{ release_version }}.
 
@@ -139,10 +122,8 @@ templates:
 
     ### Solr {{ release_version }} Release Highlights:
 
-    {% for line in load_lines(solr_highlights_file) %}
-      {{ line }}
-    {%- endfor %}
-
+     * Feature 1 pasted from WIKI release notes
+     * Feature 2 ...
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
 
@@ -176,7 +157,7 @@ templates:
     (( template=announce_lucene_mail_body ))
     ----
   announce_lucene_mail_body: |
-    {% for line in load_lines(lucene_news_draft) -%}
+    {% for line in load_lines(lucene_news_file, 5) -%}
     {{ line }}
     {%- endfor %}
 
@@ -210,7 +191,7 @@ templates:
     (( template=announce_solr_mail_body ))
     ----
   announce_solr_mail_body: |
-    {% for line in load_lines(solr_news_draft) -%}
+    {% for line in load_lines(solr_news_file, 4) -%}
     {{ line }}
     {%- endfor %}
 
@@ -622,16 +603,18 @@ groups:
     id: draft_release_notes
     title: Get a draft of the release notes in place
     description: |-
-      These are typically edited on the Wiki.
+      These are typically edited on the Wiki
 
       Clone a page for a previous version as a starting point for your release notes.
       You will need two pages, one for Lucene and another for Solr, see links.
       Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
+
+      NOTE: Do not add every single JIRA issue, but distill the Release note into important changes!
     links:
-    - https://wiki.apache.org/lucene-java/ReleaseNote77
-    - https://wiki.apache.org/solr/ReleaseNote77
+    - https://cwiki.apache.org/confluence/display/LUCENE/Release+Notes
+    - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
     id: new_jira_versions
     title: Add a new version in JIRA for the next release
@@ -1009,7 +992,7 @@ groups:
       . Select "Staging Repositories" under "Build Promotion" from the navigation bar on the left
       . Select the staging repository containing the Lucene artifacts
       . Click on the "Close" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }} RC{{ rc_number }}"
-      * The system will not spend some time validating the artifacts. Grab a coke and come back.
+      * The system will now spend some time validating the artifacts. Grab a coke and come back.
       * Release the Lucene and/or Solr artifacts
       . Wait and keep clicking refresh until the "Release" button becomes available
       . Click on the "Release" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }}".
@@ -1034,50 +1017,16 @@ groups:
   id: website
   title: Update the website
   description: |
-    For every release we publish docs on the website, we need to update the
-    download pages etc.
+    For every release, we publish docs on the website, we need to update the
+    download pages etc. The website is hosted in https://github.com/apache/lucene-site
+    but the Javadocs and Solr Reference Guide are pushed to SVN and then included
+    in the main site through links.
   todos:
-  - !Todo
-    id: website_expaths
-    title: Update extpaths.txt
-    description: |
-      The file extpaths.txt lists paths in the svn production tree, relative to the project website's root directory, 
-      that are allowed to be out of sync with the staging tree. We need to update this in order to push generated
-      javadocs directly to production SVN and thus avoid breaking the CMS staging capability.
-    links:
-    - http://www.apache.org/dev/cmsref
-    - http://www.apache.org/dev/cmsref#extpaths
-    - http://www.apache.org/dev/cmsref#generated-docs
-    commands: !Commands
-      root_folder: '{{ release_folder }}'
-      confirm_each_command: true
-      commands:
-      - !Command
-        cmd: svn co https://svn.apache.org/repos/asf/lucene/cms/trunk  website-source
-        logfile: svn-checkout-website.log
-        tee: true
-      - !Command
-        cmd: echo core/{{ release_version_underscore }}
-        cwd: website-source/content
-        redirect: extpaths.txt
-        redirect_append: true
-        comment: Add Lucene javadocs dir to extpaths
-      - !Command
-        cmd: echo solr/{{ release_version_underscore }}
-        cwd: website-source/content
-        redirect: extpaths.txt
-        redirect_append: true
-        comment: Add Solr javadocs dir to extpaths
-      - !Command
-        cmd: svn commit -m "Update CMS production sync exceptions for {{ release_version_underscore }} javadocs" extpaths.txt
-        cwd: website-source/content
-        logfile: svn_commit_website.log
-        tee: true
   - !Todo
     id: website_docs
     title: Publish docs, changes and javadocs
     description: |
-      Ensure your refridgerator has at least 2 beers - the svn import operation can take a while, 
+      Ensure your refrigerator has at least 2 beers - the svn import operation can take a while,
       depending on your upload bandwidth. We'll publish this directly to the production tree.
       At the end of the task, the two links below shall work.
     links:
@@ -1088,7 +1037,7 @@ groups:
       version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Check out the CMS content folder
+      commands_text: Build the documentation and add it to SVN production tree
       commands:
       - !Command
         cmd: git fetch && git checkout {{ release_tag }}
@@ -1107,132 +1056,100 @@ groups:
         logfile: add-docs-solr.log
         comment: Add docs for Solr
   - !Todo
-    id: website_javadoc_redirect
-    title: Update redirect to latest Javadoc
-    depends: website_expaths
+    id: website_git_clone
+    title: Do a clean git clone of the website repo
+    description: This is where we'll commit later updates for the website.
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Run this command to clone the website git repo
+      remove_files:
+        - '{{ git_website_folder }}'
+      commands:
+        - !Command
+          cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-site.git lucene-site
+          logfile: website_git_clone.log
+  - !Todo
+    id: website_update_versions
+    title: Update website versions
+    depends: website_git_clone
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
-      version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
     description: |
-      We make it possible to link to latest javadoc by providing redirect links for e.g. 
-      http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
-      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/<version>.
-      This is handled in `.htaccess`
+      We need to update the website so that the download pages list the new release, and the
+      "latest" javadoc links point to the new release.
 
-      *NOT YET IMPLEMENTED*
-    function: website_javadoc_redirect
-    asciidoc: |
-      We make it possible to link to latest javadoc by providing redirect links for e.g. 
-      http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
-      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/<version>.
-
-      If we are releasing the latest version, this task will offer to patch the `.htaccess`
-      file with latest redirect info and commit this file back to website svn.
-    post_description: After the task is done, please test that the links below redirect to the correct version
-    links:
-    - http://lucene.apache.org/solr/api/solr-core/
-    - http://lucene.apache.org/core/api/core/
-  - !Todo
-    id: prepare_highlights
-    title: Edit the release highlights for Lucene and Solr
-    description: |
-      You will edit the release highlights for Lucene and Solr.
-      This will be done in two separate files, one highlight per line,
-      each line starting with a '*'.
-    function: prepare_highlights
+      Fortunately the only thing you need to change is a few variables in `pelicanconf.py`.
+      If you release a current latest release, change the `LUCENE_LATEST_RELEASE` and `LUCENE_LATEST_RELEASE_DATE`
+      variables.
+      If you relese a bugfix release for previos version, then change the `LUCENE_PREVIOUS_MAJOR_RELEASE` variable.
     commands: !Commands
-      root_folder: '{{ release_folder }}'
+      root_folder: '{{ git_website_folder }}'
+      commands_text: Edit pelicanconf.py to update version numbers
+      commands:
+        - !Command
+          cmd: "{{ editor }} pelicanconf.py"
+          comment: Edit the pelicanconf.file
+          stdout: true
+        - !Command
+          cmd: git commit -am "Update version variables for release {{ release_version }}"
+          logfile: commit.log
+          stdout: true
+    post_description: |
+      You will push and verify all changes in a later step
+  - !Todo
+    id: prepare_announce_lucene
+    title: Author the Lucene release news
+    depends: website_git_clone
+    description: |
+      Edit a news text for the Lucene website. This text will be the basis for the release announcement email later.
+      This step will open an editor with a template. You will need to copy/paste the final release announcement text
+      from the Wiki page and format it as Markdown.
+    function: prepare_announce_lucene
+    commands: !Commands
+      root_folder: '{{ git_website_folder }}'
       commands_text: |
-        Edit the highlights files, one highlight per line.
+        Copy the Lucene announcement from https://cwiki.apache.org/confluence/display/LUCENE/Release+Notes
         You have to exit the editor after edit to continue.
       commands:
-      - !Command
-        cmd: "{{ editor }} {{ lucene_highlights_file }}"
-        comment: Edit the Lucene highlights      
-      - !Command
-        cmd: "{{ editor }} {{ solr_highlights_file }}"
-        comment: Edit the Solr highlights      
-  - !Todo
-    id: prepare_announce
-    title: Edit the drafts for the website news
-    description: |
-      Edit draft news texts for the TLP site and for Lucene and Solr sites.
-      These texts will also be used as a starting point for the release email later.
-    function: prepare_announce
-    commands: !Commands
-      root_folder: '{{ release_folder }}'
-      commands_text: |
-        Proof read the draft announcements and edit as you see fit.
-        You have to exit the editor after edit to continue.
-      commands:
-      - !Command
-        cmd: "{{ editor }} {{ tlp_news_draft }}"
-        comment: Edit the draft for TLP news announcement
-      - !Command
-        cmd: "{{ editor }} {{ lucene_news_draft }}"
-        comment: Edit the draft for Lucene announcement
-      - !Command
-        cmd: "{{ editor }} {{ solr_news_draft }}"
-        comment: Edit the draft for Solr announcement
-  - !Todo
-    id: update_news
-    title: Publish news to the web site
-    depends: prepare_announce
-    description: |
-      Update the news sections of the TLP, Lucene and Solr sites
-    vars:
-      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
-    function: update_news
-    commands: !Commands
-      root_folder: '{{ website_source }}'
-      commands_text: |
-        Add news to the site. We'll first add the {{ release_version }} text to the file, 
-        then ask you to edit the file to verify the end result. You will now only edit
-        the files, we'll commit all changes in a later step.
-
-        You have to exit the editor after edit to continue.
-      commands:
-      - !Command
-        cmd: "{{ editor }} {{ tlp_news_file }}"
-        comment: Edit the complete website file for TLP news
       - !Command
         cmd: "{{ editor }} {{ lucene_news_file }}"
-        comment: Edit the complete website file for Lucene news
+        comment: Edit the for Lucene announcement news
+        stdout: true
       - !Command
-        cmd: "{{ editor }} {{ solr_news_file }}"
-        comment: Edit the complete website file for Solr news
+        cmd: git add . && git commit -m "Adding Lucene news for release {{ release_version }}"
+        logfile: commit.log
+        stdout: true
     post_description: |
-      You will review and commit all changes later
+      You will push and verify all changes in a later step
   - !Todo
-    id: update_download_page
-    title: Update the download pages
-    depends: prepare_announce
+    id: prepare_announce_solr
+    title: Author the Solr release news
+    depends: website_git_clone
     description: |
-      Update the download pages
-    vars:
-      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+      Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
+      This step will open an editor with a template. You will need to copy/paste the final release announcement text
+      from the Wiki page and format it as Markdown.
+    function: prepare_announce_solr
     commands: !Commands
-      root_folder: '{{ website_source }}'
+      root_folder: '{{ git_website_folder }}'
       commands_text: |
-        Update download pages to point to the latest release.
+        Copy the Solr announcement from https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
         You have to exit the editor after edit to continue.
       commands:
-      - !Command
-        cmd: "{{ editor }} content/solr/downloads.mdtext"
-        comment: Edit the Solr downloads page
-        stdout: true
-      - !Command
-        cmd: "{{ editor }} content/core/downloads.mdtext"
-        comment: Edit the Lucene downloads page
-        stdout: true
+        - !Command
+          cmd: "{{ editor }} {{ solr_news_file }}"
+          comment: Edit the Solr announcement news
+          stdout: true
+        - !Command
+          cmd: git add . && git commit -m "Adding Solr news for release {{ release_version }}"
+          logfile: commit.log
+          stdout: true
     post_description: |
-      You will review and commit all changes later
-    links:
-    - https://www.apache.org/dev/release-download-pages.html
+      You will push and verify all changes in a later step
   - !Todo
     id: update_other
     title: Update rest of webpage
-    depends: prepare_announce
+    depends: website_update_versions
     description: |
       Update the rest of the web page. Please review all files in the checkout
       and consider if any need change based on what changes there are in the
@@ -1240,65 +1157,95 @@ groups:
 
       * System requirements
       * Quickstart and tutorial?
-    vars:
-      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
     commands: !Commands
-      root_folder: '{{ website_source }}'
+      root_folder: '{{ git_website_folder }}'
       commands_text: |
         We'll open an editor on the root folder of the site checkout
         You have to exit the editor after edit to continue.
       commands:
-      - !Command
-        cmd: "{{ editor }} ."
-        comment: Open an editor on the root folder
-        stdout: true
+        - !Command
+          cmd: "{{ editor }} ."
+          comment: Open an editor on the root folder
+          stdout: true
+        - !Command
+          cmd: git commit -am "Other website changes for release {{ release_version }}"
+          comment: Commit the other changes
+          logfile: commit.log
+          stdout: true
   - !Todo
-    id: publish_website
-    title: Publish the website changes
+    id: stage_website
+    title: Stage the website changes
     depends:
-    - update_news
-    - update_download_page
+    - prepare_announce_solr
     description: |
-      Publish the website changes
-    vars:
-      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+      Push the website changes to 'master' branch, and check the staging site.
+      You will get a chance to preview the diff of all changes before you push.
+      If you need to do changes, do the changes (e.g. by re-running previous step 'Update rest of webpage')
+      and commit your changes. Then re-run this step and push when everything is OK.
     commands: !Commands
-      root_folder: '{{ website_source }}'
+      root_folder: '{{ git_website_folder }}'
       commands_text: |
         Verify that changes look good, and then publish.
         You have to exit the editor after review to continue.
       commands:
       - !Command
-        cmd: svn st
+        cmd: git checkout master && git status
         stdout: true
       - !Command
-        cmd: svn diff
+        cmd: git diff
         redirect: "{{ [release_folder, 'website.diff'] | path_join }}"
         comment: Make a diff of all edits. Will open in next step
       - !Command
         cmd: "{{ editor }} {{ [release_folder, 'website.diff'] | path_join }}"
-        comment: View the diff of the website changes
+        comment: View the diff of the website changes. Abort if you need to do changes.
         stdout: true
       - !Command
-        cmd: svn commit -m "Update website for {{ release_version }} release"
-        comment: Commit changes if all looks good
-        logfile: commit-website.log
+        cmd: git push origin
+        comment: Push all changes
+        logfile: push-website.log
     post_description: |
-      * Go to https://ci.apache.org/builders/lucene-site-staging and see that site is built
-      * Open http://lucene.staging.apache.org and see that everything looks fine
-      * Publish the site at https://cms.apache.org/lucene/publish
+      Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
+      and view the staged site at https://lucene.staged.apache.org
+      Verify that correct links and versions are mentioned in download pages, download buttons etc.
+      If you find anything wrong, then commit and push any changes and check again.
 
-      Wait for these changes to appear on both of Apache's main webservers 
-      (US: http://lucene.us.apache.org, EU: http://lucene.eu.apache.org, http://lucene.apache.org 
-      is dependent on your own geographic location, so the other mirror may still be outdated) 
-      before doing the next steps (see http://www.apache.org/dev/project-site.html for details on 
-      how the site is mirrored to Apache's main web servers). Once they appear, verify all links 
-      are correct in your changes!
+      Next step is to merge the changes to branch 'production' in order to publish the site.
     links:
-    - https://ci.apache.org/builders/lucene-site-staging
-    - http://lucene.staging.apache.org
-    - https://svn.apache.org/repos/asf/lucene/cms/trunk/
-    - https://cms.apache.org/lucene/publish
+    - https://ci2.apache.org/#/builders/3
+    - https://lucene.staged.apache.org
+  - !Todo
+    id: publish_website
+    title: Publish the website changes
+    depends:
+      - stage_website
+    description: |
+      Push the website changes to 'production' branch. This will build and publish the live site on
+      https://lucene.apache.org
+    commands: !Commands
+      root_folder: '{{ git_website_folder }}'
+      commands:
+        - !Command
+          cmd: git checkout production && git pull
+          stdout: true
+        - !Command
+          cmd: git merge master
+          stdout: true
+        - !Command
+          cmd: git push origin
+          comment: Push all changes to production branch
+          logfile: push-website.log
+    post_description: |
+      Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
+
+      Verify on https://lucene.apache.org that the site is OK.
+
+      You can now also verify that http://lucene.apache.org/solr/api/solr-core/ and http://lucene.apache.org/core/api/core/
+      redirects to the latest version
+    links:
+      - https://ci2.apache.org/#/builders/3
+      - https://lucene.apache.org
+      - http://lucene.apache.org/solr/api/solr-core/
+      - http://lucene.apache.org/core/api/core/
   - !Todo
     id: update_doap
     title: Update the DOAP files
@@ -1338,9 +1285,8 @@ groups:
     For feature releases, your announcement should describe the main features included 
     in the release. *Send the announce as Plain-text email, not HTML.*
 
-    NOTE: Copy-pasting from the release notes might sometimes make cause it to be sent
-          as HTML formatted, which can break at the mailing list bot.
-          Better to copy-paste the raw/edit text.
+    This step will generate email templates based on the news files you edited earler for the website.
+    Do any last-minute necessary edits to the text as you copy it over to the email.
   todos:
   - !Todo
     id: announce_lucene
@@ -1360,6 +1306,11 @@ groups:
       Make sure you have a PGP enabled email client with your apache key installed.
       There are plugins for popular email programs, as well as browser plugins for webmail.
       See links for help on how to setup your email client for PGP.
+
+      If you prefer to sign the announcements manually rather than using a plugin,
+      you can do so from the command line and then copy the output into your mail program.
+
+      gpg --output - --clearsign lucene_announce.txt
     links:
     - https://www.openpgp.org/software/
     - https://ssd.eff.org/en/module/how-use-pgp-mac-os-x
@@ -1545,13 +1496,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
   - !Todo
     id: backcompat_stable
@@ -1574,13 +1525,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
   - !Todo
     id: backcompat_master
@@ -1605,13 +1556,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
     post_description: |
       When doing a major version release, eg. 8.0.0, you might also need to reenable some 

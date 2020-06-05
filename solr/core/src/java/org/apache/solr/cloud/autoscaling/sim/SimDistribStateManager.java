@@ -619,6 +619,7 @@ public class SimDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     Map<String, Object> map = new HashMap<>();
     int version = 0;

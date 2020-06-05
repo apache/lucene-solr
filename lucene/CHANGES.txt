@@ -60,6 +60,13 @@ API Changes
 
 Improvements
 
+* LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
+  follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
+
+* LUCENE-9336: RegExp query now supports \w \W \d \D \s \S expressions.
+  This is a break with previous behaviour where these were (mis)interpreted
+  as literally the characters w W d etc. (Mark Harwood)
+
 * LUCENE-8757: When provided with an ExecutorService to run queries across
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
@@ -93,6 +100,9 @@ Improvements
   Nepali, Serbian, and Tamil. New stoplist: Indonesian. Adds gradle 'snowball'
   task to regenerate and ease future upgrades. (Robert Muir, Dawid Weiss)
 
+* LUCENE-9354: Improvements to snowball french stopwords list, so that it is less
+  aggressive. (Philippe Ouellet)
+
 * LUCENE-9114: Improve ValueSourceScorer's Default Cost Implementation (Atri Sharma, David Smiley)
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
@@ -107,6 +117,12 @@ Bug fixes
 
 * LUCENE-9290: Don't assume that different XYPoint have different hash code
   (Ignacio Vera via Mike Drob)
+
+* LUCENE-9372: Fix paths for cygwin/msys before gradle wrapper jar lookup.
+  (Peter Barna)
+
+* LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
+  (Mark Harwood, Mike Drob)
 
 Other
 
@@ -136,6 +152,9 @@ API Changes
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
 
+* LUCENE-9330: SortFields are now responsible for writing themselves into index headers if they
+  are used as index sorts.  (Alan Woodward, Uwe Schindler, Adrien Grand)
+
 * LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
 
 * LUCENE-9345: MergeScheduler is now decoupled from IndexWriter. Instead it accepts a MergeSource
@@ -147,9 +166,18 @@ API Changes
   provide them lazily.  TermsInSetQuery switches to using this method
   to report matching terms. (Alan Woodward)
 
+* LUCENE-9366: DocValues.emptySortedNumeric() not longer takes a maxDoc parameter
+  (Alan Woodward)
+
+* LUCENE-7822: CodecUtil#checkFooter(IndexInput, Throwable) now throws a
+  CorruptIndexException if checksums mismatch or if checksums can't be verified.
+  (Martin Amirault, Adrien Grand)
+
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
+  (Alan Woodward)
 
 Improvements
 ---------------------
@@ -170,6 +198,9 @@ Improvements
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)
 
+* LUCENE-9359: SegmentInfos#readCommit now always returns a
+  CorruptIndexException if the content of the file is invalid. (Adrien Grand)
+
 Optimizations
 ---------------------
 
@@ -188,6 +219,9 @@ Optimizations
 * LUCENE-9273: Speed up geometry queries by specialising Component2D spatial operations. Instead of using a generic
   relate method for all relations, we use specialize methods for each one. In addition, the type of triangle is
   computed at deserialization time, therefore we can be more selective when decoding points of a triangle.
+  (Ignacio Vera)
+
+* LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
   (Ignacio Vera)
 
 Bug Fixes
@@ -218,6 +252,9 @@ Bug Fixes
 * LUCENE-9314: Single-document monitor runs were using the less efficient MultiDocumentBatch
   implementation. (Pierre-Luc Perron, Alan Woodward)
 
+* LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
+  (Dmitry Emets)
+
 Other
 ---------------------
 
@@ -243,9 +280,30 @@ Other
 * LUCENE-9338: Refactors SimpleBindings to improve type safety and cycle detection (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-9358: Change the way the multi-dimensional BKD tree builder generates the intermediate tree representation to be
+  equal to the one dimensional case to avoid unnecessary tree and leaves rotation. (Ignacio Vera)
+
+* LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
+
+* LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
+
 Build
 
-* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
+* Upgrade forbiddenapis to version 3.0.1.  (Uwe Schindler)
+
+* LUCENE-9376: Fix or suppress 20 resource leak precommit warnings in lucene/search
+  (Andras Salamon via Erick Erickson)
+
+* LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
+
+======================= Lucene 8.5.2 =======================
+
+Optimizations
+---------------------
+
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
 
 ======================= Lucene 8.5.1 =======================
 

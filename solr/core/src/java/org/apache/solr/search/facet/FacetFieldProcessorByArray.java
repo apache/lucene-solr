@@ -85,7 +85,11 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
     if (refineResult != null) {
       if (freq.allBuckets) {
+        // count is irrelevant, but hardcoded in collect(...), so intercept/mask normal counts.
+        // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with AIOOBE
+        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
+        otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection, setNextReader is called on otherAccs.
         allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
         collectDocs();
 
@@ -135,7 +139,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   public IntFunction<SlotContext> slotContext = (slotNum) -> {
     try {
-      Object value = sf.getType().toObject(sf, lookupOrd(slotNum));
+      Object value = sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
       Query q = makeBucketQuery(valueObjToString(value));
       assert null != q : "null query for: '" + value + "'";
       return new SlotContext(q);

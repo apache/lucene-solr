@@ -43,6 +43,7 @@ public class StringDistanceFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues str1DV = str1.getValues(context, readerContext);
     final FunctionValues str2DV = str2.getValues(context, readerContext);

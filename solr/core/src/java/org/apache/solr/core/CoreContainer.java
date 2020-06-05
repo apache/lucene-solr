@@ -61,6 +61,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
@@ -76,6 +77,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -100,6 +102,7 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -186,6 +189,7 @@ public class CoreContainer {
 
   private final OrderedExecutor replayUpdatesExecutor;
 
+  @SuppressWarnings({"rawtypes"})
   protected volatile LogWatcher logging = null;
 
   private volatile CloserThread backgroundCloser = null;
@@ -227,6 +231,10 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
+
+  private volatile SolrClientCache solrClientCache;
+
+  private final ObjectCache objectCache = new ObjectCache();
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -333,6 +341,7 @@ public class CoreContainer {
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
   }
 
+  @SuppressWarnings({"unchecked"})
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
     int newVersion = readVersion(authorizationConf);
@@ -367,6 +376,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
     auditConf = Utils.getDeepCopy(auditConf, 4);
     int newVersion = readVersion(auditConf);
@@ -402,6 +412,7 @@ public class CoreContainer {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
@@ -499,6 +510,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static int readVersion(Map<String, Object> conf) {
     if (conf == null) return -1;
     Map meta = (Map) conf.get("");
@@ -576,6 +588,15 @@ public class CoreContainer {
   public PackageStoreAPI getPackageStoreAPI() {
     return packageStoreAPI;
   }
+
+  public SolrClientCache getSolrClientCache() {
+    return solrClientCache;
+  }
+
+  public ObjectCache getObjectCache() {
+    return objectCache;
+  }
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -635,6 +656,11 @@ public class CoreContainer {
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
+
+    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    // initialize CalciteSolrDriver instance to use this solrClientCache
+    CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
     solrCores.load(loader);
 
@@ -835,6 +861,7 @@ public class CoreContainer {
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
+  @SuppressWarnings({"unchecked"})
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
     Map<String, Object> initArgs;
@@ -887,6 +914,7 @@ public class CoreContainer {
   /**
    * Make sure securityConfHandler is initialized
    */
+  @SuppressWarnings({"unchecked"})
   private void reloadSecurityProperties() {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
@@ -975,6 +1003,8 @@ public class CoreContainer {
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
+      objectCache.clear();
+
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it up if so.
       // Since all the pending operations queues have been drained, there should be nothing to do.
       synchronized (solrCores.getModifyLock()) {
@@ -1016,6 +1046,9 @@ public class CoreContainer {
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
+      }
+      if (solrClientCache != null) {
+        solrClientCache.close();
       }
 
     } finally {
@@ -1581,7 +1614,7 @@ public class CoreContainer {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
         if (!success && newCore != null && newCore.getOpenCount() > 0) {
@@ -1736,6 +1769,7 @@ public class CoreContainer {
     return solrCores.getCoreDescriptor(coreName);
   }
 
+  /** Where cores are created (absolute). */
   public Path getCoreRootDirectory() {
     return cfg.getCoreRootDirectory();
   }
@@ -1815,6 +1849,7 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
+  @SuppressWarnings({"rawtypes"})
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
     T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
@@ -1861,6 +1896,7 @@ public class CoreContainer {
     return cfg.getManagementPath();
   }
 
+  @SuppressWarnings({"rawtypes"})
   public LogWatcher getLogging() {
     return logging;
   }
@@ -1892,6 +1928,7 @@ public class CoreContainer {
     return solrCores.getUnloadedCoreDescriptor(cname);
   }
 
+  /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
   //TODO return Path
   public String getSolrHome() {
     return solrHome.toString();

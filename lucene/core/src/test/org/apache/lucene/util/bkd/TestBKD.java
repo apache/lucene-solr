@@ -1308,14 +1308,12 @@ public class TestBKD extends LuceneTestCase {
     pointsIn.seek(indexFP);
     BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
 
-    int actualMaxPointsInLeafNode = numValues;
-    while (actualMaxPointsInLeafNode > maxPointsInLeafNode) {
-      actualMaxPointsInLeafNode = (actualMaxPointsInLeafNode + 1) / 2;
-    }
-
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = Integer.highestOneBit((numValues - 1) / actualMaxPointsInLeafNode) << 1;
-    assertEquals(numLeaves * actualMaxPointsInLeafNode,
+    int numLeaves = numValues / maxPointsInLeafNode;
+    if (numValues % maxPointsInLeafNode != 0) {
+      numLeaves++;
+    }
+    assertEquals(numLeaves * maxPointsInLeafNode,
         points.estimatePointCount(new IntersectVisitor() {
           @Override
           public void visit(int docID, byte[] packedValue) throws IOException {}
@@ -1363,8 +1361,8 @@ public class TestBKD extends LuceneTestCase {
       }
     });
     assertTrue(""+pointCount,
-        pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
-        pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
+        pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
+        pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     pointsIn.close();
     dir.close();

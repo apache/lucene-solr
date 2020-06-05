@@ -98,6 +98,7 @@ public class RangeFacetProcessor extends SimpleFacets {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private <T extends Comparable<T>> NamedList getFacetRangeCounts(final RangeFacetRequest rfr)
       throws IOException, SyntaxError {
 

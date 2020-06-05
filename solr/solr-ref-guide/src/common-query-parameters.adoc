@@ -193,7 +193,7 @@ The default behavior is not to include debugging information.
 
 == explainOther Parameter
 
-The `explainOther` parameter specifies a Lucene query in order to identify a set of documents. If this parameter is included and is set to a non-blank value, the query will return debugging information, along with the "explain info" of each document that matches the Lucene query, relative to the main query (which is specified by the q parameter). For example:
+The `explainOther` parameter specifies a Lucene query in order to identify a set of documents. If this parameter is included and is set to a non-blank value, the query will return debugging information, along with the "explain info" of each document that matches the Lucene query, relative to the main query (which is specified by the `q` parameter). For example:
 
 [source,text]
 ----
@@ -361,3 +361,43 @@ This is what happens if a similar request is sent that adds `echoParams=all` to 
   }
 }
 ----
+
+== minExactCount Parameter
+When this parameter is used, Solr will count the number of hits accurately at least until this value. After that, Solr can skip over documents that don't have a score high enough to enter in the top N. This can greatly improve performance of search queries. On the other hand, when this parameter is used, the `numFound` may not be exact, and may instead be an approximation.
+The `numFoundExact` boolean attribute is included in all responses, indicating if the `numFound` value is exact or an approximation. If it's an approximation, the real number of hits for the query is guaranteed to be greater or equal `numFound`.
+
+More about approximate document counting and `minExactCount`:
+
+* The documents returned in the response are guaranteed to be the docs with the top scores. This parameter will not make Solr skip documents that are to be returned in the response, it will only allow Solr to skip counting docs that, while they match the query, their score is low enough to not be in the top N.
+* Providing `minExactCount` doesn't guarantee that Solr will use approximate hit counting (and thus, provide the speedup). Some types of queries, or other parameters (like if facets are requested) will require accurate counting. The value of `numFoundExact` indicates if the approximation was used or not.
+* Approximate counting can only be used when sorting by `score desc` first (which is the default sort in Solr). Other fields can be used after `score desc`, but if any other type of sorting is used before score, then the approximation won't be applied.
+* When doing distributed queries across multiple shards, each shard will accurately count hits until `minExactCount` (which means the query could be hitting `numShards * minExactCount` docs and `numFound` in the response would still be accurate)
+For example:
+
+[source,text]
+q=quick brown fox&minExactCount=100&rows=10
+
+[source,json]
+----
+"response": {
+    "numFound": 153,
+    "start": 0,
+    "numFoundExact": false,
+    "docs": Array[10]
+...
+----
+Since `numFoundExact=false`, we know the number of documents matching the query is greater or equal to 153. If we specify a higher value for `minExactCount`:
+
+[source,text]
+q=quick brown fox&minExactCount=200&rows=10
+
+[source,json]
+----
+"response": {
+    "numFound": 163,
+    "start": 0,
+    "numFoundExact": true,
+    "docs": Array[10]
+...
+----
+In this case we know that `163` is the exact number of hits for the query. Both queries must have returned the same number of documents in the top 10.

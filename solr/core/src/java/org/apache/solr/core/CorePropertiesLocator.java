@@ -62,7 +62,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void create(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
-      Path propertiesFile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propertiesFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       if (Files.exists(propertiesFile))
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 "Could not create a new core in " + cd.getInstanceDir()
@@ -78,7 +78,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
-      Path propFile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       writePropertiesFile(cd, propFile);
     }
   }
@@ -105,7 +105,7 @@ public class CorePropertiesLocator implements CoresLocator {
     }
     for (CoreDescriptor cd : coreDescriptors) {
       if (cd == null) continue;
-      Path propfile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propfile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       try {
         Files.deleteIfExists(propfile);
       } catch (IOException e) {

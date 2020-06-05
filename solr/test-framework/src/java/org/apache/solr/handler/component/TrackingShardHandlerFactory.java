@@ -218,6 +218,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
         ShardHandlerFactory factory = container.getShardHandlerFactory();
         assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: "
             + factory.getClass();
+        @SuppressWarnings("resource")
         TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
         trackingShardHandlerFactory.setTrackingQueue(queue);
       }

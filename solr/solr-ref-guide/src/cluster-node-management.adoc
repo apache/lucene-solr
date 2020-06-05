@@ -131,7 +131,7 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud`, `location`, `maxCoresPerNode` and `urlScheme`. Other properties can be set
+The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud`, `location`, `maxCoresPerNode`, `urlScheme` and `defaultShardPreferences`. Other properties can be set
 (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
@@ -212,6 +212,23 @@ NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key wh
 replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
  but the format of the properties will automatically be converted to the new nested structure.
 Support for the "collectionDefaults" key will be removed in Solr 9.
+
+=== Default Shard Preferences
+
+Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness. First, make sure to "label" your nodes using a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g. `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '
+{
+  "set-property" : {
+    "name" : "defaultShardPreferences",
+    "val" : "node.sysprop:sysprop.rack"
+  }
+}' http://localhost:8983/api/cluster
+----
+
+At this point, if you run a query on a node having e.g. `rack=rack1`, Solr will try to hit only replicas from `rack1`.
 
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
