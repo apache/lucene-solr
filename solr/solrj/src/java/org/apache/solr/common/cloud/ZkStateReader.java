@@ -243,6 +243,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return current configuration from <code>autoscaling.json</code>. NOTE:
    * this data is retrieved from ZK on each call.
    */
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
 
@@ -487,6 +488,7 @@ public class ZkStateReader implements SolrCloseable {
     return collection.getZNodeVersion();
   }
 
+  @SuppressWarnings({"unchecked"})
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
       InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
@@ -1085,6 +1087,7 @@ public class ZkStateReader implements SolrCloseable {
    * @param defaultValue a default value to use if no such property exists
    * @return the cluster property, or a default if the property is not set
    */
+  @SuppressWarnings({"unchecked"})
   public <T> T getClusterProperty(List<String> keyPath, T defaultValue) {
     T value = (T) Utils.getObjectByPath(clusterProperties, false, keyPath);
     if (value == null)
@@ -1256,6 +1259,7 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the content of /security.json from ZooKeeper as a Map
    * If the files doesn't exist, it returns null.
    */
+  @SuppressWarnings({"unchecked"})
   public ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
       if (securityData == null) return new ConfigData(EMPTY_MAP, -1);
