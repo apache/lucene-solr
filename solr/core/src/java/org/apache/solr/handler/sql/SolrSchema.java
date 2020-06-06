@@ -16,10 +16,9 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
@@ -33,6 +32,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
@@ -41,47 +41,59 @@ import org.apache.solr.common.cloud.ZkStateReader;
 
 import com.google.common.collect.ImmutableMap;
 
-class SolrSchema extends AbstractSchema {
+class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
+  final SolrClientCache solrClientCache;
+  private volatile boolean isClosed = false;
 
-  SolrSchema(Properties properties) {
+  SolrSchema(Properties properties, SolrClientCache solrClientCache) {
     super();
     this.properties = properties;
+    this.solrClientCache = solrClientCache;
+  }
+
+  public SolrClientCache getSolrClientCache() {
+    return solrClientCache;
+  }
+
+  @Override
+  public void close() {
+    isClosed = true;
+  }
+
+  public boolean isClosed() {
+    return isClosed;
   }
 
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build()) {
-      cloudSolrClient.connect();
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    ClusterState clusterState = zkStateReader.getClusterState();
 
-      final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+    final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
 
-      Set<String> collections = clusterState.getCollectionsMap().keySet();
-      for (String collection : collections) {
-        builder.put(collection, new SolrTable(this, collection));
-      }
-
-      Aliases aliases = zkStateReader.getAliases();
-      for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-        // don't create duplicate entries
-        if (!collections.contains(alias)) {
-          builder.put(alias, new SolrTable(this, alias));
-        }
-      }
-
-      return builder.build();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    Set<String> collections = clusterState.getCollectionsMap().keySet();
+    for (String collection : collections) {
+      builder.put(collection, new SolrTable(this, collection));
     }
+
+    Aliases aliases = zkStateReader.getAliases();
+    for (String alias : aliases.getCollectionAliasListMap().keySet()) {
+      // don't create duplicate entries
+      if (!collections.contains(alias)) {
+        builder.put(alias, new SolrTable(this, alias));
+      }
+    }
+
+    return builder.build();
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build()) {
-      cloudSolrClient.connect();
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
       LukeResponse lukeResponse = lukeRequest.process(cloudSolrClient, collection);

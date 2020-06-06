@@ -76,8 +76,11 @@ public class ExecutePlanAction extends TriggerActionBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void process(TriggerEvent event, ActionContext context) throws Exception {
-    log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
+    if (log.isDebugEnabled()) {
+      log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
+    }
     SolrCloudManager cloudManager = context.getCloudManager();
     List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
     if (operations == null || operations.isEmpty()) {
@@ -87,7 +90,9 @@ public class ExecutePlanAction extends TriggerActionBase {
     try {
       int counter = 0;
       for (SolrRequest operation : operations) {
-        log.debug("Executing operation: {}", operation.getParams());
+        if (log.isDebugEnabled()) {
+          log.debug("Executing operation: {}", operation.getParams());
+        }
         try {
           SolrResponse response = null;
           if (operation instanceof CollectionAdminRequest.AsyncCollectionAdminRequest) {
@@ -130,7 +135,7 @@ public class ExecutePlanAction extends TriggerActionBase {
                 try {
                   cloudManager.getDistribStateManager().removeData(znode, -1);
                 } catch (Exception e) {
-                  log.warn("Unexpected exception while trying to delete znode: " + znode, e);
+                  log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
                 }
               }
               response = statusResponse;
@@ -149,7 +154,7 @@ public class ExecutePlanAction extends TriggerActionBase {
               try {
                 cloudManager.getDistribStateManager().removeData(znode, -1);
               } catch (Exception e) {
-                log.warn("Unexpected exception while trying to delete znode: " + znode, e);
+                log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
               }
               throw new IOException("Task " + asyncId + " failed: " + (statusResponse != null ? statusResponse : " timed out. Operation: " + req));
             }
@@ -159,6 +164,7 @@ public class ExecutePlanAction extends TriggerActionBase {
           }
           NamedList<Object> result = response.getResponse();
           context.getProperties().compute("responses", (s, o) -> {
+            @SuppressWarnings({"unchecked"})
             List<NamedList<Object>> responses = (List<NamedList<Object>>) o;
             if (responses == null)  responses = new ArrayList<>(operations.size());
             responses.add(result);
@@ -212,7 +218,7 @@ public class ExecutePlanAction extends TriggerActionBase {
         if (rootCause instanceof SolrServerException) {
           throw e;
         }
-        log.error("Unexpected Exception while querying status of requestId=" + requestId, e);
+        log.error("Unexpected Exception while querying status of requestId={}", requestId, e);
         throw e;
       }
       if (i > 0 && i % 5 == 0) {

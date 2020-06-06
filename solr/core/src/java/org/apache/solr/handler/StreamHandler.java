@@ -53,7 +53,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -88,12 +87,14 @@ import static org.apache.solr.common.params.CommonParams.ID;
  */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
-  static SolrClientCache clientCache = new SolrClientCache();
-  static ModelCache modelCache = null;
-  static ConcurrentMap objectCache = new ConcurrentHashMap();
+  private ModelCache modelCache;
+  @SuppressWarnings({"rawtypes"})
+  private ConcurrentMap objectCache;
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
   @Override
@@ -101,48 +102,38 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  public static SolrClientCache getClientCache() {
-    return clientCache;
-  }
-
+  @SuppressWarnings({"rawtypes"})
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
+    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
-
+    String cacheKey = this.getClass().getName() + "_" + coreName + "_";
+    this.objectCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "objectCache",
+        ConcurrentHashMap.class, k-> new ConcurrentHashMap());
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
-      modelCache = new ModelCache(250,
-          defaultZkhost,
-          clientCache);
+      modelCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "modelCache",
+          ModelCache.class,
+          k -> new ModelCache(250, defaultZkhost, solrClientCache));
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
     addExpressiblePlugins(streamFactory, core);
-
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        // To change body of implemented methods use File | Settings | File Templates.
-      }
-
-      @Override
-      public void postClose(SolrCore core) {
-        clientCache.close();
-      }
-    });
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        @SuppressWarnings("resource")
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
         streamFactory.withFunctionName(pluginInfo.name,
             () -> holder.getClazz());
       } else {
@@ -152,6 +143,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static class ExpressibleHolder extends PackagePluginHolder {
     private Class clazz;
 
@@ -159,6 +151,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       super(info, core, pluginMeta);
     }
 
+    @SuppressWarnings({"rawtypes"})
     public Class getClazz() {
       return clazz;
     }
@@ -202,6 +195,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
 
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    @SuppressWarnings("resource")
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
     if (zkController != null) {
@@ -226,7 +220,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
-    context.setSolrClientCache(clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.setModelCache(modelCache);
     context.setObjectCache(objectCache);
     context.put("core", this.coreName);
@@ -350,6 +344,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       String msg = e.getMessage();
 
@@ -359,6 +354,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         t = t.getCause();
       }
 
+      @SuppressWarnings({"rawtypes"})
       Map m = new HashMap();
       m.put("EOF", true);
       m.put("EXCEPTION", msg);
@@ -400,10 +396,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if (it.hasNext()) {
         return it.next().getInfo();
       } else {
+        @SuppressWarnings({"rawtypes"})
         Map m = new HashMap();
         m.put("EOF", true);
         return new Tuple(m);
@@ -446,13 +444,16 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if (sendEOF) {
+        @SuppressWarnings({"rawtypes"})
         Map m = new HashMap();
         m.put("EOF", true);
         return new Tuple(m);
       } else {
         sendEOF = true;
+        @SuppressWarnings({"rawtypes"})
         Map m = new HashMap();
         m.put("DaemonOp", message);
         return new Tuple(m);
@@ -500,6 +501,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {
@@ -512,7 +514,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   private Map<String, List<String>> getCollectionShards(SolrParams params) {
 
-    Map<String, List<String>> collectionShards = new HashMap();
+    Map<String, List<String>> collectionShards = new HashMap<>();
     Iterator<String> paramsIt = params.getParameterNamesIterator();
     while (paramsIt.hasNext()) {
       String param = paramsIt.next();
@@ -520,7 +522,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         String collection = param.split("\\.")[0];
         String shardString = params.get(param);
         String[] shards = shardString.split(",");
-        List<String> shardList = new ArrayList();
+        @SuppressWarnings({"rawtypes"})
+        List<String> shardList = new ArrayList<>();
         for (String shard : shards) {
           shardList.add(shard);
         }

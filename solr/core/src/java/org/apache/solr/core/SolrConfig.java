@@ -203,11 +203,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
     if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
-      if (log.isWarnEnabled()) {
-        log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} " +
-            "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit"
-            , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
-      }
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} {}"
+          , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount()
+          , "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit");
     }
     
     // Warn about deprecated / discontinued parameters
@@ -317,13 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      if (log.isWarnEnabled()) {
-        log.warn(
-            "You should not use LATEST as luceneMatchVersion property: " +
-                "if you use this setting, and then Solr upgrades to a newer release of Lucene, " +
-                "sizable changes may happen. If precise back compatibility is important " +
-                "then you should instead explicitly specify an actual Lucene version.");
-      }
+      log.warn("You should not use LATEST as luceneMatchVersion property: "
+          + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          + "sizable changes may happen. If precise back compatibility is important "
+          + "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -373,11 +368,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static class SolrPluginInfo {
 
+    @SuppressWarnings({"rawtypes"})
     public final Class clazz;
     public final String tag;
     public final Set<PluginOpts> options;
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
       this.clazz = clz;
       this.tag = tag;
@@ -394,6 +391,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     InputStreamReader isr = null;
@@ -677,6 +675,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
@@ -711,6 +710,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
@@ -760,9 +760,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       try {
         urls.addAll(SolrResourceLoader.getURLs(libPath));
       } catch (IOException e) {
-        if (log.isWarnEnabled()) {
-          log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
-        }
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e);
       }
     }
 
@@ -788,18 +786,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           else
             urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
         } catch (IOException e) {
-          if (log.isWarnEnabled()) {
-            log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
-          }
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
         }
       } else if (null != path) {
         final Path dir = instancePath.resolve(path);
         try {
           urls.add(dir.toUri().toURL());
         } catch (MalformedURLException e) {
-          if (log.isWarnEnabled()) {
-            log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
-          }
+          log.warn("Couldn't add file {} to classpath: {}", dir, e);
         }
       } else {
         throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
@@ -867,6 +861,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
@@ -925,6 +920,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
     for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);

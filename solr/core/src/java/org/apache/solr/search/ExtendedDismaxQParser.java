@@ -412,7 +412,7 @@ public class ExtendedDismaxQParser extends QParser {
       String mmSpec = config.minShouldMatch;
 
       if (foundOperators(clauses, config.lowercaseOperators)) {
-        mmSpec = params.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
+        mmSpec = config.solrParams.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
       }
       query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax);
     }

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -169,6 +170,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initComponents() {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
@@ -278,6 +280,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -344,7 +347,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
+        log.warn("Query: {}; {}", req.getParamString(), ex.getMessage());
         if( rb.rsp.getResponse() == null) {
           rb.rsp.addResponse(new SolrDocumentList());
         }
@@ -484,6 +487,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
       else {
         nl.add("numFound", rb.getResults().docList.matches());
+        nl.add("numFoundExact", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);

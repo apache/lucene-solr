@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Query parsers and parsing framework'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:queries')

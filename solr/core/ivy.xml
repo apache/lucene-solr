@@ -38,7 +38,6 @@
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>
-    <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile"/>
     <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-text" rev="${/org.apache.commons/commons-text}" conf="compile"/>
     <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile"/>

@@ -221,7 +221,7 @@ class DebugAgg extends AggValueSource {
     
     @Override
     public FacetMerger createFacetMerger(Object prototype) {
-      return new FacetLongMerger();
+      return new FacetModule.FacetLongMerger();
     }
     
   }

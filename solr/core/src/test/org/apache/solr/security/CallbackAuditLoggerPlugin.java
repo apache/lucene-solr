@@ -60,7 +60,9 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     if (! out.checkError()) {
       log.error("Output stream has an ERROR!");
     }
-    log.info("Sent audit callback {} to localhost:{}", formatter.formatEvent(event), callbackPort);
+    if (log.isInfoEnabled()) {
+      log.info("Sent audit callback {} to localhost:{}", formatter.formatEvent(event), callbackPort);
+    }
   }
 
   @Override

@@ -181,7 +181,6 @@ public class SimCloudManager implements SolrCloudManager {
     if (distribStateManager == null) {
       this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
       // init common paths
-      stateManager.makePath(ZkStateReader.CLUSTER_STATE);
       stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
       stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
       stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
@@ -217,6 +216,7 @@ public class SimCloudManager implements SolrCloudManager {
 
     solrClient = new MockSearchableSolrClient() {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
         if (collection != null) {
           if (request instanceof AbstractUpdateRequest) {
@@ -476,7 +476,7 @@ public class SimCloudManager implements SolrCloudManager {
     String nodeId = (String)values.get(ImplicitSnitch.NODE);
     nodeStateProvider.simSetNodeValues(nodeId, values);
     clusterStateProvider.simAddNode(nodeId);
-    log.trace("-- added node " + nodeId);
+    log.trace("-- added node {}", nodeId);
     // initialize history handler if this is the first node
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
@@ -510,7 +510,7 @@ public class SimCloudManager implements SolrCloudManager {
         metricsHandler = null;
       }
     }
-    log.trace("-- removed node " + nodeId);
+    log.trace("-- removed node {}", nodeId);
   }
 
   /**
@@ -599,7 +599,7 @@ public class SimCloudManager implements SolrCloudManager {
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
     if (killNodeId != null) {
-      log.info("  = killing node " + killNodeId);
+      log.info("  = killing node {}", killNodeId);
       simRemoveNode(killNodeId, false);
     }
     objectCache.clear();
@@ -626,6 +626,7 @@ public class SimCloudManager implements SolrCloudManager {
    * @return future to obtain results
    * @see #getBackgroundTaskFailureCount
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public <T> Future<T> submit(Callable<T> callable) {
     return simCloudManagerPool.submit(new LoggingCallable(backgroundTaskFailureCounter, callable));
   }
@@ -715,6 +716,7 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrResponse request(SolrRequest req) throws IOException {
     try {
       // NOTE: we're doing 2 odd things here:
@@ -743,12 +745,16 @@ public class SimCloudManager implements SolrCloudManager {
    * @param req autoscaling request
    * @return results
    */
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public SolrResponse simHandleSolrRequest(SolrRequest req) throws IOException, InterruptedException {
     // pay the penalty for remote request, at least 5 ms
     timeSource.sleep(5);
 
-    log.trace("--- got SolrRequest: " + req.getMethod() + " " + req.getPath() +
-        (req.getParams() != null ? " " + req.getParams() : ""));
+    if (log.isTraceEnabled()) {
+      log.trace("--- got SolrRequest: {} {} {}", req.getMethod(), req.getPath(),
+          (req.getParams() != null ? " " + req.getParams() : "")); // logOk
+    }
     if (req.getPath() != null) {
       if (req.getPath().startsWith("/admin/autoscaling") ||
           req.getPath().startsWith("/cluster/autoscaling") ||
@@ -788,18 +794,22 @@ public class SimCloudManager implements SolrCloudManager {
             if (metricsHistoryHandler != null) {
               metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           } else {
             if (metricsHandler != null) {
               metricsHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           }
         }
         if (queryResponse.getException() != null) {
-          log.debug("-- exception handling request", queryResponse.getException());
+          if (log.isDebugEnabled()) {
+            log.debug("-- exception handling request", queryResponse.getException());
+          }
           throw new IOException(queryResponse.getException());
         }
         SolrResponse rsp = new SolrResponseBase();
@@ -859,7 +869,10 @@ public class SimCloudManager implements SolrCloudManager {
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
-      log.trace("Invoking Collection Action :{} with params {}", action.toLower(), params.toQueryString());
+      if (log.isTraceEnabled()) {
+        log.trace("Invoking Collection Action :{} with params {}", action.toLower(), params.toQueryString());
+      }
+      @SuppressWarnings({"rawtypes"})
       NamedList results = new NamedList();
       rsp.setResponse(results);
       incrementCount(action.name());

@@ -33,17 +33,15 @@ import org.apache.lucene.util.InfoStream;
 */
 public abstract class MergeScheduler implements Closeable {
 
-  /** Sole constructor. (For invocation by subclass 
+  /** Sole constructor. (For invocation by subclass
    *  constructors, typically implicit.) */
   protected MergeScheduler() {
   }
 
-  /** Run the merges provided by {@link IndexWriter#getNextMerge()}.
-   * @param writer the {@link IndexWriter} to obtain the merges from.
-   * @param trigger the {@link MergeTrigger} that caused this merge to happen
-   * @param newMergesFound <code>true</code> iff any new merges were found by the caller otherwise <code>false</code>
-   * */
-  public abstract void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException;
+  /** Run the merges provided by {@link MergeSource#getNextMerge()}.
+   * @param mergeSource the {@link IndexWriter} to obtain the merges from.
+   * @param trigger the {@link MergeTrigger} that caused this merge to happen */
+  public abstract void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException;
 
   /** 
    * Wraps the incoming {@link Directory} so that we can merge-throttle it
@@ -62,7 +60,7 @@ public abstract class MergeScheduler implements Closeable {
   protected InfoStream infoStream;
 
   /** IndexWriter calls this on init. */
-  final void setInfoStream(InfoStream infoStream) {
+  void initialize(InfoStream infoStream, Directory directory) throws IOException {
     this.infoStream = infoStream;
   }
 
@@ -86,5 +84,33 @@ public abstract class MergeScheduler implements Closeable {
    */
   protected void message(String message) {
     infoStream.message("MS", message);
+  }
+
+  /**
+   * Provides access to new merges and executes the actual merge
+   * @lucene.experimental
+   */
+  public interface MergeSource {
+    /**
+     * The {@link MergeScheduler} calls this method to retrieve the next
+     * merge requested by the MergePolicy
+     */
+    MergePolicy.OneMerge getNextMerge();
+
+    /**
+     * Does finishing for a merge.
+     */
+    void onMergeFinished(MergePolicy.OneMerge merge);
+
+    /**
+     * Expert: returns true if there are merges waiting to be scheduled.
+     */
+    boolean hasPendingMerges();
+
+    /**
+     * Merges the indicated segments, replacing them in the stack with a
+     * single segment.
+     */
+    void merge(MergePolicy.OneMerge merge) throws IOException;
   }
 }

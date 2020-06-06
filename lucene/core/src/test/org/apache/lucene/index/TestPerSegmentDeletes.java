@@ -49,14 +49,14 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
     //System.out.println("commit1");
     writer.commit();
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     for (int x = 5; x < 10; x++) {
       writer.addDocument(DocHelper.createDocument(x, "2", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     //System.out.println("commit2");
     writer.commit();
-    assertEquals(2, writer.listOfSegmentCommitInfos().size());
+    assertEquals(2, writer.cloneSegmentInfos().size());
 
     for (int x = 10; x < 15; x++) {
       writer.addDocument(DocHelper.createDocument(x, "3", 2));
@@ -71,12 +71,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     // deletes are now resolved on flush, so there shouldn't be
     // any deletes after flush
-    assertFalse(writer.bufferedUpdatesStream.any());
+    assertFalse(writer.hasChangesInRam());
 
     // get reader flushes pending deletes
     // so there should not be anymore
     IndexReader r1 = writer.getReader();
-    assertFalse(writer.bufferedUpdatesStream.any());
+    assertFalse(writer.hasChangesInRam());
     r1.close();
 
     // delete id:2 from the first segment
@@ -90,7 +90,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     fsmp.length = 2;
     writer.maybeMerge();
 
-    assertEquals(2, writer.listOfSegmentCommitInfos().size());
+    assertEquals(2, writer.cloneSegmentInfos().size());
 
     // id:2 shouldn't exist anymore because
     // it's been applied in the merge and now it's gone

@@ -218,6 +218,7 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   protected void setState(Map<String, Object> state) {
     this.lastAboveEventMap.clear();
     this.lastBelowEventMap.clear();
@@ -248,10 +249,11 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void run() {
     synchronized(this) {
       if (isClosed) {
-        log.warn(getName() + " ran but was already closed");
+        log.warn("{} ran but was already closed", getName());
         return;
       }
     }
@@ -325,11 +327,11 @@ public class IndexSizeTrigger extends TriggerBase {
         sizes.forEach((tag, size) -> {
           final ReplicaInfo info = metricTags.get(tag);
           if (info == null) {
-            log.warn("Missing replica info for response tag " + tag);
+            log.warn("Missing replica info for response tag {}", tag);
           } else {
             // verify that it's a Number
             if (!(size instanceof Number)) {
-              log.warn("invalid size value for tag " + tag + " - not a number: '" + size + "' is " + size.getClass().getName());
+              log.warn("invalid size value for tag {} - not a number: '{}' is {}", tag, size, size.getClass().getName());
               return;
             }
 
@@ -347,7 +349,7 @@ public class IndexSizeTrigger extends TriggerBase {
         });
       }
     } catch (IOException e) {
-      log.warn("Error running trigger " + getName(), e);
+      log.warn("Error running trigger {}", getName(), e);
       return;
     }
 

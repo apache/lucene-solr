@@ -97,6 +97,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
                  "notfound", resp.getValues().get("STATUS"));
 
     admin.shutdown();
+    admin.close();
   }
 
 }

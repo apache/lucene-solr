@@ -197,15 +197,18 @@ public class CatStream extends TupleStream implements Expressible {
     return false;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 
+    @SuppressWarnings({"rawtypes"})
     HashMap m = new HashMap();
     m.put("file", currentFilePath.displayPath);
     m.put("line", currentFileLines.next());
     return new Tuple(m);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Tuple createEofTuple() {
     HashMap m = new HashMap();
     m.put("EOF", true);

@@ -184,13 +184,16 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void offer(byte[] data) throws Exception {
       Timer.Context time = stats.time(dir + "_offer");
       updateLock.lockInterruptibly();
       try {
         queue.offer(new Pair(String.format(Locale.ROOT, "qn-%010d", seq), data));
         seq++;
-        log.trace("=== offer " + System.nanoTime());
+        if (log.isTraceEnabled()) {
+          log.trace("=== offer {}", System.nanoTime());
+        }
         changed.signalAll();
       } finally {
         updateLock.unlock();

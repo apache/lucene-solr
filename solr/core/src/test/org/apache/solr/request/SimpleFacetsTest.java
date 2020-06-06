@@ -3561,7 +3561,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       NamedList<Object> rangeFacetsDv;
       
       SolrQueryRequest req = req(params);
-      log.info("Using Params: " + params);
+      log.info("Using Params: {}", params);
       try {
         SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsFilter = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");

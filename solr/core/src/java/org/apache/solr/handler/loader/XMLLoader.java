@@ -105,7 +105,7 @@ public class XMLLoader extends ContentStreamLoader {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", inputFactory);
     }
     
     // Init SAX parser (for XSL):
@@ -116,7 +116,7 @@ public class XMLLoader extends ContentStreamLoader {
     xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
     if(args != null) {
       xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.debug("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
+      log.debug("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
     }
     return this;
   }
@@ -178,8 +178,10 @@ public class XMLLoader extends ContentStreamLoader {
           final byte[] body = IOUtils.toByteArray(is);
           // TODO: The charset may be wrong, as the real charset is later
           // determined by the XML parser, the content-type is only used as a hint!
-          log.trace("body: {}", new String(body, (charset == null) ?
-            ContentStreamBase.DEFAULT_CHARSET : charset));
+          if (log.isTraceEnabled()) {
+            log.trace("body: {}", new String(body, (charset == null) ?
+                ContentStreamBase.DEFAULT_CHARSET : charset));
+          }
           IOUtils.closeQuietly(is);
           is = new ByteArrayInputStream(body);
         }
@@ -249,7 +251,7 @@ public class XMLLoader extends ContentStreamLoader {
               } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
                 addCmd.commitWithin = Integer.parseInt(attrVal);
               } else {
-                log.warn("XML element <add> has invalid XML attr: " + attrName);
+                log.warn("XML element <add> has invalid XML attr: {}", attrName);
               }
             }
 
@@ -263,7 +265,7 @@ public class XMLLoader extends ContentStreamLoader {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");
             }
           } else if (UpdateRequestHandler.COMMIT.equals(currTag) || UpdateRequestHandler.OPTIMIZE.equals(currTag)) {
-            log.trace("parsing " + currTag);
+            log.trace("parsing {}", currTag);
 
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, UpdateRequestHandler.OPTIMIZE.equals(currTag));
             ModifiableSolrParams mp = new ModifiableSolrParams();
@@ -317,7 +319,7 @@ public class XMLLoader extends ContentStreamLoader {
       } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
         deleteCmd.commitWithin = Integer.parseInt(attrVal);
       } else {
-        log.warn("XML element <delete> has invalid XML attr: " + attrName);
+        log.warn("XML element <delete> has invalid XML attr: {}", attrName);
       }
     }
 
@@ -383,6 +385,7 @@ public class XMLLoader extends ContentStreamLoader {
    *
    * @since solr 1.3
    */
+  @SuppressWarnings({"unchecked"})
   public SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
@@ -397,7 +400,7 @@ public class XMLLoader extends ContentStreamLoader {
           log.debug(message);
         }
       } else {
-        log.warn("XML element <doc> has invalid XML attr:" + attrName);
+        log.warn("XML element <doc> has invalid XML attr: {}", attrName);
       }
     }
 
@@ -443,6 +446,7 @@ public class XMLLoader extends ContentStreamLoader {
               } else {
                 // multiple val are present
                 if (val instanceof List) {
+                  @SuppressWarnings({"rawtypes"})
                   List list = (List) val;
                   list.add(v);
                 } else {
@@ -510,7 +514,7 @@ public class XMLLoader extends ContentStreamLoader {
               } else if ("update".equals(attrName)) {
                 update = attrVal;
               } else {
-                log.warn("XML element <field> has invalid XML attr: " + attrName);
+                log.warn("XML element <field> has invalid XML attr: {}", attrName);
               }
             }
           }

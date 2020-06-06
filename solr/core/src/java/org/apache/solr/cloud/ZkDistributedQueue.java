@@ -51,9 +51,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A ZK-based distributed queue. Optimized for single-consumer,
+ * <p>A ZK-based distributed queue. Optimized for single-consumer,
  * multiple-producer: if there are multiple consumers on the same ZK queue,
- * the results should be correct but inefficient
+ * the results should be correct but inefficient.</p>
+ *
+ * <p>This implementation (with help from subclass {@link OverseerTaskQueue}) is used for the
+ * <code>/overseer/collection-queue-work</code> queue used for Collection and Config Set API calls to the Overseer.</p>
+ *
+ * <p><i>Implementation note:</i> In order to enqueue a message into this queue, a {@link CreateMode#EPHEMERAL_SEQUENTIAL} response node is created
+ * and watched at <code>/overseer/collection-queue-work/qnr-<i>monotonically_increasng_id</i></code>, then a corresponding
+ * {@link CreateMode#PERSISTENT} request node reusing the same id is created at <code>/overseer/collection-queue-work/qn-<i>response_id</i></code>.</p>
  */
 public class ZkDistributedQueue implements DistributedQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -250,7 +257,9 @@ public class ZkDistributedQueue implements DistributedQueue {
             try {
               zookeeper.delete(ops.get(j).getPath(), -1, true);
             } catch (KeeperException.NoNodeException e2) {
-              log.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
+              if (log.isDebugEnabled()) {
+                log.debug("Can not remove node which is not exist : {}", ops.get(j).getPath());
+              }
             }
           }
         }
@@ -417,7 +426,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         for (String childName : childNames) {
           // Check format
           if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-            log.debug("Found child node with improper name: " + childName);
+            log.debug("Found child node with improper name: {}", childName);
             continue;
           }
           orderedChildren.add(childName);

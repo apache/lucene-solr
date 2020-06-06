@@ -105,7 +105,7 @@ public class SolrIndexConfig implements MapSerializable {
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
     if (prefix == null) {
       prefix = "indexConfig";
-      log.debug("Defaulting to prefix \""+prefix+"\" for index configuration");
+      log.debug("Defaulting to prefix '{}' for index configuration", prefix);
     }
     
     if (def == null) {

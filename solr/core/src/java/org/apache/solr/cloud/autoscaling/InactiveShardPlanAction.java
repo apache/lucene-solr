@@ -90,9 +90,14 @@ public class InactiveShardPlanAction extends TriggerActionBase {
           // this timestamp uses epoch time
           long currentTime = cloudManager.getTimeSource().getEpochTimeNs();
           long delta = TimeUnit.NANOSECONDS.toSeconds(currentTime - timestamp);
-          log.debug("{}/{}: tstamp={}, time={}, delta={}", coll.getName(), s.getName(), timestamp, currentTime, delta);
+          if (log.isDebugEnabled()) {
+            log.debug("{}/{}: tstamp={}, time={}, delta={}", coll.getName(), s.getName(), timestamp, currentTime, delta);
+          }
           if (delta > cleanupTTL) {
-            log.debug("-- delete inactive {} / {}", coll.getName(), s.getName());
+            if (log.isDebugEnabled()) {
+              log.debug("-- delete inactive {} / {}", coll.getName(), s.getName());
+            }
+            @SuppressWarnings({"unchecked", "rawtypes"})
             List<SolrRequest> operations = (List<SolrRequest>)context.getProperties().computeIfAbsent("operations", k -> new ArrayList<>());
             operations.add(CollectionAdminRequest.deleteShard(coll.getName(), s.getName()));
             cleanup.computeIfAbsent(coll.getName(), c -> new ArrayList<>()).add(s.getName());
@@ -117,23 +122,29 @@ public class InactiveShardPlanAction extends TriggerActionBase {
               // this timestamp uses epoch time
               long currentTime = cloudManager.getTimeSource().getEpochTimeNs();
               long delta = TimeUnit.NANOSECONDS.toSeconds(currentTime - timestamp);
-              log.debug("{}/{}: locktstamp={}, time={}, delta={}", coll.getName(), lock, timestamp, currentTime, delta);
+              if (log.isDebugEnabled()) {
+                log.debug("{}/{}: locktstamp={}, time={}, delta={}", coll.getName(), lock, timestamp, currentTime, delta);
+              }
               if (delta > cleanupTTL) {
-                log.debug("-- delete inactive split lock for {}/{}, delta={}", coll.getName(), lock, delta);
+                if (log.isDebugEnabled()) {
+                  log.debug("-- delete inactive split lock for {}/{}, delta={}", coll.getName(), lock, delta);
+                }
                 cloudManager.getDistribStateManager().removeData(lockPath, -1);
                 lockData.put("currentTimeNs", currentTime);
                 lockData.put("deltaSec", delta);
                 lockData.put("ttlSec", cleanupTTL);
                 staleLocks.put(coll.getName() + "/" + lock, lockData);
               } else {
-                log.debug("-- lock " + coll.getName() + "/" + lock + " still active (delta=" + delta + ")");
+                if (log.isDebugEnabled()) {
+                  log.debug("-- lock {}/{} still active (delta={})", coll.getName(), lock, delta);
+                }
               }
             } catch (NoSuchElementException nse) {
               // already removed by someone else - ignore
             }
           }
         } catch (Exception e) {
-          log.warn("Exception checking for inactive shard split locks in " + parentPath, e);
+          log.warn("Exception checking for inactive shard split locks in {}", parentPath, e);
         }
       })
     );

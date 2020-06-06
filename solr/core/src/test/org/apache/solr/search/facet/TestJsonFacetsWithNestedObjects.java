@@ -130,7 +130,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "  }" +
             "}"
         )
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1_c1," +
             "        comment_t:\"A great start to what looks like an epic series!\"}," +
             "      {id:book2_c1," +
@@ -167,7 +167,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "  }" +
             "}"
         )
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -213,7 +213,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "        facet: {" +
             "           in_books: \"unique(_root_)\" }}}}}" )
 
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -267,7 +267,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "        facet: {" +
             "           in_books: \"unique(_root_)\" }}}}}" )
 
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -324,7 +324,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "           in_books: \"unique(_root_)\" }}"+
         "}" )
 
-        , "response=={numFound:0,start:0,docs:[]}"
+        , "response=={numFound:0,start:0,'numFoundExact':true,docs:[]}"
         , "facets=={ count:0," +
             "comments_for_author:{" +
             "    buckets:[ {val:mary,    count:1, in_books:1} ]}," +
@@ -364,7 +364,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "  }" +
             "}" )
 
-        , "response=={numFound:2,start:0,docs:[]}"
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[]}"
         , "facets=={ count:2," +
             "types:{" +
             "    buckets:[ {val:review, count:5, in_books1:2, in_books2:2, "

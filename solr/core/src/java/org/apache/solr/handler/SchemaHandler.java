@@ -56,6 +56,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIE
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
+@SuppressWarnings({"unchecked"})
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
@@ -63,6 +64,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   private static final Map<String, String> level2;
 
   static {
+    @SuppressWarnings({"rawtypes"})
     Map s = Utils.makeMap(
         FIELD_TYPES.nameLower, null,
         FIELDS.nameLower, "fl",
@@ -87,6 +89,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
       try {
+        @SuppressWarnings({"rawtypes"})
         List errs = new SchemaManager(req).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
@@ -147,8 +150,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             ManagedIndexSchema managed = (ManagedIndexSchema) schema;
             zkVersion = managed.getSchemaZkVersion();
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-              log.info("REFRESHING SCHEMA (refreshIfBelowVersion=" + refreshIfBelowVersion +
-                  ", currentVersion=" + zkVersion + ") before returning version!");
+              log.info("REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!"
+                  , refreshIfBelowVersion, zkVersion);
               ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
               ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
               managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
@@ -168,14 +171,17 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (parts.size() > 2) {
               req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
             }
+            @SuppressWarnings({"rawtypes"})
             Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
             Object o = propertyValues.get(fieldName);
             if(parts.size()> 2) {
               String name = parts.get(2);
               if (o instanceof List) {
+                @SuppressWarnings({"rawtypes"})
                 List list = (List) o;
                 for (Object obj : list) {
                   if (obj instanceof SimpleOrderedMap) {
+                    @SuppressWarnings({"rawtypes"})
                     SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
                     if(name.equals(simpleOrderedMap.get("name"))) {
                       rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);

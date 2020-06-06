@@ -28,31 +28,28 @@ import org.apache.solr.util.DateMathParser;
  *
  * @since solr 4.0
  */
-public class ValueAugmenterFactory extends TransformerFactory
-{
+public class ValueAugmenterFactory extends TransformerFactory {
   protected Object value = null;
   protected Object defaultValue = null;
 
   @Override
   public void init(NamedList args) {
-    value = args.get( "value" );
-    if( value == null ) {
-      defaultValue = args.get( "defaultValue" );
+    value = args.get("value");
+    if (value == null) {
+      defaultValue = args.get("defaultValue");
     }
   }
 
-  public static Object getObjectFrom( String val, String type )
-  {
-    if( type != null ) {
+  public static Object getObjectFrom(String val, String type) {
+    if (type != null) {
       try {
-        if( "int".equals( type ) ) return Integer.valueOf( val );
-        if( "double".equals( type ) ) return Double.valueOf( val );
-        if( "float".equals( type ) ) return Float.valueOf( val );
-        if( "date".equals( type ) ) return DateMathParser.parseMath(null, val );
-      }
-      catch( Exception ex ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST,
-            "Unable to parse "+type+"="+val, ex );
+        if ("int".equals(type)) return Integer.valueOf(val);
+        if ("double".equals(type)) return Double.valueOf(val);
+        if ("float".equals(type)) return Float.valueOf(val);
+        if ("date".equals(type)) return DateMathParser.parseMath(null, val);
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Unable to parse " + type + "=" + val, ex);
       }
     }
     return val;
@@ -61,43 +58,40 @@ public class ValueAugmenterFactory extends TransformerFactory
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     Object val = value;
-    if( val == null ) {
+    if (val == null) {
       String v = params.get("v");
-      if( v == null ) {
+      if (v == null) {
         val = defaultValue;
-      }
-      else {
+      } else {
         val = getObjectFrom(v, params.get("t"));
       }
-      if( val == null ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST,
-            "ValueAugmenter is missing a value -- should be defined in solrconfig or inline" );
+      if (val == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+                "ValueAugmenter is missing a value -- should be defined in solrconfig or inline");
       }
     }
-    return new ValueAugmenter( field, val );
-  }
-}
-
-class ValueAugmenter extends DocTransformer
-{
-  final String name;
-  final Object value;
-
-  public ValueAugmenter( String name, Object value )
-  {
-    this.name = name;
-    this.value = value;
+    return new ValueAugmenter(field, val);
   }
 
-  @Override
-  public String getName()
-  {
-    return name;
-  }
 
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    doc.setField( name, value );
+  static class ValueAugmenter extends DocTransformer {
+    final String name;
+    final Object value;
+
+    public ValueAugmenter(String name, Object value) {
+      this.name = name;
+      this.value = value;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid) {
+      doc.setField(name, value);
+    }
   }
 }
 

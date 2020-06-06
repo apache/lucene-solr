@@ -17,8 +17,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -39,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -47,7 +48,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -55,6 +55,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -390,7 +391,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
-              log.warn("error reading field: " + fieldName);
+              log.warn("error reading field: {}", fieldName);
             }
           }
         }
@@ -623,8 +624,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       return commit.getDirectory().fileLength(commit.getSegmentsFileName());
     } catch (NoSuchFileException okException) {
       log.debug("Unable to determine the (optional) fileSize for the current IndexReader's segments file because it is "
-                + "no longer in the Directory, this can happen if there are new commits since the Reader was opened",
-                okException);
+          + "no longer in the Directory, this can happen if there are new commits since the Reader was opened"
+          , okException);
     } catch (IOException strangeException) {
       log.warn("Ignoring IOException wile attempting to determine the (optional) fileSize stat for the current IndexReader's segments file",
                strangeException);
@@ -634,17 +635,19 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   /** Returns the sum of RAM bytes used by each segment */
   private static long getIndexHeapUsed(DirectoryReader reader) {
-    long indexHeapRamBytesUsed = 0;
-    for(LeafReaderContext leafReaderContext : reader.leaves()) {
-      LeafReader leafReader = leafReaderContext.reader();
-      if (leafReader instanceof SegmentReader) {
-        indexHeapRamBytesUsed += ((SegmentReader) leafReader).ramBytesUsed();
-      } else {
-        // Not supported for any reader that is not a SegmentReader
-        return -1;
-      }
-    }
-    return indexHeapRamBytesUsed;
+    return reader.leaves().stream()
+        .map(LeafReaderContext::reader)
+        .map(FilterLeafReader::unwrap)
+        .map(leafReader -> {
+          if (leafReader instanceof Accountable) {
+            return ((Accountable) leafReader).ramBytesUsed();
+          } else {
+            return -1L; // unsupported
+          }
+        })
+        .mapToLong(Long::longValue)
+        .reduce(0, (left, right) -> left == -1 || right == -1 ? -1 : left + right);
+    // if any leaves are unsupported (-1), we ultimately return -1.
   }
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
@@ -747,6 +750,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Private internal class that counts up frequent terms
    */
+  @SuppressWarnings("rawtypes")
   private static class TopTermQueue extends PriorityQueue
   {
     static class TermInfo {

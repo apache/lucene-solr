@@ -180,8 +180,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
                result.contains("\"id\"") &&
                result.contains("\"score\"") && result.contains("_children_"));
 
-    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7,'docs':[{'id':'1', 'score':'0.7'," +
-        " '_children_':{'numFound':1,'start':0,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7, 'numFoundExact':true,'docs':[{'id':'1', 'score':'0.7'," +
+        " '_children_':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
     String error = JSONTestUtil.match(result, "=="+expectedResult);
     assertNull("response validation failed with error: " + error, error);
 
@@ -211,7 +211,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
 
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
     List<Method> allSuperClassMethods = new ArrayList<>();
@@ -256,7 +256,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testArrntvWriterLacksMethodsOfItsOwn() {
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
     // ArrayOfNamedValuePairJSONWriter is a simple sub-class
     // which should have (almost) no methods of its own

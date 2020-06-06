@@ -109,6 +109,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     }
     this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
+    @SuppressWarnings({"unchecked"})
     List<Map<String, Object>> o = (List<Map<String, Object>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
@@ -143,7 +144,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      log.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      log.warn("Exception checking ZK path {}", ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
       throw e;
     }
     for (TriggerAction action : actions) {
@@ -243,6 +244,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
    * @see #getState
    * @lucene.internal
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String,Object> deepCopyState() {
     return Utils.getDeepCopy(getState(), 10, false, true);
   }
@@ -268,11 +270,12 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       
     } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
-      log.warn("Exception updating trigger state '" + path + "'", e);
+      log.warn("Exception updating trigger state '{}'", path, e);
     }
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void restoreState() {
     byte[] data = null;
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + getName();
@@ -284,7 +287,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyClosedException e) {
      
     } catch (Exception e) {
-      log.warn("Exception getting trigger state '" + path + "'", e);
+      log.warn("Exception getting trigger state '{}'", path, e);
     }
     if (data != null) {
       Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);

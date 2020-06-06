@@ -499,9 +499,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      if (log.isWarnEnabled()) {
-        log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
-      }
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {
@@ -728,7 +726,7 @@ public class HttpSolrCall {
 
       if (httpEntity != null) {
         if (httpEntity.getContentEncoding() != null)
-          resp.setCharacterEncoding(httpEntity.getContentEncoding().getValue());
+          resp.setHeader(httpEntity.getContentEncoding().getName(), httpEntity.getContentEncoding().getValue());
         if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
 
         InputStream is = httpEntity.getContent();

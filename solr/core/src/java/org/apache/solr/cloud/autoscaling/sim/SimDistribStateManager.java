@@ -244,7 +244,9 @@ public class SimDistribStateManager implements DistribStateManager {
    */
   public void copyFrom(DistribStateManager other, boolean failOnExists) throws InterruptedException, IOException, KeeperException, AlreadyExistsException, BadVersionException {
     List<String> tree = other.listTree("/");
-    log.info("- copying " + tree.size() + " resources...");
+    if (log.isInfoEnabled()) {
+      log.info("- copying {} resources...", tree.size());
+    }
     // check if any node exists
     for (String path : tree) {
       if (hasData(path) && failOnExists) {
@@ -617,6 +619,7 @@ public class SimDistribStateManager implements DistribStateManager {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     Map<String, Object> map = new HashMap<>();
     int version = 0;
