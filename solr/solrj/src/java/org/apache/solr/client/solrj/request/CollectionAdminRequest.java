@@ -110,6 +110,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrRequest getV2Request() {
     return usev2 ?
         V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
@@ -294,6 +295,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest {
 
     protected String collection;
@@ -1535,6 +1537,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
+      @SuppressWarnings({"rawtypes"})
       NamedList innerResponse = (NamedList) getResponse().get("status");
       return RequestStatusState.fromKey((String) innerResponse.get("state"));
     }
@@ -2682,6 +2685,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   /**
    * Returns a SolrRequest to get a list of collections in the cluster
    */
+  @SuppressWarnings({"unchecked"})
   public static java.util.List<String> listCollections(SolrClient client) throws IOException, SolrServerException {
     CollectionAdminResponse resp = new List().process(client);
     return (java.util.List<String>) resp.getResponse().get("collections");
