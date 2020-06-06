@@ -484,10 +484,73 @@ public class TestJsonFacets extends SolrTestCaseHS {
                  + "             background_popularity: 0.5 },"
                  + "   } ] } } "
                  );
+      }
+    }
+
+    // relatedness shouldn't be computed for allBuckets, but it also shouldn't cause any problems
+    //
+    // NOTE: we can't test this with 'index asc' because STREAM processor
+    // (which test may randomize as default) doesn't support allBuckets
+    // see: https://issues.apache.org/jira/browse/SOLR-14514
+    //
+    for (String sort : Arrays.asList("sort:'y desc'",
+                                     "sort:'z desc'",
+                                     "sort:'skg desc'",
+                                     "prelim_sort:'count desc', sort:'skg desc'")) {
+      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order,
+      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      //
+      // So all of these re/sort options should produce identical output (since the num buckets is < limit)
+      // - Testing "index" sort allows the randomized use of "stream" processor as default to be tested.
+      // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "defered" Agg
+      for (String limit : Arrays.asList(", ", ", limit:5, ", ", limit:-1, ")) {
+        // results shouldn't change regardless of our limit param"
+        assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                     "fore", "where_s:NY", "back", "*:*",
+                     "json.facet", ""
+                     + "{x: { type: terms, field: 'cat_s', allBuckets:true, "+sort + limit
+                     + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
+                 , "facets=={count:5, x:{ "
+                 // 'skg' key must not exist in th allBuckets bucket
+                 + "                      allBuckets: { count:5, y:2.0, z:-5 },"
+                 + "buckets:["
+                 + "   { val:'A', count:2, y:5.0, z:2, "
+                 + "     skg : { relatedness: 0.00554, "
+                 //+ "             foreground_count: 1, "
+                 //+ "             foreground_size: 2, "
+                 //+ "             background_count: 2, "
+                 //+ "             background_size: 6,"
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.33333, },"
+                 + "   }, "
+                 + "   { val:'B', count:3, y:-3.0, z:-5, "
+                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                 //+ "             foreground_count: 1, "
+                 //+ "             foreground_size: 2, "
+                 //+ "             background_count: 3, "
+                 //+ "             background_size: 6,"
+                 + "             foreground_popularity: 0.16667,"
+                 + "             background_popularity: 0.5 },"
+                 + "   } ] } } "
+                 );
+        
+        // really special case: allBuckets when there are no regular buckets...
+        assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                     "fore", "where_s:NY", "back", "*:*",
+                     "json.facet", ""
+                     + "{x: { type: terms, field: 'bogus_field_s', allBuckets:true, "+sort + limit
+                     + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
+                 , "facets=={count:5, x:{ "
+                 // 'skg' key (as well as 'z' since it's a min) must not exist in the allBuckets bucket
+                 + "                      allBuckets: { count:0, y:0.0 },"
+                 + "buckets:[ ]"
+                 + "   } } "
+                 );
 
         
       }
     }
+
     
     // trivial sanity check that we can (re)sort on SKG after pre-sorting on count...
     // ...and it's only computed for the top N buckets (based on our pre-sort)

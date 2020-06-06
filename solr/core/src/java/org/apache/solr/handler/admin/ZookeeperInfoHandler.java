@@ -353,6 +353,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private PagedCollectionSupport pagingSupport;
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
     Map<String, String> map = new HashMap<>(1);

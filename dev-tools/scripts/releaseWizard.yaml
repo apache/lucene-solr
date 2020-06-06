@@ -992,7 +992,7 @@ groups:
       . Select "Staging Repositories" under "Build Promotion" from the navigation bar on the left
       . Select the staging repository containing the Lucene artifacts
       . Click on the "Close" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }} RC{{ rc_number }}"
-      * The system will not spend some time validating the artifacts. Grab a coke and come back.
+      * The system will now spend some time validating the artifacts. Grab a coke and come back.
       * Release the Lucene and/or Solr artifacts
       . Wait and keep clicking refresh until the "Release" button becomes available
       . Click on the "Release" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }}".
@@ -1026,7 +1026,7 @@ groups:
     id: website_docs
     title: Publish docs, changes and javadocs
     description: |
-      Ensure your refridgerator has at least 2 beers - the svn import operation can take a while, 
+      Ensure your refrigerator has at least 2 beers - the svn import operation can take a while,
       depending on your upload bandwidth. We'll publish this directly to the production tree.
       At the end of the task, the two links below shall work.
     links:
@@ -1306,6 +1306,11 @@ groups:
       Make sure you have a PGP enabled email client with your apache key installed.
       There are plugins for popular email programs, as well as browser plugins for webmail.
       See links for help on how to setup your email client for PGP.
+
+      If you prefer to sign the announcements manually rather than using a plugin,
+      you can do so from the command line and then copy the output into your mail program.
+
+      gpg --output - --clearsign lucene_announce.txt
     links:
     - https://www.openpgp.org/software/
     - https://ssd.eff.org/en/module/how-use-pgp-mac-os-x
@@ -1491,13 +1496,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
   - !Todo
     id: backcompat_stable
@@ -1520,13 +1525,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
   - !Todo
     id: backcompat_master
@@ -1551,13 +1556,13 @@ groups:
         cmd: ant clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-bakccompat.log
+        logfile: add-backcompat.log
       - !Command
-        cmd: git diff
+        cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
     post_description: |
       When doing a major version release, eg. 8.0.0, you might also need to reenable some 

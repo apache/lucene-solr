@@ -148,6 +148,7 @@ public class SnapShooter {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public NamedList createSnapshot() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
@@ -208,6 +209,7 @@ public class SnapShooter {
     return commit;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void createSnapAsync(final int numberToKeep, Consumer<NamedList> result) throws IOException {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
@@ -242,6 +244,7 @@ public class SnapShooter {
    * @see IndexDeletionPolicyWrapper#saveCommitPoint
    * @see IndexDeletionPolicyWrapper#releaseCommitPoint
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
     if (log.isInfoEnabled()) {
