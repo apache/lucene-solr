@@ -133,6 +133,9 @@ Improvements
 * SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
   (David Smiley, Yasufumi Mizoguchi)
 
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available. 
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev). 
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
