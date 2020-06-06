@@ -62,6 +62,7 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
 
   private static final long serialVersionUID = 1957981902839867821L;
@@ -467,9 +468,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public void putAll(Map m) {
         boolean isEmpty = isEmpty();
         for (Object o : m.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Entry) o;
           if (isEmpty) {// we know that there are no duplicates
             add((String) e.getKey(), (T) e.getValue());
@@ -485,12 +488,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public Set<String> keySet() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).keySet();
       }
 
       @Override
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public Collection values() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).values();
@@ -795,7 +800,6 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    *           If values are found for the input key that are not strings or
    *           arrays of strings.
    */
-  @SuppressWarnings("rawtypes")
   public Collection<String> removeConfigArgs(final String name)
       throws SolrException {
     List<T> objects = getAll(name);
