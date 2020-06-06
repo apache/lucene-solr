@@ -225,6 +225,8 @@ Other Changes
 
 * SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
 
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
