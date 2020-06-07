@@ -46,6 +46,7 @@ public class ClobTransformer extends Transformer {
         srcCol = column;
       Object o = aRow.get(srcCol);
       if (o instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Clob> inputs = (List<Clob>) o;
         List<String> results = new ArrayList<>();
         for (Object input : inputs) {
