@@ -709,6 +709,24 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
+  /** SOLR-13203 **/
+  public void testUfDynamicField() throws Exception {
+    try {
+      ignoreException("dynamic field");
+
+      SolrException exception = expectThrows(SolrException.class,
+          () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertEquals("dynamic field name must start or end with *",
+          exception.getMessage());
+    } finally {
+      resetExceptionIgnores();
+    }
+
+    // simple test to validate dynamic uf parsing works
+    assertQ(req("uf", "trait* id", "defType", "edismax"));
+  }
+
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
