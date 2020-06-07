@@ -63,8 +63,8 @@ Improvements
 * SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
   (David Smiley, Yasufumi Mizoguchi)
 
-* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available. 
-  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev). 
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
 Optimizations
 ---------------------
@@ -229,6 +229,8 @@ Other Changes
 
 * SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
   (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542:  Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
 
 ==================  8.5.2 ==================
 

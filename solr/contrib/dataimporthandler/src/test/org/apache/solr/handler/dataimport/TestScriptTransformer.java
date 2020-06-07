@@ -128,6 +128,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testCheckScript() throws Exception {
     try {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance()
@@ -137,13 +138,14 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       DIHConfiguration dc = di.readFromXml(document);
       Context c = getContext("checkNextToken", dc.getScript().getText());
 
+      @SuppressWarnings({"rawtypes"})
       Map map = new HashMap();
       map.put("nextToken", "hello");
       EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(c);
       sep.applyTransformer(map);
       assertEquals("true", map.get("$hasMore"));
-      map = new HashMap();
+      map = new HashMap<>();
       map.put("nextToken", "");
       sep.applyTransformer(map);
       assertNull(map.get("$hasMore"));

@@ -142,6 +142,7 @@ public class DataImporter {
             String name = defaultParams.getName(position);            
             if (name.equals("datasource")) {
               success = true;
+              @SuppressWarnings({"rawtypes"})
               NamedList dsConfig = (NamedList) defaultParams.getVal(position);
               log.info("Getting configuration for Global Datasource...");
               Map<String,String> props = new HashMap<>();
@@ -361,6 +362,7 @@ public class DataImporter {
     return store.get(key);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public DataSource getDataSourceInstance(Entity key, String name, Context ctx) {
     Map<String,String> p = requestLevelDataSourceProps.get(name);
     if (p == null)
@@ -373,6 +375,7 @@ public class DataImporter {
       throw new DataImportHandlerException(SEVERE,
               "No dataSource :" + name + " available for entity :" + key.getName());
     String type = p.get(TYPE);
+    @SuppressWarnings({"rawtypes"})
     DataSource dataSrc = null;
     if (type == null) {
       dataSrc = new JdbcDataSource();
@@ -493,11 +496,13 @@ public class DataImporter {
   Map<String, String> getStatusMessages() {
     //this map object is a Collections.synchronizedMap(new LinkedHashMap()). if we
     // synchronize on the object it must be safe to iterate through the map
+    @SuppressWarnings({"rawtypes"})
     Map statusMessages = (Map) retrieve(STATUS_MSGS);
     Map<String, String> result = new LinkedHashMap<>();
     if (statusMessages != null) {
       synchronized (statusMessages) {
         for (Object o : statusMessages.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Map.Entry) o;
           //the toString is taken because some of the Objects create the data lazily when toString() is called
           result.put((String) e.getKey(), e.getValue().toString());
@@ -524,6 +529,7 @@ public class DataImporter {
   /**
    * used by tests.
    */
+  @SuppressWarnings({"unchecked"})
   Map<String, Evaluator> getEvaluators(List<Map<String,String>> fn) {
     Map<String, Evaluator> evaluators = new HashMap<>();
     evaluators.put(Evaluator.DATE_FORMAT_EVALUATOR, new DateFormatEvaluator());

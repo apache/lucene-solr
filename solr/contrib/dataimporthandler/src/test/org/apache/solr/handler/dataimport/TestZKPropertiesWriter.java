@@ -95,6 +95,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testZKPropertiesWriter() throws Exception {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
@@ -121,6 +122,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     props.put("last_index_time", oneSecondAgo);
     spw.persist(props);
 
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "year_s", "2013"));
     MockDataSource.setIterator("select " + df.format(oneSecondAgo) + " from dummy", rows.iterator());
