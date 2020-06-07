@@ -47,6 +47,7 @@
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE=" \
+#-XX:+ExplicitGCInvokesConcurrent \
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
