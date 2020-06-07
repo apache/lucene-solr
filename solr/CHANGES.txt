@@ -145,6 +145,8 @@ Bug Fixes
 
 * SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
 
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
 * SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
   (Michael Gibney, hossman)
 
