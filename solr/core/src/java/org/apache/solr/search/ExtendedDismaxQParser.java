@@ -51,6 +51,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -1609,7 +1610,7 @@ public class ExtendedDismaxQParser extends QParser {
         str=wildcard.substring(0,wildcard.length()-1);
       }
       else {
-        throw new RuntimeException("dynamic field name must start or end with *");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "dynamic field name must start or end with *");
       }
     }
     

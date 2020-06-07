@@ -84,6 +84,7 @@ public class StatsComponent extends SearchComponent {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
@@ -107,6 +108,7 @@ public class StatsComponent extends SearchComponent {
         for (int i = 0; i < stats_fields.size(); i++) {
           String key = stats_fields.getName(i);
           StatsValues stv = allStatsValues.get(key);
+          @SuppressWarnings({"rawtypes"})
           NamedList shardStv = (NamedList) stats_fields.get(key);
           stv.accumulate(shardStv);
         }
@@ -149,6 +151,7 @@ public class StatsComponent extends SearchComponent {
 
     for (Map.Entry<String, StatsValues> entry : statsValues.entrySet()) {
       String key = entry.getKey();
+      @SuppressWarnings({"rawtypes"})
       NamedList stv = entry.getValue().getStatsValues();
       stats_fields.add(key, stv);
     }

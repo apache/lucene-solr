@@ -351,6 +351,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -752,7 +753,7 @@ public class JavaBinCodec implements PushWriter {
     val.writeIter(itemWriter);
     writeTag(END);
   }
-  public void writeIterator(Iterator iter) throws IOException {
+  public void writeIterator(@SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
     writeTag(ITERATOR);
     while (iter.hasNext()) {
       writeVal(iter.next());
@@ -770,14 +771,14 @@ public class JavaBinCodec implements PushWriter {
     return l;
   }
 
-  public void writeArray(List l) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})List l) throws IOException {
     writeTag(ARR, l.size());
     for (int i = 0; i < l.size(); i++) {
       writeVal(l.get(i));
     }
   }
 
-  public void writeArray(Collection coll) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})Collection coll) throws IOException {
     writeTag(ARR, coll.size());
     for (Object o : coll) {
       writeVal(o);
@@ -793,11 +794,13 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Object> readArray(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     return readArray(dis, sz);
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected List readArray(DataInputInputStream dis, int sz) throws IOException {
     ArrayList<Object> l = new ArrayList<>(sz);
     for (int i = 0; i < sz; i++) {
@@ -816,7 +819,7 @@ public class JavaBinCodec implements PushWriter {
     writeStr(enumFieldValue.toString());
   }
 
-  public void writeMapEntry(Map.Entry val) throws IOException {
+  public void writeMapEntry(Map.Entry<?,?> val) throws IOException {
     writeTag(MAP_ENTRY);
     writeVal(val.getKey());
     writeVal(val.getValue());

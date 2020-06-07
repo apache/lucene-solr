@@ -35,6 +35,7 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
+REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8

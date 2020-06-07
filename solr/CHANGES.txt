@@ -136,6 +136,9 @@ Improvements
 * SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
   (David Smiley, Yasufumi Mizoguchi)
 
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -218,6 +221,12 @@ Bug Fixes
 * SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
   (Michael Gibney, hossman)
 
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -284,6 +293,19 @@ Other Changes
 * SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
 
 * SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
+
+* SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
+* SOLR-14538: Fix or suppress remaining warnings in apache/solr/handler (Erick Erickson)
+
+* SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
+
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542:  Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
 
 ==================  8.5.2 ==================
 

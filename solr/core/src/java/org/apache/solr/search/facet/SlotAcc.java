@@ -249,15 +249,26 @@ public abstract class SlotAcc implements Closeable {
    * Incapsulates information about the current slot, for Accumulators that may want
    * additional info during collection.
    */
-  public static final class SlotContext {
+  public static class SlotContext {
     private final Query slotQuery;
 
     public SlotContext(Query slotQuery) {
       this.slotQuery = slotQuery;
     }
 
+    /**
+     * behavior of this method is undefined if {@link #isAllBuckets} returns <code>true</code>
+     */
     public Query getSlotQuery() {
       return slotQuery;
+    }
+
+    /** 
+     * @return true if and only if this slot corrisponds to the <code>allBuckets</code> bucket.
+     * @see #getSlotQuery 
+     */
+    public boolean isAllBuckets() {
+      return false;
     }
   }
 

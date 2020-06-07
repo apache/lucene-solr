@@ -42,7 +42,7 @@ public class MockInitialContextFactory implements InitialContextFactory {
 
   @Override
   @SuppressWarnings("unchecked")
-  public javax.naming.Context getInitialContext(Hashtable env) {
+  public javax.naming.Context getInitialContext(@SuppressWarnings({"rawtypes"})Hashtable env) {
     return context;
   }
 

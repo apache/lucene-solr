@@ -91,6 +91,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -132,6 +133,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -145,6 +147,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
+      @SuppressWarnings({"rawtypes"})
       Map requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
@@ -156,6 +159,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
+    @SuppressWarnings({"rawtypes"})
     Map requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
@@ -202,8 +206,10 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       String msg = e.getMessage();
+      @SuppressWarnings({"rawtypes"})
       Map m = new HashMap();
       m.put("EOF", true);
       m.put("EXCEPTION", msg);
@@ -254,6 +260,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {

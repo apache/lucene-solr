@@ -74,6 +74,7 @@ public interface IteratorWriter {
       return this;
     }
   }
+  @SuppressWarnings({"unchecked", "rawtypes"})
   default List toList( List l)  {
     try {
       writeIter(new ItemWriter() {
