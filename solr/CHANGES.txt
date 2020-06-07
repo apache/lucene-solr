@@ -226,6 +226,7 @@ Bug Fixes
 * SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
   (Johannes Kloos, mrsoong via Munendra S N)
 
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
