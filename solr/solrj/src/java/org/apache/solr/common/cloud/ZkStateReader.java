@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -541,9 +542,14 @@ public class ZkStateReader implements SolrCloseable {
                 log.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
                 // remake watch
-                final Watcher thisWatch = this;
                 final Stat stat = new Stat();
-                final byte[] data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, thisWatch, stat, true);
+                byte[] data = "{}".getBytes(StandardCharsets.UTF_8);
+                if (EventType.NodeDeleted.equals(event.getType())) {
+                  // Node deleted, just recreate watch without attempting a read - SOLR-9679
+                  getZkClient().exists(SOLR_SECURITY_CONF_PATH, this, true);
+                } else {
+                  data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat, true);
+                }
                 try {
                   callback.call(new Pair<>(data, stat));
                 } catch (Exception e) {
