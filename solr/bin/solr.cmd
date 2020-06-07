@@ -1193,7 +1193,8 @@ IF "%GC_TUNE%"=="" (
     -XX:+ParallelRefProcEnabled ^
     -XX:MaxGCPauseMillis=250 ^
     -XX:+UseLargePages ^
-    -XX:+AlwaysPreTouch
+    -XX:+AlwaysPreTouch ^
+    -XX:+ExplicitGCInvokesConcurrent
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9  (
