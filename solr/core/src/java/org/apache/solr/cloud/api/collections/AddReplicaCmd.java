@@ -145,7 +145,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       totalReplicas += entry.getValue();
     }
     if (totalReplicas > 1)  {
-      if (message.getStr(CoreAdminParams.NAME) != null) {
+      if (node != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'name' parameter is specified");
       }
       if (message.getStr(CoreAdminParams.CORE_NODE_NAME) != null) {
