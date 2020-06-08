@@ -38,6 +38,7 @@ public class SetValueEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException {
     if(values[0] instanceof Tuple) {
       Tuple tuple = (Tuple)values[0];
@@ -47,6 +48,7 @@ public class SetValueEvaluator extends RecursiveObjectEvaluator implements ManyV
         value = ((String)value).replace("\"", "");
       }
       key = key.replace("\"", "");
+      @SuppressWarnings({"rawtypes"})
       Map map = new HashMap(tuple.fields);
       map.put(key, value);
       return new Tuple(map);

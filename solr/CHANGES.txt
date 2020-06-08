@@ -215,6 +215,8 @@ Bug Fixes
 
 * SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
 
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
 * SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
   (Michael Gibney, hossman)
 
@@ -302,7 +304,11 @@ Other Changes
 * SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
   (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
 
-* SOLR-14542:  Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
+
+* SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
 
 ==================  8.5.2 ==================
 

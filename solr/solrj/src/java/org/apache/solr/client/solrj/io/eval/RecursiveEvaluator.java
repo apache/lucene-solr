@@ -76,7 +76,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //Let's first check to see if we have a List of Strings.
       //If we do let's try and convert to a list of doubles and see what happens
       try {
-        List<Number> vector = new ArrayList();
+        List<Number> vector = new ArrayList<>();
         boolean allDoubles = true;
         for(Object o : (Collection)value) {
           if(o instanceof String) {
@@ -119,6 +119,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
   }
   
+  @SuppressWarnings({"unchecked"})
   protected Object normalizeOutputType(Object value) {
     if(null == value){
       return null;
@@ -144,7 +145,9 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //If its a tuple and not a inner class that has extended tuple, which is done in a number of cases so that mathematical models
       //can be contained within a tuple.
 
+      @SuppressWarnings({"rawtypes"})
       Tuple tuple = (Tuple)value;
+      @SuppressWarnings({"rawtypes"})
       Map map = new HashMap();
       for(Object o : tuple.fields.keySet()) {
         Object v = tuple.fields.get(o);

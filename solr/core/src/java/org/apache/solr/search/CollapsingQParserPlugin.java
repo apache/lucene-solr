@@ -366,6 +366,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public DelegatingCollector getFilterCollector(IndexSearcher indexSearcher) {
       try {
 
@@ -376,6 +377,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         //because the QueryElevationComponent runs after the Queries are constructed.
 
         IntIntHashMap boostDocsMap = null;
+        @SuppressWarnings({"rawtypes"})
         Map context = null;
         SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
         if(info != null) {
@@ -1451,8 +1453,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * If it is, then "this" will be added to the readerContext
      * using the "CSCORE" key, and true will be returned.  If not returns false.
      */
+    @SuppressWarnings({"unchecked"})
     public boolean setupIfNeeded(final GroupHeadSelector groupHeadSelector,
-                                 final Map readerContext) {
+                                 @SuppressWarnings({"rawtypes"})final Map readerContext) {
       // HACK, but not really any better options until/unless we can recursively
       // ask value sources if they depend on score
       if (wantsCScore(groupHeadSelector.selectorText)) {
@@ -1832,6 +1835,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private ValueSource valueSource;
     private FunctionValues functionValues;
     private IntFloatDynamicMap ordVals;
+    @SuppressWarnings({"rawtypes"})
     private Map rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
     private boolean needsScores4Collapsing;
@@ -2353,6 +2357,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     private ValueSource valueSource;
     private FunctionValues functionValues;
+    @SuppressWarnings({"rawtypes"})
     private Map rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
     private int index=-1;
@@ -2632,6 +2637,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     final private int numClauses;
     final private SortField[] sorts;
     final private int[] reverseMul;
+    @SuppressWarnings({"rawtypes"})
     final private FieldComparator[] fieldComparators;
     final private LeafFieldComparator[] leafFieldComparators;
 
@@ -2642,6 +2648,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used,
      * and an initial number of expected groups (will grow as needed).
      */
+    @SuppressWarnings({"rawtypes"})
     public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
@@ -2757,6 +2764,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * accordance with the SortFields.
      * (otherwise returns false)
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private boolean testAndSetGroupValues(Object[] values, int contextDoc) throws IOException {
       Object[] stash = new Object[numClauses];
       int lastCompare = 0;
