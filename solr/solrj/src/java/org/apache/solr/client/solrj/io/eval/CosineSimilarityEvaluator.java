@@ -46,7 +46,9 @@ public class CosineSimilarityEvaluator extends RecursiveNumericEvaluator impleme
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
+    @SuppressWarnings({"unchecked"})
     double[] d1 = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+    @SuppressWarnings({"unchecked"})
     double[] d2 = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
 
     return cosineSimilarity(d1, d2);

@@ -44,6 +44,7 @@ public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator impleme
 
   @Override
   public Object doWork(Object... values) throws IOException {
+    @SuppressWarnings({"unchecked"})
     List<double[]> mannWhitneyUInput = Arrays.stream(values)
         .map(value -> ((List<Number>) value).stream().mapToDouble(Number::doubleValue).toArray())
         .collect(Collectors.toList());

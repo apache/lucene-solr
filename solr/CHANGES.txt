@@ -304,7 +304,9 @@ Other Changes
 * SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
   (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
 
-* SOLR-14542:  Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
 
 * SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
 

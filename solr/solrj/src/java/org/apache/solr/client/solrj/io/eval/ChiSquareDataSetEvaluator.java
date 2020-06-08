@@ -38,7 +38,9 @@ public class ChiSquareDataSetEvaluator extends RecursiveNumericListEvaluator imp
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
+    @SuppressWarnings({"unchecked"})
     List<Number> listA = (List<Number>) value1;
+    @SuppressWarnings({"unchecked"})
     List<Number> listB = (List<Number>) value2;
 
     long[] sampleA = new long[listA.size()];

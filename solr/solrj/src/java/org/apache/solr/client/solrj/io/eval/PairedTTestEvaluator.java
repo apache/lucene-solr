@@ -42,9 +42,11 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
   public Object doWork(Object value1, Object value2) throws IOException {
 
     TTest tTest = new TTest();
+    @SuppressWarnings({"rawtypes"})
     Map map = new HashMap();
     Tuple tuple = new Tuple(map);
     if(value1 instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values1 = (List<Number>)value1;
       double[] samples1 = new double[values1.size()];
 
@@ -53,6 +55,7 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
       }
 
       if(value2 instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Number> values2 = (List<Number>) value2;
         double[] samples2 = new double[values2.size()];
 
