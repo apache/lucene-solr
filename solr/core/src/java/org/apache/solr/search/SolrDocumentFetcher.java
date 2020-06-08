@@ -108,6 +108,7 @@ public class SolrDocumentFetcher {
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
 
+  @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
