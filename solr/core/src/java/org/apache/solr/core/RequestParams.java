@@ -89,11 +89,13 @@ public class RequestParams implements MapSerializable {
     Map<String, String[]> copy = new LinkedHashMap<>();
     for (Map.Entry<String, ?> entry : value.entrySet()) {
       if ("".equals(entry.getKey())) {
-        // nocommit
-        // copy.put(entry.getKey(), entry.getValue());
-        // continue;
-      }
-      if (entry.getValue() == null) {
+        // Why is this a special case?
+        if (entry.getValue() instanceof String[]) {
+          copy.put("", (String[]) entry.getValue());
+        } else {
+          throw new IllegalArgumentException();
+        }
+      } else if (entry.getValue() == null) {
         copy.put(entry.getKey(), null);
       } else if (entry.getValue() instanceof List) {
         List<?> l = (List<?>) entry.getValue();
