@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,7 +60,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
     String graphML = writer.toString();
 
     //Validate the nodes
-    String error = h.validateXPath(graphML,
+    String error = BaseTestHarness.validateXPath(graphML,
                                    "//graph/node[1][@id ='bill']",
                                    "//graph/node[2][@id ='jim']",
                                    "//graph/node[3][@id ='max']");
@@ -67,7 +68,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       throw new Exception(error);
     }
     //Validate the edges
-    error = h.validateXPath(graphML,
+    error = BaseTestHarness.validateXPath(graphML,
                             "//graph/edge[1][@source ='jim']",
                             "//graph/edge[1][@target ='bill']",
                             "//graph/edge[2][@source ='max']",
