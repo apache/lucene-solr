@@ -22,8 +22,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -119,7 +117,6 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
   }
   
-  @SuppressWarnings({"unchecked"})
   protected Object normalizeOutputType(Object value) {
     if(null == value){
       return null;
@@ -145,15 +142,13 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //If its a tuple and not a inner class that has extended tuple, which is done in a number of cases so that mathematical models
       //can be contained within a tuple.
 
-      @SuppressWarnings({"rawtypes"})
       Tuple tuple = (Tuple)value;
-      @SuppressWarnings({"rawtypes"})
-      Map map = new HashMap();
-      for(Object o : tuple.fields.keySet()) {
-        Object v = tuple.fields.get(o);
-        map.put(o, normalizeOutputType(v));
+      Tuple newTuple = new Tuple();
+      for(Object o : tuple.getFields().keySet()) {
+        Object v = tuple.get(o);
+        newTuple.put(o, normalizeOutputType(v));
       }
-      return new Tuple(map);
+      return newTuple;
     }
     else{
       // anything else can just be returned as is

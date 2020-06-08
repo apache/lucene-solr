@@ -94,6 +94,8 @@ New Features
 * SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
   timeseries Streaming Expressions (Joel Bernstein)
 
+* SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method

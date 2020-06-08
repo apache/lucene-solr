@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -176,10 +177,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     TupleStream tupleStream;
 
     try {
-      StreamExpression streamExpression = StreamExpressionParser.parse(params.get("expr"));
+      StreamExpression streamExpression = StreamExpressionParser.parse(params.get(StreamParams.EXPR));
       if (this.streamFactory.isEvaluator(streamExpression)) {
-        StreamExpression tupleExpression = new StreamExpression("tuple");
-        tupleExpression.addParameter(new StreamExpressionNamedParameter("return-value", streamExpression));
+        StreamExpression tupleExpression = new StreamExpression(StreamParams.TUPLE);
+        tupleExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, streamExpression));
         tupleStream = this.streamFactory.constructStream(tupleExpression);
       } else {
         tupleStream = this.streamFactory.constructStream(streamExpression);
@@ -188,7 +189,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
       // rules.
       SolrException.log(log, e);
-      rsp.add("result-set", new DummyErrorStream(e));
+      rsp.add(StreamParams.RESULT_SET, new DummyErrorStream(e));
 
       return;
     }
@@ -241,9 +242,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       daemonStream.setDaemons(daemons);
       daemonStream.open(); // This will start the daemonStream
       daemons.put(daemonStream.getId(), daemonStream);
-      rsp.add("result-set", new DaemonResponseStream("Daemon:" + daemonStream.getId() + " started on " + coreName));
+      rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + daemonStream.getId() + " started on " + coreName));
     } else {
-      rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
+      rsp.add(StreamParams.RESULT_SET, new TimerStream(new ExceptionStream(tupleStream)));
     }
   }
 
@@ -256,40 +257,40 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     if ("list".equals(action)) {
       Collection<DaemonStream> vals = daemons.values();
-      rsp.add("result-set", new DaemonCollectionStream(vals));
+      rsp.add(StreamParams.RESULT_SET, new DaemonCollectionStream(vals));
       return;
     }
 
     String id = params.get(ID);
     DaemonStream d = daemons.get(id);
     if (d == null) {
-      rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " not found on " + coreName));
+      rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " not found on " + coreName));
       return;
     }
 
     switch (action) {
       case "stop":
         d.close();
-        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " stopped on " + coreName));
+        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " stopped on " + coreName));
         break;
 
       case "start":
         try {
           d.open();
         } catch (IOException e) {
-          rsp.add("result-set", new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
+          rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
         }
-        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " started on " + coreName));
+        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " started on " + coreName));
         break;
 
       case "kill":
         daemons.remove(id);
         d.close(); // we already found it in the daemons list, so we don't need to verify we removed it.
-        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));
+        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));
         break;
 
       default:
-        rsp.add("result-set", new DaemonResponseStream("Daemon:" + id + " action '"
+        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " action '"
             + action + "' not recognized on " + coreName));
         break;
     }
@@ -344,7 +345,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       String msg = e.getMessage();
 
@@ -353,12 +353,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         msg = t.getMessage();
         t = t.getCause();
       }
-
-      @SuppressWarnings({"rawtypes"})
-      Map m = new HashMap();
-      m.put("EOF", true);
-      m.put("EXCEPTION", msg);
-      return new Tuple(m);
+      return Tuple.EXCEPTION(msg, true);
     }
   }
 
@@ -396,15 +391,11 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if (it.hasNext()) {
         return it.next().getInfo();
       } else {
-        @SuppressWarnings({"rawtypes"})
-        Map m = new HashMap();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       }
     }
   }
@@ -444,19 +435,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if (sendEOF) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = new HashMap();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
         sendEOF = true;
-        @SuppressWarnings({"rawtypes"})
-        Map m = new HashMap();
-        m.put("DaemonOp", message);
-        return new Tuple(m);
+        return new Tuple("DaemonOp", message);
       }
     }
   }
@@ -506,7 +490,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put("RESPONSE_TIME", totalTime);
+        tuple.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }

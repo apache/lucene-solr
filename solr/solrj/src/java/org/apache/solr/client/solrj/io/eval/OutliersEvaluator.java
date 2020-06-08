@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.math3.distribution.IntegerDistribution;
@@ -77,7 +76,7 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
     } else {
       tuples = new ArrayList<>();
       for(int i=0; i<vec.size(); i++) {
-        tuples.add(new Tuple(new HashMap()));
+        tuples.add(new Tuple());
       }
     }
 

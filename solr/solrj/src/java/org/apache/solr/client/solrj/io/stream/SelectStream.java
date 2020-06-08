@@ -257,8 +257,8 @@ public class SelectStream extends TupleStream implements Expressible {
     }
 
     // create a copy with the limited set of fields
-    Tuple workingToReturn = new Tuple(new HashMap<>());
-    Tuple workingForEvaluators = new Tuple(new HashMap<>());
+    Tuple workingToReturn = new Tuple();
+    Tuple workingForEvaluators = new Tuple();
 
     //Clear the TupleContext before running the evaluators.
     //The TupleContext allows evaluators to cache values within the scope of a single tuple.
@@ -267,7 +267,7 @@ public class SelectStream extends TupleStream implements Expressible {
 
     streamContext.getTupleContext().clear();
 
-    for(Object fieldName : original.fields.keySet()){
+    for(Object fieldName : original.getFields().keySet()){
       workingForEvaluators.put(fieldName, original.get(fieldName));
       if(selectedFields.containsKey(fieldName)){
         workingToReturn.put(selectedFields.get(fieldName), original.get(fieldName));

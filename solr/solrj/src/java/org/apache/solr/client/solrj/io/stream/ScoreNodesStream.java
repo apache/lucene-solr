@@ -191,7 +191,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         node.put("field", bucket);
       }
 
-      if(!node.fields.containsKey("node")) {
+      if(!node.getFields().containsKey("node")) {
         throw new IOException("node field not present in the Tuple");
       }
 
@@ -236,7 +236,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
           String term = terms.getName(t);
           Number docFreq = terms.get(term);
           Tuple tuple = nodes.get(term);
-          if(!tuple.fields.containsKey(termFreq)) {
+          if(!tuple.getFields().containsKey(termFreq)) {
             throw new Exception("termFreq field not present in the Tuple");
           }
           Number termFreqValue = (Number)tuple.get(termFreq);
@@ -265,9 +265,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     if(tuples.hasNext()) {
       return tuples.next();
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      return new Tuple(map);
+      return Tuple.EOF();
     }
   }
 
