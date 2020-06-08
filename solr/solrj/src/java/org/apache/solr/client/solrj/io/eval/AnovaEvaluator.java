@@ -45,6 +45,7 @@ public class AnovaEvaluator extends RecursiveNumericListEvaluator implements Man
     
     // at this point we know every incoming value is an array of BigDecimals
     
+    @SuppressWarnings({"unchecked"})
     List<double[]> anovaInput = Arrays.stream(values)
         // for each List, convert to double[]
         .map(value -> ((List<Number>)value).stream().mapToDouble(Number::doubleValue).toArray())
