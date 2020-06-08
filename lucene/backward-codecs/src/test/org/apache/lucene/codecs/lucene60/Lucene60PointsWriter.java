@@ -126,8 +126,10 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-      if (writer.getPointCount() > 0) {
-        indexFPs.put(fieldInfo.name, writer.finish(dataOut, dataOut, dataOut));
+      Runnable finalizer = writer.finish(dataOut, dataOut, dataOut);
+      if (finalizer != null) {
+        indexFPs.put(fieldInfo.name, dataOut.getFilePointer());
+        finalizer.run();
       }
     }
   }

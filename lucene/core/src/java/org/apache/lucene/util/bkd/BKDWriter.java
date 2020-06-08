@@ -255,11 +255,6 @@ public class BKDWriter implements Closeable {
     docsSeen.set(docID);
   }
 
-  /** How many points have been added so far */
-  public long getPointCount() {
-    return pointCount;
-  }
-
   private static class MergeReader {
     final BKDReader bkd;
     final BKDReader.IntersectState state;
@@ -651,8 +646,6 @@ public class BKDWriter implements Closeable {
 
       pointCount = valueCount;
 
-      long indexFP = indexOut.getFilePointer();
-
       scratchBytesRef1.length = bytesPerDim;
       scratchBytesRef1.offset = 0;
       assert leafBlockStartValues.size() + 1 == leafBlockFPs.size();
@@ -779,8 +772,9 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /** Writes the BKD tree to the provided {@link IndexOutput}s and returns the file offset where index was written. */
-  public long finish(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut) throws IOException {
+  /** Writes the BKD tree to the provided {@link IndexOutput}s and returns a {@link Runnable} that
+   *  writes the index of the tree if at least one point has been added, or {@code null} otherwise. */
+  public Runnable finish(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut) throws IOException {
     // System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapPointWriter);
 
     // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recurse...)
@@ -791,7 +785,7 @@ public class BKDWriter implements Closeable {
     }
 
     if (pointCount == 0) {
-      throw new IllegalStateException("must index at least one point");
+      return null;
     }
 
     //mark as finished
@@ -876,10 +870,14 @@ public class BKDWriter implements Closeable {
       }
     };
 
-    // Write index:
-    long indexFP = indexOut.getFilePointer();
-    writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
-    return indexFP;
+    return () -> {
+      // Write index:
+      try {
+        writeIndex(metaOut, indexOut, maxPointsInLeafNode, leafNodes, dataStartFP);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    };
   }
 
   /** Packs the two arrays, representing a semi-balanced binary tree, into a compact byte[] structure. */

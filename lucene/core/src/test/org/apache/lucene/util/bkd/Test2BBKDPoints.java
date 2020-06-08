@@ -58,7 +58,9 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("1d.bkd", IOContext.DEFAULT);
-    long indexFP = w.finish(out, out, out);
+    Runnable finalizer = w.finish(out, out, out);
+    long indexFP = out.getFilePointer();
+    finalizer.run();
     out.close();
 
     IndexInput in = dir.openInput("1d.bkd", IOContext.DEFAULT);
@@ -98,7 +100,9 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("2d.bkd", IOContext.DEFAULT);
-    long indexFP = w.finish(out, out, out);
+    Runnable finalizer = w.finish(out, out, out);
+    long indexFP = out.getFilePointer();
+    finalizer.run();
     out.close();
 
     IndexInput in = dir.openInput("2d.bkd", IOContext.DEFAULT);
