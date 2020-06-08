@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
  * instantiate it on demand (and the need to put "searcher" in the map)
  * @lucene.experimental
  */
+@SuppressWarnings("rawtypes")
 public class QueryContext extends IdentityHashMap implements Closeable {
   // private IdentityHashMap map;  // we are the map for now (for compat w/ ValueSource)
   private final SolrIndexSearcher searcher;

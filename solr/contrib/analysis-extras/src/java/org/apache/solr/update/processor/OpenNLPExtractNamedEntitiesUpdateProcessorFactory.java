@@ -489,7 +489,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
             if (matcher.find()) {
               resolvedDest = matcher.replaceAll(dest);
             } else {
-              log.debug("srcSelector.shouldMutate(\"{}\") returned true, " +
+              log.debug("srcSelector.shouldMutate('{}') returned true, " +
                   "but replacement pattern did not match, field skipped.", fname);
               continue;
             }

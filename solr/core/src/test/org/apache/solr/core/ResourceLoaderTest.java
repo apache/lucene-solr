@@ -211,7 +211,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     loader.close();    
   }
 
-  public void testCacheWrongType() {
+  public void testCacheWrongType() throws Exception {
     clearCache();
 
     SolrResourceLoader loader = new SolrResourceLoader();
@@ -226,5 +226,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // This should work, but won't if earlier call succeeding corrupting the cache
     TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
     assertNotNull("Did not load Tokenizer after bad call earlier", tf);
+    loader.close();
   }
 }

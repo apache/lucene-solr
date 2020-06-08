@@ -63,14 +63,15 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
-    final CoreAdminHandler admin = new CoreAdminHandler(cores);
-    SolrQueryResponse resp = new SolrQueryResponse();
-    admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-            "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
-            , resp);
-    assertNull("Backup should have succeeded", resp.getException());
-    simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
+    try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
+      SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+              "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
+              , resp);
+      assertNull("Backup should have succeeded", resp.getException());
+      simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
+    }
   }
 
   public void testBackupBeforeFirstCommit() throws Exception {
@@ -169,6 +170,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
                         0, initialEmptyIndexSegmentFileName);
       
     }
+    admin.close();
   }
 
   /**
@@ -291,7 +293,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
                         1, oneDocSegmentFile);
       
     }
-    
+    admin.close();
   }
 
   /**

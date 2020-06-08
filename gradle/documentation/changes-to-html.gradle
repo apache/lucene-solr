@@ -32,9 +32,14 @@ class ChangesToHtmlTask extends DefaultTask {
   File siteDir = project.rootProject.file("lucene/site/changes")
 
   @OutputDirectory
-  File targetDir = project.file("${project.docroot}/changes")
+  final DirectoryProperty targetDir = project.objects.directoryProperty()
+    .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
 
-  def luceneDocUrl = "https://lucene.apache.org/core/${project.version.replace(".", "_")}/".toString()
+  @Input
+  def luceneDocUrl = "${->project.luceneDocUrl}"
+
+  @InputFile
+  def script = project.rootProject.file("${siteDir}/changes2html.pl")
 
   def loadVersions(File outfile) {
     // load version properties from DOAP RDF
@@ -51,16 +56,16 @@ class ChangesToHtmlTask extends DefaultTask {
     def result = project.exec {
       executable "perl"
       standardInput changesFile.newInputStream()
-      standardOutput project.file("${targetDir}/Changes.html").newOutputStream()
+      standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
       errorOutput = output
       ignoreExitValue = true
 
       args += [
         "-CSD",
-        project.rootProject.file("${siteDir}/changes2html.pl").toString(),
+        script,
         "${project.name}",
         versionsFile.toString(),
-        luceneDocUrl
+        luceneDocUrl.concat('/')   // slash required at end by perl script
       ]
     }
 

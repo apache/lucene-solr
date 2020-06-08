@@ -702,8 +702,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       dir.close();
 
-      // Try again with 10 more bytes of free space:
-      diskFree += 10;
+      // Try again with more bytes of free space:
+      diskFree += Math.max(10, diskFree >>> 3);
     }
     startDir.close();
   }

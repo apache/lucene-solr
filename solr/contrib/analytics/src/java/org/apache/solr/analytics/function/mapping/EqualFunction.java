@@ -73,166 +73,171 @@ public class EqualFunction {
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires that at least 1 parameter be single-valued.");
   });
-}
-/**
- * An equal function for two {@link BooleanValue}s.
- */
-class BooleanValueEqualFunction extends AbstractBooleanValue {
-  private final BooleanValue exprA;
-  private final BooleanValue exprB;
-  public static final String name = EqualFunction.name;
-  private final String funcStr;
-  private final ExpressionType funcType;
 
-  public BooleanValueEqualFunction(BooleanValue exprA, BooleanValue exprB) {
-    this.exprA = exprA;
-    this.exprB = exprB;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
-  }
+  /**
+   * An equal function for two {@link BooleanValue}s.
+   */
+  static class BooleanValueEqualFunction extends AbstractBooleanValue {
+    private final BooleanValue exprA;
+    private final BooleanValue exprB;
+    public static final String name = EqualFunction.name;
+    private final String funcStr;
+    private final ExpressionType funcType;
 
-  private boolean exists = false;
-  @Override
-  public boolean getBoolean() {
-    boolean valueA = exprA.getBoolean();
-    boolean valueB = exprB.getBoolean();
-    exists = exprA.exists() && exprB.exists();
-    return exists ? valueA == valueB : false;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    public BooleanValueEqualFunction(BooleanValue exprA, BooleanValue exprB) {
+      this.exprA = exprA;
+      this.exprB = exprB;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
+    }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * An equal function for a {@link BooleanValue} and a {@link BooleanValueStream}.
- */
-class BooleanStreamEqualFunction extends AbstractBooleanValueStream {
-  private final BooleanValue baseExpr;
-  private final BooleanValueStream compExpr;
-  public static final String name = EqualFunction.name;
-  private final String funcStr;
-  private final ExpressionType funcType;
+    private boolean exists = false;
+    @Override
+    public boolean getBoolean() {
+      boolean valueA = exprA.getBoolean();
+      boolean valueB = exprB.getBoolean();
+      exists = exprA.exists() && exprB.exists();
+      return exists ? valueA == valueB : false;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  public BooleanStreamEqualFunction(BooleanValue baseExpr, BooleanValueStream compExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    boolean baseValue = baseExpr.getBoolean();
-    if (baseExpr.exists()) {
-      compExpr.streamBooleans(compValue -> cons.accept(baseValue == compValue));
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A catch-all equal function for two {@link AnalyticsValue}s.
- */
-class ValueEqualFunction extends AbstractBooleanValue {
-  private final AnalyticsValue exprA;
-  private final AnalyticsValue exprB;
-  public static final String name = EqualFunction.name;
-  private final String funcStr;
-  private final ExpressionType funcType;
+  /**
+   * An equal function for a {@link BooleanValue} and a {@link BooleanValueStream}.
+   */
+  static class BooleanStreamEqualFunction extends AbstractBooleanValueStream {
+    private final BooleanValue baseExpr;
+    private final BooleanValueStream compExpr;
+    public static final String name = EqualFunction.name;
+    private final String funcStr;
+    private final ExpressionType funcType;
 
-  public ValueEqualFunction(AnalyticsValue exprA, AnalyticsValue exprB) {
-    this.exprA = exprA;
-    this.exprB = exprB;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
-  }
+    public BooleanStreamEqualFunction(BooleanValue baseExpr, BooleanValueStream compExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
+    }
 
-  private boolean exists = false;
-  @Override
-  public boolean getBoolean() {
-    Object valueA = exprA.getObject();
-    Object valueB = exprB.getObject();
-    exists = exprA.exists() && exprB.exists();
-    return exists ? valueA.equals(valueB) : false;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      boolean baseValue = baseExpr.getBoolean();
+      if (baseExpr.exists()) {
+        compExpr.streamBooleans(compValue -> cons.accept(baseValue == compValue));
+      }
+    }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A catch-all equal function for an {@link AnalyticsValue} and an {@link AnalyticsValueStream}.
- */
-class StreamEqualFunction extends AbstractBooleanValueStream {
-  private final AnalyticsValue baseExpr;
-  private final AnalyticsValueStream compExpr;
-  public static final String name = EqualFunction.name;
-  private final String funcStr;
-  private final ExpressionType funcType;
-
-  public StreamEqualFunction(AnalyticsValue baseExpr, AnalyticsValueStream compExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    Object baseValue = baseExpr.getObject();
-    if (baseExpr.exists()) {
-      compExpr.streamObjects(compValue -> cons.accept(baseValue.equals(compValue)));
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
+  /**
+   * A catch-all equal function for two {@link AnalyticsValue}s.
+   */
+  static class ValueEqualFunction extends AbstractBooleanValue {
+    private final AnalyticsValue exprA;
+    private final AnalyticsValue exprB;
+    public static final String name = EqualFunction.name;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public ValueEqualFunction(AnalyticsValue exprA, AnalyticsValue exprB) {
+      this.exprA = exprA;
+      this.exprB = exprB;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
+    }
+
+    private boolean exists = false;
+    @Override
+    public boolean getBoolean() {
+      Object valueA = exprA.getObject();
+      Object valueB = exprB.getObject();
+      exists = exprA.exists() && exprB.exists();
+      return exists ? valueA.equals(valueB) : false;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
+
+  /**
+   * A catch-all equal function for an {@link AnalyticsValue} and an {@link AnalyticsValueStream}.
+   */
+  static class StreamEqualFunction extends AbstractBooleanValueStream {
+    private final AnalyticsValue baseExpr;
+    private final AnalyticsValueStream compExpr;
+    public static final String name = EqualFunction.name;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public StreamEqualFunction(AnalyticsValue baseExpr, AnalyticsValueStream compExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
+    }
+
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      Object baseValue = baseExpr.getObject();
+      if (baseExpr.exists()) {
+        compExpr.streamObjects(compValue -> cons.accept(baseValue.equals(compValue)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 }
+

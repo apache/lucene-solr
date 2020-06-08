@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Data Import Handler'
+
 dependencies {
   implementation project(':solr:core')
 

@@ -755,7 +755,10 @@ public class ZkController implements Closeable {
       cloudSolrClient = new CloudSolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader)).withSocketTimeout(30000).withConnectionTimeout(15000)
           .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
           .withConnectionTimeout(15000).withSocketTimeout(30000).build();
-      cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), cloudSolrClient);
+      cloudManager = new SolrClientCloudManager(
+          new ZkDistributedQueueFactory(zkClient),
+          cloudSolrClient,
+          cc.getObjectCache());
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
@@ -1013,7 +1016,7 @@ public class ZkController implements Closeable {
         log.warn("Unable to read autoscaling.json", e1);
       }
       if (createNodes) {
-        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", cloudManager.getTimeSource().getEpochTimeNs()));
+        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", getSolrCloudManager().getTimeSource().getEpochTimeNs()));
         for (String n : oldNodes) {
           String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
 
@@ -1784,10 +1787,12 @@ public class ZkController implements Closeable {
       }
       String collectionName = cd.getCloudDescriptor().getCollectionName();
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-      log.debug(collection == null ?
-              "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
-              "Registering watch for collection {}",
-          collectionName);
+      if (log.isDebugEnabled()) {
+        log.debug(collection == null ?
+                "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
+                "Registering watch for collection {}",
+            collectionName);
+      }
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -2299,9 +2304,9 @@ public class ZkController implements Closeable {
       if (wasRemoved) {
         log.debug("Removed OnReconnect listener {}", listener);
       } else {
-        log.warn("Was asked to remove OnReconnect listener {}{}"
-            , listener
-            , ", but remove operation did not find it in the list of registered listeners.");
+        log.warn("Was asked to remove OnReconnect listener {}, but remove operation " +
+                "did not find it in the list of registered listeners."
+            , listener);
       }
     }
   }

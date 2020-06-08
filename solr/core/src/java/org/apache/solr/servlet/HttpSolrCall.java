@@ -726,7 +726,7 @@ public class HttpSolrCall {
 
       if (httpEntity != null) {
         if (httpEntity.getContentEncoding() != null)
-          resp.setCharacterEncoding(httpEntity.getContentEncoding().getValue());
+          resp.setHeader(httpEntity.getContentEncoding().getName(), httpEntity.getContentEncoding().getValue());
         if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
 
         InputStream is = httpEntity.getContent();

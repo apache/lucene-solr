@@ -16,22 +16,63 @@
  */
 
 configure(rootProject) {
+  def urlVersion = project.baseVersion.replace('.', '_')
+  def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
+  
+  ext {
+    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${urlVersion}")
+    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${urlVersion}")
+    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
+  }
+
   task documentation() {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn allprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name in [
-        "changesToHtml"
-        // TODO: "markdownToHtml"
-        // TODO: "gatherJavadocs"
-      ]}
-    }
+    dependsOn ':lucene:documentation'
+    dependsOn ':solr:documentation'
   }
 }
 
+// docroot will point to Lucene and Solr relative directory for each sub-project.
 configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   ext {
-    docroot = "${project.buildDir}/documentation"
+    docroot = file("${buildDir}/documentation")
+  }
+  
+  task documentation() {
+    group = 'documentation'
+    description = "Generate ${project.name.capitalize()} documentation"
+
+    dependsOn subprojects.collect { prj ->
+      prj.tasks.matching { it.name == 'renderSiteJavadoc' }
+    }
+    dependsOn 'changesToHtml','copyDocumentationAssets',
+      'markdownToHtml','createDocumentationIndex'
+  }
+
+  task copyDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('site/html')      // lucene
+    from('site/assets')    // solr
+    into project.docroot
+  }
+}
+
+configure(project(':solr')) {
+  ext {
+    // required for the "simple" Solr docs shipped in tgz/zip files, only referring to online web pages:
+    docrootOnline = file("${buildDir}/docs-online")
+  }
+
+  documentation {
+    // for Solr we also have a page shipped with zip/tgz that just points to online web pages:
+    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+  }
+  
+  task copyOnlineDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('site/assets')
+    into project.docrootOnline
   }
 }

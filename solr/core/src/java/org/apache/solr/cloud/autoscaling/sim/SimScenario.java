@@ -130,6 +130,7 @@ public class SimScenario implements AutoCloseable {
      * {@link #execute(SimScenario)}.
      * @param scenario current scenario
      */
+    @SuppressWarnings({"unchecked"})
     public void prepareCurrentParams(SimScenario scenario) {
       Properties props = new Properties();
       scenario.context.forEach((k, v) -> {
@@ -405,8 +406,9 @@ public class SimScenario implements AutoCloseable {
         throw new IOException(SimAction.SAVE_SNAPSHOT + " must specify 'path'");
       }
       boolean redact = Boolean.parseBoolean(params.get("redact", "false"));
-      SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(scenario.cluster, null);
-      snapshotCloudManager.saveSnapshot(new File(path), true, redact);
+      try (SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(scenario.cluster, null)) {
+        snapshotCloudManager.saveSnapshot(new File(path), true, redact);
+      }
     }
   }
 
@@ -415,6 +417,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class LoadAutoscaling extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       Map<String, Object> map;
       boolean addDefaults = Boolean.parseBoolean(params.get("withDefaultTriggers", "true"));
@@ -539,9 +542,11 @@ public class SimScenario implements AutoCloseable {
   public static class ApplySuggestions extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
+      @SuppressWarnings({"unchecked"})
       List<Suggester.SuggestionInfo> suggestions = (List<Suggester.SuggestionInfo>) scenario.context.getOrDefault(SUGGESTIONS_CTX_PROP, Collections.emptyList());
       int unresolvedCount = 0;
       for (Suggester.SuggestionInfo suggestion : suggestions) {
+        @SuppressWarnings({"rawtypes"})
         SolrRequest operation = suggestion.getOperation();
         if (operation == null) {
           unresolvedCount++;
@@ -595,6 +600,7 @@ public class SimScenario implements AutoCloseable {
         req.setContentWriter(new RequestWriter.StringPayloadContentWriter(streamBody, "application/json"));
       }
       SolrResponse rsp = scenario.cluster.request(req);
+      @SuppressWarnings({"unchecked"})
       List<SolrResponse> responses = (List<SolrResponse>) scenario.context.computeIfAbsent(RESPONSES_CTX_PROP, Utils.NEW_ARRAYLIST_FUN);
       responses.add(rsp);
     }
@@ -704,6 +710,7 @@ public class SimScenario implements AutoCloseable {
   /**
    * Set a temporary listener to wait for a specific trigger event processing.
    */
+  @SuppressWarnings({"unchecked"})
   public static class SetEventListener extends SimOp {
     @Override
     public void execute(SimScenario scenario) throws Exception {
@@ -738,10 +745,10 @@ public class SimScenario implements AutoCloseable {
         }
       }
       final AutoScalingConfig.TriggerListenerConfig listenerConfig = new AutoScalingConfig.TriggerListenerConfig(name, cfgMap);
-      TriggerListener listener = new SimWaitListener(scenario.cluster.getTimeSource(), listenerConfig);
       if (scenario.context.containsKey("_sim_waitListener_" + trigger)) {
         throw new IOException("currently only one listener can be set per trigger. Trigger name: " + trigger);
       }
+      TriggerListener listener = new SimWaitListener(scenario.cluster.getTimeSource(), listenerConfig);
       scenario.context.put("_sim_waitListener_" + trigger, listener);
       scenario.cluster.getOverseerTriggerThread().getScheduledTriggers().addAdditionalListener(listener);
     }
@@ -763,6 +770,7 @@ public class SimScenario implements AutoCloseable {
         listener.wait(waitSec);
         scenario.context.remove(TRIGGER_EVENT_PREFIX + trigger);
         if (listener.getEvent() != null) {
+          @SuppressWarnings({"unchecked"})
           Map<String, Object> ev = listener.getEvent().toMap(new LinkedHashMap<>());
           scenario.context.put(TRIGGER_EVENT_PREFIX + trigger, ev);
         }
@@ -940,6 +948,7 @@ public class SimScenario implements AutoCloseable {
    */
   public static class Dump extends SimOp {
     @Override
+    @SuppressWarnings({"unchecked"})
     public void execute(SimScenario scenario) throws Exception {
       boolean redact = Boolean.parseBoolean(params.get("redact", "false"));
       boolean withData = Boolean.parseBoolean(params.get("withData", "false"));
@@ -977,6 +986,7 @@ public class SimScenario implements AutoCloseable {
         RedactionUtils.RedactionContext ctx = SimUtils.getRedactionContext(snapshotCloudManager.getClusterStateProvider().getClusterState());
         data = RedactionUtils.redactNames(ctx.getRedactions(), data);
       }
+      snapshotCloudManager.close();
       scenario.console.println(data);
     }
   }
@@ -988,6 +998,7 @@ public class SimScenario implements AutoCloseable {
    * @throws Exception on syntax errors
    */
   public static SimScenario load(String data) throws Exception {
+    @SuppressWarnings("resource")
     SimScenario scenario = new SimScenario();
     String[] lines = data.split("\\r?\\n");
     for (int i = 0; i < lines.length; i++) {
@@ -1109,7 +1120,7 @@ public class SimScenario implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     if (cluster != null) {
       cluster.close();
       cluster = null;
