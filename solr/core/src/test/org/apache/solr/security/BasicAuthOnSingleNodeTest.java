@@ -80,7 +80,21 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
       // Deleting security.json will disable security - before SOLR-9679 it would instead cause an exception
       cluster.getZkClient().delete("/security.json", -1, false);
 
-      assertNotNull(new QueryRequest(params("q", "*:*")).process(client, COLLECTION));
+      int count = 0;
+      boolean done = false;
+      // Assert that security is turned off. This is async, so we retry up to 5s before failing the test
+      while (!done) {
+        try {
+          Thread.sleep(500);
+          count += 1;
+          new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
+          done = true;
+        } catch (Exception e) {
+          if (count >= 10) {
+            fail("Failed 10 times to query without credentials after removing security.json");
+          }
+        }
+      }
     }
   }
 
