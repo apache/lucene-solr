@@ -629,6 +629,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
+    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = null;
     if (cmd.waitSearcher) {
       waitSearcher = new Future[1];

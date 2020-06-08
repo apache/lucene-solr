@@ -79,7 +79,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     Object patternParam = args.remove(PATTERN_PARAM);
 

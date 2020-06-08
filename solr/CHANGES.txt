@@ -242,6 +242,8 @@ Other Changes
 
 * SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
 
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
