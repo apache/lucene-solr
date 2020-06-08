@@ -137,6 +137,7 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
@@ -1004,7 +1005,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         tests = allTests;
       }
 
-      String results = h.validateXPath(response, tests);
+      String results = BaseTestHarness.validateXPath(response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
