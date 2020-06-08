@@ -403,14 +403,11 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
       return t;
     } else {
-      Map m = new HashMap();
+      Tuple tuple = Tuple.EOF();
       if(trace) {
-        m.put("_COLLECTION_", this.collection);
+        tuple.put("_COLLECTION_", this.collection);
       }
-
-      m.put("EOF", true);
-
-      return new Tuple(m);
+      return tuple;
     }
   }
 
