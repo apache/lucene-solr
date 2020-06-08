@@ -664,8 +664,12 @@ public abstract class SlotAcc implements Closeable {
     final List<SweepCountAccStruct> others = new ArrayList<>();
     private final List<SlotAcc> output = new ArrayList<>();
 
-    SweepingCountSlotAcc(FacetContext fcontext, int numSlots, FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
-      super(fcontext, numSlots);
+    SweepingCountSlotAcc(int numSlots, FacetFieldProcessor p) {
+      this(numSlots, p, null);
+    }
+
+    private SweepingCountSlotAcc(int numSlots, FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
+      super(p.fcontext, numSlots);
       this.p = p;
       this.base = new SweepCountAccStruct(fcontext.base, true, baseCountAcc == null ? this : baseCountAcc);
       final FacetDebugInfo fdebug = fcontext.getDebugInfo();
@@ -739,6 +743,109 @@ public abstract class SlotAcc implements Closeable {
       for (SlotAcc acc : output) {
         acc.setValues(bucket, slotNum);
       }
+    }
+  }
+
+  static class ShimSweepingCountSlotAcc extends SweepingCountSlotAcc {
+    private final boolean supportAccessMethods;
+    private final CountSlotAcc baseCountAcc;
+
+    ShimSweepingCountSlotAcc(FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
+      this(p, baseCountAcc, true);
+    }
+
+    ShimSweepingCountSlotAcc(FacetFieldProcessor p, CountSlotAcc baseCountAcc, boolean supportAccessMethods) {
+      super(0, p, baseCountAcc);
+      assert baseCountAcc != null;
+      this.supportAccessMethods = supportAccessMethods;
+      this.baseCountAcc = supportAccessMethods ? baseCountAcc : null; // if access is attempted, NPE will be thrown. Not ideal, but simple and will fail fast
+    }
+
+    private void checkSupportAccessMethods() {
+      if (!supportAccessMethods) {
+        throw new UnsupportedOperationException("shim does not support read/write access methods");
+      }
+    }
+
+    @Override
+    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots) {
+      checkSupportAccessMethods();
+      return super.add(key, docs, numSlots);
+    }
+
+    @Override
+    public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
+      checkSupportAccessMethods();
+      super.registerMapping(fromAcc, toAcc);
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      checkSupportAccessMethods();
+      super.setValues(bucket, slotNum);
+    }
+
+    @Override
+    public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      checkSupportAccessMethods();
+      super.setSweepValues(bucket, slotNum);
+    }
+
+    @Override
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+      baseCountAcc.collect(doc, slotNum, slotContext);
+    }
+    @Override
+    public int compare(int slotA, int slotB) {
+      return baseCountAcc.compare(slotA, slotB);
+    }
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      return baseCountAcc.getValue(slotNum);
+    }
+    @Override
+    public void incrementCount(int slot, long count) {
+      baseCountAcc.incrementCount(slot, count);
+    }
+    @Override
+    public long getCount(int slot) {
+      return baseCountAcc.getCount(slot);
+    }
+    @Override
+    long[] getCountArray() {
+      if (baseCountAcc instanceof CountSlotArrAcc) {
+        return ((CountSlotArrAcc)baseCountAcc).getCountArray();
+      } else {
+        throw new UnsupportedOperationException("backing CountSlotAcc not an instanceof "+CountSlotArrAcc.class);
+      }
+    }
+    @Override
+    public void reset() throws IOException {
+      baseCountAcc.reset();
+    }
+    @Override
+    public void resize(Resizer resizer) {
+      baseCountAcc.resize(resizer);
+    }
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      baseCountAcc.setNextReader(readerContext);
+    }
+    @Override
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      return baseCountAcc.collect(docs, slot, slotContext);
+    }
+    @Override
+    protected void resetIterators() throws IOException {
+      baseCountAcc.resetIterators();
+    }
+    @Override
+    public void close() throws IOException {
+      baseCountAcc.close();
+    }
+    @Override
+    public String toString() {
+      return getClass().getSimpleName()+'{'+baseCountAcc+'}';
     }
   }
 
@@ -820,7 +927,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       // TODO: count arrays can use fewer bytes based on the number of docs in
       // the base set (that's the upper bound for single valued) - look at ttf?
       result[slotNum]++;
@@ -852,7 +959,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
-    public void reset() {
+    public void reset() throws IOException {
       Arrays.fill(result, 0);
     }
 

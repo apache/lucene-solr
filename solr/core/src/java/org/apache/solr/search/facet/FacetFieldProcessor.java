@@ -40,6 +40,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.facet.SlotAcc.ShimSweepingCountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
@@ -787,19 +788,22 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * <li>update {@link #allBucketsAcc}'s reference to {@link #collectAcc} (if it exists)</li>
    * </ul>
    *
-   * @return true if the above actions were taken
+   * @return a SweepingCountSlotAcc that may be used locally for collection. This may be either the input CountSlotAcc
+   * itself, or a ShimSweepingCountSlotAcc wrapped around an input CountSlotAcc that does not support sweeping
    */
-  protected boolean registerSweepingAccIfSupportedByCollectAcc(SweepingCountSlotAcc sweepingCountAcc) {
-    assert countAcc == sweepingCountAcc;
+  protected SweepingCountSlotAcc registerSweepingAccIfSupportedByCollectAcc() {
+    if (!(countAcc instanceof SweepingCountSlotAcc)) {
+      return new ShimSweepingCountSlotAcc(this, countAcc, false);
+    }
+    SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
     if (collectAcc instanceof SweepableSlotAcc) {
       collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
         allBucketsAcc.sweepingCountAcc = sweepingCountAcc;
       }
-      return true;
     }
-    return false;
+    return sweepingCountAcc;
   }
 
   private static final SlotContext ALL_BUCKETS_SLOT_CONTEXT = new SlotContext(null) {

@@ -94,8 +94,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
-    registerSweepingAccIfSupportedByCollectAcc(sweepingCountAcc);
+    final SweepingCountSlotAcc sweepingCountAcc = registerSweepingAccIfSupportedByCollectAcc();
     
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;

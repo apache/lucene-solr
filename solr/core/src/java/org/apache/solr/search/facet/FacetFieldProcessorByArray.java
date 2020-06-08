@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.SlotAcc.ShimSweepingCountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
@@ -68,7 +69,9 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   @Override
   protected void createAccs(long docCount, int slotCount) throws IOException {
-    countAcc = new SweepingCountSlotAcc(fcontext, slotCount, this, countAcc);
+    if (countAcc == null) {
+      countAcc = new SweepingCountSlotAcc(slotCount, this);
+    }
     super.createAccs(docCount, slotCount);
   }
 
@@ -79,7 +82,9 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
    */
   @Override
   void createCollectAcc(int numDocs, int numSlots) throws IOException {
-    countAcc = new SweepingCountSlotAcc(fcontext, numSlots, this, countAcc);
+    if (countAcc == null) {
+      countAcc = new SweepingCountSlotAcc(numSlots, this);
+    }
     super.createCollectAcc(numDocs, numSlots);
   }
 
@@ -114,7 +119,13 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
       if (freq.allBuckets) {
         // count is irrelevant, but hardcoded in collect(...), so intercept/mask normal counts.
         // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with AIOOBE
-        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
+        if (countAcc == null || countAcc instanceof SweepingCountSlotAcc) {
+          // if null or already supports sweeping, preserve sweeping support
+          countAcc = new ShimSweepingCountSlotAcc(this, SlotAcc.DEV_NULL_SLOT_ACC);
+        } else {
+          // otherwise do not introduce sweep support
+          countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
+        }
         createAccs(nDocs, 1);
         otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection, setNextReader is called on otherAccs.
         allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);

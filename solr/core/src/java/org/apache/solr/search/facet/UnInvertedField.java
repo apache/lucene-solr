@@ -329,7 +329,7 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
+    final SweepingCountSlotAcc sweepCountAcc = processor.registerSweepingAccIfSupportedByCollectAcc();
     SweepCountAccStruct baseCountAccStruct = sweepCountAcc.base;
 
     final int[] index = this.index;
@@ -449,7 +449,7 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
+    final SweepingCountSlotAcc sweepCountAcc = processor.registerSweepingAccIfSupportedByCollectAcc();
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
