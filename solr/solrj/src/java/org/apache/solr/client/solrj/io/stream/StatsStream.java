@@ -208,7 +208,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -219,11 +219,13 @@ public class StatsStream extends TupleStream implements Expressible  {
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
+    @SuppressWarnings({"unchecked"})
     Map<String, List<String>> shardsMap = (Map<String, List<String>>)context.get("shards");
     if(shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
       try {
+        @SuppressWarnings({"rawtypes"})
         NamedList response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
       } catch (Exception e) {
@@ -241,6 +243,7 @@ public class StatsStream extends TupleStream implements Expressible  {
 
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       try {
+        @SuppressWarnings({"rawtypes"})
         NamedList response = client.request(request);
         getTuples(response, metrics);
       } catch (Exception e) {
@@ -301,16 +304,17 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
   }
 
-  private void getTuples(NamedList response,
+  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
                          Metric[] metrics) {
 
     this.tuple = new Tuple();
+    @SuppressWarnings({"rawtypes"})
     NamedList facets = (NamedList)response.get("facets");
     fillTuple(tuple, facets, metrics);
   }
 
   private void fillTuple(Tuple t,
-                         NamedList nl,
+                         @SuppressWarnings({"rawtypes"})NamedList nl,
                          Metric[] _metrics) {
 
     if(nl == null) {

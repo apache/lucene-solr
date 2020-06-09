@@ -53,9 +53,11 @@ public class ZplotStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private StreamContext streamContext;
+  @SuppressWarnings({"rawtypes"})
   private Map letParams = new LinkedHashMap();
   private Iterator<Tuple> out;
 
+  @SuppressWarnings({"unchecked"})
   public ZplotStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -118,10 +120,11 @@ public class ZplotStream extends TupleStream implements Expressible {
   public void close() throws IOException {
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Set<Map.Entry<String, Object>> entries = letParams.entrySet();
-    Map<String, Object> evaluated = new HashMap();
+    Map<String, Object> evaluated = new HashMap<>();
 
     //Load up the StreamContext with the data created by the letParams.
     int numTuples = -1;
@@ -191,7 +194,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     }
     //Load the values into tuples
 
-    List<Tuple> outTuples = new ArrayList();
+    List<Tuple> outTuples = new ArrayList<>();
     if(!table && !distribution && !clusters && !heat) {
       //Handle the vectors
       for (int i = 0; i < numTuples; i++) {
@@ -287,7 +290,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         Iterator it = frequency.valuesIterator();
-        List<Long> values = new ArrayList();
+        List<Long> values = new ArrayList<>();
         while(it.hasNext()) {
           values.add((Long)it.next());
         }

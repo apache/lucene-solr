@@ -85,7 +85,7 @@ public class SolrStream extends TupleStream {
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public String getBaseUrl() {
@@ -191,8 +191,10 @@ public class SolrStream extends TupleStream {
   * Reads a Tuple from the stream. The Stream is completed when Tuple.EOF == true.
   **/
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     try {
+      @SuppressWarnings({"rawtypes"})
       Map fields = tupleStreamParser.next();
 
       if (fields == null) {
@@ -237,6 +239,7 @@ public class SolrStream extends TupleStream {
     return null;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map mapFields(Map fields, Map<String,String> mappings) {
 
     Iterator<Map.Entry<String,String>> it = mappings.entrySet().iterator();

@@ -83,7 +83,7 @@ public class GetStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     return l;
   }
 
@@ -99,9 +99,11 @@ public class GetStream extends TupleStream implements Expressible {
   public void close() throws IOException {
   }
 
+  @SuppressWarnings({"unchecked"})
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Object o = lets.get(name);
+    @SuppressWarnings({"rawtypes"})
     List l = null;
     if(o instanceof List) {
       l = (List)o;

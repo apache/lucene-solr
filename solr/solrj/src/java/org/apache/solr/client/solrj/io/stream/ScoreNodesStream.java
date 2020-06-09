@@ -65,7 +65,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   protected String zkHost;
   private TupleStream stream;
   private transient SolrClientCache clientCache;
-  private Map<String, Tuple> nodes = new HashMap();
+  private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
   private String termFreq;
   private boolean facet;
@@ -165,7 +165,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
@@ -222,9 +222,12 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     try {
 
       //Get the response from the terms component
+      @SuppressWarnings({"rawtypes"})
       NamedList response = client.request(request, collection);
+      @SuppressWarnings({"unchecked"})
       NamedList<Number> stats = (NamedList<Number>)response.get("indexstats");
       long numDocs = stats.get("numDocs").longValue();
+      @SuppressWarnings({"unchecked"})
       NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>)response.get("terms");
 
       int size = fields.size();

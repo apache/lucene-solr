@@ -121,7 +121,7 @@ public class CellStream extends TupleStream implements Expressible {
   public void open() throws IOException {
     try {
       stream.open();
-      List<Tuple> list = new ArrayList();
+      List<Tuple> list = new ArrayList<>();
       while(true) {
         Tuple tuple = stream.read();
         if(tuple.EOF) {
