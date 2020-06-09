@@ -64,7 +64,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    * regenerate an item in the new cache from an entry in the old cache.
    *
    */
-  public Object init(Map args, Object persistence, CacheRegenerator regenerator);
+  public Object init(@SuppressWarnings({"rawtypes"})Map args, Object persistence, CacheRegenerator regenerator);
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?

@@ -369,7 +369,7 @@ The `numFoundExact` boolean attribute is included in all responses, indicating i
 More about approximate document counting and `minExactCount`:
 
 * The documents returned in the response are guaranteed to be the docs with the top scores. This parameter will not make Solr skip documents that are to be returned in the response, it will only allow Solr to skip counting docs that, while they match the query, their score is low enough to not be in the top N.
-* Providing `minExactCount` doesn't guarantee that Solr will use approximate hit counting (and thus, provide the speedup). Some types of queries, or other parameters (like if facets are requested) will require accurate counting. The value of `numFoundExact` indicates if the approximation was used or not.
+* Providing `minExactCount` doesn't guarantee that Solr will use approximate hit counting (and thus, provide the speedup). Some types of queries, or other parameters (like if facets are requested) will require accurate counting.
 * Approximate counting can only be used when sorting by `score desc` first (which is the default sort in Solr). Other fields can be used after `score desc`, but if any other type of sorting is used before score, then the approximation won't be applied.
 * When doing distributed queries across multiple shards, each shard will accurately count hits until `minExactCount` (which means the query could be hitting `numShards * minExactCount` docs and `numFound` in the response would still be accurate)
 For example:

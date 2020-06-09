@@ -14,33 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update.processor;
-
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+package org.apache.solr.common.params;
 
 /**
- * Factory for {@link org.apache.solr.update.processor.CdcrUpdateProcessor}.
- *
- * @see org.apache.solr.update.processor.CdcrUpdateProcessor
- * @since 6.0.0
+ * Streaming Expressions Parameters and Properties.
  */
-public class CdcrUpdateProcessorFactory
-    extends UpdateRequestProcessorFactory
-    implements DistributingUpdateProcessorFactory {
+public interface StreamParams {
 
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  // parameters
+  String EXPR = "expr";
 
-  }
+  // stream properties
+  String TUPLE = "tuple";
+  String DOCS = "docs";
+  String RETURN_VALUE = "return-value";
+  String RESULT_SET = "result-set";
 
-  @Override
-  public CdcrUpdateProcessor getInstance(SolrQueryRequest req,
-                                         SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  // tuple properties
+  String RESPONSE_TIME = "RESPONSE_TIME";
+  String EOF = "EOF";
+  String EXCEPTION = "EXCEPTION";
+  String METRICS = "_METRICS_";
 
-    return new CdcrUpdateProcessor(req, rsp, next);
-  }
-
+  // other common tuple properties
+  String P_VALUE = "p-value";
 }
-

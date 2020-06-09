@@ -136,7 +136,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return persistence;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Cache<K, V> buildCache(Cache<K, V> prev) {
+    @SuppressWarnings({"rawtypes"})
     Caffeine builder = Caffeine.newBuilder()
         .initialCapacity(initialSize)
         .executor(executor)

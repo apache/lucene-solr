@@ -83,7 +83,7 @@ New Features
 * SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
   To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
-* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK direcory (noble)
+* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK directory (noble)
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
@@ -93,6 +93,8 @@ New Features
 
 * SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
   timeseries Streaming Expressions (Joel Bernstein)
+
+* SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
 
 Improvements
 ---------------------
@@ -132,6 +134,9 @@ Improvements
 
 * SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
   (David Smiley, Yasufumi Mizoguchi)
+
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
 Optimizations
 ---------------------
@@ -212,8 +217,16 @@ Bug Fixes
 
 * SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
 
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
 * SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
   (Michael Gibney, hossman)
+
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
 
 Other Changes
 ---------------------
@@ -283,6 +296,23 @@ Other Changes
 * SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
 
 * SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
+* SOLR-14538: Fix or suppress remaining warnings in apache/solr/handler (Erick Erickson)
+
+* SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
+
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
+
+* SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
+
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
 
 ==================  8.5.2 ==================
 

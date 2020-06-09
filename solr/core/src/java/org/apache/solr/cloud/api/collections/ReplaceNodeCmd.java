@@ -62,7 +62,8 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -103,6 +104,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapperRef = new AtomicReference<>();
     try {
       for (ZkNodeProps sourceReplica : sourceReplicas) {
+        @SuppressWarnings({"rawtypes"})
         NamedList nl = new NamedList();
         String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
         if (log.isInfoEnabled()) {
@@ -204,6 +206,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
       SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
       for (ZkNodeProps createdReplica : createdReplicas) {
+        @SuppressWarnings({"rawtypes"})
         NamedList deleteResult = new NamedList();
         try {
           ocmh.deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {

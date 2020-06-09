@@ -20,11 +20,9 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -308,11 +306,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (out.hasNext()) {
       return out.next();
     } else {
-      Map fields = new HashMap();
-      fields.put("rows", tuples.size());
-
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
+      Tuple tuple = Tuple.EOF();
+      tuple.put("rows", tuples.size());
       return tuple;
     }
 
@@ -395,7 +390,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private void getTuples(NamedList response, Bucket x, Bucket y, Metric metric) {
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
     NamedList facets = (NamedList) response.get("facets");
     fillTuples(0, tuples, tuple, facets, x, y, metric);
   }
