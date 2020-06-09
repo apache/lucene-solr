@@ -121,7 +121,7 @@ public final class BKDReader extends PointValues implements Accountable {
     private final IndexInput in;
     // holds the minimum (left most) leaf block file pointer for each level we've recursed to:
     private final long[] leafBlockFPStack;
-    // holds the address, in the packed byte[] index, of the right-node of each level:
+    // holds the address, in the off-heap index, of the right-node of each level:
     private final int[] rightNodePositions;
     // holds the splitDim for each level:
     private final int[] splitDims;
@@ -136,6 +136,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
     IndexTree() {
       this(packedIndex.clone(), 1, 1);
+      // read root node
       readNodeData(false);
     }
 
@@ -166,6 +167,7 @@ public final class BKDReader extends PointValues implements Accountable {
     @Override
     public IndexTree clone() {
       IndexTree index = new IndexTree(in.clone(), nodeID, level);
+      // copy node data
       index.splitDim = splitDim;
       index.leafBlockFPStack[level] = leafBlockFPStack[level];
       index.rightNodePositions[level] = rightNodePositions[level];
