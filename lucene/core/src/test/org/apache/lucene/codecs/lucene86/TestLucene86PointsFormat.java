@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene60;
-
+package org.apache.lucene.codecs.lucene86;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -35,24 +34,22 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-/**
- * Tests Lucene60PointsFormat
- */
-public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
+public class TestLucene86PointsFormat extends BasePointsFormatTestCase {
+
   private final Codec codec;
   private final int maxPointsInLeafNode;
   
-  public TestLucene60PointsFormat() {
+  public TestLucene86PointsFormat() {
     // standard issue
-    Codec defaultCodec = TestUtil.getDefaultCodec();
+    Codec defaultCodec = new Lucene86Codec();
     if (random().nextBoolean()) {
       // randomize parameters
       maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
@@ -68,12 +65,12 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           return new PointsFormat() {
             @Override
             public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+              return new Lucene86PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override
             public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60PointsReader(readState);
+              return new Lucene86PointsReader(readState);
             }
           };
         }
@@ -392,4 +389,5 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
       }
     };
   }
+
 }
