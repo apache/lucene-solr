@@ -97,6 +97,7 @@ public class AtomicUpdateDocumentMerger {
    * @param toDoc the final SolrInputDocument that will be mutated with the values from the fromDoc atomic commands
    * @return toDoc with mutated values
    */
+  @SuppressWarnings({"unchecked"})
   public SolrInputDocument merge(final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
      Object val = sif.getValue();
@@ -164,6 +165,7 @@ public class AtomicUpdateDocumentMerger {
    * 
    * @return Return a set of fields that can be in-place updated.
    */
+  @SuppressWarnings({"unchecked"})
   public static Set<String> computeInPlaceUpdatableFields(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     IndexSchema schema = cmd.getReq().getSchema();
@@ -415,7 +417,9 @@ public class AtomicUpdateDocumentMerger {
    * @param updateDoc the document that was sent as part of the Add Update Command
    * @return updated SolrInputDocument
    */
+  @SuppressWarnings({"unchecked"})
   public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
+    @SuppressWarnings({"rawtypes"})
     List sifToReplaceValues = (List) updateSif.getValues();
     final boolean wasList = updateSif.getValue() instanceof Collection;
     int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
@@ -511,6 +515,7 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
+    @SuppressWarnings({"rawtypes"})
     final Collection original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
@@ -546,6 +551,7 @@ public class AtomicUpdateDocumentMerger {
   private Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
+      @SuppressWarnings({"unchecked"})
       Collection<Object> patternVals = (Collection<Object>) fieldVal;
       for (Object patternVal : patternVals) {
         patterns.add(Pattern.compile(patternVal.toString()));
@@ -568,6 +574,7 @@ public class AtomicUpdateDocumentMerger {
     if(!(obj instanceof Collection)) {
       return obj instanceof SolrDocumentBase;
     }
+    @SuppressWarnings({"rawtypes"})
     Collection objValues = (Collection) obj;
     if(objValues.size() == 0) {
       return false;
@@ -575,7 +582,7 @@ public class AtomicUpdateDocumentMerger {
     return objValues.iterator().next() instanceof SolrDocumentBase;
   }
 
-  private void removeObj(Collection original, Object toRemove, String fieldName) {
+  private void removeObj(@SuppressWarnings({"rawtypes"})Collection original, Object toRemove, String fieldName) {
     if(isChildDoc(toRemove)) {
       removeChildDoc(original, (SolrInputDocument) toRemove);
     } else {
@@ -583,7 +590,8 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
-  private static void removeChildDoc(Collection original, SolrInputDocument docToRemove) {
+  @SuppressWarnings({"unchecked"})
+  private static void removeChildDoc(@SuppressWarnings({"rawtypes"})Collection original, SolrInputDocument docToRemove) {
     for(SolrInputDocument doc: (Collection<SolrInputDocument>) original) {
       if(isDerivedFromDoc(doc, docToRemove)) {
         original.remove(doc);

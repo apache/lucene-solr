@@ -50,7 +50,7 @@ public abstract class ParseNumericFieldUpdateProcessorFactory extends FieldMutat
   protected Locale locale = Locale.ROOT;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     String localeParam = (String)args.remove(LOCALE_PARAM);
     if (null != localeParam) {
       locale = LocaleUtils.toLocale(localeParam);

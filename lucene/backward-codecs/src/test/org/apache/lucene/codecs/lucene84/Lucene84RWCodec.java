@@ -14,33 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update.processor;
+package org.apache.lucene.codecs.lucene84;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
+import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
 
 /**
- * Factory for {@link org.apache.solr.update.processor.CdcrUpdateProcessor}.
- *
- * @see org.apache.solr.update.processor.CdcrUpdateProcessor
- * @since 6.0.0
+ * RW impersonation of {@link Lucene84Codec}.
  */
-public class CdcrUpdateProcessorFactory
-    extends UpdateRequestProcessorFactory
-    implements DistributingUpdateProcessorFactory {
+public class Lucene84RWCodec extends Lucene84Codec {
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
+  public PointsFormat pointsFormat() {
+    return new Lucene60RWPointsFormat();
   }
 
   @Override
-  public CdcrUpdateProcessor getInstance(SolrQueryRequest req,
-                                         SolrQueryResponse rsp, UpdateRequestProcessor next) {
-
-    return new CdcrUpdateProcessor(req, rsp, next);
+  public SegmentInfoFormat segmentInfoFormat() {
+    return new Lucene70RWSegmentInfoFormat();
   }
 
 }
-
