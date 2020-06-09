@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.codecs.asserting;
 
-import java.io.IOException;;
+import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -27,6 +28,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -75,6 +77,8 @@ public final class AssertingPointsFormat extends PointsFormat {
       this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
+      assert ramBytesUsed() >= 0;
+      assert getChildResources() != null;
     }
     
     @Override
@@ -93,6 +97,20 @@ public final class AssertingPointsFormat extends PointsFormat {
         return null;
       }
       return new AssertingLeafReader.AssertingPointValues(values, maxDoc);
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      long v = in.ramBytesUsed();
+      assert v >= 0;
+      return v;
+    }
+    
+    @Override
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
+      return res;
     }
 
     @Override

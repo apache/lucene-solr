@@ -177,6 +177,11 @@ class PointValuesWriter {
       }
 
       @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
+
+      @Override
       public void close() {
       }
     };

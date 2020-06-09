@@ -224,6 +224,11 @@ class SimpleTextPointsReader extends PointsReader {
   }
 
   @Override
+  public long ramBytesUsed() {
+    return 0L;
+  }
+
+  @Override
   public void close() throws IOException {
     dataIn.close();
   }

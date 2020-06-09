@@ -61,7 +61,12 @@ public abstract class PointsWriter implements Closeable {
     final int finalDocCount = docCount;
     writeField(fieldInfo,
         new PointsReader() {
-
+          
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
+          
           @Override
           public void close() throws IOException {}
           
