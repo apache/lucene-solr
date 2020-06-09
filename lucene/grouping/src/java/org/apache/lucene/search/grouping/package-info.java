@@ -76,8 +76,6 @@
  *   <ul>
  *     <li>{@link org.apache.lucene.search.grouping.TermGroupSelector} groups based on
  *     the value of a {@link org.apache.lucene.index.SortedDocValues} field</li>
- *     <li>{@link org.apache.lucene.search.grouping.ValueSourceGroupSelector} groups based on
- *     the value of a {@link org.apache.lucene.queries.function.ValueSource}</li>
  *     <li>{@link org.apache.lucene.search.grouping.DoubleRangeGroupSelector} groups based on
  *     the value of a {@link org.apache.lucene.search.DoubleValuesSource}</li>
  *     <li>{@link org.apache.lucene.search.grouping.LongRangeGroupSelector} groups based on

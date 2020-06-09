@@ -85,7 +85,11 @@ public class GroupingSearch {
    *
    * @param groupFunction      The function to group by specified as {@link ValueSource}
    * @param valueSourceContext The context of the specified groupFunction
+   *
+   * @deprecated grouping by ValueSource is deprecated, instead use {@link DoubleRangeGroupSelector} or
+   * {@link LongRangeGroupSelector}
    */
+  @Deprecated
   public GroupingSearch(ValueSource groupFunction, Map<?, ?> valueSourceContext) {
     this(new ValueSourceGroupSelector(groupFunction, valueSourceContext), null);
   }

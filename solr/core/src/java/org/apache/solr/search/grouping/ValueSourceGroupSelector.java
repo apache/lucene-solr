@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.grouping;
+package org.apache.solr.search.grouping;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -27,14 +27,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.grouping.GroupSelector;
+import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.mutable.MutableValue;
 
 /**
  * A GroupSelector that groups via a ValueSource
- *
- * @deprecated Use {@link LongRangeGroupSelector} or {@link DoubleRangeGroupSelector}
  */
-@Deprecated
 public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
 
   private final ValueSource valueSource;

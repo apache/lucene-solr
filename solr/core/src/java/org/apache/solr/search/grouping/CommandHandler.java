@@ -31,7 +31,6 @@ import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
-import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
