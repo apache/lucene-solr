@@ -117,7 +117,7 @@ public final class BKDReader extends PointValues implements Accountable {
     private int level;
     private int splitDim;
     private final byte[][] splitPackedValueStack;
-    // used to read the acked tree off-heap
+    // used to read the packed tree off-heap
     private final IndexInput in;
     // holds the minimum (left most) leaf block file pointer for each level we've recursed to:
     private final long[] leafBlockFPStack;
