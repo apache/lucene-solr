@@ -23,18 +23,20 @@ import java.util.ArrayList;
 
 import java.util.Iterator;
 
+@SuppressWarnings({"rawtypes"})
 public class Matrix implements Iterable, Attributes {
 
   private double[][] data;
   private List<String> columnLabels;
   private List<String> rowLabels;
 
-  private Map<String, Object> attributes = new HashMap();
+  private Map<String, Object> attributes = new HashMap<>();
 
   public Matrix(double[][] data) {
     this.data = data;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public Map getAttributes() {
     return this.attributes;
   }
@@ -75,10 +77,12 @@ public class Matrix implements Iterable, Attributes {
     return data[0].length;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public Iterator iterator() {
     return new MatrixIterator(data);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static class MatrixIterator implements Iterator {
 
     private double[][] d;
@@ -88,6 +92,7 @@ public class Matrix implements Iterable, Attributes {
       d = data;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Object next() {
       double[] row = d[index++];
       List list = new ArrayList();

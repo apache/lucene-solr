@@ -42,12 +42,15 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   int rowsToRead = -1;
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void withFieldsAndXpath() throws Exception {
     File tmpdir = createTempDir().toFile();
     
     createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8), false);
+    @SuppressWarnings({"rawtypes"})
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
             XPathEntityProcessor.FOR_EACH, "/catalog/cd");
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "title", "xpath", "/catalog/cd/title"));
     fields.add(createMap("column", "artist", "xpath", "/catalog/cd/artist"));
@@ -70,9 +73,12 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMultiValued() throws Exception  {
+    @SuppressWarnings({"rawtypes"})
     Map entityAttrs = createMap("name", "e", "url", "testdata.xml",
             XPathEntityProcessor.FOR_EACH, "/root");
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "a", "xpath", "/root/a", DataImporter.MULTI_VALUED, "true"));
     Context c = getContext(null,
@@ -86,6 +92,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
         break;
       result.add(row);
     }
+    @SuppressWarnings({"rawtypes"})
     List l = (List)result.get(0).get("a");
     assertEquals(3, l.size());
     assertEquals("1", l.get(0));
@@ -216,9 +223,12 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMultiValuedFlatten() throws Exception  {
+    @SuppressWarnings({"rawtypes"})
     Map entityAttrs = createMap("name", "e", "url", "testdata.xml",
             XPathEntityProcessor.FOR_EACH, "/root");
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "a", "xpath", "/root/a" ,"flatten","true"));
     Context c = getContext(null,
@@ -236,12 +246,15 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void withFieldsAndXpathStream() throws Exception {
     final Object monitor = new Object();
     final boolean[] done = new boolean[1];
     
+    @SuppressWarnings({"rawtypes"})
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
         XPathEntityProcessor.FOR_EACH, "/catalog/cd", "stream", "true", "batchSize","1");
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "title", "xpath", "/catalog/cd/title"));
     fields.add(createMap("column", "artist", "xpath", "/catalog/cd/artist"));
@@ -331,11 +344,13 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void withDefaultSolrAndXsl() throws Exception {
     File tmpdir = createTempDir().toFile();
     AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8),
             false);
 
+    @SuppressWarnings({"rawtypes"})
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""
             + new File(tmpdir, "x.xsl").toURI(), "url", "cd.xml");

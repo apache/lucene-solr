@@ -26,6 +26,8 @@ Add one or more replicas to a shard in a collection. The node name can be specif
 
 The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica(s) but only when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
+WARNING: If the destination node is specified, this command will ignore the maxShardsPerNode property.
+
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
 === ADDREPLICA Parameters
@@ -158,26 +160,28 @@ http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettin
 [[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
-This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.
+This command moves a replica from one node to another node. In case of shared filesystems the `dataDir` will be reused.
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the replica to be moved but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+If this command is used on a collection where more than one replica from the same shard exists on the same node, and the shard/source node parameters match more than one replica, the replica selected is not deterministic (currently it's random).
+
+WARNING: MOVERREPLICA invokes ADDREPLICA followed by DELETEREPLICA and specifies the destination node. Therefore it does not enforce maxShardsPerNode.
 
 === MOVEREPLICA Parameters
 
 `collection`::
 The name of the collection. This parameter is required.
 
-`shard`::
-The name of the shard for which a replica should be moved. Either this parameter or replica is required. If replica is specified, this parameter is ignored.
-
-`replica`::
-The name of the replica to move. Either this parameter or shard is required.
-
-`sourceNode`::
-The name of the node that contains the replica. This parameter is required.
-
 `targetNode`::
 The name of the destination node. This parameter is required.
+
+`sourceNode`::
+The name of the node that contains the replica. This parameter is required unless replica is specified. If replica is specified this parameter is ignroed.
+
+`shard`::
+The name of the shard for which a replica should be moved. This parameter is required unless replica is specified. If replica is specified, this parameter is ignored.
+
+`replica`::
+The name of the replica to move. This parameter is required unless shard and sourceNode are specified, however his parameter has precedence over those two parameters.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.

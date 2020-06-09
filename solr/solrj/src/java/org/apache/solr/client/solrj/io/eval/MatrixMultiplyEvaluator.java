@@ -52,6 +52,7 @@ public class MatrixMultiplyEvaluator extends RecursiveObjectEvaluator implements
       Matrix matrix = (Matrix)o;
       return new Array2DRowRealMatrix(matrix.getData(), false);
     } else if(o instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> vec = (List<Number>)o;
       double[][] data1 = new double[1][vec.size()];
       for(int i=0; i<vec.size(); i++) {

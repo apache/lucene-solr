@@ -123,7 +123,7 @@ public class CommitStream extends TupleStream implements Expressible {
       // if the read document contains field 'batchIndexed' then it's a summary
       // document and we can update our count based on it's value. If not then 
       // just increment by 1
-      if(tuple.fields.containsKey(UpdateStream.BATCH_INDEXED_FIELD_NAME) && isInteger(tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME))){
+      if(tuple.getFields().containsKey(UpdateStream.BATCH_INDEXED_FIELD_NAME) && isInteger(tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME))){
         docsSinceCommit += Integer.parseInt(tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME));
       }
       else{

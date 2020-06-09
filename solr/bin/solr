@@ -2152,7 +2152,8 @@ function start_solr() {
         '-XX:+ParallelRefProcEnabled' \
         '-XX:MaxGCPauseMillis=250' \
         '-XX:+UseLargePages' \
-        '-XX:+AlwaysPreTouch')
+        '-XX:+AlwaysPreTouch' \
+        '-XX:+ExplicitGCInvokesConcurrent')
   else
     GC_TUNE=($GC_TUNE)
   fi

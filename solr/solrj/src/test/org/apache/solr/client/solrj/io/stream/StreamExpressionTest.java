@@ -674,7 +674,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples4 = getTuples(solrStream);
       assert(tuples4.size() == 500);
-      Map fields = tuples4.get(0).fields;
+      Map fields = tuples4.get(0).getFields();
       assert(fields.containsKey("id"));
       assert(fields.containsKey("a_f"));
       assert(fields.containsKey("a_i"));
@@ -3028,7 +3028,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       assertEquals(100, tuples.size());
       Tuple lastModel = tuples.get(0);
-      ClassificationEvaluation evaluation = ClassificationEvaluation.create(lastModel.fields);
+      ClassificationEvaluation evaluation = ClassificationEvaluation.create(lastModel.getFields());
       assertTrue(evaluation.getF1() >= 1.0);
       assertEquals(Math.log(5000.0 / (2500 + 1)), lastModel.getDoubles("idfs_ds").get(0), 0.0001);
       // make sure the tuples is retrieved in correct order

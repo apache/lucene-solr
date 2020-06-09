@@ -36,7 +36,6 @@ import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
@@ -59,6 +58,7 @@ public class Lucene86Codec extends Codec {
   private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final PointsFormat pointsFormat = new Lucene86PointsFormat();
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
@@ -133,7 +133,7 @@ public class Lucene86Codec extends Codec {
 
   @Override
   public final PointsFormat pointsFormat() {
-    return new Lucene60PointsFormat();
+    return pointsFormat;
   }
 
   /** Returns the postings format that should be used for writing

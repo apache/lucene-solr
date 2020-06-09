@@ -193,9 +193,7 @@ public class ModelStream extends TupleStream implements Expressible {
       tuple = model;
       model = null;
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      tuple = new Tuple(map);
+      tuple = Tuple.EOF();
     }
 
     return tuple;

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene60;
+package org.apache.lucene.codecs.lucene86;
 
 
 import java.io.Closeable;
@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PointValues;
@@ -39,80 +40,79 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
-/** Reads point values previously written with {@link Lucene60PointsWriter} */
-public class Lucene60PointsReader extends PointsReader implements Closeable {
-  final IndexInput dataIn;
+/** Reads point values previously written with {@link Lucene86PointsWriter} */
+public class Lucene86PointsReader extends PointsReader implements Closeable {
+  final IndexInput indexIn, dataIn;
   final SegmentReadState readState;
   final Map<Integer,BKDReader> readers = new HashMap<>();
 
   /** Sole constructor */
-  public Lucene60PointsReader(SegmentReadState readState) throws IOException {
+  public Lucene86PointsReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
 
-
+    String metaFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
+        readState.segmentSuffix,
+        Lucene86PointsFormat.META_EXTENSION);
     String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-                                                          readState.segmentSuffix,
-                                                          Lucene60PointsFormat.INDEX_EXTENSION);
-
-    Map<Integer,Long> fieldToFileOffset = new HashMap<>();
-
-    // Read index file
-    try (ChecksumIndexInput indexIn = readState.directory.openChecksumInput(indexFileName, readState.context)) {
-      Throwable priorE = null;
-      try {
-        CodecUtil.checkIndexHeader(indexIn,
-                                   Lucene60PointsFormat.META_CODEC_NAME,
-                                   Lucene60PointsFormat.INDEX_VERSION_START,
-                                   Lucene60PointsFormat.INDEX_VERSION_START,
-                                   readState.segmentInfo.getId(),
-                                   readState.segmentSuffix);
-        int count = indexIn.readVInt();
-        for(int i=0;i<count;i++) {
-          int fieldNumber = indexIn.readVInt();
-          long fp = indexIn.readVLong();
-          fieldToFileOffset.put(fieldNumber, fp);
-        }
-      } catch (Throwable t) {
-        priorE = t;
-      } finally {
-        CodecUtil.checkFooter(indexIn, priorE);
-      }
-    }
-
+        readState.segmentSuffix,
+        Lucene86PointsFormat.INDEX_EXTENSION);
     String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-                                                         readState.segmentSuffix,
-                                                         Lucene60PointsFormat.DATA_EXTENSION);
+        readState.segmentSuffix,
+        Lucene86PointsFormat.DATA_EXTENSION);
+
     boolean success = false;
-    dataIn = readState.directory.openInput(dataFileName, readState.context);
     try {
+      indexIn = readState.directory.openInput(indexFileName, readState.context);
+      CodecUtil.checkIndexHeader(indexIn,
+          Lucene86PointsFormat.INDEX_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_START,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          readState.segmentInfo.getId(),
+          readState.segmentSuffix);
+      CodecUtil.retrieveChecksum(indexIn);
 
+      dataIn = readState.directory.openInput(dataFileName, readState.context);
       CodecUtil.checkIndexHeader(dataIn,
-                                 Lucene60PointsFormat.DATA_CODEC_NAME,
-                                 Lucene60PointsFormat.DATA_VERSION_START,
-                                 Lucene60PointsFormat.DATA_VERSION_START,
-                                 readState.segmentInfo.getId(),
-                                 readState.segmentSuffix);
-
-      // NOTE: data file is too costly to verify checksum against all the bytes on open,
-      // but for now we at least verify proper structure of the checksum footer: which looks
-      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-      // such as file truncation.
+          Lucene86PointsFormat.DATA_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_START,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          readState.segmentInfo.getId(),
+          readState.segmentSuffix);
       CodecUtil.retrieveChecksum(dataIn);
 
-      for(Map.Entry<Integer,Long> ent : fieldToFileOffset.entrySet()) {
-        int fieldNumber = ent.getKey();
-        long fp = ent.getValue();
-        dataIn.seek(fp);
-        BKDReader reader = new BKDReader(dataIn);
-        readers.put(fieldNumber, reader);
-      }
+      try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
+        Throwable priorE = null;
+        try {
+          CodecUtil.checkIndexHeader(metaIn,
+              Lucene86PointsFormat.META_CODEC_NAME,
+              Lucene86PointsFormat.VERSION_START,
+              Lucene86PointsFormat.VERSION_CURRENT,
+              readState.segmentInfo.getId(),
+              readState.segmentSuffix);
 
+          while (true) {
+            int fieldNumber = metaIn.readInt();
+            if (fieldNumber == -1) {
+              break;
+            } else if (fieldNumber < 0) {
+              throw new CorruptIndexException("Illegal field number: " + fieldNumber, metaIn);
+            }
+            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
+            readers.put(fieldNumber, reader);
+          }
+        } catch (Throwable t) {
+          priorE = t;
+        } finally {
+          CodecUtil.checkFooter(metaIn, priorE);
+        }
+      }
       success = true;
     } finally {
       if (success == false) {
         IOUtils.closeWhileHandlingException(this);
       }
     }
+
   }
 
   /** Returns the underlying {@link BKDReader}.
@@ -152,12 +152,13 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
 
   @Override
   public void checkIntegrity() throws IOException {
+    CodecUtil.checksumEntireFile(indexIn);
     CodecUtil.checksumEntireFile(dataIn);
   }
 
   @Override
   public void close() throws IOException {
-    dataIn.close();
+    IOUtils.close(indexIn, dataIn);
     // Free up heap:
     readers.clear();
   }

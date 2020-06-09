@@ -97,7 +97,7 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
   private boolean skipUpdateIfMissing = true;
 
   @Override
-  public void init(NamedList args)  {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args)  {
     Object tmp = args.remove(PARAM_SKIP_INSERT_IF_EXISTS);
     if (null != tmp) {
       if (! (tmp instanceof Boolean) ) {
