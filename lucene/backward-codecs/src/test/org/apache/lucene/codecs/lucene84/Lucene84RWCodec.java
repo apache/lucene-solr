@@ -14,9 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene84;
+
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
+import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
 
 /**
- * Components from the Lucene 6.0 index format.  See {@link org.apache.lucene.codecs.lucene86}
- * for an overview of the current index format.
+ * RW impersonation of {@link Lucene84Codec}.
  */
-package org.apache.lucene.codecs.lucene60;
+public class Lucene84RWCodec extends Lucene84Codec {
+
+  @Override
+  public PointsFormat pointsFormat() {
+    return new Lucene60RWPointsFormat();
+  }
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return new Lucene70RWSegmentInfoFormat();
+  }
+
+}
