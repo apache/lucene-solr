@@ -317,6 +317,8 @@ Other Changes
 
 * SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
 
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
