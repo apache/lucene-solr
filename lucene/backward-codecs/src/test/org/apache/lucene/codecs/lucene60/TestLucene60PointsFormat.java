@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84RWCodec;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BasePointsFormatTestCase;
@@ -35,8 +32,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
@@ -50,51 +45,15 @@ import org.apache.lucene.util.bkd.BKDWriter;
 public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
   private final Codec codec;
   private final int maxPointsInLeafNode;
-
+  
   public TestLucene60PointsFormat() {
-    // standard issue
-    Codec defaultCodec = TestUtil.getDefaultCodec();
-    if (random().nextBoolean()) {
-      // randomize parameters
-      maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
-      double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
-      if (VERBOSE) {
-        System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
-      }
-
-      // sneaky impersonation!
-      codec = new FilterCodec(defaultCodec.getName(), defaultCodec) {
-        @Override
-        public PointsFormat pointsFormat() {
-          return new PointsFormat() {
-            @Override
-            public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
-            }
-
-            @Override
-            public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60PointsReader(readState);
-            }
-          };
-        }
-      };
-    } else {
-      // standard issue
-      codec = defaultCodec;
-      maxPointsInLeafNode = BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
-    }
+    codec = new Lucene84RWCodec();
+    maxPointsInLeafNode = BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
   }
 
   @Override
   protected Codec getCodec() {
     return codec;
-  }
-
-  @Override
-  public void testMergeStability() throws Exception {
-    assumeFalse("TODO: mess with the parameters and test gets angry!", codec instanceof FilterCodec);
-    super.testMergeStability();
   }
 
   public void testEstimatePointCount() throws IOException {
@@ -190,7 +149,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     final long pointCount = points.estimatePointCount(onePointMatchVisitor);
     assertTrue(""+pointCount,
         pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
-            pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
+        pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     final long docCount = points.estimateDocCount(onePointMatchVisitor);
 
