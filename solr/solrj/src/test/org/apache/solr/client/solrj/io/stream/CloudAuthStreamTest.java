@@ -808,7 +808,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-        log.trace("Tuple: {}", t.getFields());
+        if (log.isTraceEnabled()) {
+          log.trace("Tuple: {}", t.getFields());
+        }
         tuples.add(t);
       }
     } finally {
