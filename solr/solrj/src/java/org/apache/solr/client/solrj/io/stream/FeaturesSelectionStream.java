@@ -91,7 +91,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   public FeaturesSelectionStream(String zkHost,
                      String collectionName,
-                     Map params,
+                     @SuppressWarnings({"rawtypes"})Map params,
                      String field,
                      String outcome,
                      String featureSet,
@@ -213,9 +213,10 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return expression;
   }
 
+  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    Map params,
+                    @SuppressWarnings({"rawtypes"})Map params,
                     String field,
                     String outcome,
                     String featureSet,
@@ -288,6 +289,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
 
     List<Future<NamedList>> futures = new ArrayList<>();
@@ -336,10 +338,13 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
 
         long numDocs = 0;
-        for (Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+        for (@SuppressWarnings({"rawtypes"})Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+          @SuppressWarnings({"rawtypes"})
           NamedList resp = getTopTermsCall.get();
 
+          @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>)resp.get("featuredTerms");
+          @SuppressWarnings({"unchecked"})
           NamedList<Integer> shardDocFreqs = (NamedList<Integer>)resp.get("docFreq");
 
           numDocs += (Integer)resp.get("numDocs");
@@ -397,6 +402,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return result;
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected class FeaturesSelectionCall implements Callable<NamedList> {
 
     private String baseUrl;
@@ -415,6 +421,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       this.paramsMap = paramsMap;
     }
 
+    @SuppressWarnings({"unchecked"})
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);

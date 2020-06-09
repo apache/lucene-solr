@@ -319,6 +319,8 @@ Other Changes
 
 * SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
 
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
