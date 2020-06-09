@@ -25,7 +25,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
 
@@ -33,7 +32,7 @@ import org.apache.lucene.util.MathUtil;
  *
  * @lucene.experimental */
 
-public final class BKDReader extends PointValues implements Accountable {
+public final class BKDReader extends PointValues  {
 
   // Packed array of byte[] holding all split values in the full binary tree:
   final int leafNodeOffset;
@@ -742,11 +741,6 @@ public final class BKDReader extends PointValues implements Accountable {
       state.index.pop();
       return leftCost + rightCost;
     }
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return 0;
   }
 
   @Override

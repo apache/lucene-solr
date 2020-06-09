@@ -233,11 +233,8 @@ public abstract class CodecReader extends LeafReader implements Accountable {
       ramBytesUsed += getTermVectorsReader().ramBytesUsed();
     }
 
-    // points
-    if (getPointsReader() != null) {
-      ramBytesUsed += getPointsReader().ramBytesUsed();
-    }
-    
+    // points are read always off-heap
+
     return ramBytesUsed;
   }
   
@@ -269,11 +266,8 @@ public abstract class CodecReader extends LeafReader implements Accountable {
       resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
     }
 
-    // points
-    if (getPointsReader() != null) {
-      resources.add(Accountables.namedAccountable("points", getPointsReader()));
-    }
-    
+    // points are read always off-heap
+
     return Collections.unmodifiableList(resources);
   }
 
