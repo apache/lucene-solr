@@ -26,7 +26,11 @@ public class MapSolrParams extends SolrParams {
   protected final Map<String,String> map;
 
   public MapSolrParams(Map<String,String> map) {
-    assert map.entrySet().stream().allMatch(e -> e.getKey().getClass() == String.class && e.getValue().getClass() == String.class);
+    assert map.entrySet().stream().allMatch(e -> {
+      boolean hasStringKey = e.getKey() == null || e.getKey().getClass() == String.class;
+      boolean hasStringValue = e.getValue() == null || e.getValue().getClass() == String.class;
+      return hasStringKey && hasStringValue;
+    });
     this.map = map;
   }
 
