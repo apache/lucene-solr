@@ -60,7 +60,6 @@ public class V2HttpCall extends HttpSolrCall {
   private String prefix;
   HashMap<String, String> parts = new HashMap<>();
   static final Set<String> knownPrefixes = ImmutableSet.of("cluster", "node", "collections", "cores", "c");
-  static final Set<String> perCorePrefixes = ImmutableSet.of("collections", "c","cores");
 
   public V2HttpCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cc,
                     HttpServletRequest request, HttpServletResponse response, boolean retry) {
@@ -87,7 +86,7 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       boolean isCompositeApi = false;
-      if (!perCorePrefixes.contains(prefix)) {
+      if (knownPrefixes.contains(prefix)) {
         api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
         if (api != null) {
           isCompositeApi = api instanceof CompositeApi;
@@ -123,6 +122,13 @@ public class V2HttpCall extends HttpSolrCall {
       } else if ("cores".equals(prefix)) {
         origCorename = pieces.get(1);
         core = cores.getCore(origCorename);
+      } else {
+        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
+        if(api != null) {
+          //custom plugin
+          initAdminRequest(path);
+          return;
+        }
       }
       if (core == null) {
         log.error(">> path: '{}'", path);
