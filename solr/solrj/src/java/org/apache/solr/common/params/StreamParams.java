@@ -14,9 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.common.params;
 
 /**
- * Components from the Lucene 8.4 index format.  See {@link org.apache.lucene.codecs.lucene86}
- * for an overview of the current index format.
+ * Streaming Expressions Parameters and Properties.
  */
-package org.apache.lucene.codecs.lucene84;
+public interface StreamParams {
+
+  // parameters
+  String EXPR = "expr";
+
+  // stream properties
+  String TUPLE = "tuple";
+  String DOCS = "docs";
+  String RETURN_VALUE = "return-value";
+  String RESULT_SET = "result-set";
+
+  // tuple properties
+  String RESPONSE_TIME = "RESPONSE_TIME";
+  String EOF = "EOF";
+  String EXCEPTION = "EXCEPTION";
+  String METRICS = "_METRICS_";
+
+  // other common tuple properties
+  String P_VALUE = "p-value";
+}

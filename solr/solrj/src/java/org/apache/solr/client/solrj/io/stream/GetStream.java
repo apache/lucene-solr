@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -89,14 +88,11 @@ public class GetStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    Map map = new HashMap();
-    if(tupleIterator.hasNext()) {
+    if (tupleIterator.hasNext()) {
       Tuple t = tupleIterator.next();
-      map.putAll(t.fields);
-      return new Tuple(map);
+      return t.clone();
     } else {
-      map.put("EOF", true);
-      return new Tuple(map);
+      return Tuple.EOF();
     }
   }
 

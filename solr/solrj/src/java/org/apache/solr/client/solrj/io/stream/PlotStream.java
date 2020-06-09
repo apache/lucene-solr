@@ -150,10 +150,8 @@ public class PlotStream extends TupleStream implements Expressible {
 
   public Tuple read() throws IOException {
 
-    if(finished) {
-      Map<String,Object> m = new HashMap<>();
-      m.put("EOF", true);
-      return new Tuple(m);
+    if (finished) {
+      return Tuple.EOF();
     } else {
       finished = true;
       Map<String, Object> values = new HashMap<>();
@@ -197,8 +195,8 @@ public class PlotStream extends TupleStream implements Expressible {
       values.put("data", xy);
 
       Tuple tup = new Tuple(values);
-      tup.fieldLabels = fieldLabels;
-      tup.fieldNames = fieldNames;
+      tup.setFieldLabels(fieldLabels);
+      tup.setFieldNames(fieldNames);
       return tup;
     }
   }
