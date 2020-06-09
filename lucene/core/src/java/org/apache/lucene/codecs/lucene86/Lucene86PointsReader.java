@@ -69,7 +69,6 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           Lucene86PointsFormat.VERSION_CURRENT,
           readState.segmentInfo.getId(),
           readState.segmentSuffix);
-      CodecUtil.retrieveChecksum(indexIn);
 
       dataIn = readState.directory.openInput(dataFileName, readState.context);
       CodecUtil.checkIndexHeader(dataIn,
@@ -78,7 +77,6 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           Lucene86PointsFormat.VERSION_CURRENT,
           readState.segmentInfo.getId(),
           readState.segmentSuffix);
-      CodecUtil.retrieveChecksum(dataIn);
 
       try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
@@ -99,6 +97,15 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
             }
             BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
             readers.put(fieldNumber, reader);
+          }
+
+          final long indexLength = metaIn.readLong();
+          if (indexIn.length() != indexLength) {
+            throw new CorruptIndexException("Truncated index file, expected length=" + indexLength + ", but got " + indexIn.length(), indexIn);
+          }
+          final long dataLength = metaIn.readLong();
+          if (dataIn.length() != dataLength) {
+            throw new CorruptIndexException("Truncated data file, expected length=" + dataLength + ", but got " + dataIn.length(), dataIn);
           }
         } catch (Throwable t) {
           priorE = t;
