@@ -113,8 +113,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String configName = ocmh.zkStateReader.readConfigName(collectionName);
     backupMgr.downloadConfigDir(location, backupName, configName);
 
-    //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
-    //Since we don't want to distinguish we extract the state and back it up as a separate json
+    //Save the collection's state (coming from the collection's state.json)
+    //We extract the state and back it up as a separate json
     DocCollection collectionState = ocmh.zkStateReader.getClusterState().getCollection(collectionName);
     backupMgr.writeCollectionState(location, backupName, collectionName, collectionState);
 
