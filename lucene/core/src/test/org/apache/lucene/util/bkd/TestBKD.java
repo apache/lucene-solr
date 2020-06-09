@@ -46,8 +46,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-
 public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
