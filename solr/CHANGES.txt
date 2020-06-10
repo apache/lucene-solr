@@ -252,7 +252,9 @@ Other Changes
 
 * SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
 
-* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
+
+* SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
 
 ==================  8.5.2 ==================
 

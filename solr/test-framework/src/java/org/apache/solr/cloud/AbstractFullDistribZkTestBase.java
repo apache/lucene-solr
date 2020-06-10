@@ -396,7 +396,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
     List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
+    @SuppressWarnings({"rawtypes"})
     List<CollectionAdminRequest> createReplicaRequests = Collections.synchronizedList(new ArrayList<>());
+    @SuppressWarnings({"rawtypes"})
     List<CollectionAdminRequest> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
     StringBuilder sb = new StringBuilder();
 
@@ -533,7 +535,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createReplicaRequests"));
     
-    for (CollectionAdminRequest r : createReplicaRequests) {
+    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
@@ -551,7 +553,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil
         .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createPullReplicaRequests"));
-    for (CollectionAdminRequest r : createPullReplicaRequests) {
+    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createPullReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
@@ -1816,6 +1818,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       log.info("Creating collection with stateFormat=1: {}", collectionName);
       params.set(DocCollection.STATE_FORMAT, "1");
     }
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -2424,6 +2427,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   static RequestStatusState getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
     CollectionAdminResponse response = getStatusResponse(requestId, client);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return RequestStatusState.fromKey((String) innerResponse.get("state"));
   }

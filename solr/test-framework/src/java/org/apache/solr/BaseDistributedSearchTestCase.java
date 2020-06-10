@@ -737,17 +737,21 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return f == null ? 0 : f;
   }
 
-  public static String compare(NamedList a, NamedList b, int flags, Map<String, Integer> handle) {
+  @SuppressWarnings({"unchecked"})
+  public static String compare(@SuppressWarnings({"rawtypes"})NamedList a,
+                               @SuppressWarnings({"rawtypes"})NamedList b, int flags, Map<String, Integer> handle) {
 //    System.out.println("resp a:" + a);
 //    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
     if (!ordered) {
+      @SuppressWarnings({"rawtypes"})
       Map mapA = new HashMap(a.size());
       for (int i=0; i<a.size(); i++) {
         Object prev = mapA.put(a.getName(i), a.getVal(i));
       }
 
+      @SuppressWarnings({"rawtypes"})
       Map mapB = new HashMap(b.size());
       for (int i=0; i<b.size(); i++) {
         Object prev = mapB.put(b.getName(i), b.getVal(i));
@@ -814,7 +818,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare1(Map a, Map b, int flags, Map<String, Integer> handle) {
+  public static String compare1(@SuppressWarnings({"rawtypes"})Map a,
+                                @SuppressWarnings({"rawtypes"})Map b,
+                                int flags, Map<String, Integer> handle) {
     String cmp;
 
     for (Object keya : a.keySet()) {
@@ -832,7 +838,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare(Map a, Map b, int flags, Map<String, Integer> handle) {
+  public static String compare(@SuppressWarnings({"rawtypes"})Map a,
+                               @SuppressWarnings({"rawtypes"})Map b,
+                               int flags, Map<String, Integer> handle) {
     String cmp;
     cmp = compare1(a, b, flags, handle);
     if (cmp != null) return cmp;
@@ -1071,6 +1079,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
 
       @Override
+      @SuppressWarnings({"rawtypes"})
       public void callStatement() throws Throwable {
         RandVal.uniqueValues = new HashSet(); // reset random values
         fixShardCount(numShards);
@@ -1098,6 +1107,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
 
       @Override
+      @SuppressWarnings({"rawtypes"})
       public void callStatement() throws Throwable {
         
         for (shardCount = min; shardCount <= max; shardCount++) {
@@ -1155,7 +1165,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     /* no-op */
   }
 
+  @SuppressWarnings({"unchecked"})
   public static abstract class RandVal {
+    @SuppressWarnings({"rawtypes"})
     public static Set uniqueValues = new HashSet();
 
     public abstract Object val();
