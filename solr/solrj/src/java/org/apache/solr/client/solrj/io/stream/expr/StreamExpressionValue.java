@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream.expr;
 /** 
  * Basic string stream expression
  */
+@SuppressWarnings({"overrides"})
 public class StreamExpressionValue implements StreamExpressionParameter {
   
   private String value;

@@ -249,15 +249,26 @@ public abstract class SlotAcc implements Closeable {
    * Incapsulates information about the current slot, for Accumulators that may want
    * additional info during collection.
    */
-  public static final class SlotContext {
+  public static class SlotContext {
     private final Query slotQuery;
 
     public SlotContext(Query slotQuery) {
       this.slotQuery = slotQuery;
     }
 
+    /**
+     * behavior of this method is undefined if {@link #isAllBuckets} returns <code>true</code>
+     */
     public Query getSlotQuery() {
       return slotQuery;
+    }
+
+    /** 
+     * @return true if and only if this slot corrisponds to the <code>allBuckets</code> bucket.
+     * @see #getSlotQuery 
+     */
+    public boolean isAllBuckets() {
+      return false;
     }
   }
 
@@ -594,6 +605,63 @@ public abstract class SlotAcc implements Closeable {
 
     public abstract long getCount(int slot);
   }
+
+  /**
+   * This CountSlotAcc exists as a /dev/null sink for callers of collect(...) and other "write"-type
+   * methods. It should be used in contexts where "read"-type access methods will never be called.
+   */
+  static final CountSlotAcc DEV_NULL_SLOT_ACC = new CountSlotAcc(null) {
+
+    @Override
+    public void resize(Resizer resizer) {
+      // No-op
+    }
+
+    @Override
+    public void reset() throws IOException {
+      // No-op
+    }
+
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      // No-op
+    }
+
+    @Override
+    public void incrementCount(int slot, long count) {
+      // No-op
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      // No-op
+    }
+
+    @Override
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      return docs.size(); // dressed up no-op
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public long getCount(int slot) {
+      throw new UnsupportedOperationException("not supported");
+    }
+  };
 
   static class CountSlotArrAcc extends CountSlotAcc {
     long[] result;

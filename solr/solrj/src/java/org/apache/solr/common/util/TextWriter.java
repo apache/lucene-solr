@@ -93,9 +93,9 @@ public interface TextWriter extends PushWriter {
 
   void writeStr(String name, String val, boolean needsEscaping) throws IOException;
 
-  void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;
+  void writeMap(String name, @SuppressWarnings({"rawtypes"})Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;
 
-  void writeArray(String name, Iterator val) throws IOException;
+  void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException;
 
   void writeNull(String name) throws IOException;
 
@@ -121,7 +121,7 @@ public interface TextWriter extends PushWriter {
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   void writeDate(String name, String val) throws IOException;
 
-  void writeNamedList(String name, NamedList val) throws IOException;
+  void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException;
 
   Writer getWriter();
 
@@ -154,7 +154,7 @@ public interface TextWriter extends PushWriter {
     writeArray(name, Arrays.asList(val));
   }
 
-  default void writeArray(String name, List l) throws IOException {
+  default void writeArray(String name, @SuppressWarnings({"rawtypes"})List l) throws IOException {
     writeArray(name, l.iterator());
   }
 

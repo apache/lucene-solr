@@ -39,6 +39,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.script.ScriptEngineManager;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
@@ -83,6 +84,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -344,6 +346,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
+    
       // Authorization off
       // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
       final String untrustedSuffix = "-untrusted";

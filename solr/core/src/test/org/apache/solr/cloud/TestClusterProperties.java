@@ -41,13 +41,13 @@ public class TestClusterProperties extends SolrCloudTestCase {
 
   @Test
   public void testClusterProperties() throws Exception {
-    assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false"));
+    assertEquals("false", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false"));
 
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
-    assertEquals("true", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false"));
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "true").process(cluster.getSolrClient());
+    assertEquals("true", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false"));
 
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
-    assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"));
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false").process(cluster.getSolrClient());
+    assertEquals("false", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "true"));
   }
   
   @Test

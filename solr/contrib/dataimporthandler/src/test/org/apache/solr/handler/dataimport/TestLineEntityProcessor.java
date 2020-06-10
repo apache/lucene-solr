@@ -42,12 +42,14 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
      *           />
      */
 
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, null,
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
+    @SuppressWarnings({"unchecked"})
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
@@ -82,12 +84,14 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
      *           acceptLineRegex="xml"
      *           />
      */
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "xml",
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
+    @SuppressWarnings({"unchecked"})
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
@@ -120,12 +124,14 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
      *           omitLineRegex="\\.xsd"
      *           />
      */
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "\\.xml",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
+    @SuppressWarnings({"unchecked"})
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
@@ -157,11 +163,13 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
      *           omitLineRegex="\\.xsd"
      *           />
      */
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
+    @SuppressWarnings({"unchecked"})
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver

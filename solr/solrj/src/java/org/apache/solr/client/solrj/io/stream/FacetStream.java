@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -375,7 +373,7 @@ public class FacetStream extends TupleStream implements Expressible  {
   }
 
   private String[] parseSorts(String sortString) {
-    List<String> sorts = new ArrayList();
+    List<String> sorts = new ArrayList<>();
     boolean inParam = false;
     StringBuilder buff = new StringBuilder();
     for(int i=0; i<sortString.length(); i++) {
@@ -535,7 +533,7 @@ public class FacetStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -558,6 +556,7 @@ public class FacetStream extends TupleStream implements Expressible  {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
 
@@ -626,15 +625,11 @@ public class FacetStream extends TupleStream implements Expressible  {
       ++index;
       return tuple;
     } else {
-      Map fields = new HashMap();
+      Tuple tuple = Tuple.EOF();
 
       if(bucketSizeLimit == Integer.MAX_VALUE) {
-        fields.put("totalRows", tuples.size());
+        tuple.put("totalRows", tuples.size());
       }
-
-      fields.put("EOF", true);
-
-      Tuple tuple = new Tuple(fields);
       return tuple;
     }
   }
@@ -767,11 +762,12 @@ public class FacetStream extends TupleStream implements Expressible  {
     return "index";
   }
 
-  private void getTuples(NamedList response,
+  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
                                 Bucket[] buckets,
                                 Metric[] metrics) {
 
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
+    @SuppressWarnings({"rawtypes"})
     NamedList facets = (NamedList)response.get("facets");
     fillTuples(0,
                tuples,
@@ -785,17 +781,20 @@ public class FacetStream extends TupleStream implements Expressible  {
   private void fillTuples(int level,
                           List<Tuple> tuples,
                           Tuple currentTuple,
-                          NamedList facets,
+                          @SuppressWarnings({"rawtypes"}) NamedList facets,
                           Bucket[] _buckets,
                           Metric[] _metrics) {
 
     String bucketName = _buckets[level].toString();
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList)facets.get(bucketName);
     if(nl == null) {
       return;
     }
+    @SuppressWarnings({"rawtypes"})
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
+      @SuppressWarnings({"rawtypes"})
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
       if (val instanceof Integer) {

@@ -96,7 +96,7 @@ class DebugAgg extends AggValueSource {
 
     public Acc(FacetContext fcontext, long numDocs, int numSlots, SlotAcc sub) {
       super(fcontext);
-      this.last = this;
+      last = this;
       this.numDocs = numDocs;
       this.numSlots = numSlots;
       this.sub = sub;
