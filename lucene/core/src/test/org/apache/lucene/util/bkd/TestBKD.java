@@ -47,8 +47,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-
 public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
@@ -69,7 +67,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in, false);//randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         // Simple 1D range query:
         final int queryMin = 42;
@@ -173,7 +171,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
@@ -303,7 +301,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         int iters = atLeast(100);
         for(int iter=0;iter<iters;iter++) {
@@ -799,7 +797,7 @@ public class TestBKD extends LuceneTestCase {
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
-          readers.add(new BKDReader(in, in, in, randomBoolean()));
+          readers.add(new BKDReader(in, in, in));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
         Runnable finalizer = w.merge(out, out, out, docMaps, readers);
@@ -817,7 +815,7 @@ public class TestBKD extends LuceneTestCase {
       }
 
       in.seek(indexFP);
-      BKDReader r = new BKDReader(in, in, in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
@@ -1093,7 +1091,7 @@ public class TestBKD extends LuceneTestCase {
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
       r.intersect(new IntersectVisitor() {
           int lastDocID = -1;
 
@@ -1211,7 +1209,7 @@ public class TestBKD extends LuceneTestCase {
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
       int[] count = new int[1];
       r.intersect(new IntersectVisitor() {
 
@@ -1269,7 +1267,7 @@ public class TestBKD extends LuceneTestCase {
 
     IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
     in.seek(fp);
-    BKDReader r = new BKDReader(in, in, in, randomBoolean());
+    BKDReader r = new BKDReader(in, in, in);
     int[] count = new int[1];
     r.intersect(new IntersectVisitor() {
 

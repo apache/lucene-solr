@@ -19,11 +19,7 @@ package org.apache.lucene.codecs.lucene60;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -34,8 +30,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
@@ -133,21 +127,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
 
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = 0;
-    for(BKDReader reader : readers.values()) {
-      sizeInBytes += reader.ramBytesUsed();
-    }
-    return sizeInBytes;
-  }
-
-  @Override
-  public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
-    for(Map.Entry<Integer,BKDReader> ent : readers.entrySet()) {
-      resources.add(Accountables.namedAccountable(readState.fieldInfos.fieldInfo(ent.getKey()).name,
-                                                  ent.getValue()));
-    }
-    return Collections.unmodifiableList(resources);
+    return 0L;
   }
 
   @Override
