@@ -790,7 +790,7 @@ public class TestFSTs extends LuceneTestCase {
   }
   */
 
-    public void testSimple() throws Exception {
+  public void testSimple() throws Exception {
 
     // Get outputs -- passing true means FST will share
     // (delta code) the outputs.  This should result in

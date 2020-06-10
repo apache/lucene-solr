@@ -565,7 +565,7 @@ public class TestValueSources extends LuceneTestCase {
     
     // actual doc / index is not relevant for this test
     final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
-    final Map<?,?> context = ValueSource.newContext(searcher);
+    final Map<?, ?> context = ValueSource.newContext(searcher);
 
     ALL_EXIST_VS.createWeight(context, searcher);
     NONE_EXIST_VS.createWeight(context, searcher);
