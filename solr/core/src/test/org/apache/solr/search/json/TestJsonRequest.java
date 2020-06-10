@@ -32,6 +32,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 
 @SuppressWarnings("deprecation")
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
@@ -83,6 +85,8 @@ public class TestJsonRequest extends SolrTestCaseHS {
   public static void doJsonRequest(Client client, boolean isDistrib) throws Exception {
     addDocs(client);
 
+    ignoreException("Expected JSON");
+
     // test json param
     client.testJQ( params("json","{query:'cat_s:A'}")
         , "response/numFound==2"
@@ -91,6 +95,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     // invalid value
     SolrException ex = expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
 
     // this is to verify other json params are not affected
     client.testJQ( params("q", "cat_s:A", "json.limit", "1"),
@@ -388,23 +393,19 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "response/numFound==3", isDistrib? "" :  "response/docs==[{id:'4'},{id:'1'},{id:'5'}]"
     );
 
-    try {
-      client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));  // TODO: this seems like a reasonable capability that we would want to support in the future.  It should be OK to make this pass.
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("foo_s"));
-    }
+    // TODO: this seems like a reasonable capability that we would want to support in the future.  It should be OK to make this pass.
+    Exception e = expectThrows(Exception.class, () -> {
+      client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));
+    });
+    assertThat(e.getMessage(), containsString("foo_s"));
 
-    try {
-      // test failure on unknown parameter
-      client.testJQ(params("json", "{query:'cat_s:A', foobar_ignore_exception:5}")
-          , "response/numFound==2"
-      );
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("foobar"));
-    }
+    // test failure on unknown parameter
+    e = expectThrows(Exception.class, () -> {
+      client.testJQ(params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"), "response/numFound==2");
+    });
+    assertThat(e.getMessage(), containsString("foobar"));
 
+    resetExceptionIgnores();
   }
 
   private static void doParamRefDslTest(Client client) throws Exception {
