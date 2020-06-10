@@ -42,6 +42,7 @@ import org.apache.lucene.search.SortField;
  *
  *
  */
+@SuppressWarnings("rawtypes")
 public abstract class ValueSource {
 
   /**
@@ -81,7 +82,7 @@ public abstract class ValueSource {
    * Returns a new non-threadsafe context map.
    */
   public static Map newContext(IndexSearcher searcher) {
-    Map context = new IdentityHashMap();
+    Map<String, IndexSearcher> context = new IdentityHashMap<>();
     context.put("searcher", searcher);
     return context;
   }
@@ -119,7 +120,7 @@ public abstract class ValueSource {
 
     @Override
     public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-      Map context = new IdentityHashMap<>();
+      Map<String, Object> context = new IdentityHashMap<>();
       ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       final FunctionValues fv = in.getValues(context, ctx);
@@ -196,7 +197,7 @@ public abstract class ValueSource {
 
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-      Map context = new HashMap<>();
+      Map<String, Object> context = new HashMap<>();
       ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       context.put("searcher", searcher);
@@ -236,7 +237,7 @@ public abstract class ValueSource {
 
     @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-      Map context = new HashMap<>();
+      Map<String, Object> context = new HashMap<>();
       ScoreAndDoc scorer = new ScoreAndDoc();
       scorer.score = scoreExplanation.getValue().floatValue();
       context.put("scorer", scorer);
@@ -429,7 +430,7 @@ public abstract class ValueSource {
 
     @Override
     public void setTopValue(final Double value) {
-      this.topValue = value.doubleValue();
+      this.topValue = value;
     }
 
     @Override

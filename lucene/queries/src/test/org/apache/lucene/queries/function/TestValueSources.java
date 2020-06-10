@@ -565,7 +565,7 @@ public class TestValueSources extends LuceneTestCase {
     
     // actual doc / index is not relevant for this test
     final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
-    final Map context = ValueSource.newContext(searcher);
+    final Map<?,?> context = ValueSource.newContext(searcher);
 
     ALL_EXIST_VS.createWeight(context, searcher);
     NONE_EXIST_VS.createWeight(context, searcher);
@@ -643,12 +643,12 @@ public class TestValueSources extends LuceneTestCase {
     assertExists(NONE_EXIST_VS, vs);
   }
   /**
-   * Asserts that for every doc, the {@link FunctionValues#exists} value from the 
-   * <code>actual</code> {@link ValueSource} matches the {@link FunctionValues#exists} 
+   * Asserts that for every doc, the {@link FunctionValues#exists} value from the
+   * <code>actual</code> {@link ValueSource} matches the {@link FunctionValues#exists}
    * value from the <code>expected</code> {@link ValueSource}
    */
   void assertExists(ValueSource expected, ValueSource actual) {
-    Map context = ValueSource.newContext(searcher);
+    Map <?, ?> context = ValueSource.newContext(searcher);
     try {
       expected.createWeight(context, searcher);
       actual.createWeight(context, searcher);

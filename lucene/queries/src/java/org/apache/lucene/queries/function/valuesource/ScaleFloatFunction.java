@@ -59,6 +59,7 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal;
   }
 
+  @SuppressWarnings("unchecked")
   private ScaleInfo createScaleInfo(Map context, LeafReaderContext readerContext) throws IOException {
     final List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 

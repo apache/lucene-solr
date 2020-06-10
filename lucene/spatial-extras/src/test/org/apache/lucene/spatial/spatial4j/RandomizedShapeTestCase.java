@@ -18,19 +18,15 @@ package org.apache.lucene.spatial.spatial4j;
 
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.locationtech.spatial4j.shape.impl.Range;
 
 import static org.locationtech.spatial4j.shape.SpatialRelation.CONTAINS;
 import static org.locationtech.spatial4j.shape.SpatialRelation.WITHIN;
 
 import org.apache.lucene.util.LuceneTestCase;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 /**
  * A base test class with utility methods to help test shapes.
@@ -110,7 +106,7 @@ public abstract class RandomizedShapeTestCase extends LuceneTestCase {
     }
     minY = boundY(minY, ctx.getWorldBounds());
     maxY = boundY(maxY, ctx.getWorldBounds());
-    return ctx.makeRectangle(minX, maxX, minY, maxY);
+    return ctx.getShapeFactory().rect(minX, maxX, minY, maxY);
   }
 
   public static double divisible(double v, double divisible) {
@@ -183,106 +179,4 @@ public abstract class RandomizedShapeTestCase extends LuceneTestCase {
     }
   }
 
-  protected void assertEqualsRatio(String msg, double expected, double actual) {
-    double delta = Math.abs(actual - expected);
-    double base = Math.min(actual, expected);
-    double deltaRatio = base==0 ? delta : Math.min(delta,delta / base);
-    assertEquals(msg,0,deltaRatio, EPS);
-  }
-
-  protected int randomIntBetweenDivisible(int start, int end) {
-    return randomIntBetweenDivisible(start, end, (int)DIVISIBLE);
-  }
-  /** Returns a random integer between [start, end]. Integers between must be divisible by the 3rd argument. */
-  protected int randomIntBetweenDivisible(int start, int end, int divisible) {
-    // DWS: I tested this
-    int divisStart = (int) Math.ceil( (start+1) / (double)divisible );
-    int divisEnd = (int) Math.floor( (end-1) / (double)divisible );
-    int divisRange = Math.max(0,divisEnd - divisStart + 1);
-    int r = randomInt(1 + divisRange);//remember that '0' is counted
-    if (r == 0)
-      return start;
-    if (r == 1)
-      return end;
-    return (r-2 + divisStart)*divisible;
-  }
-
-  protected Rectangle randomRectangle(Point nearP) {
-    Rectangle bounds = ctx.getWorldBounds();
-    if (nearP == null)
-      nearP = randomPointIn(bounds);
-
-    Range xRange = randomRange(rarely() ? 0 : nearP.getX(), Range.xRange(bounds, ctx));
-    Range yRange = randomRange(rarely() ? 0 : nearP.getY(), Range.yRange(bounds, ctx));
-
-    return makeNormRect(
-        divisible(xRange.getMin()),
-        divisible(xRange.getMax()),
-        divisible(yRange.getMin()),
-        divisible(yRange.getMax()) );
-  }
-
-  private Range randomRange(double near, Range bounds) {
-    double mid = near + randomGaussian() * bounds.getWidth() / 6;
-    double width = Math.abs(randomGaussian()) * bounds.getWidth() / 6;//1/3rd
-    return new Range(mid - width / 2, mid + width / 2);
-  }
-
-  private double randomGaussianZeroTo(double max) {
-    if (max == 0)
-      return max;
-    assert max > 0;
-    double r;
-    do {
-      r = Math.abs(randomGaussian()) * (max * 0.50);
-    } while (r > max);
-    return r;
-  }
-
-  protected Rectangle randomRectangle(int divisible) {
-    double rX = randomIntBetweenDivisible(-180, 180, divisible);
-    double rW = randomIntBetweenDivisible(0, 360, divisible);
-    double rY1 = randomIntBetweenDivisible(-90, 90, divisible);
-    double rY2 = randomIntBetweenDivisible(-90, 90, divisible);
-    double rYmin = Math.min(rY1,rY2);
-    double rYmax = Math.max(rY1,rY2);
-    if (rW > 0 && rX == 180)
-      rX = -180;
-    return makeNormRect(rX, rX + rW, rYmin, rYmax);
-  }
-
-  protected Point randomPoint() {
-    return randomPointIn(ctx.getWorldBounds());
-  }
-
-  protected Point randomPointIn(Circle c) {
-    double d = c.getRadius() * randomDouble();
-    double angleDEG = 360 * randomDouble();
-    Point p = ctx.getDistCalc().pointOnBearing(c.getCenter(), d, angleDEG, ctx, null);
-    assertEquals(CONTAINS,c.relate(p));
-    return p;
-  }
-
-  protected Point randomPointIn(Rectangle r) {
-    double x = r.getMinX() + randomDouble()*r.getWidth();
-    double y = r.getMinY() + randomDouble()*r.getHeight();
-    x = normX(x);
-    y = normY(y);
-    Point p = ctx.makePoint(x,y);
-    assertEquals(CONTAINS,r.relate(p));
-    return p;
-  }
-
-  protected Point randomPointInOrNull(Shape shape) {
-    if (!shape.hasArea())// or try the center?
-      throw new UnsupportedOperationException("Need area to define shape!");
-    Rectangle bbox = shape.getBoundingBox();
-    for (int i = 0; i < 1000; i++) {
-      Point p = randomPointIn(bbox);
-      if (shape.relate(p).intersects()) {
-        return p;
-      }
-    }
-    return null;//tried too many times and failed
-  }
 }

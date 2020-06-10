@@ -43,6 +43,7 @@ public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public TokenStream create(TokenStream input) {
     return new FixBrokenOffsetsFilter(input);
   }

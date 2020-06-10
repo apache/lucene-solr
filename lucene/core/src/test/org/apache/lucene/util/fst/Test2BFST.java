@@ -256,7 +256,9 @@ public class Test2BFST extends LuceneTestCase {
             // forward lookup:
             assertEquals(output, Util.get(fst, input).longValue());
             // reverse lookup:
-            assertEquals(input, Util.getByOutput(fst, output));
+            @SuppressWarnings("deprecation")
+            IntsRef inputResult = Util.getByOutput(fst, output);
+            assertEquals(input, inputResult);
             output += 1 + r.nextInt(10);
             nextInput(r, ints);
           }
