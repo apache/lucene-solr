@@ -221,36 +221,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
 
-  private static class FieldMetaData {
-    public final FieldInfo fieldInfo;
-    public final BytesRef rootCode;
-    public final long numTerms;
-    public final long indexStartFP;
-    public final long sumTotalTermFreq;
-    public final long sumDocFreq;
-    public final int docCount;
-    public final BytesRef minTerm;
-    public final BytesRef maxTerm;
-    public final ByteBuffersDataOutput fstMetaOut;
-
-    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount,
-                         BytesRef minTerm, BytesRef maxTerm, ByteBuffersDataOutput fstMetaOut) {
-      assert numTerms > 0;
-      this.fieldInfo = fieldInfo;
-      assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
-      this.rootCode = rootCode;
-      this.indexStartFP = indexStartFP;
-      this.numTerms = numTerms;
-      this.sumTotalTermFreq = sumTotalTermFreq;
-      this.sumDocFreq = sumDocFreq;
-      this.docCount = docCount;
-      this.minTerm = minTerm;
-      this.maxTerm = maxTerm;
-      this.fstMetaOut = fstMetaOut;
-    }
-  }
-
-  private final List<FieldMetaData> fields = new ArrayList<>();
+  private final List<ByteBuffersDataOutput> fields = new ArrayList<>();
 
   /** Create a new writer.  The number of items (terms or
    *  sub-blocks) per block will aim to be between
@@ -999,11 +970,26 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         assert pending.size() == 1 && !pending.get(0).isTerm: "pending.size()=" + pending.size() + " pending=" + pending;
         final PendingBlock root = (PendingBlock) pending.get(0);
         assert root.prefix.length == 0;
-        assert root.index.getEmptyOutput() != null;
+        final BytesRef rootCode = root.index.getEmptyOutput();
+        assert rootCode != null;
 
-        // Write FST to index
-        long indexStartFP = indexOut.getFilePointer();
         ByteBuffersDataOutput metaOut = new ByteBuffersDataOutput();
+        fields.add(metaOut);
+
+        metaOut.writeVInt(fieldInfo.number);
+        metaOut.writeVLong(numTerms);
+        metaOut.writeVInt(rootCode.length);
+        metaOut.writeBytes(rootCode.bytes, rootCode.offset, rootCode.length);
+        assert fieldInfo.getIndexOptions() != IndexOptions.NONE;
+        if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
+          metaOut.writeVLong(sumTotalTermFreq);
+        }
+        metaOut.writeVLong(sumDocFreq);
+        metaOut.writeVInt(docsSeen.cardinality());
+        writeBytesRef(metaOut, new BytesRef(firstPendingTerm.termBytes));
+        writeBytesRef(metaOut, new BytesRef(lastPendingTerm.termBytes));
+        metaOut.writeVLong(indexOut.getFilePointer());
+        // Write FST to index
         root.index.save(metaOut, indexOut);
         //System.out.println("  write FST " + indexStartFP + " field=" + fieldInfo.name);
 
@@ -1016,21 +1002,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           w.close();
         }
         */
-        assert firstPendingTerm != null;
-        BytesRef minTerm = new BytesRef(firstPendingTerm.termBytes);
 
-        assert lastPendingTerm != null;
-        BytesRef maxTerm = new BytesRef(lastPendingTerm.termBytes);
-
-        fields.add(new FieldMetaData(fieldInfo,
-                                     ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
-                                     numTerms,
-                                     indexStartFP,
-                                     sumTotalTermFreq,
-                                     sumDocFreq,
-                                     docsSeen.cardinality(),
-                                     minTerm, maxTerm,
-                                     metaOut));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -1064,23 +1036,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
       metaOut.writeVInt(fields.size());
       
-      for(FieldMetaData field : fields) {
-        //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
-        metaOut.writeVInt(field.fieldInfo.number);
-        assert field.numTerms > 0;
-        metaOut.writeVLong(field.numTerms);
-        metaOut.writeVInt(field.rootCode.length);
-        metaOut.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
-        assert field.fieldInfo.getIndexOptions() != IndexOptions.NONE;
-        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
-          metaOut.writeVLong(field.sumTotalTermFreq);
-        }
-        metaOut.writeVLong(field.sumDocFreq);
-        metaOut.writeVInt(field.docCount);
-        writeBytesRef(metaOut, field.minTerm);
-        writeBytesRef(metaOut, field.maxTerm);
-        metaOut.writeVLong(field.indexStartFP);
-        field.fstMetaOut.copyTo(metaOut);
+      for (ByteBuffersDataOutput fieldMeta : fields) {
+        fieldMeta.copyTo(metaOut);
       }
       CodecUtil.writeFooter(termsOut);
       CodecUtil.writeFooter(indexOut);
@@ -1095,7 +1052,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     }
   }
 
-  private static void writeBytesRef(IndexOutput out, BytesRef bytes) throws IOException {
+  private static void writeBytesRef(DataOutput out, BytesRef bytes) throws IOException {
     out.writeVInt(bytes.length);
     out.writeBytes(bytes.bytes, bytes.offset, bytes.length);
   }

@@ -200,7 +200,7 @@ Improvements
 
 * LUCENE-9353: Metadata of the terms dictionary moved to its own file, with the
   `.tmd` extension. This allows checksums of metadata to be verified when
-  opening indices. (Adrien Grand)
+  opening indices and helps save seeks when opening an index. (Adrien Grand)
 
 * LUCENE-9359: SegmentInfos#readCommit now always returns a
   CorruptIndexException if the content of the file is invalid. (Adrien Grand)
