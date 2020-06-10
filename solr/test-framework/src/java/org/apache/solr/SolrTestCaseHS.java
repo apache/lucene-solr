@@ -81,6 +81,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     return s;
   }
 
+  @SuppressWarnings({"unchecked"})
   public static <T> T rand(T... vals) {
     return vals[ random().nextInt(vals.length) ];
   }
@@ -109,9 +110,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   }
   
   
-  public static Object createDocObjects(Map<Comparable, Doc> fullModel, Comparator sort, int rows, Collection<String> fieldNames) {
+  @SuppressWarnings({"unchecked"})
+  public static Object createDocObjects(@SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel,
+                                        @SuppressWarnings({"rawtypes"})Comparator sort, int rows,
+                                        Collection<String> fieldNames) {
     List<Doc> docList = new ArrayList<>(fullModel.values());
     Collections.sort(docList, sort);
+    @SuppressWarnings({"rawtypes"})
     List sortedDocs = new ArrayList(rows);
     for (Doc doc : docList) {
       if (sortedDocs.size() >= rows) break;
@@ -122,7 +127,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   }
 
 
-  public static void compare(SolrQueryRequest req, String path, Object model, Map<Comparable, Doc> fullModel) throws Exception {
+  public static void compare(SolrQueryRequest req, String path, Object model,
+                             @SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel) throws Exception {
     String strResponse = h.query(req);
 
     Object realResponse = ObjectBuilder.fromJSON(strResponse);
