@@ -51,17 +51,26 @@ public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
   @Before
   public void initialize() {
+    initializeInner();
+  }
+
+  protected void initializeInner() {
     UniformSplitRot13PostingsFormat.resetEncodingFlags();
   }
 
   @After
   public void checkEncodingCalled() {
     if (checkEncoding) {
-      assertTrue(UniformSplitRot13PostingsFormat.blocksEncoded);
-      assertTrue(UniformSplitRot13PostingsFormat.dictionaryEncoded);
-      if (shouldCheckDecoderWasCalled) {
-        assertTrue(UniformSplitRot13PostingsFormat.decoderCalled);
-      }
+      checkEncodingCalledInner();
+    }
+  }
+
+  protected void checkEncodingCalledInner() {
+    assertTrue(UniformSplitRot13PostingsFormat.blocksEncoded);
+    assertTrue(UniformSplitRot13PostingsFormat.fieldsMetadataEncoded);
+    assertTrue(UniformSplitRot13PostingsFormat.dictionaryEncoded);
+    if (shouldCheckDecoderWasCalled) {
+      assertTrue(UniformSplitRot13PostingsFormat.decoderCalled);
     }
   }
 
