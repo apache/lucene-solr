@@ -134,7 +134,7 @@ public class MultiCollector implements Collector {
       case 1:
         return leafCollectors.get(0);
       default:
-        return new MultiLeafCollector(leafCollectors, cacheScores);
+        return new MultiLeafCollector(leafCollectors, cacheScores, scoreMode() == ScoreMode.TOP_SCORES);
     }
   }
 
@@ -143,11 +143,15 @@ public class MultiCollector implements Collector {
     private final boolean cacheScores;
     private final LeafCollector[] collectors;
     private int numCollectors;
+    private final float[] minScores;
+    private final boolean skipNonCompetitiveScores;
 
-    private MultiLeafCollector(List<LeafCollector> collectors, boolean cacheScores) {
+    private MultiLeafCollector(List<LeafCollector> collectors, boolean cacheScores, boolean skipNonCompetitive) {
       this.collectors = collectors.toArray(new LeafCollector[collectors.size()]);
       this.cacheScores = cacheScores;
       this.numCollectors = this.collectors.length;
+      this.skipNonCompetitiveScores = skipNonCompetitive;
+      this.minScores = new float[this.skipNonCompetitiveScores ? this.numCollectors : 0];
     }
 
     @Override
@@ -155,20 +159,27 @@ public class MultiCollector implements Collector {
       if (cacheScores) {
         scorer = new ScoreCachingWrappingScorer(scorer);
       }
-      scorer = new FilterScorable(scorer) {
-        @Override
-        public void setMinCompetitiveScore(float minScore) {
-          // Ignore calls to setMinCompetitiveScore so that if we wrap two
-          // collectors and one of them wants to skip low-scoring hits, then
-          // the other collector still sees all hits. We could try to reconcile
-          // min scores and take the maximum min score across collectors, but
-          // this is very unlikely to be helpful in practice.
+      if (skipNonCompetitiveScores) {
+        for (int i = 0; i < numCollectors; ++i) {
+          final LeafCollector c = collectors[i];
+          c.setScorer(new MinCompetitiveScoreAwareScorable(scorer,  i,  minScores));
         }
+      } else {
+        scorer = new FilterScorable(scorer) {
+          @Override
+          public void setMinCompetitiveScore(float minScore) throws IOException {
+            // Ignore calls to setMinCompetitiveScore so that if we wrap two
+            // collectors and one of them wants to skip low-scoring hits, then
+            // the other collector still sees all hits. We could try to reconcile
+            // min scores and take the maximum min score across collectors, but
+            // this is very unlikely to be helpful in practice.
+          }
 
-      };
-      for (int i = 0; i < numCollectors; ++i) {
-        final LeafCollector c = collectors[i];
-        c.setScorer(scorer);
+        };
+        for (int i = 0; i < numCollectors; ++i) {
+          final LeafCollector c = collectors[i];
+          c.setScorer(scorer);
+        }
       }
     }
 
@@ -197,6 +208,37 @@ public class MultiCollector implements Collector {
       }
     }
 
+  }
+  
+  final static class MinCompetitiveScoreAwareScorable extends FilterScorable {
+    
+    private final int idx;
+    private final float[] minScores;
+
+    MinCompetitiveScoreAwareScorable(Scorable in, int idx, float[] minScores) {
+      super(in);
+      this.idx = idx;
+      this.minScores = minScores;
+    }
+    
+    @Override
+    public void setMinCompetitiveScore(float minScore) throws IOException {
+      if (minScore > minScores[idx]) {
+        minScores[idx] = minScore;
+        in.setMinCompetitiveScore(minScore());
+      }
+    }
+
+    private float minScore() {
+      float min = Float.MAX_VALUE;
+      for (int i = 0; i < minScores.length; i++) {
+        if (minScores[i] < min) {
+          min = minScores[i];
+        }
+      }
+      return min;
+    }
+    
   }
 
 }

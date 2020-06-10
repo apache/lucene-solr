@@ -163,4 +163,64 @@ public class MultiCollectorTest extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  
+  public void testScorerWrappingForTopScores() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    iw.addDocument(new Document());
+    iw.commit();
+    DirectoryReader reader = iw.getReader();
+    iw.close();
+    final LeafReaderContext ctx = reader.leaves().get(0);
+    Collector c1 = collector(ScoreMode.TOP_SCORES, MultiCollector.MinCompetitiveScoreAwareScorable.class);
+    Collector c2 = collector(ScoreMode.TOP_SCORES, MultiCollector.MinCompetitiveScoreAwareScorable.class);
+    MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new ScoreAndDoc());
+    
+    c1 = collector(ScoreMode.TOP_SCORES, ScoreCachingWrappingScorer.class);
+    c2 = collector(ScoreMode.COMPLETE, ScoreCachingWrappingScorer.class);
+    MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new ScoreAndDoc());
+    
+    reader.close();
+    dir.close();
+  }
+  
+  public void testMinCompetitiveScore() throws IOException {
+    float[] currentMinScores = new float[3];
+    float[] minCompetitiveScore = new float[1];
+    Scorable scorer = new Scorable() {
+      
+      @Override
+      public float score() throws IOException {
+        return 0;
+      }
+      
+      @Override
+      public int docID() {
+        return 0;
+      }
+      
+      @Override
+      public void setMinCompetitiveScore(float minScore) throws IOException {
+        minCompetitiveScore[0] = minScore;
+      }
+    };
+    Scorable s0 = new MultiCollector.MinCompetitiveScoreAwareScorable(scorer, 0, currentMinScores);
+    Scorable s1 = new MultiCollector.MinCompetitiveScoreAwareScorable(scorer, 1, currentMinScores);
+    Scorable s2 = new MultiCollector.MinCompetitiveScoreAwareScorable(scorer, 2, currentMinScores);
+    assertEquals(0f, minCompetitiveScore[0], 0);
+    s0.setMinCompetitiveScore(0.5f);
+    assertEquals(0f, minCompetitiveScore[0], 0);
+    s1.setMinCompetitiveScore(0.8f);
+    assertEquals(0f, minCompetitiveScore[0], 0);
+    s2.setMinCompetitiveScore(0.3f);
+    assertEquals(0.3f, minCompetitiveScore[0], 0);
+    s2.setMinCompetitiveScore(0.1f);
+    assertEquals(0.3f, minCompetitiveScore[0], 0);
+    s1.setMinCompetitiveScore(Float.MAX_VALUE);
+    assertEquals(0.3f, minCompetitiveScore[0], 0);
+    s2.setMinCompetitiveScore(Float.MAX_VALUE);
+    assertEquals(0.5f, minCompetitiveScore[0], 0);
+    s0.setMinCompetitiveScore(Float.MAX_VALUE);
+    assertEquals(Float.MAX_VALUE, minCompetitiveScore[0], 0);
+  }
 }
