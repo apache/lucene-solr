@@ -71,6 +71,8 @@ Improvements
 
 * LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
 
+* LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
+
 Optimizations
 ---------------------
 
