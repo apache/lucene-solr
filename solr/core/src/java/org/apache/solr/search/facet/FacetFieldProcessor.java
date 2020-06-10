@@ -793,7 +793,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    */
   protected SweepingCountSlotAcc registerSweepingAccIfSupportedByCollectAcc() {
     if (!(countAcc instanceof SweepingCountSlotAcc)) {
-      return new ShimSweepingCountSlotAcc(this, countAcc, false);
+      return new ShimSweepingCountSlotAcc(this, countAcc);
     }
     SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
     if (collectAcc instanceof SweepableSlotAcc) {

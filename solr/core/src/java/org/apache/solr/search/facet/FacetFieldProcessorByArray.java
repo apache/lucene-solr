@@ -119,14 +119,10 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
       if (freq.allBuckets) {
         // count is irrelevant, but hardcoded in collect(...), so intercept/mask normal counts.
         // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with AIOOBE
-        if (countAcc == null || countAcc instanceof SweepingCountSlotAcc) {
-          // if null or already supports sweeping, preserve sweeping support
-          countAcc = new ShimSweepingCountSlotAcc(this, SlotAcc.DEV_NULL_SLOT_ACC);
-        } else {
-          // otherwise do not introduce sweep support
-          countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
-        }
+        // NOTE: because collectAcc will be null, it is fine/irrelevant to set a countAcc that doesn't support sweeping
+        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
+        assert collectAcc == null;
         otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection, setNextReader is called on otherAccs.
         allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
         collectDocs();

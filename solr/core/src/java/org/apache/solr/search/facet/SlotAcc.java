@@ -746,106 +746,96 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
+  /**
+   * Normally, {@link SweepingCountSlotAcc} (as a subclass of {@link CountSlotArrAcc}) acts as its own base countAcc.
+   *
+   * But there are some cases where we want to override the default behavior by explicitly setting the base countAcc to
+   * something other than "this", on a {@link FacetFieldProcessor} whose "collect" implementation accumulates counts via
+   * sweep objects (e.g., {@link SweepDocIterator}, {@link SweepDISI}).
+   *
+   * There are two situations in which this may happen:
+   *
+   *   1. If a subclass sets a custom countAcc that doesn't support sweep collection
+   *
+   *   2. In the case of special-purpose countAccs, like {@link SlotAcc#DEV_NULL_SLOT_ACC}
+   *
+   * For these cases, {@link ShimSweepingCountSlotAcc} facilitates the creation of singleton sweep countAcc objects
+   * (e.g., {@link SweepDocIterator}, {@link SweepDISI}) over the custom countAcc for purposes of collection, while not
+   * offering the collectAcc the opportunity to register any sweeping accs.
+   */
   static class ShimSweepingCountSlotAcc extends SweepingCountSlotAcc {
-    private final boolean supportAccessMethods;
-    private final CountSlotAcc baseCountAcc;
-
+    private static final String EXCEPTION_MESSAGE = ShimSweepingCountSlotAcc.class + " does not support read/write access methods";
     ShimSweepingCountSlotAcc(FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
-      this(p, baseCountAcc, true);
-    }
-
-    ShimSweepingCountSlotAcc(FacetFieldProcessor p, CountSlotAcc baseCountAcc, boolean supportAccessMethods) {
       super(0, p, baseCountAcc);
       assert baseCountAcc != null;
-      this.supportAccessMethods = supportAccessMethods;
-      this.baseCountAcc = supportAccessMethods ? baseCountAcc : null; // if access is attempted, NPE will be thrown. Not ideal, but simple and will fail fast
     }
-
-    private void checkSupportAccessMethods() {
-      if (!supportAccessMethods) {
-        throw new UnsupportedOperationException("shim does not support read/write access methods");
-      }
-    }
-
     @Override
     public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots) {
-      checkSupportAccessMethods();
-      return super.add(key, docs, numSlots);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
-
     @Override
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
-      checkSupportAccessMethods();
-      super.registerMapping(fromAcc, toAcc);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
-
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      checkSupportAccessMethods();
-      super.setValues(bucket, slotNum);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
-
     @Override
     public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      checkSupportAccessMethods();
-      super.setSweepValues(bucket, slotNum);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
-
     @Override
     public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
-      baseCountAcc.collect(doc, slotNum, slotContext);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public int compare(int slotA, int slotB) {
-      return baseCountAcc.compare(slotA, slotB);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public Object getValue(int slotNum) throws IOException {
-      return baseCountAcc.getValue(slotNum);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public void incrementCount(int slot, long count) {
-      baseCountAcc.incrementCount(slot, count);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public long getCount(int slot) {
-      return baseCountAcc.getCount(slot);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     long[] getCountArray() {
-      if (baseCountAcc instanceof CountSlotArrAcc) {
-        return ((CountSlotArrAcc)baseCountAcc).getCountArray();
-      } else {
-        throw new UnsupportedOperationException("backing CountSlotAcc not an instanceof "+CountSlotArrAcc.class);
-      }
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public void reset() throws IOException {
-      baseCountAcc.reset();
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public void resize(Resizer resizer) {
-      baseCountAcc.resize(resizer);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      baseCountAcc.setNextReader(readerContext);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      return baseCountAcc.collect(docs, slot, slotContext);
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     protected void resetIterators() throws IOException {
-      baseCountAcc.resetIterators();
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public void close() throws IOException {
-      baseCountAcc.close();
+      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
     }
     @Override
     public String toString() {
-      return getClass().getSimpleName()+'{'+baseCountAcc+'}';
+      return getClass().getSimpleName()+'{'+base.countAcc+'}';
     }
   }
 
