@@ -550,7 +550,6 @@ public class Policy implements MapWriter {
     final SolrCloudManager cloudManager;
     final List<Row> matrix;
     final NodeStateProvider nodeStateProvider;
-    final int znodeVersion;
     final Set<String> collections;
     final Policy policy;
     List<Clause> expandedClauses;
@@ -613,8 +612,8 @@ public class Policy implements MapWriter {
     /**
      * Creates a new Session and updates the Rows in the internal matrix to reference this session.
      */
-   private Session(List<String> nodes, SolrCloudManager cloudManager,
-                   List<Row> matrix, Set<String> collections, List<Clause> expandedClauses, int znodeVersion,
+    private Session(List<String> nodes, SolrCloudManager cloudManager,
+                   List<Row> matrix, Set<String> collections, List<Clause> expandedClauses,
                    NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction) {
       this.transaction = transaction;
       this.policy = policy;
@@ -644,15 +643,13 @@ public class Policy implements MapWriter {
       List<Clause> expandedClauses = new ArrayList<>(this.expandedClauses);
 
       List<Row> matrix = new ArrayList<>(nodes.size());
+      Map<String, Row> copyNodes = new HashMap<>();
+      for (Row oldRow: this.matrix) {
+        copyNodes.put(oldRow.node, oldRow.copy());
+      }
       for (String node : nodes) {
         // Do we have a row for that node in this session? If yes, reuse without trying to fetch from cluster state (latest changes might not be there)
-        Row newRow = null;
-        for (Row oldRow: this.matrix) {
-          if (oldRow.node.equals(node)) {
-            newRow = oldRow.copy();
-            break;
-          }
-        }
+        Row newRow = copyNodes.get(node);
         if (newRow == null) {
           // Dealing with a node that doesn't exist in this Session. Need to create related data from scratch.
           // We pass null for the Session in purpose. The current (this) session in not the correct one for this Row.
@@ -688,7 +685,7 @@ public class Policy implements MapWriter {
 
       Collections.sort(expandedClauses);
 
-      Session newSession = new Session(nodes, cloudManager, matrix, collections, expandedClauses, this.znodeVersion,
+      Session newSession = new Session(nodes, cloudManager, matrix, collections, expandedClauses,
           nodeStateProvider, this.policy, this.transaction);
       newSession.applyRules();
 
@@ -711,7 +708,7 @@ public class Policy implements MapWriter {
     }
 
     Session copy() {
-      return new Session(nodes, cloudManager, getMatrixCopy(), new HashSet<>(), expandedClauses, znodeVersion, nodeStateProvider, policy, transaction);
+      return new Session(nodes, cloudManager, getMatrixCopy(), new HashSet<>(), expandedClauses,  nodeStateProvider, policy, transaction);
     }
 
     public Row getNode(String node) {

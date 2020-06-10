@@ -72,7 +72,7 @@ public class Row implements MapWriter {
    * use those obtained through the passed <code>session</code>.
    * <p>Note the resulting row has a {@link Policy.Session} that may not be consistent with the rest of the Row's state. When rows are copied
    * as part of a {@link Policy.Session} copy, the copied rows' sessions are eventually updated in
-   * {@link org.apache.solr.client.solrj.cloud.autoscaling.Policy.Session#Session(List, SolrCloudManager, List, Set, List, int, NodeStateProvider, Policy, Policy.Transaction)}
+   * {@link org.apache.solr.client.solrj.cloud.autoscaling.Policy.Session#Session(List, SolrCloudManager, List, Set, List, NodeStateProvider, Policy, Policy.Transaction)}
    * once the new {@link Policy.Session} instance is available.</p>
    */
   Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session,
