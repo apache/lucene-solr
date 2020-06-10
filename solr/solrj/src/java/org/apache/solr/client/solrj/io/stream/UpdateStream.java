@@ -66,7 +66,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   private PushBackStream tupleSource;
   private transient SolrClientCache cache;
   private transient CloudSolrClient cloudSolrClient;
-  private List<SolrInputDocument> documentBatch = new ArrayList();
+  private List<SolrInputDocument> documentBatch = new ArrayList<>();
   private String coreName;
 
   public UpdateStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -294,6 +294,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
     for (Object field : tuple.getFields().keySet()) {

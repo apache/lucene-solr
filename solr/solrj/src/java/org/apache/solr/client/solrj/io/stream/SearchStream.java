@@ -174,7 +174,7 @@ public class SearchStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     return l;
   }
 
@@ -227,6 +227,7 @@ public class SearchStream extends TupleStream implements Expressible  {
     return comp;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private StreamComparator parseComp(String sort, String fl) throws IOException {
 
     HashSet fieldSet = null;

@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.stream.expr;
 /**
  * Provides a named parameter
  */
+@SuppressWarnings({"overrides"})
 public class StreamExpressionNamedParameter implements StreamExpressionParameter {
   private String name;
   private StreamExpressionParameter parameter;

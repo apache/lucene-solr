@@ -31,6 +31,7 @@ import org.junit.Test;
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12823")
   public void testCloudClientCanConnectAfterClusterComesUp() throws Exception {
 
     // Start by creating a cluster with no jetties
@@ -58,6 +59,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12823")
   public void testCloudClientUploads() throws Exception {
 
     Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
