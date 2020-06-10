@@ -52,11 +52,11 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
       }
 
       double[][] data = matrix.getData();
-      List<List<String>> topFeatures = new ArrayList();
+      List<List<String>> topFeatures = new ArrayList<>();
 
       for(int i=0; i<data.length; i++) {
         double[] row = data[i];
-        List<String> featuresRow = new ArrayList();
+        List<String> featuresRow = new ArrayList<>();
         List<Integer> indexes = getMaxIndexes(row, k);
         for(int index : indexes) {
           featuresRow.add(features.get(index));
@@ -71,7 +71,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
   }
 
   private List<Integer> getMaxIndexes(double[] values, int k) {
-    TreeSet<Pair> set = new TreeSet();
+    TreeSet<Pair> set = new TreeSet<>();
     for(int i=0; i<values.length; i++) {
       if(values[i] > 0){
         set.add(new Pair(i, values[i]));
@@ -81,7 +81,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
       }
     }
 
-    List<Integer> top = new ArrayList(k);
+    List<Integer> top = new ArrayList<>(k);
     while(set.size() > 0) {
       top.add(set.pollLast().getIndex());
     }

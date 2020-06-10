@@ -52,7 +52,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, NODE);
     String nodeName = message.getStr(NODE);
     String async = message.getStr(ASYNC);
@@ -94,6 +94,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     for (; ; ) {
       suggester = session.getSuggester(MOVEREPLICA)
           .hint(Suggester.Hint.TARGET_NODE, nodeName);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = suggester.getSuggestion();
       if (requests.size() > 10) {
         log.info("too_many_suggestions");
@@ -125,6 +126,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   private void executeAll(List<ZkNodeProps> requests) throws Exception {
     if (requests.isEmpty()) return;
     for (ZkNodeProps props : requests) {
+      @SuppressWarnings({"rawtypes"})
       NamedList result = new NamedList();
       ocmh.commandMap.get(MOVEREPLICA)
           .call(ocmh.overseer.getSolrCloudManager().getClusterStateProvider().getClusterState(),

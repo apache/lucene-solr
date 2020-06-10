@@ -613,10 +613,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     if (out.hasNext()) {
       return out.next();
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      Tuple tuple = new Tuple(map);
-      return tuple;
+      return Tuple.EOF();
     }
   }
 
@@ -645,14 +642,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     public void setStreamContext(StreamContext context) {}
 
     public Tuple read() {
-      HashMap map = new HashMap();
       if(it.hasNext()) {
-        map.put("node",it.next());
-        return new Tuple(map);
+        return new Tuple("node",it.next());
       } else {
-
-        map.put("EOF", true);
-        return new Tuple(map);
+        return Tuple.EOF();
       }
     }
 

@@ -97,11 +97,11 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String translateAnd(RexNode node0) {
-      List<String> andStrings = new ArrayList();
-      List<String> notStrings = new ArrayList();
+      List<String> andStrings = new ArrayList<>();
+      List<String> notStrings = new ArrayList<>();
 
-      List<RexNode> ands = new ArrayList();
-      List<RexNode> nots = new ArrayList();
+      List<RexNode> ands = new ArrayList<>();
+      List<RexNode> nots = new ArrayList<>();
       RelOptUtil.decomposeConjunction(node0, ands, nots);
 
 
@@ -253,11 +253,11 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String translateAnd(RexNode node0) {
-      List<String> andStrings = new ArrayList();
-      List<String> notStrings = new ArrayList();
+      List<String> andStrings = new ArrayList<>();
+      List<String> notStrings = new ArrayList<>();
 
-      List<RexNode> ands = new ArrayList();
-      List<RexNode> nots = new ArrayList();
+      List<RexNode> ands = new ArrayList<>();
+      List<RexNode> nots = new ArrayList<>();
 
       RelOptUtil.decomposeConjunction(node0, ands, nots);
 

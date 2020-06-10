@@ -403,8 +403,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
         for(LinkedList p : paths) {
           String s = p.toString();
           if (!finalPaths.contains(s)){
-            Tuple shortestPath = new Tuple(new HashMap());
-            shortestPath.put("path", p);
+            Tuple shortestPath = new Tuple("path", p);
             shortestPaths.add(shortestPath);
             finalPaths.add(s);
           }
@@ -501,12 +500,11 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       Tuple t = shortestPaths.removeFirst();
       return t;
     } else {
-      Map m = new HashMap();
-      m.put("EOF", true);
+      Tuple tuple = Tuple.EOF();
       if(!found) {
-        m.put("sorry", "No path found");
+        tuple.put("sorry", "No path found");
       }
-      return new Tuple(m);
+      return tuple;
     }
   }
 

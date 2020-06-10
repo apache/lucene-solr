@@ -121,6 +121,9 @@ Bug fixes
 * LUCENE-9372: Fix paths for cygwin/msys before gradle wrapper jar lookup.
   (Peter Barna)
 
+* LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
+  (Mark Harwood, Mike Drob)
+
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -148,6 +151,9 @@ API Changes
 
 * LUCENE-9339: MergeScheduler#merge doesn't accept a parameter if a new merge was found anymore.
   (Simon Willnauer)
+
+* LUCENE-9330: SortFields are now responsible for writing themselves into index headers if they
+  are used as index sorts.  (Alan Woodward, Uwe Schindler, Adrien Grand)
 
 * LUCENE-9340: Deprecate SimpleBindings#add(SortField). (Alan Woodward)
 
@@ -192,6 +198,12 @@ Improvements
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)
 
+* LUCENE-9359: SegmentInfos#readCommit now always returns a
+  CorruptIndexException if the content of the file is invalid. (Adrien Grand)
+  
+* LUCENE-9393: Make FunctionScoreQuery use ScoreMode.COMPLETE for creating the inner query weight when
+  ScoreMode.TOP_DOCS is requested. (Tomás Fernández Löbbe)
+
 Optimizations
 ---------------------
 
@@ -215,9 +227,7 @@ Optimizations
 * LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
   (Ignacio Vera)
 
-* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
-  up blowing up query caches which use query objects as cache keys, so building the automata is
-  now delayed to search time again.  (Alan Woodward, Mike Drob)
+* LUCENE-9148: Points now write their index in a separate file. (Adrien Grand)
 
 Bug Fixes
 ---------------------
@@ -284,7 +294,21 @@ Other
 
 Build
 
-* Upgrade forbiddenapis to version 3.0.  (Uwe Schindler)
+* Upgrade forbiddenapis to version 3.0.1.  (Uwe Schindler)
+
+* LUCENE-9376: Fix or suppress 20 resource leak precommit warnings in lucene/search
+  (Andras Salamon via Erick Erickson)
+
+* LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
+
+======================= Lucene 8.5.2 =======================
+
+Optimizations
+---------------------
+
+* LUCENE-9350: Partial reversion of LUCENE-9068; holding levenshtein automata on FuzzyQuery can end
+  up blowing up query caches which use query objects as cache keys, so building the automata is
+  now delayed to search time again.  (Alan Woodward, Mike Drob)
 
 ======================= Lucene 8.5.1 =======================
 

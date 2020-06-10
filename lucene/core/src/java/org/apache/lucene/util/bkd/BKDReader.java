@@ -39,7 +39,6 @@ import org.apache.lucene.util.MathUtil;
 public final class BKDReader extends PointValues implements Accountable {
 
   private static abstract class BKDInput extends DataInput implements Cloneable {
-    abstract long getMinLeafBlockFP();
     abstract long ramBytesUsed();
 
     abstract int getPosition();
@@ -54,26 +53,14 @@ public final class BKDReader extends PointValues implements Accountable {
   private static class BKDOffHeapInput extends BKDInput implements Cloneable {
 
     private final IndexInput packedIndex;
-    private final long minLeafBlockFP;
 
-    BKDOffHeapInput(IndexInput packedIndex) throws IOException {
+    BKDOffHeapInput(IndexInput packedIndex) {
       this.packedIndex = packedIndex;
-      this.minLeafBlockFP = packedIndex.clone().readVLong();
-    }
-
-    private BKDOffHeapInput(IndexInput packedIndex, long minLeadBlockFP) {
-      this.packedIndex = packedIndex;
-      this.minLeafBlockFP = minLeadBlockFP;
     }
 
     @Override
     public BKDOffHeapInput clone() {
-        return new BKDOffHeapInput(packedIndex.clone(), minLeafBlockFP);
-    }
-
-    @Override
-    long getMinLeafBlockFP() {
-      return minLeafBlockFP;
+        return new BKDOffHeapInput(packedIndex.clone());
     }
 
     @Override
@@ -105,28 +92,20 @@ public final class BKDReader extends PointValues implements Accountable {
   private static class BKDOnHeapInput extends BKDInput implements Cloneable {
 
     private final ByteArrayDataInput packedIndex;
-    private final long minLeafBlockFP;
 
     BKDOnHeapInput(IndexInput packedIndex, int numBytes) throws IOException {
       byte[] packedBytes = new byte[numBytes];
       packedIndex.readBytes(packedBytes, 0, numBytes);
       this.packedIndex = new ByteArrayDataInput(packedBytes);
-      this.minLeafBlockFP = this.packedIndex.clone().readVLong();
     }
 
-    private BKDOnHeapInput(ByteArrayDataInput packedIndex, long minLeadBlockFP) {
+    private BKDOnHeapInput(ByteArrayDataInput packedIndex) {
       this.packedIndex = packedIndex;
-      this.minLeafBlockFP = minLeadBlockFP;
     }
 
     @Override
     public BKDOnHeapInput clone() {
-      return new BKDOnHeapInput((ByteArrayDataInput)packedIndex.clone(), minLeafBlockFP);
-    }
-
-    @Override
-    long getMinLeafBlockFP() {
-      return minLeafBlockFP;
+      return new BKDOnHeapInput((ByteArrayDataInput)packedIndex.clone());
     }
 
     @Override
@@ -170,64 +149,74 @@ public final class BKDReader extends PointValues implements Accountable {
   final int version;
   protected final int packedBytesLength;
   protected final int packedIndexBytesLength;
+  final long minLeafBlockFP;
 
   final BKDInput packedIndex;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
-  public BKDReader(IndexInput in) throws IOException {
-    this(in, in instanceof ByteBufferIndexInput);
+  public BKDReader(IndexInput metaIn, IndexInput indexIn, IndexInput dataIn) throws IOException {
+    this(metaIn, indexIn, dataIn, indexIn instanceof ByteBufferIndexInput);
   }
 
   /**
    * Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned
    * and specify {@code true} to store BKD off-heap ({@code false} otherwise)
    */
-  public BKDReader(IndexInput in, boolean offHeap) throws IOException {
-    version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
-    numDataDims = in.readVInt();
+  public BKDReader(IndexInput metaIn, IndexInput indexIn, IndexInput dataIn, boolean offHeap) throws IOException {
+    version = CodecUtil.checkHeader(metaIn, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
+    numDataDims = metaIn.readVInt();
     if (version >= BKDWriter.VERSION_SELECTIVE_INDEXING) {
-      numIndexDims = in.readVInt();
+      numIndexDims = metaIn.readVInt();
     } else {
       numIndexDims = numDataDims;
     }
-    maxPointsInLeafNode = in.readVInt();
-    bytesPerDim = in.readVInt();
+    maxPointsInLeafNode = metaIn.readVInt();
+    bytesPerDim = metaIn.readVInt();
     packedBytesLength = numDataDims * bytesPerDim;
     packedIndexBytesLength = numIndexDims * bytesPerDim;
 
     // Read index:
-    numLeaves = in.readVInt();
+    numLeaves = metaIn.readVInt();
     assert numLeaves > 0;
     leafNodeOffset = numLeaves;
 
     minPackedValue = new byte[packedIndexBytesLength];
     maxPackedValue = new byte[packedIndexBytesLength];
 
-    in.readBytes(minPackedValue, 0, packedIndexBytesLength);
-    in.readBytes(maxPackedValue, 0, packedIndexBytesLength);
+    metaIn.readBytes(minPackedValue, 0, packedIndexBytesLength);
+    metaIn.readBytes(maxPackedValue, 0, packedIndexBytesLength);
 
     for(int dim=0;dim<numIndexDims;dim++) {
       if (Arrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) > 0) {
-        throw new CorruptIndexException("minPackedValue " + new BytesRef(minPackedValue) + " is > maxPackedValue " + new BytesRef(maxPackedValue) + " for dim=" + dim, in);
+        throw new CorruptIndexException("minPackedValue " + new BytesRef(minPackedValue) + " is > maxPackedValue " + new BytesRef(maxPackedValue) + " for dim=" + dim, metaIn);
       }
     }
     
-    pointCount = in.readVLong();
-    docCount = in.readVInt();
+    pointCount = metaIn.readVLong();
+    docCount = metaIn.readVInt();
 
-    int numBytes = in.readVInt();
-    IndexInput slice = in.slice("packedIndex", in.getFilePointer(), numBytes);
+    int numIndexBytes = metaIn.readVInt();
+    long indexStartPointer;
+    if (version >= BKDWriter.VERSION_META_FILE) {
+      minLeafBlockFP = metaIn.readLong();
+      indexStartPointer = metaIn.readLong();
+    } else {
+      indexStartPointer = indexIn.getFilePointer();
+      minLeafBlockFP = indexIn.readVLong();
+      indexIn.seek(indexStartPointer);
+    }
+    IndexInput slice = indexIn.slice("packedIndex", indexStartPointer, numIndexBytes);
     if (offHeap) {
       packedIndex = new BKDOffHeapInput(slice);
     } else {
-      packedIndex = new BKDOnHeapInput(slice, numBytes);
+      packedIndex = new BKDOnHeapInput(slice, numIndexBytes);
     }
 
-    this.in = in;
+    this.in = dataIn;
   }
 
   long getMinLeafBlockFP() {
-    return packedIndex.getMinLeafBlockFP();
+    return minLeafBlockFP;
   }
 
   /** Used to walk the in-heap index. The format takes advantage of the limited

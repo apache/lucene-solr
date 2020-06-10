@@ -39,10 +39,12 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     Map<String, Object[]> calls = new HashMap<>();
     CoreContainer mockCC = getCoreContainerMock(calls, new HashMap<>());
 
-    CoreAdminHandler  coreAdminHandler = new CoreAdminHandler(mockCC);
-    ApiBag apiBag = new ApiBag(false);
-    for (Api api : coreAdminHandler.getApis()) {
-      apiBag.register(api, Collections.EMPTY_MAP);
+    ApiBag apiBag;
+    try (CoreAdminHandler  coreAdminHandler = new CoreAdminHandler(mockCC)) {
+       apiBag = new ApiBag(false);
+       for (Api api : coreAdminHandler.getApis()) {
+         apiBag.register(api, Collections.EMPTY_MAP);
+       }
     }
     TestCollectionAPIs.makeCall(apiBag, "/cores", SolrRequest.METHOD.POST,
         "{create:{name: hello, instanceDir : someDir, schema: 'schema.xml'}}", mockCC);

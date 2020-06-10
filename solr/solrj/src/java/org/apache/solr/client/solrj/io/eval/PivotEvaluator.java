@@ -53,6 +53,7 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
     Object value4 = values[3];
 
     if(value1 instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Tuple> tuples = (List<Tuple>)value1;
       String x = (String)value2;
       x = x.replace("\"", "");
@@ -62,8 +63,8 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
       String vlabel = (String)value4;
       vlabel = vlabel.replace("\"", "");
 
-      Set<String> xset = new TreeSet();
-      Set<String> yset = new TreeSet();
+      Set<String> xset = new TreeSet<>();
+      Set<String> yset = new TreeSet<>();
 
       for(int i=0; i<tuples.size(); i++) {
         Tuple tuple = tuples.get(i);
@@ -73,8 +74,8 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
 
       double[][] data = new double[xset.size()][yset.size()];
 
-      List<String> xlabels = new ArrayList(xset.size());
-      Map<String, Integer> xindexes = new HashMap();
+      List<String> xlabels = new ArrayList<>(xset.size());
+      Map<String, Integer> xindexes = new HashMap<>();
       int xindex = 0;
       for (String xlabel :xset) {
         xlabels.add(xlabel);
@@ -82,8 +83,8 @@ public class PivotEvaluator extends RecursiveObjectEvaluator implements ManyValu
         ++xindex;
       }
 
-      List<String> ylabels = new ArrayList(yset.size());
-      Map<String, Integer> yindexes = new HashMap();
+      List<String> ylabels = new ArrayList<>(yset.size());
+      Map<String, Integer> yindexes = new HashMap<>();
       int yindex = 0;
       for (String ylabel : yset) {
         ylabels.add(ylabel);

@@ -27,6 +27,7 @@ public class FacetQuery extends FacetRequest {
   // query string or query?
   Query q;
 
+  @SuppressWarnings("rawtypes")
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     return new FacetQueryProcessor(fcontext, this);
@@ -34,7 +35,7 @@ public class FacetQuery extends FacetRequest {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetQueryMerger(this);
+    return new FacetModule.FacetQueryMerger(this);
   }
   
   @Override
@@ -49,7 +50,7 @@ public class FacetQuery extends FacetRequest {
 
 
 class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
-  FacetQueryProcessor(FacetRequest.FacetContext fcontext, FacetQuery freq) {
+  FacetQueryProcessor(FacetContext fcontext, FacetQuery freq) {
     super(fcontext, freq);
   }
 
@@ -61,7 +62,7 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
       // FIXME - what needs to be done here?
     }
     response = new SimpleOrderedMap<>();
-    fillBucket(response, freq.q, null, (fcontext.flags & FacetRequest.FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
+    fillBucket(response, freq.q, null, (fcontext.flags & FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
   }
 
 

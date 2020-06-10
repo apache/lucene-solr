@@ -127,6 +127,20 @@ Improvements
 
 * SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
+* SOLR-13325: ComputePlanAction now supports a collection selector of the form `collections: {policy: my_policy}`
+  which can be used to select multiple collections that match collection property/value pairs. This is useful to
+  maintain a whitelist of collections for which actions are taken without needing to hard code the collection names
+  themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
+  are not computed at all. (ab, shalin)
+
+* SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
+* SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
+  (David Smiley, Yasufumi Mizoguchi)
+
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -141,10 +155,13 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
-* SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
+* SOLR-13289: When the "minExactCount" parameters is provided in queries and it's value is lower than the number of hits,
   Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
   value of matching documents in the response (numFound) will be an approximation.
-  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe, David Smiley)
+
+* SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
+  (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -171,8 +188,6 @@ Bug Fixes
 
 * SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
 
-* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
-
 * SOLR-14371: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin UI Zookeeper Status
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
@@ -185,11 +200,36 @@ Bug Fixes
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez via Houston Putman)
 
-* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
-  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
-
 * SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
   (Steve Molloy, Isabelle Giguere, David Smiley)
+
+* SOLR-14492: Fix ArrayIndexOutOfBoundsException in json.facet 'terms' when FacetFieldProcessorByHashDV is
+  used with aggregations over multivalued numeric fields (hossman)
+
+* SOLR-14477: Fix incorrect 'relatedness()' calculations in json.facet 'terms' when 'prefix' option is used
+  (hossman)
+
+* SOLR-14504: ZkController LiveNodesListener has NullPointerException in startup race.
+  (Colvin Cowie via ab)
+
+* SOLR-14498: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue. (Jakub Zytka, ab)
+
+* SOLR-14517: Dont ignore 'mm' localparam on edismax queries using operators (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14491: Intercepting internode requests in KerberosPlugin when HTTP/2 client is used (Ishan Chattopadhyaya, Moshe Bla)
+
+* SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
+
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
+* SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
+  (Michael Gibney, hossman)
+
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
 
 Other Changes
 ---------------------
@@ -229,6 +269,8 @@ Other Changes
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
+* SOLR-14461: Replaced commons-fileupload dependency with using Jetty's facilities. (David Smiley)
+
 * SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
 
 * SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
@@ -239,7 +281,57 @@ Other Changes
 * SOLR-14226: Fix or suppress 14 resource leak warnings in apache/solr/core (Andras Salaman via
   Erick Erickson)
 
-* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via Erick Erickson)
+* SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
+
+* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
+  Erick Erickson)
+
+* SOLR-14495: Fix or suppress warnings in solr/search/function (Erick Erickson)
+
+* SOLR-14280: Improve error reporting in SolrConfig (Andras Salamon via Jason Gerlowski)
+
+* SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
+
+* SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
+
+* SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
+
+* SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
+
+* SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
+* SOLR-14538: Fix or suppress remaining warnings in apache/solr/handler (Erick Erickson)
+
+* SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
+
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
+
+* SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
+
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream
+
+==================  8.5.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
+
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
 
 ==================  8.5.1 ==================
 

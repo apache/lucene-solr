@@ -405,8 +405,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_FIELD, f);
     args.put("f." + f +".stats.calcdistinct","true");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-
 
     for (SolrParams baseParams : new SolrParams[] {
         params("stats.field", f, "stats", "true", "f." + f +".stats.calcdistinct","true"),

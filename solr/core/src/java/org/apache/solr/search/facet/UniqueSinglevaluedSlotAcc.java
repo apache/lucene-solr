@@ -36,7 +36,7 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   LongValues toGlobal;
   SortedDocValues subDv;
 
-  public UniqueSinglevaluedSlotAcc(FacetRequest.FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSinglevaluedSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext, field, numSlots, factory);
   }
 

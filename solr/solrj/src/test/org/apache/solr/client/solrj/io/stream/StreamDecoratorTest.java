@@ -2296,7 +2296,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       
       assertEquals(1, tuples.size());
-      assertFalse(tuples.get(0).fields.containsKey("extra_s"));
+      assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
     
     } finally {
       solrClientCache.close();
@@ -4467,7 +4467,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
+        if(!tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
         }
       }
@@ -4477,7 +4477,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(tuple.fields.containsKey(field)){
+        if(tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }

@@ -53,6 +53,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.<p>
    */
+  @SuppressWarnings({"rawtypes"})
   static NamedList createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
                                     String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request

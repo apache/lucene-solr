@@ -75,7 +75,6 @@ dependencies {
   })
 
   implementation 'com.tdunning:t-digest'
-  implementation 'commons-fileupload:commons-fileupload'
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'io.opentracing:opentracing-noop'

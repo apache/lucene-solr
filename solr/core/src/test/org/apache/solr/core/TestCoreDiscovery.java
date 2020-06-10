@@ -397,7 +397,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNull(cc.getCore("core0"));
 
       SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir().toAbsolutePath().toString(), containsString("relative"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();

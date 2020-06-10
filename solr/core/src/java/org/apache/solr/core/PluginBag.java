@@ -69,6 +69,7 @@ public class PluginBag<T> implements AutoCloseable {
   private final Map<String, PluginHolder<T>> registry;
   private final Map<String, PluginHolder<T>> immutableRegistry;
   private String def;
+  @SuppressWarnings({"rawtypes"})
   private final Class klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
@@ -119,6 +120,7 @@ public class PluginBag<T> implements AutoCloseable {
   /**
    * Check if any of the mentioned names are missing. If yes, return the Set of missing names
    */
+  @SuppressWarnings({"unchecked"})
   public Set<String> checkContains(Collection<String> names) {
     if (names == null || names.isEmpty()) return Collections.EMPTY_SET;
     HashSet<String> result = new HashSet<>();
@@ -126,6 +128,7 @@ public class PluginBag<T> implements AutoCloseable {
     return result;
   }
 
+  @SuppressWarnings({"unchecked"})
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       if (log.isDebugEnabled()) {
@@ -148,7 +151,7 @@ public class PluginBag<T> implements AutoCloseable {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
         return holder;
       } else {
-        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        T inst = SolrCore.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
@@ -208,6 +211,7 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
+  @SuppressWarnings({"unchecked"})
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
@@ -382,14 +386,21 @@ public class PluginBag<T> implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
       // TODO: there may be a race here.  One thread can be creating a plugin
       // and another thread can come along and close everything (missing the plugin
       // that is in the state of being created and will probably never have close() called on it).
       // can close() be called concurrently with other methods?
       if (isLoaded()) {
         T myInst = get();
-        if (myInst != null && myInst instanceof AutoCloseable) ((AutoCloseable) myInst).close();
+        // N.B. instanceof returns false if myInst is null
+        if (myInst instanceof AutoCloseable) {
+          try {
+            ((AutoCloseable) myInst).close();
+          } catch (Exception e) {
+            log.error("Error closing {}", inst , e);
+          }
+        }
       }
     }
 
@@ -459,10 +470,11 @@ public class PluginBag<T> implements AutoCloseable {
         MemClassLoader loader = (MemClassLoader) resourceLoader;
         loader.loadJars();
       }
+      @SuppressWarnings({"unchecked"})
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
       T localInst = null;
       try {
-        localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+        localInst = SolrCore.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
       } catch (SolrException e) {
         if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
           throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
@@ -489,8 +501,6 @@ public class PluginBag<T> implements AutoCloseable {
       lazyInst = localInst;  // only assign the volatile until after the plugin is completely ready to use
       return true;
     }
-
-
   }
 
   /**
@@ -526,9 +536,7 @@ public class PluginBag<T> implements AutoCloseable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest)  );
         }
         log.info("dynamic library verified {}, sha512: {}", url, sha512);
-
       }
-
     }
 
     public RuntimeLib(SolrCore core) {
@@ -539,6 +547,7 @@ public class PluginBag<T> implements AutoCloseable {
       return url;
     }
 
+    @SuppressWarnings({"unchecked"})
     void loadJar() {
       if (jarContent != null) return;
       synchronized (this) {
@@ -601,7 +610,7 @@ public class PluginBag<T> implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
       if (jarContent != null) coreContainer.getBlobRepository().decrementBlobRefCount(jarContent);
     }
 

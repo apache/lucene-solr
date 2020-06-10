@@ -146,6 +146,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       ExecutorUtil.shutdownAndAwaitTermination(bootstrapExecutor);
     }
     this.closeLogReaders();
+    @SuppressWarnings({"rawtypes"})
     Callable callable = core.getSolrCoreState().getCdcrBootstrapCallable();
     if (callable != null)  {
       CdcrRequestHandler.BootstrapCallable bootstrapCallable = (CdcrRequestHandler.BootstrapCallable) callable;
@@ -201,9 +202,11 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.ACTION, CdcrParams.CdcrAction.COLLECTIONCHECKPOINT.toString());
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath(path);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList response = state.getClient().request(request);
     return (Long) response.get(CdcrParams.CHECKPOINT);
   }
@@ -364,6 +367,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
         log.info("Attempting to bootstrap target collection: {} shard: {} leader: {}", targetCollection, shard, leaderCoreUrl);
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.MASTER_URL, myCoreUrl);
           log.debug("CDCR Bootstrap response: {}", response);
           String status = response.get(RESPONSE_STATUS).toString();
@@ -384,6 +388,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         String leaderCoreUrl = leader.getCoreUrl();
         HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
         try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+          @SuppressWarnings({"rawtypes"})
           NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP_STATUS);
           String status = (String) response.get(RESPONSE_STATUS);
           BootstrapStatus bootstrapStatus = BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));
@@ -410,6 +415,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList sendCdcrCommand(SolrClient client, CdcrParams.CdcrAction action, String... params) throws SolrServerException, IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(CommonParams.QT, "/cdcr");

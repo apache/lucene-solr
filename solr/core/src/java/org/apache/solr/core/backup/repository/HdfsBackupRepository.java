@@ -49,6 +49,7 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
+  @SuppressWarnings("rawtypes")
   private NamedList config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 

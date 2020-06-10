@@ -18,14 +18,13 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.inference.GTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 
 public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator implements TwoValueWorker {
@@ -38,7 +37,9 @@ public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator impleme
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
+    @SuppressWarnings({"unchecked"})
     List<Number> listA = (List<Number>) value1;
+    @SuppressWarnings({"unchecked"})
     List<Number> listB = (List<Number>) value2;
 
     long[] sampleA = new long[listA.size()];
@@ -56,9 +57,9 @@ public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator impleme
     double g = gTest.gDataSetsComparison(sampleA, sampleB);
     double p = gTest.gTestDataSetsComparison(sampleA, sampleB);
 
-    Map<String,Number> m = new HashMap<>();
-    m.put("G-statistic", g);
-    m.put("p-value", p);
-    return new Tuple(m);
+   Tuple tuple = new Tuple();
+    tuple.put("G-statistic", g);
+    tuple.put(StreamParams.P_VALUE, p);
+    return tuple;
   }
 }

@@ -225,170 +225,170 @@ public class CharArr implements CharSequence, Appendable {
     write(c);
     return this;
   }
-}
 
 
-class NullCharArr extends CharArr {
-  public NullCharArr() {
-    super(new char[1], 0, 0);
-  }
-
-  @Override
-  public void unsafeWrite(char b) {
-  }
-
-  @Override
-  public void unsafeWrite(char b[], int off, int len) {
-  }
-
-  @Override
-  public void unsafeWrite(int b) {
-  }
-
-  @Override
-  public void write(char b) {
-  }
-
-  @Override
-  public void write(char b[], int off, int len) {
-  }
-
-  @Override
-  public void reserve(int num) {
-  }
-
-  @Override
-  protected void resize(int len) {
-  }
-
-  @Override
-  public Appendable append(CharSequence csq, int start, int end) throws IOException {
-    return this;
-  }
-
-  @Override
-  public char charAt(int index) {
-    return 0;
-  }
-
-  @Override
-  public void write(String s, int stringOffset, int len) {
-  }
-}
-
-
-// IDEA: a subclass that refills the array from a reader?
-class CharArrReader extends CharArr {
-  protected final Reader in;
-
-  public CharArrReader(Reader in, int size) {
-    super(size);
-    this.in = in;
-  }
-
-  @Override
-  public int read() throws IOException {
-    if (start >= end) fill();
-    return start >= end ? -1 : buf[start++];
-  }
-
-  @Override
-  public int read(CharBuffer cb) throws IOException {
-    // empty the buffer and then read direct
-    int sz = size();
-    if (sz > 0) cb.put(buf, start, end);
-    int sz2 = in.read(cb);
-    if (sz2 >= 0) return sz + sz2;
-    return sz > 0 ? sz : -1;
-  }
-
-  @Override
-  public int fill() throws IOException {
-    if (start >= end) {
-      reset();
-    } else if (start > 0) {
-      System.arraycopy(buf, start, buf, 0, size());
-      end = size();
-      start = 0;
+  static class NullCharArr extends CharArr {
+    public NullCharArr() {
+      super(new char[1], 0, 0);
     }
-    /***
-     // fill fully or not???
-     do {
-     int sz = in.read(buf,end,buf.length-end);
-     if (sz==-1) return;
-     end+=sz;
-     } while (end < buf.length);
-     ***/
 
-    int sz = in.read(buf, end, buf.length - end);
-    if (sz > 0) end += sz;
-    return sz;
-  }
-
-}
-
-
-class CharArrWriter extends CharArr {
-  protected Writer sink;
-
-  @Override
-  public void flush() {
-    try {
-      sink.write(buf, start, end - start);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    @Override
+    public void unsafeWrite(char b) {
     }
-    start = end = 0;
-  }
 
-  @Override
-  public void write(char b) {
-    if (end >= buf.length) {
-      flush();
+    @Override
+    public void unsafeWrite(char b[], int off, int len) {
     }
-    unsafeWrite(b);
+
+    @Override
+    public void unsafeWrite(int b) {
+    }
+
+    @Override
+    public void write(char b) {
+    }
+
+    @Override
+    public void write(char b[], int off, int len) {
+    }
+
+    @Override
+    public void reserve(int num) {
+    }
+
+    @Override
+    protected void resize(int len) {
+    }
+
+    @Override
+    public Appendable append(CharSequence csq, int start, int end) throws IOException {
+      return this;
+    }
+
+    @Override
+    public char charAt(int index) {
+      return 0;
+    }
+
+    @Override
+    public void write(String s, int stringOffset, int len) {
+    }
   }
 
-  @Override
-  public void write(char b[], int off, int len) {
-    int space = buf.length - end;
-    if (len < space) {
-      unsafeWrite(b, off, len);
-    } else if (len < buf.length) {
-      unsafeWrite(b, off, space);
-      flush();
-      unsafeWrite(b, off + space, len - space);
-    } else {
-      flush();
+
+  // IDEA: a subclass that refills the array from a reader?
+  class CharArrReader extends CharArr {
+    protected final Reader in;
+
+    public CharArrReader(Reader in, int size) {
+      super(size);
+      this.in = in;
+    }
+
+    @Override
+    public int read() throws IOException {
+      if (start >= end) fill();
+      return start >= end ? -1 : buf[start++];
+    }
+
+    @Override
+    public int read(CharBuffer cb) throws IOException {
+      // empty the buffer and then read direct
+      int sz = size();
+      if (sz > 0) cb.put(buf, start, end);
+      int sz2 = in.read(cb);
+      if (sz2 >= 0) return sz + sz2;
+      return sz > 0 ? sz : -1;
+    }
+
+    @Override
+    public int fill() throws IOException {
+      if (start >= end) {
+        reset();
+      } else if (start > 0) {
+        System.arraycopy(buf, start, buf, 0, size());
+        end = size();
+        start = 0;
+      }
+      /***
+       // fill fully or not???
+       do {
+       int sz = in.read(buf,end,buf.length-end);
+       if (sz==-1) return;
+       end+=sz;
+       } while (end < buf.length);
+       ***/
+
+      int sz = in.read(buf, end, buf.length - end);
+      if (sz > 0) end += sz;
+      return sz;
+    }
+
+  }
+
+
+  class CharArrWriter extends CharArr {
+    protected Writer sink;
+
+    @Override
+    public void flush() {
       try {
-        sink.write(b, off, len);
+        sink.write(buf, start, end - start);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+      start = end = 0;
     }
-  }
 
-  @Override
-  public void write(String s, int stringOffset, int len) {
-    int space = buf.length - end;
-    if (len < space) {
-      s.getChars(stringOffset, stringOffset + len, buf, end);
-      end += len;
-    } else if (len < buf.length) {
-      // if the data to write is small enough, buffer it.
-      s.getChars(stringOffset, stringOffset + space, buf, end);
-      flush();
-      s.getChars(stringOffset + space, stringOffset + len, buf, 0);
-      end = len - space;
-    } else {
-      flush();
-      // don't buffer, just write to sink
-      try {
-        sink.write(s, stringOffset, len);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    @Override
+    public void write(char b) {
+      if (end >= buf.length) {
+        flush();
       }
+      unsafeWrite(b);
+    }
 
+    @Override
+    public void write(char b[], int off, int len) {
+      int space = buf.length - end;
+      if (len < space) {
+        unsafeWrite(b, off, len);
+      } else if (len < buf.length) {
+        unsafeWrite(b, off, space);
+        flush();
+        unsafeWrite(b, off + space, len - space);
+      } else {
+        flush();
+        try {
+          sink.write(b, off, len);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    @Override
+    public void write(String s, int stringOffset, int len) {
+      int space = buf.length - end;
+      if (len < space) {
+        s.getChars(stringOffset, stringOffset + len, buf, end);
+        end += len;
+      } else if (len < buf.length) {
+        // if the data to write is small enough, buffer it.
+        s.getChars(stringOffset, stringOffset + space, buf, end);
+        flush();
+        s.getChars(stringOffset + space, stringOffset + len, buf, 0);
+        end = len - space;
+      } else {
+        flush();
+        // don't buffer, just write to sink
+        try {
+          sink.write(s, stringOffset, len);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+
+      }
     }
   }
 }
