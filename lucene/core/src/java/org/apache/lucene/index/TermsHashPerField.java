@@ -34,8 +34,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   // Copied from our perThread
   private final IntBlockPool intPool;
   final ByteBlockPool bytePool;
-
-
   private int[] intUptos;
   private int intUptoStart;
 
