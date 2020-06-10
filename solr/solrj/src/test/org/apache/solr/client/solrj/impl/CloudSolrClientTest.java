@@ -761,6 +761,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public ExpectedException exception = ExpectedException.none();
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12823")
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
