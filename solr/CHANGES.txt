@@ -163,6 +163,8 @@ Optimizations
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
 
+* SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
