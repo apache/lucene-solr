@@ -91,6 +91,10 @@ public class Tuple implements Cloneable, MapWriter {
       throw new RuntimeException("must have a matching number of key-value pairs");
     }
     for (int i = 0; i < fields.length; i += 2) {
+      // skip empty entries
+      if (fields[i] == null) {
+        continue;
+      }
       put(fields[i], fields[i + 1]);
     }
   }
