@@ -1035,7 +1035,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           state.segmentInfo.getId(), state.segmentSuffix);
 
       metaOut.writeVInt(fields.size());
-      
       for (ByteBuffersDataOutput fieldMeta : fields) {
         fieldMeta.copyTo(metaOut);
       }
