@@ -134,12 +134,18 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public void finish() throws IOException {
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<String> outTerms = new ArrayList();
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Integer> outFreq = new ArrayList();
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Integer> outQueryFreq = new ArrayList();
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Double> scores = new ArrayList();
 
+      @SuppressWarnings({"unchecked", "rawtypes"})
       NamedList<Integer> allFreq = new NamedList();
+      @SuppressWarnings({"unchecked", "rawtypes"})
       NamedList<Integer> allQueryFreq = new NamedList();
 
       LinkedHashMap<String, Object> response = new LinkedHashMap<>();

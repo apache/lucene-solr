@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -107,14 +106,12 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    while(true) {
+    while (true) {
       if (currentStream == null) {
         if (streamIndex < streams.length) {
           currentStream = streams[streamIndex];
         } else {
-          HashMap map = new HashMap();
-          map.put("EOF", true);
-          return new Tuple(map);
+          return Tuple.EOF();
         }
       }
 

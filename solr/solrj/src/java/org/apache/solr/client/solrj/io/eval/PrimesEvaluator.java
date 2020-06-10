@@ -44,7 +44,7 @@ public class PrimesEvaluator extends RecursiveNumericEvaluator implements ManyVa
 
     int sizeNum = ((Number)values[0]).intValue();
     int startNum = ((Number)values[1]).intValue();
-    List<Number> primes = new ArrayList();
+    List<Number> primes = new ArrayList<>();
 
     for(int i=0; i< sizeNum; i++) {
       int prime = Primes.nextPrime(startNum);

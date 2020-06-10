@@ -52,6 +52,7 @@ public class LoessEvaluator extends RecursiveNumericEvaluator implements ManyVal
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... objects) throws IOException{
 
     Object first = objects[0];
@@ -75,7 +76,7 @@ public class LoessEvaluator extends RecursiveNumericEvaluator implements ManyVal
     LoessInterpolator interpolator = new LoessInterpolator(bandwidth, robustIterations);
     double[] smooth = interpolator.smooth(x, y);
 
-    List<Number> list = new ArrayList();
+    List<Number> list = new ArrayList<>();
     for(double yvalue : smooth) {
       list.add(yvalue);
     }

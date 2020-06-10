@@ -88,6 +88,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
@@ -182,7 +183,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
-      @SuppressWarnings("unchecked")
       Map<String, Object> routerProps = (Map<String, Object>) backupCollectionState.getProperties().get(DocCollection.DOC_ROUTER);
       for (Map.Entry<String, Object> pair : routerProps.entrySet()) {
         propMap.put(DocCollection.DOC_ROUTER + "." + pair.getKey(), pair.getValue());

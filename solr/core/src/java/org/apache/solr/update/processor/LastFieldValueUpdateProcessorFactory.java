@@ -59,6 +59,7 @@ public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubset
 
     if (values instanceof List) {
       // optimize index lookup
+      @SuppressWarnings({"rawtypes"})
       List l = (List)values;
       result = l.get(l.size()-1);
     } else if (values instanceof SortedSet) {

@@ -55,7 +55,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Collection pickSubset(Collection values) {
     Collection result = values;
     try {

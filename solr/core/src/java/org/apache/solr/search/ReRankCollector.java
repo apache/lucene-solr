@@ -42,8 +42,10 @@ import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
 
 /* A TopDocsCollector used by reranking queries. */
+@SuppressWarnings({"rawtypes"})
 public class ReRankCollector extends TopDocsCollector {
 
+  @SuppressWarnings({"rawtypes"})
   final private TopDocsCollector  mainCollector;
   final private IndexSearcher searcher;
   final private int reRankDocs;
@@ -54,6 +56,7 @@ public class ReRankCollector extends TopDocsCollector {
   final private Query query;
 
 
+  @SuppressWarnings({"unchecked"})
   public ReRankCollector(int reRankDocs,
       int length,
       Rescorer reRankQueryRescorer,
@@ -92,6 +95,7 @@ public class ReRankCollector extends TopDocsCollector {
     return sort == null || sort.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
+  @SuppressWarnings({"unchecked"})
   public TopDocs topDocs(int start, int howMany) {
 
     try {
@@ -152,6 +156,7 @@ public class ReRankCollector extends TopDocsCollector {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static class BoostedComp implements Comparator {
     IntFloatHashMap boostedMap;
 

@@ -74,7 +74,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -136,10 +136,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
-                          NamedList results, String asyncId, ZkNodeProps message) throws Exception {
+                          @SuppressWarnings({"rawtypes"})NamedList results, String asyncId, ZkNodeProps message) throws Exception {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     if (clusterState.hasCollection(tempSourceCollectionName)) {

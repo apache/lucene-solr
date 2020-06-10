@@ -231,6 +231,8 @@ Optimizations
 * LUCENE-9087: Build always trees with full leaves and lower the default value for maxPointsPerLeafNode to 512.
   (Ignacio Vera)
 
+* LUCENE-9148: Points now write their index in a separate file. (Adrien Grand)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
