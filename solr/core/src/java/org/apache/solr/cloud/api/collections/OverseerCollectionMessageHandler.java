@@ -50,7 +50,6 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerMessageHandler;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -867,26 +866,25 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
+  // -1 is not a possible batchSessionId so -1 will force initialization of lockSession
   private long sessionId = -1;
   private LockTree.Session lockSession;
 
   @Override
-  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
-    if (lockSession == null || sessionId != taskBatch.getId()) {
+  public Lock lockTask(ZkNodeProps message, long batchSessionId) {
+    if (sessionId != batchSessionId) {
       //this is always called in the same thread.
       //Each batch is supposed to have a new taskBatch
       //So if taskBatch changes we must create a new Session
-      // also check if the running tasks are empty. If yes, clear lockTree
-      // this will ensure that locks are not 'leaked'
-      if(taskBatch.getRunningTasks() == 0) lockTree.clear();
       lockSession = lockTree.getSession();
+      sessionId = batchSessionId;
     }
+
     return lockSession.lock(getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
         Arrays.asList(
             getTaskKey(message),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             message.getStr(ZkStateReader.REPLICA_PROP))
-
     );
   }
 
