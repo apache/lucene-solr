@@ -292,6 +292,8 @@ Other
 
 * LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
 
+* LUCENE-9398: Always keep BKD index off-heap. BKD reader does not implement Accountable any more. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 3.0.1.  (Uwe Schindler)
