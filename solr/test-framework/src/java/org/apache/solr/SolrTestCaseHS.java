@@ -45,12 +45,14 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -225,12 +227,15 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       query.setPath(path);
     }
 
-    query.setResponseParser(new NoOpResponseParser(wt));
-    NamedList<Object> rsp = client.request(query);
-
-    String raw = (String)rsp.get("response");
-
-    return raw;
+    if ("json".equals(wt)) {
+      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      NamedList<Object> rsp = client.request(query);
+      return Utils.toJSONString(rsp);
+    } else {
+      query.setResponseParser(new NoOpResponseParser(wt));
+      NamedList<Object> rsp = client.request(query);
+      return  (String)rsp.get("response");
+    }
   }
 
   public static String getQueryResponse(String wt, SolrParams params) throws Exception {
