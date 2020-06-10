@@ -573,7 +573,6 @@ public class Policy implements MapWriter {
       } catch (Exception e) {
         log.trace("-- session created, can't obtain cluster state", e);
       }
-      this.znodeVersion = state != null ? state.getZNodeVersion() : -1;
       this.nodes = new ArrayList<>(cloudManager.getClusterStateProvider().getLiveNodes());
       this.cloudManager = cloudManager;
       for (String node : nodes) {
@@ -614,7 +613,7 @@ public class Policy implements MapWriter {
     /**
      * Creates a new Session and updates the Rows in the internal matrix to reference this session.
      */
-    private Session(List<String> nodes, SolrCloudManager cloudManager,
+   private Session(List<String> nodes, SolrCloudManager cloudManager,
                    List<Row> matrix, Set<String> collections, List<Clause> expandedClauses, int znodeVersion,
                    NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction) {
       this.transaction = transaction;
@@ -624,7 +623,6 @@ public class Policy implements MapWriter {
       this.collections = collections;
       this.matrix = matrix;
       this.expandedClauses = expandedClauses;
-      this.znodeVersion = znodeVersion;
       this.nodeStateProvider = nodeStateProvider;
       for (Row row : matrix) row.session = this;
     }
@@ -762,7 +760,6 @@ public class Policy implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("znodeVersion", znodeVersion);
       for (Row row : matrix) {
         ew.put(row.node, row);
       }

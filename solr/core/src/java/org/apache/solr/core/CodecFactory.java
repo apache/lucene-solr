@@ -25,7 +25,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class CodecFactory implements NamedListInitializedPlugin {
   @Override
-  public void init(NamedList args) {  
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
   }
   
   public abstract Codec getCodec();

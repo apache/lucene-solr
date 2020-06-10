@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'java-library'
+apply plugin: 'java'
+// NOT a 'java-library'.  Maybe 'application' but seems too limiting.
 
 description = 'System for benchmarking Lucene'
 
 dependencies {  
-  api project(':lucene:core')
+  implementation project(':lucene:core')
 
   implementation project(':lucene:analysis:common')
   implementation project(':lucene:facet')
@@ -37,5 +37,120 @@ dependencies {
     exclude module: "xml-apis"
   })
 
+  runtimeOnly project(':lucene:analysis:icu')
+
   testImplementation project(':lucene:test-framework')
+}
+
+def tempDir = file("temp")
+def workDir = file("work")
+
+task run(type: JavaExec) {
+  description "Run a perf test (optional: -PtaskAlg=conf/your-algorithm-file -PmaxHeapSize=1G)"
+  main 'org.apache.lucene.benchmark.byTask.Benchmark'
+  classpath sourceSets.main.runtimeClasspath
+  // allow these to be specified on the CLI via -PtaskAlg=  for example
+  args = [propertyOrDefault('taskAlg', 'conf/micro-standard.alg')]
+
+  maxHeapSize = propertyOrDefault('maxHeapSize', '1G')
+
+  String stdOutStr = propertyOrDefault('standardOutput', null)
+  if (stdOutStr != null) {
+    standardOutput = new File(stdOutStr).newOutputStream()
+  }
+
+  debugOptions {
+    enabled = false
+    port = 5005
+    suspend = true
+  }
+}
+
+/* Old "collation" Ant target:
+gradle getTop100kWikiWordFiles run -PtaskAlg=conf/collation.alg -PstandardOutput=work/collation.benchmark.output.txt
+perl -CSD scripts/collation.bm2jira.pl work/collation.benchmark.output.txt
+ */
+
+/* Old "shingle" Ant target:
+gradle getReuters run -PtaskAlg=conf/shingle.alg -PstandardOutput=work/shingle.benchmark.output.txt
+perl -CSD scripts/shingle.bm2jira.pl work/shingle.benchmark.output.txt
+ */
+
+// The remaining tasks just get / extract / prepare data
+
+task getEnWiki(type: Download) {
+  def finalName = "enwiki-20070527-pages-articles.xml"
+  src "https://home.apache.org/~dsmiley/data/" + finalName + ".bz2"
+  dest file("$tempDir/" + finalName + ".bz2")
+  overwrite false
+  compress false
+
+  doLast {
+    ant.bunzip2(src: dest, dest: tempDir)
+  }
+  outputs.file file("$tempDir/$finalName")
+}
+
+task getGeoNames(type: Download) {
+  // note: latest data is at: https://download.geonames.org/export/dump/allCountries.zip
+  //       and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
+  //       and then compress with: bzip2 -9 -k file_random.txt
+  def finalName = "geonames_20130921_randomOrder_allCountries.txt"
+  src "https://home.apache.org/~dsmiley/data/" + finalName + ".bz2"
+  dest file("$tempDir/" + finalName + ".bz2")
+  overwrite false
+  compress false
+
+  doLast {
+    ant.bunzip2(src: dest, dest: tempDir) // will chop off .bz2
+  }
+  outputs.file file("$tempDir/$finalName")
+}
+
+task getTop100kWikiWordFiles(type: Download) {
+  src "https://home.apache.org/~rmuir/wikipedia/top.100k.words.de.en.fr.uk.wikipedia.2009-11.tar.bz2"
+  dest file("$tempDir/${src.file.split('/').last()}")
+  overwrite false
+  compress false
+
+  def finalPath = file("$workDir/top100k-out")
+
+  doLast {
+    project.sync {
+      from tarTree(dest) // defined above.  Will decompress on the fly
+      into finalPath
+    }
+  }
+  outputs.dir finalPath
+}
+
+task getReuters(type: Download) {
+  // note: there is no HTTPS url and we don't care because this is merely test/perf data
+  src "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
+  dest file("$tempDir/${src.file.split('/').last()}")
+  overwrite false
+  compress false
+
+  def untarPath = file("$workDir/reuters")
+  def finalPath = file("$workDir/reuters-out")
+  dependsOn sourceSets.main.runtimeClasspath
+
+  doLast {
+    project.sync {
+      from(tarTree(dest)) { // defined above.  Will decompress on the fly
+        exclude '*.txt'
+      }
+      into untarPath
+    }
+    println "Extracting reuters to $finalPath"
+    finalPath.deleteDir() // necessary
+    // TODO consider porting ExtractReuters to groovy?
+    project.javaexec {
+      main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
+      classpath = sourceSets.main.runtimeClasspath
+      maxHeapSize = '1G'
+      args = [untarPath, finalPath]
+    }
+  }
+  outputs.dir finalPath
 }

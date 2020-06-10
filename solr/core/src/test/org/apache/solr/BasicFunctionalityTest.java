@@ -53,6 +53,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -231,7 +232,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             ,"//*[@numFound='0']"
             );
     
-    assertU(h.simpleTag("rollback"));
+    assertU(BaseTestHarness.simpleTag("rollback"));
     assertU(commit());
   }
 

@@ -186,7 +186,7 @@
  * An optional file indicating which documents are live.
  * </li>
  * <li>
- * {@link org.apache.lucene.codecs.lucene60.Lucene60PointsFormat Point values}.
+ * {@link org.apache.lucene.codecs.lucene86.Lucene86PointsFormat Point values}.
  * Optional pair of files, recording dimensionally indexed fields, to enable fast
  * numeric range filtering and large numeric values like BigInteger and BigDecimal (1D)
  * and geographic shape intersection (2D, 3D).
@@ -310,7 +310,7 @@
  * <td>Info about what documents are live</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene60.Lucene60PointsFormat Point values}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene86.Lucene86PointsFormat Point values}</td>
  * <td>.dii, .dim</td>
  * <td>Holds indexed points, if any</td>
  * </tr>

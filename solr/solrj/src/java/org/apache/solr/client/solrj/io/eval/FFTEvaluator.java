@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class FFTEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  private static List<String> clabels = new ArrayList();
+  private static List<String> clabels = new ArrayList<>();
 
   static {
     clabels.add("real");

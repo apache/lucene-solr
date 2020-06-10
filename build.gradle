@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '3.0' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
   id "de.undercouch.download" version "4.0.2" apply false
 }
@@ -54,6 +54,8 @@ ext {
     }
     return m[0][1] as int
   }
+  // snapshot build marker used in scripts.
+  snapshotBuild = version.contains("SNAPSHOT")
 
   // Build timestamp.
   def tstamp = ZonedDateTime.now()

@@ -22,6 +22,7 @@ import java.util.List;
 /**
  * Expression containing a function and set of parameters
  */
+@SuppressWarnings({"overrides"})
 public class StreamExpression implements StreamExpressionParameter {
   private String functionName;
   private List<StreamExpressionParameter> parameters;

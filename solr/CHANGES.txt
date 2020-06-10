@@ -74,6 +74,9 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
+ * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
+   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -83,13 +86,18 @@ New Features
 * SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
   To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
-* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK direcory (noble)
+* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK directory (noble)
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
 * SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
 
 * SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
+
+* SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
+  timeseries Streaming Expressions (Joel Bernstein)
+
+* SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
 
 Improvements
 ---------------------
@@ -126,6 +134,12 @@ Improvements
   are not computed at all. (ab, shalin)
 
 * SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
+* SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
+  (David Smiley, Yasufumi Mizoguchi)
+
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
 Optimizations
 ---------------------
@@ -200,6 +214,23 @@ Bug Fixes
 
 * SOLR-14498: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue. (Jakub Zytka, ab)
 
+* SOLR-14517: Dont ignore 'mm' localparam on edismax queries using operators (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14491: Intercepting internode requests in KerberosPlugin when HTTP/2 client is used (Ishan Chattopadhyaya, Moshe Bla)
+
+* SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
+
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
+* SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
+  (Michael Gibney, hossman)
+
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -252,7 +283,6 @@ Other Changes
 
 * SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
 
-
 * SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
   Erick Erickson)
 
@@ -261,6 +291,35 @@ Other Changes
 * SOLR-14280: Improve error reporting in SolrConfig (Andras Salamon via Jason Gerlowski)
 
 * SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
+
+* SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
+
+* SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
+
+* SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
+
+* SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
+* SOLR-14538: Fix or suppress remaining warnings in apache/solr/handler (Erick Erickson)
+
+* SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
+
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
+
+* SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
+
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream
 
 ==================  8.5.2 ==================
 

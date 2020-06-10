@@ -67,13 +67,14 @@ public class NormalizeSumEvaluator extends RecursiveObjectEvaluator implements M
       m.setColumnLabels(matrix.getColumnLabels());
       return m;
     } else if(value instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> vals = (List<Number>)value;
       double[] doubles = new double[vals.size()];
       for(int i=0; i<doubles.length; i++) {
         doubles[i] = vals.get(i).doubleValue();
       }
 
-      List<Number> unitList = new ArrayList(doubles.length);
+      List<Number> unitList = new ArrayList<>(doubles.length);
       double[] unitArray = MathArrays.normalizeArray(doubles, sumTo);
       for(double d : unitArray) {
         unitList.add(d);
