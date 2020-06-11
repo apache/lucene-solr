@@ -39,12 +39,6 @@ public class LockTree {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Node root = new Node(null, LockLevel.CLUSTER, null);
 
-  public void clear() {
-    synchronized (this) {
-      root.clear();
-    }
-  }
-
   private class LockImpl implements Lock {
     final Node node;
 
@@ -99,8 +93,10 @@ public class LockTree {
     }
 
     /**
-     * Marks busy the SessionNode corresponding to lockLevel (node names coming from <code>path</code>).
-     * @param path size is at least <code>lockLevel.getHeight()</code>, to capture which node should be marked busy
+     * Marks busy the SessionNode corresponding to <code>lockLevel</code> (node names coming from <code>path</code>).
+     * @param path contains at least <code>lockLevel.getHeight()</code> strings, capturing the names of the
+     *             <code>SessionNode</code> being walked from the {@link Session#root} to the <code>SessionNode</code>
+     *             that is to be marked busy.
      * @param lockLevel the level of the node that should be marked busy.
      */
     void markBusy(LockLevel lockLevel, List<String> path) {
@@ -183,14 +179,6 @@ public class LockTree {
       if (name != null) collect.addFirst(name);
       if (mom != null) mom.constructPath(collect);
       return collect;
-    }
-
-    void clear() {
-      if (myLock != null) {
-        log.warn("lock_is_leaked at {}", constructPath(new LinkedList<>()));
-        myLock = null;
-      }
-      for (Node node : children.values()) node.clear();
     }
   }
   static final Lock FREELOCK = () -> {};
