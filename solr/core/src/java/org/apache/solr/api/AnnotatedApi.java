@@ -124,7 +124,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     return endPoint.permission();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static SpecProvider readSpec(EndPoint endPoint, List<Method> m) {
     return () -> {
       Map map = new LinkedHashMap();
@@ -180,7 +179,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
-    @SuppressWarnings({"rawtypes"})
     List<Map> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
@@ -195,7 +193,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     final Object obj;
     ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
-    @SuppressWarnings({"rawtypes"})
     Class c;
     boolean isWrappedInPayloadObj = false;
 
@@ -238,7 +235,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
     }
 
-    @SuppressWarnings({"unchecked"})
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
       try {
         if (paramsCount == 2) {

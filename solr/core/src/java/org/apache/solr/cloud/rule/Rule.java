@@ -46,9 +46,8 @@ public class Rule {
   Condition replica;
   Condition tag;
 
-  public Rule(@SuppressWarnings({"rawtypes"})Map m) {
+  public Rule(Map m) {
     for (Object o : m.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
       Condition condition = new Condition(String.valueOf(e.getKey()), String.valueOf(e.getValue()));
       if (condition.name.equals(SHARD_ID_PROP)) shard = condition;
@@ -70,7 +69,7 @@ public class Rule {
 
   }
 
-  static Object parseObj(Object o, @SuppressWarnings({"rawtypes"})Class typ) {
+  static Object parseObj(Object o, Class typ) {
     if (o == null) return o;
     if (typ == String.class) return String.valueOf(o);
     if (typ == Integer.class) {
@@ -80,7 +79,6 @@ public class Rule {
     return o;
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static Map parseRule(String s) {
     Map<String, String> result = new LinkedHashMap<>();
     s = s.trim();
@@ -100,9 +98,7 @@ public class Rule {
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public String toString() {
-    @SuppressWarnings({"rawtypes"})
     Map map = new LinkedHashMap();
     if (shard != SHARD_DEFAULT) map.put(shard.name, shard.operand.toStr(shard.val));
     if (replica != REPLICA_DEFAULT) map.put(replica.name, replica.operand.toStr(replica.val));
@@ -361,11 +357,6 @@ public class Rule {
 
       }
       return false;
-    }
-
-    @Override
-    public int hashCode() {
-      throw new UnsupportedOperationException("TODO unimplemented");
     }
 
     @Override

@@ -231,7 +231,7 @@ public class BoolField extends PrimitiveFieldType {
 
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
       // figure out what ord maps to true

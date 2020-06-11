@@ -41,7 +41,6 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
     super.init(initInfo);
     Map<String, Object> map = getMapValue(initInfo, "user-role");
     for (Object o : map.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
       String roleName = (String) e.getKey();
       usersVsRoles.put(roleName, Permission.readValueAsSet(map, roleName));

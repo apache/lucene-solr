@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
@@ -214,7 +215,7 @@ public class PackageTool extends SolrCLI.ToolBase {
    * @return A pair of package name (first) and version (second)
    */
   private Pair<String, String> parsePackageVersion(String arg) {
-    String[] splits = arg.split(":");
+    String splits[] = arg.split(":");
     if (splits.length > 2) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid package name: " + arg +
           ". Didn't match the pattern: <packagename>:<version> or <packagename>");
@@ -222,50 +223,51 @@ public class PackageTool extends SolrCLI.ToolBase {
 
     String packageName = splits[0];
     String version = splits.length == 2? splits[1]: null;
-    return new Pair<>(packageName, version);
+    return new Pair(packageName, version);
   }
 
+  @SuppressWarnings("static-access")
   public Option[] getOptions() {
     return new Option[] {
-        Option.builder("solrUrl")
-        .argName("URL")
+        OptionBuilder
+        .withArgName("URL")
         .hasArg()
-        .required(true)
-        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
-        .build(),
+        .isRequired(true)
+        .withDescription("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
+        .create("solrUrl"),
 
-        Option.builder("collections")
-        .argName("COLLECTIONS")
+        OptionBuilder
+        .withArgName("COLLECTIONS")
         .hasArg()
-        .required(false)
-        .desc("List of collections. Run './solr package help' for more details.")
-        .build(),
+        .isRequired(false)
+        .withDescription("List of collections. Run './solr package help' for more details.")
+        .create("collections"),
 
-        Option.builder("p")
-        .argName("PARAMS")
+        OptionBuilder
+        .withArgName("PARAMS")
         .hasArgs()
-        .required(false)
-        .desc("List of parameters to be used with deploy command. Run './solr package help' for more details.")
-        .longOpt("param")
-        .build(),
+        .isRequired(false)
+        .withDescription("List of parameters to be used with deploy command. Run './solr package help' for more details.")
+        .withLongOpt("param")
+        .create("p"),
 
-        Option.builder("u")
-        .required(false)
-        .desc("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
-        .longOpt("update")
-        .build(),
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
+        .withLongOpt("update")
+        .create("u"),
 
-        Option.builder("c")
-        .required(false)
-        .desc("Run './solr package help' for more details.")
-        .longOpt("collection")
-        .build(),
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("Run './solr package help' for more details.")
+        .withLongOpt("collection")
+        .create("c"),
 
-        Option.builder("y")
-        .required(false)
-        .desc("Run './solr package help' for more details.")
-        .longOpt("noprompt")
-        .build()
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("Run './solr package help' for more details.")
+        .withLongOpt("noprompt")
+        .create("y")
     };
   }
 
@@ -283,7 +285,6 @@ public class PackageTool extends SolrCLI.ToolBase {
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
       Map<String,Object> status = statusTool.reportStatus(solrUrl+"/", systemInfo, httpClient);
-      @SuppressWarnings({"unchecked"})
       Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
       if (cloud != null) {
         String zookeeper = (String) cloud.get("ZooKeeper");

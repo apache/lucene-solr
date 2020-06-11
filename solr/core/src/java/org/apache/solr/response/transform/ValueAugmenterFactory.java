@@ -33,7 +33,7 @@ public class ValueAugmenterFactory extends TransformerFactory {
   protected Object defaultValue = null;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     value = args.get("value");
     if (value == null) {
       defaultValue = args.get("defaultValue");

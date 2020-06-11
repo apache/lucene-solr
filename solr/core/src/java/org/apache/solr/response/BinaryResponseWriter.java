@@ -81,7 +81,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     /* NOOP */
   }
 
@@ -166,7 +166,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
       List<Object> l = new ArrayList<>(4);
-      l.add( ctx.getDocList().matches());
+      l.add((long) ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
       
       Float maxScore = null;
@@ -239,7 +239,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       return null;
     }
 
-    @SuppressWarnings({"unchecked"})
     public Collection<Object> getRawFieldValues(String name) {
       Object v = _fields.get(name);
       if (v instanceof Collection) {
@@ -267,7 +266,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         }
 
         @Override
-        @SuppressWarnings({"unchecked"})
         public Entry<String, Object> next() {
           return convertCharSeq(it.next());
         }
@@ -286,7 +284,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
       if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
-      @SuppressWarnings({"rawtypes"})
       Collection c = (Collection) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());

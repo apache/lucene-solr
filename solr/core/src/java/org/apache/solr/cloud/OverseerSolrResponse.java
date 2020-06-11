@@ -21,12 +21,11 @@ import org.apache.solr.common.util.NamedList;
 
 public class OverseerSolrResponse extends SolrResponse {
   
-  @SuppressWarnings({"rawtypes"})
   NamedList responseList = null;
 
   private long elapsedTime;
   
-  public OverseerSolrResponse(@SuppressWarnings({"rawtypes"})NamedList list) {
+  public OverseerSolrResponse(NamedList list) {
     responseList = list;
   }
   
@@ -46,7 +45,6 @@ public class OverseerSolrResponse extends SolrResponse {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public NamedList<Object> getResponse() {
     return responseList;
   }

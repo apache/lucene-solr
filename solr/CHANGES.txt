@@ -329,9 +329,6 @@ Other Changes
 
 * SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
 
-* SOLR-14559: Fix or suppress warnings in solr/core/src/java/org/apache/solr/util, 
-  response, cloud, security, schema, api (Erick Erickson)
-
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

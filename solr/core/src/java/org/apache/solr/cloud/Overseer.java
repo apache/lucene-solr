@@ -403,7 +403,6 @@ public class Overseer implements SolrCloseable {
         return;
       }
       try {
-        @SuppressWarnings({"rawtypes"})
         Map m = (Map) Utils.fromJSON(data);
         String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
@@ -722,9 +721,7 @@ public class Overseer implements SolrCloseable {
           .setWithSegments(true)
           .setWithFieldInfo(true);
       CollectionAdminResponse rsp = req.process(client);
-      @SuppressWarnings({"unchecked"})
       NamedList<Object> status = (NamedList<Object>)rsp.getResponse().get(CollectionAdminParams.SYSTEM_COLL);
-      @SuppressWarnings({"unchecked"})
       Collection<String> nonCompliant = (Collection<String>)status.get("schemaNonCompliant");
       if (!nonCompliant.contains("(NONE)")) {
         consumer.accept("indexFieldsNotMatchingSchema", nonCompliant);
@@ -735,20 +732,16 @@ public class Overseer implements SolrCloseable {
       String currentVersion = Version.LATEST.toString();
       segmentVersions.add(currentVersion);
       segmentCreatedMajorVersions.add(currentMajorVersion);
-      @SuppressWarnings({"unchecked"})
       NamedList<Object> shards = (NamedList<Object>)status.get("shards");
       for (Map.Entry<String, Object> entry : shards) {
-        @SuppressWarnings({"unchecked"})
         NamedList<Object> leader = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("leader");
         if (leader == null) {
           continue;
         }
-        @SuppressWarnings({"unchecked"})
         NamedList<Object> segInfos = (NamedList<Object>)leader.get("segInfos");
         if (segInfos == null) {
           continue;
         }
-        @SuppressWarnings({"unchecked"})
         NamedList<Object> infos = (NamedList<Object>)segInfos.get("info");
         if (((Number)infos.get("numSegments")).intValue() > 0) {
           segmentVersions.add(infos.get("minSegmentLuceneVersion").toString());
@@ -756,10 +749,8 @@ public class Overseer implements SolrCloseable {
         if (infos.get("commitLuceneVersion") != null) {
           segmentVersions.add(infos.get("commitLuceneVersion").toString());
         }
-        @SuppressWarnings({"unchecked"})
         NamedList<Object> segmentInfos = (NamedList<Object>)segInfos.get("segments");
         segmentInfos.forEach((k, v) -> {
-          @SuppressWarnings({"unchecked"})
           NamedList<Object> segment = (NamedList<Object>)v;
           segmentVersions.add(segment.get("version").toString());
           if (segment.get("minVersion") != null) {

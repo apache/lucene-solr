@@ -101,7 +101,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   @VisibleForTesting
   protected FilterConfig getInitFilterConfig(Map<String, Object> pluginConfig, boolean skipKerberosChecking) {
-    Map<String, String> params = new HashMap<>();
+    Map<String, String> params = new HashMap();
     params.put("type", "kerberos");
     putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
     putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
@@ -162,7 +162,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     }
 
     // check impersonator config
-    for (@SuppressWarnings({"rawtypes"})Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements();) {
+    for (Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements();) {
       String key = e.nextElement().toString();
       if (key.startsWith(IMPERSONATOR_PREFIX)) {
         if (!delegationTokenEnabled) {

@@ -116,7 +116,6 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
   @SuppressWarnings("unchecked")
   private void checkThereIsNoDupe(String field, Map<Object,Object> context) {
     // find a map
-    @SuppressWarnings({"rawtypes"})
     final Map conflictMap;
     final String conflictMapKey = getClass().getSimpleName();
     if (context.containsKey(conflictMapKey)) {
@@ -220,8 +219,8 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        for (@SuppressWarnings({"rawtypes"})Iterator iterator = vals.iterator(); iterator.hasNext();) {
-          Object object = iterator.next();
+        for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
+          Object object = (Object) iterator.next();
           rez.append(convertFieldValue(object));
           if (iterator.hasNext()) {
             rez.append(separator);
@@ -344,7 +343,7 @@ class SubQueryAugmenter extends DocTransformer {
       QueryResponse response = 
           SolrRequestInfoSuspender.doInSuspension(subQuery);
 
-      final SolrDocumentList docList = response.getResults();
+      final SolrDocumentList docList = (SolrDocumentList) response.getResults();
 
       doc.setField(getName(), new Result(docList));
 

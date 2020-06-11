@@ -273,7 +273,6 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
       Map m = new LinkedHashMap(doc.size());
@@ -301,7 +300,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       super.accept(doc);
     }
 
-    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
+    private boolean hasdate(List list) {
       boolean hasDate = false;
       for (Object o : list) {
         if(o instanceof Date){
@@ -378,10 +377,10 @@ public class ExportTool extends SolrCLI.ToolBase {
 
   static class MultiThreadedRunner extends Info {
     ExecutorService producerThreadpool, consumerThreadpool;
-    ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue<>(1000);
+    ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue(1000);
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
-    Map<String, CoreHandler> corehandlers = new HashMap<>();
+    Map<String, CoreHandler> corehandlers = new HashMap();
     private long startTime ;
 
     @SuppressForbidden(reason = "Need to print out time")

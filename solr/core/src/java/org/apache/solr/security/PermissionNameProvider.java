@@ -62,7 +62,6 @@ public interface PermissionNameProvider {
     final String name;
     final Set<String> collName;
 
-    @SuppressWarnings({"unchecked"})
     Name(String s, Object collName) {
       name = s;
       this.collName = collName instanceof Set? (Set<String>)collName : singleton((String)collName);

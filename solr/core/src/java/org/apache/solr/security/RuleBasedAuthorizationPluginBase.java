@@ -259,12 +259,10 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})Map<String, Object> initInfo) {
+  public void init(Map<String, Object> initInfo) {
     mapping.put(null, new WildCardSupportMap());
-    @SuppressWarnings({"rawtypes"})
     List<Map> perms = getListValue(initInfo, "permissions");
-    for (@SuppressWarnings({"rawtypes"})Map o : perms) {
+    for (Map o : perms) {
       Permission p;
       try {
         p = Permission.load(o);

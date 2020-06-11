@@ -106,7 +106,6 @@ class GeoJSONWriter extends JSONWriter {
       }
       rsp.removeResponseHeader();
 
-      @SuppressWarnings({"unchecked"})
       NamedList<Object> vals = rsp.getValues();
       Object response = vals.remove("response");
       if(vals.size()==0) {
@@ -196,7 +195,6 @@ class GeoJSONWriter extends JSONWriter {
   {
     // Support multi-valued geometries
     if(geo instanceof Iterable) {
-      @SuppressWarnings({"rawtypes"})
       Iterator iter = ((Iterable)geo).iterator();
       if(!iter.hasNext()) {
         return; // empty list

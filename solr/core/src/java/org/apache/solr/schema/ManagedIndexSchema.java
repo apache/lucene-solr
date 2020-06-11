@@ -314,7 +314,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     return activeReplicaCoreUrls;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
 
     private String coreUrl;
@@ -486,7 +485,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema replaceField
       (String fieldName, FieldType replacementFieldType, Map<String,?> replacementArgs) {
     ManagedIndexSchema newSchema;
@@ -692,7 +690,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema replaceDynamicField
     (String fieldNamePattern, FieldType replacementFieldType, Map<String,?> replacementArgs) {
     ManagedIndexSchema newSchema;
@@ -812,7 +809,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   @Override
-  @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema deleteCopyFields(Map<String,Collection<String>> copyFields) {
     ManagedIndexSchema newSchema;
     if (isMutable) {
@@ -960,7 +956,6 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // we shallow copied fieldTypes, but since we're changing them, we need to do a true
     // deep copy before adding the new field types
-    @SuppressWarnings({"unchecked"})
     HashMap<String,FieldType> clone =
         (HashMap<String,FieldType>)((HashMap<String,FieldType>)newSchema.fieldTypes).clone();
     newSchema.fieldTypes = clone;
@@ -1049,7 +1044,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema replaceFieldType(String typeName, String replacementClassName, Map<String,Object> replacementArgs) {
     ManagedIndexSchema newSchema;
     if (isMutable) {

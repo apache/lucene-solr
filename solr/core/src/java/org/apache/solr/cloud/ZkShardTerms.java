@@ -349,7 +349,6 @@ public class ZkShardTerms implements AutoCloseable{
   /**
    * Fetch latest terms from ZK
    */
-  @SuppressWarnings({"unchecked"})
   public void refreshTerms() {
     ShardTerms newTerms;
     try {

@@ -70,10 +70,9 @@ public class ReplicaAssigner {
    * @param shardVsNodes        The current state of the system. can be an empty map if no nodes
    *                            are created in this collection till now
    */
-  @SuppressWarnings({"unchecked"})
   public ReplicaAssigner(List<Rule> rules,
                          Map<String, Integer> shardVsReplicaCount,
-                         @SuppressWarnings({"rawtypes"})List snitches,
+                         List snitches,
                          Map<String, Map<String, Integer>> shardVsNodes,
                          List<String> participatingLiveNodes,
                          SolrCloudManager cloudManager, ClusterState clusterState) {
@@ -186,7 +185,6 @@ public class ReplicaAssigner {
   }
 
 
-  @SuppressWarnings({"unchecked"})
   private Map<ReplicaPosition, String> tryAPermutationOfRules(int[] rulePermutation, List<ReplicaPosition> replicaPositions, boolean fuzzyPhase) {
     Map<String, Map<String, Object>> nodeVsTagsCopy = getDeepCopy(nodeVsTags, 2);
     Map<ReplicaPosition, String> result = new LinkedHashMap<>();
@@ -334,12 +332,10 @@ public class ReplicaAssigner {
   /**
    * This method uses the snitches and get the tags for all the nodes
    */
-  @SuppressWarnings({"unchecked"})
-  private Map<String, Map<String, Object>> getTagsForNodes(final SolrCloudManager cloudManager, @SuppressWarnings({"rawtypes"})List snitchConf) {
+  private Map<String, Map<String, Object>> getTagsForNodes(final SolrCloudManager cloudManager, List snitchConf) {
 
-    @SuppressWarnings({"rawtypes"})
     Map<Class, SnitchInfoImpl> snitches = getSnitchInfos(cloudManager, snitchConf);
-    for (@SuppressWarnings({"rawtypes"})Class c : Snitch.WELL_KNOWN_SNITCHES) {
+    for (Class c : Snitch.WELL_KNOWN_SNITCHES) {
       if (snitches.containsKey(c)) continue;// it is already specified explicitly , ignore
       try {
         snitches.put(c, new SnitchInfoImpl(Collections.EMPTY_MAP, (Snitch) c.getConstructor().newInstance(), cloudManager));
@@ -413,12 +409,11 @@ public class ReplicaAssigner {
     return new ServerSnitchContext(info, node, snitchSession, cloudManager);
   }
 
-  public static void verifySnitchConf(SolrCloudManager cloudManager, @SuppressWarnings({"rawtypes"})List snitchConf) {
+  public static void verifySnitchConf(SolrCloudManager cloudManager, List snitchConf) {
     getSnitchInfos(cloudManager, snitchConf);
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   static Map<Class, SnitchInfoImpl> getSnitchInfos(SolrCloudManager cloudManager, List snitchConf) {
     if (snitchConf == null) snitchConf = Collections.emptyList();
     Map<Class, SnitchInfoImpl> snitches = new LinkedHashMap<>();

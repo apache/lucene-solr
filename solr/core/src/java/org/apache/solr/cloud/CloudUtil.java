@@ -131,7 +131,6 @@ public class CloudUtil {
   /**Read the list of public keys from ZK
    */
 
-  @SuppressWarnings({"unchecked"})
   public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
     Map<String, byte[]> result = new HashMap<>();
     try {
