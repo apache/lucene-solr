@@ -49,7 +49,7 @@ public class RawValueTransformerFactory extends TransformerFactory
   }
   
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     if(defaultUserArgs!=null&&defaultUserArgs.startsWith("wt=")) {
       applyToWT = defaultUserArgs.substring(3);
@@ -113,6 +113,7 @@ public class RawValueTransformerFactory extends TransformerFactory
         return;
       }
       if(val instanceof Collection) {
+        @SuppressWarnings({"rawtypes"})
         Collection current = (Collection)val;
         ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
         for(Object v : current) {
