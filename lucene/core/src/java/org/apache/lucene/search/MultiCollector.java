@@ -117,7 +117,7 @@ public class MultiCollector implements Collector {
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    final List<LeafCollector> leafCollectors = new ArrayList<>();
+    final List<LeafCollector> leafCollectors = new ArrayList<>(collectors.length);
     for (Collector collector : collectors) {
       final LeafCollector leafCollector;
       try {
@@ -142,16 +142,14 @@ public class MultiCollector implements Collector {
 
     private final boolean cacheScores;
     private final LeafCollector[] collectors;
-    private int numCollectors;
     private final float[] minScores;
     private final boolean skipNonCompetitiveScores;
 
     private MultiLeafCollector(List<LeafCollector> collectors, boolean cacheScores, boolean skipNonCompetitive) {
       this.collectors = collectors.toArray(new LeafCollector[collectors.size()]);
       this.cacheScores = cacheScores;
-      this.numCollectors = this.collectors.length;
       this.skipNonCompetitiveScores = skipNonCompetitive;
-      this.minScores = new float[this.skipNonCompetitiveScores ? this.numCollectors : 0];
+      this.minScores = this.skipNonCompetitiveScores ? new float[this.collectors.length] : null;
     }
 
     @Override
@@ -160,8 +158,9 @@ public class MultiCollector implements Collector {
         scorer = new ScoreCachingWrappingScorer(scorer);
       }
       if (skipNonCompetitiveScores) {
-        for (int i = 0; i < numCollectors; ++i) {
+        for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
+          assert c != null;
           c.setScorer(new MinCompetitiveScoreAwareScorable(scorer,  i,  minScores));
         }
       } else {
@@ -170,42 +169,42 @@ public class MultiCollector implements Collector {
           public void setMinCompetitiveScore(float minScore) throws IOException {
             // Ignore calls to setMinCompetitiveScore so that if we wrap two
             // collectors and one of them wants to skip low-scoring hits, then
-            // the other collector still sees all hits. We could try to reconcile
-            // min scores and take the maximum min score across collectors, but
-            // this is very unlikely to be helpful in practice.
+            // the other collector still sees all hits.
           }
 
         };
-        for (int i = 0; i < numCollectors; ++i) {
+        for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
+          assert c != null;
           c.setScorer(scorer);
         }
       }
     }
 
-    private void removeCollector(int i) {
-      System.arraycopy(collectors, i + 1, collectors, i, numCollectors - i - 1);
-      --numCollectors;
-      collectors[numCollectors] = null;
-    }
-
     @Override
     public void collect(int doc) throws IOException {
-      final LeafCollector[] collectors = this.collectors;
-      int numCollectors = this.numCollectors;
-      for (int i = 0; i < numCollectors; ) {
+      for (int i = 0; i < collectors.length; i++) {
         final LeafCollector collector = collectors[i];
-        try {
-          collector.collect(doc);
-          ++i;
-        } catch (CollectionTerminatedException e) {
-          removeCollector(i);
-          numCollectors = this.numCollectors;
-          if (numCollectors == 0) {
-            throw new CollectionTerminatedException();
+        if (collector != null) {
+          try {
+            collector.collect(doc);
+          } catch (CollectionTerminatedException e) {
+            collectors[i] = null;
+            if (allCollectorsTerminated()) {
+              throw new CollectionTerminatedException();
+            }
           }
         }
       }
+    }
+
+    private boolean allCollectorsTerminated() {
+      for (int i = 0; i < collectors.length; i++) {
+        if (collectors[i] != null) {
+          return false;
+        }
+      }
+      return true;
     }
 
   }

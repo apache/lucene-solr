@@ -168,7 +168,6 @@ public class MultiCollectorTest extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     iw.addDocument(new Document());
-    iw.commit();
     DirectoryReader reader = iw.getReader();
     iw.close();
     final LeafReaderContext ctx = reader.leaves().get(0);
@@ -222,5 +221,57 @@ public class MultiCollectorTest extends LuceneTestCase {
     assertEquals(0.5f, minCompetitiveScore[0], 0);
     s0.setMinCompetitiveScore(Float.MAX_VALUE);
     assertEquals(Float.MAX_VALUE, minCompetitiveScore[0], 0);
+  }
+  
+  public void testCollectionTermination() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    iw.addDocument(new Document());
+    DirectoryReader reader = iw.getReader();
+    iw.close();
+    final LeafReaderContext ctx = reader.leaves().get(0);
+    DummyCollector c1 = new DummyCollector() {
+      @Override
+      public void collect(int doc) throws IOException {
+        if (doc == 1) {
+          throw new CollectionTerminatedException();
+        }
+        super.collect(doc);
+      }
+      
+    };
+    
+    DummyCollector c2 = new DummyCollector() {
+      @Override
+      public void collect(int doc) throws IOException {
+        if (doc == 2) {
+          throw new CollectionTerminatedException();
+        }
+        super.collect(doc);
+      }
+      
+    };
+
+    Collector mc = MultiCollector.wrap(c1, c2);
+    LeafCollector lc = mc.getLeafCollector(ctx);
+    lc.setScorer(new ScoreAndDoc());
+    lc.collect(0); // OK
+    assertTrue("c1's collect should be called", c1.collectCalled);
+    assertTrue("c2's collect should be called", c2.collectCalled);
+    c1.collectCalled = false;
+    c2.collectCalled = false;
+    lc.collect(1); // OK, but c1 should terminate
+    assertFalse("c1 should be removed already", c1.collectCalled);
+    assertTrue("c2's collect should be called", c2.collectCalled);
+    c2.collectCalled = false;
+    
+    expectThrows(CollectionTerminatedException.class, () -> {
+      lc.collect(2);
+    });
+    assertFalse("c1 should be removed already", c1.collectCalled);
+    assertFalse("c2 should be removed already", c2.collectCalled);
+    
+    reader.close();
+    dir.close();
   }
 }
