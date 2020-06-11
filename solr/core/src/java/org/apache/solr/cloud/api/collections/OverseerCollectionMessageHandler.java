@@ -870,6 +870,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private long sessionId = -1;
   private LockTree.Session lockSession;
 
+  /**
+   * Grabs an exclusive lock for this particular task.
+   * @return <code>null</code> if locking is not possible. When locking is not possible, it will remain
+   * impossible for the passed value of <code>batchSessionId</code>. This is to guarantee tasks are executed
+   * in queue order (and a later task is not run earlier than its turn just because it happens that a lock got released).
+   */
   @Override
   public Lock lockTask(ZkNodeProps message, long batchSessionId) {
     if (sessionId != batchSessionId) {
