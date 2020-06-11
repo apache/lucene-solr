@@ -257,6 +257,7 @@ public class ZkCLI {
           zkClient.printLayoutToStream(stdout);
         } else if (line.getOptionValue(CMD).equals(LS)) {
 
+          @SuppressWarnings({"rawtypes"})
           List argList = line.getArgList();
           if (argList.size() != 1) {
             stdout.println("-" + LS + " requires one arg - the path to list");
@@ -269,6 +270,7 @@ public class ZkCLI {
           stdout.println(sb.toString());
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
@@ -276,6 +278,7 @@ public class ZkCLI {
           }
           zkClient.clean(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
@@ -283,6 +286,7 @@ public class ZkCLI {
           }
           zkClient.makePath(arglist.get(0).toString(), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + PUT + " requires two args - the path to create and the data string");
@@ -295,6 +299,7 @@ public class ZkCLI {
             zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
@@ -314,6 +319,7 @@ public class ZkCLI {
           }
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
@@ -322,6 +328,7 @@ public class ZkCLI {
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
@@ -330,6 +337,7 @@ public class ZkCLI {
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
+          @SuppressWarnings({"rawtypes"})
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");

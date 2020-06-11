@@ -198,7 +198,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
    * @return map of headers
    */
   private Map<String, String> getPromptHeaders(boolean isAjaxRequest) {
-    Map<String,String> headers = new HashMap(authenticationProvider.getPromptHeaders());
+    Map<String,String> headers = new HashMap<>(authenticationProvider.getPromptHeaders());
     if (isAjaxRequest && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE) 
         && headers.get(HttpHeaders.WWW_AUTHENTICATE).startsWith("Basic ")) {
       headers.put(HttpHeaders.WWW_AUTHENTICATE, "x" + headers.get(HttpHeaders.WWW_AUTHENTICATE));

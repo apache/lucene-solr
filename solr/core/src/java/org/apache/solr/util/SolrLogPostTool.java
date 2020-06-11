@@ -69,7 +69,7 @@ public class SolrLogPostTool {
     try {
       client = builder.withBaseSolrUrl(baseUrl).build();
       File rf = new File(root);
-      List<File> files = new ArrayList();
+      List<File> files = new ArrayList<>();
       gatherFiles(rf, files);
       int rec = 0;
       UpdateRequest request = new UpdateRequest();

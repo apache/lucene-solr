@@ -79,6 +79,7 @@ public class CloudConfigSetService extends ConfigSetService {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");

@@ -289,6 +289,7 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException {
 
@@ -2248,8 +2249,10 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
+      @SuppressWarnings({"rawtypes"})
       Map roles = (Map) Utils.fromJSON(data);
       if (roles == null) return;
+      @SuppressWarnings({"rawtypes"})
       List nodeList = (List) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
@@ -2313,6 +2316,7 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   Set<OnReconnect> getCurrentOnReconnectListeners() {
     HashSet<OnReconnect> clonedListeners;
     synchronized (reconnectListeners) {
@@ -2674,6 +2678,7 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
+        @SuppressWarnings({"rawtypes"})
         Future[] waitSearcher = new Future[1];
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
