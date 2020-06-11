@@ -343,6 +343,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void assertAllowedCorePath() {
+
+  }
+
+  @Test
   public void testCustomHandlers() throws Exception {
 
     CoreContainer cc = init(CUSTOM_HANDLERS_SOLR_XML);

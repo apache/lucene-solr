@@ -1200,6 +1200,10 @@ public class CoreContainer {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
     }
 
+    // Validate paths are relative to known locations to avoid path traversal
+    assertAllowedCorePath(cd.getInstanceDir());
+    assertAllowedCorePath(Paths.get(cd.getDataDir()));
+
     boolean preExisitingZkEntry = false;
     try {
       if (getZkController() != null) {
@@ -1256,6 +1260,30 @@ public class CoreContainer {
 
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
+    }
+  }
+
+  /**
+   * Checks that the given path is relative to solrHome, solrDataHome or coreRootDirectory
+   * NOCOMMIT: Add system property to add more allowed paths, as a workaround for existing users
+   * @param path path to check
+   * @throws SolrException if path is outside allowed paths
+   */
+  protected void assertAllowedCorePath(Path path) throws SolrException {
+    if (path.normalize().equals(path) && !path.isAbsolute()) {
+      log.info("Path is relative and safe.");
+      return;
+    }
+    Set<Path> allowedPaths = new java.util.HashSet<>();
+    allowedPaths.add(getNodeConfig().getSolrHome().toAbsolutePath());
+    allowedPaths.add(getNodeConfig().getCoreRootDirectory().toAbsolutePath());
+    if (getNodeConfig().getSolrDataHome() != null) {
+      allowedPaths.add(getNodeConfig().getSolrDataHome().toAbsolutePath());
+    }
+    log.info("Testing paths " + allowedPaths + " against " + path);
+    if (allowedPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory");
     }
   }
 
