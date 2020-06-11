@@ -63,6 +63,8 @@ public class TestCharArraySet extends LuceneTestCase {
     Integer val = Integer.valueOf(1);
     @SuppressWarnings("deprecation")
     Integer val1 = new Integer(1);
+    // Verify explicitly the case of different Integer instances
+    assertNotSame(val, val1);
     set.add(val);
     assertTrue(set.contains(val));
     assertTrue(set.contains(val1)); // another integer
