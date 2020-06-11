@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.response.transform;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -126,13 +125,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
 
     // Communicate which feature store we are requesting features for
-    String[] params = localparams.getParams(FV_STORE);
-    if(params==null || params.length==0 ||params[0].isEmpty()){
-      if (defaultStore != null) {
-        params = new String[]{defaultStore};
-      }
-    }
-    SolrQueryRequestContextUtils.setFvStoreNames(req, params);
+    SolrQueryRequestContextUtils.setFvStoreName(req, localparams.get(FV_STORE, defaultStore));
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(req,
@@ -214,7 +207,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (threadManager != null) {
         threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
-
+      
       // Setup LTRScoringQuery
       scoringQueries = SolrQueryRequestContextUtils.getScoringQueries(req);
 
@@ -223,17 +216,17 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         scoringQueries = new LTRScoringQuery[]{null};
       }
       modelWeights = new LTRScoringQuery.ModelWeight[scoringQueries.length];
-      String[] featureStoreNames = SolrQueryRequestContextUtils.getFvStoreNames(req);
+      String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       for (int i = 0; i < scoringQueries.length; i++) {
         LTRScoringQuery scoringQuery = scoringQueries[i];
-        if (docsWereNotReranked || (featureStoreNames != null && featureStoreNames.length > 0 && (!Arrays.asList(featureStoreNames).contains(scoringQuery.getScoringModel().getFeatureStoreName())))) {
+        if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
+          // if store is set in the transformer we should overwrite the logger
+
           final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
-          String featureStoreName = null;
-          if (featureStoreNames != null && featureStoreNames.length > 0) {
-            featureStoreName = featureStoreNames[0];
-          }
+
           final FeatureStore store = fr.getFeatureStore(featureStoreName);
           featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
+
 
           try {
             final LoggingModel lm = new LoggingModel(loggingModelName,
@@ -287,7 +280,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private void implTransform(SolrDocument doc, int docid, Float score)
         throws IOException {
       String[] modelsFeatureVectors = new String[scoringQueries.length];
-      for(int i=0;i<modelsFeatureVectors.length;i++){
+      for (int i = 0; i < modelsFeatureVectors.length; i++) {
         String singleModelFeatureVector = featureLogger.getFeatureVector(docid, scoringQueries[i], searcher);
         if (singleModelFeatureVector == null) { // FV for this document was not in the cache
           singleModelFeatureVector = featureLogger.makeFeatureVector(

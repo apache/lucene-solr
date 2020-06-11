@@ -17,7 +17,6 @@
 package org.apache.solr.ltr;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -43,9 +42,13 @@ import org.apache.solr.search.SolrIndexSearcher;
  * */
 public class LTRRescorer extends Rescorer {
 
-  LTRScoringQuery[] reRankingModels;
-  public LTRRescorer(LTRScoringQuery[] reRankingModels) {
-    this.reRankingModels = reRankingModels;
+  LTRScoringQuery scoringQuery;
+
+  public LTRRescorer() {
+  }
+
+  public LTRRescorer(LTRScoringQuery scoringQuery) {
+    this.scoringQuery = scoringQuery;
   }
 
   private void heapAdjust(ScoreDoc[] hits, int size, int root) {
@@ -105,6 +108,41 @@ public class LTRRescorer extends Rescorer {
     if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
+    final ScoreDoc[] firstPassResults = getFirstPassDocsRanked(firstPassTopDocs);
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+
+    final ScoreDoc[] reranked = rerank(searcher, scoringQuery, topN, firstPassResults, leaves);
+
+    return new TopDocs(firstPassTopDocs.totalHits, reranked);
+  }
+
+  protected ScoreDoc[] rerank(IndexSearcher searcher, LTRScoringQuery reRankModel, int topN, ScoreDoc[] firstPassResults, List<LeafReaderContext> leaves) throws IOException {
+    final ScoreDoc[] reranked = new ScoreDoc[topN];
+    final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
+        .createWeight(searcher.rewrite(reRankModel), ScoreMode.COMPLETE, 1);
+
+    scoreFeatures(searcher, reRankModel,topN, modelWeight, firstPassResults, leaves, reranked);
+    // Must sort all documents that we reranked, and then select the top
+    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
+      @Override
+      public int compare(ScoreDoc a, ScoreDoc b) {
+        // Sort by score descending, then docID ascending:
+        if (a.score > b.score) {
+          return -1;
+        } else if (a.score < b.score) {
+          return 1;
+        } else {
+          // This subtraction can't overflow int
+          // because docIDs are >= 0:
+          return a.doc - b.doc;
+        }
+      }
+    });
+    return reranked;
+  }
+
+  protected ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
     Arrays.sort(hits, new Comparator<ScoreDoc>() {
       @Override
@@ -114,42 +152,12 @@ public class LTRRescorer extends Rescorer {
     });
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
-    ScoreDoc[][] reRankedPerModel = new ScoreDoc[reRankingModels.length][];
-    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-    
-    for(int i=0;i<reRankingModels.length;i++){
-      reRankedPerModel[i] = new ScoreDoc[topN];
-      final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-          .createWeight(searcher.rewrite(reRankingModels[i]), ScoreMode.COMPLETE, 1);
-      scoreFeatures(searcher, reRankingModels[i],topN, modelWeight, hits, leaves, reRankedPerModel[i]);
-      // Must sort all documents that we reranked, and then select the top
-      Arrays.sort(reRankedPerModel[i], new Comparator<ScoreDoc>() {
-        @Override
-        public int compare(ScoreDoc a, ScoreDoc b) {
-          // Sort by score descending, then docID ascending:
-          if (a.score > b.score) {
-            return -1;
-          } else if (a.score < b.score) {
-            return 1;
-          } else {
-            // This subtraction can't overflow int
-            // because docIDs are >= 0:
-            return a.doc - b.doc;
-          }
-        }
-      });
-    }
-    ScoreDoc[] reRanked = reRankedPerModel[0];
-    if(reRankingModels.length>1){//Interleaving
-      
-    }
-    return new TopDocs(firstPassTopDocs.totalHits, reRanked);
+    return hits;
   }
 
   public void scoreFeatures(IndexSearcher indexSearcher, LTRScoringQuery reRankingModel,
-      int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
-      ScoreDoc[] reranked) throws IOException {
+                            int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+                            ScoreDoc[] reranked) throws IOException {
 
     int readerUpto = -1;
     int endDoc = 0;
@@ -228,17 +236,9 @@ public class LTRRescorer extends Rescorer {
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
-    List<Explanation> modelsExplanations = new ArrayList<>(reRankingModels.length);
-    for(LTRScoringQuery reRankingModel:reRankingModels){
-      final Weight modelWeight = searcher.createWeight(searcher.rewrite(reRankingModel),
-          ScoreMode.COMPLETE, 1);
-      modelsExplanations.add(modelWeight.explain(context, deBasedDoc));
-    }
-    if(reRankingModels.length>1) {
-      return Explanation.match(0, toString() + " score from model X has been chosen by Interleaving", modelsExplanations);//0 must be the real score chosen
-    } else {
-      return modelsExplanations.get(0);
-    }
+    final Weight modelWeight = searcher.createWeight(searcher.rewrite(scoringQuery),
+        ScoreMode.COMPLETE, 1);
+    return modelWeight.explain(context, deBasedDoc);
   }
 
   public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(LTRScoringQuery.ModelWeight modelWeight,

@@ -71,12 +71,12 @@ public class SolrQueryRequestContextUtils {
 
   /** feature vector store name accessors **/
 
-  public static void setFvStoreNames(SolrQueryRequest req, String[] fvStoreNames) {
-    req.getContext().put(STORE, fvStoreNames);
+  public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
+    req.getContext().put(STORE, fvStoreName);
   }
 
-  public static String[] getFvStoreNames(SolrQueryRequest req) {
-    return (String[]) req.getContext().get(STORE);
+  public static String getFvStoreName(SolrQueryRequest req) {
+    return (String) req.getContext().get(STORE);
   }
 
 }
