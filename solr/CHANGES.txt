@@ -25,6 +25,8 @@ Improvements
 
 Other Changes
 ----------------------
+* LUCENE-8574: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
