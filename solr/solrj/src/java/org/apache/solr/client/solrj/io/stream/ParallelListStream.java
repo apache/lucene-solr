@@ -136,7 +136,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
   private void openStreams() throws IOException {
     ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("ParallelListStream"));
     try {
-      List<Future<StreamIndex>> futures = new ArrayList();
+      List<Future<StreamIndex>> futures = new ArrayList<>();
       int i=0;
       for (TupleStream tupleStream : streams) {
         StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));

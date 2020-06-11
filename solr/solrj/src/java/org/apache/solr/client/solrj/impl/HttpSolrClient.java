@@ -533,6 +533,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
+  @SuppressWarnings({"unchecked"})
   protected NamedList<Object> executeMethod(HttpRequestBase method, Principal userPrincipal, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
@@ -643,13 +644,24 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         NamedList<String> metadata = null;
         String reason = null;
         try {
-          NamedList err = (NamedList) rsp.get("error");
-          if (err != null) {
-            reason = (String) err.get("msg");
+          if (error != null) {
+            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
             if(reason == null) {
-              reason = (String) err.get("trace");
+              reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
             }
-            metadata = (NamedList<String>)err.get("metadata");
+            Object metadataObj = Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
+            if  (metadataObj instanceof NamedList) {
+              metadata = (NamedList<String>) metadataObj;
+            } else if (metadataObj instanceof List) {
+              // NamedList parsed as List convert to NamedList again
+              List<Object> list = (List<Object>) metadataObj;
+              metadata = new NamedList<>(list.size()/2);
+              for (int i = 0; i < list.size(); i+=2) {
+                metadata.add((String)list.get(i), (String) list.get(i+1));
+              }
+            } else if (metadataObj instanceof Map) {
+              metadata = new NamedList((Map) metadataObj);
+            }
           }
         } catch (Exception ex) {}
         if (reason == null) {

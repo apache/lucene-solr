@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -90,20 +89,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       }
       proxies.put(proxy.getUrl(), proxy);
       jettys.put(proxy.getUrl(), jetty);
-    }
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (true) {
-      try {
-        CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
-        CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-        assertEquals(0, response.getStatus());
-        break;
-      } catch (SolrServerException e) {
-        Thread.sleep(50);
-        if (t.hasTimedOut()) {
-          throw e;
-        }
-      }
     }
   }
   

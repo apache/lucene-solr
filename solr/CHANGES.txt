@@ -74,6 +74,9 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
+ * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
+   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -83,7 +86,7 @@ New Features
 * SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
   To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
-* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK direcory (noble)
+* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK directory (noble)
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
@@ -160,6 +163,8 @@ Optimizations
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
 
+* SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -227,6 +232,10 @@ Bug Fixes
 
 * SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
   (Johannes Kloos, mrsoong via Munendra S N)
+
+* SOLR-14550: Fix duplicates issue in Atomic updates with add-distinct (Thomas Corthals, Munendra S N)
+
+* SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
 
 Other Changes
 ---------------------
@@ -311,6 +320,14 @@ Other Changes
 * SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
 
 * SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
+
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
+
+* SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
 
 ==================  8.5.2 ==================
 

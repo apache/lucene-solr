@@ -190,13 +190,15 @@ public class HashRollupStream extends TupleStream implements Expressible {
     tupleIterator = null;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     //On the first call to read build the tupleIterator.
     if(tupleIterator == null) {
-      Map<HashKey, Metric[]> metricMap = new HashMap();
+      Map<HashKey, Metric[]> metricMap = new HashMap<>();
       while (true) {
         Tuple tuple = tupleStream.read();
         if (tuple.EOF) {
+          @SuppressWarnings({"rawtypes"})
           List tuples = new ArrayList();
           for(Map.Entry<HashKey, Metric[]> entry : metricMap.entrySet()) {
             Tuple t = new Tuple();

@@ -332,7 +332,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         List replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         int tries = 0;
         while ((replicatedAtCount == null || replicatedAtCount.size() < i) && tries++ < 5) {
-          Thread.currentThread().sleep(1000);
+          Thread.sleep(1000);
           details = getDetails(slaveClient);
           replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         }

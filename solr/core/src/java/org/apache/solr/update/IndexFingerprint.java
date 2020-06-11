@@ -109,6 +109,7 @@ public class IndexFingerprint implements MapSerializable {
       throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
+    @SuppressWarnings({"rawtypes"})
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     
@@ -184,7 +185,7 @@ public class IndexFingerprint implements MapSerializable {
     return map;
   }
 
-  private static long getLong(Map m, String key, long def) {
+  private static long getLong(@SuppressWarnings({"rawtypes"})Map m, String key, long def) {
     Object oval = m.get(key);
     return oval != null ? ((Number)oval).longValue() : def;
   }
@@ -194,6 +195,7 @@ public class IndexFingerprint implements MapSerializable {
    */
   public static IndexFingerprint fromObject(Object o) {
     if (o instanceof IndexFingerprint) return (IndexFingerprint) o;
+    @SuppressWarnings({"rawtypes"})
     Map map = null;
     if (o instanceof Map) {
       map = (Map) o;

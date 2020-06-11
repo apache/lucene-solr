@@ -34,7 +34,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
@@ -108,14 +107,13 @@ public class ZkCLI implements CLIO {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
-
-    options.addOption(OptionBuilder
+    options.addOption(Option.builder(CMD)
         .hasArg(true)
-        .withDescription(
+        .desc(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
                 + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
                 + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR
-                + ", " + UPDATEACLS + ", " + LS).create(CMD));
+                + ", " + UPDATEACLS + ", " + LS).build());
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
