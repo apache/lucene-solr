@@ -490,7 +490,39 @@ public final class CodecUtil {
     validateFooter(in);
     return readCRC(in);
   }
-  
+
+  /** 
+   * Returns (but does not validate) the checksum previously written by {@link #checkFooter}.
+   * @return actual checksum value
+   * @throws IOException if the footer is invalid
+   */
+  public static long retrieveChecksum(IndexInput in, long expectedLength) throws IOException {
+    if (expectedLength < footerLength()) {
+      throw new IllegalArgumentException("expectedLength cannot be less than the footer length");
+    }
+    IOException mainException = null;
+    if (in.length() < expectedLength) {
+      mainException = new CorruptIndexException("truncated file: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+    } else if (in.length() > expectedLength) {
+      mainException = new CorruptIndexException("file too long: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+    }
+
+    try {
+      return retrieveChecksum(in);
+    } catch (IOException e) {
+      if (mainException == null) {
+        mainException = e;
+      } else {
+        mainException.addSuppressed(e);
+      }
+    } finally {
+      if (mainException != null) {
+        throw mainException;
+      }
+    }
+    throw new Error("unreachable code");
+  }
+
   private static void validateFooter(IndexInput in) throws IOException {
     long remaining = in.length() - in.getFilePointer();
     long expected = footerLength();

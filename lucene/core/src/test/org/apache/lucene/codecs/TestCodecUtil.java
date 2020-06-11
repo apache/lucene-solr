@@ -26,6 +26,8 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexInput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
@@ -318,5 +320,54 @@ public class TestCodecUtil extends LuceneTestCase {
     e = expectThrows(CorruptIndexException.class,
         () -> CodecUtil.retrieveChecksum(input));
     assertTrue(e.getMessage(), e.getMessage().contains("misplaced codec footer (file truncated?): length=0 but footerLength==16 (resource"));
+  }
+
+  public void testRetrieveChecksum() throws IOException {
+    Directory dir = newDirectory();
+    try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      CodecUtil.writeFooter(out);
+    }
+    try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+      CodecUtil.retrieveChecksum(in, in.length()); // no exception
+
+      CorruptIndexException exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() - 1));
+      assertTrue(exception.getMessage().contains("too long"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() + 1));
+      assertTrue(exception.getMessage().contains("truncated"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+    }
+
+    try (IndexOutput out = dir.createOutput("bar", IOContext.DEFAULT)) {
+      for (int i = 0; i <= CodecUtil.footerLength(); ++i) {
+        out.writeByte((byte) i);
+      }
+    }
+    try (IndexInput in = dir.openInput("bar", IOContext.DEFAULT)) {
+      CorruptIndexException exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length()));
+      assertTrue(exception.getMessage().contains("codec footer mismatch"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() - 1));
+      assertTrue(exception.getMessage().contains("too long"));
+      assertEquals(1, exception.getSuppressed().length);
+      assertTrue(exception.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(exception.getSuppressed()[0].getMessage().contains("codec footer mismatch"));
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() + 1));
+      assertTrue(exception.getMessage().contains("truncated"));
+      assertEquals(1, exception.getSuppressed().length);
+      assertTrue(exception.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(exception.getSuppressed()[0].getMessage().contains("codec footer mismatch"));
+    }
+
+    dir.close();
   }
 }
