@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -310,6 +311,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "<str name=\"shareSchema\">${shareSchema:false}</str>\n" +
       "</solr>";
 
+  private static final String ALLOW_PATHS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>\n" +
+      "<str name=\"allowPaths\">/tmp</str>\n" +
+      "</solr>";
+
   private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>" +
       " <str name=\"collectionsHandler\">" + CustomCollectionsHandler.class.getName() + "</str>" +
@@ -343,8 +349,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void assertAllowedCorePath() {
-
+  public void assertAllowedCorePath() throws Exception {
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    try {
+      cc.assertAllowedCorePath(Paths.get("/tmp/foo"));
+      try {
+        cc.assertAllowedCorePath(Paths.get("/home/foo"));
+        fail("allowPaths check failed");
+      } catch (SolrException e) { /* ignored */ }
+    }
+    finally {
+      cc.shutdown();
+    }
   }
 
   @Test
