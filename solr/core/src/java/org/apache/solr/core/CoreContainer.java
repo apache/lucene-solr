@@ -151,6 +151,7 @@ public class CoreContainer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
+  private Set<Path> allowPaths;
 
   public static class CoreLoadFailure {
 
@@ -338,6 +339,14 @@ public class CoreContainer {
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
+
+    this.allowPaths = new java.util.HashSet<>();
+    this.allowPaths.add(cfg.getSolrHome().toAbsolutePath());
+    this.allowPaths.add(cfg.getCoreRootDirectory().toAbsolutePath());
+    if (cfg.getSolrDataHome() != null) {
+      this.allowPaths.add(getNodeConfig().getSolrDataHome().toAbsolutePath());
+    }
+    this.allowPaths.addAll(cfg.getAllowPaths());
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1265,25 +1274,14 @@ public class CoreContainer {
 
   /**
    * Checks that the given path is relative to solrHome, solrDataHome or coreRootDirectory
-   * NOCOMMIT: Add system property to add more allowed paths, as a workaround for existing users
    * @param path path to check
    * @throws SolrException if path is outside allowed paths
    */
   protected void assertAllowedCorePath(Path path) throws SolrException {
-    if (path.normalize().equals(path) && !path.isAbsolute()) {
-      log.info("Path is relative and safe.");
-      return;
-    }
-    Set<Path> allowedPaths = new java.util.HashSet<>();
-    allowedPaths.add(getNodeConfig().getSolrHome().toAbsolutePath());
-    allowedPaths.add(getNodeConfig().getCoreRootDirectory().toAbsolutePath());
-    if (getNodeConfig().getSolrDataHome() != null) {
-      allowedPaths.add(getNodeConfig().getSolrDataHome().toAbsolutePath());
-    }
-    log.info("Testing paths " + allowedPaths + " against " + path);
-    if (allowedPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
+    if (path.normalize().equals(path) && !path.isAbsolute()) return;
+    if (allowPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory");
+          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
     }
   }
 

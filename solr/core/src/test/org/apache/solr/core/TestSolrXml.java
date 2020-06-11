@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -98,6 +100,8 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("a.b.C", backupRepoConfigs[0].className);
     assertEquals("true", backupRepoConfigs[0].attributes.get("default"));
     assertEquals(0, backupRepoConfigs[0].initArgs.size());
+    assertTrue("allowPaths", cfg.getAllowPaths().containsAll(
+        Arrays.asList(Paths.get("/home/john"), Paths.get("/tmp"))));
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
