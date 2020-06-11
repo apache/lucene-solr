@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -452,7 +453,7 @@ public final class FST<T> implements Accountable {
         inputType = INPUT_TYPE.BYTE4;
         break;
     default:
-      throw new IllegalStateException("invalid input type " + t);
+      throw new CorruptIndexException("invalid input type " + t, in);
     }
     startNode = in.readVLong();
 
