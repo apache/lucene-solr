@@ -146,6 +146,7 @@ public class IndexSchema {
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
 
   private Analyzer indexAnalyzer;
@@ -1385,6 +1386,7 @@ public class IndexSchema {
   /**
    * Get a map of property name -&gt; value for the whole schema.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map getNamedPropertyValues() {
     return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
   }
@@ -1413,6 +1415,7 @@ public class IndexSchema {
           .map(it -> it.getNamedPropertyValues(sp.showDefaults))
           .collect(Collectors.toList())),
 
+      @SuppressWarnings({"unchecked", "rawtypes"})
       FIELDS(IndexSchema.FIELDS, sp -> {
         List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
             .stream()
@@ -1465,6 +1468,7 @@ public class IndexSchema {
       requestedFields = readMultiVals(CommonParams.FL);
 
     }
+    @SuppressWarnings({"rawtypes"})
     public Collection applyDynamic(){
       return (Collection) Handler.DYNAMIC_FIELDS.fun.apply(this);
     }
@@ -1484,6 +1488,7 @@ public class IndexSchema {
     }
 
 
+    @SuppressWarnings({"rawtypes"})
     SimpleOrderedMap getProperties(SchemaField sf) {
       SimpleOrderedMap<Object> result = sf.getNamedPropertyValues(showDefaults);
       if (schema.isDynamicField(sf.name)) {
