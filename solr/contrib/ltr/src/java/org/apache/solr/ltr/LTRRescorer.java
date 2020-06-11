@@ -51,7 +51,7 @@ public class LTRRescorer extends Rescorer {
     this.scoringQuery = scoringQuery;
   }
 
-  private void heapAdjust(ScoreDoc[] hits, int size, int root) {
+  protected void heapAdjust(ScoreDoc[] hits, int size, int root) {
     final ScoreDoc doc = hits[root];
     final float score = doc.score;
     int i = root;
@@ -86,7 +86,7 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
-  private void heapify(ScoreDoc[] hits, int size) {
+  protected void heapify(ScoreDoc[] hits, int size) {
     for (int i = (size >> 1) - 1; i >= 0; i--) {
       heapAdjust(hits, size, i);
     }
@@ -112,18 +112,23 @@ public class LTRRescorer extends Rescorer {
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    final ScoreDoc[] reranked = rerank(searcher, scoringQuery, topN, firstPassResults, leaves);
+    final ScoreDoc[] reranked = rerank(searcher, topN, firstPassResults, leaves);
 
     return new TopDocs(firstPassTopDocs.totalHits, reranked);
   }
 
-  protected ScoreDoc[] rerank(IndexSearcher searcher, LTRScoringQuery reRankModel, int topN, ScoreDoc[] firstPassResults, List<LeafReaderContext> leaves) throws IOException {
+  private ScoreDoc[] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults, List<LeafReaderContext> leaves) throws IOException {
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-        .createWeight(searcher.rewrite(reRankModel), ScoreMode.COMPLETE, 1);
+        .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
-    scoreFeatures(searcher, reRankModel,topN, modelWeight, firstPassResults, leaves, reranked);
+    scoreFeatures(searcher, scoringQuery,topN, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
+    sortByScore(reranked);
+    return reranked;
+  }
+
+  protected void sortByScore(ScoreDoc[] reranked) {
     Arrays.sort(reranked, new Comparator<ScoreDoc>() {
       @Override
       public int compare(ScoreDoc a, ScoreDoc b) {
@@ -139,7 +144,6 @@ public class LTRRescorer extends Rescorer {
         }
       }
     });
-    return reranked;
   }
 
   protected ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
@@ -181,49 +185,54 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.scorer(readerContext);
       }
-      // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
-      // call score
-      // even if no feature scorers match, since a model might use that info to
-      // return a
-      // non-zero score. Same applies for the case of advancing a LTRScoringQuery.ModelWeight.ModelScorer
-      // past the target
-      // doc since the model algorithm still needs to compute a potentially
-      // non-zero score from blank features.
-      assert (scorer != null);
-      final int targetDoc = docID - docBase;
-      scorer.docID();
-      scorer.iterator().advance(targetDoc);
+      scoreSingleHit(indexSearcher, topN, modelWeight, docBase, hitUpto, hit, docID, scoringQuery, scorer, reranked);
+      hitUpto++;
+    }
+  }
 
-      scorer.getDocInfo().setOriginalDocScore(hit.score);
-      hit.score = scorer.score();
-      if (hitUpto < topN) {
-        reranked[hitUpto] = hit;
-        // if the heap is not full, maybe I want to log the features for this
-        // document
+  protected void scoreSingleHit(IndexSearcher indexSearcher, int topN, LTRScoringQuery.ModelWeight modelWeight, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery rerankingModel, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
+    final FeatureLogger featureLogger = rerankingModel.getFeatureLogger();
+    // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
+    // call score
+    // even if no feature scorers match, since a model might use that info to
+    // return a
+    // non-zero score. Same applies for the case of advancing a LTRScoringQuery.ModelWeight.ModelScorer
+    // past the target
+    // doc since the model algorithm still needs to compute a potentially
+    // non-zero score from blank features.
+    assert (scorer != null);
+    final int targetDoc = docID - docBase;
+    scorer.docID();
+    scorer.iterator().advance(targetDoc);
+
+    scorer.getDocInfo().setOriginalDocScore(hit.score);
+    hit.score = scorer.score();
+    if (hitUpto < topN) {
+      reranked[hitUpto] = hit;
+      // if the heap is not full, maybe I want to log the features for this
+      // document
+      if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
+        featureLogger.log(hit.doc, rerankingModel, (SolrIndexSearcher) indexSearcher,
+            modelWeight.getFeaturesInfo());
+      }
+    } else if (hitUpto == topN) {
+      // collected topN document, I create the heap
+      heapify(reranked, topN);
+    }
+    if (hitUpto >= topN) {
+      // once that heap is ready, if the score of this document is lower that
+      // the minimum
+      // i don't want to log the feature. Otherwise I replace it with the
+      // minimum and fix the
+      // heap.
+      if (hit.score > reranked[0].score) {
+        reranked[0] = hit;
+        heapAdjust(reranked, topN, 0);
         if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-          featureLogger.log(hit.doc, reRankingModel, (SolrIndexSearcher)indexSearcher,
+          featureLogger.log(hit.doc, rerankingModel, (SolrIndexSearcher) indexSearcher,
               modelWeight.getFeaturesInfo());
         }
-      } else if (hitUpto == topN) {
-        // collected topN document, I create the heap
-        heapify(reranked, topN);
       }
-      if (hitUpto >= topN) {
-        // once that heap is ready, if the score of this document is lower that
-        // the minimum
-        // i don't want to log the feature. Otherwise I replace it with the
-        // minimum and fix the
-        // heap.
-        if (hit.score > reranked[0].score) {
-          reranked[0] = hit;
-          heapAdjust(reranked, topN, 0);
-          if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-            featureLogger.log(hit.doc, reRankingModel, (SolrIndexSearcher)indexSearcher,
-                modelWeight.getFeaturesInfo());
-          }
-        }
-      }
-      hitUpto++;
     }
   }
 

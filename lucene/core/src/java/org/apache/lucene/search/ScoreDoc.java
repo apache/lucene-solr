@@ -17,6 +17,8 @@
 package org.apache.lucene.search;
 
 
+import java.util.Objects;
+
 /** Holds one hit in {@link TopDocs}. */
 
 public class ScoreDoc {
@@ -47,5 +49,19 @@ public class ScoreDoc {
   @Override
   public String toString() {
     return "doc=" + doc + " score=" + score + " shardIndex=" + shardIndex;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ScoreDoc scoreDoc = (ScoreDoc) o;
+    return doc == scoreDoc.doc &&
+        shardIndex == scoreDoc.shardIndex;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(doc, shardIndex);
   }
 }
