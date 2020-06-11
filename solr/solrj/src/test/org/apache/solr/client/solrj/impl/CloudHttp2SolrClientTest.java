@@ -777,7 +777,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public ExpectedException exception = ExpectedException.none();
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12823")
   public void testWrongZkChrootTest() throws IOException {
 
     exception.expect(SolrException.class);
