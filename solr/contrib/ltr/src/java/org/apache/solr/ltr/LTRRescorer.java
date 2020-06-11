@@ -17,6 +17,7 @@
 package org.apache.solr.ltr;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -42,9 +43,9 @@ import org.apache.solr.search.SolrIndexSearcher;
  * */
 public class LTRRescorer extends Rescorer {
 
-  LTRScoringQuery scoringQuery;
-  public LTRRescorer(LTRScoringQuery scoringQuery) {
-    this.scoringQuery = scoringQuery;
+  LTRScoringQuery[] reRankingModels;
+  public LTRRescorer(LTRScoringQuery[] reRankingModels) {
+    this.reRankingModels = reRankingModels;
   }
 
   private void heapAdjust(ScoreDoc[] hits, int size, int root) {
@@ -114,33 +115,39 @@ public class LTRRescorer extends Rescorer {
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
-    final ScoreDoc[] reranked = new ScoreDoc[topN];
+    ScoreDoc[][] reRankedPerModel = new ScoreDoc[reRankingModels.length][];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-    final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-        .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
-
-    scoreFeatures(searcher, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
-    // Must sort all documents that we reranked, and then select the top
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
+    
+    for(int i=0;i<reRankingModels.length;i++){
+      reRankedPerModel[i] = new ScoreDoc[topN];
+      final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
+          .createWeight(searcher.rewrite(reRankingModels[i]), ScoreMode.COMPLETE, 1);
+      scoreFeatures(searcher, reRankingModels[i],topN, modelWeight, hits, leaves, reRankedPerModel[i]);
+      // Must sort all documents that we reranked, and then select the top
+      Arrays.sort(reRankedPerModel[i], new Comparator<ScoreDoc>() {
+        @Override
+        public int compare(ScoreDoc a, ScoreDoc b) {
+          // Sort by score descending, then docID ascending:
+          if (a.score > b.score) {
+            return -1;
+          } else if (a.score < b.score) {
+            return 1;
+          } else {
+            // This subtraction can't overflow int
+            // because docIDs are >= 0:
+            return a.doc - b.doc;
+          }
         }
-      }
-    });
-
-    return new TopDocs(firstPassTopDocs.totalHits, reranked);
+      });
+    }
+    ScoreDoc[] reRanked = reRankedPerModel[0];
+    if(reRankingModels.length>1){//Interleaving
+      
+    }
+    return new TopDocs(firstPassTopDocs.totalHits, reRanked);
   }
 
-  public void scoreFeatures(IndexSearcher indexSearcher, TopDocs firstPassTopDocs,
+  public void scoreFeatures(IndexSearcher indexSearcher, LTRScoringQuery reRankingModel,
       int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
       ScoreDoc[] reranked) throws IOException {
 
@@ -150,7 +157,7 @@ public class LTRRescorer extends Rescorer {
 
     LTRScoringQuery.ModelWeight.ModelScorer scorer = null;
     int hitUpto = 0;
-    final FeatureLogger featureLogger = scoringQuery.getFeatureLogger();
+    final FeatureLogger featureLogger = reRankingModel.getFeatureLogger();
 
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
@@ -186,7 +193,7 @@ public class LTRRescorer extends Rescorer {
         // if the heap is not full, maybe I want to log the features for this
         // document
         if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-          featureLogger.log(hit.doc, scoringQuery, (SolrIndexSearcher)indexSearcher,
+          featureLogger.log(hit.doc, reRankingModel, (SolrIndexSearcher)indexSearcher,
               modelWeight.getFeaturesInfo());
         }
       } else if (hitUpto == topN) {
@@ -203,7 +210,7 @@ public class LTRRescorer extends Rescorer {
           reranked[0] = hit;
           heapAdjust(reranked, topN, 0);
           if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-            featureLogger.log(hit.doc, scoringQuery, (SolrIndexSearcher)indexSearcher,
+            featureLogger.log(hit.doc, reRankingModel, (SolrIndexSearcher)indexSearcher,
                 modelWeight.getFeaturesInfo());
           }
         }
@@ -221,9 +228,17 @@ public class LTRRescorer extends Rescorer {
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
-    final Weight modelWeight = searcher.createWeight(searcher.rewrite(scoringQuery),
-        ScoreMode.COMPLETE, 1);
-    return modelWeight.explain(context, deBasedDoc);
+    List<Explanation> modelsExplanations = new ArrayList<>(reRankingModels.length);
+    for(LTRScoringQuery reRankingModel:reRankingModels){
+      final Weight modelWeight = searcher.createWeight(searcher.rewrite(reRankingModel),
+          ScoreMode.COMPLETE, 1);
+      modelsExplanations.add(modelWeight.explain(context, deBasedDoc));
+    }
+    if(reRankingModels.length>1) {
+      return Explanation.match(0, toString() + " score from model X has been chosen by Interleaving", modelsExplanations);//0 must be the real score chosen
+    } else {
+      return modelsExplanations.get(0);
+    }
   }
 
   public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(LTRScoringQuery.ModelWeight modelWeight,

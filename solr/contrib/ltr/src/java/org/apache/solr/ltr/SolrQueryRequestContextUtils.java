@@ -47,12 +47,12 @@ public class SolrQueryRequestContextUtils {
 
   /** scoring query accessors **/
 
-  public static void setScoringQuery(SolrQueryRequest req, LTRScoringQuery scoringQuery) {
-    req.getContext().put(SCORING_QUERY, scoringQuery);
+  public static void setScoringQuery(SolrQueryRequest req, LTRScoringQuery[] scoringQueries) {
+    req.getContext().put(SCORING_QUERY, scoringQueries);
   }
 
-  public static LTRScoringQuery getScoringQuery(SolrQueryRequest req) {
-    return (LTRScoringQuery) req.getContext().get(SCORING_QUERY);
+  public static LTRScoringQuery[] getScoringQueries(SolrQueryRequest req) {
+    return (LTRScoringQuery[]) req.getContext().get(SCORING_QUERY);
   }
 
   /** isExtractingFeatures flag accessors **/
@@ -71,12 +71,12 @@ public class SolrQueryRequestContextUtils {
 
   /** feature vector store name accessors **/
 
-  public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
-    req.getContext().put(STORE, fvStoreName);
+  public static void setFvStoreNames(SolrQueryRequest req, String[] fvStoreNames) {
+    req.getContext().put(STORE, fvStoreNames);
   }
 
-  public static String getFvStoreName(SolrQueryRequest req) {
-    return (String) req.getContext().get(STORE);
+  public static String[] getFvStoreNames(SolrQueryRequest req) {
+    return (String[]) req.getContext().get(STORE);
   }
 
 }

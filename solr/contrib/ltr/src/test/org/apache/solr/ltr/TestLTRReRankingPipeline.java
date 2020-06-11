@@ -151,7 +151,8 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
-    final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
+    LTRScoringQuery[] reRankingModels = new LTRScoringQuery[]{new LTRScoringQuery(ltrScoringModel)};
+    final LTRRescorer rescorer = new LTRRescorer(reRankingModels);
     hits = rescorer.rescore(searcher, hits, 2);
 
     // rerank using the field final-score
@@ -226,8 +227,9 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
     final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
-
-    final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
+    
+    LTRScoringQuery[] reRankingModels = new LTRScoringQuery[]{new LTRScoringQuery(ltrScoringModel)};
+    final LTRRescorer rescorer = new LTRRescorer(reRankingModels);
 
     // rerank @ 0 should not change the order
     hits = rescorer.rescore(searcher, hits, 0);
