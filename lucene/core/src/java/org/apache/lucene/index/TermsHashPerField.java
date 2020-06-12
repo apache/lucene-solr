@@ -71,7 +71,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     }
   }
 
-  public void initReader(ByteSliceReader reader, int termID, int stream) {
+  final void initReader(ByteSliceReader reader, int termID, int stream) {
     assert stream < streamCount;
     int intStart = postingsArray.intStarts[termID];
     final int[] ints = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
