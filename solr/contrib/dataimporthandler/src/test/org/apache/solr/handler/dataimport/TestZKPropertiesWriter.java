@@ -138,7 +138,7 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
     rows.add(AbstractDataImportHandlerTestCase.createMap("id", "1", "year_s", "2013"));
     MockDataSource.setIterator("select " + df.format(oneSecondAgo) + " from dummy", rows.iterator());
 
-    localQuery("/dataimport", makeRequest(core, "command", "full-import", "dataConfig",
+    localQuery("/dataimport", localMakeRequest(core, "command", "full-import", "dataConfig",
         generateConfig(), "clean", "true", "commit", "true", "synchronous",
         "true", "indent", "true"));
     props = spw.readIndexerProperties();
@@ -152,8 +152,8 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
     core.close();
   }
 
-  private SolrQueryRequest request(SolrCore core, String... q) {
-    LocalSolrQueryRequest req = makeRequest(core, q);
+  private static SolrQueryRequest request(SolrCore core, String... q) {
+    LocalSolrQueryRequest req = localMakeRequest(core, q);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(req.getParams());
     params.set("distrib", true);
@@ -181,7 +181,7 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
   /**
    * Code copied with some adaptations from {@link org.apache.solr.util.TestHarness.LocalRequestFactory#makeRequest(String...)}.
    */
-  private LocalSolrQueryRequest makeRequest(SolrCore core, String ... q) {
+  private static LocalSolrQueryRequest localMakeRequest(SolrCore core, String ... q) {
     if (q.length==1) {
       Map<String, String> args = new HashMap<>();
       args.put(CommonParams.VERSION,"2.2");
@@ -206,7 +206,7 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
    * Code copied from {@link org.apache.solr.util.TestHarness#query(String, SolrQueryRequest)} because it is not
    * <code>static</code> there (it could have been) and we do not have an instance of {@link org.apache.solr.util.TestHarness}.
    */
-  private String localQuery(String handler, SolrQueryRequest req) throws Exception {
+  private static String localQuery(String handler, SolrQueryRequest req) throws Exception {
     try {
       SolrCore core = req.getCore();
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -237,7 +237,7 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
    * Code copied from {@link org.apache.solr.SolrTestCaseJ4#assertQ(String, SolrQueryRequest, String...)} in order not to
    * use the instance of the {@link org.apache.solr.util.TestHarness}.
    */
-  private void localAssertQ(String message, SolrQueryRequest req, String... tests) {
+  private static void localAssertQ(String message, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       //since the default (standard) response format is now JSON
