@@ -53,7 +53,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException
   {
     final BinaryDocValues terms = DocValues.getBinary(readerContext.reader(), field);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();

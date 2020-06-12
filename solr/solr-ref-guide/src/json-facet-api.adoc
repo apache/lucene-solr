@@ -910,6 +910,8 @@ The `relatedness(...)` function is used to "score" these relationships, relative
 
 Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from its parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
+NOTE: The semantics of `relatedness(...)` in an `allBuckets` context is currently undefined. Accordingly, although the `relatedness(...)` stat may be specified for a facet request that also specifies `allBuckets:true`, the `allBuckets` bucket itself will not include a relatedness calculation.
+
 NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[relatedness-options]]

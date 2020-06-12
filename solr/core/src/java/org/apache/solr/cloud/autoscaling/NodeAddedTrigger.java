@@ -153,10 +153,12 @@ public class NodeAddedTrigger extends TriggerBase {
   protected void setState(Map<String, Object> state) {
     this.lastLiveNodes.clear();
     this.nodeNameVsTimeAdded.clear();
+    @SuppressWarnings({"unchecked"})
     Collection<String> lastLiveNodes = (Collection<String>)state.get("lastLiveNodes");
     if (lastLiveNodes != null) {
       this.lastLiveNodes.addAll(lastLiveNodes);
     }
+    @SuppressWarnings({"unchecked"})
     Map<String,Long> nodeNameVsTimeAdded = (Map<String,Long>)state.get("nodeNameVsTimeAdded");
     if (nodeNameVsTimeAdded != null) {
       this.nodeNameVsTimeAdded.putAll(nodeNameVsTimeAdded);

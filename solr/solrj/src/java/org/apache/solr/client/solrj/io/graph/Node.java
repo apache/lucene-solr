@@ -51,12 +51,12 @@ public class Node {
   }
 
   public Tuple toTuple(String collection, String field, int level, Traversal traversal) {
-    Map map = new HashMap();
+    Tuple tuple = new Tuple();
 
-    map.put("node", id);
-    map.put("collection", collection);
-    map.put("field", field);
-    map.put("level", level);
+    tuple.put("node", id);
+    tuple.put("collection", collection);
+    tuple.put("field", field);
+    tuple.put("level", level);
 
     boolean prependCollection = traversal.isMultiCollection();
     List<String> cols = traversal.getCollections();
@@ -76,15 +76,15 @@ public class Node {
         }
       }
 
-      map.put("ancestors", l);
+      tuple.put("ancestors", l);
     }
 
     if(metrics != null) {
       for(Metric metric : metrics) {
-        map.put(metric.getIdentifier(), metric.getValue());
+        tuple.put(metric.getIdentifier(), metric.getValue());
       }
     }
 
-    return new Tuple(map);
+    return tuple;
   }
 }

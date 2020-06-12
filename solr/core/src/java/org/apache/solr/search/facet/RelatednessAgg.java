@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -36,7 +37,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,6 +163,8 @@ public class RelatednessAgg extends AggValueSource {
     return new Merger(this);
   }
   
+  private static final String IMPLIED_KEY = "implied";
+
   private static final class SKGSlotAcc extends SlotAcc {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
@@ -186,7 +188,22 @@ public class RelatednessAgg extends AggValueSource {
       
       assert null != slotContext;
       
-      Query slotQ = slotContext.apply(slot).getSlotQuery();
+      final BucketData slotVal = new BucketData(agg);
+      slotvalues[slot] = slotVal;
+      
+      final SlotContext ctx = slotContext.apply(slot);
+      if (ctx.isAllBuckets()) {
+        // relatedness is meaningless for allBuckets (see SOLR-14467)
+        // our current (implied & empty) BucketData is all we need
+        //
+        // NOTE: it might be temping to use 'slotvalues[slot] = null' in this case
+        // since getValue() will also ultimately generate an implied bucket in that case,
+        // but by using a non-null bucket we let collect(int,...) know it doesn't need to keep calling
+        // processSlot over and over.
+        return;
+      }
+      
+      Query slotQ = ctx.getSlotQuery();
       if (null == slotQ) {
         // extremeley special edge case...
         // the only way this should be possible is if our relatedness() function is used as a "top level"
@@ -198,11 +215,9 @@ public class RelatednessAgg extends AggValueSource {
       // ...and in which case we should just use the current base
       final DocSet slotSet = null == slotQ ? fcontext.base : fcontext.searcher.getDocSet(slotQ);
 
-      final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
       slotVal.incCounts(fgSet.intersectionSize(slotSet),
                         bgSet.intersectionSize(slotSet));
-      slotvalues[slot] = slotVal;
     }
     
     @Override
@@ -247,7 +262,7 @@ public class RelatednessAgg extends AggValueSource {
     public Object getValue(int slotNum) {
       BucketData slotVal = slotvalues[slotNum];
       if (null == slotVal) {
-        // since we haven't been told about any docs for this slot, use a slot w/no counts,
+        // since we haven't collected any docs for this slot, use am (implied) slot w/no counts,
         // just the known fg/bg sizes. (this is most likely a refinement request for a bucket we dont have)
         slotVal = new BucketData(agg);
         slotVal.incSizes(fgSize, bgSize);
@@ -280,12 +295,22 @@ public class RelatednessAgg extends AggValueSource {
    * @see SKGSlotAcc
    * @see Merger
    */
-  private static final class BucketData implements Comparable<BucketData> {
+  private static class BucketData implements Comparable<BucketData> {
     private RelatednessAgg agg;
     private long fg_size = 0;
     private long bg_size = 0;
     private long fg_count = 0;
     private long bg_count = 0;
+
+    /**
+     * Buckets are implied until/unless counts are explicitly incremented (even if those counts are 0)
+     * An implied bucket means we have no real data for it -- it may be useful for a per-Shard request
+     * to return "size" info of a bucket that doesn't exist on the current shard, or it may represent
+     * the <code>allBuckets</code> bucket.
+     *
+     * @see #incCounts
+     */
+    private boolean implied;
     
     /** 
      * NaN indicates that <b>all</a> derived values need (re)-computed
@@ -306,6 +331,7 @@ public class RelatednessAgg extends AggValueSource {
     
     public BucketData(final RelatednessAgg agg) {
       this.agg = agg;
+      this.implied = true;
     }
 
     /** 
@@ -313,9 +339,10 @@ public class RelatednessAgg extends AggValueSource {
      * derived values that may be cached
      */
     public void incCounts(final long fgInc, final long bgInc) {
-        this.relatedness = Double.NaN;
-        fg_count += fgInc;
-        bg_count += bgInc;
+      this.implied = false;
+      this.relatedness = Double.NaN;
+      fg_count += fgInc;
+      bg_count += bgInc;
     }
     /** 
      * Increment both the foreground &amp; background <em>sizes</em> for the current bucket, reseting any
@@ -329,7 +356,7 @@ public class RelatednessAgg extends AggValueSource {
     
     @Override
     public int hashCode() {
-      return Objects.hash(this.getClass(), fg_count, bg_count, fg_size, bg_size, agg);
+      return Objects.hash(this.getClass(), implied, fg_count, bg_count, fg_size, bg_size, agg);
     }
     
     @Override
@@ -339,7 +366,8 @@ public class RelatednessAgg extends AggValueSource {
       }
       BucketData that = (BucketData)other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare counts first
-      return Objects.equals(this.fg_count, that.fg_count)
+      return Objects.equals(this.implied, that.implied)
+        && Objects.equals(this.fg_count, that.fg_count)
         && Objects.equals(this.bg_count, that.bg_count)
         && Objects.equals(this.fg_size, that.fg_size)
         && Objects.equals(this.bg_size, that.bg_size)
@@ -408,16 +436,36 @@ public class RelatednessAgg extends AggValueSource {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public SimpleOrderedMap externalize(final boolean isShardRequest) {
       SimpleOrderedMap result = new SimpleOrderedMap<Number>();
+
+      // if counts are non-zero, then this bucket must not be implied
+      assert 0 == fg_count || ! implied : "Implied bucket has non-zero fg_count";
+      assert 0 == bg_count || ! implied : "Implied bucket has non-zero bg_count";
       
       if (isShardRequest) {
-        result.add(FG_COUNT, fg_count);
-        result.add(BG_COUNT, bg_count);
+        // shard responses must include size info, but don't need the derived stats
+        //
         // NOTE: sizes will be the same for every slot...
         // TODO: it would be nice to put them directly in the parent facet, instead of every bucket,
         // in order to reduce the size of the response.
         result.add(FG_SIZE, fg_size); 
         result.add(BG_SIZE, bg_size);
+        
+        if (implied) {
+          // for an implied bucket on this shard, we don't need to bother returning the (empty)
+          // counts, just the flag explaining that this bucket is (locally) implied...
+          result.add(IMPLIED_KEY, Boolean.TRUE);
+        } else {
+          result.add(FG_COUNT, fg_count); 
+          result.add(BG_COUNT, bg_count);
+        }
       } else {
+        if (implied) {
+          // When returning results to an external client, any bucket still 'implied' shouldn't return
+          // any results at all.
+          // (practically speaking this should only happen for the 'allBuckets' bucket
+          return null;
+        }
+
         // there's no need to bother computing these when returning results *to* a shard coordinator
         // only useful to external clients 
         result.add(RELATEDNESS, this.getRelatedness());
@@ -441,9 +489,22 @@ public class RelatednessAgg extends AggValueSource {
     @Override
     public void merge(Object facetResult, Context mcontext) {
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> shardData = (NamedList<Object>)facetResult;
+      final NamedList<Object> shardData = (NamedList<Object>)facetResult;
+      
+      final boolean shardImplied = Optional.ofNullable((Boolean)shardData.remove(IMPLIED_KEY)).orElse(false);
+      
+      // regardless of wether this shard is implied, we want to know it's size info...
       mergedData.incSizes((Long)shardData.remove(FG_SIZE), (Long)shardData.remove(BG_SIZE));
-      mergedData.incCounts((Long)shardData.remove(FG_COUNT), (Long)shardData.remove(BG_COUNT));
+
+      if (! shardImplied) {
+        // only merge in counts from non-implied shard buckets...
+        mergedData.incCounts((Long)shardData.remove(FG_COUNT), (Long)shardData.remove(BG_COUNT));
+      } else {
+        // if this shard is implied, we shouldn't have even gotten counts...
+        assert shardImplied;
+        assert null == shardData.remove(FG_COUNT);
+        assert null == shardData.remove(BG_COUNT);
+      }
     }
 
     @Override

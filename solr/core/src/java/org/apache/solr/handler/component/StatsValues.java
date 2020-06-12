@@ -35,7 +35,7 @@ public interface StatsValues {
    *
    * @param stv NamedList whose values will be used to accumulate the current values
    */
-  void accumulate(NamedList stv);
+  void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv);
 
   /** Accumulate the value associated with <code>docID</code>.
    *  @see #setNextReader(org.apache.lucene.index.LeafReaderContext) */

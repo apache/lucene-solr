@@ -32,6 +32,7 @@ import java.util.Map;
 public class TestFieldReader extends AbstractDataImportHandlerTestCase {
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void simple() {
     DataImporter di = new DataImporter();
     di.loadAndInit(config);

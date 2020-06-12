@@ -209,6 +209,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.nanoTime();
@@ -219,6 +220,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     if (event.getBytes() != null) {
       SolrResponse response = OverseerSolrResponseSerializer.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
       if (exp != null) {
         Integer code = (Integer) exp.get("rspCode");
@@ -282,6 +284,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         return CollectionsHandler.copy(req.getParams().required(), null, NAME);
       }
     },
+    @SuppressWarnings({"unchecked"})
     LIST_OP(LIST) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {

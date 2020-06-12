@@ -63,6 +63,7 @@ public final class CommitTracker implements Runnable {
   //  Not a big deal but it means we must take care of MDC logging here.
   private final ScheduledExecutorService scheduler =
       Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
+  @SuppressWarnings({"rawtypes"})
   private ScheduledFuture pending;
   
   // state

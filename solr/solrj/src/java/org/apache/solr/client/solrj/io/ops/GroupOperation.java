@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -108,15 +107,15 @@ public class GroupOperation implements ReduceOperation {
   public Tuple reduce() {
     LinkedList ll = new LinkedList();
     while(priorityQueue.size() > 0) {
-      ll.addFirst(priorityQueue.poll().getMap());
+      ll.addFirst(priorityQueue.poll().getFields());
       //This will clear priority queue and so it will be ready for the next group.
     }
 
     List<Map> list = new ArrayList(ll);
     Map groupHead = list.get(0);
-    Map map = new HashMap(groupHead);
-    map.put("group", list);
-    return new Tuple(map);
+    Tuple tuple = new Tuple(groupHead);
+    tuple.put("group", list);
+    return tuple;
   }
 
   public void operate(Tuple tuple) {

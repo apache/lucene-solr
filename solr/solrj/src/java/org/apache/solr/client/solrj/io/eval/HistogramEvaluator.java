@@ -19,10 +19,8 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -71,17 +69,17 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
 
     List<Tuple> histogramBins = new ArrayList<>();
     for(SummaryStatistics binSummary : distribution.getBinStats()) {
-      Map<String,Number> map = new HashMap<>();
-      map.put("max", binSummary.getMax());
-      map.put("mean", binSummary.getMean());
-      map.put("min", binSummary.getMin());
-      map.put("stdev", binSummary.getStandardDeviation());
-      map.put("sum", binSummary.getSum());
-      map.put("N", binSummary.getN());
-      map.put("var", binSummary.getVariance());
-      map.put("cumProb", distribution.cumulativeProbability(binSummary.getMean()));
-      map.put("prob", distribution.probability(binSummary.getMin(), binSummary.getMax()));
-      histogramBins.add(new Tuple(map));
+      Tuple tuple = new Tuple();
+      tuple.put("max", binSummary.getMax());
+      tuple.put("mean", binSummary.getMean());
+      tuple.put("min", binSummary.getMin());
+      tuple.put("stdev", binSummary.getStandardDeviation());
+      tuple.put("sum", binSummary.getSum());
+      tuple.put("N", binSummary.getN());
+      tuple.put("var", binSummary.getVariance());
+      tuple.put("cumProb", distribution.cumulativeProbability(binSummary.getMean()));
+      tuple.put("prob", distribution.probability(binSummary.getMin(), binSummary.getMax()));
+      histogramBins.add(tuple);
     }
     
     return histogramBins;

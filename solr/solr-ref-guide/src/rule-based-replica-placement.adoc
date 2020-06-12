@@ -174,4 +174,4 @@ Rules are specified per collection during collection creation as request paramet
 snitch=class:EC2Snitch&rule=shard:*,replica:1,dc:dc1&rule=shard:*,replica:<2,dc:dc3
 ----
 
-These rules are persisted in `clusterstate.json` in ZooKeeper and are available throughout the lifetime of the collection. This enables the system to perform any future node allocation without direct user interaction. The rules added during collection creation can be modified later using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> API.
+These rules are persisted in the collection's `state.json` in ZooKeeper and are available throughout the lifetime of the collection. This enables the system to perform any future node allocation without direct user interaction. The rules added during collection creation can be modified later using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> API.

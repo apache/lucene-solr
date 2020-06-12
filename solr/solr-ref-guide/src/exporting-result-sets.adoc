@@ -59,6 +59,34 @@ It can get worse otherwise.
 
 The `fl` property defines the fields that will be exported with the result set. Any of the field types that can be sorted (i.e., int, long, float, double, string, date, boolean) can be used in the field list. The fields can be single or multi-valued. However, returning scores and wildcards are not supported at this time.
 
+=== Specifying the Local Streaming Expression
+
+The optional `expr` property defines a <<streaming-expressions.adoc#streaming-expressions,stream expression>> that allows documents to be processed locally before they are exported in the result set.
+
+Expressions have to use a special `input()` stream that represents original results from the `/export` handler. Output from the stream expression then becomes the output from the `/export` handler. The `&streamLocalOnly=true` flag is always set for this streaming expression.
+
+Only stream <<stream-decorator-reference.adoc#stream-decorator-reference,decorators>> and <<stream-evaluator-reference.adoc#stream-evaluator-reference,evaluators>> are supported in these expressions - using any of the <<stream-source-reference.adoc#stream-source-reference,source>> expressions except for the pre-defined `input()` will result in an error.
+
+Using stream expressions with the `/export` handler may result in dramatic performance improvements due to the local in-memory reduction of the number of documents to be returned.
+
+Here's an example of using `top` decorator for returning only top N results:
+[source,text]
+----
+http://localhost:8983/solr/core_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+----
+
+(Note that the sort spec in the `top` decorator must match the sort spec in the
+handler parameter).
+
+Here's an example of using `unique` decorator:
+
+[source,text]
+----
+http://localhost:8983/solr/core_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+----
+
+(Note that the `over` parameter must use one of the fields requested in the `fl` parameter).
+
 == Distributed Support
 
 See the section <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>> for distributed support.
