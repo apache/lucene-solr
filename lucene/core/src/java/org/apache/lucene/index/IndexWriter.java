@@ -3178,12 +3178,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               deleter.decRef(sci.files());
             }
           }
-          // Construct a OneMerge that applies to toCommit
-          MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
-          applicableMerge.info = this.info.clone();
-          long segmentCounter = Long.parseLong(this.info.info.name.substring(1), Character.MAX_RADIX);
-          toCommit.counter = Math.max(toCommit.counter, segmentCounter + 1);
-          toCommit.applyMergeChanges(applicableMerge, false);
+          if (toCommitMergedAwaySegments.size() > 0) {
+            // Construct a OneMerge that applies to toCommit
+            MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
+            applicableMerge.info = this.info.clone();
+            long segmentCounter = Long.parseLong(this.info.info.name.substring(1), Character.MAX_RADIX);
+            toCommit.counter = Math.max(toCommit.counter, segmentCounter + 1);
+            toCommit.applyMergeChanges(applicableMerge, false);
+          }
         }
         mergeAwaitLatch.countDown();
       }
