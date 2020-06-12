@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.facet.SlotAcc.ShimSweepingCountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 

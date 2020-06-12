@@ -665,13 +665,9 @@ public abstract class SlotAcc implements Closeable {
     private final List<SlotAcc> output = new ArrayList<>();
 
     SweepingCountSlotAcc(int numSlots, FacetFieldProcessor p) {
-      this(numSlots, p, null);
-    }
-
-    private SweepingCountSlotAcc(int numSlots, FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
       super(p.fcontext, numSlots);
       this.p = p;
-      this.base = new SweepCountAccStruct(fcontext.base, true, baseCountAcc == null ? this : baseCountAcc);
+      this.base = new SweepCountAccStruct(fcontext.base, true, this);
       final FacetDebugInfo fdebug = fcontext.getDebugInfo();
       this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
       if (null != this.debug) {
@@ -743,99 +739,6 @@ public abstract class SlotAcc implements Closeable {
       for (SlotAcc acc : output) {
         acc.setValues(bucket, slotNum);
       }
-    }
-  }
-
-  /**
-   * Normally, {@link SweepingCountSlotAcc} (as a subclass of {@link CountSlotArrAcc}) acts as its own base countAcc.
-   *
-   * But there are some cases where we want to override the default behavior by explicitly setting the base countAcc to
-   * something other than "this", on a {@link FacetFieldProcessor} whose "collect" implementation accumulates counts via
-   * sweep objects (e.g., {@link SweepDocIterator}, {@link SweepDISI}).
-   *
-   * There are two situations in which this may happen:
-   *
-   *   1. If a subclass sets a custom countAcc that doesn't support sweep collection
-   *
-   *   2. In the case of special-purpose countAccs, like {@link SlotAcc#DEV_NULL_SLOT_ACC}
-   *
-   * For these cases, {@link ShimSweepingCountSlotAcc} facilitates the creation of singleton sweep countAcc objects
-   * (e.g., {@link SweepDocIterator}, {@link SweepDISI}) over the custom countAcc for purposes of collection, while not
-   * offering the collectAcc the opportunity to register any sweeping accs.
-   */
-  static class ShimSweepingCountSlotAcc extends SweepingCountSlotAcc {
-    private static final String EXCEPTION_MESSAGE = ShimSweepingCountSlotAcc.class + " does not support read/write access methods";
-    ShimSweepingCountSlotAcc(FacetFieldProcessor p, CountSlotAcc baseCountAcc) {
-      super(0, p, baseCountAcc);
-      assert baseCountAcc != null;
-    }
-    @Override
-    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public int compare(int slotA, int slotB) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void incrementCount(int slot, long count) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public long getCount(int slot) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    long[] getCountArray() {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void reset() throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void resize(Resizer resizer) {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    protected void resetIterators() throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public void close() throws IOException {
-      throw new UnsupportedOperationException(EXCEPTION_MESSAGE);
-    }
-    @Override
-    public String toString() {
-      return getClass().getSimpleName()+'{'+base.countAcc+'}';
     }
   }
 
@@ -917,7 +820,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) {
       // TODO: count arrays can use fewer bytes based on the number of docs in
       // the base set (that's the upper bound for single valued) - look at ttf?
       result[slotNum]++;
@@ -949,7 +852,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       Arrays.fill(result, 0);
     }
 

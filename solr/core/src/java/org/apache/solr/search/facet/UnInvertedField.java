@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -329,8 +330,17 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepingCountSlotAcc sweepCountAcc = processor.registerSweepingAccIfSupportedByCollectAcc();
-    SweepCountAccStruct baseCountAccStruct = sweepCountAcc.base;
+    SweepCountAccStruct baseCountAccStruct;
+    final List<SweepCountAccStruct> others;
+    if (processor.countAcc instanceof SweepingCountSlotAcc) {
+      SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
+      processor.registerSweepingAccIfSupportedByCollectAcc(sweepCountAcc);
+      baseCountAccStruct = sweepCountAcc.base;
+      others = sweepCountAcc.others;
+    } else {
+      baseCountAccStruct = new SweepCountAccStruct(processor.fcontext.base, true, processor.countAcc);
+      others = Collections.emptyList();
+    }
 
     final int[] index = this.index;
 
@@ -351,7 +361,7 @@ public class UnInvertedField extends DocTermOrds {
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorting by index order
       final int termOrd = tt.termNum;
-      Iterator<SweepCountAccStruct> othersIter = sweepCountAcc.others.iterator();
+      Iterator<SweepCountAccStruct> othersIter = others.iterator();
       SweepCountAccStruct entry = baseCountAccStruct != null ? baseCountAccStruct : othersIter.next();
       for (;;) {
         entry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
@@ -366,7 +376,7 @@ public class UnInvertedField extends DocTermOrds {
     // where we already have enough terms from the bigTerms
 
     if (termInstances > 0) {
-      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, sweepCountAcc.others);
+      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
       final SweepDocIterator iter = iterAndCounts.iter;
       final SegCountGlobal counts = new SegCountGlobal(iterAndCounts.countAccs);
       while (iter.hasNext()) {
@@ -449,7 +459,17 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepingCountSlotAcc sweepCountAcc = processor.registerSweepingAccIfSupportedByCollectAcc();
+    final SweepCountAccStruct baseCountAccStruct;
+    final List<SweepCountAccStruct> others;
+    if (countAcc instanceof SweepingCountSlotAcc) {
+      SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) countAcc;
+      processor.registerSweepingAccIfSupportedByCollectAcc(sweepCountAcc);
+      baseCountAccStruct = sweepCountAcc.base;
+      others = sweepCountAcc.others;
+    } else {
+      baseCountAccStruct = new SweepCountAccStruct(processor.fcontext.base, true, countAcc);
+      others = Collections.emptyList();
+    }
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
@@ -460,7 +480,7 @@ public class UnInvertedField extends DocTermOrds {
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
         final int termOrd = tt.termNum - startTermIndex;
         countAcc.incrementCount(termOrd, collected);
-        for (SweepCountAccStruct entry : sweepCountAcc.others) {
+        for (SweepCountAccStruct entry : others) {
           entry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
         }
         if (collected > 0) {
@@ -482,7 +502,7 @@ public class UnInvertedField extends DocTermOrds {
 
       // TODO: handle facet.prefix here!!!
 
-      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(sweepCountAcc.base, sweepCountAcc.others);
+      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
       final SweepDocIterator iter = sweepIterAndCounts.iter;
       final CountSlotAcc[] countAccs = sweepIterAndCounts.countAccs;
       final SegCountGlobal counts = new SegCountGlobal(countAccs);

@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.DocValues;
@@ -33,6 +34,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
@@ -94,7 +96,17 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    final SweepingCountSlotAcc sweepingCountAcc = registerSweepingAccIfSupportedByCollectAcc();
+    final SweepCountAccStruct base;
+    final List<SweepCountAccStruct> others;
+    if (countAcc instanceof SweepingCountSlotAcc) {
+      SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
+      registerSweepingAccIfSupportedByCollectAcc(sweepingCountAcc);
+      base = sweepingCountAcc.base;
+      others = sweepingCountAcc.others;
+    } else {
+      base = new SweepCountAccStruct(fcontext.base, true, countAcc);
+      others = Collections.emptyList();
+    }
     
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
@@ -120,7 +132,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final int maxSize = sweepingCountAcc.others.size() + (sweepingCountAcc.base == null ? 0 : 1);
+    final int maxSize = others.size() + (base == null ? 0 : 1);
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
     final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
@@ -130,7 +142,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi = SweepDISI.newInstance(sweepingCountAcc, subIterators, activeCountAccs, subCtx);
+      final SweepDISI disi = SweepDISI.newInstance(base, others, subIterators, activeCountAccs, subCtx);
       if (disi == null) {
         continue;
       }

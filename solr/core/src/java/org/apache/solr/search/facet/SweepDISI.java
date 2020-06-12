@@ -17,10 +17,12 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
@@ -44,15 +46,15 @@ public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAw
     return true;
   }
 
-  static SweepDISI newInstance(SweepingCountSlotAcc sweep, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
+  static SweepDISI newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
     int activeCt = 0;
     final int baseIdx;
-    if (sweep.base == null || !addAcc(sweep.base, subIterators, activeCountAccs, subCtx, activeCt)) {
+    if (base == null || !addAcc(base, subIterators, activeCountAccs, subCtx, activeCt)) {
       baseIdx = -1;
     } else {
       baseIdx = activeCt++;
     }
-    for (SweepCountAccStruct entry : sweep.others) {
+    for (SweepCountAccStruct entry : others) {
       if (addAcc(entry, subIterators, activeCountAccs, subCtx, activeCt)) {
         activeCt++;
       }
