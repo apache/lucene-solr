@@ -141,6 +141,9 @@ Improvements
 * SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
   Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
+* SOLR-14566: Solr now logs the NOW value on coordinator requests that is used on downstream per-shard requests.  This
+  allows easier association between shard requests and their corresponding coordinator request when reading logs. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
