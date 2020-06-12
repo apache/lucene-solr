@@ -151,7 +151,6 @@ public class CoreContainer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
-  private Set<Path> allowPaths;
 
   public static class CoreLoadFailure {
 
@@ -239,6 +238,7 @@ public class CoreContainer {
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
+  private Set<Path> allowPaths;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -1282,7 +1282,7 @@ public class CoreContainer {
    * @param path path to check
    * @throws SolrException if path is outside allowed paths
    */
-  protected void assertAllowedCorePath(Path path) throws SolrException {
+  public void assertAllowedCorePath(Path path) throws SolrException {
     if (path.normalize().equals(path) && !path.isAbsolute()) return;
     if (allowPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -1532,7 +1532,6 @@ public class CoreContainer {
   public Map<String, CoreLoadFailure> getCoreInitFailures() {
     return ImmutableMap.copyOf(coreInitFailures);
   }
-
 
   // ---------------- Core name related methods ---------------
 
