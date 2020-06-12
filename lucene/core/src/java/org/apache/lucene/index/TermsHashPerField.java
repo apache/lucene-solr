@@ -47,6 +47,8 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   final BytesRefHash bytesHash;
 
   ParallelPostingsArray postingsArray;
+  private int lastDocID; // only with assert
+
 
   /** streamCount: how many streams this field stores per term.
    * E.g. doc(+freq) is 1 stream, prox+offset is a second. */
@@ -132,10 +134,16 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     newTerm(termID, docID);
   }
 
+  private boolean assertDocId(int docId) {
+    assert docId >= lastDocID : "docID must be >= " + lastDocID + " but was: " + docId;
+    lastDocID = docId;
+    return true;
+  }
   /** Called once per inverted token.  This is the primary
    *  entry point (for first TermsHash); postings use this
    *  API. */
   void add(BytesRef termBytes, final int docID) throws IOException {
+    assert assertDocId(docID);
     // We are first in the chain so we must "intern" the
     // term text into textStart address
     // Get the text & hash of this term.

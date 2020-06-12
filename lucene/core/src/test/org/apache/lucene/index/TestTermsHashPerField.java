@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -90,8 +89,8 @@ public class TestTermsHashPerField extends LuceneTestCase  {
     return hash;
   }
 
-  boolean assertDocAndFreq(ByteSliceReader reader, FreqProxTermsWriterPerField.FreqProxPostingsArray postingsArray, int termId, int doc, int frequency) throws IOException {
-    int docId = 0;
+  boolean assertDocAndFreq(ByteSliceReader reader, FreqProxTermsWriterPerField.FreqProxPostingsArray postingsArray, int prevDoc, int termId, int doc, int frequency) throws IOException {
+    int docId = prevDoc;
     int freq;
     boolean eof = reader.eof();
     if (eof) {
@@ -129,26 +128,32 @@ public class TestTermsHashPerField extends LuceneTestCase  {
     hash.add(new BytesRef("verylongfoobarbaz"), 1); // tid = 4;
     hash.finish();
     hash.add(new BytesRef("verylongfoobarbaz"), 2);
-    hash.add(new BytesRef("end"), 2); // tid = 5;
+    hash.add(new BytesRef("boom"), 2); // tid = 5;
+    hash.finish();
+    hash.add(new BytesRef("verylongfoobarbaz"), 3);
+    hash.add(new BytesRef("end"), 3); // tid = 6;
     hash.finish();
 
-    assertEquals(6, newCalled.get());
-    assertEquals(5, addCalled.get());
+    assertEquals(7, newCalled.get());
+    assertEquals(6, addCalled.get());
     final ByteSliceReader reader = new ByteSliceReader();
     hash.initReader(reader, 0, 0);
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 0, 1));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 0, 0, 1));
     hash.initReader(reader, 1, 0);
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 1, 0, 1));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 1, 0, 1));
     hash.initReader(reader, 2, 0);
-    assertFalse(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 2, 0, 1));
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 2, 1, 3));
+    assertFalse(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 2, 0, 1));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 2, 2, 1, 3));
     hash.initReader(reader, 3, 0);
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 3, 1, 2));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 3, 1, 2));
     hash.initReader(reader, 4, 0);
-    assertFalse(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 4, 1, 1));
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 4, 2, 1));
+    assertFalse(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 4, 1, 1));
+    assertFalse(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 1, 4, 2, 1));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 2, 4, 3, 1));
     hash.initReader(reader, 5, 0);
-    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 5, 2, 1));
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 5, 2, 1));
+    hash.initReader(reader, 6, 0);
+    assertTrue(assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray, 0, 6, 3, 1));
   }
 
   public void testAddAndUpdateRandom() throws IOException {
@@ -192,13 +197,14 @@ public class TestTermsHashPerField extends LuceneTestCase  {
     for (Posting p : values) {
       hash.initReader(reader, p.termId, 0);
       boolean eof = false;
+      int prefDoc = 0;
       for (Map.Entry<Integer, Integer> entry : p.docAndFreq.entrySet()) {
         assertFalse("the reader must not be EOF here", eof);
         eof = assertDocAndFreq(reader, (FreqProxTermsWriterPerField.FreqProxPostingsArray) hash.postingsArray,
-            p.termId, entry.getKey(), entry.getValue());
+            prefDoc, p.termId, entry.getKey(), entry.getValue());
+        prefDoc = entry.getKey();
       }
       assertTrue("the last posting must be EOF on the reader", eof);
     }
   }
-
 }
