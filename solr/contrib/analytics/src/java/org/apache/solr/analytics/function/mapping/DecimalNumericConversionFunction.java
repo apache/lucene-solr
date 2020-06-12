@@ -103,7 +103,7 @@ public class DecimalNumericConversionFunction {
   public static class RoundFunction {
     public static final String name = "round";
     public static final CreatorFunction creatorFunction = (params -> {
-      return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> (int)Math.round(val), val -> (long)Math.round(val), params);
+      return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> Math.round(val), val -> Math.round(val), params);
     });
   }
 
