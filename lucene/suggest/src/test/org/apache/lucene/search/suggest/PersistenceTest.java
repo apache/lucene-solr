@@ -50,7 +50,8 @@ public class PersistenceTest extends LuceneTestCase {
   public void testTSTPersistence() throws Exception {
     runTest(TSTLookup.class, true);
   }
-  
+
+  @Deprecated
   public void testJaspellPersistence() throws Exception {
     runTest(JaspellLookup.class, true);
   }
