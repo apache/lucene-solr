@@ -348,7 +348,9 @@ public class CoreContainer {
     }
     if (!cfg.getAllowPaths().isEmpty()) {
       this.allowPaths.addAll(cfg.getAllowPaths());
-      log.info("Allowing cores to use paths: {}", cfg.getAllowPaths());
+      if (log.isInfoEnabled()) {
+        log.info("Allowing cores to use paths: {}", cfg.getAllowPaths());
+      }
     }
   }
 
