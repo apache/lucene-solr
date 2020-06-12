@@ -352,9 +352,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void assertAllowedCorePath() throws Exception {
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
     try {
-      cc.assertAllowedCorePath(Paths.get("/tmp/foo"));
+      cc.assertPathAllowed(Paths.get("/tmp/foo"));
       try {
-        cc.assertAllowedCorePath(Paths.get("/home/foo"));
+        cc.assertPathAllowed(Paths.get("/home/foo"));
         fail("allowPaths check failed");
       } catch (SolrException e) { /* ignored */ }
     }
