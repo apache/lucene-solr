@@ -20,8 +20,6 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.DocIterator;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 final class UnionDocIterator extends SweepDocIterator {
 
@@ -95,7 +93,7 @@ final class UnionDocIterator extends SweepDocIterator {
   }
 
   @Override
-  public int registerCounts(SegCountGlobal segCounts) {
+  public int registerCounts(SegCounter segCounts) {
     int i = -1;
     do {
       if (!collectBase && top == baseSub) {
@@ -106,18 +104,4 @@ final class UnionDocIterator extends SweepDocIterator {
     } while ((top = queue.updateTop()).docId == docId);
     return i;
   }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounts) {
-    int i = -1;
-    do {
-      if (!collectBase && top == baseSub) {
-        collectBase = true;
-      }
-      segCounts.map(top.index, ++i);
-      top.nextDoc();
-    } while ((top = queue.updateTop()).docId == docId);
-    return i;
-  }
-
 }

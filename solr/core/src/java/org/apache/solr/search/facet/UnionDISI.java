@@ -19,8 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 
 final class UnionDISI extends SweepDISI {
@@ -86,27 +84,8 @@ final class UnionDISI extends SweepDISI {
     return collectBase;
   }
 
-  // nocommit: even if there are reasons why SweepCountAware should define 2 distinct registerCounts methods
-  // nocommit: since the impls here are idenitcal, and only depend on the common SegCounter.map method, we
-  // nocommit: might as well refactor these identical impls to just be stubs that call a new
-  // nocommit: 'private int _registerCounts(SegCounter)'
-  
-  
   @Override
-  public int registerCounts(SegCountGlobal segCounter) throws IOException {
-    int i = -1;
-    do {
-      if (!collectBase && top == baseSub) {
-        collectBase = true;
-      }
-      segCounter.map(top.index, ++i);
-      top.nextDoc();
-    } while ((top = queue.updateTop()).docId == docId);
-    return i;
-  }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounter) throws IOException {
+  public int registerCounts(SegCounter segCounter) throws IOException {
     int i = -1;
     do {
       if (!collectBase && top == baseSub) {

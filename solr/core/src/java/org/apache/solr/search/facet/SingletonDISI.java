@@ -18,8 +18,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 
 final class SingletonDISI extends SweepDISI {
@@ -44,13 +42,7 @@ final class SingletonDISI extends SweepDISI {
   }
 
   @Override
-  public int registerCounts(SegCountGlobal segCounter) {
+  public int registerCounts(SegCounter segCounter) {
     return 0;
   }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounter) {
-    return 0;
-  }
-
 }

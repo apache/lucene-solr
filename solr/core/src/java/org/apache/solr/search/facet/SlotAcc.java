@@ -609,22 +609,35 @@ public abstract class SlotAcc implements Closeable {
      * be covered by the "sweeping" data structures registered with the specified
      * baseSweepingAcc as a result of the call to this method).
      *
-     * The implementing instance must call {@link SweepingCountSlotAcc#registerMapping(SlotAcc, SlotAcc)}
-     * on the specified baseSweepingAcc to notify it of the mapping (possibly "identity") from
-     * original SlotAcc to the SlotAcc that should be used for purposes of read access. It is
-     * the responsibility of the specified {@link SweepingCountSlotAcc} to ensure proper
-     * placement/accessibility of the SlotAcc to be used for read access.
+     * If an implementing instance chooses to replace itself with another {@link SlotAcc}, it must
+     * call {@link SweepingCountSlotAcc#registerMapping(SlotAcc, SlotAcc)} on the specified
+     * baseSweepingAcc to notify it of the mapping from original SlotAcc to the SlotAcc that should
+     * be used for purposes of read access. It is the responsibility of the specified {@link SweepingCountSlotAcc}
+     * to ensure proper placement/accessibility of the SlotAcc to be used for read access.
+     * 
+     * The replacement SlotAcc registered via {@link SweepingCountSlotAcc#registerMapping(SlotAcc, SlotAcc)}
+     * will be responsible for output via its {@link SlotAcc#setValues(SimpleOrderedMap, int)} method.
+     * An implementer of this method may register such a replacement, and also return a non-null
+     * SlotAcc to be used for normal collection (via {@link FacetFieldProcessor#collectAcc}). In this case,
+     * the implementer should take care that the returned {@link SlotAcc} is different from the {@link SlotAcc}
+     * registered for the purpose of output -- with the former overriding {@link SlotAcc#setValues(SimpleOrderedMap, int)}
+     * as a no-op, to prevent setting duplicate values.
      *
      * @param baseSweepingAcc - never null, where the SlotAcc may register domains for sweep collection,
-     * and must register mappings ("identity" or otherwise) of new read-access SlotAccs that result
-     * from this call.
+     * and must register mappings of new read-access SlotAccs that result from this call.
      * @return SlotAcc to be used for purpose of collection. If null then collect methods will
      * never be called on this SlotAcc.
      */
     public T registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc);
   }
 
-  // nocommit: need jdocs explaining purpose
+  /**
+   * A simple data structure to {@link DocSet} domains with an associated {@link CountSlotAcc}. This may be used
+   * to support sweep count accumulation over different {@link DocSet} domains, but the concept is perfectly applicable
+   * to encapsulating the relevant state for simple "non-sweep" collection as well (in which case {@link SweepCountAccStruct#docSet}
+   * would be {@link FacetContext#base}, {@link SweepCountAccStruct#countAcc} would be {@link FacetProcessor#countAcc}, and
+   * {@link SweepCountAccStruct#isBase} would trivially be "true"). 
+   */
   static final class SweepCountAccStruct {
     final DocSet docSet;
     final boolean isBase;
@@ -639,6 +652,12 @@ public abstract class SlotAcc implements Closeable {
       this.isBase = t.isBase;
       this.countAcc = t.countAcc;
     }
+    /**
+     * Because sweep collection offloads "collect" methods to count accumulation code,
+     * it is helpful to provide a read-only view over the backing {@link CountSlotAcc}
+     * 
+     * @return - a read-only view over {@link #countAcc}
+     */
     public ReadOnlyCountSlotAcc roCountAcc() {
       return countAcc;
     }
@@ -701,7 +720,25 @@ public abstract class SlotAcc implements Closeable {
       return ret.roCountAcc();
     }
 
-    // nocommit: need jdocs explaining purpose/usage/restrictions
+    /**
+     * When a {@link SweepableSlotAcc} replaces itself (for the purpose of collection) with a different {@link SlotAcc}
+     * instance, it must register that replacement by calling this method with itself as the fromAcc param, and with the
+     * new replacement {@link SlotAcc} as the toAcc param. The two SlotAccs must have the same {@link SlotAcc#key}.
+     * 
+     * It is the responsibility of this method to insure that {@link FacetFieldProcessor} references to fromAcc (other than
+     * those within {@link FacetFieldProcessor#collectAcc}, which are set directly by the return value of
+     * {@link SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)}) are replaced
+     * by references to toAcc. Such references would include, e.g., {@link FacetFieldProcessor#sortAcc}.
+     * 
+     * It is also this method's responsibility to insure that read access to toAcc (via toAcc's {@link SlotAcc#setValues(SimpleOrderedMap, int)}
+     * method) is provided via this instance's {@link #setValues(SimpleOrderedMap, int)} method.
+     * 
+     * @param fromAcc - the {@link SlotAcc} to be replaced (this will normally be the caller of this method).
+     * @param toAcc - the replacement {@link SlotAcc}
+     * 
+     * @see SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)
+     * @see FacetFieldProcessor#registerSweepingAccIfSupportedByCollectAcc(SweepingCountSlotAcc)
+     */
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       assert fromAcc.key.equals(toAcc.key);
       output.add(toAcc);

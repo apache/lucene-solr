@@ -36,6 +36,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
+import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
 /**
@@ -254,7 +256,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   }
 
   private SegCountPerSeg getSegCountPerSeg(SweepDISI disi, int segMax) {
-    return new SegCountPerSeg(this, segMax, disi.size);
+    final int size = disi.size;
+    return new SegCountPerSeg(getSegmentCountArrays(segMax, size), getBoolArr(segMax), segMax, size);
   }
 
   private SegCountGlobal getSegCountGlobal(SweepDISI disi, SortedDocValues dv) {
@@ -320,88 +323,6 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     return ret;
   }
 
-  // nocommit: need class & method javadocs
-  // nocommit: would it make more sense for this API to live inside SweepCountAware
-  static interface SegCounter {
-    void map(int allIdx, int activeIdx);
-  }
-
-  // nocommit: need class & method javadocs
-  // nocommit: would it make more sense for this API to live inside SweepCountAware
-  static class SegCountGlobal implements SegCounter {
-    private final CountSlotAcc[] allCounts;
-    private final CountSlotAcc[] activeCounts;
-
-    public SegCountGlobal(CountSlotAcc[] allCounts) {
-      this.allCounts = allCounts;
-      this.activeCounts = Arrays.copyOf(allCounts, allCounts.length);
-    }
-
-    @Override
-    public void map(int allIdx, int activeIdx) {
-      activeCounts[activeIdx] = allCounts[allIdx];
-    }
-
-    public final void incrementCount(int segOrd, int globalOrd, int inc, int maxIdx) {
-      // nocommit: segOrd is (ultimately) unused?
-      int i = maxIdx;
-      do {
-        incrementIdxCount(i, segOrd, globalOrd, inc);
-      } while (i-- > 0);
-    }
-
-    protected void incrementIdxCount(int idx, int segOrd, int globalOrd, int inc) {
-      activeCounts[idx].incrementCount(globalOrd, inc);
-    }
-  }
-
-  // nocommit: need class & method javadocs
-  // nocommit: would it make more sense for this API to live inside SweepCountAware
-  static class SegCountPerSeg implements SegCounter {
-    protected final int[][] allSegCounts;
-    private final int[][] activeSegCounts;
-    private final boolean[] seen;
-
-    public SegCountPerSeg(FacetFieldProcessorByArrayDV parent, int segMax, int size) {
-      this.allSegCounts = parent.getSegmentCountArrays(segMax, size);
-      this.activeSegCounts = Arrays.copyOf(this.allSegCounts, size);
-      this.seen = parent.getBoolArr(segMax);
-    }
-
-    @Override
-    public final void map(int allIdx, int activeIdx) {
-      activeSegCounts[activeIdx] = allSegCounts[allIdx];
-    }
-
-    public final void incrementCount(int segOrd, int inc, int maxIdx) {
-      seen[segOrd] = true;
-      int i = maxIdx;
-      do {
-        activeSegCounts[i][segOrd] += inc;
-      } while (i-- > 0);
-    }
-
-    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int maxSegOrd) {
-      int segOrd = maxSegOrd;
-      final int maxIdx = countAccs.length - 1;
-      for (;;) {
-        if (seen[segOrd]) {
-          int i = maxIdx;
-          int slot = toGlobal == null ? segOrd : (int)toGlobal.get(segOrd);
-          do {
-            final int inc = allSegCounts[i][segOrd];
-            if (inc > 0) {
-              countAccs[i].incrementCount(slot, inc);
-            }
-          } while (i-- > 0);
-        }
-        if (--segOrd < 0) {
-          break;
-        }
-      }
-    }
-  }
-
   private void collectDocs(SortedDocValues singleDv, SweepDISI disi, LongValues toGlobal) throws IOException {
     int doc;
     final SegCountGlobal segCounter = getSegCountGlobal(disi, singleDv);
@@ -425,7 +346,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
         if (segOrd < 0) continue;
         int ord = (int)toGlobal.get(segOrd);
         int maxIdx = disi.registerCounts(segCounter);
-        segCounter.incrementCount(segOrd, ord, 1, maxIdx);
+        segCounter.incrementCount(ord, 1, maxIdx);
       }
 
     } else {
@@ -435,7 +356,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
           int segOrd = singleDv.ordValue();
           int ord = (int) toGlobal.get(segOrd);
           int maxIdx = disi.registerCounts(segCounter);
-          segCounter.incrementCount(segOrd, ord, 1, maxIdx);
+          segCounter.incrementCount(ord, 1, maxIdx);
         }
       }
     }
@@ -467,7 +388,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
           int ord = (int)toGlobal.get(segOrd);
-          segCounter.incrementCount(segOrd, ord, 1, maxIdx);
+          segCounter.incrementCount(ord, 1, maxIdx);
         }
       }
     }
@@ -480,7 +401,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     // This code handles faceting prefixes, which narrows the range of ords we want to collect.
     // It’s not an error for an ord to fall outside this range… we simply want to skip it.
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      segCounter.incrementCount(segOrd, arrIdx, 1, maxIdx);
+      segCounter.incrementCount(arrIdx, 1, maxIdx);
       if (collectBase) {
         if (collectAcc != null) {
           collectAcc.collect(doc, arrIdx, slotContext);
