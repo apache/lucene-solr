@@ -17,36 +17,44 @@
 
 package org.apache.solr.ltr.interleaving;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.search.ScoreDoc;
 
 public class TeamDraftInterleaving implements Interleaving{
   private Random generator = new Random();
   
-  public ScoreDoc[] interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB){
-    LinkedHashSet<ScoreDoc> interleaved = new LinkedHashSet<>();
-    ScoreDoc[] interleavedArray = new ScoreDoc[rerankedA.length];
+  public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB){
+    LinkedHashSet<ScoreDoc> interleavedResults = new LinkedHashSet<>();
+    ScoreDoc[] interleavedResultArray = new ScoreDoc[rerankedA.length];
+    ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(rerankedA.length);
+    Set<Integer> teamA = new HashSet<>();
+    Set<Integer> teamB = new HashSet<>();
     int topN = rerankedA.length;
     int indexA = 0, indexB = 0;
-    int teamA = 0, teamB = 0;
     
-    while(interleaved.size()<topN && (indexA<rerankedA.length) && (indexB<rerankedB.length)){
-      if(teamA<teamB || (teamA==teamB && generator.nextBoolean())){
-        interleaved.add(rerankedA[indexA]);
+    while(interleavedResults.size()<topN && (indexA<rerankedA.length) && (indexB<rerankedB.length)){
+      if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && generator.nextBoolean())){
+        indexA = updateIndex(interleavedResults,indexA,rerankedA);
+        interleavedResults.add(rerankedA[indexA]);
+        teamA.add(rerankedA[indexA].doc);
         indexA++;
-        teamA++;
-        indexA = updateIndex(interleaved,indexA,rerankedA);
       } else{
-        interleaved.add(rerankedB[indexB]);
+        indexB = updateIndex(interleavedResults,indexB,rerankedB);
+        interleavedResults.add(rerankedB[indexB]);
+        teamB.add(rerankedB[indexB].doc);
         indexB++;
-        teamB++;
-        indexB = updateIndex(interleaved,indexB,rerankedB);
       }
     }
+    interleavingPicks.add(teamA);
+    interleavingPicks.add(teamB);
+    interleavedResultArray = interleavedResults.toArray(interleavedResultArray);
     
-    return interleaved.toArray(interleavedArray);
+    return new InterleavingResult(interleavedResultArray,interleavingPicks);
   }
 
   private int updateIndex(LinkedHashSet<ScoreDoc> interleaved, int index, ScoreDoc[] reranked) {

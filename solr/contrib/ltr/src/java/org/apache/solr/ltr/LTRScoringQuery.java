@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -73,6 +74,8 @@ public class LTRScoringQuery extends Query implements Accountable {
   final private Map<String,String[]> efi;
   // Original solr query used to fetch matching documents
   private Query originalQuery;
+  // Model was picked for this Docs
+  private Set<Integer> pickedInterleavingDocIds;
   // Original solr request
   private SolrQueryRequest request;
 
@@ -120,6 +123,14 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   public Map<String,String[]> getExternalFeatureInfo() {
     return efi;
+  }
+
+  public Set<Integer> getPickedInterleavingDocIds() {
+    return pickedInterleavingDocIds;
+  }
+
+  public void setPickedInterleavingDocIds(Set<Integer> pickedInterleavingDocIds) {
+    this.pickedInterleavingDocIds = pickedInterleavingDocIds;
   }
 
   public void setRequest(SolrQueryRequest request) {

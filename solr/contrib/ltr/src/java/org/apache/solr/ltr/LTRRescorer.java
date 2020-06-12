@@ -239,13 +239,16 @@ public class LTRRescorer extends Rescorer {
   @Override
   public Explanation explain(IndexSearcher searcher,
       Explanation firstPassExplanation, int docID) throws IOException {
+    return getExplanation(searcher, docID, scoringQuery);
+  }
 
+  protected Explanation getExplanation(IndexSearcher searcher, int docID, LTRScoringQuery rerankModel) throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext()
         .leaves();
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
-    final Weight modelWeight = searcher.createWeight(searcher.rewrite(scoringQuery),
+    final Weight modelWeight = searcher.createWeight(searcher.rewrite(rerankModel),
         ScoreMode.COMPLETE, 1);
     return modelWeight.explain(context, deBasedDoc);
   }

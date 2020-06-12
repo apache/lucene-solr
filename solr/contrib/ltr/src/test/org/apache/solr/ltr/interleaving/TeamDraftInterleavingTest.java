@@ -55,14 +55,19 @@ public class TeamDraftInterleavingTest {
     ScoreDoc b5 = new ScoreDoc(3,4,2);
     ScoreDoc[] rerankedB = new ScoreDoc[]{b1,b2,b3,b4,b5};
 
-    ScoreDoc[] interleavedResults = toTest.interleave(rerankedA, rerankedB);
+    InterleavingResult interleaved = toTest.interleave(rerankedA, rerankedB);
+    ScoreDoc[] interleavedResults = interleaved.getInterleavedResults();
     assertThat(interleavedResults.length,is(5));
     assertThat(interleavedResults[0],is(a1));
     assertThat(interleavedResults[1],is(b1));
     assertThat(interleavedResults[2],is(b2));
     assertThat(interleavedResults[3],is(a3));
     assertThat(interleavedResults[4],is(b5));
-    
+
+    /*
+    boolean[] interleavingPicks = interleaved.getInterleavingPicks();
+    assertThat(interleavingPicks,is(new boolean[]{false,true,true,false,true}));
+*/
   }
   
 

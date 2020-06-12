@@ -165,7 +165,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     private List<LeafReaderContext> leafContexts;
     private SolrIndexSearcher searcher;
-    private LTRScoringQuery[] scoringQueries;
+    private LTRScoringQuery[] rerankingQueries;
     private LTRScoringQuery.ModelWeight[] modelWeights;
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
@@ -209,16 +209,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
       
       // Setup LTRScoringQuery
-      scoringQueries = SolrQueryRequestContextUtils.getScoringQueries(req);
+      rerankingQueries = SolrQueryRequestContextUtils.getScoringQueries(req);
 
-      docsWereNotReranked = (scoringQueries == null || scoringQueries.length == 0);
+      docsWereNotReranked = (rerankingQueries == null || rerankingQueries.length == 0);
       if (docsWereNotReranked) {
-        scoringQueries = new LTRScoringQuery[]{null};
+        rerankingQueries = new LTRScoringQuery[]{null};
       }
-      modelWeights = new LTRScoringQuery.ModelWeight[scoringQueries.length];
+      modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
-      for (int i = 0; i < scoringQueries.length; i++) {
-        LTRScoringQuery scoringQuery = scoringQueries[i];
+      for (int i = 0; i < rerankingQueries.length; i++) {
+        LTRScoringQuery scoringQuery = rerankingQueries[i];
         if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
           // if store is set in the transformer we should overwrite the logger
 
@@ -236,7 +236,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                 LTRQParserPlugin.extractEFIParams(localparams),
                 true,
                 threadManager); // request feature weights to be created for all features
-            scoringQueries[i] = scoringQuery;
+            rerankingQueries[i] = scoringQuery;
           } catch (final Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "retrieving the feature store " + featureStoreName, e);
@@ -247,12 +247,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           scoringQuery.setOriginalQuery(context.getQuery());
         }
         if (scoringQuery.getFeatureLogger() == null) {
-          scoringQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
+          scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
         }
         scoringQuery.setRequest(req);
-
         featureLogger = scoringQuery.getFeatureLogger();
-
         try {
           modelWeights[i] = scoringQuery.createWeight(searcher, ScoreMode.COMPLETE, 1f);
         } catch (final IOException e) {
@@ -279,20 +277,22 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     private void implTransform(SolrDocument doc, int docid, Float score)
         throws IOException {
-      String[] modelsFeatureVectors = new String[scoringQueries.length];
-      for (int i = 0; i < modelsFeatureVectors.length; i++) {
-        String singleModelFeatureVector = featureLogger.getFeatureVector(docid, scoringQueries[i], searcher);
-        if (singleModelFeatureVector == null) { // FV for this document was not in the cache
-          singleModelFeatureVector = featureLogger.makeFeatureVector(
-              LTRRescorer.extractFeaturesInfo(
-                  modelWeights[i],
-                  docid,
-                  (docsWereNotReranked ? score : null),
-                  leafContexts));
-        }
-        modelsFeatureVectors[i] = singleModelFeatureVector;
+      LTRScoringQuery rerankingQuery = rerankingQueries[0];
+      LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
+      if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
+        rerankingQuery = rerankingQueries[1];
       }
-      doc.addField(name, String.join(",", modelsFeatureVectors));
+      Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
+      if (featureVector == null) { // FV for this document was not in the cache
+        featureVector = featureLogger.makeFeatureVector(
+            LTRRescorer.extractFeaturesInfo(
+                rerankingModelWeight,
+                docid,
+                (docsWereNotReranked ? score : null),
+                leafContexts));
+      }
+      doc.addField(name, featureVector);
+      doc.addField("interleavingPick",rerankingQuery.getScoringModel().getName());
     }
 
   }
