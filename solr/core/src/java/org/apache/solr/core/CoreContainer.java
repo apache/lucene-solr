@@ -1215,8 +1215,8 @@ public class CoreContainer {
     }
 
     // Validate paths are relative to known locations to avoid path traversal
-    assertAllowedCorePath(cd.getInstanceDir());
-    assertAllowedCorePath(Paths.get(cd.getDataDir()));
+    assertPathAllowed(cd.getInstanceDir());
+    assertPathAllowed(Paths.get(cd.getDataDir()));
 
     boolean preExisitingZkEntry = false;
     try {
@@ -1278,11 +1278,12 @@ public class CoreContainer {
   }
 
   /**
-   * Checks that the given path is relative to solrHome, solrDataHome or coreRootDirectory
+   * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one of the paths
+   * specified in solr.xml's allowPaths element.
    * @param path path to check
    * @throws SolrException if path is outside allowed paths
    */
-  public void assertAllowedCorePath(Path path) throws SolrException {
+  public void assertPathAllowed(Path path) throws SolrException {
     if (path.normalize().equals(path) && !path.isAbsolute()) return;
     if (allowPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
