@@ -346,7 +346,10 @@ public class CoreContainer {
     if (cfg.getSolrDataHome() != null) {
       this.allowPaths.add(getNodeConfig().getSolrDataHome().toAbsolutePath());
     }
-    this.allowPaths.addAll(cfg.getAllowPaths());
+    if (!cfg.getAllowPaths().isEmpty()) {
+      this.allowPaths.addAll(cfg.getAllowPaths());
+      log.info("Allowing cores to use paths: {}", cfg.getAllowPaths());
+    }
   }
 
   @SuppressWarnings({"unchecked"})
