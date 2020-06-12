@@ -24,10 +24,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -196,6 +202,7 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
+    private final CompletableFuture<Void> completable = new CompletableFuture<>();
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -222,13 +229,13 @@ public abstract class MergePolicy {
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
-    public final int totalMaxDoc;
+    final int totalMaxDoc;
     Throwable error;
 
-    /** Sole constructor.
-     * @param segments List of {@link SegmentCommitInfo}s
-     *        to be merged. */
-    public OneMerge(List<SegmentCommitInfo> segments) {
+      /** Sole constructor.
+       * @param segments List of {@link SegmentCommitInfo}s
+       *        to be merged. */
+      public OneMerge(List<SegmentCommitInfo> segments) {
       if (0 == segments.size()) {
         throw new RuntimeException("segments must include at least one segment");
       }
@@ -252,7 +259,24 @@ public abstract class MergePolicy {
     }
     
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
-    public void mergeFinished() throws IOException {
+    public void mergeFinished(boolean committed) throws IOException {
+      completable.complete(null);
+    }
+
+    boolean await(long timeout, TimeUnit timeUnit) {
+      try {
+        completable.get(timeout, timeUnit);
+        return true;
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        return false;
+      } catch (ExecutionException | TimeoutException e) {
+        return false;
+      }
+    }
+
+    boolean isDone() {
+      return completable.isDone();
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
@@ -399,7 +423,18 @@ public abstract class MergePolicy {
       }
       return b.toString();
     }
+
+    boolean await(long timeout, TimeUnit unit) {
+      for (OneMerge merge : merges) {
+        if (merge.await(timeout, unit) == false) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
+
+
 
   /** Exception thrown if there are any problems while executing a merge. */
   public static class MergeException extends RuntimeException {
@@ -692,4 +727,27 @@ public abstract class MergePolicy {
      */
     Set<SegmentCommitInfo> getMergingSegments();
   }
+
+  /**
+   * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
+   *
+   * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
+   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitSeconds()} have elapsed. This may be
+   * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
+   * the commit. If a merge does not complete in the allotted time, it will continue to execute, but will not be reflected
+   * in the commit.
+   *
+   * If a {@link OneMerge} in the returned {@link MergeSpecification} includes a segment already included in a registered
+   * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.
+   * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
+   *
+   * @param mergeTrigger the event that triggered the merge (COMMIT or FULL_FLUSH).
+   * @param segmentInfos the total set of segments in the index (while preparing the commit)
+   * @param mergeContext the MergeContext to find the merges on, which should be used to determine which segments are
+   *                     already in a registered merge (see {@link MergeContext#getMergingSegments()}).
+   */
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return null;
+  }
+
 }
