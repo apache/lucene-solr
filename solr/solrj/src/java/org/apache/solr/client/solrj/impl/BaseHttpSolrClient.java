@@ -49,15 +49,16 @@ public abstract class BaseHttpSolrClient extends SolrClient {
    * it sends a proper payload back to the client
    */
   public static class RemoteExecutionException extends HttpSolrClient.RemoteSolrException {
+    @SuppressWarnings({"rawtypes"})
     private NamedList meta;
 
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
+    public RemoteExecutionException(String remoteHost, int code, String msg, @SuppressWarnings({"rawtypes"})NamedList meta) {
       super(remoteHost, code, msg, null);
       this.meta = meta;
     }
 
 
-    public static HttpSolrClient.RemoteExecutionException create(String host, NamedList errResponse) {
+    public static HttpSolrClient.RemoteExecutionException create(String host, @SuppressWarnings({"rawtypes"})NamedList errResponse) {
       Object errObj = errResponse.get("error");
       if (errObj != null) {
         Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
@@ -71,6 +72,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
 
     }
 
+    @SuppressWarnings({"rawtypes"})
     public NamedList getMetaData() {
 
       return meta;

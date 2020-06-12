@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
 
+@SuppressWarnings({"unchecked"})
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -108,7 +109,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         + " solrUrl(s) or zkHost(s).");
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"rawtypes"})
   private ClusterState fetchClusterState(SolrClient client, String collection, Map<String, Object> clusterProperties) throws SolrServerException, IOException, NotACollectionException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (collection != null) {
@@ -180,6 +181,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static Set<String> fetchLiveNodes(SolrClient client) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "CLUSTERSTATUS");

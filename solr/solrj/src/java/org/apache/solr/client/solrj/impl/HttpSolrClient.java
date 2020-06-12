@@ -239,7 +239,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *      org.apache.solr.client.solrj.ResponseParser)
    */
   @Override
-  public NamedList<Object> request(final SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
@@ -248,15 +248,16 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return request(request, responseParser, collection);
   }
 
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     return request(request, processor, null);
   }
   
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, String> headers = request.getHeaders();
       for (Map.Entry<String, String> entry : headers.entrySet()) {
         method.setHeader(entry.getKey(), entry.getValue());
@@ -265,11 +266,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
-  private boolean isV2ApiRequest(final SolrRequest request) {
+  private boolean isV2ApiRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
-  private void setBasicAuthHeader(SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
+  private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
     if (request.getBasicAuthUser() != null && request.getBasicAuthPassword() != null) {
       String userPass = request.getBasicAuthUser() + ":" + request.getBasicAuthPassword();
       String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
@@ -288,7 +289,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * @lucene.experimental
    */
-  public HttpUriRequestResponse httpUriRequest(final SolrRequest request)
+  public HttpUriRequestResponse httpUriRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request)
       throws SolrServerException, IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
@@ -300,7 +301,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * @lucene.experimental
    */
-  public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+  public HttpUriRequestResponse httpUriRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request, null);
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
@@ -340,7 +341,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
+  @SuppressWarnings({"unchecked"})
+  protected HttpRequestBase createMethod(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
       request = ((V2RequestSupport) request).getV2Request();
     }
@@ -474,7 +476,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   }
 
-  private HttpEntityEnclosingRequestBase fillContentStream(SolrRequest request, Collection<ContentStream> streams, ModifiableSolrParams wparams, boolean isMultipart, LinkedList<NameValuePair> postOrPutParams, String fullQueryUrl) throws IOException {
+  private HttpEntityEnclosingRequestBase fillContentStream(
+          @SuppressWarnings({"rawtypes"})SolrRequest request,
+          Collection<ContentStream> streams, ModifiableSolrParams wparams,
+          boolean isMultipart, LinkedList<NameValuePair> postOrPutParams,
+          String fullQueryUrl) throws IOException {
     HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
         new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
 
@@ -533,7 +539,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected NamedList<Object> executeMethod(HttpRequestBase method, Principal userPrincipal, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
