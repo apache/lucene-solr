@@ -68,6 +68,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           command.add("ngroups", totalGroupCount);
         }
 
+        @SuppressWarnings({"rawtypes"})
         List<NamedList> groups = new ArrayList<>();
         SchemaField groupField = searcher.getSchema().getField(entry.getKey());
         FieldType groupFieldType = groupField.getType();

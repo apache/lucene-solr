@@ -72,6 +72,7 @@ public class ValueSourceAugmenter extends DocTransformer
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   Map fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;

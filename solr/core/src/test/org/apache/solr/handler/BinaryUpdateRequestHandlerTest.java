@@ -53,21 +53,18 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     BinaryRequestWriter brw = new BinaryRequestWriter();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init(new NamedList());
-    SolrQueryRequest req = req();
-    ContentStreamLoader csl = handler.newLoader(req, p);
-
-    RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    cw.write(baos);
-    ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
-    csl.load(req, rsp, cs, p);
-    AddUpdateCommand add = p.addCommands.get(0);
-    System.out.println(add.solrDoc);
-    assertEquals(false, add.overwrite);
-    assertEquals(100, add.commitWithin);
-
-    req.close();
+    try (SolrQueryRequest req = req(); UpdateRequestHandler handler = new UpdateRequestHandler()) {
+      handler.init(new NamedList());
+      ContentStreamLoader csl = handler.newLoader(req, p);
+      RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      cw.write(baos);
+      ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
+      csl.load(req, rsp, cs, p);
+      AddUpdateCommand add = p.addCommands.get(0);
+      System.out.println(add.solrDoc);
+      assertEquals(false, add.overwrite);
+      assertEquals(100, add.commitWithin);
+    }
   }
 }

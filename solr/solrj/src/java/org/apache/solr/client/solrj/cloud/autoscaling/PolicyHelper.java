@@ -121,17 +121,21 @@ public class PolicyHelper {
 
     policyMapping.set(optionalPolicyMapping);
     SessionWrapper sessionWrapper = null;
-    Policy.Session origSession = null;
+
     try {
       try {
         SESSION_WRAPPPER_REF.set(sessionWrapper = getSession(delegatingManager));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to get autoscaling policy session", e);
-
       }
-      origSession = sessionWrapper.session;
+
+      Policy.Session origSession = sessionWrapper.session;
       // new session needs to be created to avoid side-effects from per-collection policies
-      Policy.Session session = new Policy.Session(delegatingManager, origSession.policy, origSession.transaction);
+      // TODO: refactor so cluster state cache is separate from storage of policies to avoid per cluster vs per collection interactions
+      // Need a Session that has all previous history of the original session, NOT filtered by what's present or not in Zookeeper
+      // (as does constructor Session(SolrCloudManager, Policy, Transaction)).
+      Policy.Session newSession = origSession.cloneToNewSession(delegatingManager);
+
       Map<String, Double> diskSpaceReqd = new HashMap<>();
       try {
         DocCollection coll = cloudManager.getClusterStateProvider().getCollection(collName);
@@ -165,7 +169,7 @@ public class PolicyHelper {
         int idx = 0;
         for (Map.Entry<Replica.Type, Integer> e : typeVsCount.entrySet()) {
           for (int i = 0; i < e.getValue(); i++) {
-            Suggester suggester = session.getSuggester(ADDREPLICA)
+            Suggester suggester = newSession.getSuggester(ADDREPLICA)
                 .hint(Hint.REPLICATYPE, e.getKey())
                 .hint(Hint.COLL_SHARD, new Pair<>(collName, shardName));
             if (nodesList != null) {
@@ -184,18 +188,23 @@ public class PolicyHelper {
                   , handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString())); // logOk
 
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
-                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "
+                  Utils.toJSONString(Utils.getDeepCopy(newSession.expandedClauses, 4, true) + " More details from logs in node : "
                       + Utils.getMDCNode() + ", errorId : " + errorId));
             }
-            session = suggester.getSession();
+            newSession = suggester.getSession();
             positions.add(new ReplicaPosition(shardName, ++idx, e.getKey(), op.getParams().get(NODE)));
           }
         }
       }
+
+      // We're happy with the updated session based on the original one, so let's update what the wrapper would hand
+      // to the next computation that wants a session.
+      sessionWrapper.update(newSession);
     } finally {
       policyMapping.remove();
+      // We mark the wrapper (and its session) as being available to others.
       if (sessionWrapper != null) {
-        sessionWrapper.returnSession(origSession);
+        sessionWrapper.returnSession();
       }
     }
     return positions;
@@ -600,16 +609,21 @@ public class PolicyHelper {
      */
     public void returnSession(Policy.Session session) {
       this.update(session);
+      this.returnSession();
+    }
+
+    /**
+     * return this for later use without updating the internal Session for cases where it's easier to update separately
+     */
+    public void returnSession() {
       refCount.incrementAndGet();
       ref.returnSession(this);
-
     }
 
     //all ops are executed now it can be destroyed
     public void release() {
       refCount.decrementAndGet();
       ref.release(this);
-
     }
   }
 }

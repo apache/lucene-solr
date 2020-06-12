@@ -189,6 +189,10 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 +
 `stable[:hash[:_paramName_]]` the string value associated with the given parameter name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
 
+`node.sysprop`::
+Query will be routed to nodes with same defined system properties as the current one. For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g. `-Drack=rack1`). Then, queries can contain `shards.preference=node.sysprop:sysprop.rack`, to make sure you always hit shards with the same value of `rack`.
+
+
 Examples:
 
 * Prefer stable routing (keyed to client "sessionId" param) among otherwise equivalent replicas:

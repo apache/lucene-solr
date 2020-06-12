@@ -177,11 +177,11 @@ public class JoinQParserPlugin extends QParserPlugin {
   }
 
   @Override
-  public void init(NamedList args) {
+  @SuppressWarnings({"unchecked"})
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     routerField = (String) args.get("routerField");
     solrUrlWhitelist = new HashSet<>();
     if (args.get("solrUrlWhitelist") != null) {
-      //noinspection unchecked
       for (String s : (List<String>) args.get("solrUrlWhitelist")) {
         if (!StringUtils.isEmpty(s))
           solrUrlWhitelist.add(s);

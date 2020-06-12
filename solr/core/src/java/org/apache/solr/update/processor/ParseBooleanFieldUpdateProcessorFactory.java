@@ -103,7 +103,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     Object caseSensitiveParam = args.remove(CASE_SENSITIVE_PARAM);
     if (null != caseSensitiveParam) {
       if (caseSensitiveParam instanceof Boolean) {
@@ -113,6 +113,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     Collection<String> trueValuesParam = args.removeConfigArgs(TRUE_VALUES_PARAM);
     if ( ! trueValuesParam.isEmpty()) {
       trueValues.clear();
@@ -121,6 +122,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     Collection<String> falseValuesParam = args.removeConfigArgs(FALSE_VALUES_PARAM);
     if ( ! falseValuesParam.isEmpty()) {
       falseValues.clear();

@@ -97,6 +97,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
             if (log.isDebugEnabled()) {
               log.debug("-- delete inactive {} / {}", coll.getName(), s.getName());
             }
+            @SuppressWarnings({"unchecked", "rawtypes"})
             List<SolrRequest> operations = (List<SolrRequest>)context.getProperties().computeIfAbsent("operations", k -> new ArrayList<>());
             operations.add(CollectionAdminRequest.deleteShard(coll.getName(), s.getName()));
             cleanup.computeIfAbsent(coll.getName(), c -> new ArrayList<>()).add(s.getName());

@@ -132,7 +132,7 @@ public class JSONParser {
     return "Unknown: " + e;
   }
 
-  private static final CharArr devNull = new NullCharArr();
+  private static final CharArr devNull = new CharArr.NullCharArr();
 
   protected int flags = FLAGS_DEFAULT;
 

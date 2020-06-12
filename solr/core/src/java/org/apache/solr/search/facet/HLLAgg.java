@@ -50,7 +50,7 @@ public class HLLAgg extends StrAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.getType().isPointField()) {
@@ -75,7 +75,7 @@ public class HLLAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     HLL aggregate = null;
     long answer = -1; // -1 means unset
 
@@ -86,6 +86,9 @@ public class HLLAgg extends StrAggValueSource {
         return;
       }
 
+
+
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       byte[] serialized = ((byte[])map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);
@@ -109,7 +112,7 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }
@@ -121,7 +124,7 @@ public class HLLAgg extends StrAggValueSource {
   abstract class BaseNumericAcc extends DocValuesAcc {
     HLL[] sets;
 
-    public BaseNumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
+    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, fcontext.qcontext.searcher().getSchema().getField(field));
       sets = new HLL[numSlots];
     }
@@ -160,6 +163,7 @@ public class HLLAgg extends StrAggValueSource {
       return set == null ? 0 : set.cardinality();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       HLL hll = sets[slot];
       if (hll == null) return NO_VALUES;
@@ -179,7 +183,7 @@ public class HLLAgg extends StrAggValueSource {
   class NumericAcc extends BaseNumericAcc {
     NumericDocValues values;
 
-    public NumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
+    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
     }
 
@@ -205,7 +209,7 @@ public class HLLAgg extends StrAggValueSource {
   class SortedNumericAcc extends BaseNumericAcc {
     SortedNumericDocValues values;
 
-    public SortedNumericAcc(FacetRequest.FacetContext fcontext, String field, int numSlots) throws IOException {
+    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
     }
 

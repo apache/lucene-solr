@@ -80,6 +80,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   private long maxSize = DEFAULT_MAX_SIZE;
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
@@ -275,6 +276,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
+      @SuppressWarnings({"rawtypes"})
       NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");

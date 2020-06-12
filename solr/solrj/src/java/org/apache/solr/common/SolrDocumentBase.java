@@ -48,6 +48,7 @@ public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializ
   /**
    * Get a collection of values for a given field name
    */
+  @SuppressWarnings({"rawtypes"})
   public abstract Collection getFieldValues(String name);
 
   public abstract void addChildDocument(K child);

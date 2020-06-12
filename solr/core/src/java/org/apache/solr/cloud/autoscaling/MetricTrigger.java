@@ -91,6 +91,7 @@ public class MetricTrigger extends TriggerBase {
   @Override
   protected void setState(Map<String, Object> state) {
     lastNodeEvent.clear();
+    @SuppressWarnings({"unchecked"})
     Map<String, Long> nodeTimes = (Map<String, Long>) state.get("lastNodeEvent");
     if (nodeTimes != null) {
       lastNodeEvent.putAll(nodeTimes);

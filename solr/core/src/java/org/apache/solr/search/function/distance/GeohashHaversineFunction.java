@@ -59,6 +59,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues gh1DV = geoHash1.getValues(context, readerContext);
     final FunctionValues gh2DV = geoHash2.getValues(context, readerContext);
@@ -96,6 +97,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     geoHash1.createWeight(context, searcher);
     geoHash2.createWeight(context, searcher);

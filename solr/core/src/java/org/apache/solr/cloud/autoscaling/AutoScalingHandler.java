@@ -120,6 +120,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
       String httpMethod = (String) req.getContext().get("httpMethod");
@@ -187,11 +188,13 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
+  @SuppressWarnings({"unchecked"})
   private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf, SolrParams params) {
     rsp.getValues().add("suggestions",
         PolicyHelper.getSuggestions(autoScalingConf, cloudManager, params));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)
       throws KeeperException, InterruptedException, IOException {
     while (true) {
@@ -269,11 +272,13 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig.withProperties(configProps);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
     Policy policy = autoScalingConf.getPolicy();
     rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, cloudManager));
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                    AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> clusterPolicy = (List<Map<String, Object>>) op.getCommandData();
@@ -293,6 +298,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                         AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> preferences = (List<Map<String, Object>>) op.getCommandData();
@@ -336,6 +342,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                               AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     Map<String, Object> policiesMap = op.getDataMap();
@@ -361,6 +368,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                 AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
@@ -393,6 +401,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                  AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
@@ -525,6 +534,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
+  @SuppressWarnings({"unchecked"})
   private AutoScalingConfig handleSetTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     // we're going to modify the op - use a copy

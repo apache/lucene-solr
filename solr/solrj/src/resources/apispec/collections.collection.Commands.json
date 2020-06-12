@@ -24,11 +24,11 @@
       "properties": {
         "replica": {
           "type": "string",
-          "description": "The name of the replica"
+          "description": "The name of the replica to move. Either this parameter or shard is required."
         },
         "shard": {
           "type": "string",
-          "description": "The name of the shard"
+          "description": "The name of the shard for which a replica should be moved. Either this parameter or replica is required. If replica is specified, this parameter is ignored."
         },
         "sourceNode": {
           "type": "string",

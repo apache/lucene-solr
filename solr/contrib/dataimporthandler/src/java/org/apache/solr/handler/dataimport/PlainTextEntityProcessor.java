@@ -45,6 +45,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
   @Override
   public Map<String, Object> nextRow() {
     if (ended) return null;
+    @SuppressWarnings({"unchecked"})
     DataSource<Reader> ds = context.getDataSource();
     String url = context.replaceTokens(context.getEntityAttribute(URL));
     Reader r = null;
