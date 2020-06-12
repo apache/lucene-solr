@@ -142,7 +142,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
-  static {
+  static {  initBrokenConstructors(); }
+  @SuppressWarnings("deprecation")
+  private static void initBrokenConstructors() {
     try {
       brokenConstructors.put(
           LimitTokenCountFilter.class.getConstructor(TokenStream.class, int.class),

@@ -53,7 +53,9 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     protected SpatialPrefixTree newSPT() {
       QuadPrefixTree tree = new QuadPrefixTree(ctx,
           maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
-      tree.robust = getVersion().onOrAfter(Version.LUCENE_8_3_0);
+      @SuppressWarnings("deprecation")
+      Version LUCENE_8_3_0 = Version.LUCENE_8_3_0;
+      tree.robust = getVersion().onOrAfter(LUCENE_8_3_0);
       return tree;
     }
   }
@@ -142,7 +144,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
   public Cell getCell(Point p, int level) {
     if (!robust) { // old method
       List<Cell> cells = new ArrayList<>(1);
-      buildNotRobustly(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.makePoint(p.getX(),p.getY()), level);
+      buildNotRobustly(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.getShapeFactory().pointXY(p.getX(),p.getY()), level);
       if (!cells.isEmpty()) {
         return cells.get(0);//note cells could be longer if p on edge
       }
@@ -223,7 +225,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     double h = levelH[level] / 2;
 
     int strlen = str.length;
-    Rectangle rectangle = ctx.makeRectangle(cx - w, cx + w, cy - h, cy + h);
+    Rectangle rectangle = ctx.getShapeFactory().rect(cx - w, cx + w, cy - h, cy + h);
     SpatialRelation v = shape.relate(rectangle);
     if (SpatialRelation.CONTAINS == v) {
       str.bytes[str.length++] = (byte)c;//append
@@ -354,7 +356,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
         width = gridW;
         height = gridH;
       }
-      return ctx.makeRectangle(xmin, xmin + width, ymin, ymin + height);
+      return ctx.getShapeFactory().rect(xmin, xmin + width, ymin, ymin + height);
     }
   }//QuadCell
 }
