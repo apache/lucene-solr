@@ -32,7 +32,7 @@ import org.apache.lucene.util.IntBlockPool;
  * of information like term frequency per document or term proximity. Internally
  * this class allocates a linked list of slices that can be read by a {@link ByteSliceReader}
  * for each term. Terms are first deduplicated in a {@link BytesRefHash} once this is done
- * internal data-structures point to the current offest of each stream that can be written to.
+ * internal data-structures point to the current offset of each stream that can be written to.
  */
 abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   private static final int HASH_INIT_SIZE = 4;
@@ -165,6 +165,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     lastDocID = docId;
     return true;
   }
+
   /** Called once per inverted token.  This is the primary
    *  entry point (for first TermsHash); postings use this
    *  API. */
