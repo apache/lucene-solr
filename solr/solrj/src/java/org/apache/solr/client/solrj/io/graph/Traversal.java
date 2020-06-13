@@ -22,11 +22,11 @@ import java.util.*;
 
 public class Traversal {
 
-  private List<Map<String, Node>> graph = new ArrayList();
-  private List<String> fields = new ArrayList();
-  private List<String> collections = new ArrayList();
-  private Set<Scatter> scatter = new HashSet();
-  private Set<String> collectionSet = new HashSet();
+  private List<Map<String, Node>> graph = new ArrayList<>();
+  private List<String> fields = new ArrayList<>();
+  private List<String> collections = new ArrayList<>();
+  private Set<Scatter> scatter = new HashSet<>();
+  private Set<String> collectionSet = new HashSet<>();
   private boolean trackTraversal;
   private int depth;
 
@@ -90,6 +90,7 @@ public class Traversal {
     LEAVES;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Iterator<Tuple> iterator() {
     return new TraversalIterator(this, scatter);
   }

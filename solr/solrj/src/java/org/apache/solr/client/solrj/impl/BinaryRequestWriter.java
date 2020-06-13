@@ -39,7 +39,7 @@ import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 public class BinaryRequestWriter extends RequestWriter {
 
   @Override
-  public ContentWriter getContentWriter(SolrRequest req) {
+  public ContentWriter getContentWriter(@SuppressWarnings({"rawtypes"})SolrRequest req) {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
@@ -60,7 +60,7 @@ public class BinaryRequestWriter extends RequestWriter {
   }
 
   @Override
-  public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
+  public Collection<ContentStream> getContentStreams(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest) ) return null;
@@ -77,7 +77,7 @@ public class BinaryRequestWriter extends RequestWriter {
   }
 
   @Override
-  public void write(SolrRequest request, OutputStream os) throws IOException {
+  public void write(@SuppressWarnings({"rawtypes"})SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
