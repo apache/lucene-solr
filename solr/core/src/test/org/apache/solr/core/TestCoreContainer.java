@@ -24,12 +24,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.exec.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -39,6 +41,7 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXParseException;
@@ -313,7 +316,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private static final String ALLOW_PATHS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>\n" +
-      "<str name=\"allowPaths\">/tmp</str>\n" +
+      "<str name=\"allowPaths\">/var/solr</str>\n" +
       "</solr>";
 
   private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -349,18 +352,41 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void assertAllowedCorePath() throws Exception {
+  public void assertAllowPathFromSolrXml() throws Exception {
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    assertPathAllowed("/var/solr/foo");
+    assertPathBlocked("/home/foo");
+    cc.shutdown();
+  }
+
+  @Test
+  public void assertAllowPathRelative() {
+    assertPathAllowed("/var/solr/foo");
+    assertPathAllowed("/var/log/../solr/foo");
+    assertPathAllowed("relative");
+
+    assertPathBlocked("../../false");
+    assertPathBlocked("./../../false");
+    assertPathBlocked("/var/solr/../../etc");
+  }
+
+  @Test
+  public void assertAllowPathUNC() {
+    Assume.assumeTrue(OS.isFamilyWindows());
+    assertPathBlocked("\\\\unc-server\\share\\path");
+  }
+
+  private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));
+
+  private void assertPathBlocked(String path) {
     try {
-      cc.assertPathAllowed(Paths.get("/tmp/foo"));
-      try {
-        cc.assertPathAllowed(Paths.get("/home/foo"));
-        fail("allowPaths check failed");
-      } catch (SolrException e) { /* ignored */ }
-    }
-    finally {
-      cc.shutdown();
-    }
+      SolrPaths.assertPathAllowed(Path.of(path), ALLOWED_PATHS);
+      fail("Path " + path + " sould have been blocked.");
+    } catch (SolrException e) { /* Expected */ }
+  }
+
+  private void assertPathAllowed(String path) {
+    SolrPaths.assertPathAllowed(Path.of(path), ALLOWED_PATHS);
   }
 
   @Test

@@ -1279,16 +1279,12 @@ public class CoreContainer {
 
   /**
    * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one of the paths
-   * specified in solr.xml's allowPaths element.
-   * @param path path to check
+   * specified in solr.xml's allowPaths element. Delegates to {@link SolrPaths#assertPathAllowed(Path, Set)}
+   * @param pathToAssert path to check
    * @throws SolrException if path is outside allowed paths
    */
-  public void assertPathAllowed(Path path) throws SolrException {
-    if (path.normalize().equals(path) && !path.isAbsolute()) return;
-    if (allowPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
-    }
+  public void assertPathAllowed(Path pathToAssert) throws SolrException {
+    SolrPaths.assertPathAllowed(pathToAssert, allowPaths);
   }
 
   /**
