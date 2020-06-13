@@ -134,8 +134,8 @@ class FreqProxFields extends Fields {
 
     FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
       this.terms = terms;
-      this.numTerms = terms.bytesHash.size();
-      sortedTermIDs = terms.sortedTermIDs;
+      this.numTerms = terms.getNumTerms();
+      sortedTermIDs = terms.getSortedTermIDs();
       assert sortedTermIDs != null;
       postingsArray = (FreqProxPostingsArray) terms.postingsArray;
     }

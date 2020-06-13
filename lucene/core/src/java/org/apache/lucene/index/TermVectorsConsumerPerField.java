@@ -58,7 +58,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
    *  RAMOutputStream, which is then quickly flushed to
    *  the real term vectors files in the Directory. */  @Override
   void finish() {
-    if (!doVectors || bytesHash.size() == 0) {
+    if (!doVectors || getNumTerms() == 0) {
       return;
     }
     termsWriter.addFieldToFlush(this);
@@ -71,7 +71,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
     doVectors = false;
 
-    final int numPostings = bytesHash.size();
+    final int numPostings = getNumTerms();
 
     final BytesRef flushTerm = termsWriter.flushTerm;
 
@@ -84,7 +84,8 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    final int[] termIDs = sortPostings();
+    sortTerms();
+    final int[] termIDs = getSortedTermIDs();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
     
@@ -125,14 +126,14 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
     if (first) {
 
-      if (bytesHash.size() != 0) {
+      if (getNumTerms() != 0) {
         // Only necessary if previous doc hit a
         // non-aborting exception while writing vectors in
         // this field:
         reset();
       }
 
-      bytesHash.reinit();
+      reinitHash();
 
       hasPayloads = false;
 
@@ -200,8 +201,8 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
     return doVectors;
   }
-  
-  void writeProx(TermVectorsPostingsArray postings, int termID) {    
+
+  void writeProx(TermVectorsPostingsArray postings, int termID) {
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
