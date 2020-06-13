@@ -123,6 +123,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     log.info("------ managed models ~ loading ------");
 
     if ((managedData != null) && (managedData instanceof List)) {
+      @SuppressWarnings({"unchecked"})
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
         addModelFromMap(u);

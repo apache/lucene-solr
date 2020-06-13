@@ -46,6 +46,7 @@ public abstract class AuthorizationContext {
 
   public abstract String getHttpHeader(String header);
   
+  @SuppressWarnings({"rawtypes"})
   public abstract Enumeration getHeaderNames();
 
   public abstract String getRemoteAddr();

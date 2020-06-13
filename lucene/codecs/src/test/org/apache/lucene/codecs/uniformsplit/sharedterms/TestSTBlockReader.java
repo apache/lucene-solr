@@ -51,9 +51,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class STBlockReaderTest extends LuceneTestCase {
+public class TestSTBlockReader extends LuceneTestCase {
 
-  private static final String MOCK_BLOCK_OUTPUT_NAME = "STBlockReaderTest.tmp";
+  private static final String MOCK_BLOCK_OUTPUT_NAME = "TestSTBlockReader.tmp";
 
   private FieldInfos fieldInfos;
   private List<MockSTBlockLine> blockLines;

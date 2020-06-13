@@ -37,7 +37,7 @@ import org.apache.lucene.util.IntsRef;
  *  for merging results from multiple DirectSpellCheckers.
  */
 public final class LuceneLevenshteinDistance implements StringDistance {
-  
+
   /**
    * Creates a new comparator, mimicing the behavior of Lucene's internal
    * edit distance.
@@ -50,7 +50,7 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     IntsRef otherPoints;
     int n;
     int d[][]; // cost array
-    
+
     // NOTE: if we cared, we could 3*m space instead of m*n space, similar to 
     // what LevenshteinDistance does, except cycling thru a ring of three 
     // horizontal cost arrays... but this comparator is never actually used by 
@@ -63,7 +63,7 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     n = targetPoints.length;
     final int m = otherPoints.length;
     d = new int[n+1][m+1];
-    
+
     if (n == 0 || m == 0) {
       if (n == m) {
         return 0;
@@ -71,7 +71,7 @@ public final class LuceneLevenshteinDistance implements StringDistance {
       else {
         return Math.max(n, m);
       }
-    } 
+    }
 
     // indexes into strings s and t
     int i; // iterates through s
@@ -84,7 +84,7 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     for (i = 0; i<=n; i++) {
       d[i][0] = i;
     }
-    
+
     for (j = 0; j<=m; j++) {
       d[0][j] = j;
     }
@@ -102,10 +102,10 @@ public final class LuceneLevenshteinDistance implements StringDistance {
         }
       }
     }
-    
+
     return 1.0f - ((float) d[n][m] / Math.min(m, n));
   }
-  
+
   private static IntsRef toIntsRef(String s) {
     IntsRef ref = new IntsRef(s.length()); // worst case
     int utf16Len = s.length();
@@ -114,12 +114,18 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     }
     return ref;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (null == obj) return false;
     return (getClass() == obj.getClass());
   }
-  
+
+  @Override
+  public int hashCode() {
+    // constant hashCode since all instances of this class are equal()
+    return 6;
+  }
+
 }

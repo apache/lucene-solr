@@ -40,7 +40,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_JSON_UTF8;
 
   @Override
-  public void init(NamedList namedList) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;
@@ -103,7 +103,7 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
+  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
 
     if (val instanceof SimpleOrderedMap) {
       super.writeNamedList(name, val);
@@ -230,13 +230,14 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
 
 
   @Override
-  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map val,
+                       boolean excludeOuter, boolean isFirstVal) throws IOException {
     ifNeededWriteTypeAndValueKey("map");
     super.writeMap(name, val, excludeOuter, isFirstVal);
   }
 
   @Override
-  public void writeArray(String name, Iterator val) throws IOException {
+  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
     ifNeededWriteTypeAndValueKey("array");
     super.writeArray(name, val);
   }
