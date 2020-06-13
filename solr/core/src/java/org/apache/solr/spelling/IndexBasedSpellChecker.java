@@ -48,7 +48,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   protected IndexReader reader;
 
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
     super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
