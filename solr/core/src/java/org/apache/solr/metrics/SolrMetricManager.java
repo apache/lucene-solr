@@ -399,7 +399,7 @@ public class SolrMetricManager {
     for (String pattern : patterns) {
       compiled.add(Pattern.compile(pattern));
     }
-    return registryNames((Pattern[]) compiled.toArray(new Pattern[compiled.size()]));
+    return registryNames(compiled.toArray(new Pattern[compiled.size()]));
   }
 
   public Set<String> registryNames(Pattern... patterns) {
@@ -740,6 +740,7 @@ public class SolrMetricManager {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
     registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
@@ -753,6 +754,7 @@ public class SolrMetricManager {
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching((name, metric) -> {
       if (metric instanceof GaugeWrapper) {
+        @SuppressWarnings({"rawtypes"})
         GaugeWrapper wrapper = (GaugeWrapper) metric;
         boolean toRemove = wrapper.getTag().contains(tagSegment);
         if (toRemove) {
@@ -952,6 +954,7 @@ public class SolrMetricManager {
    *                      component instances.
    * @throws Exception if any argument is missing or invalid
    */
+  @SuppressWarnings({"rawtypes"})
   public void loadReporter(String registry, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
     if (registry == null || pluginInfo == null || pluginInfo.name == null || pluginInfo.className == null) {
       throw new IllegalArgumentException("loadReporter called with missing arguments: " +
@@ -963,7 +966,7 @@ public class SolrMetricManager {
         pluginInfo.className,
         SolrMetricReporter.class,
         new String[0],
-        new Class[]{SolrMetricManager.class, String.class},
+    new Class[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
     // prepare MDC for plugins that want to use its properties
@@ -1173,6 +1176,7 @@ public class SolrMetricManager {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private PluginInfo preparePlugin(PluginInfo info, Map<String, String> defaultAttributes,
                                    Map<String, Object> defaultInitArgs) {
     if (info == null) {

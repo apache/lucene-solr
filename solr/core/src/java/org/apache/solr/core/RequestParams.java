@@ -212,6 +212,7 @@ public class RequestParams implements MapSerializable {
   public static final String APPENDS = "_appends_";
   public static final String INVARIANTS = "_invariants_";
 
+  @SuppressWarnings({"unchecked"})
   public static class ParamSet implements MapSerializable {
     @SuppressWarnings({"rawtypes"})
     private final Map defaults, appends, invariants;

@@ -514,6 +514,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     public Currency getTargetCurrency() { return targetCurrency; }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext reader) throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
