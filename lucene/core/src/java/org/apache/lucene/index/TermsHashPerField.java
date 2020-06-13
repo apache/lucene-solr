@@ -38,7 +38,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   private int intUptoStart;
 
   private final int streamCount;
-  private final int numPostingInt;
 
   private final String fieldName;
   final IndexOptions indexOptions;
@@ -57,7 +56,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     this.intPool = intPool;
     this.bytePool = bytePool;
     this.streamCount = streamCount;
-    numPostingInt = 2*streamCount;
     this.fieldName = fieldName;
     this.nextPerField = nextPerField;
     assert indexOptions != IndexOptions.NONE;
@@ -111,11 +109,14 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
   private void initStreamSlices(int termID, int docID) throws IOException {
     // Init stream slices
-    if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
+    // TODO: figure out why this is 2*streamCount here. streamCount should be enough?
+    if ((2*streamCount) + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
+      // can we fit all the streams in the current buffer?
       intPool.nextBuffer();
     }
 
-    if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt * ByteBlockPool.FIRST_LEVEL_SIZE) {
+    if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < (2*streamCount) * ByteBlockPool.FIRST_LEVEL_SIZE) {
+      // can we fit at least one byte per stream in the current buffer, if not allocated a new one
       bytePool.nextBuffer();
     }
 
@@ -150,7 +151,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     int termID = bytesHash.add(termBytes);
     //System.out.println("add term=" + termBytesRef.utf8ToString() + " doc=" + docState.docID + " termID=" + termID);
     if (termID >= 0) { // New posting
-      bytesHash.byteStart(termID);
       // Init stream slices
       initStreamSlices(termID, docID);
     } else {
