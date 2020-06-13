@@ -1855,7 +1855,7 @@ public final class JapaneseTokenizer extends Tokenizer {
           }
           backCount += unigramTokenCount;
 
-        } else if (!discardPunctuation || length == 0 || !isPunctuation(fragment[offset])) {
+        } else if (!discardPunctuation || length == 0 || !isAllCharPunctuation(fragment, offset, length)) {
           pending.add(new Token(backID,
                                 fragment,
                                 offset,
@@ -1916,5 +1916,16 @@ public final class JapaneseTokenizer extends Tokenizer {
       default:
         return false;
     }
+  }
+
+  private static boolean isAllCharPunctuation(char[] ch, int offset, int length) {
+    boolean flag = true;
+    for (int i = offset; i < offset + length; i++) {
+      if (!isPunctuation(ch[i])) {
+        flag = false;
+        break;
+      }
+    }
+    return flag;
   }
 }

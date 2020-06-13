@@ -918,4 +918,35 @@ public class
     assertAnalyzesTo(extendedModeAnalyzerNoCompound, "株式会社とアカデミア",
         new String[]{"株式", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
   }
+
+  public void testDiscardPunctuationStartingPunctuationToken1() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "（株）巴商会",
+        new String[] { "（株）", "巴商会" },
+        new int[] { 0, 3 },
+        new int[] { 3, 6 }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken2() throws Exception {
+    assertAnalyzesTo(extendedModeAnalyzerNoPunct, "（株）巴商会",
+        new String[] { "（株）", "巴商会" },
+        new int[] { 0, 3 },
+        new int[] { 3, 6 }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken3() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "（）巴商会",
+        new String[] { "巴商会" },
+        new int[] { 2 },
+        new int[] { 5 }
+    );
+  }
+  public void testDiscardPunctuationStartingPunctuationToken4() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "−−巴商会",
+        new String[] { "巴商会" },
+        new int[] { 2 },
+        new int[] { 5 }
+    );
+  }
 }
