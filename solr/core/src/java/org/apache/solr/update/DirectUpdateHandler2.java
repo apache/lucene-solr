@@ -615,6 +615,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
@@ -629,7 +630,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
-    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = null;
     if (cmd.waitSearcher) {
       waitSearcher = new Future[1];

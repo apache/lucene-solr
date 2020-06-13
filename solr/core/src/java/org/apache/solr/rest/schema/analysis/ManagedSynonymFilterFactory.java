@@ -235,6 +235,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
             madeChanges = true;
           }
         } else if (val instanceof List) {
+          @SuppressWarnings({"unchecked"})
           List<String> vals = (List<String>)val;
 
           if (output == null) {

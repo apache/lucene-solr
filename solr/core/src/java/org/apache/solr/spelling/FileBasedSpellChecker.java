@@ -59,7 +59,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   public static final String WORD_FIELD_NAME = "word";
 
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
     super.init(config, core);
     characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
     return name;

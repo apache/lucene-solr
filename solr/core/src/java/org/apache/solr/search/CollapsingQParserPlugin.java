@@ -1869,6 +1869,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
     }
 
+    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext context) throws IOException {
       functionValues = this.valueSource.getValues(rcontext, context);
     }
@@ -2396,6 +2397,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
     }
 
+    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext context) throws IOException {
       functionValues = this.valueSource.getValues(rcontext, context);
     }

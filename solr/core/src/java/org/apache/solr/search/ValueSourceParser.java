@@ -1417,6 +1417,7 @@ abstract class DoubleParser extends NamedParser {
 
     @Override
       public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+        @SuppressWarnings({"unchecked"})
       final FunctionValues vals =  source.getValues(context, readerContext);
       return new DoubleDocValues(this) {
         @Override
@@ -1465,7 +1466,9 @@ abstract class Double2Parser extends NamedParser {
 
     @Override
       public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+        @SuppressWarnings({"unchecked"})
       final FunctionValues aVals =  a.getValues(context, readerContext);
+        @SuppressWarnings({"unchecked"})
       final FunctionValues bVals =  b.getValues(context, readerContext);
       return new DoubleDocValues(this) {
         @Override
@@ -1580,6 +1583,7 @@ class TestValueSource extends ValueSource {
   }
 
   @Override
+    @SuppressWarnings({"unchecked"})
     public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
             , LeafReaderContext readerContext) throws IOException {
     if (context.get(this) == null) {

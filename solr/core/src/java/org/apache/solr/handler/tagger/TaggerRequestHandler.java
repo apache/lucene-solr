@@ -381,6 +381,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
       functionValuesDocIdPerSeg = new int[readerContexts.size()];
     }
 
+    @SuppressWarnings({"unchecked"})
     Object objectVal(int topDocId) throws IOException {
       // lookup segment level stuff:
       int segIdx = ReaderUtil.subIndex(topDocId, readerContexts);

@@ -365,6 +365,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     return res;
   }
 
+    @SuppressWarnings({"unchecked"})
   public void setNextReader(LeafReaderContext ctx) throws IOException {
     if (valueSource == null) {
       // first time we've collected local values, get the right ValueSource

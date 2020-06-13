@@ -81,6 +81,7 @@ public class PackageManager implements Closeable {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
     List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
@@ -112,6 +113,7 @@ public class PackageManager implements Closeable {
     return ret;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
     Map<String, String> packages = null;
     try {
@@ -145,8 +147,9 @@ public class PackageManager implements Closeable {
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   private boolean deployPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate, boolean noprompt,
-      List<String> collections, String overrides[]) {
+      List<String> collections, String[] overrides) {
     List<String> previouslyDeployed =  new ArrayList<>(); // collections where package is already deployed in
 
     for (String collection: collections) {

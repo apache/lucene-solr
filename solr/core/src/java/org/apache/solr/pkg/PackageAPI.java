@@ -210,6 +210,11 @@ public class PackageAPI {
     }
 
     @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("TODO unimplemented");
+    }
+
+    @Override
     public String toString() {
       try {
         return Utils.writeJson(this, new StringWriter(), false).toString() ;
@@ -250,6 +255,7 @@ public class PackageAPI {
 
 
     @Command(name = "add")
+    @SuppressWarnings({"unchecked"})
     public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.AddVersion add = payload.get();
@@ -271,6 +277,7 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
+          @SuppressWarnings({"rawtypes"})
           List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
           for (Object o : list) {
             if (o instanceof PkgVersion) {

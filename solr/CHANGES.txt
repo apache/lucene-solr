@@ -263,6 +263,8 @@ Other Changes
 
 * SOLR-14565: Fix or suppress warnings in solrj/impl and solrj/io/graph (Erick Erickson)
 
+* SOLR-14564: Fix or suppress remaining warnings in solr/core (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

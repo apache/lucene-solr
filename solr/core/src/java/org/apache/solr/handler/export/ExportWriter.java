@@ -193,6 +193,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void open() throws IOException {
       docs = (SortDoc[]) context.get(SORT_DOCS_KEY);
       queue = (SortQueue) context.get(SORT_QUEUE_KEY);

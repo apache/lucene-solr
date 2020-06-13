@@ -40,7 +40,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
   protected SolrMetricManager metricManager;
   protected String registryName;
 
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList ) {

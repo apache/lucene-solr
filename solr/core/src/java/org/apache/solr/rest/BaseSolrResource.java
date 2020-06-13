@@ -198,6 +198,7 @@ public abstract class BaseSolrResource extends ServerResource {
   protected void handleException(Logger log) {
     Exception exception = getSolrResponse().getException();
     if (null != exception) {
+      @SuppressWarnings({"rawtypes"})
       NamedList info = new SimpleOrderedMap();
       int code = ResponseUtils.getErrorInfo(exception, info, log);
       setStatus(Status.valueOf(code));
