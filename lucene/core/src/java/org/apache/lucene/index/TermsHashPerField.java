@@ -27,7 +27,7 @@ import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 
 /**
- * This class allows to store streams of information per term without knowing
+ * This class stores streams of information per term without knowing
  * the size of the stream ahead of time. Each stream typically encodes one level
  * of information like term frequency per document or term proximity. Internally
  * this class allocates a linked list of slices that can be read by a {@link ByteSliceReader}
@@ -140,7 +140,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     }
 
     if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < (2*streamCount) * ByteBlockPool.FIRST_LEVEL_SIZE) {
-      // can we fit at least one byte per stream in the current buffer, if not allocated a new one
+      // can we fit at least one byte per stream in the current buffer, if not allocate a new one
       bytePool.nextBuffer();
     }
 

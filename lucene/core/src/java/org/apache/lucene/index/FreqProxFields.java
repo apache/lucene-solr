@@ -55,7 +55,6 @@ class FreqProxFields extends Fields {
 
   @Override
   public int size() {
-    //return fields.size();
     throw new UnsupportedOperationException();
   }
 
@@ -75,25 +74,21 @@ class FreqProxFields extends Fields {
 
     @Override
     public long size() {
-      //return terms.termsHashPerField.bytesHash.size();
       throw new UnsupportedOperationException();
     }
 
     @Override
     public long getSumTotalTermFreq() {
-      //return terms.sumTotalTermFreq;
       throw new UnsupportedOperationException();
     }
 
     @Override
     public long getSumDocFreq() {
-      //return terms.sumDocFreq;
       throw new UnsupportedOperationException();
     }
 
     @Override
     public int getDocCount() {
-      //return terms.docCount;
       throw new UnsupportedOperationException();
     }
   
