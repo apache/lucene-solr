@@ -108,10 +108,13 @@ public class FieldComparator implements StreamComparator {
    * check only once - we can do that in the constructor of this class, create a lambda, and then execute 
    * that lambda in the compare function. A little bit of branch prediction savings right here.
    */
+  @SuppressWarnings({"unchecked"})
   private void assignComparator(){
     if(ComparatorOrder.DESCENDING == order){
       comparator = (leftTuple, rightTuple) -> {
+        @SuppressWarnings({"rawtypes"})
         Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        @SuppressWarnings({"rawtypes"})
         Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
 
         if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
@@ -124,7 +127,9 @@ public class FieldComparator implements StreamComparator {
     else{
       // See above for black magic reasoning.
       comparator = (leftTuple, rightTuple) -> {
+        @SuppressWarnings({"rawtypes"})
         Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        @SuppressWarnings({"rawtypes"})
         Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
 
         if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal

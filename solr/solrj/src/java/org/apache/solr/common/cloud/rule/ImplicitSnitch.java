@@ -97,6 +97,7 @@ public class ImplicitSnitch extends Snitch {
   }
 
   private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
+    @SuppressWarnings({"rawtypes"})
     Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     try {
@@ -107,10 +108,12 @@ public class ImplicitSnitch extends Snitch {
     }
   }
 
-  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
+  private void cacheRoles(String solrNode, SnitchContext ctx, String key,
+                          @SuppressWarnings({"rawtypes"})Map roles) {
     ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
       for (Object o : roles.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof List) {
           if (((List) e.getValue()).contains(solrNode)) {

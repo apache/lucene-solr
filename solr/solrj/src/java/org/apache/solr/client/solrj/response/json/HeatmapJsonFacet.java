@@ -39,6 +39,7 @@ public class HeatmapJsonFacet {
   private List<List<Integer>> countGrid;
   private String countEncodedAsBase64PNG;
 
+  @SuppressWarnings({"unchecked"})
   public HeatmapJsonFacet(NamedList<Object> heatmapNL) {
     gridLevel = (int) heatmapNL.get("gridLevel");
     columns = (int) heatmapNL.get("columns");

@@ -40,6 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
+@SuppressWarnings({"overrides"})
 public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   private static final String INCLUDE = "#include";
@@ -346,6 +347,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public boolean equals(Object that) {
     return that instanceof Map && this.delegate.equals(that);
   }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented ValidatingJsonMap.hashCode");
+//  }
 
   @SuppressWarnings({"unchecked"})
   public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.EMPTY_MAP);

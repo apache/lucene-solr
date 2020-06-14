@@ -777,13 +777,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @SuppressWarnings({"rawtypes"})
   public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList {
+    @SuppressWarnings({"rawtypes"})
     private NamedList routeResponses;
     private Map<String, T> routes;
 
-    public void setRouteResponses(NamedList routeResponses) {
+    public void setRouteResponses(@SuppressWarnings({"rawtypes"})NamedList routeResponses) {
       this.routeResponses = routeResponses;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public NamedList getRouteResponses() {
       return routeResponses;
     }
@@ -1294,6 +1296,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
+      @SuppressWarnings({"unchecked"})
       Iterator<Map.Entry<String,Object>> routeIter = routes.iterator();
       while (routeIter.hasNext()) {
         Map.Entry<String,Object> next = routeIter.next();

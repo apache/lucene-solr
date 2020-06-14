@@ -74,6 +74,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
         TokenInfo tokenInfo = buildTokenInfoFromString((String) phaseValue);
         phase.addTokenInfo(tokenInfo);
       } else {
+        @SuppressWarnings({"unchecked"})
         List<NamedList<Object>> tokens = (List<NamedList<Object>>) phaseEntry.getValue();
         for (NamedList<Object> token : tokens) {
           TokenInfo tokenInfo = buildTokenInfo(token);
