@@ -111,6 +111,9 @@ New Features
 
 * SOLR-14404: CoreContainer level custom requesthandlers (noble)
 
+* SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
+  (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
