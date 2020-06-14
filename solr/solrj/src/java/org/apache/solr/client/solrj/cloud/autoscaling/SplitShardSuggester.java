@@ -37,7 +37,9 @@ class SplitShardSuggester extends Suggester {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
+    @SuppressWarnings({"unchecked"})
     Set<Pair<String, String>> shards = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
     if (shards.isEmpty()) {
       throw new RuntimeException("split-shard requires 'collection' and 'shard'");
@@ -46,6 +48,7 @@ class SplitShardSuggester extends Suggester {
       throw new RuntimeException("split-shard requires exactly one pair of 'collection' and 'shard'");
     }
     Pair<String, String> collShard = shards.iterator().next();
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> params = (Map<String, Object>)hints.getOrDefault(Hint.PARAMS, Collections.emptyMap());
     Float splitFuzz = (Float)params.get(CommonAdminParams.SPLIT_FUZZ);
     CollectionAdminRequest.SplitShard req = CollectionAdminRequest.splitShard(collShard.first()).setShardName(collShard.second());

@@ -60,7 +60,9 @@ public class Row implements MapWriter {
   boolean anyValueMissing = false;
   boolean isLive = true;
   Policy.Session session;
+  @SuppressWarnings({"rawtypes"})
   Map globalCache;
+  @SuppressWarnings({"rawtypes"})
   Map perCollCache;
 
   public Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session) {
@@ -75,6 +77,7 @@ public class Row implements MapWriter {
    * {@link org.apache.solr.client.solrj.cloud.autoscaling.Policy.Session#Session(List, SolrCloudManager, List, Set, List, NodeStateProvider, Policy, Policy.Transaction)}
    * once the new {@link Policy.Session} instance is available.</p>
    */
+  @SuppressWarnings({"rawtypes"})
   Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session,
       NodeStateProvider nsp, SolrCloudManager cloudManager) {
     this.session = session;
@@ -134,6 +137,7 @@ public class Row implements MapWriter {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public <R> R computeCacheIfAbsent(String cacheName, Function<Object, R> supplier) {
     R result = (R) globalCache.get(cacheName);
     if (result != null) {
@@ -146,6 +150,7 @@ public class Row implements MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public <R> R computeCacheIfAbsent(String coll, String shard, String cacheName, Object key, Function<Object, R> supplier) {
     Map collMap = (Map) this.perCollCache.get(coll);
     if (collMap == null) this.perCollCache.put(coll, collMap = new HashMap());
@@ -165,9 +170,11 @@ public class Row implements MapWriter {
   }
 
 
-
-  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
-      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session, Map perRowCache, Map globalCache) {
+  public Row(String node, Cell[] cells, boolean anyValueMissing,
+             @SuppressWarnings({"rawtypes"}) Map<String,
+                     Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
+             @SuppressWarnings({"rawtypes"}) Map perRowCache,
+             @SuppressWarnings({"rawtypes"})Map globalCache) {
     this.session = session;
     this.node = node;
     this.isLive = isLive;
@@ -266,6 +273,7 @@ public class Row implements MapWriter {
 
   boolean isAlreadyCopied = false;
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void lazyCopyReplicas(String coll, String shard) {
     globalCache = new HashMap();
     Map cacheCopy = new HashMap<>(perCollCache);
@@ -286,6 +294,7 @@ public class Row implements MapWriter {
     return collectionVsShardVsReplicas.containsKey(coll);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void createCollShard(Pair<String, String> collShard) {
     Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
     if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), Utils.NEW_ARRAYLIST_FUN);

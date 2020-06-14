@@ -75,6 +75,7 @@ public class PolicyHelper {
 
   private static final String POLICY_MAPPING_KEY = "PolicyHelper.policyMapping";
 
+  @SuppressWarnings({"unchecked"})
   private static ThreadLocal<Map<String, String>> getPolicyMapping(SolrCloudManager cloudManager) {
     return (ThreadLocal<Map<String, String>>) cloudManager.getObjectCache()
         .computeIfAbsent(POLICY_MAPPING_KEY, k -> new ThreadLocal<>());
@@ -180,6 +181,7 @@ public class PolicyHelper {
             if (diskSpaceReqd.get(shardName) != null) {
               suggester.hint(Hint.MINFREEDISK, diskSpaceReqd.get(shardName));
             }
+            @SuppressWarnings({"rawtypes"})
             SolrRequest op = suggester.getSuggestion();
             if (op == null) {
               String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
@@ -265,6 +267,7 @@ public class PolicyHelper {
     ctx.max = max;
     ctx.session = policy.createSession(cloudManager);
     String[] t = params == null ? null : params.getParams("type");
+    @SuppressWarnings({"unchecked"})
     List<String> types = t == null? Collections.EMPTY_LIST: Arrays.asList(t);
 
     if(types.isEmpty() || types.contains(violation.name())) {
@@ -320,11 +323,13 @@ public class PolicyHelper {
     ));
   }
 
+  @SuppressWarnings({"unchecked"})
   private static void addMissingReplicas(ReplicaCount count, DocCollection coll, String shard, Replica.Type type, Suggestion.Ctx ctx) {
     int delta = count.delta(coll.getExpectedReplicaCount(type, 0), type);
     for (; ; ) {
       if (!ctx.needMore()) return;
       if (delta >= 0) break;
+      @SuppressWarnings({"rawtypes"})
       SolrRequest suggestion = ctx.addSuggestion(
           ctx.session.getSuggester(ADDREPLICA)
               .hint(Hint.REPLICATYPE, type)
