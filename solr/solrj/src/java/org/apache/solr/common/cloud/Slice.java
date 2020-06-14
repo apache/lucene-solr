@@ -40,6 +40,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public final String collection;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
+  @SuppressWarnings({"unchecked"})
   public static Map<String,Slice> loadAllFromMap(String collection, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
     Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
@@ -129,6 +130,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
     this.name = name;
@@ -188,6 +190,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   private Map<String,Replica> makeReplicas(String collection, String slice,Map<String,Object> genericReplicas) {
     if (genericReplicas == null) return new HashMap<>(1);
     Map<String,Replica> result = new LinkedHashMap<>(genericReplicas.size());

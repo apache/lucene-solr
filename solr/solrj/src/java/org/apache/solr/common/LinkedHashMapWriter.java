@@ -42,12 +42,14 @@ public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements 
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object _get(String path, Object def) {
     if (path.indexOf('/') == -1) return getOrDefault(path, (V) def);
     return MapWriter.super._get(path, def);
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object _get(List<String> path, Object def) {
     if (path.size() == 1) return getOrDefault(path.get(0), (V) def);
     return MapWriter.super._get(path, def);
