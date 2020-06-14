@@ -70,6 +70,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_
  * Create a fresh new session for each use
  *
  */
+@SuppressWarnings({"overrides"})
 public class Policy implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -80,6 +81,7 @@ public class Policy implements MapWriter {
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores", CollectionAdminParams.WITH_COLLECTION)));
+  @SuppressWarnings({"unchecked"})
   public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
       Arrays.asList(
           // NOTE - if you change this, make sure to update the solrcloud-autoscaling-overview.adoc which
@@ -286,6 +288,11 @@ public class Policy implements MapWriter {
     return getClusterPreferences().equals(policy.getClusterPreferences());
   }
 
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
+
   public static Map<String, List<Clause>> clausesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
     Map<String, List<Clause>> newPolicies = new HashMap<>();
     map.forEach((s, l1) ->
@@ -328,6 +335,7 @@ public class Policy implements MapWriter {
           });
         } catch (Exception e) {
           try {
+            @SuppressWarnings({"rawtypes"})
             Map m = Collections.singletonMap("diagnostics", (MapWriter) ew -> {
               PolicyHelper.writeNodes(ew, matrixCopy);
               ew.put("config", matrix.get(0).session.getPolicy());
@@ -586,8 +594,10 @@ public class Policy implements MapWriter {
         //if any collection has 'withCollection' irrespective of the node, the NodeStateProvider returns a map value
         Map<String, Object> vals = nodeStateProvider.getNodeValues(nodes.get(0), Collections.singleton("withCollection"));
         if (!vals.isEmpty() && vals.get("withCollection") != null) {
+          @SuppressWarnings({"unchecked"})
           Map<String, String> withCollMap = (Map<String, String>) vals.get("withCollection");
           if (!withCollMap.isEmpty()) {
+            @SuppressWarnings({"unchecked"})
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
                 new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false
@@ -672,8 +682,10 @@ public class Policy implements MapWriter {
         //if any collection has 'withCollection' irrespective of the node, the NodeStateProvider returns a map value
         Map<String, Object> vals = nodeStateProvider.getNodeValues(nodes.get(0), Collections.singleton("withCollection"));
         if (!vals.isEmpty() && vals.get("withCollection") != null) {
+          @SuppressWarnings({"unchecked"})
           Map<String, String> withCollMap = (Map<String, String>) vals.get("withCollection");
           if (!withCollMap.isEmpty()) {
+            @SuppressWarnings({"unchecked"})
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
                 new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false

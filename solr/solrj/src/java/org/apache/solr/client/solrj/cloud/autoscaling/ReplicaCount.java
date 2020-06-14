@@ -24,6 +24,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
+@SuppressWarnings({"overrides"})
 class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
 
@@ -105,6 +106,16 @@ class ReplicaCount  implements MapWriter {
     }
     return false;
   }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException("TODO unimplemented");
+  }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
 
   @Override
   public String toString() {
