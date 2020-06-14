@@ -342,6 +342,8 @@ Other Changes
 
 * SOLR-14567: Fix or suppress remaining warnings in solrj (Erick Erickson)
 
+* SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

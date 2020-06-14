@@ -42,6 +42,7 @@ import static java.util.stream.Collectors.toList;
  * Bean representation of <code>autoscaling.json</code>, which parses data
  * lazily.
  */
+@SuppressWarnings({"overrides"})
 public class AutoScalingConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -58,6 +59,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger listener config.
    */
+  @SuppressWarnings({"overrides"})
   public static class TriggerListenerConfig implements MapWriter {
     public final String name;
     public final String trigger;
@@ -138,6 +140,11 @@ public class AutoScalingConfig implements MapWriter {
       return properties.equals(that.properties);
     }
 
+//    @Override
+//    public int hashCode() {
+//      throw new UnsupportedOperationException("TODO unimplemented");
+//    }
+//
     @Override
     public String toString() {
       return Utils.toJSONString(this);
@@ -147,6 +154,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger config.
    */
+  @SuppressWarnings({"overrides"})
   public static class TriggerConfig implements MapWriter {
     /** Trigger name. */
     public final String name;
@@ -183,6 +191,7 @@ public class AutoScalingConfig implements MapWriter {
       }
       enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
 
+      @SuppressWarnings({"unchecked"})
       List<Map<String, Object>> newActions = (List<Map<String, Object>>)this.properties.get("actions");
       if (newActions != null) {
         this.actions = newActions.stream().map(ActionConfig::new).collect(collectingAndThen(toList(), Collections::unmodifiableList));
@@ -225,6 +234,10 @@ public class AutoScalingConfig implements MapWriter {
       if (event != that.event) return false;
       return properties.equals(that.properties);
     }
+//    @Override
+//    public int hashCode() {
+//      throw new UnsupportedOperationException("TODO unimplemented");
+//    }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
@@ -249,6 +262,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger action configuration.
    */
+  @SuppressWarnings({"overrides"})
   public static class ActionConfig implements MapWriter {
     /** Action name. */
     public final String name;
@@ -291,6 +305,11 @@ public class AutoScalingConfig implements MapWriter {
       return properties.equals(that.properties);
     }
 
+//    @Override
+//    public int hashCode() {
+//      throw new UnsupportedOperationException("TODO unimplemented");
+//    }
+
     @Override
     public String toString() {
       return Utils.toJSONString(this);
@@ -301,6 +320,7 @@ public class AutoScalingConfig implements MapWriter {
    * Construct from bytes that represent a UTF-8 JSON string.
    * @param utf8 config data
    */
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig(byte[] utf8) {
     this(utf8 != null && utf8.length > 0 ? (Map<String, Object>)Utils.fromJSON(utf8) : Collections.emptyMap());
   }
@@ -362,6 +382,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Get trigger configurations.
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String, TriggerConfig> getTriggerConfigs() {
     if (triggers == null) {
       if (jsonMap != null) {
@@ -405,6 +426,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Get listener configurations.
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String, TriggerListenerConfig> getTriggerListenerConfigs() {
     if (listeners == null) {
       if (jsonMap != null) {
@@ -428,6 +450,7 @@ public class AutoScalingConfig implements MapWriter {
   public Map<String, Object> getProperties()  {
     if (properties == null) {
       if (jsonMap != null)  {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> map = (Map<String, Object>) jsonMap.get("properties");
         if (map == null) {
           this.properties = Collections.emptyMap();
@@ -564,11 +587,17 @@ public class AutoScalingConfig implements MapWriter {
     if (!getTriggerListenerConfigs().equals(that.getTriggerListenerConfigs())) return false;
     return getProperties().equals(that.getProperties());
   }
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
+
 
   private static List<Object> getList(String key, Map<String, Object> properties) {
     return getList(key, properties, null);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static List<Object> getList(String key, Map<String, Object> properties, List<Object> defaultList) {
     if (defaultList == null) {
       defaultList = Collections.emptyList();
