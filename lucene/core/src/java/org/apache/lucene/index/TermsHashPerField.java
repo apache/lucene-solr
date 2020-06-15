@@ -42,7 +42,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   final ByteBlockPool bytePool;
   // for each term we store an integer per stream that points into the bytePool above
   // the address is updated once data is written to the stream to point to the next free offset
-  // this the terms stream. The start address for the stream is stored in postingsArray.byteStarts[termId]
+  // in the terms stream. The start address for the stream is stored in postingsArray.byteStarts[termId]
   // This is initialized in the #addTerm method, either to a brand new per term stream if the term is new or
   // to the addresses where the term stream was written to when we saw it the last time.
   private int[] termStreamAddressBuffer;
@@ -94,7 +94,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
   /** Collapse the hash table and sort in-place; also sets
    * this.sortedTermIDs to the results
-   * This method should not be called twice unless {@link #reset()}
+   * This method must not be called twice unless {@link #reset()}
    * or {@link #reinitHash()} was called. */
   final void sortTerms() {
     assert sortedTermIDs == null;

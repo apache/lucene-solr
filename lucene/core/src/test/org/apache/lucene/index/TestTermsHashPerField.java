@@ -78,7 +78,6 @@ public class TestTermsHashPerField extends LuceneTestCase  {
       @Override
       void newPostingsArray() {
         freqProxPostingsArray = (FreqProxTermsWriterPerField.FreqProxPostingsArray) postingsArray;
-
       }
 
       @Override
