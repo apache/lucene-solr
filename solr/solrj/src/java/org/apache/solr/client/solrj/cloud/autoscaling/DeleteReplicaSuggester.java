@@ -36,7 +36,9 @@ class DeleteReplicaSuggester extends Suggester {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
+    @SuppressWarnings({"unchecked"})
     Set<Pair<String, String>> shards = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
     if (shards.isEmpty()) {
       throw new RuntimeException("delete-replica requires 'collection' and 'shard'");
@@ -45,6 +47,7 @@ class DeleteReplicaSuggester extends Suggester {
       throw new RuntimeException("delete-replica requires exactly one pair of 'collection' and 'shard'");
     }
     Pair<String, String> collShard = shards.iterator().next();
+    @SuppressWarnings({"unchecked"})
     Set<Number> counts = (Set<Number>) hints.getOrDefault(Hint.NUMBER, Collections.emptySet());
     Integer count = null;
     if (!counts.isEmpty()) {
@@ -54,6 +57,7 @@ class DeleteReplicaSuggester extends Suggester {
       Number n = counts.iterator().next();
       count = n.intValue();
     }
+    @SuppressWarnings({"unchecked"})
     Set<String> replicas = (Set<String>) hints.getOrDefault(Hint.REPLICA, Collections.emptySet());
     String replica = null;
     if (!replicas.isEmpty()) {

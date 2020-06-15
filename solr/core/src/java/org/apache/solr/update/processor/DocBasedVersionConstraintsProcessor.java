@@ -353,6 +353,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return values;
   }
 
+  @SuppressWarnings({"unchecked"})
   private static FunctionValues getFunctionValues(LeafReaderContext segmentContext,
                                           SchemaField field,
                                           SolrIndexSearcher searcher) throws IOException {

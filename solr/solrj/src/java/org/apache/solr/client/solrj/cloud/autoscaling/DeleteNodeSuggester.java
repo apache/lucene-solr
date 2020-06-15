@@ -33,7 +33,9 @@ class DeleteNodeSuggester extends Suggester {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
+    @SuppressWarnings({"unchecked"})
     Set<String> srcNodes = (Set<String>) hints.get(Hint.SRC_NODE);
     if (srcNodes.isEmpty()) {
       throw new RuntimeException("delete-node requires 'src_node' hint");

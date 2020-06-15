@@ -226,6 +226,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
+    @SuppressWarnings({"unchecked"})
     void sendUpdateStream() throws Exception {
     
       while (!queue.isEmpty()) {

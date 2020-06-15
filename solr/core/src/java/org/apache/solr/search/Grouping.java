@@ -927,6 +927,7 @@ public class Grouping {
     @SuppressWarnings({"rawtypes"})
     Map context;
 
+    @SuppressWarnings({"unchecked"})
     private ValueSourceGroupSelector newSelector() {
       return new ValueSourceGroupSelector(groupBy, context);
     }
@@ -939,6 +940,7 @@ public class Grouping {
     Collection<SearchGroup<MutableValue>> topGroups;
 
     @Override
+    @SuppressWarnings({"unchecked"})
     protected void prepare() throws IOException {
       context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
