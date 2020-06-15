@@ -25,6 +25,8 @@ Improvements
 
 Other Changes
 ----------------------
+* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -73,6 +75,9 @@ Other Changes
 
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
+
+ * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
+   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
 
 ==================  8.6.0 ==================
 
@@ -160,6 +165,8 @@ Optimizations
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
 
+* SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -227,6 +234,12 @@ Bug Fixes
 
 * SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
   (Johannes Kloos, mrsoong via Munendra S N)
+
+* SOLR-14550: Fix duplicates issue in Atomic updates with add-distinct (Thomas Corthals, Munendra S N)
+
+* SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
+
+* SOLR-14516: NPE in JsonTextWriter (noble)
 
 Other Changes
 ---------------------
@@ -313,6 +326,25 @@ Other Changes
 * SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
 
 * SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
+
+* SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
+
+* SOLR-14559: Fix or suppress warnings in solr/core/src/java/org/apache/solr/util,
+  response, cloud, security, schema, api (Erick Erickson)
+
+* SOLR-14563: Fix or suppress warnings in solr/contrib (Erick Erickson)
+
+* SOLR-14565: Fix or suppress warnings in solrj/impl and solrj/io/graph (Erick Erickson)
+
+* SOLR-14564: Fix or suppress remaining warnings in solr/core (Erick Erickson)
+
+* SOLR-14567: Fix or suppress remaining warnings in solrj (Erick Erickson)
+
+* SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
 
 ==================  8.5.2 ==================
 

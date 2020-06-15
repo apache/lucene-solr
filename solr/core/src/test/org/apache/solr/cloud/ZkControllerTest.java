@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -284,7 +283,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
             CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, nodeName, ZkStateReader.NUM_SHARDS_PROP, "1",
-            "name", collectionName, DocCollection.STATE_FORMAT, "2");
+            "name", collectionName);
         zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
 
         HashMap<String, Object> propMap = new HashMap<>();

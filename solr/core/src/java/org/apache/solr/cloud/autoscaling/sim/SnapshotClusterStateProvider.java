@@ -30,7 +30,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -47,7 +46,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
   public SnapshotClusterStateProvider(ClusterStateProvider other) throws Exception {
     liveNodes = Set.copyOf(other.getLiveNodes());
     ClusterState otherState = other.getClusterState();
-    clusterState = new ClusterState(otherState.getZNodeVersion(), liveNodes, otherState.getCollectionsMap());
+    clusterState = new ClusterState(liveNodes, otherState.getCollectionsMap());
     clusterProperties = new HashMap<>(other.getClusterProperties());
   }
 
@@ -69,15 +68,13 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
         collMap = mutableState;
         mutableState = Collections.singletonMap(name, state);
       }
-      Integer version = Integer.parseInt(String.valueOf(collMap.getOrDefault("zNodeVersion", stateVersion)));
-      String path = String.valueOf(collMap.getOrDefault("zNode", ZkStateReader.getCollectionPath(name)));
+      int version = Integer.parseInt(String.valueOf(collMap.getOrDefault("zNodeVersion", stateVersion)));
       collMap.remove("zNodeVersion");
-      collMap.remove("zNode");
       byte[] data = Utils.toJSON(mutableState);
-      ClusterState collState = ClusterState.load(version, data, Collections.emptySet(), path);
+      ClusterState collState = ClusterState.createFromJson(version, data, Collections.emptySet());
       collectionStates.put(name, collState.getCollection(name));
     });
-    clusterState = new ClusterState(stateVersion, liveNodes, collectionStates);
+    clusterState = new ClusterState(liveNodes, collectionStates);
   }
 
   public Map<String, Object> getSnapshot() {
@@ -97,7 +94,6 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
         @SuppressWarnings({"unchecked"})
         Map<String, Object> collMap = new LinkedHashMap<>((Map<String, Object>)Utils.fromJSON(json.getBytes("UTF-8")));
         collMap.put("zNodeVersion", coll.getZNodeVersion());
-        collMap.put("zNode", coll.getZNode());
         // format compatible with the real /state.json, which uses a mini-ClusterState
         // consisting of a single collection
         stateMap.put(coll.getName(), Collections.singletonMap(coll.getName(), collMap));

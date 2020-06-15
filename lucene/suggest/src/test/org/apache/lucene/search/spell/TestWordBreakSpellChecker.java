@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import junit.framework.Assert;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -37,6 +35,7 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Assert;
 
 public class TestWordBreakSpellChecker extends LuceneTestCase {
   private Directory dir;

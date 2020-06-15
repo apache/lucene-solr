@@ -233,7 +233,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
           DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
           String path = ZkStateReader.getCollectionPath(name);
-          coll = new DocCollection(name, slices, collProps, router, zkVersion + 1, path);
+          coll = new DocCollection(name, slices, collProps, router, zkVersion + 1);
           try {
             SimDistribStateManager stateManager = cloudManager.getSimDistribStateManager();
             byte[] data = Utils.toJSON(Collections.singletonMap(name, coll));
@@ -2510,7 +2510,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       lock.lockInterruptibly();
       try {
         Map<String, DocCollection> states = getCollectionStates();
-        ClusterState state = new ClusterState(0, liveNodes.get(), states);
+        ClusterState state = new ClusterState(liveNodes.get(), states);
         return state;
       } finally {
         lock.unlock();

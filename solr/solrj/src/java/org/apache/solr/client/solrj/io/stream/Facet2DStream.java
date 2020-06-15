@@ -271,7 +271,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -293,6 +293,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, x, y, metric);
       this.out = tuples.iterator();
@@ -389,21 +390,26 @@ public class Facet2DStream extends TupleStream implements Expressible {
     return null;
   }
 
-  private void getTuples(NamedList response, Bucket x, Bucket y, Metric metric) {
+  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response, Bucket x, Bucket y, Metric metric) {
     Tuple tuple = new Tuple();
+    @SuppressWarnings({"rawtypes"})
     NamedList facets = (NamedList) response.get("facets");
     fillTuples(0, tuples, tuple, facets, x, y, metric);
   }
 
-  private void fillTuples(int level, List<Tuple> tuples, Tuple currentTuple, NamedList facets, Bucket x, Bucket y, Metric metric) {
+  private void fillTuples(int level, List<Tuple> tuples, Tuple currentTuple,
+                          @SuppressWarnings({"rawtypes"})NamedList facets, Bucket x, Bucket y, Metric metric) {
     String bucketXName = x.toString();
     String bucketYName = y.toString();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList allXBuckets = (NamedList) facets.get("x");
     for (int b = 0; b < allXBuckets.size(); b++) {
+      @SuppressWarnings({"rawtypes"})
       List buckets = (List) allXBuckets.get("buckets");
       for(int s=0; s<buckets.size(); s++) {
 
+        @SuppressWarnings({"rawtypes"})
         NamedList bucket = (NamedList)buckets.get(s);
         Object val = bucket.get("val");
         if (val instanceof Integer) {
@@ -412,10 +418,13 @@ public class Facet2DStream extends TupleStream implements Expressible {
         Tuple tx = currentTuple.clone();
         tx.put(bucketXName, val);
 
+        @SuppressWarnings({"rawtypes"})
         NamedList allYBuckets = (NamedList) bucket.get("y");
+        @SuppressWarnings({"rawtypes"})
         List ybuckets = (List)allYBuckets.get("buckets");
 
         for (int d = 0; d < ybuckets.size(); d++) {
+          @SuppressWarnings({"rawtypes"})
           NamedList bucketY = (NamedList) ybuckets.get(d);
           Object valY = bucketY.get("val");
           if (valY instanceof Integer) {

@@ -116,11 +116,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   public void setUp() throws Exception {
     super.setUp();
     collectionUlogDirMap.clear();
-    if (random().nextBoolean()) {
-      CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cloudClient);
-    } else {
-      CollectionAdminRequest.setClusterProperty("legacyCloud", "true").process(cloudClient);
-    }
   }
   
   @Override
