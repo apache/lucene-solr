@@ -160,8 +160,9 @@ public class MultiCollector implements Collector {
       if (skipNonCompetitiveScores) {
         for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
-          assert c != null;
-          c.setScorer(new MinCompetitiveScoreAwareScorable(scorer,  i,  minScores));
+          if (c != null) {
+            c.setScorer(new MinCompetitiveScoreAwareScorable(scorer,  i,  minScores));
+          }
         }
       } else {
         scorer = new FilterScorable(scorer) {
@@ -175,8 +176,9 @@ public class MultiCollector implements Collector {
         };
         for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
-          assert c != null;
-          c.setScorer(scorer);
+          if (c != null) {
+            c.setScorer(scorer);
+          }
         }
       }
     }
