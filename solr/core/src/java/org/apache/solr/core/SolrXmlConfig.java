@@ -311,8 +311,9 @@ public class SolrXmlConfig {
     if (Strings.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
-    return Arrays.stream(commaSeparatedString.split(","))
-        .map(p -> Paths.get(p)).collect(Collectors.toSet());
+    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
+    return Arrays.stream(commaSeparatedString.split(",\\s?"))
+        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {

@@ -65,7 +65,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
-    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of("*"))); // Allow non-standard core instance path
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of("_ALL_"))); // Allow non-standard core instance path
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
 
