@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
