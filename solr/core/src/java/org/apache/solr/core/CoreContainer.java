@@ -341,15 +341,15 @@ public class CoreContainer {
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
 
     this.allowPaths = new java.util.HashSet<>();
-    this.allowPaths.add(cfg.getSolrHome().toAbsolutePath());
-    this.allowPaths.add(cfg.getCoreRootDirectory().toAbsolutePath());
+    this.allowPaths.add(cfg.getSolrHome());
+    this.allowPaths.add(cfg.getCoreRootDirectory());
     if (cfg.getSolrDataHome() != null) {
-      this.allowPaths.add(getNodeConfig().getSolrDataHome().toAbsolutePath());
+      this.allowPaths.add(cfg.getSolrDataHome());
     }
     if (!cfg.getAllowPaths().isEmpty()) {
       this.allowPaths.addAll(cfg.getAllowPaths());
       if (log.isInfoEnabled()) {
-        log.info("Allowing cores to use paths: {}", cfg.getAllowPaths());
+        log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
     }
   }
