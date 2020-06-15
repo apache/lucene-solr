@@ -175,9 +175,9 @@ Other components that ship with Solr include:
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
-|phrases |`solr.PhrasesIdentificationComponent` | Learn more in the {solr-javadocs}/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] java class.
+|phrases |`solr.PhrasesIdentificationComponent` | Learn more in the {solr-javadocs}org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] java class.
 |get |`solr.RealTimeGetComponent` | Described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-|responselog |`solr.ResponseLogComponent` | Learn more in the {solr-javadocs}/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] java class.
+|responselog |`solr.ResponseLogComponent` | Learn more in the {solr-javadocs}org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] java class.
 |===
 
 Lastly, you may be interested in some of the components hosted on the https://solr.cool/#searchcomponents[Solr Cool] website.
