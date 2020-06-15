@@ -267,7 +267,7 @@ Bug Fixes
   (Dmitry Emets)
 
 * LUCENE-9405: IndexWriter incorrectly calls closeMergeReaders twice when the merged segment is 100% deleted.
-  (Simon Willnauer, Mike Mccandless, Mike Sokolov)
+  (Michael Froh, Simon Willnauer, Mike Mccandless, Mike Sokolov)
 
 Other
 ---------------------
