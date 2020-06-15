@@ -82,6 +82,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -125,6 +126,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     final File workDir = createTempDir().toFile();
     
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 

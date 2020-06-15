@@ -148,13 +148,15 @@ public final class SolrPaths {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");
     }
-    final Path path = pathToAssert.normalize();
+    // Conversion Path -> String -> Path is to be able to compare against org.apache.lucene.mockfile.FilterPath instances
+    final Path path = Path.of(pathToAssert.toString()).normalize();
     if (path.startsWith("..")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed due to path traversal..");
     }
     if (!path.isAbsolute()) return; // All relative paths are accepted
-    if (allowPaths.stream().noneMatch(p -> path.toAbsolutePath().startsWith(p))) {
+    if (allowPaths.contains(Paths.get("*"))) return; // Catch-all path "*" will allow all other paths
+    if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
     }

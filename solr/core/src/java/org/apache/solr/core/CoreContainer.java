@@ -1288,6 +1288,13 @@ public class CoreContainer {
   }
 
   /**
+   * Get the list of file system paths allowed for cores. These are the paths used by {@link #assertPathAllowed(Path)}.
+   */
+  public Set<Path> getAllowPaths() {
+    return allowPaths;
+  }
+
+  /**
    * Creates a new core based on a CoreDescriptor.
    *
    * @param dcore        a core descriptor
