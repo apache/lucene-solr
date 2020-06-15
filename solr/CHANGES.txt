@@ -239,6 +239,8 @@ Bug Fixes
 
 * SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
 
+* SOLR-14516: NPE in JsonTextWriter (noble)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
