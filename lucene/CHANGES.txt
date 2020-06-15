@@ -266,6 +266,9 @@ Bug Fixes
 * LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
   (Dmitry Emets)
 
+* LUCENE-9405: IndexWriter incorrectly calls closeMergeReaders twice when the merged segment is 100% deleted.
+  (Simon Willnauer, Mike Mccandless, Mike Sokolov)
+
 Other
 ---------------------
 
