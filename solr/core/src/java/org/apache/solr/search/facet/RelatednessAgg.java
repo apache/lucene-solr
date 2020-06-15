@@ -299,6 +299,13 @@ public class RelatednessAgg extends AggValueSource {
       this.bgSize = bgSet.size();
       this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
+      minDfFilterCache = initMinDfFilterCache();
+      if (minDfFilterCache == ALWAYS_CACHE) {
+        noCacheQ = null;
+      } else {
+        noCacheQ = new WrappedQuery(null);
+        noCacheQ.setCache(false);
+      }
     }
 
     /**
@@ -321,8 +328,36 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
 
-    private int minDfFilterCache = Integer.MIN_VALUE;
-    private WrappedQuery noCacheQ;
+    private int initMinDfFilterCache() throws IOException {
+      if (fcontext.processor.freq instanceof FacetField) {
+        // nocommit: need to ensure we have good whitebox tests of the caching effects when
+        // nocommit: using relatedness() under multiple types of parent facets
+        FacetField ffield = (FacetField)fcontext.processor.freq;
+        final int cacheDf = ffield.cacheDf;
+        final int ret;
+        // Minimum term docFreq in order to use the filterCache for that term.
+        switch (cacheDf) {
+          case -1: // -1 means never cache
+            return NEVER_CACHE;
+          case 0: // default; compute as fraction of maxDoc
+            ret = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
+            break;
+          default:
+            if (cacheDf < 0) {
+              throw new IllegalArgumentException("illegal negative value for cacheDf: "+cacheDf);
+            } else {
+              ret = cacheDf;
+            }
+        }
+        initializeForMinDf(ffield.field);
+        return ret;
+      } else {
+        return ALWAYS_CACHE;
+      }
+    }
+
+    private final int minDfFilterCache;
+    private final WrappedQuery noCacheQ;
     private static final Comparator<LeafReaderContext> LEAF_BY_MAX_DOC = new Comparator<LeafReaderContext>() {
 
       @Override
@@ -330,7 +365,8 @@ public class RelatednessAgg extends AggValueSource {
         return Integer.compare(o2.reader().maxDoc(), o1.reader().maxDoc());
       }
     };
-    private static final int ALWAYS_CACHE = Integer.MIN_VALUE + 1;
+    private static final int ALWAYS_CACHE = Integer.MIN_VALUE;
+    private static final int NEVER_CACHE = Integer.MAX_VALUE;
     private static final float SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR = 0.5f;
     private static final float SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR = 2.0f;
     private TermsEnum[] tes;
@@ -426,38 +462,9 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotQ) {
         slotSet = fcontext.base;
       } else {
-        // nocommit: having this "non slot specific" code in the processSlot method,
-        // nocommit: such that replaces the (default) minDfFilterCache value with a new hueristic defined
-        // nocommit: value after the first slot, seems overly-cleaver to the point of being confusing
-        // nocommit: at first glance.
-        // nocommit: it would be a lot cleaner & easier to understand if we encapsulate all the code
-        // nocomimt: that isn't slot specific into an isolated data-struct with it's own init method/logic
         switch (minDfFilterCache) {
           case ALWAYS_CACHE:
             break;
-          case Integer.MIN_VALUE:
-            if (fcontext.processor.freq instanceof FacetField) {
-              // nocommit: need to ensure we have good whitebox tests of the caching effects when
-              // nocommit: using relatedness() under multiple types of parent facets
-              FacetField ffield = (FacetField)fcontext.processor.freq;
-              noCacheQ = new WrappedQuery(null);
-              noCacheQ.setCache(false);
-              // Minimum term docFreq in order to use the filterCache for that term.
-              if (ffield.cacheDf == -1) { // -1 means never cache
-                minDfFilterCache = Integer.MAX_VALUE;
-                noCacheQ.setWrappedQuery(slotQ);
-                slotQ = noCacheQ;
-                break;
-              } else if (ffield.cacheDf == 0) { // default; compute as fraction of maxDoc
-                minDfFilterCache = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
-              } else {
-                minDfFilterCache = ffield.cacheDf;
-              }
-              initializeForMinDf(ffield.field);
-            } else {
-              minDfFilterCache = ALWAYS_CACHE;
-              break;
-            }
           default:
             if (!(slotQ instanceof TermQuery) || shouldCache(((TermQuery)slotQ).getTerm().bytes())) {
               // nocommit: if we're going to unwrap the (common case) TermQueries to get the Term
@@ -466,7 +473,7 @@ public class RelatednessAgg extends AggValueSource {
               // nocommit: (just like FacetFieldProcessorByEnumTermsStream)
               break;
             }
-          case Integer.MAX_VALUE:
+          case NEVER_CACHE:
             noCacheQ.setWrappedQuery(slotQ);
             slotQ = noCacheQ;
         }
