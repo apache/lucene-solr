@@ -70,7 +70,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_
  * Create a fresh new session for each use
  *
  */
-@SuppressWarnings({"overrides"})
 public class Policy implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -288,10 +287,11 @@ public class Policy implements MapWriter {
     return getClusterPreferences().equals(policy.getClusterPreferences());
   }
 
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented");
-//  }
+  //TODO: Uncertain about this one
+  @Override
+  public int hashCode() {
+    return Objects.hash(zkVersion);
+  }
 
   public static Map<String, List<Clause>> clausesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
     Map<String, List<Clause>> newPolicies = new HashMap<>();

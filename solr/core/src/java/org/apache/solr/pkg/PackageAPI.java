@@ -211,7 +211,7 @@ public class PackageAPI {
 
     @Override
     public int hashCode() {
-      throw new UnsupportedOperationException("TODO unimplemented");
+      return Objects.hash(version, manifestSHA512);
     }
 
     @Override
