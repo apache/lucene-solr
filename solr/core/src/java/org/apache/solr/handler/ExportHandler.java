@@ -34,6 +34,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
+import org.apache.solr.handler.export.ExportWriterStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class ExportHandler extends SearchHandler {
       for (String function : forbiddenStreams) {
         this.withoutFunctionName(function);
       }
-      this.withFunctionName("input", ExportWriter.ExportWriterStream.class);
+      this.withFunctionName("input", ExportWriterStream.class);
     }
   }
 
