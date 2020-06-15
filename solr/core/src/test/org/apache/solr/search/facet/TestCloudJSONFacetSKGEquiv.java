@@ -58,14 +58,11 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// nocommit: jdocs and code currently assume option is named 'sweep_collection' - adjust as impl changes
-// nocommit: ... really: just make the constant in RelatednessAgg public and refer to it directly here
-
 /** 
  * <p>
  * A randomized test of nested facets using the <code>relatedness()</code> function, that asserts the 
  * results are consistent and equivilent regardless of what <code>method</code> (ie: FacetFieldProcessor) 
- * and/or <code>sweep_collection</code> option is requested.
+ * and/or <code>{@value RelatednessAgg#SWEEP_COLLECTION}</code> option is requested.
  * </p>
  * <p>
  * This test is based on {@link TestCloudJSONFacetSKG} but does <em>not</em> 
@@ -284,7 +281,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   }
   
   /** 
-   * Sanity check that our method of varying the <code>sweep_collection</code> in conjunction with the
+   * Sanity check that our method of varying the <code>{@value RelatednessAgg#SWEEP_COLLECTION}</code> in conjunction with the
    * <code>method</code> params works and can be verified by inspecting the debug output of basic requests.
    */
   public void testWhiteboxSanitySweepDebug() throws Exception {
@@ -326,7 +323,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       
       // both default sweep option and explicit sweep should give same results...
       for (SolrParams sweepParams : Arrays.asList(params(),
-                                                  params("sweep_key", "sweep_collection",
+                                                  params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                          "sweep_val", "true"))) {
         final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
         
@@ -339,7 +336,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         assertEquals(Arrays.asList("skg"), sweep_debug.get("mapped"));
       }
       { // 'dv' will always *try* to sweep, but disabling on stat should mean debug is mostly empty...
-        final SolrParams params = SolrParams.wrapDefaults(params("sweep_key", "sweep_collection",
+        final SolrParams params = SolrParams.wrapDefaults(params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                                  "sweep_val", "false"),
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
@@ -353,7 +350,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
         final SolrParams params = SolrParams.wrapDefaults(params("method_val", "dvhash",
-                                                                 "sweep_key", "sweep_collection",
+                                                                 "sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                                  "sweep_val", "true"),
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
@@ -384,9 +381,9 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
       // default sweep as well as any explicit sweep=true/false values should give same results: no sweeping
       for (SolrParams sweepParams : Arrays.asList(params(),
-                                                  params("sweep_key", "sweep_collection",
+                                                  params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                          "sweep_val", "false"),
-                                                  params("sweep_key", "sweep_collection",
+                                                  params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                          "sweep_val", "true"))) {
         final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
         
@@ -420,7 +417,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         
         // both default sweep option and explicit sweep should give same results...
         for (SolrParams sweepParams : Arrays.asList(params(),
-                                                    params("sweep_key", "sweep_collection",
+                                                    params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                            "sweep_val", "true"))) {
           final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
           
@@ -459,7 +456,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                                   baseParams);
       // both default sweep option and explicit sweep should give same results...
       for (SolrParams sweepParams : Arrays.asList(params(),
-                                                  params("sweep_key", "sweep_collection",
+                                                  params("sweep_key", RelatednessAgg.SWEEP_COLLECTION,
                                                          "sweep_val", "true"))) {
         final SolrParams params = SolrParams.wrapDefaults(sweepParams, facetParams);
         
@@ -704,7 +701,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   /**
    * Given a set of term facets, and top level query strings, asserts that 
    * the results of these queries are identical even when varying the <code>method_val</code> param
-   * and when varying the <code>sweep_collection</code> param; either by explicitly setting to 
+   * and when varying the <code>{@value RelatednessAgg#SWEEP_COLLECTION}</code> param; either by explicitly setting to 
    * <code>true</code> or <code>false</code> or by changing the param key to not set it at all.
    */
   private void assertFacetSKGsAreConsistent(final Map<String,TermFacet> facets,
@@ -726,7 +723,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         for (Boolean sweep : Arrays.asList(true, false, null)) {
           final ModifiableSolrParams options = params("method_val", method.toString().toLowerCase(Locale.ROOT));
           if (null != sweep) {
-            options.add("sweep_key", "sweep_collection");
+            options.add("sweep_key", RelatednessAgg.SWEEP_COLLECTION);
             options.add("sweep_val", sweep.toString());
           }
           

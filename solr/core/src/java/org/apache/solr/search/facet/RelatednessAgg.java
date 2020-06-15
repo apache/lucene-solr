@@ -64,7 +64,7 @@ public class RelatednessAgg extends AggValueSource {
   private static final String RELATEDNESS = "relatedness";
   private static final String FG_POP = "foreground_popularity";
   private static final String BG_POP = "background_popularity";
-  private static final String SWEEP_COLLECTION = "sweep_collection";
+  public static final String SWEEP_COLLECTION = "sweep_collection";
 
   // needed for distrib calculation
   private static final String FG_SIZE = "foreground_size";

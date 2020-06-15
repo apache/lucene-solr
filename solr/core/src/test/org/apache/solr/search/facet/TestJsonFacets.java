@@ -791,8 +791,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                      "json.facet", ""
                      + "{x: { type: terms, field: 'cat_s', "+sort+", limit:-1, "
                      + "      facet: { skg: { type: 'func', func:'relatedness($fore,$back)', "
-                     // nocommit: refactor to use constant for sweep_collection param name
-                     +"                       sweep_collection: "+sweep+" },"
+                     +"                       "+RelatednessAgg.SWEEP_COLLECTION+": "+sweep+" },"
                      + "               y:'sum(num_i)', "
                      +"                z:'min(num_i)' } } }")
                  , "facets=={count:5, x:{ buckets:["
