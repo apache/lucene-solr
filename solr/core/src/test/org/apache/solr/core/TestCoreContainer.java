@@ -315,7 +315,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private static final String ALLOW_PATHS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>\n" +
-      "<str name=\"allowPaths\">/var/solr</str>\n" +
+      "<str name=\"allowPaths\">${solr.allowPaths:}</str>\n" +
       "</solr>";
 
   private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -352,14 +352,35 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void assertAllowPathFromSolrXml() throws Exception {
+    Assume.assumeFalse(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    assertPathAllowed("/var/solr/foo");
-    assertPathBlocked("/home/foo");
-    cc.shutdown();
+    try {
+      assertPathAllowed("/var/solr/foo");
+      assertPathBlocked("/tmp");
+    } finally {
+      cc.shutdown();
+      System.clearProperty("solr.allowPaths");
+    }
   }
 
   @Test
-  public void assertAllowPathRelative() {
+  public void assertAllowPathFromSolrXmlWin() throws Exception {
+    Assume.assumeTrue(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "C:\\solr");
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    try {
+      assertPathAllowed("C:\\solr\\data");
+      assertPathBlocked("C:\\tmp");
+    } finally {
+      cc.shutdown();
+      System.clearProperty("solr.allowPaths");
+    }
+  }
+
+  @Test
+  public void assertAllowPath() {
+    Assume.assumeFalse(OS.isFamilyWindows());
     assertPathAllowed("/var/solr/foo");
     assertPathAllowed("/var/log/../solr/foo");
     assertPathAllowed("relative");
@@ -370,22 +391,32 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void assertAllowPathUNC() {
+  public void assertAllowPathWindows() {
     Assume.assumeTrue(OS.isFamilyWindows());
+    assertPathAllowed("C:\\var\\solr\\foo");
+    assertPathAllowed("C:\\var\\log\\..\\solr\\foo");
+    assertPathAllowed("relative");
+
+    assertPathBlocked("..\\..\\false");
+    assertPathBlocked(".\\../\\..\\false");
+    assertPathBlocked("C:\\var\\solr\\..\\..\\etc");
+
+    // UNC paths are always blocked
     assertPathBlocked("\\\\unc-server\\share\\path");
   }
 
   private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));
+  private static Set<Path> ALLOWED_PATHS_WIN = Set.of(Path.of("C:\\var\\solr"));
 
   private void assertPathBlocked(String path) {
     try {
-      SolrPaths.assertPathAllowed(Path.of(path), ALLOWED_PATHS);
+      SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
       fail("Path " + path + " sould have been blocked.");
     } catch (SolrException e) { /* Expected */ }
   }
 
   private void assertPathAllowed(String path) {
-    SolrPaths.assertPathAllowed(Path.of(path), ALLOWED_PATHS);
+    SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
   }
 
   @Test
