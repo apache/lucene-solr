@@ -670,7 +670,7 @@ public abstract class SlotAcc implements Closeable {
    * Special CountSlotAcc used by processors that support sweeping to decide what to sweep over and how to "collect"
    * when doing the sweep.
    *
-   * This class may be used by {@link SweepableSlotAccs} to {@link SweepingCountSlotAcc#add register DocSet domains}
+   * This class may be used by instances of {@link SweepableSlotAcc} to register DocSet domains (via {@link SweepingCountSlotAcc#add})
    * over which to sweep-collect facet counts.
    *
    * @see SweepableSlotAcc#registerSweepingAccs
@@ -769,7 +769,7 @@ public abstract class SlotAcc implements Closeable {
      *
      * This method exists because there are some contexts (namely SpecialSlotAcc, for allBuckets, etc.) in which "base"
      * count is tracked differently, via getSpecialCount(). For such cases, we need a method that allows the caller to
-     * directly coordinate calling {@link SoltAcc#setValues} on the sweeping output accs, while avoiding the inclusion
+     * directly coordinate calling {@link SlotAcc#setValues} on the sweeping output accs, while avoiding the inclusion
      * of {@link CountSlotAcc#setValues CountSlotAcc.setValues}
      */
     public void setSweepValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
