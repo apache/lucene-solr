@@ -720,7 +720,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             "random_i_p", String.valueOf(random().nextInt(BATCH_SIZE)),
             "sortabledv", TestUtil.randomSimpleString(random(), 2, 3),
             "sortabledv_udvas", String.valueOf(random().nextInt(100)),
-            "small_i_p", String.valueOf((i + j) % 7)
+            "small_i_p", String.valueOf((i + j) % 37)
             );
       }
       updateJ(jsonAdd(docs), null);
@@ -755,6 +755,20 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         }
       }
       assertTrue("missing value " + i + " in results", found);
+    }
+    req = req("q", "*:*", "qt", "/export", "fl", "id,sortabledv_udvas,small_i_p", "sort", "sortabledv_udvas asc", "expr", "rollup(input(),over=\"sortabledv_udvas\", sum(small_i_p),avg(small_i_p),min(small_i_p),count(*))");
+    rsp = h.query(req);
+    rspMap = mapper.readValue(rsp, HashMap.class);
+    docs = (List<Map<String, Object>>) Utils.getObjectByPath(rspMap, false, "/response/docs");
+    assertNotNull("missing document results: " + rspMap, docs);
+    assertEquals("wrong number of unique docs", 100, docs.size());
+    for (Map<String, Object> doc : docs) {
+      assertNotNull("missing sum: " + doc, doc.get("sum(small_i_p)"));
+      assertEquals(18000.0, ((Number)doc.get("sum(small_i_p)")).doubleValue(), 2500.0);
+      assertNotNull("missing avg: " + doc, doc.get("avg(small_i_p)"));
+      assertEquals(18.0, ((Number)doc.get("avg(small_i_p)")).doubleValue(), 2.5);
+      assertNotNull("missing count: " + doc, doc.get("count(*)"));
+      assertEquals(1000.0, ((Number)doc.get("count(*)")).doubleValue(), 200.0);
     }
   }
 
