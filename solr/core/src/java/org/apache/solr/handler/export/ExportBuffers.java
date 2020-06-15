@@ -26,10 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Exchanger;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -53,19 +52,21 @@ class ExportBuffers {
 
   final Buffer bufferOne;
   final Buffer bufferTwo;
-  final Exchanger<Buffer> exchanger = new Exchanger<>();
   final SortDoc[] outDocs;
   final List<LeafReaderContext> leaves;
   final ExportWriter exportWriter;
   final OutputStream os;
   final IteratorWriter.ItemWriter rawWriter;
   final IteratorWriter.ItemWriter writer;
+  final CyclicBarrier barrier;
   final int totalHits;
   Buffer fillBuffer;
   Buffer outputBuffer;
   Runnable filler;
   ExecutorService service;
+  Throwable error;
   LongAdder outputCounter = new LongAdder();
+  volatile boolean shutDown = false;
 
   ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
                 OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits) {
@@ -87,32 +88,60 @@ class ExportBuffers {
     this.totalHits = totalHits;
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;
+    barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
+        log.info("--- filler start " + Thread.currentThread());
+        Buffer buffer = getFillBuffer();
         SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           log.info("--- filler fillOutDocs in " + fillBuffer);
-          exportWriter.fillOutDocs(leaves, sortDoc, queue, outDocs, fillBuffer);
-          count += (fillBuffer.outDocsIndex + 1);
-          log.info("--- filler count=" + count + ", exchange buffer from " + fillBuffer);
-          fillBuffer = exchange(fillBuffer);
+          exportWriter.fillOutDocs(leaves, sortDoc, queue, outDocs, buffer);
+          count += (buffer.outDocsIndex + 1);
+          log.info("--- filler count=" + count + ", exchange buffer from " + buffer);
+          exchangeBuffers();
+          buffer = getFillBuffer();
           if (outputCounter.longValue() > lastOutputCounter) {
             lastOutputCounter = outputCounter.longValue();
             flushOutput();
           }
-          log.info("--- filler got empty buffer " + fillBuffer);
+          log.info("--- filler got empty buffer " + buffer);
         }
-        fillBuffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        log.info("--- filler final exchange buffer from " + fillBuffer);
-        fillBuffer = exchange(fillBuffer);
-        log.info("--- filler final got buffer " + fillBuffer);
+        buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
+        log.info("--- filler final exchange buffer from " + buffer);
+        exchangeBuffers();
+        buffer = getFillBuffer();
+        log.info("--- filler final got buffer " + buffer);
       } catch (Exception e) {
         log.error("filler", e);
+        error(e);
         shutdownNow();
       }
     };
+  }
+
+  public void exchangeBuffers() throws Exception {
+    log.info("---- wait from " + Thread.currentThread());
+    barrier.await(EXCHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+  }
+
+  public void error(Throwable t) {
+    error = t;
+    // break the lock on the other thread too
+    barrier.reset();
+  }
+
+  public Throwable getError() {
+    return error;
+  }
+
+  private void swapBuffers() {
+    log.info("--- swap buffers");
+    Buffer one = fillBuffer;
+    fillBuffer = outputBuffer;
+    outputBuffer = one;
   }
 
   private void flushOutput() throws IOException {
@@ -124,20 +153,26 @@ class ExportBuffers {
     return outputBuffer;
   }
 
+  public Buffer getFillBuffer() {
+    return fillBuffer;
+  }
+
   // decorated writer that keeps track of number of writes
   public IteratorWriter.ItemWriter getWriter() {
     return writer;
-  }
-
-  public Buffer exchange(Buffer buffer) throws InterruptedException, TimeoutException {
-    return exchanger.exchange(buffer, EXCHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
   public void shutdownNow() {
     if (service != null) {
       log.info("--- shutting down buffers");
       service.shutdownNow();
+      service = null;
     }
+    shutDown = true;
+  }
+
+  public boolean isShutDown() {
+    return shutDown;
   }
 
   /**
@@ -168,10 +203,11 @@ class ExportBuffers {
       log.info("-- finished.");
     } catch (Exception e) {
       log.error("Exception running filler / writer", e);
+      error(e);
       //
     } finally {
       log.info("--- all done, shutting down buffers");
-      service.shutdownNow();
+      shutdownNow();
     }
   }
 

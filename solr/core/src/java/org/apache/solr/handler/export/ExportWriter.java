@@ -331,17 +331,20 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             t = tupleStream.read();
           } catch (final Exception e) {
             buffers.getWriter().add((MapWriter) ew -> Tuple.EXCEPTION(e, true).writeMap(ew));
-            throw e;
+            break;
           }
           if (t == null) {
             break;
           }
-          if (t.EOF) {
+          if (t.EOF && !t.EXCEPTION) {
             break;
           }
           // use decorated writer to monitor the number of output writes
           // and flush the output quickly in case of very few (reduced) output items
           buffers.getWriter().add((MapWriter) ew -> t.writeMap(ew));
+          if (t.EXCEPTION && t.EOF) {
+            break;
+          }
         }
         return true;
       });
@@ -349,9 +352,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     } else {
       buffers.run(() -> {
         // get the initial buffer
+        log.info("--- writer init exchanging from empty");
+        buffers.exchangeBuffers();
         ExportBuffers.Buffer buffer = buffers.getOutputBuffer();
-        log.info("--- writer init exchanging from " + buffer);
-        buffer = buffers.exchange(buffer);
         log.info("--- writer init got " + buffer);
         while (buffer.outDocsIndex != ExportBuffers.Buffer.NO_MORE_DOCS) {
           if (Thread.currentThread().isInterrupted()) {
@@ -365,7 +368,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             buffer.writeItem(i, writer);
           }
           log.info("--- writer exchanging from " + buffer);
-          buffer = buffers.exchange(buffer);
+          buffers.exchangeBuffers();
+          buffer = buffers.getOutputBuffer();
           log.info("--- writer got " + buffer);
         }
         return true;

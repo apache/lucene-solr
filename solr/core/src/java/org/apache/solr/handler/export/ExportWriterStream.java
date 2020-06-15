@@ -19,6 +19,8 @@ package org.apache.solr.handler.export;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -111,12 +113,42 @@ public class ExportWriterStream extends TupleStream implements Expressible {
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
         log.info("--- ews exchange empty buffer " + buffer);
-        buffer = exportBuffers.exchanger.exchange(buffer);
-        log.info("--- ews got new output buffer " + buffer);
+        boolean exchanged = false;
+        while (!exchanged) {
+          try {
+            exportBuffers.exchangeBuffers();
+            exchanged = true;
+          } catch (TimeoutException e) {
+            log.info("--- ews timeout loop");
+            if (exportBuffers.isShutDown()) {
+              log.info("--- ews - the other end is shutdown, returning EOF");
+              return Tuple.EOF();
+            }
+            continue;
+          } catch (InterruptedException e) {
+            log.info("--- ews interrupted");
+            exportBuffers.error(e);
+            return Tuple.EXCEPTION(e, true);
+          } catch (BrokenBarrierException e) {
+            if (exportBuffers.getError() != null) {
+              return Tuple.EXCEPTION(exportBuffers.getError(), true);
+            } else {
+              return Tuple.EXCEPTION(e, true);
+            }
+          }
+        }
       } catch (InterruptedException e) {
         log.info("--- ews interrupt");
-        Thread.currentThread().interrupt();
-        throw new IOException("interrupted");
+        exportBuffers.error(e);
+        return Tuple.EXCEPTION(e, true);
+      } catch (Exception e) {
+        log.info("--- ews exception", e);
+        exportBuffers.error(e);
+        return Tuple.EXCEPTION(e, true);
+      }
+      buffer = exportBuffers.getOutputBuffer();
+      if (buffer == null) {
+        return Tuple.EOF();
       }
       if (buffer.outDocsIndex == ExportBuffers.Buffer.NO_MORE_DOCS) {
         log.info("--- ews EOF");
