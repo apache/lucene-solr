@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.RANGE_EQUAL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.NODE;
 
 public class PerClauseData implements ReflectMapWriter, Cloneable {
@@ -96,7 +97,6 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
 
     public final String coll;
     public final Map<String, ShardDetails> shards = new HashMap<>();
-
     Map<Clause,  Map<String,  ReplicaCount>> clauseValues = new HashMap<>();
 
     @Override
@@ -115,6 +115,7 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
     CollectionDetails copy() {
       CollectionDetails result = new CollectionDetails(coll);
       shards.forEach((k, shardDetails) -> result.shards.put(k, shardDetails.copy()));
+      copyTo(clauseValues, result.clauseValues);
       return result;
     }
 
@@ -146,11 +147,9 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
 
     ShardDetails copy() {
       ShardDetails result = new ShardDetails(coll, shard);
-      values.forEach((clause, clauseVal) -> {
-        HashMap<String,ReplicaCount> m = new HashMap(clauseVal);
-        for (Map.Entry<String, ReplicaCount> e : m.entrySet()) e.setValue(e.getValue().copy());
-        result.values.put(clause, m);
-      });
+      result.indexSize = indexSize;
+      result.replicas.increment(replicas);
+      copyTo(values, result.values);
       return result;
     }
 
@@ -159,78 +158,126 @@ public class PerClauseData implements ReflectMapWriter, Cloneable {
     }
   }
 
+  static void copyTo(Map<Clause, Map<String, ReplicaCount>> values, Map<Clause, Map<String, ReplicaCount>> sink) {
+    values.forEach((clause, clauseVal) -> {
+      HashMap<String, ReplicaCount> m = new HashMap(clauseVal);
+      for (Map.Entry<String, ReplicaCount> e : m.entrySet()) e.setValue(e.getValue().copy());
+      sink.put(clause, m);
+    });
+  }
+
+
   static class LazyViolation extends Violation {
     private Policy.Session session;
+    private List<ReplicaInfoAndErr> lazyreplicaInfoAndErrs;
 
     LazyViolation(SealedClause clause, String coll, String shard, String node, Object actualVal, Double replicaCountDelta, Object tagKey, Policy.Session session) {
       super(clause, coll, shard, node, actualVal, replicaCountDelta, tagKey);
-      super.replicaInfoAndErrs = null;
       this.session = session;
     }
 
     @Override
     public List<ReplicaInfoAndErr> getViolatingReplicas() {
-      if(replicaInfoAndErrs == null){
+      if (lazyreplicaInfoAndErrs == null) {
         populateReplicas();
       }
-      return replicaInfoAndErrs;
+      return lazyreplicaInfoAndErrs;
     }
 
     private void populateReplicas() {
-      replicaInfoAndErrs = new ArrayList<>();
+      lazyreplicaInfoAndErrs = new ArrayList<>();
       for (Row row : session.matrix) {
-        if(getClause().getThirdTag().isPass(row)) {
-            row.forEachReplica(coll, ri -> {
-              if(shard == null || Objects.equals(shard, ri.getShard()))
-              replicaInfoAndErrs.add(new ReplicaInfoAndErr(ri));
-            });
+        if (node != null && !node.equals(row.node)) continue;
+        if (getClause().getThirdTag().isPass(row)) {
+          row.forEachReplica(coll, ri -> {
+            if (shard == null || Policy.ANY.equals(shard) || Objects.equals(shard, ri.getShard()))
+              lazyreplicaInfoAndErrs.add(new ReplicaInfoAndErr(ri));
+          });
 
         }
       }
     }
   }
+
   public static final String SINGLEVALUE = "";
-  private static final Map<String, ReplicaCount> EMPTY = singletonMap(SINGLEVALUE, new ReplicaCount());
-//  private final ReplicaCount EMPTY = new ReplicaCount();
+  private static final ReplicaCount EMPTY_COUNT = new ReplicaCount();
+  private static final Map<String, ReplicaCount> EMPTY = singletonMap(SINGLEVALUE, EMPTY_COUNT);
 
-  void getViolations( Map<Clause,  Map<String, ReplicaCount>> vals ,
-                      List<Violation> violations,
-                      Clause.ComputedValueEvaluator evaluator,
-                      Clause clause) {
-    Map<String,ReplicaCount> rc = vals.get(clause);
-    if (rc == null ) rc= EMPTY;
-
+  void getViolations(Map<Clause, Map<String, ReplicaCount>> vals,
+                     List<Violation> violations,
+                     Clause.ComputedValueEvaluator evaluator,
+                     Clause clause, double[] deviations) {
+    Map<String, ReplicaCount> rc = vals.get(clause);
+    if (rc == null) rc = EMPTY;
     SealedClause sc = clause.getSealedClause(evaluator);
-
-    rc.forEach((name, replicaCount) -> {
-      if (!sc.replica.isPass(replicaCount)) {
-        Violation v = new LazyViolation(
-            sc,
-            evaluator.collName,
-            evaluator.shardName == null? Policy.ANY: evaluator.shardName,
-            NODE.tagName.equals( clause.tag.name)? name:  null,
-            replicaCount,
-            sc.getReplica().replicaCountDelta(replicaCount),
-            name,//TODO
-            evaluator.session);
-        violations.add(v);
+    if (clause.getThirdTag().varType == Variable.Type.NODE && clause.getThirdTag().op == Operand.WILDCARD) {
+      for (Row row : evaluator.session.matrix) {
+        ReplicaCount replicaCount = rc.getOrDefault(row.node, EMPTY_COUNT);
+        addViolation(violations, evaluator, deviations, sc, row.node, row.node, replicaCount);
       }
-    });
+    } else {
+      rc.forEach((name, replicaCount) -> {
+        if (!sc.replica.isPass(replicaCount)) {
+          Violation v = new LazyViolation(
+              sc,
+              evaluator.collName,
+              evaluator.shardName == null ? Policy.ANY : evaluator.shardName,
+              NODE.tagName.equals(clause.tag.name) ? name : null,
+              replicaCount,
+              sc.getReplica().replicaCountDelta(replicaCount),
+              name,
+              evaluator.session);
+          violations.add(v);
+          if (!clause.strict && deviations != null) {
+            clause.getThirdTag().varType.computeDeviation(evaluator.session, deviations, replicaCount, sc);
+          }
+        } else {
+          if (sc.replica.op == RANGE_EQUAL)
+            sc.getThirdTag().varType.computeDeviation(evaluator.session, deviations, replicaCount, sc);
+        }
+      });
 
+    }
   }
 
-  List<Violation> computeViolations(Policy.Session session, Clause clause) {
+  private void addViolation(List<Violation> violations,
+                            Clause.ComputedValueEvaluator evaluator,
+                            double[] deviations, SealedClause sc,
+                            String node,
+                            String key,
+                            ReplicaCount replicaCount) {
+    if (!sc.replica.isPass(replicaCount)) {
+      Violation v = new LazyViolation(
+          sc,
+          evaluator.collName,
+          evaluator.shardName == null ? Policy.ANY : evaluator.shardName,
+          node,
+          replicaCount,
+          sc.getReplica().replicaCountDelta(replicaCount),
+          key,
+          evaluator.session);
+      violations.add(v);
+      if (!sc.strict && deviations != null) {
+        sc.getThirdTag().varType.computeDeviation(evaluator.session, deviations, replicaCount, sc);
+      }
+    } else {
+      if (sc.replica.op == RANGE_EQUAL)
+        sc.getThirdTag().varType.computeDeviation(evaluator.session, deviations, replicaCount, sc);
+    }
+  }
+
+  List<Violation> computeViolations(Policy.Session session, Clause clause, double[] deviations) {
     Clause.ComputedValueEvaluator evaluator = new Clause.ComputedValueEvaluator(session);
     List<Violation> result = new ArrayList<>();
     collections.forEach((coll, cd) -> {
       evaluator.collName = coll;
       evaluator.shardName = null;
       if (clause.dataGrouping == Clause.DataGrouping.COLL) {
-        getViolations(cd.clauseValues, result, evaluator, clause);
+        getViolations(cd.clauseValues, result, evaluator, clause, deviations);
       } else if (clause.dataGrouping == Clause.DataGrouping.SHARD) {
         cd.shards.forEach((shard, sd) -> {
           evaluator.shardName = shard;
-          getViolations(sd.values, result, evaluator, clause);
+          getViolations(sd.values, result, evaluator, clause, deviations);
         });
       }
     });

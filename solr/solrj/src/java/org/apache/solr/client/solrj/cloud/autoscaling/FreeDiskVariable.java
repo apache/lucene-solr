@@ -53,6 +53,23 @@ public class FreeDiskVariable extends VariableBase {
   }
 
   @Override
+  public Clause transform(Clause clause) {
+    if (clause.replica.computedType == ComputedType.ALL) {
+      return new Clause(clause.original,
+          new Condition(FREEDISK.tagName, clause.tag.val, clause.tag.op.opposite(true), null, null),
+          null,
+          clause.strict,
+          clause.put,
+          clause.nodeSetPresent,
+          clause.dataGrouping,
+          new Condition(Type.REPLICA.tagName, 0, Operand.EQUAL, null, null),
+          clause.collection,
+          clause.shard);
+    }
+    return clause;
+  }
+
+  @Override
   public Object computeValue(Condition condition, Clause.ComputedValueEvaluator evaluator) {
     if (condition.computedType == ComputedType.PERCENT) {
       Row r = evaluator.getNode();

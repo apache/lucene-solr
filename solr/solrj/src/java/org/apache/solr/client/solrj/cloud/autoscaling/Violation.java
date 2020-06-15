@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -37,7 +36,7 @@ public class Violation implements MapWriter {
   final Object tagKey;
   private final int hash;
   private final Clause clause;
-  protected List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
+  private List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
 
   Violation(SealedClause clause, String coll, String shard, String node, Object actualVal, Double replicaCountDelta, Object tagKey) {
     this.clause = clause;
@@ -129,10 +128,6 @@ public class Violation implements MapWriter {
     }
   }
 
-  @Override
-  public String toString() {
-    return Utils.toJSONString(Utils.getDeepCopy(toMap(new LinkedHashMap<>()), 5));
-  }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {

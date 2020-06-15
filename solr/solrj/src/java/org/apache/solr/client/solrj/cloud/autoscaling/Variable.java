@@ -90,6 +90,10 @@ public interface Variable {
 
   Object validate(String name, Object val, boolean isRuleVal);
 
+  default Clause transform(Clause clause) {
+    return clause;
+  }
+
   /**
    * Type details of each variable in policies
    */
@@ -158,6 +162,7 @@ public interface Variable {
         associatedPerReplicaValue = Variable.coreidxsize,
         associatedPerNodeValue = "totaldisk",
         implementation = FreeDiskVariable.class,
+        alwaysPutOnEachNode = true,
         computedValues = ComputedType.PERCENT)
     FREEDISK,
 
@@ -321,8 +326,14 @@ public interface Variable {
       return impl.postValidate(condition);
     }
 
+
     public Object validate(String name, Object val, boolean isRuleVal) {
       return impl.validate(name, val, isRuleVal);
+    }
+
+    @Override
+    public Clause transform(Clause clause) {
+      return impl.transform(clause);
     }
 
     /**
@@ -400,6 +411,8 @@ public interface Variable {
     String metricsKey() default NULL;
 
     Class implementation() default void.class;
+
+    boolean alwaysPutOnEachNode() default false;
 
     ComputedType[] computedValues() default ComputedType.NULL;
   }

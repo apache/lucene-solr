@@ -572,9 +572,9 @@ public class Policy implements MapWriter {
         if (!vals.isEmpty() && vals.get("withCollection") != null) {
           Map<String, String> withCollMap = (Map<String, String>) vals.get("withCollection");
           if (!withCollMap.isEmpty()) {
-            Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
+            Clause withCollClause = new Clause((Map<String, Object>) Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}"),
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false, Clause.DataGrouping.NODE
+                new Condition(WITH_COLLECTION.tagName, "*", Operand.EQUAL, null, null), true, null, false, Clause.DataGrouping.NODE, null, null, null
             );
             expandedClauses.add(withCollClause);
           }

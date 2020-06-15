@@ -332,7 +332,7 @@ public class Row implements MapWriter {
       }
     }
 
-    row.modifyPerClauseCount(ri, 1);
+    row.modifyPerClauseCount(ri, 1, this);
 
     return row;
   }
@@ -436,7 +436,7 @@ public class Row implements MapWriter {
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
-    row.modifyPerClauseCount(removed, -1);
+    row.modifyPerClauseCount(removed, -1, this);
     return row;
 
   }
@@ -471,13 +471,13 @@ public class Row implements MapWriter {
     }
   }
 
-  void modifyPerClauseCount(ReplicaInfo ri, int delta) {
+  void modifyPerClauseCount(ReplicaInfo ri, int delta, Row previous) {
     if (session == null || session.perClauseData == null || ri == null) return;
-    session.perClauseData.getShardDetails(ri.getCollection(),ri.getShard()).incrReplicas(ri.getType(), delta);
+    session.perClauseData.getShardDetails(ri.getCollection(), ri.getShard()).incrReplicas(ri.getType(), delta);
     for (Clause clause : session.expandedClauses) {
-      if(!clause.dataGrouping.storePerClauseData()) continue;
-      if(!clause.collection.isPass(ri.getCollection()) ||
-          !clause.shard.isPass(ri.getShard())  ||
+      if (!clause.dataGrouping.storePerClauseData()) continue;
+      if (!clause.collection.isPass(ri.getCollection()) ||
+          !clause.shard.isPass(ri.getShard()) ||
           !clause.isType(ri.getType())) continue;
       if (clause.put == Clause.Put.ON_EACH) continue;
       if (clause.dataGrouping.storePerClauseData()) {

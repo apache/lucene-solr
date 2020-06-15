@@ -90,22 +90,27 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   // internal use only
-  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent, DataGrouping dataGrouping) {
+  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent, DataGrouping dataGrouping, Condition replica, Condition collection, Condition shard) {
     this.hashCode = original.hashCode();
     this.original = original;
-    this.tag = tag;
-    this.globalTag = globalTag;
-    this.globalTag.clause = this;
+    this.tag = setClause(tag);
+    this.globalTag = setClause(globalTag);
     this.type = null;
     this.hasComputedValue = false;
     this.strict = isStrict;
     derivedFrom = null;
     this.put = put;
     this.nodeSetPresent = nodeSetPresent;
-    this.collection = null;
-    this.shard = null;
-    this.replica = null;
+    this.collection = setClause(collection);
+    this.shard = setClause(shard);
+    this.replica = setClause(replica);
     this.dataGrouping = dataGrouping;
+  }
+
+  private Condition setClause(Condition condition) {
+    if (condition == null) return null;
+    condition.clause = this;
+    return condition;
   }
 
   private Clause(Map<String, Object> m) {
@@ -114,7 +119,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
-    String put = (String) m.getOrDefault("put", m.containsKey(NODESET)? Put.ON_ALL.val: null );
+    String put = (String) m.getOrDefault("put", m.containsKey(NODESET) ? Put.ON_ALL.val : null);
     if (put != null) {
       this.put = Put.get(put);
       if (this.put == null) throwExp(m, "invalid value for put : {0}", put);
@@ -272,6 +277,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public static Clause create(Map<String, Object> m) {
     Clause clause = new Clause(m);
+    if (clause.tag != null) {
+      clause = clause.tag.varType.transform(clause);
+    }
     return clause.hasComputedValue() ?
         clause :
         clause.getSealedClause(null);
@@ -715,16 +723,16 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public List<Violation> test(Policy.Session session, Row changedRow, double[] deviations) {
     if (isPerCollectiontag()) {
       if(nodeSetPresent) {
-        if(put == Put.ON_EACH) {
-          return testPerNode(session, changedRow, deviations) ;
+        if (put == Put.ON_EACH || getThirdTag().varType.meta.alwaysPutOnEachNode()) {
+          return testPerNode(session, changedRow, deviations);
         } else {
-          return session.perClauseData.computeViolations(session, this);
+          return session.perClauseData.computeViolations(session, this, deviations);
           //return testGroupNodes(session, deviations);
         }
       }
 
       if(dataGrouping != DataGrouping.NODE && tag.varType == Type.NODE){
-        return session.perClauseData.computeViolations(session, this);
+        return session.perClauseData.computeViolations(session, this, deviations);
       }
 
 

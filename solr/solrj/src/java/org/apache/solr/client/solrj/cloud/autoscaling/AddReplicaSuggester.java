@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,6 @@ class AddReplicaSuggester extends Suggester {
         if (!isNodeSuitableForReplicaAddition(row, null)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type, strict);
         List<Violation> errs = testChangedMatrix(strict, tmpRow, tmpRow.session);
-        if(row.node.equals("node3")) System.out.println(""+ Utils.toJSONString(errs));
         if (!containsNewErrors(errs)) {
           if ((errs.isEmpty() && isLessDeviant()) ||//there are no violations but this is deviating less
               isLessSerious(errs, leastSeriousViolation)) {//there are errors , but this has less serious violation

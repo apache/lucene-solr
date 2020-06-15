@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
@@ -880,9 +881,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         assertEquals(2.0, val.max.doubleValue(), 0.01);
         assertEquals(1.2d, val.actual.doubleValue(), 0.01d);
         assertEquals(1, violation.replicaCountDelta.doubleValue(), 0.01);
-        assertEquals(3, violation.getViolatingReplicas().size());
+        List<Violation.ReplicaInfoAndErr> violatingReplicas = violation.getViolatingReplicas();
+        assertEquals(3, violatingReplicas.size());
         Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
-        for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
+        for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violatingReplicas) {
           assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
         }
       } else if (violation.node.equals("node5")) {
@@ -892,10 +894,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
         fail();
       }
     }
-//    Violation violation = violations.get(0);
-//    assertEquals("node1", violation.node);
-
-
   }
 
   private static void expectError(String name, Object val, String msg) {
@@ -2243,7 +2241,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     }
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
-        cloudManagerWithData((Map) loadFromResource("testReplicaCountSuggestions.json")));
+        cloudManagerWithData((Map) loadFromResource("testReplicaCountSuggestions.json")), new MapSolrParams(Map.of("type", "violation")));
     assertFalse(l.isEmpty());
 
     assertEquals(1.0d, l.get(0)._get( "violation/violation/delta",null));
@@ -2303,8 +2301,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testReplicaZonesPercentage() {
     String autoScalingjson = "  { cluster-policy:[" +
-        "    { replica :'33%', shard: '#EACH', sysprop.az : east}," +
-        "    { replica :'67%', shard: '#EACH', sysprop.az : west}" +
+        "    { replica :'33%',  shard: '#EACH', nodeset:{ sysprop.az : east}}," +
+        "    { replica :'67%', shard: '#EACH', nodeset: {sysprop.az : west}}" +
         "    ]," +
         "  cluster-preferences :[{ minimize : cores }]}";
 
@@ -2318,7 +2316,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     int westCount = 0, eastCount = 0;
     for (int i = 0; i < 12; i++) {
-      SolrRequest suggestion = txn.getCurrentSession()
+      Policy.Session currentSession = txn.getCurrentSession();
+      SolrRequest suggestion = currentSession
           .getSuggester(ADDREPLICA)
           .hint(Hint.COLL_SHARD, new Pair<>(COLL_NAME, "shard1"))
           .getSuggestion();
@@ -2434,11 +2433,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
     cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json"))).getViolations();
     assertEquals(1, violations.size());
-    assertEquals(-4, violations.get(0).replicaCountDelta, 0.1);
+    assertEquals(4, violations.get(0).replicaCountDelta, 0.1);
     assertEquals(1, violations.size());
-    assertEquals(0, violations.get(0).getViolatingReplicas().size());
+    assertEquals(4, violations.get(0).getViolatingReplicas().size());
 
-    l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json")));
+    l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json")),
+        new MapSolrParams(Collections.singletonMap("type", "violation")));
     assertEquals(3, l.size());
     assertEquals("r4", l.get(0)._get("operation/command/move-replica/replica", null));
     assertEquals("node1", l.get(0)._get("operation/command/move-replica/targetNode", null));
