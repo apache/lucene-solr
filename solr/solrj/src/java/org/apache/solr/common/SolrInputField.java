@@ -108,7 +108,8 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   public Object getFirstValue() {
     if (value instanceof Collection) {
-      Collection c = (Collection<Object>) value;
+      @SuppressWarnings({"unchecked"})
+      Collection<Object> c = (Collection<Object>) value;
       if (c.size() > 0) {
         return c.iterator().next();
       }
@@ -200,6 +201,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     SolrInputField clone = new SolrInputField(name);
     // We can't clone here, so we rely on simple primitives
     if (value instanceof Collection) {
+      @SuppressWarnings({"unchecked"})
       Collection<Object> values = (Collection<Object>) value;
       Collection<Object> cloneValues = new ArrayList<>(values.size());
       cloneValues.addAll(values);

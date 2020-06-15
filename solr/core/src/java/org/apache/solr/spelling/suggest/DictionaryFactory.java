@@ -31,10 +31,11 @@ public abstract class DictionaryFactory {
   /** Default dictionary implementation to use for IndexBasedDictionaries */
   public static String DEFAULT_INDEX_BASED_DICT = HighFrequencyDictionaryFactory.class.getName(); 
   
+  @SuppressWarnings({"rawtypes"})
   protected NamedList params;
   
   /** Sets the parameters available to SolrSuggester for use in Dictionary creation */
-  public void setParams(NamedList params) {
+  public void setParams(@SuppressWarnings({"rawtypes"})NamedList params) {
     this.params = params;
   }
   

@@ -35,7 +35,7 @@ import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
-
+@SuppressWarnings({"overrides"})
 public class ReplicaInfo implements MapWriter {
   private final String name;
   private final String core, collection, shard;
@@ -75,9 +75,10 @@ public class ReplicaInfo implements MapWriter {
     validate();
   }
 
+  @SuppressWarnings({"unchecked"})
   public ReplicaInfo(Map<String, Object> map) {
     this.name = map.keySet().iterator().next();
-    Map details = (Map) map.get(name);
+    @SuppressWarnings({"rawtypes"})Map details = (Map) map.get(name);
     details = Utils.getDeepCopy(details, 4);
     this.collection = (String) details.remove("collection");
     this.shard = (String) details.remove("shard");
@@ -207,6 +208,11 @@ public class ReplicaInfo implements MapWriter {
       return false;
     }
   }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
 
   @Override
   public String toString() {

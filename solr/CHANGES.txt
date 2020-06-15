@@ -25,6 +25,8 @@ Improvements
 
 Other Changes
 ----------------------
+* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -332,6 +334,19 @@ Other Changes
 * SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
 
 * SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
+
+* SOLR-14559: Fix or suppress warnings in solr/core/src/java/org/apache/solr/util,
+  response, cloud, security, schema, api (Erick Erickson)
+
+* SOLR-14563: Fix or suppress warnings in solr/contrib (Erick Erickson)
+
+* SOLR-14565: Fix or suppress warnings in solrj/impl and solrj/io/graph (Erick Erickson)
+
+* SOLR-14564: Fix or suppress remaining warnings in solr/core (Erick Erickson)
+
+* SOLR-14567: Fix or suppress remaining warnings in solrj (Erick Erickson)
+
+* SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
 
 ==================  8.5.2 ==================
 

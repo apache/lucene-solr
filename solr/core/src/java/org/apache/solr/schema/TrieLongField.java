@@ -68,7 +68,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
         
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);

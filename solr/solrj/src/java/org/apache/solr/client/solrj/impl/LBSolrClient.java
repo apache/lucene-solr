@@ -138,22 +138,24 @@ public abstract class LBSolrClient extends SolrClient {
 
 
   public static class Req {
+    @SuppressWarnings({"rawtypes"})
     protected SolrRequest request;
     protected List<String> servers;
     protected int numDeadServersToTry;
     private final Integer numServersToTry;
 
-    public Req(SolrRequest request, List<String> servers) {
+    public Req(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> servers) {
       this(request, servers, null);
     }
 
-    public Req(SolrRequest request, List<String> servers, Integer numServersToTry) {
+    public Req(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> servers, Integer numServersToTry) {
       this.request = request;
       this.servers = servers;
       this.numDeadServersToTry = servers.size();
       this.numServersToTry = numServersToTry;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public SolrRequest getRequest() {
       return request;
     }
@@ -349,7 +351,7 @@ public abstract class LBSolrClient extends SolrClient {
   /**
    * @return time allowed in nanos, returns -1 if no time_allowed is specified.
    */
-  private long getTimeAllowedInNanos(final SolrRequest req) {
+  private long getTimeAllowedInNanos(@SuppressWarnings({"rawtypes"})final SolrRequest req) {
     SolrParams reqParams = req.getParams();
     return reqParams == null ? -1 :
         TimeUnit.NANOSECONDS.convert(reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
@@ -576,12 +578,12 @@ public abstract class LBSolrClient extends SolrClient {
    * @throws IOException If there is a low-level I/O error.
    */
   @Override
-  public NamedList<Object> request(final SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     return request(request, collection, null);
   }
 
-  public NamedList<Object> request(final SolrRequest request, String collection,
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection,
                                    final Integer numServersToTry) throws SolrServerException, IOException {
     Exception ex = null;
     ServerWrapper[] serverList = aliveServerList;
@@ -678,7 +680,8 @@ public abstract class LBSolrClient extends SolrClient {
    * @param request the request will be sent to the picked server
    * @return the picked server
    */
-  protected ServerWrapper pickServer(ServerWrapper[] aliveServerList, SolrRequest request) {
+  protected ServerWrapper pickServer(ServerWrapper[] aliveServerList,
+                                     @SuppressWarnings({"rawtypes"})SolrRequest request) {
     int count = counter.incrementAndGet() & Integer.MAX_VALUE;
     return aliveServerList[count % aliveServerList.length];
   }

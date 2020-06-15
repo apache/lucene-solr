@@ -28,6 +28,7 @@ import org.apache.zookeeper.CreateMode;
 /**
  * Immutable representation of binary data with version.
  */
+@SuppressWarnings({"overrides"})
 public class VersionedData implements MapWriter {
   private final int version;
   private final byte[] data;
@@ -91,4 +92,10 @@ public class VersionedData implements MapWriter {
         Objects.equals(owner, that.owner) &&
         mode == that.mode;
   }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
+
 }

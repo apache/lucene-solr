@@ -42,7 +42,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
   protected abstract boolean func(int doc, FunctionValues[] vals) throws IOException;
 
   @Override
-  public BoolDocValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public BoolDocValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues[] vals =  new FunctionValues[sources.size()];
     int i=0;
     for (ValueSource source : sources) {
@@ -104,7 +104,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources) {
       source.createWeight(context, searcher);
     }

@@ -57,15 +57,15 @@ public class DocFreqValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    context.put("searcher",searcher);
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
+    context.put("searcher", searcher);
   }
 
   @Override
