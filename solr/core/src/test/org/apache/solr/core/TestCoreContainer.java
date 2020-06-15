@@ -353,28 +353,26 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void assertAllowPathFromSolrXml() throws Exception {
     Assume.assumeFalse(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.getAllowPaths().add(Path.of("/var/solr"));
     try {
       assertPathAllowed("/var/solr/foo");
       assertPathBlocked("/tmp");
     } finally {
       cc.shutdown();
-      System.clearProperty("solr.allowPaths");
     }
   }
 
   @Test
   public void assertAllowPathFromSolrXmlWin() throws Exception {
     Assume.assumeTrue(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "C:\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.getAllowPaths().add(Path.of("C:\\solr"));
     try {
       assertPathAllowed("C:\\solr\\data");
       assertPathBlocked("C:\\tmp");
     } finally {
       cc.shutdown();
-      System.clearProperty("solr.allowPaths");
     }
   }
 
