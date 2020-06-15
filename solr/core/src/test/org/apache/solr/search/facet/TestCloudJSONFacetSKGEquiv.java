@@ -48,6 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import static org.apache.solr.search.facet.FacetField.FacetMethod;
+import static org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc.SWEEP_COLLECTION_DEBUG_KEY;
 
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
@@ -329,7 +330,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
-        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
         assertEquals(Arrays.asList("skg!fg","skg!bg"), sweep_debug.get("accs"));
@@ -341,7 +342,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
-        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
         assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
@@ -355,7 +356,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByHashDV.class.getSimpleName(), debug.get("processor"));
-        assertNull(debug.get("sweep_collection"));
+        assertNull(debug.get(SWEEP_COLLECTION_DEBUG_KEY));
       }
     }
 
@@ -389,7 +390,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
-        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+        final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
         assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
@@ -423,7 +424,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           
           final NamedList<Object> debug = getFacetDebug(params);
           assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
-          final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+          final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
           assertNotNull(sweep_debug);
           assertEquals("count", sweep_debug.get("base"));
           assertEquals(Arrays.asList("skg!fg","skg!bg","skg2!fg","skg2!bg"), sweep_debug.get("accs"));
@@ -470,7 +471,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         // these should all be true for both the parent and the child debug..
         for (NamedList<Object> debug : Arrays.asList(parentDebug, childDebug)) {
           assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
-          final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get("sweep_collection");
+          final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
           assertNotNull(sweep_debug);
           assertEquals("count", sweep_debug.get("base"));
           assertEquals(Arrays.asList("skg!fg","skg!bg"), sweep_debug.get("accs"));

@@ -677,6 +677,7 @@ public abstract class SlotAcc implements Closeable {
    */
   static class SweepingCountSlotAcc extends CountSlotArrAcc {
 
+    static final String SWEEP_COLLECTION_DEBUG_KEY = "sweep_collection";
     private final SimpleOrderedMap<Object> debug;
     private final FacetFieldProcessor p;
     final SweepCountAccStruct base;
@@ -690,7 +691,7 @@ public abstract class SlotAcc implements Closeable {
       final FacetDebugInfo fdebug = fcontext.getDebugInfo();
       this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
       if (null != this.debug) {
-        fdebug.putInfoItem("sweep_collection", debug);
+        fdebug.putInfoItem(SWEEP_COLLECTION_DEBUG_KEY, debug);
         debug.add("base", key);
         debug.add("accs", new ArrayList<String>());
         debug.add("mapped", new ArrayList<String>());
