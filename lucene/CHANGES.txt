@@ -210,6 +210,8 @@ Improvements
 
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
 
+* LUCENE-9396: Improved truncation detection for points. (Adrien Grand, Robert Muir)
+
 Optimizations
 ---------------------
 
