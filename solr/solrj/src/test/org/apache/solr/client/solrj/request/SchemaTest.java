@@ -66,6 +66,7 @@ public class SchemaTest extends RestTestBase {
     SimpleOrderedMap errorMap = (SimpleOrderedMap)e.getMetaData().get("error");
     assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
         ((NamedList)errorMap.get("metadata")).get("error-class"));
+    @SuppressWarnings({"rawtypes"})
     List details = (List)errorMap.get("details");
     assertTrue(((List)((Map)details.get(0)).get("errorMessages")).get(0).toString().contains(expectedErrorMessage));
   }

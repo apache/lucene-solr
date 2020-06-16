@@ -122,7 +122,7 @@ public class NamedListTest extends SolrTestCase {
     NamedList<Object> nl2 = new NamedList<>();
     nl2.add("key2a", "value2a");
     nl2.add("key2b", nl2b);
-    nl2.add("k2int1", (int) 5);
+    nl2.add("k2int1", 5);
     NamedList<Object> nl3 = new NamedList<>();
     nl3.add("key3a", nl3a);
     nl3.add("key3b", "value3b");
@@ -187,9 +187,12 @@ public class NamedListTest extends SolrTestCase {
 
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  @SuppressWarnings({"unchecked"})
   public void testShallowMap() {
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("key1", "Val1");
+    @SuppressWarnings({"rawtypes"})
     Map m = nl.asShallowMap();
     m.put("key1", "Val1_");
     assertEquals("Val1_", nl.get("key1"));

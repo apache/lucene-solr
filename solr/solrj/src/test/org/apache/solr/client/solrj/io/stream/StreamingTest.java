@@ -420,14 +420,17 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 2, 1, 9);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
@@ -530,14 +533,17 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 9, 1, 2, 0);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 8, 7, 5, 3);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 6, 4);
 
@@ -2400,14 +2406,14 @@ public void testParallelRankStream() throws Exception {
     tryWithQt("/export");
     tryWithQt("/select");
   }
-  
+
   // We should be getting the exact same thing back with both the export and select handlers, so test
   private void tryWithQt(String which) throws IOException {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl", 
-        "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi", 
+    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl",
+        "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi",
         "sort", "i_sing asc");
     try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
 
@@ -2445,7 +2451,7 @@ public void testParallelRankStream() throws Exception {
       assertTrue("MV dates should be returned as Dates for dt_multi", tuple.getDates("dt_multi").get(0).equals(dt));
       dt = new Date(Instant.parse("1981-05-24T04:05:06.990Z").toEpochMilli());
       assertTrue("MV dates should be returned as Dates  for dt_multi", tuple.getDates("dt_multi").get(1).equals(dt));
-      
+
       assertTrue("Booleans should be returned", tuple.getBool("b_sing"));
       assertFalse("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(0));
       assertTrue("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(1));
@@ -2493,7 +2499,7 @@ public void testParallelRankStream() throws Exception {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList();
+    List<Tuple> tuples = new ArrayList<>();
     for(;;) {
       Tuple t = tupleStream.read();
       if(t.EOF) {
@@ -2528,9 +2534,11 @@ public void testParallelRankStream() throws Exception {
   }
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List group = (List)tuple.get("tuples");
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = (Map)group.get(i);
       Long tip = (Long)t.get("id");
       if(tip.intValue() != val) {
@@ -2541,13 +2549,14 @@ public void testParallelRankStream() throws Exception {
     return true;
   }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -2566,7 +2575,7 @@ public void testParallelRankStream() throws Exception {
 
     return true;
   }
-  
+
   private void attachStreamFactory(TupleStream tupleStream) {
     StreamContext streamContext = new StreamContext();
     streamContext.setStreamFactory(streamFactory);
@@ -2582,10 +2591,10 @@ public void testParallelRankStream() throws Exception {
     if(random().nextBoolean()) params.add("wt","javabin");
     return params;
   }
-  
+
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator) throws IOException {
     ParallelStream pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
     return pstream;
-  }  
+  }
 
 }
