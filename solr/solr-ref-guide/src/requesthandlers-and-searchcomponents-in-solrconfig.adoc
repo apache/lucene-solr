@@ -169,15 +169,11 @@ Many of the other useful components are described in sections of this Guide for 
 * `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
 * `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
 * `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
+* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
 
 Other components that ship with Solr include:
 
-[cols="20,40,40",options="header"]
-|===
-|Component Name |Class Name |More Information
-|phrases |`solr.PhrasesIdentificationComponent` | Learn more in the {solr-javadocs}org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] java class.
-|get |`solr.RealTimeGetComponent` | Described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-|responselog |`solr.ResponseLogComponent` | Learn more in the {solr-javadocs}org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] java class.
-|===
+* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
+* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
 
-Lastly, you may be interested in some of the components hosted on the https://solr.cool/#searchcomponents[Solr Cool] website.
+Lastly, you may be interested in some other components created by the community and listed on the https://solr.cool/#searchcomponents[Solr Cool] website.
